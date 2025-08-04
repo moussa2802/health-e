@@ -114,46 +114,67 @@ export class PayDunyaService {
       };
       */
 
+      // 🔧 Sécuriser tous les champs avec des fallbacks
+      const cancelUrl = bookingData.professionalId
+        ? `https://health-e.sn/book-appointment/${bookingData.professionalId}`
+        : `https://health-e.sn/home`;
+
+      const callbackUrl = bookingData.bookingId
+        ? `https://health-e.sn/appointment-success/${bookingData.bookingId}`
+        : `https://health-e.sn/home`;
+
+      const returnUrl = bookingData.bookingId
+        ? `https://health-e.sn/appointment-success/${bookingData.bookingId}`
+        : `https://health-e.sn/home`;
+
+      const invoiceNumber = bookingData.bookingId
+        ? `INV-${bookingData.bookingId}`
+        : `INV-${Date.now()}`;
+
       // Préparer les données de la facture selon le format PayDunya
       const invoiceData = {
         invoice: {
           items: [
             {
-              name: `Consultation ${bookingData.consultationType} - ${bookingData.professionalName}`,
+              name: `Consultation ${
+                bookingData.consultationType || "Vidéo"
+              } - ${bookingData.professionalName || "Professionnel"}`,
               quantity: 1,
               unit_price: parseInt(bookingData.price.toString()), // 🔧 Force en entier
-              description: `Consultation ${bookingData.consultationType} le ${bookingData.date} à ${bookingData.time} (${bookingData.duration} min)`,
+              description: `Consultation ${
+                bookingData.consultationType || "Vidéo"
+              } le ${bookingData.date || "Aujourd'hui"} à ${
+                bookingData.time || "Maintenant"
+              } (${bookingData.duration || 60} min)`,
             },
           ],
           total_amount: parseInt(bookingData.price.toString()), // 🔧 Force en entier
-          description: `Consultation avec ${bookingData.professionalName}`,
+          description: `Consultation avec ${
+            bookingData.professionalName || "Professionnel"
+          }`,
         },
         store: {
           name: "Health-e",
           website_url: "https://health-e.sn",
         },
         actions: {
-          callback_url: `https://health-e.sn/appointment-success/${bookingData.bookingId}`,
-          cancel_url: bookingData.professionalId
-            ? `https://health-e.sn/book-appointment/${bookingData.professionalId}`
-            : `https://health-e.sn/home`, // URL par défaut si undefined
-          return_url: `https://health-e.sn/appointment-success/${bookingData.bookingId}`,
+          callback_url: callbackUrl,
+          cancel_url: cancelUrl,
+          return_url: returnUrl,
         },
         custom_data: {
-          invoice_number: `INV-${bookingData.bookingId}`,
-          customer_name: bookingData.patientName,
-          customer_email: bookingData.patientEmail,
+          invoice_number: invoiceNumber,
+          customer_name: bookingData.patientName || "Patient",
+          customer_email: bookingData.patientEmail || "patient@health-e.sn",
           customer_phone: bookingData.patientPhone || "770000000", // 🛑 Mets un téléphone factice si vide
         },
       };
 
       // 🔍 DEBUG: Vérifier les URLs générées
       console.log("🔍 [DEBUG] URLs générées:");
-      console.log("callback_url:", `https://health-e.sn/appointment-success/${bookingData.bookingId}`);
-      console.log("cancel_url:", bookingData.professionalId
-        ? `https://health-e.sn/book-appointment/${bookingData.professionalId}`
-        : `https://health-e.sn/home`);
-      console.log("return_url:", `https://health-e.sn/appointment-success/${bookingData.bookingId}`);
+      console.log("callback_url:", callbackUrl);
+      console.log("[PAYDUNYA] cancel_url:", cancelUrl);
+      console.log("return_url:", returnUrl);
 
       // Appel à l'API PayDunya pour créer la facture
       console.log(
