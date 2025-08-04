@@ -55,6 +55,7 @@ export class PayDunyaService {
     patientEmail: string;
     patientPhone: string;
     professionalName: string;
+    professionalId: string;
     consultationType: string;
     date: string;
     time: string;
@@ -95,6 +96,16 @@ export class PayDunyaService {
       };
 
       // Appel à l'API PayDunya pour créer la facture
+      console.log("🔔 [PAYDUNYA] API URL:", `${PAYDUNYA_CONFIG.baseUrl}/checkout-invoice/create`);
+      console.log("🔔 [PAYDUNYA] Headers:", {
+        'Content-Type': 'application/json',
+        'PAYDUNYA-PUBLIC-KEY': PAYDUNYA_CONFIG.publicKey,
+        'PAYDUNYA-PRIVATE-KEY': PAYDUNYA_CONFIG.privateKey,
+        'PAYDUNYA-MASTER-KEY': PAYDUNYA_CONFIG.masterKey,
+        'PAYDUNYA-MODE': PAYDUNYA_CONFIG.mode
+      });
+      console.log("🔔 [PAYDUNYA] Request body:", JSON.stringify(invoiceData, null, 2));
+      
       const response = await fetch(`${PAYDUNYA_CONFIG.baseUrl}/checkout-invoice/create`, {
         method: 'POST',
         headers: {
@@ -106,8 +117,20 @@ export class PayDunyaService {
         },
         body: JSON.stringify(invoiceData)
       });
-
-      const result = await response.json();
+      
+      console.log("🔔 [PAYDUNYA] Response status:", response.status);
+      console.log("🔔 [PAYDUNYA] Response headers:", Object.fromEntries(response.headers.entries()));
+      
+      const responseText = await response.text();
+      console.log("🔔 [PAYDUNYA] Response text:", responseText);
+      
+      let result;
+      try {
+        result = JSON.parse(responseText);
+      } catch (parseError) {
+        console.error("❌ [PAYDUNYA] Failed to parse JSON response:", parseError);
+        throw new Error(`Invalid response from PayDunya: ${responseText.substring(0, 200)}`);
+      }
 
       if (result.success) {
         console.log("✅ [PAYDUNYA] Invoice created successfully:", result.invoice_url);
@@ -143,7 +166,14 @@ export class PayDunyaService {
   }
 
   // Sauvegarder les informations de paiement
-  private async savePaymentInfo(bookingId: string, paymentInfo: any) {
+  private async savePaymentInfo(bookingId: string, paymentInfo: {
+    invoiceToken: string;
+    invoiceUrl: string;
+    status: string;
+    amount: number;
+    currency: string;
+    createdAt: string;
+  }) {
     try {
       const paymentRef = doc(this.db, 'payments', bookingId);
       await setDoc(paymentRef, paymentInfo);
