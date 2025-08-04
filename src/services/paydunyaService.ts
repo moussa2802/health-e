@@ -74,18 +74,58 @@ export class PayDunyaService {
         bookingData.bookingId
       );
 
-      // Préparer les données de la facture
+      // 🔍 DEBUG: Vérifier les types des données avant envoi
+      console.log("[DEBUG] Type des champs envoyés à PayDunya:");
+      console.log("unit_price:", bookingData.price, typeof bookingData.price);
+      console.log("bookingData.professionalId:", bookingData.professionalId);
+      console.log("bookingData.patientPhone:", bookingData.patientPhone);
+      console.log("bookingData.bookingId:", bookingData.bookingId);
+
+      // 🧪 TEST STATIQUE - Décommentez pour tester avec des données fixes
+      /*
+      const invoiceData = {
+        invoice: {
+          items: [
+            {
+              name: "Consultation test",
+              quantity: 1,
+              unit_price: 25000,
+              description: "Consultation test statique"
+            }
+          ],
+          total_amount: 25000,
+          description: "Consultation test"
+        },
+        store: {
+          name: "Health-e",
+          website_url: "https://health-e.sn"
+        },
+        actions: {
+          callback_url: "https://health-e.sn/success",
+          cancel_url: "https://health-e.sn/cancel",
+          return_url: "https://health-e.sn/return"
+        },
+        custom_data: {
+          invoice_number: "INV-123456789",
+          customer_name: "Test Patient",
+          customer_email: "test@example.com",
+          customer_phone: "770000000"
+        }
+      };
+      */
+
+      // Préparer les données de la facture selon le format PayDunya
       const invoiceData = {
         invoice: {
           items: [
             {
               name: `Consultation ${bookingData.consultationType} - ${bookingData.professionalName}`,
               quantity: 1,
-              unit_price: bookingData.price,
+              unit_price: parseInt(bookingData.price.toString()), // 🔧 Force en entier
               description: `Consultation ${bookingData.consultationType} le ${bookingData.date} à ${bookingData.time} (${bookingData.duration} min)`,
             },
           ],
-          total_amount: bookingData.price,
+          total_amount: parseInt(bookingData.price.toString()), // 🔧 Force en entier
           description: `Consultation avec ${bookingData.professionalName}`,
         },
         store: {
