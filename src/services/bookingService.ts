@@ -85,8 +85,20 @@ export async function createBooking(
     const db = getFirestoreInstance();
     if (!db) throw new Error("Firestore not available");
 
+    // Vérifier l'authentification
+    const auth = getAuth(app);
+    const currentUser = auth.currentUser;
+    console.log("🔐 Current user:", currentUser?.uid);
+    console.log("🔐 User authenticated:", !!currentUser);
+
+    if (!currentUser) {
+      throw new Error("Utilisateur non authentifié");
+    }
+
     // Ensure bookings collection exists
     const bookingsRef = collection(db, "bookings");
+    console.log("📁 Using bookings collection:", bookingsRef.path);
+    
     // Vérifier si le créneau est déjà réservé
     const conflictingQuery = query(
       bookingsRef,
@@ -96,6 +108,7 @@ export async function createBooking(
       where("status", "in", ["confirmé", "en_attente"]) // statuts actifs
     );
 
+    console.log("🔍 Checking for conflicting bookings...");
     const conflictingSnap = await getDocs(conflictingQuery);
     if (!conflictingSnap.empty) {
       console.warn(
@@ -107,6 +120,8 @@ export async function createBooking(
         "Ce créneau est déjà réservé. Veuillez en choisir un autre."
       );
     }
+    console.log("✅ No conflicting bookings found");
+
     const result = await retryFirestoreOperation(async () => {
       const bookingWithDefaults = {
         ...bookingData,
@@ -123,8 +138,15 @@ export async function createBooking(
         "📝 Création finale de la réservation avec les données:",
         JSON.stringify(bookingWithDefaults, null, 2)
       );
+      console.log("🔐 User ID for booking:", currentUser.uid);
+      console.log("🔐 Patient ID in booking data:", bookingData.patientId);
+      console.log("🔐 User matches patient:", currentUser.uid === bookingData.patientId);
+      
       return await addDoc(bookingsRef, bookingWithDefaults);
     });
+    
+    console.log("✅ Booking document created with ID:", result.id);
+    
     await createNotification(
       bookingData.professionalId,
       "appointment_request",
@@ -137,6 +159,11 @@ export async function createBooking(
     return result.id;
   } catch (error) {
     console.error("❌ Error creating booking:", error);
+    console.error("❌ Error details:", {
+      code: error.code,
+      message: error.message,
+      stack: error.stack
+    });
     throw new Error("Impossible de créer la réservation. Veuillez réessayer.");
   }
 }
