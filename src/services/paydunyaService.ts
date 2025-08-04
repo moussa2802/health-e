@@ -30,11 +30,17 @@ export interface PayDunyaPaymentData {
 
 // Configuration PayDunya (à remplacer par vos vraies clés)
 const PAYDUNYA_CONFIG = {
-  publicKey: process.env.REACT_APP_PAYDUNYA_PUBLIC_KEY || 'test_public_p64arhicc9ELdNg7kD78tmEYE3a',
-  privateKey: process.env.REACT_APP_PAYDUNYA_PRIVATE_KEY || 'test_private_Cvyg0Z3E0kuBE20lWqZbjTxzKhf',
-  masterKey: process.env.REACT_APP_PAYDUNYA_MASTER_KEY || 'gzt0lrr3-IhY9-C15D-nQjQ-4YiQ3HmHdWtF',
-  baseUrl: 'https://app.paydunya.com/api/v1',
-  mode: 'test' // ou 'live' pour la production
+  publicKey:
+    process.env.REACT_APP_PAYDUNYA_PUBLIC_KEY ||
+    "test_public_p64arhicc9ELdNg7kD78tmEYE3a",
+  privateKey:
+    process.env.REACT_APP_PAYDUNYA_PRIVATE_KEY ||
+    "test_private_Cvyg0Z3E0kuBE20lWqZbjTxzKhf",
+  masterKey:
+    process.env.REACT_APP_PAYDUNYA_MASTER_KEY ||
+    "gzt0lrr3-IhY9-C15D-nQjQ-4YiQ3HmHdWtF",
+  baseUrl: "https://app.paydunya.com/api/v1",
+  mode: "test", // ou 'live' pour la production
 };
 
 export class PayDunyaService {
@@ -63,7 +69,10 @@ export class PayDunyaService {
     duration: number;
   }): Promise<{ success: boolean; invoiceUrl?: string; error?: string }> {
     try {
-      console.log("🔔 [PAYDUNYA] Creating invoice for booking:", bookingData.bookingId);
+      console.log(
+        "🔔 [PAYDUNYA] Creating invoice for booking:",
+        bookingData.bookingId
+      );
 
       // Préparer les données de la facture
       const invoiceData = {
@@ -73,109 +82,132 @@ export class PayDunyaService {
               name: `Consultation ${bookingData.consultationType} - ${bookingData.professionalName}`,
               quantity: 1,
               unit_price: bookingData.price,
-              total_price: bookingData.price,
-              description: `Consultation ${bookingData.consultationType} le ${bookingData.date} à ${bookingData.time} (${bookingData.duration} min)`
-            }
+              description: `Consultation ${bookingData.consultationType} le ${bookingData.date} à ${bookingData.time} (${bookingData.duration} min)`,
+            },
           ],
           total_amount: bookingData.price,
           description: `Consultation avec ${bookingData.professionalName}`,
-          invoice_number: `INV-${bookingData.bookingId}`,
-          customer_name: bookingData.patientName,
-          customer_email: bookingData.patientEmail,
-          customer_phone: bookingData.patientPhone
         },
         store: {
           name: "Health-e",
-          website_url: "https://health-e.sn"
+          website_url: "https://health-e.sn",
         },
         actions: {
           callback_url: `https://health-e.sn/appointment-success/${bookingData.bookingId}`,
           cancel_url: `https://health-e.sn/book-appointment/${bookingData.professionalId}`,
-          return_url: `https://health-e.sn/appointment-success/${bookingData.bookingId}`
-        }
-      };
-
-      // Appel à l'API PayDunya pour créer la facture
-      console.log("🔔 [PAYDUNYA] API URL:", `${PAYDUNYA_CONFIG.baseUrl}/checkout-invoice/create`);
-      console.log("🔔 [PAYDUNYA] Headers:", {
-        'Content-Type': 'application/json',
-        'PAYDUNYA-PUBLIC-KEY': PAYDUNYA_CONFIG.publicKey,
-        'PAYDUNYA-PRIVATE-KEY': PAYDUNYA_CONFIG.privateKey,
-        'PAYDUNYA-MASTER-KEY': PAYDUNYA_CONFIG.masterKey,
-        'PAYDUNYA-MODE': PAYDUNYA_CONFIG.mode
-      });
-      console.log("🔔 [PAYDUNYA] Request body:", JSON.stringify(invoiceData, null, 2));
-      
-      const response = await fetch(`${PAYDUNYA_CONFIG.baseUrl}/checkout-invoice/create`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'PAYDUNYA-PUBLIC-KEY': PAYDUNYA_CONFIG.publicKey,
-          'PAYDUNYA-PRIVATE-KEY': PAYDUNYA_CONFIG.privateKey,
-          'PAYDUNYA-MASTER-KEY': PAYDUNYA_CONFIG.masterKey,
-          'PAYDUNYA-MODE': PAYDUNYA_CONFIG.mode
+          return_url: `https://health-e.sn/appointment-success/${bookingData.bookingId}`,
         },
-        body: JSON.stringify(invoiceData)
+        custom_data: {
+          invoice_number: `INV-${bookingData.bookingId}`,
+          customer_name: bookingData.patientName,
+          customer_email: bookingData.patientEmail,
+          customer_phone: bookingData.patientPhone,
+        },
+      };
+      // Appel à l'API PayDunya pour créer la facture
+      console.log(
+        "🔔 [PAYDUNYA] API URL:",
+        `${PAYDUNYA_CONFIG.baseUrl}/checkout-invoice/create`
+      );
+      console.log("🔔 [PAYDUNYA] Headers:", {
+        "Content-Type": "application/json",
+        "PAYDUNYA-PUBLIC-KEY": PAYDUNYA_CONFIG.publicKey,
+        "PAYDUNYA-PRIVATE-KEY": PAYDUNYA_CONFIG.privateKey,
+        "PAYDUNYA-MASTER-KEY": PAYDUNYA_CONFIG.masterKey,
+        "PAYDUNYA-MODE": PAYDUNYA_CONFIG.mode,
       });
-      
+      console.log(
+        "🔔 [PAYDUNYA] Request body:",
+        JSON.stringify(invoiceData, null, 2)
+      );
+
+      const response = await fetch(
+        `${PAYDUNYA_CONFIG.baseUrl}/checkout-invoice/create`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "PAYDUNYA-PUBLIC-KEY": PAYDUNYA_CONFIG.publicKey,
+            "PAYDUNYA-PRIVATE-KEY": PAYDUNYA_CONFIG.privateKey,
+            "PAYDUNYA-MASTER-KEY": PAYDUNYA_CONFIG.masterKey,
+            "PAYDUNYA-MODE": PAYDUNYA_CONFIG.mode,
+          },
+          body: JSON.stringify(invoiceData),
+        }
+      );
+
       console.log("🔔 [PAYDUNYA] Response status:", response.status);
-      console.log("🔔 [PAYDUNYA] Response headers:", Object.fromEntries(response.headers.entries()));
-      
+      console.log(
+        "🔔 [PAYDUNYA] Response headers:",
+        Object.fromEntries(response.headers.entries())
+      );
+
       const responseText = await response.text();
       console.log("🔔 [PAYDUNYA] Response text:", responseText);
-      
+
       let result;
       try {
         result = JSON.parse(responseText);
       } catch (parseError) {
-        console.error("❌ [PAYDUNYA] Failed to parse JSON response:", parseError);
-        throw new Error(`Invalid response from PayDunya: ${responseText.substring(0, 200)}`);
+        console.error(
+          "❌ [PAYDUNYA] Failed to parse JSON response:",
+          parseError
+        );
+        throw new Error(
+          `Invalid response from PayDunya: ${responseText.substring(0, 200)}`
+        );
       }
 
       if (result.success) {
-        console.log("✅ [PAYDUNYA] Invoice created successfully:", result.invoice_url);
-        
+        console.log(
+          "✅ [PAYDUNYA] Invoice created successfully:",
+          result.invoice_url
+        );
+
         // Sauvegarder les informations de paiement dans Firestore
         await this.savePaymentInfo(bookingData.bookingId, {
           invoiceToken: result.token,
           invoiceUrl: result.invoice_url,
-          status: 'pending',
+          status: "pending",
           amount: bookingData.price,
-          currency: 'XOF',
-          createdAt: new Date().toISOString()
+          currency: "XOF",
+          createdAt: new Date().toISOString(),
         });
 
         return {
           success: true,
-          invoiceUrl: result.invoice_url
+          invoiceUrl: result.invoice_url,
         };
       } else {
         console.error("❌ [PAYDUNYA] Failed to create invoice:", result);
         return {
           success: false,
-          error: result.message || 'Erreur lors de la création de la facture'
+          error: result.message || "Erreur lors de la création de la facture",
         };
       }
     } catch (error) {
       console.error("❌ [PAYDUNYA] Error creating invoice:", error);
       return {
         success: false,
-        error: 'Erreur de connexion avec PayDunya'
+        error: "Erreur de connexion avec PayDunya",
       };
     }
   }
 
   // Sauvegarder les informations de paiement
-  private async savePaymentInfo(bookingId: string, paymentInfo: {
-    invoiceToken: string;
-    invoiceUrl: string;
-    status: string;
-    amount: number;
-    currency: string;
-    createdAt: string;
-  }) {
+  private async savePaymentInfo(
+    bookingId: string,
+    paymentInfo: {
+      invoiceToken: string;
+      invoiceUrl: string;
+      status: string;
+      amount: number;
+      currency: string;
+      createdAt: string;
+    }
+  ) {
     try {
-      const paymentRef = doc(this.db, 'payments', bookingId);
+      const paymentRef = doc(this.db, "payments", bookingId);
       await setDoc(paymentRef, paymentInfo);
       console.log("✅ [PAYDUNYA] Payment info saved for booking:", bookingId);
     } catch (error) {
@@ -184,83 +216,98 @@ export class PayDunyaService {
   }
 
   // Vérifier le statut d'un paiement
-  async checkPaymentStatus(invoiceToken: string): Promise<{ success: boolean; status?: string; error?: string }> {
+  async checkPaymentStatus(
+    invoiceToken: string
+  ): Promise<{ success: boolean; status?: string; error?: string }> {
     try {
-      const response = await fetch(`${PAYDUNYA_CONFIG.baseUrl}/checkout-invoice/confirm/${invoiceToken}`, {
-        method: 'GET',
-        headers: {
-          'PAYDUNYA-MASTER-KEY': PAYDUNYA_CONFIG.masterKey,
-          'PAYDUNYA-MODE': PAYDUNYA_CONFIG.mode
+      const response = await fetch(
+        `${PAYDUNYA_CONFIG.baseUrl}/checkout-invoice/confirm/${invoiceToken}`,
+        {
+          method: "GET",
+          headers: {
+            "PAYDUNYA-MASTER-KEY": PAYDUNYA_CONFIG.masterKey,
+            "PAYDUNYA-MODE": PAYDUNYA_CONFIG.mode,
+          },
         }
-      });
+      );
 
       const result = await response.json();
 
       if (result.success) {
         return {
           success: true,
-          status: result.invoice.status
+          status: result.invoice.status,
         };
       } else {
         return {
           success: false,
-          error: result.message || 'Erreur lors de la vérification du statut'
+          error: result.message || "Erreur lors de la vérification du statut",
         };
       }
     } catch (error) {
       console.error("❌ [PAYDUNYA] Error checking payment status:", error);
       return {
         success: false,
-        error: 'Erreur de connexion'
+        error: "Erreur de connexion",
       };
     }
   }
 
   // Traiter une notification IPN
-  async processIPN(paymentData: PayDunyaPaymentData): Promise<{ success: boolean; error?: string }> {
+  async processIPN(
+    paymentData: PayDunyaPaymentData
+  ): Promise<{ success: boolean; error?: string }> {
     try {
-      console.log("🔔 [PAYDUNYA IPN] Processing payment notification:", paymentData);
+      console.log(
+        "🔔 [PAYDUNYA IPN] Processing payment notification:",
+        paymentData
+      );
 
       // Vérifier le token
       if (paymentData.token !== PAYDUNYA_CONFIG.masterKey) {
         console.error("❌ [PAYDUNYA IPN] Invalid token");
-        return { success: false, error: 'Token invalide' };
+        return { success: false, error: "Token invalide" };
       }
 
       // Extraire l'ID de réservation du numéro de facture
       const invoiceNumber = paymentData.invoice.invoice_number;
-      const bookingId = invoiceNumber?.replace('INV-', '');
+      const bookingId = invoiceNumber?.replace("INV-", "");
 
       if (!bookingId) {
-        console.error("❌ [PAYDUNYA IPN] No booking ID found in invoice number");
-        return { success: false, error: 'ID de réservation manquant' };
+        console.error(
+          "❌ [PAYDUNYA IPN] No booking ID found in invoice number"
+        );
+        return { success: false, error: "ID de réservation manquant" };
       }
 
       // Mettre à jour le statut de la réservation
-      const bookingRef = doc(this.db, 'bookings', bookingId);
+      const bookingRef = doc(this.db, "bookings", bookingId);
       await updateDoc(bookingRef, {
         paymentStatus: paymentData.invoice.status,
         paymentDate: new Date().toISOString(),
-        paymentMethod: paymentData.payment_method || 'paydunya',
-        transactionId: paymentData.transaction_id
+        paymentMethod: paymentData.payment_method || "paydunya",
+        transactionId: paymentData.transaction_id,
       });
 
       // Mettre à jour les informations de paiement
-      const paymentRef = doc(this.db, 'payments', bookingId);
+      const paymentRef = doc(this.db, "payments", bookingId);
       await updateDoc(paymentRef, {
         status: paymentData.invoice.status,
         paymentDate: new Date().toISOString(),
-        paymentMethod: paymentData.payment_method || 'paydunya',
-        transactionId: paymentData.transaction_id
+        paymentMethod: paymentData.payment_method || "paydunya",
+        transactionId: paymentData.transaction_id,
       });
 
-      console.log("✅ [PAYDUNYA IPN] Payment processed successfully for booking:", bookingId);
+      console.log(
+        "✅ [PAYDUNYA IPN] Payment processed successfully for booking:",
+        bookingId
+      );
       return { success: true };
     } catch (error) {
       console.error("❌ [PAYDUNYA IPN] Error processing payment:", error);
-      return { success: false, error: 'Erreur lors du traitement du paiement' };
+      return { success: false, error: "Erreur lors du traitement du paiement" };
     }
   }
 }
 
-export default PayDunyaService.getInstance(); 
+export default PayDunyaService.getInstance();
