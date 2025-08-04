@@ -33,6 +33,7 @@ import LoadingSpinner from "../../components/ui/LoadingSpinner";
 import { getDatabase, ref, set } from "firebase/database";
 import { createInstantConsultationRequest } from "../../services/jitsiService";
 import { ensureFirestoreReady } from "../../utils/firebase";
+import paydunyaService from "../../services/paydunyaService";
 
 type ConsultationType = "video" | "audio";
 
@@ -91,11 +92,11 @@ const BookAppointment: React.FC = () => {
 
   const paymentMethods: PaymentMethod[] = [
     {
-      id: "wave",
-      name: "Wave",
+      id: "paydunya",
+      name: "PayDunya",
       type: "mobile",
-      icon: <Smartphone className="h-6 w-6 text-blue-500" />,
-      description: "Paiement via Wave",
+      icon: <CreditCard className="h-6 w-6 text-green-500" />,
+      description: "Paiement sécurisé via PayDunya (Wave, Orange Money, MTN, etc.)",
     },
     {
       id: "orange-money",
@@ -419,15 +420,15 @@ const BookAppointment: React.FC = () => {
       return false;
     }
 
-    if (
-      selectedPaymentMethod === "wave" ||
-      selectedPaymentMethod === "orange-money"
-    ) {
-      if (!phoneNumber || !/^[0-9]{9}$/.test(phoneNumber)) {
-        setPaymentError("Numéro de téléphone invalide");
-        return false;
-      }
-    } else if (selectedPaymentMethod === "card") {
+    // Pour PayDunya, pas besoin de validation spécifique car les informations
+    // seront collectées sur la page de paiement PayDunya
+    if (selectedPaymentMethod === "paydunya") {
+      setPaymentError("");
+      return true;
+    }
+
+    // Validation pour les autres méthodes de paiement (si ajoutées plus tard)
+    if (selectedPaymentMethod === "card") {
       if (!cardNumber || cardNumber.length < 16) {
         setPaymentError("Numéro de carte invalide");
         return false;
@@ -442,15 +443,11 @@ const BookAppointment: React.FC = () => {
       }
     }
 
+    setPaymentError("");
     return true;
   };
 
   const handlePayment = async () => {
-    if (!validatePaymentForm()) {
-      console.log("❌ Payment form validation failed");
-      return;
-    }
-
     if (!currentUser || !professional) {
       setPaymentError("Informations utilisateur manquantes");
       console.log("❌ Current user or professional missing");
@@ -579,12 +576,30 @@ const BookAppointment: React.FC = () => {
         type: consultationType,
       });
 
-      // Simuler le traitement du paiement
-      await new Promise((resolve) => setTimeout(resolve, 2000));
+      // Créer la facture PayDunya
+      console.log("🔔 [PAYDUNYA] Creating invoice for booking:", bookingId);
+      
+      const paydunyaResult = await paydunyaService.createInvoice({
+        bookingId: bookingId,
+        patientName: currentUser.name || "Patient",
+        patientEmail: currentUser.email || "",
+        patientPhone: currentUser.phone || "",
+        professionalName: professional.name || "Professionnel",
+        consultationType: consultationType,
+        date: dateString,
+        time: startTime,
+        price: professional.price || 0,
+        duration: 60
+      });
 
-      // Rediriger vers la page de succès après création réussie
-      console.log("🔄 Redirecting to success page");
-      navigate(`/appointment-success/${bookingId}`);
+      if (paydunyaResult.success && paydunyaResult.invoiceUrl) {
+        console.log("✅ [PAYDUNYA] Invoice created, redirecting to payment page");
+        // Rediriger vers la page de paiement PayDunya
+        window.location.href = paydunyaResult.invoiceUrl;
+      } else {
+        console.error("❌ [PAYDUNYA] Failed to create invoice:", paydunyaResult.error);
+        setPaymentError(paydunyaResult.error || "Erreur lors de la création de la facture de paiement");
+      }
     } catch (error) {
       console.error("❌ Error during booking creation:", error);
       setPaymentError(
@@ -1229,16 +1244,19 @@ const BookAppointment: React.FC = () => {
                       isSubmitting ||
                       !isSlotAvailable)
                       ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-                      : "bg-blue-600 text-white hover:bg-blue-700 transform hover:-translate-y-0.5"
+                      : "bg-green-600 text-white hover:bg-green-700 transform hover:-translate-y-0.5"
                   }`}
                 >
                   {isSubmitting ? (
                     <>
                       <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                      Traitement en cours...
+                      Création de la facture...
                     </>
                   ) : (
-                    "Continuer vers le paiement"
+                    <>
+                      <CreditCard className="h-5 w-5 mr-2" />
+                      Payer avec PayDunya
+                    </>
                   )}
                 </button>
               </section>

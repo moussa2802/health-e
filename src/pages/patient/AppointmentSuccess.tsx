@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
-import { CheckCircle, Calendar, Clock, Video, User } from 'lucide-react';
+import { Link, useParams, useSearchParams } from 'react-router-dom';
+import { CheckCircle, Calendar, Clock, Video, User, AlertCircle } from 'lucide-react';
 import { getFirestoreInstance } from '../../utils/firebase';
 import { formatLocalDate, formatLocalTime, createDateWithTime, formatInDakarTime } from '../../utils/dateUtils';
 import { doc, getDoc } from 'firebase/firestore';
+import paydunyaService from '../../services/paydunyaService';
 
 interface AppointmentSuccessParams {
   bookingId: string;
@@ -11,9 +12,11 @@ interface AppointmentSuccessParams {
 
 const AppointmentSuccess: React.FC = () => {
   const { bookingId } = useParams<AppointmentSuccessParams>();
+  const [searchParams] = useSearchParams();
   const [bookingData, setBookingData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [paymentStatus, setPaymentStatus] = useState<string>('pending');
 
   useEffect(() => {
     const fetchBooking = async () => {
@@ -37,7 +40,23 @@ const AppointmentSuccess: React.FC = () => {
         
         if (snapshot.exists()) {
           console.log('✅ Booking data found:', snapshot.data());
-          setBookingData(snapshot.data());
+          const data = snapshot.data();
+          setBookingData(data);
+          
+          // Vérifier le statut de paiement PayDunya
+          if (data.paymentStatus) {
+            setPaymentStatus(data.paymentStatus);
+          }
+          
+          // Si c'est un retour de PayDunya, vérifier le statut
+          const token = searchParams.get('token');
+          if (token) {
+            console.log('🔔 [PAYDUNYA] Checking payment status for token:', token);
+            const paymentResult = await paydunyaService.checkPaymentStatus(token);
+            if (paymentResult.success) {
+              setPaymentStatus(paymentResult.status || 'completed');
+            }
+          }
         } else {
           console.log('⚠️ No booking found with ID:', bookingId);
           setError("Réservation non trouvée");
@@ -51,7 +70,7 @@ const AppointmentSuccess: React.FC = () => {
     };
     
     fetchBooking();
-  }, [bookingId]);
+  }, [bookingId, searchParams]);
   
   if (loading) {
     return (
@@ -91,10 +110,36 @@ const AppointmentSuccess: React.FC = () => {
   return (
     <div className="container mx-auto px-4 py-16">
       <div className="max-w-md mx-auto bg-white rounded-lg shadow-md overflow-hidden">
-        <div className="bg-gradient-to-r from-blue-500 to-teal-400 p-6 text-white text-center">
-          <CheckCircle className="h-16 w-16 mx-auto mb-4" />
-          <h1 className="text-2xl font-bold mb-2">Rendez-vous confirmé !</h1>
-          <p>Votre consultation a été réservée avec succès.</p>
+        <div className={`p-6 text-white text-center ${
+          paymentStatus === 'completed' 
+            ? 'bg-gradient-to-r from-green-500 to-green-600' 
+            : paymentStatus === 'pending'
+            ? 'bg-gradient-to-r from-yellow-500 to-yellow-600'
+            : 'bg-gradient-to-r from-red-500 to-red-600'
+        }`}>
+          {paymentStatus === 'completed' ? (
+            <CheckCircle className="h-16 w-16 mx-auto mb-4" />
+          ) : paymentStatus === 'pending' ? (
+            <AlertCircle className="h-16 w-16 mx-auto mb-4" />
+          ) : (
+            <AlertCircle className="h-16 w-16 mx-auto mb-4" />
+          )}
+          <h1 className="text-2xl font-bold mb-2">
+            {paymentStatus === 'completed' 
+              ? 'Paiement confirmé !' 
+              : paymentStatus === 'pending'
+              ? 'Paiement en attente'
+              : 'Paiement échoué'
+            }
+          </h1>
+          <p>
+            {paymentStatus === 'completed' 
+              ? 'Votre consultation a été réservée et payée avec succès.' 
+              : paymentStatus === 'pending'
+              ? 'Votre réservation est en attente de confirmation de paiement.'
+              : 'Le paiement n\'a pas pu être traité. Veuillez réessayer.'
+            }
+          </p>
         </div>
         
         <div className="p-6">
@@ -153,6 +198,14 @@ const AppointmentSuccess: React.FC = () => {
           </div>
           
           <div className="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-3">
+            {paymentStatus !== 'completed' && (
+              <Link
+                to={`/book-appointment/${bookingData?.professionalId}`}
+                className="flex-1 bg-green-500 text-white py-3 px-4 rounded-md text-center font-medium hover:bg-green-600 transition-colors"
+              >
+                Réessayer le paiement
+              </Link>
+            )}
             <Link
               to="/patient/dashboard"
               className="flex-1 bg-blue-500 text-white py-3 px-4 rounded-md text-center font-medium hover:bg-blue-600 transition-colors"
