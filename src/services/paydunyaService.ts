@@ -134,9 +134,9 @@ export class PayDunyaService {
         },
         actions: {
           callback_url: `https://health-e.sn/appointment-success/${bookingData.bookingId}`,
-          cancel_url: `https://health-e.sn/book-appointment/${
-            bookingData.professionalId || ""
-          }`,
+          cancel_url: bookingData.professionalId
+            ? `https://health-e.sn/book-appointment/${bookingData.professionalId}`
+            : `https://health-e.sn/home`, // URL par défaut si undefined
           return_url: `https://health-e.sn/appointment-success/${bookingData.bookingId}`,
         },
         custom_data: {
@@ -146,6 +146,15 @@ export class PayDunyaService {
           customer_phone: bookingData.patientPhone || "770000000", // 🛑 Mets un téléphone factice si vide
         },
       };
+
+      // 🔍 DEBUG: Vérifier les URLs générées
+      console.log("🔍 [DEBUG] URLs générées:");
+      console.log("callback_url:", `https://health-e.sn/appointment-success/${bookingData.bookingId}`);
+      console.log("cancel_url:", bookingData.professionalId
+        ? `https://health-e.sn/book-appointment/${bookingData.professionalId}`
+        : `https://health-e.sn/home`);
+      console.log("return_url:", `https://health-e.sn/appointment-success/${bookingData.bookingId}`);
+
       // Appel à l'API PayDunya pour créer la facture
       console.log(
         "🔔 [PAYDUNYA] API URL:",
