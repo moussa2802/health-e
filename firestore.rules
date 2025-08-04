@@ -84,6 +84,24 @@ service cloud.firestore {
           get(/databases/$(database)/documents/users/$(request.auth.uid)).data.type == 'admin'));
     }
     
+    // Règles pour les paiements PayDunya
+    match /payments/{paymentId} {
+      // Lecture : par le patient concerné OU admin
+      allow read: if request.auth != null && 
+        (request.auth.uid == paymentId || // paymentId correspond au bookingId
+         (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.type == 'admin'));
+      
+      // Création : par tous les utilisateurs authentifiés (pour créer les informations de paiement)
+      allow create: if request.auth != null;
+      
+      // Mise à jour : par le patient concerné OU admin OU par l'endpoint IPN (pas d'auth)
+      allow update: if request.auth != null && 
+        (request.auth.uid == paymentId ||
+         (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.type == 'admin'));
+    }
+    
     // Règles pour les conversations
     match /conversations/{conversationId} {
       allow read, write: if request.auth != null && 
