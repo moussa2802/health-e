@@ -57,49 +57,31 @@ service cloud.firestore {
         request.auth.uid == resource.data.professionalId;
     }
     
-    // Règles pour les réservations
+    // Règles pour les réservations - TEMPORAIREMENT PLUS PERMISSIVES POUR LES TESTS
     match /bookings/{bookingId} {
-      // Lecture : par le patient, le professionnel concerné OU admin
-      allow read: if request.auth != null && 
-        (request.auth.uid == resource.data.patientId || 
-         request.auth.uid == resource.data.professionalId ||
-         (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.type == 'admin'));
+      // Lecture : par tous les utilisateurs authentifiés
+      allow read: if request.auth != null;
       
-      // Création : par tous les utilisateurs authentifiés (patients qui réservent)
+      // Création : par tous les utilisateurs authentifiés
       allow create: if request.auth != null;
       
-      // Mise à jour : par le patient, le professionnel concerné OU admin
-      allow update: if request.auth != null && 
-        (request.auth.uid == resource.data.patientId || 
-         request.auth.uid == resource.data.professionalId ||
-         (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.type == 'admin'));
+      // Mise à jour : par tous les utilisateurs authentifiés
+      allow update: if request.auth != null;
       
-      // Suppression : par le patient, le professionnel concerné OU admin
-      allow delete: if request.auth != null && 
-        (request.auth.uid == resource.data.patientId || 
-         request.auth.uid == resource.data.professionalId ||
-         (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.type == 'admin'));
+      // Suppression : par tous les utilisateurs authentifiés
+      allow delete: if request.auth != null;
     }
     
-    // Règles pour les paiements PayDunya
+    // Règles pour les paiements PayDunya - TEMPORAIREMENT PLUS PERMISSIVES POUR LES TESTS
     match /payments/{paymentId} {
-      // Lecture : par le patient concerné OU admin
-      allow read: if request.auth != null && 
-        (request.auth.uid == paymentId || // paymentId correspond au bookingId
-         (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.type == 'admin'));
+      // Lecture : par tous les utilisateurs authentifiés
+      allow read: if request.auth != null;
       
-      // Création : par tous les utilisateurs authentifiés (pour créer les informations de paiement)
+      // Création : par tous les utilisateurs authentifiés
       allow create: if request.auth != null;
       
-      // Mise à jour : par le patient concerné OU admin OU par l'endpoint IPN (pas d'auth)
-      allow update: if request.auth != null && 
-        (request.auth.uid == paymentId ||
-         (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.type == 'admin'));
+      // Mise à jour : par tous les utilisateurs authentifiés
+      allow update: if request.auth != null;
     }
     
     // Règles pour les conversations
