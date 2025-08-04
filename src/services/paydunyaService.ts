@@ -81,20 +81,21 @@ export class PayDunyaService {
       console.log("bookingData.patientPhone:", bookingData.patientPhone);
       console.log("bookingData.bookingId:", bookingData.bookingId);
 
-      // 🧪 TEST STATIQUE - Décommentez pour tester avec des données fixes
+      // 🧪 TEST STATIQUE - Version minimale selon la doc PayDunya
       /*
       const invoiceData = {
         invoice: {
           items: [
             {
-              name: "Consultation test",
+              name: "Consultation vidéo",
               quantity: 1,
               unit_price: 25000,
-              description: "Consultation test statique"
+              total_price: 25000,
+              description: "Consultation vidéo de 60 minutes"
             }
           ],
           total_amount: 25000,
-          description: "Consultation test"
+          description: "Consultation médicale"
         },
         store: {
           name: "Health-e",
@@ -132,6 +133,8 @@ export class PayDunyaService {
         : `INV-${Date.now()}`;
 
       // Préparer les données de la facture selon le format PayDunya
+      const price = parseInt(bookingData.price.toString()); // 🔧 Force en entier
+      
       const invoiceData = {
         invoice: {
           items: [
@@ -140,7 +143,8 @@ export class PayDunyaService {
                 bookingData.consultationType || "Vidéo"
               } - ${bookingData.professionalName || "Professionnel"}`,
               quantity: 1,
-              unit_price: parseInt(bookingData.price.toString()), // 🔧 Force en entier
+              unit_price: price,
+              total_price: price, // 🔧 Ajouté selon la doc PayDunya
               description: `Consultation ${
                 bookingData.consultationType || "Vidéo"
               } le ${bookingData.date || "Aujourd'hui"} à ${
@@ -148,7 +152,7 @@ export class PayDunyaService {
               } (${bookingData.duration || 60} min)`,
             },
           ],
-          total_amount: parseInt(bookingData.price.toString()), // 🔧 Force en entier
+          total_amount: price,
           description: `Consultation avec ${
             bookingData.professionalName || "Professionnel"
           }`,
@@ -192,6 +196,7 @@ export class PayDunyaService {
         "🔔 [PAYDUNYA] Request body:",
         JSON.stringify(invoiceData, null, 2)
       );
+      console.log("🔔 [PAYDUNYA] Price value:", price, typeof price);
 
       const response = await fetch(
         `${PAYDUNYA_CONFIG.baseUrl}/checkout-invoice/create`,
