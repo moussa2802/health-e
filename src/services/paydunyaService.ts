@@ -94,14 +94,16 @@ export class PayDunyaService {
         },
         actions: {
           callback_url: `https://health-e.sn/appointment-success/${bookingData.bookingId}`,
-          cancel_url: `https://health-e.sn/book-appointment/${bookingData.professionalId}`,
+          cancel_url: `https://health-e.sn/book-appointment/${
+            bookingData.professionalId || ""
+          }`,
           return_url: `https://health-e.sn/appointment-success/${bookingData.bookingId}`,
         },
         custom_data: {
           invoice_number: `INV-${bookingData.bookingId}`,
           customer_name: bookingData.patientName,
           customer_email: bookingData.patientEmail,
-          customer_phone: bookingData.patientPhone,
+          customer_phone: bookingData.patientPhone || "770000000", // 🛑 Mets un téléphone factice si vide
         },
       };
       // Appel à l'API PayDunya pour créer la facture
