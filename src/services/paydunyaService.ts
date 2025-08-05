@@ -30,10 +30,10 @@ export interface PayDunyaPaymentData {
 
 // Configuration PayDunya (à remplacer par vos vraies clés)
 const PAYDUNYA_CONFIG = {
-  publicKey: "test_public_p64arhicc9ELdNg7kD78tmEYE3a", // 🔧 Clé publique de test
-  privateKey: "test_private_Cvyg0Z3E0kuBE20lWqZbjTxzKhf", // 🔧 Clé privée de test
-  masterKey: "gzt0lrr3-IhY9-Cl5D-nQjQ-4YiQ3HmHdWtF", // 🔧 Clé Master de test
-  token: "wZTFnRBd87rYZIdoQmyh", // 🔧 Token de test
+  publicKey: "test_public_p64arhicc9ELdNg7kD78tmEYE3a", // 🔧 Clé publique de test standard
+  privateKey: "test_private_Cvyg0Z3E0kuBE20lWqZbjTxzKhf", // 🔧 Clé privée de test standard
+  masterKey: "gzt0lrr3-IhY9-C15D-nQjQ-4YiQ3HmHdWtF", // 🔧 Clé Master de test standard
+  token: "test_token_123456789", // 🔧 Token de test standard
   baseUrl: "https://app.paydunya.com/sandbox-api/v1", // 🔧 Endpoint sandbox pour le mode test
   mode: "test", // ou 'live' pour la production
 };
