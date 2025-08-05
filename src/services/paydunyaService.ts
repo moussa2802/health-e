@@ -41,8 +41,8 @@ const PAYDUNYA_CONFIG = {
   masterKey:
     process.env.REACT_APP_PAYDUNYA_MASTER_KEY ||
     process.env.PAYDUNYA_MASTER_KEY ||
-    "gzt0lrr3-IhY9-C15D-nQjQ-4YiQ3HmHdWtF", // 🔧 Doit correspondre à votre dashboard
-  token: 
+    "gzt0lrr3-IhY9-C15D-nQjQ-4YiQ3HmHdWt", // 🔧 Clé Master sans le F final
+  token:
     process.env.REACT_APP_PAYDUNYA_TOKEN ||
     process.env.PAYDUNYA_TOKEN ||
     "OTjTwVBbiqygEmisnvzh", // 🔧 Token de votre dashboard
@@ -52,7 +52,10 @@ const PAYDUNYA_CONFIG = {
 
 // 🔍 DEBUG: Vérifier la configuration au démarrage
 console.log("🔍 [PAYDUNYA CONFIG DEBUG] Configuration chargée:");
-console.log("REACT_APP_PAYDUNYA_MASTER_KEY:", process.env.REACT_APP_PAYDUNYA_MASTER_KEY);
+console.log(
+  "REACT_APP_PAYDUNYA_MASTER_KEY:",
+  process.env.REACT_APP_PAYDUNYA_MASTER_KEY
+);
 console.log("PAYDUNYA_MASTER_KEY:", process.env.PAYDUNYA_MASTER_KEY);
 console.log("REACT_APP_PAYDUNYA_TOKEN:", process.env.REACT_APP_PAYDUNYA_TOKEN);
 console.log("PAYDUNYA_TOKEN:", process.env.PAYDUNYA_TOKEN);
@@ -241,6 +244,13 @@ export class PayDunyaService {
       if (!PAYDUNYA_CONFIG.token || PAYDUNYA_CONFIG.token.trim() === "") {
         throw new Error("PAYDUNYA_TOKEN is missing or empty");
       }
+
+      // 🔍 DEBUG: Vérifier le format exact des clés
+      console.log("🔍 [PAYDUNYA DEBUG] Format des clés:");
+      console.log("masterKey length:", PAYDUNYA_CONFIG.masterKey.length);
+      console.log("masterKey exact:", `"${PAYDUNYA_CONFIG.masterKey}"`);
+      console.log("token length:", PAYDUNYA_CONFIG.token.length);
+      console.log("token exact:", `"${PAYDUNYA_CONFIG.token}"`);
 
       const headers = {
         "Content-Type": "application/json",
