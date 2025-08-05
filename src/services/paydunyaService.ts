@@ -39,7 +39,7 @@ const PAYDUNYA_CONFIG = {
   masterKey:
     process.env.REACT_APP_PAYDUNYA_MASTER_KEY ||
     "gzt0lrr3-IhY9-C15D-nQjQ-4YiQ3HmHdWtF",
-  baseUrl: "https://app.paydunya.com/api/v1",
+  baseUrl: "https://app.paydunya.com/sandbox-api/v1", // 🔧 Endpoint sandbox pour le mode test
   mode: "test", // ou 'live' pour la production
 };
 
@@ -134,7 +134,7 @@ export class PayDunyaService {
 
       // Préparer les données de la facture selon le format PayDunya
       const price = parseInt(bookingData.price.toString()); // 🔧 Force en entier
-      
+
       const invoiceData = {
         invoice: {
           items: [
@@ -204,6 +204,7 @@ export class PayDunyaService {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
+            "Accept": "application/json", // 🔧 Ajouté pour éviter les réponses HTML
             "PAYDUNYA-PUBLIC-KEY": PAYDUNYA_CONFIG.publicKey,
             "PAYDUNYA-PRIVATE-KEY": PAYDUNYA_CONFIG.privateKey,
             "PAYDUNYA-MASTER-KEY": PAYDUNYA_CONFIG.masterKey,
