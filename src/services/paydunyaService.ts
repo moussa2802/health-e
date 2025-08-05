@@ -152,31 +152,26 @@ export class PayDunyaService {
       // Préparer les données de la facture selon le format PayDunya
       const price = parseInt(bookingData.price.toString()); // 🔧 Force en entier
 
+      // 🔧 Structure PayDunya corrigée selon la documentation officielle
       const invoiceData = {
         invoice: {
           items: [
             {
-              name: `Consultation ${
-                bookingData.consultationType || "Vidéo"
-              } - ${bookingData.professionalName || "Professionnel"}`,
+              name: `Consultation ${bookingData.consultationType || "Vidéo"}`,
               quantity: 1,
               unit_price: price,
-              total_price: price, // 🔧 Ajouté selon la doc PayDunya
-              description: `Consultation ${
-                bookingData.consultationType || "Vidéo"
-              } le ${bookingData.date || "Aujourd'hui"} à ${
-                bookingData.time || "Maintenant"
-              } (${bookingData.duration || 60} min)`,
+              total_price: price,
+              description: `Consultation ${bookingData.consultationType || "Vidéo"} - ${bookingData.professionalName || "Professionnel"}`,
             },
           ],
           total_amount: price,
-          description: `Consultation avec ${
-            bookingData.professionalName || "Professionnel"
-          }`,
+          description: `Consultation médicale avec ${bookingData.professionalName || "Professionnel"}`,
+          currency: "XOF",
         },
         store: {
           name: "Health-e",
           website_url: "https://health-e.sn",
+          tagline: "Plateforme de santé en ligne",
         },
         actions: {
           callback_url: callbackUrl,
@@ -187,7 +182,9 @@ export class PayDunyaService {
           invoice_number: invoiceNumber,
           customer_name: bookingData.patientName || "Patient",
           customer_email: bookingData.patientEmail || "patient@health-e.sn",
-          customer_phone: bookingData.patientPhone || "770000000", // 🛑 Mets un téléphone factice si vide
+          customer_phone: bookingData.patientPhone || "770000000",
+          booking_id: bookingData.bookingId,
+          professional_id: bookingData.professionalId,
         },
       };
 
@@ -232,15 +229,23 @@ export class PayDunyaService {
       );
       console.log("🔔 [PAYDUNYA] Price value:", price, typeof price);
 
-      // 🔍 Vérifier que les clés ne sont pas vides
-      if (
-        !PAYDUNYA_CONFIG.masterKey ||
-        PAYDUNYA_CONFIG.masterKey.trim() === ""
-      ) {
+      // 🔍 Validation des clés PayDunya
+      if (!PAYDUNYA_CONFIG.masterKey || PAYDUNYA_CONFIG.masterKey.trim() === "") {
         throw new Error("PAYDUNYA_MASTER_KEY is missing or empty");
       }
       if (!PAYDUNYA_CONFIG.token || PAYDUNYA_CONFIG.token.trim() === "") {
         throw new Error("PAYDUNYA_TOKEN is missing or empty");
+      }
+      if (!PAYDUNYA_CONFIG.publicKey || PAYDUNYA_CONFIG.publicKey.trim() === "") {
+        throw new Error("PAYDUNYA_PUBLIC_KEY is missing or empty");
+      }
+      if (!PAYDUNYA_CONFIG.privateKey || PAYDUNYA_CONFIG.privateKey.trim() === "") {
+        throw new Error("PAYDUNYA_PRIVATE_KEY is missing or empty");
+      }
+
+      // 🔍 Validation du prix
+      if (price <= 0) {
+        throw new Error("Le prix doit être supérieur à 0");
       }
 
       // 🔍 DEBUG: Vérifier le format exact des clés
@@ -252,12 +257,14 @@ export class PayDunyaService {
 
       const headers = {
         "Content-Type": "application/json",
-        Accept: "application/json", // 🔧 Ajouté pour éviter les réponses HTML
+        Accept: "application/json",
         "PAYDUNYA-PUBLIC-KEY": PAYDUNYA_CONFIG.publicKey,
         "PAYDUNYA-PRIVATE-KEY": PAYDUNYA_CONFIG.privateKey,
-        "PAYDUNYA-MASTER-KEY": PAYDUNYA_CONFIG.masterKey.trim(), // 🔧 Trim pour enlever les espaces
-        "PAYDUNYA-TOKEN": PAYDUNYA_CONFIG.token.trim(), // 🔧 Trim pour enlever les espaces
+        "PAYDUNYA-MASTER-KEY": PAYDUNYA_CONFIG.masterKey.trim(),
+        "PAYDUNYA-TOKEN": PAYDUNYA_CONFIG.token.trim(),
+        // 🔧 Headers spécifiques pour la production
         "PAYDUNYA-MODE": PAYDUNYA_CONFIG.mode,
+        "User-Agent": "Health-e/1.0",
       };
 
       // 🔍 DEBUG: Vérifier les headers exacts envoyés
@@ -297,11 +304,15 @@ export class PayDunyaService {
         );
       }
 
+      // 🔍 Debug de la réponse PayDunya
+      console.log("🔍 [PAYDUNYA DEBUG] Response object:", result);
+      console.log("🔍 [PAYDUNYA DEBUG] Response code:", result.response_code);
+      console.log("🔍 [PAYDUNYA DEBUG] Response text:", result.response_text);
+
       if (result.response_code === "00") {
-        console.log(
-          "✅ [PAYDUNYA] Invoice created successfully:",
-          result.response_text
-        );
+        console.log("✅ [PAYDUNYA] Invoice created successfully");
+        console.log("🔍 [PAYDUNYA DEBUG] Invoice URL:", result.response_text);
+        console.log("🔍 [PAYDUNYA DEBUG] Token:", result.token);
 
         // Sauvegarder les informations de paiement dans Firestore
         await this.savePaymentInfo(bookingData.bookingId, {
@@ -318,11 +329,16 @@ export class PayDunyaService {
           invoiceUrl: result.response_text,
         };
       } else {
-        console.error("❌ [PAYDUNYA] Failed to create invoice:", result);
+        console.error("❌ [PAYDUNYA] Failed to create invoice");
+        console.error("🔍 [PAYDUNYA DEBUG] Error details:", {
+          code: result.response_code,
+          text: result.response_text,
+          full_response: result
+        });
+        
         return {
           success: false,
-          error:
-            result.response_text || "Erreur lors de la création de la facture",
+          error: result.response_text || "Erreur lors de la création de la facture",
         };
       }
     } catch (error) {
