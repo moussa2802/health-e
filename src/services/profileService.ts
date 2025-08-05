@@ -489,7 +489,7 @@ export async function createDefaultProfessionalProfile(
       description: "Professionnel de santé",
       education: [],
       experience: "",
-      price: 25000,
+      price: 100,
       currency: "XOF",
       offersFreeConsultations: false,
       availability: defaultAvailability,

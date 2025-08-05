@@ -104,7 +104,7 @@ const ProfessionalSettings: React.FC = () => {
     education: [],
     experience: "",
     profileImage: "",
-    price: 25000,
+    price: 100,
     currency: "XOF",
     offersFreeConsultations: false,
     freeConsultationDuration: 30,
@@ -122,13 +122,13 @@ const ProfessionalSettings: React.FC = () => {
   const [consultationDurations, setConsultationDurations] = useState<
     ConsultationDuration[]
   >([
-    { duration: 30, price: 25000 },
-    { duration: 45, price: 35000 },
-    { duration: 60, price: 45000 },
+    { duration: 30, price: 100 },
+    { duration: 45, price: 150 },
+    { duration: 60, price: 200 },
   ]);
   const [newDuration, setNewDuration] = useState<ConsultationDuration>({
     duration: 30,
-    price: 25000,
+    price: 100,
   });
   const [showDurationModal, setShowDurationModal] = useState(false);
   const [newEducation, setNewEducation] = useState("");
@@ -1692,7 +1692,7 @@ const ProfessionalSettings: React.FC = () => {
                   }
                   className="mt-1 block w-32 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                   min="0"
-                  step="500"
+                  step="100"
                 />
                 <select
                   value={profileData.currency || "XOF"}
