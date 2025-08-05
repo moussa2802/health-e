@@ -32,22 +32,30 @@ export interface PayDunyaPaymentData {
 const PAYDUNYA_CONFIG = {
   publicKey:
     process.env.REACT_APP_PAYDUNYA_PUBLIC_KEY ||
+    process.env.PAYDUNYA_PUBLIC_KEY ||
     "test_public_p64arhicc9ELdNg7kD78tmEYE3a",
   privateKey:
     process.env.REACT_APP_PAYDUNYA_PRIVATE_KEY ||
+    process.env.PAYDUNYA_PRIVATE_KEY ||
     "test_private_Cvyg0Z3E0kuBE20lWqZbjTxzKhf",
   masterKey:
     process.env.REACT_APP_PAYDUNYA_MASTER_KEY ||
+    process.env.PAYDUNYA_MASTER_KEY ||
     "gzt0lrr3-IhY9-C15D-nQjQ-4YiQ3HmHdWtF", // 🔧 Doit correspondre à votre dashboard
-  token: process.env.REACT_APP_PAYDUNYA_TOKEN || "OTjTwVBbiqygEmisnvzh", // 🔧 Token de votre dashboard
+  token: 
+    process.env.REACT_APP_PAYDUNYA_TOKEN ||
+    process.env.PAYDUNYA_TOKEN ||
+    "OTjTwVBbiqygEmisnvzh", // 🔧 Token de votre dashboard
   baseUrl: "https://app.paydunya.com/sandbox-api/v1", // 🔧 Endpoint sandbox pour le mode test
   mode: "test", // ou 'live' pour la production
 };
 
 // 🔍 DEBUG: Vérifier la configuration au démarrage
 console.log("🔍 [PAYDUNYA CONFIG DEBUG] Configuration chargée:");
-console.log("masterKey from env:", process.env.REACT_APP_PAYDUNYA_MASTER_KEY);
-console.log("token from env:", process.env.REACT_APP_PAYDUNYA_TOKEN);
+console.log("REACT_APP_PAYDUNYA_MASTER_KEY:", process.env.REACT_APP_PAYDUNYA_MASTER_KEY);
+console.log("PAYDUNYA_MASTER_KEY:", process.env.PAYDUNYA_MASTER_KEY);
+console.log("REACT_APP_PAYDUNYA_TOKEN:", process.env.REACT_APP_PAYDUNYA_TOKEN);
+console.log("PAYDUNYA_TOKEN:", process.env.PAYDUNYA_TOKEN);
 console.log("masterKey final:", PAYDUNYA_CONFIG.masterKey);
 console.log("token final:", PAYDUNYA_CONFIG.token);
 
@@ -224,7 +232,10 @@ export class PayDunyaService {
       console.log("🔔 [PAYDUNYA] Price value:", price, typeof price);
 
       // 🔍 Vérifier que les clés ne sont pas vides
-      if (!PAYDUNYA_CONFIG.masterKey || PAYDUNYA_CONFIG.masterKey.trim() === "") {
+      if (
+        !PAYDUNYA_CONFIG.masterKey ||
+        PAYDUNYA_CONFIG.masterKey.trim() === ""
+      ) {
         throw new Error("PAYDUNYA_MASTER_KEY is missing or empty");
       }
       if (!PAYDUNYA_CONFIG.token || PAYDUNYA_CONFIG.token.trim() === "") {
