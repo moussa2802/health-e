@@ -350,9 +350,15 @@ export class PayDunyaService {
     invoiceToken: string
   ): Promise<{ success: boolean; status?: string; error?: string }> {
     try {
-      console.log("🔔 [PAYDUNYA] Checking payment status for token:", invoiceToken);
-      console.log("🔔 [PAYDUNYA] Using endpoint:", `${PAYDUNYA_CONFIG.baseUrl}/checkout-invoice/confirm/${invoiceToken}`);
-      
+      console.log(
+        "🔔 [PAYDUNYA] Checking payment status for token:",
+        invoiceToken
+      );
+      console.log(
+        "🔔 [PAYDUNYA] Using endpoint:",
+        `${PAYDUNYA_CONFIG.baseUrl}/checkout-invoice/confirm/${invoiceToken}`
+      );
+
       const response = await fetch(
         `${PAYDUNYA_CONFIG.baseUrl}/checkout-invoice/confirm/${invoiceToken}`,
         {
@@ -382,13 +388,19 @@ export class PayDunyaService {
       console.log("🔔 [PAYDUNYA] Parsed result:", result);
 
       if (result.success) {
-        console.log("✅ [PAYDUNYA] Payment status check successful:", result.invoice.status);
+        console.log(
+          "✅ [PAYDUNYA] Payment status check successful:",
+          result.invoice.status
+        );
         return {
           success: true,
           status: result.invoice.status,
         };
       } else {
-        console.log("❌ [PAYDUNYA] Payment status check failed:", result.message);
+        console.log(
+          "❌ [PAYDUNYA] Payment status check failed:",
+          result.message
+        );
         return {
           success: false,
           error: result.message || "Erreur lors de la vérification du statut",

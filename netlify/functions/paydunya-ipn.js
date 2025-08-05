@@ -53,9 +53,13 @@ exports.handler = async (event, context) => {
     // Parser le body JSON
     const body = JSON.parse(event.body || "{}");
 
-    // Vérifier la signature PayDunya (optionnel mais recommandé)
+    // Vérifier la signature PayDunya
     const paydunyaToken = process.env.PAYDUNYA_MASTER_KEY || "test-token";
-    const receivedToken = event.headers["paydunya-token"] || body.token;
+    const receivedToken = event.headers["paydunya-token"] || body.token || body.master_key;
+
+    console.log("🔔 [PAYDUNYA IPN] Token verification:");
+    console.log("Expected token:", paydunyaToken);
+    console.log("Received token:", receivedToken);
 
     if (receivedToken && receivedToken !== paydunyaToken) {
       console.error("❌ [PAYDUNYA IPN] Invalid token");
@@ -66,18 +70,27 @@ exports.handler = async (event, context) => {
       };
     }
 
+    // Extraire l'ID de réservation du numéro de facture
+    const invoiceNumber = body.invoice?.invoice_number || body.invoice_number;
+    let bookingId = null;
+    
+    if (invoiceNumber) {
+      bookingId = invoiceNumber.replace("INV-", "");
+      console.log("🔔 [PAYDUNYA IPN] Extracted booking ID from invoice:", bookingId);
+    }
+    
     // Extraire les données du paiement
     const paymentData = {
       token: body.token,
-      status: body.status,
+      status: body.invoice?.status || body.status,
       transactionId: body.transaction_id || body.token,
-      amount: body.amount,
-      currency: body.currency || "XOF",
-      customerName: body.customer_name,
-      customerPhone: body.customer_phone,
-      customerEmail: body.customer_email,
+      amount: body.invoice?.amount || body.amount,
+      currency: body.invoice?.currency || body.currency || "XOF",
+      customerName: body.invoice?.customer_name || body.customer_name,
+      customerPhone: body.invoice?.customer_phone || body.customer_phone,
+      customerEmail: body.invoice?.customer_email || body.customer_email,
       paymentMethod: body.payment_method,
-      bookingId: body.booking_id || body.custom_data?.booking_id,
+      bookingId: bookingId || body.booking_id || body.custom_data?.booking_id,
       professionalId: body.professional_id || body.custom_data?.professional_id,
       patientId: body.patient_id || body.custom_data?.patient_id,
       timestamp: new Date().toISOString(),
@@ -101,27 +114,40 @@ exports.handler = async (event, context) => {
       );
 
       // Si c'est un paiement confirmé, mettre à jour le statut de la réservation
-      if (paymentData.status === "COMPLETED" && paymentData.bookingId) {
+      if ((paymentData.status === "COMPLETED" || paymentData.status === "completed" || paymentData.status === "success") && paymentData.bookingId) {
         try {
-          const bookingRef = db
-            .collection("bookings")
-            .doc(paymentData.bookingId);
+          console.log("🔔 [PAYDUNYA IPN] Updating booking status for:", paymentData.bookingId);
+          
+          const bookingRef = db.collection("bookings").doc(paymentData.bookingId);
           await bookingRef.update({
-            paymentStatus: "paid",
+            status: "confirmed",
+            paymentStatus: "completed",
             paymentId: paymentRef.id,
             paidAt: new Date(),
             updatedAt: new Date(),
           });
-          console.log(
-            "✅ [PAYDUNYA IPN] Booking status updated for:",
-            paymentData.bookingId
-          );
+          
+          console.log("✅ [PAYDUNYA IPN] Booking status updated to confirmed for:", paymentData.bookingId);
+          
+          // Mettre à jour aussi dans la Realtime Database
+          try {
+            const { getDatabase, ref, update } = require("firebase-admin/database");
+            const database = getDatabase();
+            const roomRef = database.ref(`scheduled_rooms/${paymentData.bookingId}`);
+            await roomRef.update({
+              status: "confirmed",
+              updatedAt: new Date().toISOString(),
+            });
+            console.log("✅ [PAYDUNYA IPN] Realtime Database updated for:", paymentData.bookingId);
+          } catch (realtimeError) {
+            console.warn("⚠️ [PAYDUNYA IPN] Failed to update Realtime Database:", realtimeError);
+          }
+          
         } catch (bookingError) {
-          console.error(
-            "❌ [PAYDUNYA IPN] Error updating booking:",
-            bookingError
-          );
+          console.error("❌ [PAYDUNYA IPN] Error updating booking:", bookingError);
         }
+      } else {
+        console.log("⚠️ [PAYDUNYA IPN] Payment status not completed or no booking ID:", paymentData.status, paymentData.bookingId);
       }
 
       // Envoyer une notification au professionnel si nécessaire

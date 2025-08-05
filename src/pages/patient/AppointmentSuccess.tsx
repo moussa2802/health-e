@@ -139,6 +139,98 @@ const AppointmentSuccess: React.FC = () => {
       </div>
     );
   }
+
+  // Ajouter un bouton de test pour mettre à jour manuellement le statut
+  const handleManualUpdate = async () => {
+    if (!bookingId) return;
+    
+    try {
+      console.log("🔧 [MANUAL UPDATE] Updating booking status manually");
+      const result = await paydunyaService.updateBookingStatus(bookingId, "confirmed");
+      
+      if (result.success) {
+        console.log("✅ [MANUAL UPDATE] Booking status updated successfully");
+        // Recharger la page pour voir les changements
+        window.location.reload();
+      } else {
+        console.error("❌ [MANUAL UPDATE] Failed to update booking status:", result.error);
+        alert("Erreur lors de la mise à jour du statut");
+      }
+    } catch (error) {
+      console.error("❌ [MANUAL UPDATE] Error:", error);
+      alert("Erreur lors de la mise à jour du statut");
+    }
+  };
+
+  // Si la réservation est en attente, afficher un bouton de test
+  if (bookingData?.status === "en_attente" || bookingData?.status === "pending") {
+    return (
+      <div className="container mx-auto px-4 py-16">
+        <div className="max-w-md mx-auto bg-white rounded-lg shadow-md p-8 text-center">
+          <div className="text-yellow-500 mb-4">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+          </div>
+          <h2 className="text-xl font-semibold mb-2">Paiement en attente</h2>
+          <p className="text-gray-600 mb-6">Votre réservation est en attente de confirmation de paiement.</p>
+          
+          {/* Détails du rendez-vous */}
+          {bookingData && (
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+              <h3 className="font-semibold text-blue-800 mb-3">Détails du rendez-vous</h3>
+              <div className="space-y-2 text-sm">
+                <div className="flex items-center">
+                  <Calendar className="h-4 w-4 mr-2 text-blue-600" />
+                  <span>Date: {bookingData.date}</span>
+                </div>
+                <div className="flex items-center">
+                  <Clock className="h-4 w-4 mr-2 text-blue-600" />
+                  <span>Heure: {bookingData.startTime}</span>
+                </div>
+                <div className="flex items-center">
+                  <Video className="h-4 w-4 mr-2 text-blue-600" />
+                  <span>Type: Consultation {bookingData.type}</span>
+                </div>
+                <div className="flex items-center">
+                  <User className="h-4 w-4 mr-2 text-blue-600" />
+                  <span>Professionnel: {bookingData.professionalName}</span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Bouton de test pour mise à jour manuelle */}
+          <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+            <p className="text-sm text-yellow-800 mb-2">
+              <strong>Test :</strong> Si le paiement est confirmé mais le statut ne se met pas à jour automatiquement
+            </p>
+            <button
+              onClick={handleManualUpdate}
+              className="bg-yellow-500 text-white py-2 px-4 rounded-md hover:bg-yellow-600 transition-colors text-sm"
+            >
+              🔧 Mettre à jour le statut manuellement
+            </button>
+          </div>
+
+          <div className="flex flex-col space-y-3">
+            <Link
+              to="/patient/dashboard"
+              className="bg-blue-500 text-white py-2 px-4 rounded-md hover:bg-blue-600 transition-colors"
+            >
+              Voir mes rendez-vous
+            </Link>
+            <Link
+              to="/"
+              className="bg-gray-500 text-white py-2 px-4 rounded-md hover:bg-gray-600 transition-colors"
+            >
+              Retour à l'accueil
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
   
   return (
     <div className="container mx-auto px-4 py-16">
