@@ -3,8 +3,9 @@ import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { CheckCircle, Calendar, Clock, Video, User, AlertCircle } from 'lucide-react';
 import { getFirestoreInstance } from '../../utils/firebase';
 import { formatLocalDate, formatLocalTime, createDateWithTime, formatInDakarTime } from '../../utils/dateUtils';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, collection, query, where, orderBy, limit, getDocs } from 'firebase/firestore';
 import paydunyaService from '../../services/paydunyaService';
+import { useAuth } from '../../contexts/AuthContext';
 
 interface AppointmentSuccessParams {
   bookingId: string;
@@ -13,6 +14,7 @@ interface AppointmentSuccessParams {
 const AppointmentSuccess: React.FC = () => {
   const { bookingId } = useParams<AppointmentSuccessParams>();
   const [searchParams] = useSearchParams();
+  const { currentUser } = useAuth();
   const [bookingData, setBookingData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -36,6 +38,7 @@ const AppointmentSuccess: React.FC = () => {
         }
         
         const bookingRef = doc(db, 'bookings', bookingId);
+        console.log('🔍 [APPOINTMENT SUCCESS] Looking for booking in Firestore:', bookingRef.path);
         const snapshot = await getDoc(bookingRef);
         
         if (snapshot.exists()) {
@@ -59,6 +62,25 @@ const AppointmentSuccess: React.FC = () => {
           }
         } else {
           console.log('⚠️ No booking found with ID:', bookingId);
+          console.log('🔍 [APPOINTMENT SUCCESS] Checking if booking exists in other collections...');
+          
+          // Essayer de chercher dans les réservations récentes
+          try {
+            const recentBookingsQuery = query(
+              collection(db, 'bookings'),
+              where('patientId', '==', currentUser?.uid),
+              orderBy('createdAt', 'desc'),
+              limit(1)
+            );
+            const recentSnapshot = await getDocs(recentBookingsQuery);
+            if (!recentSnapshot.empty) {
+              const recentBooking = recentSnapshot.docs[0];
+              console.log('🔍 [APPOINTMENT SUCCESS] Found recent booking:', recentBooking.id, recentBooking.data());
+            }
+          } catch (err) {
+            console.log('🔍 [APPOINTMENT SUCCESS] Error checking recent bookings:', err);
+          }
+          
           setError("Réservation non trouvée");
         }
       } catch (err) {
