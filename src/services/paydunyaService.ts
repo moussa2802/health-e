@@ -311,7 +311,8 @@ export class PayDunyaService {
         console.error("❌ [PAYDUNYA] Failed to create invoice:", result);
         return {
           success: false,
-          error: result.response_text || "Erreur lors de la création de la facture",
+          error:
+            result.response_text || "Erreur lors de la création de la facture",
         };
       }
     } catch (error) {
