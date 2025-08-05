@@ -39,6 +39,9 @@ const PAYDUNYA_CONFIG = {
   masterKey:
     process.env.REACT_APP_PAYDUNYA_MASTER_KEY ||
     "gzt0lrr3-IhY9-C15D-nQjQ-4YiQ3HmHdWtF",
+  token:
+    process.env.REACT_APP_PAYDUNYA_TOKEN ||
+    "test_token_123456789", // 🔧 Token PayDunya ajouté
   baseUrl: "https://app.paydunya.com/sandbox-api/v1", // 🔧 Endpoint sandbox pour le mode test
   mode: "test", // ou 'live' pour la production
 };
@@ -190,6 +193,7 @@ export class PayDunyaService {
         "PAYDUNYA-PUBLIC-KEY": PAYDUNYA_CONFIG.publicKey,
         "PAYDUNYA-PRIVATE-KEY": PAYDUNYA_CONFIG.privateKey,
         "PAYDUNYA-MASTER-KEY": PAYDUNYA_CONFIG.masterKey,
+        "PAYDUNYA-TOKEN": PAYDUNYA_CONFIG.token, // 🔧 Token ajouté
         "PAYDUNYA-MODE": PAYDUNYA_CONFIG.mode,
       });
       console.log(
@@ -204,10 +208,11 @@ export class PayDunyaService {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            "Accept": "application/json", // 🔧 Ajouté pour éviter les réponses HTML
+            Accept: "application/json", // 🔧 Ajouté pour éviter les réponses HTML
             "PAYDUNYA-PUBLIC-KEY": PAYDUNYA_CONFIG.publicKey,
             "PAYDUNYA-PRIVATE-KEY": PAYDUNYA_CONFIG.privateKey,
             "PAYDUNYA-MASTER-KEY": PAYDUNYA_CONFIG.masterKey,
+            "PAYDUNYA-TOKEN": PAYDUNYA_CONFIG.token, // 🔧 Token PayDunya ajouté
             "PAYDUNYA-MODE": PAYDUNYA_CONFIG.mode,
           },
           body: JSON.stringify(invoiceData),
