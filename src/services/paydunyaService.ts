@@ -39,7 +39,7 @@ const PAYDUNYA_CONFIG = {
   masterKey:
     process.env.REACT_APP_PAYDUNYA_MASTER_KEY ||
     "gzt0lrr3-IhY9-C15D-nQjQ-4YiQ3HmHdWtF", // 🔧 Doit correspondre à votre dashboard
-  token: process.env.REACT_APP_PAYDUNYA_TOKEN || "0TjTwVBbiqygEmisnvzh", // 🔧 Token de votre dashboard
+  token: process.env.REACT_APP_PAYDUNYA_TOKEN || "OTjTwVBbiqygEmisnvzh", // 🔧 Token de votre dashboard
   baseUrl: "https://app.paydunya.com/sandbox-api/v1", // 🔧 Endpoint sandbox pour le mode test
   mode: "test", // ou 'live' pour la production
 };
@@ -193,8 +193,14 @@ export class PayDunyaService {
       console.log("mode:", PAYDUNYA_CONFIG.mode);
       console.log("baseUrl:", PAYDUNYA_CONFIG.baseUrl);
       console.log("🔍 [PAYDUNYA DEBUG] Variables d'environnement:");
-      console.log("REACT_APP_PAYDUNYA_TOKEN:", process.env.REACT_APP_PAYDUNYA_TOKEN);
-      console.log("REACT_APP_PAYDUNYA_MASTER_KEY:", process.env.REACT_APP_PAYDUNYA_MASTER_KEY);
+      console.log(
+        "REACT_APP_PAYDUNYA_TOKEN:",
+        process.env.REACT_APP_PAYDUNYA_TOKEN
+      );
+      console.log(
+        "REACT_APP_PAYDUNYA_MASTER_KEY:",
+        process.env.REACT_APP_PAYDUNYA_MASTER_KEY
+      );
 
       console.log("🔔 [PAYDUNYA] Headers:", {
         "Content-Type": "application/json",
