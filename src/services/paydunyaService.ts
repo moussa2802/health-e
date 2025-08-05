@@ -287,16 +287,16 @@ export class PayDunyaService {
         );
       }
 
-      if (result.success) {
+      if (result.response_code === "00") {
         console.log(
           "✅ [PAYDUNYA] Invoice created successfully:",
-          result.invoice_url
+          result.response_text
         );
 
         // Sauvegarder les informations de paiement dans Firestore
         await this.savePaymentInfo(bookingData.bookingId, {
           invoiceToken: result.token,
-          invoiceUrl: result.invoice_url,
+          invoiceUrl: result.response_text,
           status: "pending",
           amount: bookingData.price,
           currency: "XOF",
@@ -305,13 +305,13 @@ export class PayDunyaService {
 
         return {
           success: true,
-          invoiceUrl: result.invoice_url,
+          invoiceUrl: result.response_text,
         };
       } else {
         console.error("❌ [PAYDUNYA] Failed to create invoice:", result);
         return {
           success: false,
-          error: result.message || "Erreur lors de la création de la facture",
+          error: result.response_text || "Erreur lors de la création de la facture",
         };
       }
     } catch (error) {
