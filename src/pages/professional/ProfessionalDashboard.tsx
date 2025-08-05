@@ -461,6 +461,7 @@ const ProfessionalDashboard: React.FC = () => {
       case "en_attente":
         return "En attente";
       case "confirmé":
+      case "confirmed":
         return "Confirmé";
       case "terminé":
       case "completed":
@@ -477,6 +478,7 @@ const ProfessionalDashboard: React.FC = () => {
       case "en_attente":
         return "bg-yellow-100 text-yellow-800";
       case "confirmé":
+      case "confirmed":
         return "bg-green-100 text-green-800";
       case "terminé":
       case "completed":
@@ -492,7 +494,7 @@ const ProfessionalDashboard: React.FC = () => {
   const upcomingBookings = Array.isArray(bookings)
     ? bookings.filter(
         (booking) =>
-          booking.status === "en_attente" || booking.status === "confirmé"
+          booking.status === "en_attente" || booking.status === "confirmé" || booking.status === "confirmed"
       )
     : [];
   const pastBookings = Array.isArray(bookings)

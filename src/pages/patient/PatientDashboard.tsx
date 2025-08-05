@@ -277,6 +277,7 @@ const PatientDashboard: React.FC = () => {
       case 'en_attente':
         return 'En attente';
       case 'confirmé':
+      case 'confirmed':
         return 'Confirmé';
       case 'terminé':
       case 'completed':
@@ -293,6 +294,7 @@ const PatientDashboard: React.FC = () => {
       case 'en_attente':
         return 'bg-yellow-100 text-yellow-800';
       case 'confirmé':
+      case 'confirmed':
         return 'bg-green-100 text-green-800';
       case 'terminé':
       case 'completed':
@@ -333,7 +335,7 @@ const PatientDashboard: React.FC = () => {
   });
 
   const upcomingBookings = bookings.filter(booking => 
-    booking.status === 'en_attente' || booking.status === 'confirmé'
+    booking.status === 'en_attente' || booking.status === 'confirmé' || booking.status === 'confirmed'
   );
   const pastBookings = bookings.filter(booking => 
     booking.status === 'terminé' || booking.status === 'completed' || booking.status === 'annulé'
@@ -441,7 +443,7 @@ const PatientDashboard: React.FC = () => {
                         </div>
                       </div>
                       
-                      {(booking.status === 'en_attente' || booking.status === 'confirmé') ? (
+                      {(booking.status === 'en_attente' || booking.status === 'confirmé' || booking.status === 'confirmed') ? (
                         <div className="flex justify-between">
                           <button
                             onClick={() => {

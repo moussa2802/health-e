@@ -37,7 +37,7 @@ export interface Booking {
   startTime: string;
   endTime: string;
   type: "video" | "audio" | "chat";
-  status: "en_attente" | "confirmé" | "terminé" | "completed" | "annulé";
+  status: "en_attente" | "confirmé" | "confirmed" | "terminé" | "completed" | "annulé";
   duration: number;
   price: number;
   notes?: string;
@@ -492,7 +492,7 @@ export function subscribeToBookings(
 // Mettre à jour le statut d'une réservation
 export async function updateBookingStatus(
   bookingId: string,
-  status: "en_attente" | "confirmé" | "terminé" | "completed" | "annulé"
+  status: "en_attente" | "confirmé" | "confirmed" | "terminé" | "completed" | "annulé"
 ): Promise<void> {
   try {
     console.log(`📝 Updating booking ${bookingId} status to:`, status);
