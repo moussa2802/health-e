@@ -31,6 +31,7 @@ export interface Notification {
   sourceType: "message" | "booking";
   read: boolean;
   createdAt: Timestamp;
+  timestamp?: Date; // For component compatibility
 }
 
 // Global registry to prevent duplicate listeners
@@ -158,11 +159,22 @@ export function subscribeToNotifications(
             );
 
             const notifications = snapshot.docs.map(
-              (doc) =>
-                ({
+              (doc) => {
+                const data = doc.data();
+                return {
                   id: doc.id,
-                  ...doc.data(),
-                } as Notification)
+                  userId: data.userId,
+                  type: data.type,
+                  title: data.title,
+                  content: data.content,
+                  sourceId: data.sourceId,
+                  sourceType: data.sourceType,
+                  read: data.read,
+                  createdAt: data.createdAt,
+                  // Convert createdAt to timestamp for the component
+                  timestamp: data.createdAt?.toDate ? data.createdAt.toDate() : new Date(data.createdAt),
+                } as Notification;
+              }
             );
 
             console.log("✅ Received", notifications.length, "notifications");
