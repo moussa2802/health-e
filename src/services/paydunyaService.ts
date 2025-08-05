@@ -30,9 +30,15 @@ export interface PayDunyaPaymentData {
 
 // Configuration PayDunya (à remplacer par vos vraies clés)
 const PAYDUNYA_CONFIG = {
-  publicKey: process.env.REACT_APP_PAYDUNYA_PUBLIC_KEY || "test_public_p64arhicc9ELdNg7kD78tmEYE3a",
-  privateKey: process.env.REACT_APP_PAYDUNYA_PRIVATE_KEY || "test_private_CvygOZ3E0kuBE20lWqZbjTxzKhf",
-  masterKey: process.env.REACT_APP_PAYDUNYA_MASTER_KEY || "gzt0lrr3-IhY9-Cl5D-nQjQ-4YiQ3HmHdWtF",
+  publicKey:
+    process.env.REACT_APP_PAYDUNYA_PUBLIC_KEY ||
+    "test_public_p64arhicc9ELdNg7kD78tmEYE3a",
+  privateKey:
+    process.env.REACT_APP_PAYDUNYA_PRIVATE_KEY ||
+    "test_private_CvygOZ3E0kuBE20lWqZbjTxzKhf",
+  masterKey:
+    process.env.REACT_APP_PAYDUNYA_MASTER_KEY ||
+    "gzt0lrr3-IhY9-Cl5D-nQjQ-4YiQ3HmHdWtF",
   token: process.env.REACT_APP_PAYDUNYA_TOKEN || "wZTFnRBd87rYZIdoQmyh",
   baseUrl: "https://app.paydunya.com/sandbox-api/v1",
   mode: process.env.REACT_APP_PAYDUNYA_MODE || "test",

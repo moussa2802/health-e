@@ -279,6 +279,7 @@ const PatientDashboard: React.FC = () => {
       case 'confirmé':
         return 'Confirmé';
       case 'terminé':
+      case 'completed':
         return 'Terminé';
       case 'annulé':
         return 'Annulé';
@@ -294,6 +295,7 @@ const PatientDashboard: React.FC = () => {
       case 'confirmé':
         return 'bg-green-100 text-green-800';
       case 'terminé':
+      case 'completed':
         return 'bg-blue-100 text-blue-800';
       case 'annulé':
         return 'bg-red-100 text-red-800';
@@ -321,7 +323,7 @@ const PatientDashboard: React.FC = () => {
     booking.status === 'en_attente' || booking.status === 'confirmé'
   );
   const pastBookings = bookings.filter(booking => 
-    booking.status === 'terminé' || booking.status === 'annulé'
+    booking.status === 'terminé' || booking.status === 'completed' || booking.status === 'annulé'
   );
   const displayedBookings = activeTab === 'upcoming' ? upcomingBookings : pastBookings;
 
@@ -437,7 +439,7 @@ const PatientDashboard: React.FC = () => {
                             Rejoindre
                           </Link>
                         </div>
-                      ) : booking.status === 'terminé' ? (
+                      ) : (booking.status === 'terminé' || booking.status === 'completed') ? (
                         <div className="mt-4 pt-4 border-t border-gray-200">
                           <div className="flex justify-between items-center">
                             <h4 className="text-sm font-medium text-gray-700">Dossier médical:</h4>

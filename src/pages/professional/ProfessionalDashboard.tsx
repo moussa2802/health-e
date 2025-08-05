@@ -463,6 +463,7 @@ const ProfessionalDashboard: React.FC = () => {
       case "confirmé":
         return "Confirmé";
       case "terminé":
+      case "completed":
         return "Terminé";
       case "annulé":
         return "Annulé";
@@ -478,6 +479,7 @@ const ProfessionalDashboard: React.FC = () => {
       case "confirmé":
         return "bg-green-100 text-green-800";
       case "terminé":
+      case "completed":
         return "bg-blue-100 text-blue-800";
       case "annulé":
         return "bg-red-100 text-red-800";
@@ -495,7 +497,7 @@ const ProfessionalDashboard: React.FC = () => {
     : [];
   const pastBookings = Array.isArray(bookings)
     ? bookings.filter(
-        (booking) => booking.status === "terminé" || booking.status === "annulé"
+        (booking) => booking.status === "terminé" || booking.status === "completed" || booking.status === "annulé"
       )
     : [];
   const displayedBookings =
