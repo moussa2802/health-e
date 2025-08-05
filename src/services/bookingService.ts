@@ -37,7 +37,7 @@ export interface Booking {
   startTime: string;
   endTime: string;
   type: "video" | "audio" | "chat";
-  status: "en_attente" | "confirmé" | "terminé" | "annulé";
+  status: "en_attente" | "confirmé" | "terminé" | "completed" | "annulé";
   duration: number;
   price: number;
   notes?: string;
@@ -358,6 +358,22 @@ export function subscribeToBookings(
               console.log(
                 `✅ Received ${sortedBookings.length} bookings via subscription (listener: ${listenerId})`
               );
+              
+              // Debug: Afficher les détails de chaque booking
+              if (sortedBookings.length > 0) {
+                console.log('🔍 [BOOKING DEBUG] Booking details:');
+                sortedBookings.forEach((booking, index) => {
+                  console.log(`  Booking ${index + 1}:`, {
+                    id: booking.id,
+                    status: booking.status,
+                    patientId: booking.patientId,
+                    professionalId: booking.professionalId,
+                    date: booking.date,
+                    type: booking.type
+                  });
+                });
+              }
+              
               callback(sortedBookings);
             } catch (error) {
               console.error(
@@ -476,7 +492,7 @@ export function subscribeToBookings(
 // Mettre à jour le statut d'une réservation
 export async function updateBookingStatus(
   bookingId: string,
-  status: "en_attente" | "confirmé" | "terminé" | "annulé"
+  status: "en_attente" | "confirmé" | "terminé" | "completed" | "annulé"
 ): Promise<void> {
   try {
     console.log(`📝 Updating booking ${bookingId} status to:`, status);

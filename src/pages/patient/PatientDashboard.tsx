@@ -319,12 +319,32 @@ const PatientDashboard: React.FC = () => {
     }
   };
 
+  // Debug: Afficher tous les bookings reçus
+  console.log('🔍 [DASHBOARD DEBUG] All bookings received:', bookings.length);
+  bookings.forEach((booking, index) => {
+    console.log(`  Dashboard Booking ${index + 1}:`, {
+      id: booking.id,
+      status: booking.status,
+      patientId: booking.patientId,
+      professionalId: booking.professionalId,
+      date: booking.date,
+      type: booking.type
+    });
+  });
+
   const upcomingBookings = bookings.filter(booking => 
     booking.status === 'en_attente' || booking.status === 'confirmé'
   );
   const pastBookings = bookings.filter(booking => 
     booking.status === 'terminé' || booking.status === 'completed' || booking.status === 'annulé'
   );
+  
+  console.log('🔍 [DASHBOARD DEBUG] Filtered bookings:', {
+    upcoming: upcomingBookings.length,
+    past: pastBookings.length,
+    activeTab
+  });
+  
   const displayedBookings = activeTab === 'upcoming' ? upcomingBookings : pastBookings;
 
   if (loading) {

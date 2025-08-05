@@ -69,6 +69,22 @@ export const useBookings = (
           }
 
           console.log(`✅ Received ${bookingsData.length} bookings for ${userType} (listener: ${listenerId})`);
+          
+          // Debug: Afficher les détails des bookings reçus
+          if (bookingsData.length > 0) {
+            console.log('🔍 [HOOK DEBUG] Bookings received in hook:');
+            bookingsData.forEach((booking, index) => {
+              console.log(`  Hook Booking ${index + 1}:`, {
+                id: booking.id,
+                status: booking.status,
+                patientId: booking.patientId,
+                professionalId: booking.professionalId,
+                date: booking.date,
+                type: booking.type
+              });
+            });
+          }
+          
           setBookings(bookingsData);
           setLoading(false);
           setError(null);
