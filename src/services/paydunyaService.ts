@@ -350,6 +350,9 @@ export class PayDunyaService {
     invoiceToken: string
   ): Promise<{ success: boolean; status?: string; error?: string }> {
     try {
+      console.log("🔔 [PAYDUNYA] Checking payment status for token:", invoiceToken);
+      console.log("🔔 [PAYDUNYA] Using endpoint:", `${PAYDUNYA_CONFIG.baseUrl}/checkout-invoice/confirm/${invoiceToken}`);
+      
       const response = await fetch(
         `${PAYDUNYA_CONFIG.baseUrl}/checkout-invoice/confirm/${invoiceToken}`,
         {
@@ -361,14 +364,31 @@ export class PayDunyaService {
         }
       );
 
-      const result = await response.json();
+      console.log("🔔 [PAYDUNYA] Response status:", response.status);
+      const responseText = await response.text();
+      console.log("🔔 [PAYDUNYA] Response text:", responseText);
+
+      let result;
+      try {
+        result = JSON.parse(responseText);
+      } catch (parseError) {
+        console.error("❌ [PAYDUNYA] Failed to parse response:", parseError);
+        return {
+          success: false,
+          error: `Invalid response: ${responseText.substring(0, 200)}`,
+        };
+      }
+
+      console.log("🔔 [PAYDUNYA] Parsed result:", result);
 
       if (result.success) {
+        console.log("✅ [PAYDUNYA] Payment status check successful:", result.invoice.status);
         return {
           success: true,
           status: result.invoice.status,
         };
       } else {
+        console.log("❌ [PAYDUNYA] Payment status check failed:", result.message);
         return {
           success: false,
           error: result.message || "Erreur lors de la vérification du statut",
@@ -389,32 +409,38 @@ export class PayDunyaService {
     status: "confirmed" | "cancelled" | "failed"
   ): Promise<{ success: boolean; error?: string }> {
     try {
-      console.log("🔔 [PAYDUNYA] Updating booking status:", bookingId, "to", status);
-      
+      console.log(
+        "🔔 [PAYDUNYA] Updating booking status:",
+        bookingId,
+        "to",
+        status
+      );
+
       const db = getFirestore();
       const bookingRef = doc(db, "bookings", bookingId);
-      
+
       // Mettre à jour le statut de la réservation
       await updateDoc(bookingRef, {
         status: status,
         paymentStatus: status === "confirmed" ? "completed" : "failed",
         updatedAt: new Date().toISOString(),
       });
-      
+
       // Mettre à jour aussi dans la Realtime Database
       const { getDatabase, ref, update } = await import("firebase/database");
       const database = getDatabase();
       const roomRef = ref(database, `scheduled_rooms/${bookingId}`);
-      
+
       await update(roomRef, {
         status: status,
         updatedAt: new Date().toISOString(),
       });
-      
+
       console.log("✅ [PAYDUNYA] Booking status updated successfully");
       return { success: true };
     } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : "Unknown error";
+      const errorMessage =
+        error instanceof Error ? error.message : "Unknown error";
       console.error("❌ [PAYDUNYA] Error updating booking status:", error);
       return { success: false, error: errorMessage };
     }
@@ -448,7 +474,10 @@ export class PayDunyaService {
 
       // Déterminer le statut de la réservation basé sur le statut du paiement
       let bookingStatus: "confirmed" | "cancelled" | "failed";
-      if (paymentData.invoice.status === "completed" || paymentData.invoice.status === "success") {
+      if (
+        paymentData.invoice.status === "completed" ||
+        paymentData.invoice.status === "success"
+      ) {
         bookingStatus = "confirmed";
       } else if (paymentData.invoice.status === "cancelled") {
         bookingStatus = "cancelled";
