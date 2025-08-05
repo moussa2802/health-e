@@ -96,6 +96,16 @@ const AppointmentSuccess: React.FC = () => {
         }
       } catch (err) {
         console.error('❌ Error fetching booking:', err);
+        
+        // Si c'est une erreur de connexion, réessayer après un délai
+        if (err.code === 'unavailable' || err.message.includes('offline')) {
+          console.log('🔄 Connection error, retrying in 2 seconds...');
+          setTimeout(() => {
+            fetchBooking();
+          }, 2000);
+          return;
+        }
+        
         setError("Erreur lors du chargement des détails de la réservation");
       } finally {
         setLoading(false);

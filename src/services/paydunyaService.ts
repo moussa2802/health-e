@@ -30,12 +30,12 @@ export interface PayDunyaPaymentData {
 
 // Configuration PayDunya (à remplacer par vos vraies clés)
 const PAYDUNYA_CONFIG = {
-  publicKey: "test_public_p64arhicc9ELdNg7kD78tmEYE3a", // 🔧 Clé publique de test
-  privateKey: "test_private_CvygOZ3E0kuBE20lWqZbjTxzKhf", // 🔧 Clé privée de test
-  masterKey: "gzt0lrr3-IhY9-Cl5D-nQjQ-4YiQ3HmHdWtF", // 🔧 Clé Master de votre dashboard
-  token: "wZTFnRBd87rYZIdoQmyh", // 🔧 Token de test de votre dashboard
-  baseUrl: "https://app.paydunya.com/sandbox-api/v1", // 🔧 Endpoint sandbox pour le mode test
-  mode: "test", // ou 'live' pour la production
+  publicKey: process.env.REACT_APP_PAYDUNYA_PUBLIC_KEY || "test_public_p64arhicc9ELdNg7kD78tmEYE3a",
+  privateKey: process.env.REACT_APP_PAYDUNYA_PRIVATE_KEY || "test_private_CvygOZ3E0kuBE20lWqZbjTxzKhf",
+  masterKey: process.env.REACT_APP_PAYDUNYA_MASTER_KEY || "gzt0lrr3-IhY9-Cl5D-nQjQ-4YiQ3HmHdWtF",
+  token: process.env.REACT_APP_PAYDUNYA_TOKEN || "wZTFnRBd87rYZIdoQmyh",
+  baseUrl: "https://app.paydunya.com/sandbox-api/v1",
+  mode: process.env.REACT_APP_PAYDUNYA_MODE || "test",
 };
 
 // 🔍 DEBUG: Vérifier la configuration au démarrage
