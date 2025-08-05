@@ -33,11 +33,11 @@ const PAYDUNYA_CONFIG = {
   publicKey:
     process.env.REACT_APP_PAYDUNYA_PUBLIC_KEY ||
     process.env.PAYDUNYA_PUBLIC_KEY ||
-    "test_public_p64arhicc9ELdNg7kD78tmEYE3a",
+    "test_public_p64arhicc9ELdNg7kD78tmEYE3a", // 🔧 Clé publique de test (à remplacer par votre vraie clé de test)
   privateKey:
     process.env.REACT_APP_PAYDUNYA_PRIVATE_KEY ||
     process.env.PAYDUNYA_PRIVATE_KEY ||
-    "test_private_Cvyg0Z3E0kuBE20lWqZbjTxzKhf",
+    "test_private_CvygOZ3E0kuBE20lWqZbjTxzKhf", // 🔧 Clé privée corrigée
   masterKey:
     process.env.REACT_APP_PAYDUNYA_MASTER_KEY ||
     process.env.PAYDUNYA_MASTER_KEY ||
