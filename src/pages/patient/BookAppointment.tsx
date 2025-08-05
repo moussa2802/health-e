@@ -560,10 +560,18 @@ const BookAppointment: React.FC = () => {
       );
       console.log("🩺 Professional ID:", professional.id);
 
-      const bookingId = await createBooking(bookingData);
-      console.log("✅ Booking created with ID:", bookingId);
+      // Créer une réservation temporaire avec statut "pending"
+      const tempBookingData = {
+        ...bookingData,
+        status: "pending", // Statut temporaire en attente de paiement
+        paymentStatus: "pending",
+        createdAt: new Date().toISOString(),
+      };
+      
+      const bookingId = await createBooking(tempBookingData);
+      console.log("✅ Temporary booking created with ID:", bookingId);
 
-      // Créer une entrée dans la Realtime Database pour la future consultation
+      // Créer une entrée temporaire dans la Realtime Database
       const roomRef = ref(database, `scheduled_rooms/${bookingId}`);
       await set(roomRef, {
         createdAt: new Date().toISOString(),
@@ -572,7 +580,7 @@ const BookAppointment: React.FC = () => {
         patientName: currentUser.name || "Patient",
         professionalId: professional.id,
         professionalName: professional.name || "Professionnel",
-        status: "scheduled",
+        status: "pending", // Statut temporaire
         type: consultationType,
       });
 

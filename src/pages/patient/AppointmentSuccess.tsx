@@ -58,7 +58,18 @@ const AppointmentSuccess: React.FC = () => {
             const paymentResult = await paydunyaService.checkPaymentStatus(token);
             if (paymentResult.success) {
               setPaymentStatus(paymentResult.status || 'completed');
+              
+              // Si le paiement est confirmé, mettre à jour le statut de la réservation
+              if (paymentResult.status === 'completed' || paymentResult.status === 'success') {
+                console.log('✅ [PAYDUNYA] Payment confirmed, updating booking status');
+                await paydunyaService.updateBookingStatus(bookingId, 'confirmed');
+              }
             }
+          }
+          
+          // Si la réservation est en statut "pending", afficher un message d'attente
+          if (data.status === 'pending') {
+            console.log('⏳ [APPOINTMENT SUCCESS] Booking is pending payment confirmation');
           }
         } else {
           console.log('⚠️ No booking found with ID:', bookingId);

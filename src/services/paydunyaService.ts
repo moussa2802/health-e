@@ -384,6 +384,42 @@ export class PayDunyaService {
   }
 
   // Traiter une notification IPN
+  async updateBookingStatus(
+    bookingId: string,
+    status: "confirmed" | "cancelled" | "failed"
+  ): Promise<{ success: boolean; error?: string }> {
+    try {
+      console.log("🔔 [PAYDUNYA] Updating booking status:", bookingId, "to", status);
+      
+      const db = getFirestore();
+      const bookingRef = doc(db, "bookings", bookingId);
+      
+      // Mettre à jour le statut de la réservation
+      await updateDoc(bookingRef, {
+        status: status,
+        paymentStatus: status === "confirmed" ? "completed" : "failed",
+        updatedAt: new Date().toISOString(),
+      });
+      
+      // Mettre à jour aussi dans la Realtime Database
+      const { getDatabase, ref, update } = await import("firebase/database");
+      const database = getDatabase();
+      const roomRef = ref(database, `scheduled_rooms/${bookingId}`);
+      
+      await update(roomRef, {
+        status: status,
+        updatedAt: new Date().toISOString(),
+      });
+      
+      console.log("✅ [PAYDUNYA] Booking status updated successfully");
+      return { success: true };
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : "Unknown error";
+      console.error("❌ [PAYDUNYA] Error updating booking status:", error);
+      return { success: false, error: errorMessage };
+    }
+  }
+
   async processIPN(
     paymentData: PayDunyaPaymentData
   ): Promise<{ success: boolean; error?: string }> {
@@ -410,7 +446,20 @@ export class PayDunyaService {
         return { success: false, error: "ID de réservation manquant" };
       }
 
+      // Déterminer le statut de la réservation basé sur le statut du paiement
+      let bookingStatus: "confirmed" | "cancelled" | "failed";
+      if (paymentData.invoice.status === "completed" || paymentData.invoice.status === "success") {
+        bookingStatus = "confirmed";
+      } else if (paymentData.invoice.status === "cancelled") {
+        bookingStatus = "cancelled";
+      } else {
+        bookingStatus = "failed";
+      }
+
       // Mettre à jour le statut de la réservation
+      await this.updateBookingStatus(bookingId, bookingStatus);
+
+      // Mettre à jour les informations de paiement
       const bookingRef = doc(this.db, "bookings", bookingId);
       await updateDoc(bookingRef, {
         paymentStatus: paymentData.invoice.status,
