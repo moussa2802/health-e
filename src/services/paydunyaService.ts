@@ -28,7 +28,7 @@ export interface PayDunyaPaymentData {
   transaction_id?: string;
 }
 
-// Configuration PayDunya (à remplacer par vos vraies clés)
+// Configuration PayDunya (production ou test selon les variables d'environnement)
 const PAYDUNYA_CONFIG = {
   publicKey:
     process.env.REACT_APP_PAYDUNYA_PUBLIC_KEY ||
@@ -40,21 +40,25 @@ const PAYDUNYA_CONFIG = {
     process.env.REACT_APP_PAYDUNYA_MASTER_KEY ||
     "gzt0lrr3-IhY9-Cl5D-nQjQ-4YiQ3HmHdWtF",
   token: process.env.REACT_APP_PAYDUNYA_TOKEN || "wZTFnRBd87rYZIdoQmyh",
-  baseUrl: "https://app.paydunya.com/sandbox-api/v1",
+  // URL automatique selon le mode
+  baseUrl: (process.env.REACT_APP_PAYDUNYA_MODE || "test") === "live" 
+    ? "https://app.paydunya.com/api/v1" 
+    : "https://app.paydunya.com/sandbox-api/v1",
   mode: process.env.REACT_APP_PAYDUNYA_MODE || "test",
 };
 
 // 🔍 DEBUG: Vérifier la configuration au démarrage
 console.log("🔍 [PAYDUNYA CONFIG DEBUG] Configuration chargée:");
+console.log("Mode:", PAYDUNYA_CONFIG.mode);
+console.log("Base URL:", PAYDUNYA_CONFIG.baseUrl);
+console.log("REACT_APP_PAYDUNYA_MODE:", process.env.REACT_APP_PAYDUNYA_MODE);
 console.log(
   "REACT_APP_PAYDUNYA_MASTER_KEY:",
-  process.env.REACT_APP_PAYDUNYA_MASTER_KEY
+  process.env.REACT_APP_PAYDUNYA_MASTER_KEY ? "✅ Configuré" : "❌ Non configuré"
 );
-console.log("PAYDUNYA_MASTER_KEY:", process.env.PAYDUNYA_MASTER_KEY);
-console.log("REACT_APP_PAYDUNYA_TOKEN:", process.env.REACT_APP_PAYDUNYA_TOKEN);
-console.log("PAYDUNYA_TOKEN:", process.env.PAYDUNYA_TOKEN);
-console.log("masterKey final:", PAYDUNYA_CONFIG.masterKey);
-console.log("token final:", PAYDUNYA_CONFIG.token);
+console.log("REACT_APP_PAYDUNYA_TOKEN:", process.env.REACT_APP_PAYDUNYA_TOKEN ? "✅ Configuré" : "❌ Non configuré");
+console.log("masterKey final:", PAYDUNYA_CONFIG.masterKey.substring(0, 10) + "...");
+console.log("token final:", PAYDUNYA_CONFIG.token.substring(0, 10) + "...");
 
 export class PayDunyaService {
   private static instance: PayDunyaService;
