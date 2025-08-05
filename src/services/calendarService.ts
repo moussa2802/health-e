@@ -783,7 +783,7 @@ async function getBookedAppointments(
       where('professionalId', '==', professionalId),
       where('date', '>=', startDateStr),
       where('date', '<=', endDateStr),
-      where('status', 'in', ['en_attente', 'confirmé'])
+      where('status', 'in', ['en_attente', 'confirmé', 'confirmed'])
     );
     
     const snapshot = await getDocs(q);

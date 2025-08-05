@@ -105,7 +105,7 @@ export async function createBooking(
       where("professionalId", "==", bookingData.professionalId),
       where("date", "==", bookingData.date),
       where("startTime", "==", bookingData.startTime.trim()),
-      where("status", "in", ["confirmé", "en_attente"]) // statuts actifs
+      where("status", "in", ["confirmé", "confirmed", "en_attente"]) // statuts actifs
     );
 
     console.log("🔍 Checking for conflicting bookings...");

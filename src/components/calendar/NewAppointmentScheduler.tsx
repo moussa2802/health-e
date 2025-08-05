@@ -197,7 +197,7 @@ const NewAppointmentScheduler: React.FC<NewAppointmentSchedulerProps> = ({
 
         // Filter active bookings (already filtered by professional in getUserBookings)
         const reserved = bookings.filter(
-          (b) => b.status === "en_attente" || b.status === "confirmé"
+          (b) => b.status === "en_attente" || b.status === "confirmé" || b.status === "confirmed"
         );
 
         console.log(
