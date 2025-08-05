@@ -192,6 +192,9 @@ export class PayDunyaService {
       console.log("token:", PAYDUNYA_CONFIG.token);
       console.log("mode:", PAYDUNYA_CONFIG.mode);
       console.log("baseUrl:", PAYDUNYA_CONFIG.baseUrl);
+      console.log("🔍 [PAYDUNYA DEBUG] Variables d'environnement:");
+      console.log("REACT_APP_PAYDUNYA_TOKEN:", process.env.REACT_APP_PAYDUNYA_TOKEN);
+      console.log("REACT_APP_PAYDUNYA_MASTER_KEY:", process.env.REACT_APP_PAYDUNYA_MASTER_KEY);
 
       console.log("🔔 [PAYDUNYA] Headers:", {
         "Content-Type": "application/json",
@@ -207,19 +210,27 @@ export class PayDunyaService {
       );
       console.log("🔔 [PAYDUNYA] Price value:", price, typeof price);
 
+      const headers = {
+        "Content-Type": "application/json",
+        Accept: "application/json", // 🔧 Ajouté pour éviter les réponses HTML
+        "PAYDUNYA-PUBLIC-KEY": PAYDUNYA_CONFIG.publicKey,
+        "PAYDUNYA-PRIVATE-KEY": PAYDUNYA_CONFIG.privateKey,
+        "PAYDUNYA-MASTER-KEY": PAYDUNYA_CONFIG.masterKey,
+        "PAYDUNYA-TOKEN": PAYDUNYA_CONFIG.token, // 🔧 Token PayDunya ajouté
+        "PAYDUNYA-MODE": PAYDUNYA_CONFIG.mode,
+      };
+
+      // 🔍 DEBUG: Vérifier les headers exacts envoyés
+      console.log("🔍 [PAYDUNYA DEBUG] Headers exacts envoyés:");
+      Object.entries(headers).forEach(([key, value]) => {
+        console.log(`${key}:`, value);
+      });
+
       const response = await fetch(
         `${PAYDUNYA_CONFIG.baseUrl}/checkout-invoice/create`,
         {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Accept: "application/json", // 🔧 Ajouté pour éviter les réponses HTML
-            "PAYDUNYA-PUBLIC-KEY": PAYDUNYA_CONFIG.publicKey,
-            "PAYDUNYA-PRIVATE-KEY": PAYDUNYA_CONFIG.privateKey,
-            "PAYDUNYA-MASTER-KEY": PAYDUNYA_CONFIG.masterKey,
-            "PAYDUNYA-TOKEN": PAYDUNYA_CONFIG.token, // 🔧 Token PayDunya ajouté
-            "PAYDUNYA-MODE": PAYDUNYA_CONFIG.mode,
-          },
+          headers,
           body: JSON.stringify(invoiceData),
         }
       );
