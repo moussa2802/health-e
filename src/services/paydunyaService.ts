@@ -41,7 +41,7 @@ const PAYDUNYA_CONFIG = {
   masterKey:
     process.env.REACT_APP_PAYDUNYA_MASTER_KEY ||
     process.env.PAYDUNYA_MASTER_KEY ||
-    "gzt0lrr3-IhY9-C15D-nQjQ-4YiQ3HmHdWt", // 🔧 Clé Master sans le F final
+    "gzt0lrr3-IhY9-Cl5D-nQjQ-4YiQ3HmHdWtF", // 🔧 Clé Master de votre Netlify
   token:
     process.env.REACT_APP_PAYDUNYA_TOKEN ||
     process.env.PAYDUNYA_TOKEN ||
