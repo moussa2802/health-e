@@ -318,7 +318,7 @@ const ProfessionalAccess: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <div className="bg-gradient-to-r from-teal-500 to-emerald-400 py-6">
+      <div className="bg-gradient-to-r from-teal-500 to-emerald-400 py-6 backdrop-blur-md bg-white/10 rounded-b-xl">
         <div className="container mx-auto px-4">
           <div className="flex justify-between items-center">
             <Link to="/" className="text-white flex items-center">
@@ -362,32 +362,6 @@ const ProfessionalAccess: React.FC = () => {
                   </div>
                 )}
 
-                {/* Demo Credentials Info - MASQUÉ */}
-                {/* 
-                <div className="bg-teal-50 border border-teal-200 rounded-lg p-4 mb-6">
-                  <div className="flex items-start">
-                    <Stethoscope className="h-5 w-5 text-teal-400 mt-0.5 mr-3 flex-shrink-0" />
-                    <div className="flex-1">
-                      <h3 className="text-sm font-medium text-teal-800 mb-2">
-                        Compte de démonstration
-                      </h3>
-                      <div className="flex justify-between items-center">
-                        <span className="text-xs text-teal-700">
-                          professional@demo.com / demo123
-                        </span>
-                        <button
-                          type="button"
-                          onClick={fillDemoCredentials}
-                          className="text-teal-600 hover:text-teal-800 underline ml-2 text-xs"
-                        >
-                          Utiliser
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                */}
-
                 <form onSubmit={handleLogin} className="space-y-4">
                   <div>
                     <label
@@ -401,7 +375,7 @@ const ProfessionalAccess: React.FC = () => {
                       type="email"
                       value={loginEmail}
                       onChange={(e) => setLoginEmail(e.target.value)}
-                      className="w-full rounded-md border-gray-300 shadow-sm focus:border-teal-500 focus:ring-teal-500"
+                      className="w-full px-4 py-3 rounded-xl border-gray-300 shadow-sm focus:border-teal-500 focus:ring-teal-500 transition-colors"
                       placeholder="Votre email"
                       required
                     />
@@ -419,7 +393,7 @@ const ProfessionalAccess: React.FC = () => {
                       type="password"
                       value={loginPassword}
                       onChange={(e) => setLoginPassword(e.target.value)}
-                      className="w-full rounded-md border-gray-300 shadow-sm focus:border-teal-500 focus:ring-teal-500"
+                      className="w-full px-4 py-3 rounded-xl border-gray-300 shadow-sm focus:border-teal-500 focus:ring-teal-500 transition-colors"
                       placeholder="Votre mot de passe"
                       required
                     />
@@ -454,7 +428,7 @@ const ProfessionalAccess: React.FC = () => {
                   <button
                     type="submit"
                     disabled={isLoggingIn}
-                    className="w-full bg-teal-500 text-white py-2 px-4 rounded-md hover:bg-teal-600 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-full bg-teal-500 hover:bg-teal-600 text-white font-semibold rounded-xl px-4 py-3 shadow transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {isLoggingIn ? "Connexion en cours..." : "Se connecter"}
                   </button>
@@ -507,7 +481,7 @@ const ProfessionalAccess: React.FC = () => {
                       type="text"
                       value={registerName}
                       onChange={(e) => setRegisterName(e.target.value)}
-                      className="w-full rounded-md border-gray-300 shadow-sm focus:border-teal-500 focus:ring-teal-500"
+                      className="w-full px-4 py-3 rounded-xl border-gray-300 shadow-sm focus:border-teal-500 focus:ring-teal-500 transition-colors"
                       placeholder="Votre nom et prénom"
                       required
                     />
@@ -525,7 +499,7 @@ const ProfessionalAccess: React.FC = () => {
                       type="email"
                       value={registerEmail}
                       onChange={(e) => setRegisterEmail(e.target.value)}
-                      className="w-full rounded-md border-gray-300 shadow-sm focus:border-teal-500 focus:ring-teal-500"
+                      className="w-full px-4 py-3 rounded-xl border-gray-300 shadow-sm focus:border-teal-500 focus:ring-teal-500 transition-colors"
                       placeholder="Votre email"
                       required
                     />
@@ -543,7 +517,7 @@ const ProfessionalAccess: React.FC = () => {
                       type="password"
                       value={registerPassword}
                       onChange={(e) => setRegisterPassword(e.target.value)}
-                      className="w-full rounded-md border-gray-300 shadow-sm focus:border-teal-500 focus:ring-teal-500"
+                      className="w-full px-4 py-3 rounded-xl border-gray-300 shadow-sm focus:border-teal-500 focus:ring-teal-500 transition-colors"
                       placeholder="Créez un mot de passe"
                       required
                     />
@@ -630,7 +604,7 @@ const ProfessionalAccess: React.FC = () => {
                   <button
                     type="submit"
                     disabled={isRegistering || emailVerificationLoading}
-                    className="w-full bg-teal-500 text-white py-2 px-4 rounded-md hover:bg-teal-600 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-full bg-teal-500 hover:bg-teal-600 text-white font-semibold rounded-xl px-4 py-3 shadow transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {isRegistering || emailVerificationLoading
                       ? "Création en cours..."
@@ -642,12 +616,12 @@ const ProfessionalAccess: React.FC = () => {
           </div>
 
           {/* Benefits */}
-          <div className="bg-white rounded-xl shadow-md p-6 mb-12">
+          <div className="bg-gray-50 rounded-xl shadow-md p-6 mb-12">
             <h3 className="text-xl font-semibold mb-6 text-center">
               Avantages pour les professionnels
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="text-center">
+              <div className="text-center bg-white rounded-xl p-6 shadow-sm hover:shadow-lg transition-all duration-200">
                 <div className="w-12 h-12 bg-teal-100 rounded-full flex items-center justify-center mx-auto mb-4">
                   <Calendar className="h-6 w-6 text-teal-500" />
                 </div>
@@ -657,7 +631,7 @@ const ProfessionalAccess: React.FC = () => {
                   besoins
                 </p>
               </div>
-              <div className="text-center">
+              <div className="text-center bg-white rounded-xl p-6 shadow-sm hover:shadow-lg transition-all duration-200">
                 <div className="w-12 h-12 bg-teal-100 rounded-full flex items-center justify-center mx-auto mb-4">
                   <Users className="h-6 w-6 text-teal-500" />
                 </div>
@@ -669,7 +643,7 @@ const ProfessionalAccess: React.FC = () => {
                   géographique
                 </p>
               </div>
-              <div className="text-center">
+              <div className="text-center bg-white rounded-xl p-6 shadow-sm hover:shadow-lg transition-all duration-200">
                 <div className="w-12 h-12 bg-teal-100 rounded-full flex items-center justify-center mx-auto mb-4">
                   <ShieldCheck className="h-6 w-6 text-teal-500" />
                 </div>
@@ -683,14 +657,14 @@ const ProfessionalAccess: React.FC = () => {
           </div>
 
           {/* How it works */}
-          <div className="bg-white rounded-xl shadow-md p-6">
+          <div className="bg-white rounded-xl shadow-md p-6 border-t border-gray-100 pt-10">
             <h3 className="text-xl font-semibold mb-6 text-center">
               Comment ça marche ?
             </h3>
             <div className="space-y-6">
               <div className="flex items-start">
-                <div className="w-8 h-8 bg-teal-100 rounded-full flex items-center justify-center mr-4 flex-shrink-0">
-                  <span className="font-bold text-teal-500">1</span>
+                <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center mr-4 flex-shrink-0">
+                  <span className="font-bold text-blue-800">1</span>
                 </div>
                 <div>
                   <h4 className="font-medium mb-1">
@@ -703,8 +677,8 @@ const ProfessionalAccess: React.FC = () => {
                 </div>
               </div>
               <div className="flex items-start">
-                <div className="w-8 h-8 bg-teal-100 rounded-full flex items-center justify-center mr-4 flex-shrink-0">
-                  <span className="font-bold text-teal-500">2</span>
+                <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center mr-4 flex-shrink-0">
+                  <span className="font-bold text-blue-800">2</span>
                 </div>
                 <div>
                   <h4 className="font-medium mb-1">
@@ -717,8 +691,8 @@ const ProfessionalAccess: React.FC = () => {
                 </div>
               </div>
               <div className="flex items-start">
-                <div className="w-8 h-8 bg-teal-100 rounded-full flex items-center justify-center mr-4 flex-shrink-0">
-                  <span className="font-bold text-teal-500">3</span>
+                <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center mr-4 flex-shrink-0">
+                  <span className="font-bold text-blue-800">3</span>
                 </div>
                 <div>
                   <h4 className="font-medium mb-1">
