@@ -19,6 +19,7 @@ import {
   getConnectionStatus,
   endConsultation,
   getRoomParticipants,
+  JitsiParticipant,
 } from "../../services/jitsiService";
 import LoadingSpinner from "../../components/ui/LoadingSpinner";
 import { updatePatientMedicalRecord } from "../../services/patientService";
@@ -37,12 +38,6 @@ interface MedicalRecordData {
   treatment: string;
   recommendations: string;
   nextAppointmentDate: string;
-}
-
-interface JitsiParticipant {
-  displayName?: string;
-  id: string;
-  type?: string;
 }
 
 const ConsultationRoom: React.FC = () => {
@@ -180,6 +175,7 @@ const ConsultationRoom: React.FC = () => {
       try {
         const roomParticipants = await getRoomParticipants(roomId);
         console.log("👥 Room participants:", roomParticipants);
+        console.log("👥 [CONSULTATION DEBUG] Participants structure:", JSON.stringify(roomParticipants, null, 2));
         setParticipants(roomParticipants);
       } catch (error) {
         console.error("❌ Error fetching room participants:", error);
@@ -313,19 +309,19 @@ const ConsultationRoom: React.FC = () => {
       api.addListener("participantJoined", (data: unknown) => {
         const participant = data as JitsiParticipant;
         console.log("👤 Participant joined:", participant);
-        if (participant.displayName?.toLowerCase().includes("patient")) {
+        if (participant.name?.toLowerCase().includes("patient")) {
           console.log("🧍‍♀️ Le patient a rejoint la salle !");
         } else if (
-          participant.displayName?.toLowerCase().includes("dr") ||
-          participant.displayName?.toLowerCase().includes("professionnel")
+          participant.name?.toLowerCase().includes("dr") ||
+          participant.name?.toLowerCase().includes("professionnel")
         ) {
           console.log("👤 Participant joined:", participant);
           console.log("🧍‍⚕️ Le professionnel a rejoint la salle !");
         }
 
         // Set remote user name if available
-        if (participant.displayName) {
-          setRemoteUserName(participant.displayName);
+        if (participant.name) {
+          setRemoteUserName(participant.name);
           setRemoteUserId(participant.id);
         }
 
@@ -505,24 +501,29 @@ const ConsultationRoom: React.FC = () => {
   };
 
   // Fetch booking data to get patient information
-  const fetchBookingData = async (bookingId: string): Promise<{ patientId?: string; patientName?: string } | null> => {
+  const fetchBookingData = async (
+    bookingId: string
+  ): Promise<{ patientId?: string; patientName?: string } | null> => {
     try {
-      console.log("🔍 [CONSULTATION DEBUG] Fetching booking data for:", bookingId);
-      
+      console.log(
+        "🔍 [CONSULTATION DEBUG] Fetching booking data for:",
+        bookingId
+      );
+
       // Import booking service
       const { getBookings } = await import("../../services/bookingService");
-      
+
       const bookings = await getBookings();
-      const booking = bookings.find(b => b.id === bookingId);
-      
+      const booking = bookings.find((b) => b.id === bookingId);
+
       if (booking) {
         console.log("✅ Found booking data:", booking);
         return {
           patientId: booking.patientId,
-          patientName: booking.patientName
+          patientName: booking.patientName,
         };
       }
-      
+
       return null;
     } catch (error) {
       console.warn("⚠️ Could not fetch booking data:", error);
@@ -544,12 +545,12 @@ const ConsultationRoom: React.FC = () => {
     // First check if we have participants from Firebase Realtime Database
     if (participants.length > 0) {
       console.log("🔍 [CONSULTATION DEBUG] Checking Firebase participants...");
-      
+
       // Find the patient participant (the one who is not the current user)
-      const patientParticipant = participants.find((p) => 
-        p.type === "patient" && p.id !== currentUser?.id
+      const patientParticipant = participants.find(
+        (p) => p.type === "patient" && p.id !== currentUser?.id
       );
-      
+
       if (patientParticipant) {
         console.log(
           "✅ Found patient from Firebase participants:",
@@ -557,9 +558,11 @@ const ConsultationRoom: React.FC = () => {
         );
         return patientParticipant.id;
       }
-      
+
       // If no patient found, try to find the other participant
-      const otherParticipant = participants.find((p) => p.id !== currentUser?.id);
+      const otherParticipant = participants.find(
+        (p) => p.id !== currentUser?.id
+      );
       if (otherParticipant) {
         console.log(
           "✅ Using other participant as patient:",
@@ -592,7 +595,10 @@ const ConsultationRoom: React.FC = () => {
       try {
         const bookingData = await fetchBookingData(bookingId);
         if (bookingData?.patientId) {
-          console.log("✅ Found patient ID from booking data:", bookingData.patientId);
+          console.log(
+            "✅ Found patient ID from booking data:",
+            bookingData.patientId
+          );
           return bookingData.patientId;
         }
       } catch (error) {
@@ -616,7 +622,10 @@ const ConsultationRoom: React.FC = () => {
 
     console.warn("⚠️ Could not determine patient ID");
     console.warn("⚠️ [CONSULTATION DEBUG] All identification methods failed");
-    console.warn("⚠️ [CONSULTATION DEBUG] Participants available:", participants);
+    console.warn(
+      "⚠️ [CONSULTATION DEBUG] Participants available:",
+      participants
+    );
     console.warn("⚠️ [CONSULTATION DEBUG] Current user:", currentUser);
     return null;
   };
@@ -632,7 +641,10 @@ const ConsultationRoom: React.FC = () => {
 
     console.log("🔍 [CONSULTATION DEBUG] Found patient ID:", patientId);
     console.log("🔍 [CONSULTATION DEBUG] Patient ID length:", patientId.length);
-    console.log("🔍 [CONSULTATION DEBUG] Patient ID format check:", /^[a-zA-Z0-9]+$/.test(patientId));
+    console.log(
+      "🔍 [CONSULTATION DEBUG] Patient ID format check:",
+      /^[a-zA-Z0-9]+$/.test(patientId)
+    );
 
     // If the patient ID looks like a Firestore ID (long alphanumeric), use it directly
     if (patientId.length > 20 && /^[a-zA-Z0-9]+$/.test(patientId)) {

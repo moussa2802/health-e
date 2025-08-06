@@ -64,30 +64,19 @@ export const joinRoom = async (
         }
       });
     }
-    // 🔥 Add participant (patient or professional)
+    
+    // Add the user to the room
     const participantRef = ref(database, `rooms/${roomId}/participants/${userId}`);
     await set(participantRef, {
-      id: userId,
-      name: userName,
-      type: userType,
-      status: 'connected',
-      joinedAt: new Date().toISOString()
-    });
-console.log('✅ Participant written to Firebase:', userId);
-    console.log(`✅ ${userType} ${userName} added to room ${roomId}`);
-
-   
-    // Add the user to the room
-    const userRoomId = `${userId}`;
-    const userRef = ref(database, `rooms/${roomId}/participants/${userRoomId}`);
-    console.log(`👤 ${userType} ${userId} added to participants`);
-    await update(userRef, {
       id: userId,
       name: userName,
       type: userType,
       joinedAt: new Date().toISOString(),
       isConnected: true
     });
+    
+    console.log('✅ Participant written to Firebase:', userId);
+    console.log(`✅ ${userType} ${userName} added to room ${roomId}`);
     
     // Update connection status in the room
     const connectionStatusRef = ref(database, `rooms/${roomId}/connectionStatus`);
