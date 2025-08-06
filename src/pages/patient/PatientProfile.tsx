@@ -1,7 +1,29 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import { Save, Edit2, Camera, Upload, CheckCircle, AlertCircle, RefreshCw, Wifi, WifiOff } from 'lucide-react';
+import { 
+  Save, 
+  Edit2, 
+  Camera, 
+  Upload, 
+  CheckCircle, 
+  AlertCircle, 
+  RefreshCw, 
+  Wifi, 
+  WifiOff,
+  User,
+  Mail,
+  Phone,
+  MapPin,
+  Calendar,
+  Heart,
+  Stethoscope,
+  Pill,
+  XCircle,
+  Shield,
+  Users,
+  ArrowLeft
+} from 'lucide-react';
 import {
   getPatientProfile, 
   updatePatientProfile, 
@@ -495,12 +517,12 @@ if (!patientInfo) {
             </div>
             
             <button
-              onClick={() => isEditing ? handleSave() : setIsEditing(true)}
+              onClick={isEditing ? handleSave : () => setIsEditing(true)}
               disabled={isSaving || isUploadingImage || isRetrying || redirecting}
-              className={`flex items-center px-4 py-2 rounded-lg transition-colors ${
+              className={`flex items-center px-6 py-3 rounded-xl font-semibold transition-all duration-200 shadow-md hover:shadow-lg ${
                 isEditing
-                  ? 'bg-green-500 text-white hover:bg-green-600'
-                  : 'bg-blue-500 text-white hover:bg-blue-600'
+                  ? 'bg-gradient-to-r from-green-500 to-green-600 text-white hover:from-green-600 hover:to-green-700'
+                  : 'bg-gradient-to-r from-blue-500 to-blue-600 text-white hover:from-blue-600 hover:to-blue-700'
               } ${isSaving || isUploadingImage || isRetrying || redirecting ? 'opacity-50 cursor-not-allowed' : ''}`}
             >
               {isEditing ? (
@@ -554,35 +576,44 @@ if (!patientInfo) {
           </div>
         )}
 
-        <div className="bg-white rounded-lg shadow-md overflow-hidden">
+        <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
           {/* Photo de profil */}
-          <div className="p-6 border-b border-gray-200">
-            <h2 className="text-lg font-semibold mb-4">Photo de profil</h2>
-            <div className="flex items-center space-x-4">
+          <div className="p-8 border-b border-gray-100 bg-gradient-to-r from-blue-50 to-indigo-50">
+            <h2 className="text-xl font-bold text-gray-900 mb-6 flex items-center">
+              <User className="h-6 w-6 mr-3 text-blue-600" />
+              Photo de profil
+            </h2>
+            <div className="flex items-center space-x-6">
               <div className="relative group cursor-pointer" onClick={handleImageClick}>
-                <img
-                  src={patientInfo.profileImage || 'https://via.placeholder.com/150?text=Photo'}
-                  alt="Profile"
-                  className="w-32 h-32 rounded-full object-cover group-hover:opacity-75 transition-opacity"
-                />
+                {patientInfo.profileImage ? (
+                  <img
+                    src={patientInfo.profileImage}
+                    alt="Profile"
+                    className="w-32 h-32 rounded-2xl object-cover group-hover:opacity-75 transition-all duration-300 shadow-lg"
+                  />
+                ) : (
+                  <div className="w-32 h-32 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg group-hover:shadow-xl transition-all duration-300">
+                    <User className="h-12 w-12 text-white" />
+                  </div>
+                )}
                 {isUploadingImage && (
-                  <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 rounded-full">
+                  <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 rounded-2xl">
                     <div className="text-center">
                       <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto mb-2"></div>
-                      <div className="text-white text-xs">{uploadProgress}%</div>
+                      <div className="text-white text-xs font-medium">{uploadProgress}%</div>
                     </div>
                   </div>
                 )}
                 {!isUploadingImage && isEditing && (
-                  <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                    <div className="bg-black bg-opacity-50 rounded-full p-3">
-                      <Camera className="h-6 w-6 text-white" />
+                  <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300">
+                    <div className="bg-black bg-opacity-50 rounded-2xl p-4">
+                      <Camera className="h-8 w-8 text-white" />
                     </div>
                   </div>
                 )}
               </div>
               {isEditing && (
-                <div>
+                <div className="flex-1">
                   <input
                     ref={fileInputRef}
                     type="file"
@@ -595,7 +626,7 @@ if (!patientInfo) {
                     type="button"
                     onClick={handleImageClick}
                     disabled={isUploadingImage}
-                    className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+                    className="px-6 py-3 border-2 border-blue-300 rounded-xl text-sm font-semibold text-blue-700 hover:bg-blue-50 disabled:opacity-50 disabled:cursor-not-allowed flex items-center transition-all duration-200"
                   >
                     {isUploadingImage ? (
                       <>
@@ -609,13 +640,13 @@ if (!patientInfo) {
                       </>
                     )}
                   </button>
-                  <p className="mt-2 text-sm text-gray-500">
+                  <p className="mt-3 text-sm text-gray-600">
                     JPG, PNG. Taille maximale : 5MB
                   </p>
                   {isUploadingImage && (
-                    <div className="mt-2 w-full bg-gray-200 rounded-full h-2">
+                    <div className="mt-3 w-full bg-gray-200 rounded-full h-2">
                       <div 
-                        className="bg-blue-600 h-2 rounded-full transition-all duration-300" 
+                        className="bg-gradient-to-r from-blue-500 to-indigo-600 h-2 rounded-full transition-all duration-300" 
                         style={{ width: `${uploadProgress}%` }}
                       ></div>
                     </div>
@@ -626,11 +657,15 @@ if (!patientInfo) {
           </div>
 
           {/* Informations personnelles */}
-          <div className="p-6 border-b border-gray-200">
-            <h2 className="text-lg font-semibold mb-4">Informations personnelles</h2>
+          <div className="p-8 border-b border-gray-100">
+            <h2 className="text-xl font-bold text-gray-900 mb-6 flex items-center">
+              <User className="h-6 w-6 mr-3 text-green-600" />
+              Informations personnelles
+            </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+              <div className="bg-gray-50 rounded-xl p-4">
+                <label className="block text-sm font-semibold text-gray-700 mb-2 flex items-center">
+                  <User className="h-4 w-4 mr-2 text-blue-500" />
                   Nom complet
                 </label>
                 {isEditing ? (
@@ -638,15 +673,16 @@ if (!patientInfo) {
                     type="text"
                     value={patientInfo.name || ''}
                     onChange={(e) => handleChange('name', e.target.value)}
-                    className="w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                    className="w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 bg-white"
                   />
                 ) : (
-                  <p className="text-gray-900">{patientInfo.name || 'Non renseigné'}</p>
+                  <p className="text-gray-900 font-medium">{patientInfo.name || 'Non renseigné'}</p>
                 )}
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+              <div className="bg-gray-50 rounded-xl p-4">
+                <label className="block text-sm font-semibold text-gray-700 mb-2 flex items-center">
+                  <Mail className="h-4 w-4 mr-2 text-blue-500" />
                   Email
                 </label>
                 {isEditing ? (
@@ -654,15 +690,16 @@ if (!patientInfo) {
                     type="email"
                     value={patientInfo?.email || ''}
                     onChange={(e) => handleChange('email', e.target.value)}
-                    className="w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                    className="w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 bg-white"
                   />
                 ) : (
-                  <p className="text-gray-900">{patientInfo.email || 'Non renseigné'}</p>
+                  <p className="text-gray-900 font-medium">{patientInfo.email || 'Non renseigné'}</p>
                 )}
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+              <div className="bg-gray-50 rounded-xl p-4">
+                <label className="block text-sm font-semibold text-gray-700 mb-2 flex items-center">
+                  <Phone className="h-4 w-4 mr-2 text-blue-500" />
                   Téléphone
                 </label>
                 {isEditing ? (
@@ -670,15 +707,16 @@ if (!patientInfo) {
                     type="tel"
                     value={patientInfo?.phone || ''}
                     onChange={(e) => handleChange('phone', e.target.value)}
-                    className="w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                    className="w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 bg-white"
                   />
                 ) : (
-                  <p className="text-gray-900">{patientInfo.phone || 'Non renseigné'}</p>
+                  <p className="text-gray-900 font-medium">{patientInfo.phone || 'Non renseigné'}</p>
                 )}
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+              <div className="bg-gray-50 rounded-xl p-4">
+                <label className="block text-sm font-semibold text-gray-700 mb-2 flex items-center">
+                  <Calendar className="h-4 w-4 mr-2 text-blue-500" />
                   Date de naissance
                 </label>
                 {isEditing ? (
@@ -686,31 +724,32 @@ if (!patientInfo) {
                     type="date"
                     value={patientInfo.dateOfBirth || ''}
                     onChange={(e) => handleChange('dateOfBirth', e.target.value)}
-                    className="w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                    className="w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 bg-white"
                   />
                 ) : (
-                  <p className="text-gray-900">
+                  <p className="text-gray-900 font-medium">
                     {patientInfo.dateOfBirth ? new Date(patientInfo.dateOfBirth).toLocaleDateString() : 'Non renseigné'}
                   </p>
                 )}
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+              <div className="bg-gray-50 rounded-xl p-4">
+                <label className="block text-sm font-semibold text-gray-700 mb-2 flex items-center">
+                  <Heart className="h-4 w-4 mr-2 text-blue-500" />
                   Genre
                 </label>
                 {isEditing ? (
                   <select
                     value={patientInfo?.gender || 'F'}
                     onChange={(e) => handleChange('gender', e.target.value)}
-                    className="w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                    className="w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 bg-white"
                   >
                     <option value="M">Masculin</option>
                     <option value="F">Féminin</option>
                     <option value="O">Autre</option>
                   </select>
                 ) : (
-                  <p className="text-gray-900">
+                  <p className="text-gray-900 font-medium">
                     {patientInfo.gender === 'M' ? 'Masculin' : 
                      patientInfo.gender === 'F' ? 'Féminin' : 
                      patientInfo.gender === 'O' ? 'Autre' : 'Non renseigné'}
@@ -718,8 +757,9 @@ if (!patientInfo) {
                 )}
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+              <div className="bg-gray-50 rounded-xl p-4 md:col-span-2">
+                <label className="block text-sm font-semibold text-gray-700 mb-2 flex items-center">
+                  <MapPin className="h-4 w-4 mr-2 text-blue-500" />
                   Adresse
                 </label>
                 {isEditing ? (
@@ -727,21 +767,25 @@ if (!patientInfo) {
                     type="text"
                     value={patientInfo?.address || ''}
                     onChange={(e) => handleChange('address', e.target.value)}
-                    className="w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                    className="w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 bg-white"
                   />
                 ) : (
-                  <p className="text-gray-900">{patientInfo.address || 'Non renseigné'}</p>
+                  <p className="text-gray-900 font-medium">{patientInfo.address || 'Non renseigné'}</p>
                 )}
               </div>
             </div>
           </div>
 
           {/* Informations médicales */}
-          <div className="p-6 border-b border-gray-200">
-            <h2 className="text-lg font-semibold mb-4">Informations médicales</h2>
+          <div className="p-8 border-b border-gray-100">
+            <h2 className="text-xl font-bold text-gray-900 mb-6 flex items-center">
+              <Stethoscope className="h-6 w-6 mr-3 text-red-600" />
+              Informations médicales
+            </h2>
             <div className="space-y-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+              <div className="bg-red-50 rounded-xl p-6 border border-red-100">
+                <label className="block text-sm font-semibold text-gray-700 mb-3 flex items-center">
+                  <Stethoscope className="h-4 w-4 mr-2 text-red-500" />
                   Antécédents médicaux
                 </label>
                 {isEditing ? (
@@ -749,15 +793,17 @@ if (!patientInfo) {
                     value={patientInfo?.medicalHistory || ''}
                     onChange={(e) => handleChange('medicalHistory', e.target.value)}
                     rows={3}
-                    className="w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                    className="w-full rounded-lg border-gray-300 shadow-sm focus:border-red-500 focus:ring-red-500 bg-white"
+                    placeholder="Décrivez vos antécédents médicaux..."
                   />
                 ) : (
-                  <p className="text-gray-900">{patientInfo.medicalHistory || 'Aucun antécédent médical particulier'}</p>
+                  <p className="text-gray-900 font-medium">{patientInfo.medicalHistory || 'Aucun antécédent médical particulier'}</p>
                 )}
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+              <div className="bg-yellow-50 rounded-xl p-6 border border-yellow-100">
+                <label className="block text-sm font-semibold text-gray-700 mb-3 flex items-center">
+                  <XCircle className="h-4 w-4 mr-2 text-yellow-600" />
                   Allergies
                 </label>
                 {isEditing ? (
@@ -765,15 +811,17 @@ if (!patientInfo) {
                     value={patientInfo?.allergies || ''}
                     onChange={(e) => handleChange('allergies', e.target.value)}
                     rows={2}
-                    className="w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                    className="w-full rounded-lg border-gray-300 shadow-sm focus:border-yellow-500 focus:ring-yellow-500 bg-white"
+                    placeholder="Listez vos allergies..."
                   />
                 ) : (
-                  <p className="text-gray-900">{patientInfo.allergies || 'Aucune allergie connue'}</p>
+                  <p className="text-gray-900 font-medium">{patientInfo.allergies || 'Aucune allergie connue'}</p>
                 )}
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+              <div className="bg-blue-50 rounded-xl p-6 border border-blue-100">
+                <label className="block text-sm font-semibold text-gray-700 mb-3 flex items-center">
+                  <Pill className="h-4 w-4 mr-2 text-blue-600" />
                   Médicaments en cours
                 </label>
                 {isEditing ? (
@@ -781,65 +829,77 @@ if (!patientInfo) {
                     value={patientInfo?.medications || ''}
                     onChange={(e) => handleChange('medications', e.target.value)}
                     rows={2}
-                    className="w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                    className="w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 bg-white"
+                    placeholder="Listez vos médicaments en cours..."
                   />
                 ) : (
-                  <p className="text-gray-900">{patientInfo.medications || 'Aucun médicament en cours'}</p>
+                  <p className="text-gray-900 font-medium">{patientInfo.medications || 'Aucun médicament en cours'}</p>
                 )}
               </div>
             </div>
           </div>
 
           {/* Contact d'urgence */}
-          <div className="p-6">
-            <h2 className="text-lg font-semibold mb-4">Contact d'urgence</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Nom du contact
-                </label>
-                {isEditing ? (
-                  <input
-                    type="text"
-                    value={patientInfo?.emergencyContact?.name || ''}
-                    onChange={(e) => handleEmergencyContactChange('name', e.target.value)}
-                    className="w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                  />
-                ) : (
-                  <p className="text-gray-900">{patientInfo.emergencyContact?.name || 'Non renseigné'}</p>
-                )}
-              </div>
+          <div className="p-8">
+            <h2 className="text-xl font-bold text-gray-900 mb-6 flex items-center">
+              <Shield className="h-6 w-6 mr-3 text-orange-600" />
+              Contact d'urgence
+            </h2>
+            <div className="bg-orange-50 rounded-xl p-6 border border-orange-100">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2 flex items-center">
+                    <Users className="h-4 w-4 mr-2 text-orange-500" />
+                    Nom du contact
+                  </label>
+                  {isEditing ? (
+                    <input
+                      type="text"
+                      value={patientInfo?.emergencyContact?.name || ''}
+                      onChange={(e) => handleEmergencyContactChange('name', e.target.value)}
+                      className="w-full rounded-lg border-gray-300 shadow-sm focus:border-orange-500 focus:ring-orange-500 bg-white"
+                      placeholder="Nom du contact d'urgence"
+                    />
+                  ) : (
+                    <p className="text-gray-900 font-medium">{patientInfo.emergencyContact?.name || 'Non renseigné'}</p>
+                  )}
+                </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Téléphone du contact
-                </label>
-                {isEditing ? (
-                  <input
-                    type="tel"
-                    value={patientInfo?.emergencyContact?.phone || ''}
-                    onChange={(e) => handleEmergencyContactChange('phone', e.target.value)}
-                    className="w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                  />
-                ) : (
-                  <p className="text-gray-900">{patientInfo.emergencyContact?.phone || 'Non renseigné'}</p>
-                )}
-              </div>
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2 flex items-center">
+                    <Phone className="h-4 w-4 mr-2 text-orange-500" />
+                    Téléphone du contact
+                  </label>
+                  {isEditing ? (
+                    <input
+                      type="tel"
+                      value={patientInfo?.emergencyContact?.phone || ''}
+                      onChange={(e) => handleEmergencyContactChange('phone', e.target.value)}
+                      className="w-full rounded-lg border-gray-300 shadow-sm focus:border-orange-500 focus:ring-orange-500 bg-white"
+                      placeholder="Numéro de téléphone"
+                    />
+                  ) : (
+                    <p className="text-gray-900 font-medium">{patientInfo.emergencyContact?.phone || 'Non renseigné'}</p>
+                  )}
+                </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Relation
-                </label>
-                {isEditing ? (
-                  <input
-                    type="text"
-                    value={patientInfo?.emergencyContact?.relationship || ''}
-                    onChange={(e) => handleEmergencyContactChange('relationship', e.target.value)}
-                    className="w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                  />
-                ) : (
-                  <p className="text-gray-900">{patientInfo.emergencyContact?.relationship || 'Non renseigné'}</p>
-                )}
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-semibold text-gray-700 mb-2 flex items-center">
+                    <User className="h-4 w-4 mr-2 text-orange-500" />
+                    Relation
+                  </label>
+                  {isEditing ? (
+                    <input
+                      type="text"
+                      value={patientInfo?.emergencyContact?.relationship || ''}
+                      onChange={(e) => handleEmergencyContactChange('relationship', e.target.value)}
+                      className="w-full rounded-lg border-gray-300 shadow-sm focus:border-orange-500 focus:ring-orange-500 bg-white"
+                      placeholder="Relation avec le contact (ex: conjoint, parent, ami...)"
+                    />
+                  ) : (
+                    <p className="text-gray-900 font-medium">{patientInfo.emergencyContact?.relationship || 'Non renseigné'}</p>
+                  )}
+                </div>
               </div>
             </div>
           </div>
