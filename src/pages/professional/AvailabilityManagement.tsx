@@ -159,12 +159,12 @@ const AvailabilityManagement: React.FC = () => {
     loadProfile();
   }, [currentUser?.id]);
 
-  const handleSlotsChange = (slots: TimeSlot[]) => {
+  const handleSlotsChange = useCallback((slots: TimeSlot[]) => {
     console.log("🔄 Créneaux modifiés:", slots);
     setExistingSlots(slots);
-  };
+  }, []);
 
-  const handleSave = async () => {
+  const handleSave = useCallback(async () => {
     if (!currentUser?.id) {
       setError("Utilisateur non connecté");
       return;
@@ -232,8 +232,8 @@ const AvailabilityManagement: React.FC = () => {
         setSaveSuccess(false);
       }, 3000);
 
-      // Recharger les créneaux pour s'assurer de la cohérence
-      await loadSlotsForCurrentMonth();
+      // Ne pas recharger automatiquement pour éviter la boucle
+      // await loadSlotsForCurrentMonth();
     } catch (error) {
       console.error("❌ Erreur lors de la sauvegarde:", error);
       setError(
@@ -244,7 +244,7 @@ const AvailabilityManagement: React.FC = () => {
     } finally {
       setIsSaving(false);
     }
-  };
+  }, [currentUser?.id, existingSlots]);
 
   const handleRefresh = async () => {
     if (!currentUser?.id) return;
