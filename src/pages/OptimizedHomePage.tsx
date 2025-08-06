@@ -29,7 +29,6 @@ const FeaturedContentSection = lazy(
 const OptimizedHomePage: React.FC = () => {
   const { isAuthenticated, currentUser } = useAuth();
   const [searchTerm] = useState("");
-  const [isScrolled, setIsScrolled] = useState(false);
   const searchContainerRef = useRef<HTMLDivElement>(null);
 
   // Debounce search to reduce API calls
@@ -46,16 +45,6 @@ const OptimizedHomePage: React.FC = () => {
     targetRef: featuredContentRef,
     isIntersecting: featuredContentVisible,
   } = useIntersectionObserver();
-
-  // Handle scroll for sticky header
-  useEffect(() => {
-    const handleScroll = () => {
-      setIsScrolled(window.scrollY > 50);
-    };
-
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
 
   // Close suggestions when clicking outside
   useEffect(() => {
@@ -113,22 +102,16 @@ const OptimizedHomePage: React.FC = () => {
 
   return (
     <ErrorBoundary>
-      <div className="flex flex-col min-h-screen pt-16">
-        {/* Sticky Header */}
-        <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-          isScrolled 
-            ? 'bg-white/95 backdrop-blur-md shadow-lg' 
-            : 'bg-transparent'
-        }`}>
+      <div className="flex flex-col min-h-screen">
+        {/* Transparent Header */}
+        <header className="fixed top-0 left-0 right-0 z-50 bg-transparent">
           <div className="container mx-auto px-4">
             <div className="flex items-center justify-between py-4">
               <div className="flex items-center">
                 <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-teal-400 rounded-xl flex items-center justify-center mr-3">
                   <Heart className="h-6 w-6 text-white" />
                 </div>
-                <span className={`text-xl font-bold ${
-                  isScrolled ? 'text-gray-900' : 'text-white'
-                }`}>
+                <span className="text-xl font-bold text-white">
                   Health-e
                 </span>
               </div>
@@ -136,11 +119,7 @@ const OptimizedHomePage: React.FC = () => {
               <div className="flex items-center space-x-4">
                 <Link
                   to="/patient"
-                  className={`px-6 py-3 rounded-xl font-semibold transition-all duration-200 ${
-                    isScrolled
-                      ? 'bg-blue-500 text-white hover:bg-blue-600'
-                      : 'bg-white/20 text-white hover:bg-white/30 backdrop-blur-sm'
-                  }`}
+                  className="px-6 py-3 rounded-xl font-semibold bg-white/20 text-white hover:bg-white/30 backdrop-blur-sm transition-all duration-200"
                 >
                   Prendre rendez-vous
                 </Link>
