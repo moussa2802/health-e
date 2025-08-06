@@ -17,6 +17,23 @@ import {
   X,
   Database,
   PenTool,
+  User,
+  Mail,
+  Phone,
+  MapPin,
+  GraduationCap,
+  Languages,
+  Award,
+  FileText,
+  CreditCard,
+  Calendar,
+  Settings,
+  Star,
+  Info,
+  Edit3,
+  Shield,
+  Check,
+  ChevronRight,
 } from "lucide-react";
 import {
   getProfessionalProfile,
@@ -51,6 +68,240 @@ interface ConsultationDuration {
   price: number;
 }
 
+// Modern Input Component
+const ModernInput: React.FC<{
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  icon: React.ComponentType<any>;
+  placeholder?: string;
+  type?: string;
+  required?: boolean;
+  error?: string;
+}> = ({ label, value, onChange, icon: Icon, placeholder, type = "text", required = false, error }) => {
+  return (
+    <div className="space-y-2">
+      <label className="block text-sm font-medium text-gray-700 flex items-center gap-2">
+        <Icon className="h-4 w-4 text-gray-500" />
+        {label}
+        {required && <span className="text-red-500">*</span>}
+      </label>
+      <div className="relative">
+        <input
+          type={type}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder={placeholder}
+          className={`w-full px-4 py-3 pl-12 border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 ${
+            error ? "border-red-300 bg-red-50" : "border-gray-300 bg-white"
+          }`}
+        />
+        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+          <Icon className="h-5 w-5 text-gray-400" />
+        </div>
+      </div>
+      {error && (
+        <p className="text-sm text-red-600 flex items-center gap-1">
+          <AlertCircle className="h-4 w-4" />
+          {error}
+        </p>
+      )}
+    </div>
+  );
+};
+
+// Modern Select Component
+const ModernSelect: React.FC<{
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  options: { value: string; label: string }[];
+  icon: React.ComponentType<any>;
+  required?: boolean;
+  error?: string;
+}> = ({ label, value, onChange, options, icon: Icon, required = false, error }) => {
+  return (
+    <div className="space-y-2">
+      <label className="block text-sm font-medium text-gray-700 flex items-center gap-2">
+        <Icon className="h-4 w-4 text-gray-500" />
+        {label}
+        {required && <span className="text-red-500">*</span>}
+      </label>
+      <div className="relative">
+        <select
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          className={`w-full px-4 py-3 pl-12 border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 appearance-none ${
+            error ? "border-red-300 bg-red-50" : "border-gray-300 bg-white"
+          }`}
+        >
+          {options.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </select>
+        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+          <Icon className="h-5 w-5 text-gray-400" />
+        </div>
+        <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+          <ChevronRight className="h-4 w-4 text-gray-400" />
+        </div>
+      </div>
+      {error && (
+        <p className="text-sm text-red-600 flex items-center gap-1">
+          <AlertCircle className="h-4 w-4" />
+          {error}
+        </p>
+      )}
+    </div>
+  );
+};
+
+// Tag Component
+const Tag: React.FC<{
+  label: string;
+  onRemove?: () => void;
+  color?: "blue" | "green" | "purple" | "orange" | "red";
+}> = ({ label, onRemove, color = "blue" }) => {
+  const colorClasses = {
+    blue: "bg-blue-100 text-blue-700 border-blue-200",
+    green: "bg-green-100 text-green-700 border-green-200",
+    purple: "bg-purple-100 text-purple-700 border-purple-200",
+    orange: "bg-orange-100 text-orange-700 border-orange-200",
+    red: "bg-red-100 text-red-700 border-red-200",
+  };
+
+  return (
+    <span className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm font-medium border ${colorClasses[color]}`}>
+      {label}
+      {onRemove && (
+        <button
+          onClick={onRemove}
+          className="hover:bg-black/10 rounded-full p-0.5 transition-colors"
+        >
+          <X className="h-3 w-3" />
+        </button>
+      )}
+    </span>
+  );
+};
+
+// Profile Image Component
+const ProfileImage: React.FC<{
+  imageUrl?: string;
+  onImageClick: () => void;
+  isUploading: boolean;
+  uploadProgress: number;
+}> = ({ imageUrl, onImageClick, isUploading, uploadProgress }) => {
+  return (
+    <div className="relative group">
+      <div className="w-32 h-32 rounded-full overflow-hidden border-4 border-white shadow-lg bg-gradient-to-br from-blue-100 to-indigo-100 flex items-center justify-center">
+        {imageUrl ? (
+          <img
+            src={imageUrl}
+            alt="Photo de profil"
+            className="w-full h-full object-cover"
+          />
+        ) : (
+          <User className="h-16 w-16 text-gray-400" />
+        )}
+        
+        {/* Upload overlay */}
+        {isUploading && (
+          <div className="absolute inset-0 bg-black/50 flex items-center justify-center rounded-full">
+            <div className="text-center text-white">
+              <LoadingSpinner size="sm" color="white" />
+              <p className="text-xs mt-1">{uploadProgress}%</p>
+            </div>
+          </div>
+        )}
+        
+        {/* Hover overlay */}
+        <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center rounded-full cursor-pointer">
+          <Camera className="h-8 w-8 text-white" />
+        </div>
+      </div>
+      
+      <button
+        onClick={onImageClick}
+        className="absolute -bottom-2 -right-2 bg-blue-600 text-white p-2 rounded-full shadow-lg hover:bg-blue-700 transition-colors"
+      >
+        <Edit3 className="h-4 w-4" />
+      </button>
+    </div>
+  );
+};
+
+// Signature Section Component
+const SignatureSection: React.FC<{
+  signatureUrl?: string;
+  stampUrl?: string;
+  onSignatureClick: () => void;
+  onStampClick: () => void;
+  isUploadingSignature: boolean;
+  isUploadingStamp: boolean;
+}> = ({ signatureUrl, stampUrl, onSignatureClick, onStampClick, isUploadingSignature, isUploadingStamp }) => {
+  return (
+    <div className="bg-white rounded-2xl shadow-lg p-6">
+      <div className="flex items-center gap-2 mb-4">
+        <PenTool className="h-5 w-5 text-blue-600" />
+        <h3 className="text-lg font-semibold text-gray-900">Signature & Cachet</h3>
+        <div className="flex items-center gap-1 text-gray-500" title="Ces éléments seront utilisés pour signer électroniquement vos prescriptions">
+          <Info className="h-4 w-4" />
+          <span className="text-xs">Électronique</span>
+        </div>
+      </div>
+      
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Signature */}
+        <div className="space-y-3">
+          <label className="block text-sm font-medium text-gray-700">Signature</label>
+          <div className="border-2 border-dashed border-gray-300 rounded-xl p-4 hover:border-blue-400 transition-colors cursor-pointer" onClick={onSignatureClick}>
+            {signatureUrl ? (
+              <div className="relative">
+                <img src={signatureUrl} alt="Signature" className="w-full h-20 object-contain" />
+                {isUploadingSignature && (
+                  <div className="absolute inset-0 bg-white/80 flex items-center justify-center">
+                    <LoadingSpinner size="sm" />
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="text-center py-8">
+                <PenTool className="h-8 w-8 text-gray-400 mx-auto mb-2" />
+                <p className="text-sm text-gray-500">Cliquez pour ajouter votre signature</p>
+              </div>
+            )}
+          </div>
+        </div>
+        
+        {/* Stamp */}
+        <div className="space-y-3">
+          <label className="block text-sm font-medium text-gray-700">Cachet</label>
+          <div className="border-2 border-dashed border-gray-300 rounded-xl p-4 hover:border-blue-400 transition-colors cursor-pointer" onClick={onStampClick}>
+            {stampUrl ? (
+              <div className="relative">
+                <img src={stampUrl} alt="Cachet" className="w-full h-20 object-contain" />
+                {isUploadingStamp && (
+                  <div className="absolute inset-0 bg-white/80 flex items-center justify-center">
+                    <LoadingSpinner size="sm" />
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="text-center py-8">
+                <Shield className="h-8 w-8 text-gray-400 mx-auto mb-2" />
+                <p className="text-sm text-gray-500">Cliquez pour ajouter votre cachet</p>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const ProfessionalSettings: React.FC = () => {
   console.log("🔍 ProfessionalSettings component rendering");
 
@@ -77,7 +328,7 @@ const ProfessionalSettings: React.FC = () => {
   const [isLocalEnvironment, setIsLocalEnvironment] = useState(false);
   const [uploadError, setUploadError] = useState("");
   const [loadingStep, setLoadingStep] = useState("initializing");
-  const [retryCount, setRetryCount] = useState(0); // ✅ Added retry counter
+  const [retryCount, setRetryCount] = useState(0);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const signatureInputRef = useRef<HTMLInputElement>(null);
@@ -1007,343 +1258,324 @@ const ProfessionalSettings: React.FC = () => {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold">
-          Paramètres du profil professionnel
-        </h1>
-
-        <div className="flex items-center space-x-4">
-          {isLocalEnvironment && (
-            <div className="flex items-center px-3 py-1 rounded-full text-sm bg-yellow-100 text-yellow-800">
-              <Globe className="h-4 w-4 mr-1" />
-              Mode développement
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+      <div className="container mx-auto px-4 py-8">
+        {/* Header */}
+        <div className="bg-white rounded-2xl shadow-lg p-6 mb-8">
+          <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">Paramètres du profil</h1>
+              <p className="text-gray-600 mt-2">Gérez vos informations professionnelles et votre disponibilité</p>
             </div>
-          )}
 
-          <div
-            className={`flex items-center px-3 py-1 rounded-full text-sm ${
-              connectionStatus.isOnline && connectionStatus.isInitialized
-                ? "bg-green-100 text-green-800"
-                : "bg-red-100 text-red-800"
-            }`}
-          >
-            {connectionStatus.isOnline && connectionStatus.isInitialized ? (
-              <>
-                <Wifi className="h-4 w-4 mr-1" />
-                Connecté
-              </>
-            ) : (
-              <>
-                <WifiOff className="h-4 w-4 mr-1" />
-                Hors ligne
-              </>
-            )}
-          </div>
-        </div>
-      </div>
+            <div className="flex items-center gap-4">
+              {isLocalEnvironment && (
+                <div className="flex items-center px-3 py-1 rounded-full text-sm bg-yellow-100 text-yellow-800">
+                  <Globe className="h-4 w-4 mr-1" />
+                  Mode développement
+                </div>
+              )}
 
-      {errorMessage && (
-        <div className="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded-md flex items-center justify-between">
-          <div className="flex items-center">
-            <AlertCircle className="h-5 w-5 mr-2" />
-            {errorMessage}
-          </div>
-          <div className="flex space-x-2">
-            {(errorMessage.includes("Target ID already exists") ||
-              errorMessage.includes("cache Firestore") ||
-              errorMessage.includes("Firestore operation failed")) && (
-              <button
-                onClick={handleResetCache}
-                disabled={isResettingCache}
-                className="px-3 py-1 bg-orange-500 text-white rounded-md hover:bg-orange-600 disabled:opacity-50 flex items-center"
+              <div
+                className={`flex items-center px-3 py-1 rounded-full text-sm ${
+                  connectionStatus.isOnline && connectionStatus.isInitialized
+                    ? "bg-green-100 text-green-800"
+                    : "bg-red-100 text-red-800"
+                }`}
               >
-                {isResettingCache ? (
+                {connectionStatus.isOnline && connectionStatus.isInitialized ? (
                   <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                    Réinitialisation...
+                    <Wifi className="h-4 w-4 mr-1" />
+                    Connecté
                   </>
                 ) : (
                   <>
-                    <Database className="h-4 w-4 mr-2" />
-                    Réinitialiser le cache
+                    <WifiOff className="h-4 w-4 mr-1" />
+                    Hors ligne
                   </>
                 )}
-              </button>
-            )}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Error Message */}
+        {errorMessage && (
+          <div className="mb-6 p-4 bg-red-100 border border-red-400 text-red-700 rounded-xl flex items-center justify-between">
+            <div className="flex items-center">
+              <AlertCircle className="h-5 w-5 mr-2" />
+              <span>{errorMessage}</span>
+            </div>
             <button
-              onClick={handleReconnect}
-              disabled={isReconnecting}
-              className="px-3 py-1 bg-red-500 text-white rounded-md hover:bg-red-600 disabled:opacity-50 flex items-center"
+              onClick={() => setErrorMessage("")}
+              className="text-red-500 hover:text-red-700"
             >
-              {isReconnecting ? (
-                <>
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                  Reconnexion...
-                </>
-              ) : (
-                <>
-                  <RefreshCw className="h-4 w-4 mr-2" />
-                  Reconnecter
-                </>
-              )}
+              <X className="h-5 w-5" />
             </button>
           </div>
-        </div>
-      )}
-
-      {saveSuccess && (
-        <div className="mb-4 p-4 bg-green-100 border border-green-400 text-green-700 rounded-md flex items-center">
-          <CheckCircle className="h-5 w-5 mr-2" />
-          <div>
-            <p className="font-medium">
-              {redirecting
-                ? "Vos modifications ont été enregistrées avec succès. Redirection vers le tableau de bord..."
-                : "Vos modifications ont été enregistrées avec succès"}
-            </p>
-            <p className="text-sm mt-1">
-              Votre profil est maintenant visible dans la liste des
-              professionnels disponibles avec les créneaux horaires.
-            </p>
-          </div>
-        </div>
-      )}
-
-      {uploadError && (
-        <div className="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded-md flex items-center justify-between">
-          <div className="flex items-center">
-            <AlertCircle className="h-5 w-5 mr-2" />
-            {uploadError}
-          </div>
-          <button
-            onClick={() => setUploadError("")}
-            className="text-red-500 hover:text-red-700"
-          >
-            <X className="h-4 w-4" />
-          </button>
-        </div>
-      )}
-
-      <section className="bg-blue-50 border-l-4 border-blue-500 rounded-lg shadow p-6 mb-6">
-        <div className="flex justify-between items-center">
-          <div>
-            <h2 className="text-xl font-semibold text-blue-700">
-              Statut du profil
-            </h2>
-            <p className="text-sm text-gray-600 mt-1">
-              Ce bouton permet de rendre votre profil visible pour les patients.
-            </p>
-          </div>
-          <div>
-            <label
-              htmlFor="isActive"
-              className={`inline-flex items-center px-4 py-2 rounded-md font-medium text-sm shadow-sm transition-colors duration-150 ${
-                profileData.isApproved
-                  ? profileData.isActive
-                    ? "bg-green-600 text-white hover:bg-green-700"
-                    : "bg-gray-300 text-gray-800 hover:bg-gray-400"
-                  : "bg-gray-200 text-gray-500 cursor-not-allowed"
-              }`}
-            >
-              <input
-                type="checkbox"
-                id="isActive"
-                checked={profileData.isActive || false}
-                disabled={!profileData.isApproved}
-                onChange={(e) => {
-                  if (profileData.isApproved) {
-                    setProfileData((prev) => ({
-                      ...prev,
-                      isActive: e.target.checked,
-                    }));
-                  }
-                }}
-                className="sr-only"
-              />
-              {profileData.isActive ? "Profil actif" : "Activer mon profil"}
-            </label>
-          </div>
-        </div>
-
-        {!profileData.isApproved && (
-          <p className="mt-4 text-sm text-red-600">
-            ⚠️ Votre profil est en attente de validation par un administrateur.
-            Vous ne pouvez pas l’activer pour le moment.
-          </p>
         )}
-      </section>
 
-      <form onSubmit={handleSubmit} className="max-w-4xl mx-auto space-y-8">
-        <section className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-xl font-semibold mb-4">Type de service</h2>
-          <div className="space-y-4">
-            <div className="flex space-x-4">
-              <label className="inline-flex items-center">
-                <input
-                  type="radio"
-                  className="form-radio h-5 w-5 text-blue-600"
-                  name="serviceType"
-                  value="mental"
-                  checked={profileData.type === "mental"}
-                  onChange={(e) =>
-                    setProfileData((prev) => ({
-                      ...prev,
-                      type: e.target.value as "mental" | "sexual",
-                    }))
-                  }
-                />
-                <span className="ml-2 text-gray-700">Santé mentale</span>
-              </label>
-              <label className="inline-flex items-center">
-                <input
-                  type="radio"
-                  className="form-radio h-5 w-5 text-blue-600"
-                  name="serviceType"
-                  value="sexual"
-                  checked={profileData.type === "sexual"}
-                  onChange={(e) =>
-                    setProfileData((prev) => ({
-                      ...prev,
-                      type: e.target.value as "mental" | "sexual",
-                    }))
-                  }
-                />
-                <span className="ml-2 text-gray-700">Santé sexuelle</span>
-              </label>
+        {/* Success Message */}
+        {saveSuccess && (
+          <div className="mb-6 p-4 bg-green-100 border border-green-400 text-green-700 rounded-xl flex items-center justify-between">
+            <div className="flex items-center">
+              <CheckCircle className="h-5 w-5 mr-2" />
+              <span>Profil sauvegardé avec succès !</span>
             </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Spécialité *
-              </label>
-              <select
-                value={profileData.specialty || ""}
-                onChange={(e) =>
-                  setProfileData((prev) => ({
-                    ...prev,
-                    specialty: e.target.value,
-                  }))
-                }
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                required
-              >
-                <option value="">Sélectionnez une spécialité</option>
-                {specialties[profileData.type || "mental"].map((spec) => (
-                  <option key={spec} value={spec}>
-                    {spec}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-        </section>
-
-        <section className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-xl font-semibold mb-4">
-            Informations personnelles
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Nom complet *
-              </label>
-              <input
-                type="text"
-                value={profileData.name || ""}
-                onChange={(e) =>
-                  setProfileData((prev) => ({ ...prev, name: e.target.value }))
-                }
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                required
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Email *
-              </label>
-              <input
-                type="email"
-                value={profileData.email || ""}
-                disabled
-                className="mt-1 block w-full rounded-md border-gray-300 bg-gray-100 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                required
-              />
-              <p className="mt-1 text-sm text-gray-500">
-                L'adresse email ne peut pas être modifiée pour des raisons de
-                sécurité.
-              </p>
-            </div>
-
-            <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Description professionnelle *
-              </label>
-              <textarea
-                value={profileData.description || ""}
-                onChange={(e) =>
-                  setProfileData((prev) => ({
-                    ...prev,
-                    description: e.target.value,
-                  }))
-                }
-                rows={4}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                required
-              />
-              <p className="mt-1 text-sm text-gray-500">
-                Décrivez votre pratique, votre approche et vos domaines
-                d'expertise.
-              </p>
-            </div>
-
-            <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Expérience professionnelle
-              </label>
-              <textarea
-                value={profileData.experience || ""}
-                onChange={(e) =>
-                  setProfileData((prev) => ({
-                    ...prev,
-                    experience: e.target.value,
-                  }))
-                }
-                rows={3}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-              />
-            </div>
-          </div>
-        </section>
-
-        <section className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-xl font-semibold mb-4">Photo de profil</h2>
-          <div className="flex items-center space-x-6">
-            <div
-              className="relative group cursor-pointer"
-              onClick={handleImageClick}
+            <button
+              onClick={() => setSaveSuccess(false)}
+              className="text-green-500 hover:text-green-700"
             >
-              {profileData.profileImage ? (
-                <img
-                  src={profileData.profileImage}
-                  alt="Profile"
-                  className="w-32 h-32 rounded-full object-cover group-hover:opacity-75 transition-opacity"
+              <X className="h-5 w-5" />
+            </button>
+          </div>
+        )}
+
+        {/* Main Content - Two Column Layout */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Left Column - Personal Information */}
+          <div className="lg:col-span-2 space-y-6">
+            {/* Personal Information Section */}
+            <div className="bg-white rounded-2xl shadow-lg p-6">
+              <div className="flex items-center gap-2 mb-6">
+                <User className="h-6 w-6 text-blue-600" />
+                <h2 className="text-xl font-semibold text-gray-900">Informations personnelles</h2>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <ModernInput
+                  label="Nom complet"
+                  value={profileData.name || ""}
+                  onChange={(value) => setProfileData({ ...profileData, name: value })}
+                  icon={User}
+                  placeholder="Votre nom complet"
+                  required
                 />
-              ) : (
-                <div className="w-32 h-32 rounded-full bg-gray-200 flex items-center justify-center group-hover:bg-gray-300 transition-colors">
-                  <Camera className="h-8 w-8 text-gray-400" />
-                </div>
-              )}
-              {isUploadingImage && (
-                <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 rounded-full">
-                  <div className="text-center">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto mb-2"></div>
-                    <div className="text-white text-xs">{uploadProgress}%</div>
-                  </div>
-                </div>
-              )}
+                
+                <ModernInput
+                  label="Email"
+                  value={profileData.email || ""}
+                  onChange={(value) => setProfileData({ ...profileData, email: value })}
+                  icon={Mail}
+                  type="email"
+                  placeholder="votre@email.com"
+                  required
+                />
+                
+                <ModernInput
+                  label="Téléphone"
+                  value={profileData.phone || ""}
+                  onChange={(value) => setProfileData({ ...profileData, phone: value })}
+                  icon={Phone}
+                  type="tel"
+                  placeholder="Votre numéro de téléphone"
+                />
+                
+                <ModernInput
+                  label="Localisation"
+                  value={profileData.location || ""}
+                  onChange={(value) => setProfileData({ ...profileData, location: value })}
+                  icon={MapPin}
+                  placeholder="Votre ville ou région"
+                />
+              </div>
             </div>
-            <div>
+
+            {/* Professional Information Section */}
+            <div className="bg-white rounded-2xl shadow-lg p-6">
+              <div className="flex items-center gap-2 mb-6">
+                <GraduationCap className="h-6 w-6 text-blue-600" />
+                <h2 className="text-xl font-semibold text-gray-900">Informations professionnelles</h2>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <ModernSelect
+                  label="Spécialité"
+                  value={profileData.specialty || ""}
+                  onChange={(value) => setProfileData({ ...profileData, specialty: value })}
+                  options={[
+                    { value: "mental", label: "Santé mentale" },
+                    { value: "sexual", label: "Santé sexuelle" },
+                    { value: "general", label: "Médecine générale" },
+                  ]}
+                  icon={Award}
+                  required
+                />
+                
+                <ModernInput
+                  label="Expérience"
+                  value={profileData.experience || ""}
+                  onChange={(value) => setProfileData({ ...profileData, experience: value })}
+                  icon={Star}
+                  placeholder="Nombre d'années d'expérience"
+                />
+                
+                <ModernInput
+                  label="Description"
+                  value={profileData.description || ""}
+                  onChange={(value) => setProfileData({ ...profileData, description: value })}
+                  icon={FileText}
+                  placeholder="Description de votre pratique"
+                />
+                
+                <ModernInput
+                  label="Éducation"
+                  value={profileData.education || ""}
+                  onChange={(value) => setProfileData({ ...profileData, education: value })}
+                  icon={GraduationCap}
+                  placeholder="Formation et diplômes"
+                />
+              </div>
+            </div>
+
+            {/* Languages Section */}
+            <div className="bg-white rounded-2xl shadow-lg p-6">
+              <div className="flex items-center gap-2 mb-6">
+                <Languages className="h-6 w-6 text-blue-600" />
+                <h2 className="text-xl font-semibold text-gray-900">Langues parlées</h2>
+              </div>
+              
+              <div className="space-y-4">
+                <div className="flex gap-2">
+                  <ModernSelect
+                    label="Ajouter une langue"
+                    value=""
+                    onChange={(value) => {
+                      if (value && !profileData.languages?.includes(value)) {
+                        setProfileData({
+                          ...profileData,
+                          languages: [...(profileData.languages || []), value],
+                        });
+                      }
+                    }}
+                    options={availableLanguages.map(lang => ({ value: lang.code, label: lang.name }))}
+                    icon={Languages}
+                  />
+                </div>
+                
+                <div className="flex flex-wrap gap-2">
+                  {profileData.languages?.map((language) => (
+                    <Tag
+                      key={language}
+                      label={availableLanguages.find((l) => l.code === language)?.name || language}
+                      onRemove={() => handleRemoveLanguage(language)}
+                      color="blue"
+                    />
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Pricing Section */}
+            <div className="bg-white rounded-2xl shadow-lg p-6">
+              <div className="flex items-center gap-2 mb-6">
+                <CreditCard className="h-6 w-6 text-blue-600" />
+                <h2 className="text-xl font-semibold text-gray-900">Tarification</h2>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <ModernInput
+                  label="Prix par consultation (FCFA)"
+                  value={profileData.price?.toString() || ""}
+                  onChange={(value) => setProfileData({ ...profileData, price: Number(value) })}
+                  icon={CreditCard}
+                  type="number"
+                  placeholder="5000"
+                  required
+                />
+                
+                <ModernInput
+                  label="Durée par consultation (minutes)"
+                  value={profileData.duration?.toString() || ""}
+                  onChange={(value) => setProfileData({ ...profileData, duration: Number(value) })}
+                  icon={Clock}
+                  type="number"
+                  placeholder="30"
+                  required
+                />
+              </div>
+            </div>
+
+            {/* Availability Section */}
+            <div className="bg-white rounded-2xl shadow-lg p-6">
+              <div className="flex items-center gap-2 mb-6">
+                <Calendar className="h-6 w-6 text-blue-600" />
+                <h2 className="text-xl font-semibold text-gray-900">Disponibilités</h2>
+              </div>
+              
+              <div className="space-y-4">
+                {profileData.availability?.map((slot, index) => (
+                  <div key={index} className="flex items-center gap-4 p-4 bg-gray-50 rounded-xl">
+                    <ModernSelect
+                      label="Jour"
+                      value={slot.day}
+                      onChange={(value) => handleTimeSlotChange(index, "day", value)}
+                      options={[
+                        { value: "lundi", label: "Lundi" },
+                        { value: "mardi", label: "Mardi" },
+                        { value: "mercredi", label: "Mercredi" },
+                        { value: "jeudi", label: "Jeudi" },
+                        { value: "vendredi", label: "Vendredi" },
+                        { value: "samedi", label: "Samedi" },
+                        { value: "dimanche", label: "Dimanche" },
+                      ]}
+                      icon={Calendar}
+                    />
+                    
+                    <ModernInput
+                      label="Début"
+                      value={slot.startTime}
+                      onChange={(value) => handleTimeSlotChange(index, "startTime", value)}
+                      icon={Clock}
+                      type="time"
+                    />
+                    
+                    <ModernInput
+                      label="Fin"
+                      value={slot.endTime}
+                      onChange={(value) => handleTimeSlotChange(index, "endTime", value)}
+                      icon={Clock}
+                      type="time"
+                    />
+                    
+                    <button
+                      onClick={() => handleRemoveTimeSlot(index)}
+                      className="mt-6 p-2 text-red-600 hover:bg-red-100 rounded-lg transition-colors"
+                    >
+                      <Trash2 className="h-5 w-5" />
+                    </button>
+                  </div>
+                ))}
+                
+                <button
+                  onClick={handleAddTimeSlot}
+                  className="w-full p-4 border-2 border-dashed border-gray-300 rounded-xl hover:border-blue-400 hover:bg-blue-50 transition-colors flex items-center justify-center gap-2"
+                >
+                  <Plus className="h-5 w-5 text-gray-400" />
+                  <span className="text-gray-600">Ajouter un créneau</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Right Column - Profile Image & Signature */}
+          <div className="space-y-6">
+            {/* Profile Image */}
+            <div className="bg-white rounded-2xl shadow-lg p-6">
+              <div className="flex items-center gap-2 mb-6">
+                <Camera className="h-6 w-6 text-blue-600" />
+                <h2 className="text-xl font-semibold text-gray-900">Photo de profil</h2>
+              </div>
+              
+              <div className="flex justify-center">
+                <ProfileImage
+                  imageUrl={profileData.profileImage}
+                  onImageClick={handleImageClick}
+                  isUploading={isUploadingImage}
+                  uploadProgress={uploadProgress}
+                />
+              </div>
+              
               <input
                 ref={fileInputRef}
                 type="file"
@@ -1352,452 +1584,88 @@ const ProfessionalSettings: React.FC = () => {
                 className="hidden"
                 disabled={isUploadingImage}
               />
-              <button
-                type="button"
-                onClick={handleImageClick}
-                disabled={isUploadingImage}
-                className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
-              >
-                {isUploadingImage ? (
-                  <>
-                    <Upload className="h-4 w-4 mr-2 animate-pulse" />
-                    Téléchargement... {uploadProgress}%
-                  </>
-                ) : (
-                  <>
-                    <Camera className="h-4 w-4 mr-2" />
-                    Changer la photo
-                  </>
-                )}
-              </button>
-              <p className="mt-2 text-sm text-gray-500">
-                JPG, PNG. Taille maximale : 5MB
-              </p>
-              {isUploadingImage && (
-                <div className="mt-2 w-full bg-gray-200 rounded-full h-2">
-                  <div
-                    className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-                    style={{ width: `${uploadProgress}%` }}
-                  ></div>
-                </div>
-              )}
-            </div>
-          </div>
-        </section>
-
-        {/* Signature électronique */}
-        <section className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-xl font-semibold mb-4">Signature électronique</h2>
-          <div className="space-y-6">
-            <div className="flex items-center">
-              <input
-                type="checkbox"
-                id="useElectronicSignature"
-                checked={profileData.useElectronicSignature || false}
-                onChange={(e) =>
-                  setProfileData((prev) => ({
-                    ...prev,
-                    useElectronicSignature: e.target.checked,
-                  }))
-                }
-                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-              />
-              <label
-                htmlFor="useElectronicSignature"
-                className="ml-2 block text-sm text-gray-700"
-              >
-                Utiliser la signature électronique pour les ordonnances
-              </label>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Signature */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Signature manuscrite
-                </label>
-                <div className="border border-gray-300 rounded-lg p-4 flex flex-col items-center">
-                  <div
-                    className="relative w-full h-32 bg-gray-100 rounded-md mb-4 flex items-center justify-center cursor-pointer"
-                    onClick={handleSignatureClick}
-                  >
-                    {profileData.signatureUrl ? (
-                      <img
-                        src={profileData.signatureUrl}
-                        alt="Signature"
-                        className="max-h-full max-w-full object-contain"
-                      />
-                    ) : (
-                      <div className="text-center text-gray-500">
-                        <PenTool className="h-8 w-8 mx-auto mb-2" />
-                        <p>Cliquez pour ajouter votre signature</p>
-                      </div>
-                    )}
-                    {isUploadingSignature && (
-                      <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 rounded-md">
-                        <div className="text-center">
-                          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto mb-2"></div>
-                          <div className="text-white text-xs">
-                            {signatureUploadProgress}%
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                  <input
-                    ref={signatureInputRef}
-                    type="file"
-                    accept="image/*"
-                    onChange={handleSignatureChange}
-                    className="hidden"
-                    disabled={isUploadingSignature}
-                  />
-                  <button
-                    type="button"
-                    onClick={handleSignatureClick}
-                    disabled={isUploadingSignature}
-                    className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
-                  >
-                    {isUploadingSignature ? (
-                      <>
-                        <Upload className="h-4 w-4 mr-2 animate-pulse" />
-                        Téléchargement... {signatureUploadProgress}%
-                      </>
-                    ) : (
-                      <>
-                        <PenTool className="h-4 w-4 mr-2" />
-                        {profileData.signatureUrl
-                          ? "Changer la signature"
-                          : "Ajouter une signature"}
-                      </>
-                    )}
-                  </button>
-                </div>
+            {/* Signature Section */}
+            <SignatureSection
+              signatureUrl={profileData.signatureUrl}
+              stampUrl={profileData.stampUrl}
+              onSignatureClick={handleSignatureClick}
+              onStampClick={handleStampClick}
+              isUploadingSignature={isUploadingSignature}
+              isUploadingStamp={isUploadingStamp}
+            />
+            
+            <input
+              ref={signatureInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleSignatureChange}
+              className="hidden"
+              disabled={isUploadingSignature}
+            />
+            
+            <input
+              ref={stampInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleStampChange}
+              className="hidden"
+              disabled={isUploadingStamp}
+            />
+
+            {/* Electronic Signature Toggle */}
+            <div className="bg-white rounded-2xl shadow-lg p-6">
+              <div className="flex items-center gap-2 mb-4">
+                <Settings className="h-6 w-6 text-blue-600" />
+                <h3 className="text-lg font-semibold text-gray-900">Signature électronique</h3>
               </div>
-
-              {/* Cachet */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Cachet professionnel
-                </label>
-                <div className="border border-gray-300 rounded-lg p-4 flex flex-col items-center">
-                  <div
-                    className="relative w-full h-32 bg-gray-100 rounded-md mb-4 flex items-center justify-center cursor-pointer"
-                    onClick={handleStampClick}
-                  >
-                    {profileData.stampUrl ? (
-                      <img
-                        src={profileData.stampUrl}
-                        alt="Cachet"
-                        className="max-h-full max-w-full object-contain"
-                      />
-                    ) : (
-                      <div className="text-center text-gray-500">
-                        <PenTool className="h-8 w-8 mx-auto mb-2" />
-                        <p>Cliquez pour ajouter votre cachet</p>
-                      </div>
-                    )}
-                    {isUploadingStamp && (
-                      <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 rounded-md">
-                        <div className="text-center">
-                          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto mb-2"></div>
-                          <div className="text-white text-xs">
-                            {stampUploadProgress}%
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                  <input
-                    ref={stampInputRef}
-                    type="file"
-                    accept="image/*"
-                    onChange={handleStampChange}
-                    className="hidden"
-                    disabled={isUploadingStamp}
-                  />
-                  <button
-                    type="button"
-                    onClick={handleStampClick}
-                    disabled={isUploadingStamp}
-                    className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
-                  >
-                    {isUploadingStamp ? (
-                      <>
-                        <Upload className="h-4 w-4 mr-2 animate-pulse" />
-                        Téléchargement... {stampUploadProgress}%
-                      </>
-                    ) : (
-                      <>
-                        <PenTool className="h-4 w-4 mr-2" />
-                        {profileData.stampUrl
-                          ? "Changer le cachet"
-                          : "Ajouter un cachet"}
-                      </>
-                    )}
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-4">
-              <div className="flex items-start">
-                <div className="flex-shrink-0">
-                  <AlertCircle className="h-5 w-5 text-blue-400" />
-                </div>
-                <div className="ml-3">
-                  <h3 className="text-sm font-medium text-blue-800">
-                    Informations importantes
-                  </h3>
-                  <div className="mt-2 text-sm text-blue-700">
-                    <p>
-                      La signature électronique et le cachet seront
-                      automatiquement ajoutés à vos ordonnances si vous activez
-                      cette option.
-                    </p>
-                    <p className="mt-1">
-                      Assurez-vous que votre signature et votre cachet sont
-                      clairement lisibles et conformes à vos documents
-                      officiels.
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <section className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-xl font-semibold mb-4">Langues parlées</h2>
-          <div className="space-y-4">
-            <div className="flex flex-wrap gap-2">
-              {profileData.languages?.map((language) => (
-                <div
-                  key={language}
-                  className="flex items-center bg-blue-100 text-blue-800 px-3 py-1 rounded-full"
-                >
-                  <span>
-                    {availableLanguages.find((l) => l.code === language)
-                      ?.name || language}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => handleRemoveLanguage(language)}
-                    className="ml-2 text-blue-600 hover:text-blue-800"
-                  >
-                    <X className="h-4 w-4" />
-                  </button>
-                </div>
-              ))}
-            </div>
-
-            <div className="flex space-x-2">
-              <select
-                value={selectedLanguage}
-                onChange={(e) => setSelectedLanguage(e.target.value)}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-              >
-                <option value="">Sélectionnez une langue</option>
-                {availableLanguages
-                  .filter((lang) => !profileData.languages?.includes(lang.code))
-                  .map((lang) => (
-                    <option key={lang.code} value={lang.code}>
-                      {lang.name}
-                    </option>
-                  ))}
-              </select>
-              <button
-                type="button"
-                onClick={handleAddLanguage}
-                disabled={!selectedLanguage}
-                className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Ajouter
-              </button>
-            </div>
-          </div>
-        </section>
-
-        <section className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-xl font-semibold mb-4">Formation</h2>
-          <div className="space-y-4">
-            <div>
-              {profileData.education && profileData.education.length > 0 ? (
-                <ul className="space-y-2">
-                  {profileData.education.map((edu, index) => (
-                    <li
-                      key={index}
-                      className="flex items-center justify-between bg-gray-50 p-3 rounded-md"
-                    >
-                      <span>{edu}</span>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setProfileData((prev) => ({
-                            ...prev,
-                            education:
-                              prev.education?.filter((_, i) => i !== index) ||
-                              [],
-                          }));
-                        }}
-                        className="text-red-500 hover:text-red-600"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p className="text-gray-500 italic">Aucune formation ajoutée</p>
-              )}
-            </div>
-
-            <div className="flex space-x-2">
-              <input
-                type="text"
-                value={newEducation}
-                onChange={(e) => setNewEducation(e.target.value)}
-                placeholder="Ajouter une formation ou un diplôme"
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-              />
-              <button
-                type="button"
-                onClick={handleAddEducation}
-                disabled={!newEducation.trim()}
-                className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Ajouter
-              </button>
-            </div>
-          </div>
-        </section>
-
-        <section className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-xl font-semibold mb-4">Tarifs</h2>
-          <div className="space-y-6">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Prix par consultation
-              </label>
-              <div className="flex items-center">
-                <input
-                  type="number"
-                  value={profileData.price === null ? "" : profileData.price}
-                  onChange={(e) =>
-                    setProfileData((prev) => ({
-                      ...prev,
-                      price:
-                        e.target.value === "" ? null : Number(e.target.value),
-                    }))
-                  }
-                  className="mt-1 block w-32 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                  min="0"
-                  step="100"
-                />
-                <select
-                  value={profileData.currency || "XOF"}
-                  onChange={(e) =>
-                    setProfileData((prev) => ({
-                      ...prev,
-                      currency: e.target.value,
-                    }))
-                  }
-                  className="ml-2 mt-1 block rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                >
-                  <option value="XOF">XOF</option>
-                  <option value="EUR">EUR</option>
-                  <option value="USD">USD</option>
-                </select>
-              </div>
-            </div>
-
-            <div>
+              
               <div className="flex items-center">
                 <input
                   type="checkbox"
-                  id="offersFreeConsultations"
-                  checked={profileData.offersFreeConsultations || false}
+                  id="useElectronicSignature"
+                  checked={profileData.useElectronicSignature || false}
                   onChange={(e) =>
                     setProfileData((prev) => ({
                       ...prev,
-                      offersFreeConsultations: e.target.checked,
+                      useElectronicSignature: e.target.checked,
                     }))
                   }
-                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                  className="h-5 w-5 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                 />
                 <label
-                  htmlFor="offersFreeConsultations"
-                  className="ml-2 block text-sm text-gray-700"
+                  htmlFor="useElectronicSignature"
+                  className="ml-3 block text-sm text-gray-700"
                 >
-                  Proposer des consultations gratuites
+                  Utiliser la signature électronique pour les ordonnances
                 </label>
               </div>
-
-              {profileData.offersFreeConsultations && (
-                <div className="mt-4 pl-6 space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Durée des consultations gratuites (minutes)
-                    </label>
-                    <input
-                      type="number"
-                      value={profileData.freeConsultationDuration || 30}
-                      onChange={(e) =>
-                        setProfileData((prev) => ({
-                          ...prev,
-                          freeConsultationDuration: Number(e.target.value),
-                        }))
-                      }
-                      className="mt-1 block w-32 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                      min="15"
-                      max="60"
-                      step="15"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Nombre de consultations gratuites par semaine
-                    </label>
-                    <input
-                      type="number"
-                      value={profileData.freeConsultationsPerWeek || 5}
-                      onChange={(e) =>
-                        setProfileData((prev) => ({
-                          ...prev,
-                          freeConsultationsPerWeek: Number(e.target.value),
-                        }))
-                      }
-                      className="mt-1 block w-32 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                      min="1"
-                      max="20"
-                    />
-                  </div>
-                </div>
-              )}
             </div>
           </div>
-        </section>
+        </div>
 
-        <div className="flex justify-end">
+        {/* Save Button */}
+        <div className="mt-8 flex justify-center">
           <button
-            type="submit"
-            disabled={
-              isSaving || isUploadingImage || isReconnecting || redirecting
-            }
-            className={`flex items-center px-6 py-3 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors ${
-              isSaving || isUploadingImage || isReconnecting || redirecting
-                ? "opacity-50 cursor-not-allowed"
-                : ""
-            }`}
+            onClick={handleSubmit}
+            disabled={isSaving}
+            className="px-8 py-4 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl font-semibold text-lg hover:from-blue-700 hover:to-blue-800 transition-all duration-200 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-3"
           >
-            <Save className="h-5 w-5 mr-2" />
-            {isSaving
-              ? "Enregistrement..."
-              : "Enregistrer et publier le profil"}
+            {isSaving ? (
+              <>
+                <LoadingSpinner size="sm" color="white" />
+                Sauvegarde en cours...
+              </>
+            ) : (
+              <>
+                <Save className="h-5 w-5" />
+                Enregistrer et publier le profil
+              </>
+            )}
           </button>
         </div>
-      </form>
+      </div>
     </div>
   );
 };
