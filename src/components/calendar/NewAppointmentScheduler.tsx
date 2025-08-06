@@ -252,131 +252,95 @@ const NewAppointmentScheduler: React.FC<NewAppointmentSchedulerProps> = ({
   const loadAvailableSlots = useCallback(async () => {
     if (!selectedDate || !professionalId) return;
 
-    // Infinite loop detection
+    // Loop detection
     loopDetectionCountRef.current += 1;
     if (loopDetectionCountRef.current > 10) {
-      console.warn("⚠️ Possible infinite loop detected in loadAvailableSlots");
+      console.warn("⚠️ Infinite loop detected, stopping execution");
       setIsInfiniteLoopDetected(true);
-      setSlotError(
-        "Problème de chargement détecté. Veuillez rafraîchir la page."
-      );
       return;
     }
-
-    console.log(
-      "🔄 Loading available slots for date:",
-      format(selectedDate, "yyyy-MM-dd")
-    );
-    console.log("🔍 Professional ID utilisé pour la requête:", professionalId);
 
     try {
       setLoadingSlots(true);
       setSlotError(null);
 
-      // Ensure Firestore is ready
+      console.log(
+        `🔄 Loading available slots for date: ${format(selectedDate, "yyyy-MM-dd")}`
+      );
+      console.log(`🔍 Professional ID utilisé pour la requête: ${professionalId}`);
+
       await ensureFirestoreReady();
 
       const db = getFirestoreInstance();
-      if (!db) throw new Error("Firestore not available");
+      if (!db) {
+        throw new Error("Firestore not available");
+      }
+      const slotsRef = collection(db, "calendar_events");
 
-      // Get the day of week for the selected date
+      // Get the day of the week for the selected date
+      const dayOfWeek = getDay(selectedDate);
       const dayNames = [
-        "Dimanche",
-        "Lundi",
-        "Mardi",
-        "Mercredi",
-        "Jeudi",
-        "Vendredi",
-        "Samedi",
+        "sunday",
+        "monday",
+        "tuesday",
+        "wednesday",
+        "thursday",
+        "friday",
+        "saturday",
       ];
-      const dayIndex = selectedDate.getDay();
-      const dayName = dayNames[dayIndex];
+      const dayName = dayNames[dayOfWeek];
 
       console.log(
-        `🔍 Looking for slots on ${dayName} (${format(
+        `🔍 Looking for slots on ${debugDayOfWeek(selectedDate)} (${format(
           selectedDate,
           "yyyy-MM-dd"
-        )}) - Day index: ${dayIndex}`
+        )}) - Day index: ${dayOfWeek}`
       );
 
-      // Query for slots on this date
-      const eventsRef = collection(db, "calendar_events");
-      const startOfDay = new Date(selectedDate);
-      startOfDay.setHours(0, 0, 0, 0);
-
-      const endOfDay = new Date(selectedDate);
-      endOfDay.setHours(23, 59, 59, 999);
-
-      // Requête simplifiée pour éviter les problèmes de permissions
-      const q = query(
-        eventsRef,
+      // Query for slots on this specific date
+      const dateQuery = query(
+        slotsRef,
         where("professionalId", "==", professionalId),
-        where("start", ">=", startOfDay),
-        where("start", "<=", endOfDay)
+        where("start", ">=", startOfDay(selectedDate)),
+        where("start", "<", addDays(startOfDay(selectedDate), 1))
       );
 
       console.log("🔍 Exécution de la requête Firestore...");
-      const snapshot = await getDocs(q);
+      const querySnapshot = await getDocs(dateQuery);
+      const slots: TimeSlot[] = [];
 
-      console.log(`📊 Found ${snapshot.docs.length} slots in Firestore`);
-
-      // Convert to TimeSlot format
-      const slots: TimeSlot[] = snapshot.docs
-        .map((doc) => {
-          const data = doc.data();
-          let start: Date;
-
-          try {
-            // Handle potential invalid date formats
-            start = data.start.toDate();
-
-            if (!isValid(start)) {
-              console.warn(`⚠️ Invalid date in slot:`, data);
-              return null;
-            }
-          } catch (err) {
-            console.error("❌ Error converting date:", err);
-            return null;
-          }
-
-          return {
+      querySnapshot.forEach((doc) => {
+        const data = doc.data();
+        if (data.isAvailable) {
+          slots.push({
             id: doc.id,
-            date: start,
-            time: format(start, "HH:mm"),
-            isBooked: !data.isAvailable,
-            bookingId: data.bookingId,
-          };
-        })
-        .filter(Boolean) as TimeSlot[];
-
-      // Sort by time
-      slots.sort((a, b) => {
-        return a.time.localeCompare(b.time);
+            date: data.start.toDate(),
+            time: format(data.start.toDate(), "HH:mm"),
+            isBooked: false,
+          });
+        }
       });
 
-      // Marquer les créneaux réservés en utilisant reservedSlotKeys
+      console.log(`📊 Found ${slots.length} slots in Firestore`);
+
+      // Update slots with booking status
       const updatedSlots = slots.map((slot) => {
         const slotKey = generateSlotKey(slot.date, slot.time);
-        const isBooked = reservedSlotKeys.includes(slotKey);
-
         console.log(`🔍 [SLOT CHECK] Créneau: ${slotKey}`);
-        console.log(`🔍 [SLOT CHECK] Dans reservedSlotKeys: ${isBooked}`);
-        console.log(`🔍 [SLOT CHECK] Firestore isAvailable: ${!slot.isBooked}`);
-        console.log(
-          `🔍 [SLOT CHECK] Final isBooked: ${isBooked || slot.isBooked}`
-        );
-
+        console.log(`🔍 [SLOT CHECK] Dans reservedSlotKeys: ${reservedSlotKeys.includes(slotKey)}`);
+        console.log(`🔍 [SLOT CHECK] Firestore isAvailable: ${slot.isBooked !== true}`);
+        
+        const isBooked = reservedSlotKeys.includes(slotKey);
+        console.log(`🔍 [SLOT CHECK] Final isBooked: ${isBooked}`);
+        
         return {
           ...slot,
-          isBooked: isBooked || slot.isBooked, // Combine Firestore status and booking status
+          isBooked,
         };
       });
 
-      console.log(
-        `✅ [SLOT CHECK] Updated ${updatedSlots.length} slots with booking status`
-      );
-      const bookedCount = updatedSlots.filter((s) => s.isBooked).length;
-      console.log(`📊 [SLOT CHECK] ${bookedCount} slots marked as booked`);
+      console.log(`✅ [SLOT CHECK] Updated ${updatedSlots.length} slots with booking status`);
+      console.log(`📊 [SLOT CHECK] ${updatedSlots.filter(s => s.isBooked).length} slots marked as booked`);
 
       setAvailableSlots(updatedSlots);
 
@@ -400,7 +364,7 @@ const NewAppointmentScheduler: React.FC<NewAppointmentSchedulerProps> = ({
         );
         if (formattedSlots.length > 0) {
           console.log(
-            `Sample slot: date=${formattedSlots[0].date}, day=${formattedSlots[0].day}, time=${formattedSlots[0].time}`
+            `Sample slot: date=${formattedSlots[0].date}, time=${formattedSlots[0].time}`
           );
         }
 
@@ -416,7 +380,7 @@ const NewAppointmentScheduler: React.FC<NewAppointmentSchedulerProps> = ({
     } finally {
       setLoadingSlots(false);
     }
-  }, [professionalId, selectedDate, onSlotsChange, reservedSlotKeys]);
+  }, [professionalId, selectedDate, reservedSlotKeys]);
 
   // Load slots when selected date changes
   useEffect(() => {
@@ -484,7 +448,9 @@ const NewAppointmentScheduler: React.FC<NewAppointmentSchedulerProps> = ({
       await ensureFirestoreReady();
 
       const db = getFirestoreInstance();
-      if (!db) throw new Error("Firestore not available");
+      if (!db) {
+        throw new Error("Firestore not available");
+      }
 
       // Vérifier que l'utilisateur est authentifié et est un professionnel
       if (!currentUser?.id) {
@@ -627,7 +593,9 @@ const NewAppointmentScheduler: React.FC<NewAppointmentSchedulerProps> = ({
       await ensureFirestoreReady();
 
       const db = getFirestoreInstance();
-      if (!db) throw new Error("Firestore not available");
+      if (!db) {
+        throw new Error("Firestore not available");
+      }
 
       // Delete the event
       const eventRef = doc(db, "calendar_events", slotId);
