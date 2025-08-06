@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { Plus, AlertCircle, CheckCircle, RefreshCw, Info, Clock, Calendar, Save, Settings } from "lucide-react";
-import { format, isValid } from "date-fns";
+import { format } from "date-fns";
 import { useAuth } from "../../contexts/AuthContext";
 import {
   updateProfessionalProfile,
@@ -8,7 +8,6 @@ import {
 } from "../../services/profileService";
 import {
   ensureFirestoreReady,
-  resetFirestoreConnection,
 } from "../../utils/firebase";
 import LoadingSpinner from "../../components/ui/LoadingSpinner";
 import NewAppointmentScheduler, {
@@ -133,21 +132,6 @@ const AvailabilityManagement: React.FC = () => {
   };
 
   useEffect(() => {
-    const loadProfile = async () => {
-      if (!currentUser?.id) return;
-
-      try {
-        setLoading(true);
-        await ensureFirestoreReady();
-        await loadSlotsForCurrentMonth();
-      } catch (error) {
-        console.error("❌ Erreur lors du chargement du profil:", error);
-        setError("Erreur lors du chargement du profil");
-      } finally {
-        setLoading(false);
-      }
-    };
-
     const loadProfile = async () => {
       if (!currentUser?.id) return;
 
@@ -300,11 +284,15 @@ const AvailabilityManagement: React.FC = () => {
                   <Calendar className="h-8 w-8 text-blue-600" />
                 </div>
                 <div>
-                  <h1 className="text-3xl font-bold text-gray-900">Gérer mes disponibilités</h1>
-                  <p className="text-gray-600 mt-1">Planifiez vos créneaux de consultation</p>
+                  <h1 className="text-3xl font-bold text-gray-900">
+                    Gérer mes disponibilités
+                  </h1>
+                  <p className="text-gray-600 mt-1">
+                    Planifiez vos créneaux de consultation
+                  </p>
                 </div>
               </div>
-              
+
               <div className="flex flex-col sm:flex-row gap-3">
                 <div className="flex items-center gap-2 px-4 py-2 bg-blue-50 rounded-xl">
                   <Clock className="h-4 w-4 text-blue-600" />
@@ -312,7 +300,7 @@ const AvailabilityManagement: React.FC = () => {
                     {existingSlots.length} créneaux disponibles
                   </span>
                 </div>
-                
+
                 <button
                   onClick={() => setShowAddModal(true)}
                   className="px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all duration-200 flex items-center gap-2 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
@@ -320,7 +308,7 @@ const AvailabilityManagement: React.FC = () => {
                   <Plus className="h-5 w-5" />
                   <span className="font-medium">Ajouter des créneaux</span>
                 </button>
-                
+
                 <button
                   onClick={handleRefresh}
                   disabled={refreshing}
@@ -342,7 +330,9 @@ const AvailabilityManagement: React.FC = () => {
             <div className="mb-6 p-4 bg-green-100 border border-green-400 text-green-700 rounded-xl flex items-center justify-between">
               <div className="flex items-center">
                 <CheckCircle className="h-5 w-5 mr-3" />
-                <span className="font-medium">Vos disponibilités ont été enregistrées avec succès</span>
+                <span className="font-medium">
+                  Vos disponibilités ont été enregistrées avec succès
+                </span>
               </div>
               <button
                 onClick={() => setSaveSuccess(false)}
@@ -390,10 +380,12 @@ const AvailabilityManagement: React.FC = () => {
             <div className="p-6 border-b border-gray-100">
               <div className="flex items-center gap-3">
                 <Settings className="h-6 w-6 text-gray-600" />
-                <h2 className="text-xl font-semibold text-gray-900">Calendrier des disponibilités</h2>
+                <h2 className="text-xl font-semibold text-gray-900">
+                  Calendrier des disponibilités
+                </h2>
               </div>
             </div>
-            
+
             <div className="p-6">
               <NewAppointmentScheduler
                 professionalId={currentUser?.id || ""}
@@ -422,7 +414,9 @@ const AvailabilityManagement: React.FC = () => {
               ) : (
                 <>
                   <Save className="h-5 w-5" />
-                  <span className="font-medium">Enregistrer les modifications</span>
+                  <span className="font-medium">
+                    Enregistrer les modifications
+                  </span>
                 </>
               )}
             </button>
