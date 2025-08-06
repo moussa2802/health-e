@@ -318,7 +318,15 @@ const ProfessionalAccess: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <div className="bg-gradient-to-r from-teal-500 to-emerald-400 py-6 backdrop-blur-md bg-white/10 rounded-b-xl">
+      <div 
+        className="bg-gradient-to-r from-teal-500 to-emerald-400 py-6"
+        style={{
+          backdropFilter: 'blur(12px)',
+          backgroundColor: 'rgba(255, 255, 255, 0.1)',
+          borderBottomLeftRadius: '12px',
+          borderBottomRightRadius: '12px'
+        }}
+      >
         <div className="container mx-auto px-4">
           <div className="flex justify-between items-center">
             <Link to="/" className="text-white flex items-center">
@@ -375,7 +383,13 @@ const ProfessionalAccess: React.FC = () => {
                       type="email"
                       value={loginEmail}
                       onChange={(e) => setLoginEmail(e.target.value)}
-                      className="w-full px-4 py-3 rounded-xl border-gray-300 shadow-sm focus:border-teal-500 focus:ring-teal-500 transition-colors"
+                      className="w-full border-gray-300 shadow-sm focus:border-teal-500 focus:ring-teal-500"
+                      style={{
+                        padding: '12px 16px',
+                        borderRadius: '12px',
+                        border: '1px solid #d1d5db',
+                        transition: 'all 0.2s ease-in-out'
+                      }}
                       placeholder="Votre email"
                       required
                     />
@@ -428,7 +442,25 @@ const ProfessionalAccess: React.FC = () => {
                   <button
                     type="submit"
                     disabled={isLoggingIn}
-                    className="w-full bg-teal-500 hover:bg-teal-600 text-white font-semibold rounded-xl px-4 py-3 shadow transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-full text-white font-semibold px-4 py-3 disabled:opacity-50 disabled:cursor-not-allowed"
+                    style={{
+                      backgroundColor: '#0d9488',
+                      borderRadius: '12px',
+                      boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+                      transition: 'all 0.2s ease-in-out'
+                    }}
+                    onMouseEnter={(e) => {
+                      if (!isLoggingIn) {
+                        e.currentTarget.style.backgroundColor = '#0f766e';
+                        e.currentTarget.style.boxShadow = '0 10px 15px -3px rgba(0, 0, 0, 0.1)';
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (!isLoggingIn) {
+                        e.currentTarget.style.backgroundColor = '#0d9488';
+                        e.currentTarget.style.boxShadow = '0 4px 6px -1px rgba(0, 0, 0, 0.1)';
+                      }
+                    }}
                   >
                     {isLoggingIn ? "Connexion en cours..." : "Se connecter"}
                   </button>
