@@ -334,7 +334,7 @@ const ProfessionalAccess: React.FC = () => {
               Retour à l'accueil
             </Link>
             <h1 className="text-white text-xl font-bold">
-              Espace Professionnel - Design Amélioré ✅
+              Espace Professionnel
             </h1>
           </div>
         </div>
