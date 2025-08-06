@@ -57,6 +57,14 @@ service cloud.firestore {
         request.auth.uid == resource.data.professionalId;
     }
     
+    // Règles pour les requêtes collectionGroup sur les dossiers médicaux
+    match /{path=**}/medicalRecords/{recordId} {
+      // Permettre aux professionnels de lire tous les dossiers médicaux
+      allow read: if request.auth != null && 
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.type == 'professional');
+    }
+    
     // Règles pour les réservations - TEMPORAIREMENT PLUS PERMISSIVES POUR LES TESTS
     match /bookings/{bookingId} {
       // Lecture : par tous les utilisateurs authentifiés

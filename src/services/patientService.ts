@@ -272,69 +272,49 @@ export async function getMedicalRecordsByProfessional(
         "🔄 [MEDICAL RECORDS DEBUG] CollectionGroup query failed, falling back to patient-by-patient approach"
       );
       console.log("🔄 [MEDICAL RECORDS DEBUG] Error details:", collectionGroupError);
-  } catch (error) {
-    console.error("❌ Error fetching medical records by professional:", error);
 
-    // If collectionGroup query fails (might need index), fall back to patient-by-patient approach
-    try {
-      console.log(
-        "🔄 [MEDICAL RECORDS DEBUG] CollectionGroup query failed, falling back to patient-by-patient approach"
-      );
-      console.log("🔄 [MEDICAL RECORDS DEBUG] Error details:", error);
-
-      const db = getFirestoreInstance();
-      if (!db) throw new Error("Firestore not available");
-
-      // Get all patients
+      // Fallback: Get all patients and their medical records
       const patientsRef = collection(db, "patients");
       const patientsSnapshot = await getDocs(patientsRef);
-
+      
       const allRecords: MedicalRecord[] = [];
-
-      // For each patient, get their medical records created by this professional
+      
       for (const patientDoc of patientsSnapshot.docs) {
         const patientId = patientDoc.id;
-        const medicalRecordsRef = collection(
-          db,
-          "patients",
-          patientId,
-          "medicalRecords"
-        );
-
-        // Query for records by this professional
-        const q = query(
-          medicalRecordsRef,
-          where("professionalId", "==", professionalId)
-        );
-        const recordsSnapshot = await getDocs(q);
-
-        const patientRecords = recordsSnapshot.docs.map(
-          (doc) =>
-            ({
-              id: doc.id,
-              ...doc.data(),
-              patientId, // Ensure patientId is included
-            } as MedicalRecord)
-        );
-
-        allRecords.push(...patientRecords);
+        const patientData = patientDoc.data();
+        
+        try {
+          const medicalRecordsRef = collection(db, "patients", patientId, "medicalRecords");
+          const recordsQuery = query(
+            medicalRecordsRef,
+            where("professionalId", "==", professionalId),
+            orderBy("consultationDate", "desc")
+          );
+          
+          const recordsSnapshot = await getDocs(recordsQuery);
+          
+          recordsSnapshot.docs.forEach((recordDoc) => {
+            allRecords.push({
+              id: recordDoc.id,
+              patientId,
+              patientName: patientData.name || "Patient inconnu",
+              ...recordDoc.data(),
+            } as MedicalRecord);
+          });
+        } catch (patientError) {
+          console.log(`⚠️ Error fetching records for patient ${patientId}:`, patientError);
+          // Continue with other patients
+        }
       }
-
-      // Sort by consultationDate (newest first)
-      allRecords.sort((a, b) => {
-        const dateA = new Date(a.consultationDate);
-        const dateB = new Date(b.consultationDate);
-        return dateB.getTime() - dateA.getTime();
-      });
-
+      
       console.log(
         `✅ Fetched ${allRecords.length} medical records for professional (fallback method)`
       );
       return allRecords;
-    } catch (fallbackError) {
-      console.error("❌ Fallback method also failed:", fallbackError);
-      throw new Error("Failed to fetch medical records");
     }
+  } catch (error) {
+    console.error("❌ Error fetching medical records by professional:", error);
+    throw new Error("Failed to fetch medical records by professional");
   }
 }
 
