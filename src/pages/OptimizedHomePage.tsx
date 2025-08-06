@@ -104,7 +104,7 @@ const OptimizedHomePage: React.FC = () => {
     <ErrorBoundary>
       <div className="flex flex-col min-h-screen">
         {/* Transparent Header */}
-        <header className="fixed top-0 left-0 right-0 z-50 bg-transparent">
+        <header className="fixed top-0 left-0 right-0 z-50 bg-white/20 backdrop-blur-md">
           <div className="container mx-auto px-4">
             <div className="flex items-center justify-between py-4">
               <div className="flex items-center">
@@ -119,7 +119,7 @@ const OptimizedHomePage: React.FC = () => {
               <div className="flex items-center space-x-4">
                 <Link
                   to="/patient"
-                  className="px-6 py-3 rounded-xl font-semibold bg-white/20 text-white hover:bg-white/30 backdrop-blur-sm transition-all duration-200"
+                  className="px-6 py-3 rounded-xl font-semibold bg-white/20 text-white hover:bg-white/30 backdrop-blur-sm transition-all duration-200 border border-white/30 shadow-md hover:shadow-lg"
                 >
                   Prendre rendez-vous
                 </Link>
@@ -131,7 +131,7 @@ const OptimizedHomePage: React.FC = () => {
         {/* Hero Section */}
         <section
           ref={heroRef}
-          className="relative bg-gradient-to-br from-blue-500 via-teal-400 to-emerald-400 pt-24 pb-32 overflow-hidden"
+          className="relative bg-gradient-to-br from-blue-500 via-teal-400 to-emerald-400 pt-32 pb-32 overflow-hidden"
         >
           {/* Background illustration */}
           <div className="absolute inset-0 bg-[url('https://images.pexels.com/photos/3376799/pexels-photo-3376799.jpeg?auto=compress&cs=tinysrgb&w=1920')] bg-cover bg-center mix-blend-overlay opacity-10"></div>
@@ -152,16 +152,16 @@ const OptimizedHomePage: React.FC = () => {
               <h1 className="text-5xl md:text-7xl font-bold text-white mb-8 animate-fade-in">
                 Santé mentale et sexuelle en toute confidentialité
               </h1>
-              <p className="text-xl md:text-2xl text-white/90 mb-12 animate-fade-in-delay">
+              <p className="text-xl md:text-2xl text-white/90 mb-16 animate-fade-in-delay">
                 Consultez des professionnels de santé qualifiés en ligne, en
                 toute discrétion. Une plateforme pensée pour les Sénégalais, au Sénégal et dans la diaspora.
               </p>
 
               {/* User Type Selection Buttons */}
-              <div className="flex flex-col md:flex-row justify-center gap-6 mt-12 animate-fade-in-delay-2">
+              <div className="flex flex-col md:flex-row justify-center gap-6 mt-16 animate-fade-in-delay-2">
                 <Link
                   to="/patient"
-                  className="group bg-white text-blue-600 px-8 py-8 rounded-2xl shadow-xl hover:shadow-2xl transition-all transform hover:-translate-y-2 flex flex-col items-center border-2 border-transparent hover:border-blue-200"
+                  className="group bg-white text-blue-600 px-8 py-8 rounded-2xl shadow-xl hover:shadow-2xl transition-all transform hover:-translate-y-2 flex flex-col items-center border border-white/30 shadow-md hover:shadow-lg"
                 >
                   <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
                     <User className="h-8 w-8 text-white" />
@@ -174,7 +174,7 @@ const OptimizedHomePage: React.FC = () => {
 
                 <Link
                   to="/professional/access"
-                  className="group bg-white text-teal-600 px-8 py-8 rounded-2xl shadow-xl hover:shadow-2xl transition-all transform hover:-translate-y-2 flex flex-col items-center border-2 border-transparent hover:border-teal-200"
+                  className="group bg-white text-teal-600 px-8 py-8 rounded-2xl shadow-xl hover:shadow-2xl transition-all transform hover:-translate-y-2 flex flex-col items-center border border-white/30 shadow-md hover:shadow-lg"
                 >
                   <div className="w-16 h-16 bg-gradient-to-br from-teal-500 to-teal-600 rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
                     <Stethoscope className="h-8 w-8 text-white" />
@@ -189,7 +189,7 @@ const OptimizedHomePage: React.FC = () => {
               </div>
 
               {/* Real-time Statistics */}
-              <div className="mt-12 flex justify-center items-center space-x-12 text-white/90 animate-fade-in-delay-3">
+              <div className="mt-16 flex justify-center items-center space-x-12 text-white/90 animate-fade-in-delay-3">
                 <div className="text-center">
                   <div className="text-3xl font-bold flex items-center justify-center">
                     <Users className="h-6 w-6 mr-2" />
@@ -210,7 +210,7 @@ const OptimizedHomePage: React.FC = () => {
         </section>
 
         {/* Featured Content Section */}
-        <section ref={featuredContentRef} className="py-20 bg-white">
+        <section ref={featuredContentRef} className="py-20 bg-gray-50">
           {featuredContentVisible && (
             <Suspense
               fallback={
@@ -310,7 +310,7 @@ const OptimizedHomePage: React.FC = () => {
         </section>
 
         {/* How It Works Section */}
-        <section className="py-20 bg-white">
+        <section className="py-20 bg-gray-100">
           <div className="container mx-auto px-4">
             <h2 className="text-4xl font-bold text-center mb-4">
               Comment ça marche
@@ -342,8 +342,8 @@ const OptimizedHomePage: React.FC = () => {
                   description: "Bénéficiez d'un suivi adapté à vos besoins",
                 },
               ].map((step, index) => (
-                <div key={index} className="text-center group">
-                  <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-2xl flex items-center justify-center text-xl font-bold mx-auto mb-6 group-hover:scale-110 transition-transform shadow-lg">
+                <div key={index} className="text-center group hover:bg-white/30 p-6 rounded-xl transition-all duration-200">
+                  <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-xl flex items-center justify-center text-xl font-bold mx-auto mb-6 group-hover:scale-110 transition-transform shadow-lg">
                     <step.icon className="h-8 w-8" />
                   </div>
                   <h3 className="text-xl font-semibold mb-3">{step.title}</h3>
@@ -366,7 +366,7 @@ const OptimizedHomePage: React.FC = () => {
         </section>
 
         {/* CTA Section */}
-        <section className="py-20 bg-gradient-to-br from-blue-600 to-teal-500 text-white">
+        <section className="py-20 bg-gradient-to-br from-blue-700 via-blue-600 to-teal-600 text-white">
           <div className="container mx-auto px-4 text-center">
             <h2 className="text-4xl md:text-5xl font-bold mb-6">
               Prêt à prendre soin de votre santé ?
@@ -378,14 +378,14 @@ const OptimizedHomePage: React.FC = () => {
             <div className="flex flex-col sm:flex-row justify-center gap-6">
               <Link
                 to="/professionals/mental"
-                className="bg-white text-blue-600 px-8 py-4 rounded-xl font-semibold hover:bg-blue-50 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-1 flex items-center justify-center"
+                className="bg-white text-blue-600 px-8 py-4 rounded-xl font-semibold hover:bg-blue-50 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 flex items-center justify-center"
               >
                 <Brain className="h-5 w-5 mr-2" />
                 Santé mentale
               </Link>
               <Link
                 to="/professionals/sexual"
-                className="bg-transparent border-2 border-white text-white px-8 py-4 rounded-xl font-semibold hover:bg-white/10 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-1 flex items-center justify-center"
+                className="bg-transparent border-2 border-white text-white px-8 py-4 rounded-xl font-semibold hover:bg-white/10 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 flex items-center justify-center"
               >
                 <Heart className="h-5 w-5 mr-2" />
                 Santé sexuelle
@@ -404,7 +404,7 @@ const OptimizedHomePage: React.FC = () => {
         </section>
 
         {/* Footer */}
-        <footer className="bg-gray-800 text-white py-12">
+        <footer className="bg-gray-800 text-white py-12 border-t border-gray-700">
           <div className="container mx-auto px-4">
             {/* Admin Login Link */}
             <div className="text-center mb-8">
@@ -418,9 +418,11 @@ const OptimizedHomePage: React.FC = () => {
             </div>
 
             <div className="mt-8 pt-8 border-t border-gray-700 text-center text-gray-400">
-              <p>
-                &copy; {new Date().getFullYear()} Health-e. Tous droits
-                réservés.
+              <p className="mb-4">
+                &copy; 2025 Health-e. Plateforme de téléconsultation en santé mentale et sexuelle.
+              </p>
+              <p className="text-sm">
+                Tous droits réservés.
               </p>
             </div>
           </div>
