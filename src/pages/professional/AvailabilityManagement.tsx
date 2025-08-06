@@ -1,5 +1,15 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { Plus, AlertCircle, CheckCircle, RefreshCw, Info, Clock, Calendar, Save, Settings } from "lucide-react";
+import {
+  Plus,
+  AlertCircle,
+  CheckCircle,
+  RefreshCw,
+  Info,
+  Clock,
+  Calendar,
+  Save,
+  Settings,
+} from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { useAuth } from "../../contexts/AuthContext";
@@ -7,9 +17,7 @@ import {
   updateProfessionalProfile,
   type AvailabilitySlot,
 } from "../../services/profileService";
-import {
-  ensureFirestoreReady,
-} from "../../utils/firebase";
+import { ensureFirestoreReady } from "../../utils/firebase";
 import LoadingSpinner from "../../components/ui/LoadingSpinner";
 import NewAppointmentScheduler, {
   type TimeSlot,
@@ -99,9 +107,9 @@ const AvailabilityManagement: React.FC = () => {
       );
 
       const slots = await getAvailableTimeSlots(
-        currentUser.id,
-        format(startOfCurrentMonth, "yyyy-MM-dd"),
-        format(endOfCurrentMonth, "yyyy-MM-dd")
+        startOfCurrentMonth,
+        endOfCurrentMonth,
+        currentUser.id
       );
 
       console.log("✅ Créneaux chargés:", slots);
