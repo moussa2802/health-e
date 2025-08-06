@@ -268,22 +268,39 @@ export async function getMedicalRecordsByProfessional(
         "records"
       );
 
-      const records = snapshot.docs.map((doc) => {
+      const records = snapshot.docs.map(async (docSnapshot) => {
         // Get the patient ID from the path
-        const pathSegments = doc.ref.path.split("/");
+        const pathSegments = docSnapshot.ref.path.split("/");
         const patientId = pathSegments[1]; // patients/{patientId}/medicalRecords/{recordId}
 
+        // Get patient data to get the name
+        let patientName = "Patient inconnu";
+        try {
+          const patientRef = doc(db, "patients", patientId);
+          const patientSnap = await getDoc(patientRef);
+          if (patientSnap.exists()) {
+            const patientData = patientSnap.data() as { name?: string };
+            patientName = patientData.name || `Patient ${patientId.substring(0, 8)}`;
+          }
+        } catch (error) {
+          console.log(`⚠️ Error fetching patient data for ${patientId}:`, error);
+          patientName = `Patient ${patientId.substring(0, 8)}`;
+        }
+
         return {
-          id: doc.id,
+          id: docSnapshot.id,
           patientId,
-          ...doc.data(),
+          patientName,
+          ...docSnapshot.data(),
         } as MedicalRecord;
       });
 
+      // Wait for all async operations to complete
+      const recordsWithNames = await Promise.all(records);
       console.log(
-        `✅ Fetched ${records.length} medical records for professional`
+        `✅ Fetched ${recordsWithNames.length} medical records for professional`
       );
-      return records;
+      return recordsWithNames;
     } catch (collectionGroupError) {
       console.log(
         "🔄 [MEDICAL RECORDS DEBUG] CollectionGroup query failed, falling back to patient-by-patient approach"
@@ -402,10 +419,7 @@ export async function getArchivedPatients(
 
     // Get all patients that are archived
     const patientsRef = collection(db, "patients");
-    const q = query(
-      patientsRef,
-      where("isArchived", "==", true)
-    );
+    const q = query(patientsRef, where("isArchived", "==", true));
 
     const snapshot = await getDocs(q);
     const archivedPatients = snapshot.docs.map((doc) => ({
@@ -413,9 +427,7 @@ export async function getArchivedPatients(
       ...doc.data(),
     })) as Patient[];
 
-    console.log(
-      `✅ Found ${archivedPatients.length} archived patients`
-    );
+    console.log(`✅ Found ${archivedPatients.length} archived patients`);
     return archivedPatients;
   } catch (error) {
     console.error("❌ Error fetching archived patients:", error);
