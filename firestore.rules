@@ -32,13 +32,13 @@ service cloud.firestore {
       // Écriture : par le patient propriétaire uniquement
       allow write: if request.auth != null && request.auth.uid == patientId;
       
-      // Mise à jour spécifique : permettre aux professionnels de mettre à jour les références de dossiers médicaux
+      // Mise à jour spécifique : permettre aux professionnels de mettre à jour les références de dossiers médicaux ET l'archivage
       allow update: if request.auth != null && 
         (request.auth.uid == patientId || 
          (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
           get(/databases/$(database)/documents/users/$(request.auth.uid)).data.type == 'professional' &&
           // Vérifier que seuls les champs autorisés sont modifiés
-          (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['latestMedicalRecord', 'medicalRecordIds', 'updatedAt']))));
+          (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['latestMedicalRecord', 'medicalRecordIds', 'updatedAt', 'isArchived', 'archivedAt']))));
     }
     
     // Règles pour les dossiers médicaux (sous-collection)
