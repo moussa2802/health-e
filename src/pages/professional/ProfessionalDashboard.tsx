@@ -44,7 +44,12 @@ import LoadingSpinner from "../../components/ui/LoadingSpinner";
 const WelcomeBanner: React.FC<{ name: string }> = ({ name }) => {
   const displayName = name.startsWith("Dr.") ? name : `Dr. ${name}`;
   const currentHour = new Date().getHours();
-  const greeting = currentHour < 12 ? "Bonjour" : currentHour < 18 ? "Bon après-midi" : "Bonsoir";
+  const greeting =
+    currentHour < 12
+      ? "Bonjour"
+      : currentHour < 18
+      ? "Bon après-midi"
+      : "Bonsoir";
 
   return (
     <div className="bg-gradient-to-br from-blue-600 via-blue-500 to-teal-500 text-white p-8 rounded-2xl shadow-xl mb-8 relative overflow-hidden">
@@ -58,12 +63,14 @@ const WelcomeBanner: React.FC<{ name: string }> = ({ name }) => {
         </p>
         <div className="mt-4 flex items-center gap-2 text-blue-100">
           <Calendar className="h-5 w-5" />
-          <span>{new Date().toLocaleDateString("fr-FR", { 
-            weekday: "long", 
-            year: "numeric", 
-            month: "long", 
-            day: "numeric" 
-          })}</span>
+          <span>
+            {new Date().toLocaleDateString("fr-FR", {
+              weekday: "long",
+              year: "numeric",
+              month: "long",
+              day: "numeric",
+            })}
+          </span>
         </div>
       </div>
     </div>
@@ -110,14 +117,19 @@ const FinancialStats: React.FC<{ revenue: Revenue }> = ({ revenue }) => {
           Voir détails
         </button>
       </div>
-      
+
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {stats.map((stat, index) => {
           const IconComponent = stat.icon;
           return (
-            <div key={index} className={`${stat.bgColor} rounded-xl p-4 border border-gray-100`}>
+            <div
+              key={index}
+              className={`${stat.bgColor} rounded-xl p-4 border border-gray-100`}
+            >
               <div className="flex items-center justify-between mb-3">
-                <div className={`p-2 rounded-lg bg-gradient-to-r ${stat.color}`}>
+                <div
+                  className={`p-2 rounded-lg bg-gradient-to-r ${stat.color}`}
+                >
                   <IconComponent className="h-5 w-5 text-white" />
                 </div>
                 <span className={`text-sm font-medium ${stat.textColor}`}>
@@ -172,7 +184,7 @@ const QuickActions: React.FC = () => {
         <Settings className="h-6 w-6 text-gray-600" />
         Actions rapides
       </h2>
-      
+
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {actions.map((action, index) => {
           const IconComponent = action.icon;
@@ -182,10 +194,14 @@ const QuickActions: React.FC = () => {
               to={action.link}
               className={`${action.bgColor} rounded-xl p-4 text-center hover:scale-105 transition-all duration-200 group`}
             >
-              <div className={`p-3 rounded-lg bg-gradient-to-r ${action.color} inline-block mb-3 group-hover:scale-110 transition-transform`}>
+              <div
+                className={`p-3 rounded-lg bg-gradient-to-r ${action.color} inline-block mb-3 group-hover:scale-110 transition-transform`}
+              >
                 <IconComponent className="h-6 w-6 text-white" />
               </div>
-              <p className="text-sm font-medium text-gray-700">{action.title}</p>
+              <p className="text-sm font-medium text-gray-700">
+                {action.title}
+              </p>
             </Link>
           );
         })}
@@ -197,8 +213,8 @@ const QuickActions: React.FC = () => {
 // Today's Agenda
 const TodaysAgenda: React.FC<{ bookings: any[] }> = ({ bookings }) => {
   const today = new Date().toDateString();
-  const todaysBookings = bookings.filter(booking => 
-    new Date(booking.date).toDateString() === today
+  const todaysBookings = bookings.filter(
+    (booking) => new Date(booking.date).toDateString() === today
   );
 
   const getConsultationTypeIcon = (type: string) => {
@@ -231,32 +247,44 @@ const TodaysAgenda: React.FC<{ bookings: any[] }> = ({ bookings }) => {
           Agenda du jour
         </h2>
         <span className="text-sm text-gray-500">
-          {todaysBookings.length} consultation{todaysBookings.length > 1 ? 's' : ''}
+          {todaysBookings.length} consultation
+          {todaysBookings.length > 1 ? "s" : ""}
         </span>
       </div>
-      
+
       {todaysBookings.length === 0 ? (
         <div className="text-center py-8">
           <Calendar className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-          <p className="text-gray-500">Aucune consultation prévue aujourd'hui</p>
+          <p className="text-gray-500">
+            Aucune consultation prévue aujourd'hui
+          </p>
         </div>
       ) : (
         <div className="space-y-3">
           {todaysBookings.map((booking) => (
-            <div key={booking.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors">
+            <div
+              key={booking.id}
+              className="flex items-center justify-between p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors"
+            >
               <div className="flex items-center gap-3">
                 <div className="flex items-center gap-2">
                   {getConsultationTypeIcon(booking.type)}
-                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${getConsultationTypeColor(booking.type)}`}>
+                  <span
+                    className={`px-2 py-1 rounded-full text-xs font-medium ${getConsultationTypeColor(
+                      booking.type
+                    )}`}
+                  >
                     {booking.type}
                   </span>
                 </div>
                 <div>
-                  <p className="font-medium text-gray-900">{booking.patientName}</p>
+                  <p className="font-medium text-gray-900">
+                    {booking.patientName}
+                  </p>
                   <p className="text-sm text-gray-500">
-                    {new Date(booking.date).toLocaleTimeString("fr-FR", { 
-                      hour: "2-digit", 
-                      minute: "2-digit" 
+                    {new Date(booking.date).toLocaleTimeString("fr-FR", {
+                      hour: "2-digit",
+                      minute: "2-digit",
                     })}
                   </p>
                 </div>
@@ -274,22 +302,22 @@ const TodaysAgenda: React.FC<{ bookings: any[] }> = ({ bookings }) => {
 };
 
 // Consultations Section with Tabs
-const ConsultationsSection: React.FC<{ 
-  bookings: any[], 
-  onConfirm: (bookingId: string) => void, 
-  onCancel: (bookingId: string) => void, 
-  onComplete: (bookingId: string, notes?: string) => void 
-}> = ({ 
-  bookings, onConfirm, onCancel, onComplete 
-}) => {
+const ConsultationsSection: React.FC<{
+  bookings: any[];
+  onConfirm: (bookingId: string) => void;
+  onCancel: (bookingId: string) => void;
+  onComplete: (bookingId: string, notes?: string) => void;
+}> = ({ bookings, onConfirm, onCancel, onComplete }) => {
   const [activeTab, setActiveTab] = useState<"upcoming" | "past">("upcoming");
-  
-  const upcomingBookings = bookings.filter(booking => 
-    new Date(booking.date) > new Date() && booking.status === "confirmed"
+
+  const upcomingBookings = bookings.filter(
+    (booking) =>
+      new Date(booking.date) > new Date() && booking.status === "confirmed"
   );
-  
-  const pastBookings = bookings.filter(booking => 
-    new Date(booking.date) < new Date() || booking.status === "completed"
+
+  const pastBookings = bookings.filter(
+    (booking) =>
+      new Date(booking.date) < new Date() || booking.status === "completed"
   );
 
   const formatDate = (dateString: string) => {
@@ -297,7 +325,7 @@ const ConsultationsSection: React.FC<{
       day: "numeric",
       month: "long",
       hour: "2-digit",
-      minute: "2-digit"
+      minute: "2-digit",
     });
   };
 
@@ -308,10 +336,13 @@ const ConsultationsSection: React.FC<{
       completed: { label: "Terminé", color: "bg-blue-100 text-blue-700" },
       cancelled: { label: "Annulé", color: "bg-red-100 text-red-700" },
     };
-    
-    const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.pending;
+
+    const config =
+      statusConfig[status as keyof typeof statusConfig] || statusConfig.pending;
     return (
-      <span className={`px-2 py-1 rounded-full text-xs font-medium ${config.color}`}>
+      <span
+        className={`px-2 py-1 rounded-full text-xs font-medium ${config.color}`}
+      >
         {config.label}
       </span>
     );
@@ -323,7 +354,7 @@ const ConsultationsSection: React.FC<{
         <Calendar className="h-6 w-6 text-blue-600" />
         Consultations
       </h2>
-      
+
       {/* Tabs */}
       <div className="flex space-x-1 bg-gray-100 p-1 rounded-xl mb-6">
         <button
@@ -350,71 +381,91 @@ const ConsultationsSection: React.FC<{
 
       {/* Content */}
       <div className="space-y-4">
-        {(activeTab === "upcoming" ? upcomingBookings : pastBookings).map((booking) => (
-          <div key={booking.id} className="border border-gray-200 rounded-xl p-4 hover:shadow-md transition-shadow">
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                  <User className="h-5 w-5 text-blue-600" />
+        {(activeTab === "upcoming" ? upcomingBookings : pastBookings).map(
+          (booking) => (
+            <div
+              key={booking.id}
+              className="border border-gray-200 rounded-xl p-4 hover:shadow-md transition-shadow"
+            >
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                    <User className="h-5 w-5 text-blue-600" />
+                  </div>
+                  <div>
+                    <p className="font-medium text-gray-900">
+                      {booking.patientName}
+                    </p>
+                    <p className="text-sm text-gray-500">
+                      {formatDate(booking.date)}
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <p className="font-medium text-gray-900">{booking.patientName}</p>
-                  <p className="text-sm text-gray-500">{formatDate(booking.date)}</p>
+                {getStatusBadge(booking.status)}
+              </div>
+
+              <div className="flex items-center gap-2">
+                <span
+                  className={`px-2 py-1 rounded-full text-xs font-medium ${
+                    booking.type === "video"
+                      ? "bg-blue-100 text-blue-700"
+                      : booking.type === "audio"
+                      ? "bg-green-100 text-green-700"
+                      : "bg-gray-100 text-gray-700"
+                  }`}
+                >
+                  {booking.type === "video" ? (
+                    <Video className="h-3 w-3 inline mr-1" />
+                  ) : booking.type === "audio" ? (
+                    <Phone className="h-3 w-3 inline mr-1" />
+                  ) : (
+                    <FileText className="h-3 w-3 inline mr-1" />
+                  )}
+                  {booking.type}
+                </span>
+              </div>
+
+              {activeTab === "upcoming" && booking.status === "confirmed" && (
+                <div className="flex gap-2 mt-4">
+                  <button
+                    onClick={() => onConfirm(booking.id)}
+                    className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium flex items-center justify-center gap-2"
+                  >
+                    <Play className="h-4 w-4" />
+                    Rejoindre
+                  </button>
+                  <button
+                    onClick={() => onCancel(booking.id)}
+                    className="px-4 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors text-sm font-medium"
+                  >
+                    Annuler
+                  </button>
                 </div>
-              </div>
-              {getStatusBadge(booking.status)}
+              )}
+
+              {activeTab === "past" && booking.status === "confirmed" && (
+                <div className="flex gap-2 mt-4">
+                  <button
+                    onClick={() => onComplete(booking.id)}
+                    className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium flex items-center justify-center gap-2"
+                  >
+                    <CheckCircle className="h-4 w-4" />
+                    Terminer
+                  </button>
+                </div>
+              )}
             </div>
-            
-            <div className="flex items-center gap-2">
-              <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                booking.type === "video" ? "bg-blue-100 text-blue-700" :
-                booking.type === "audio" ? "bg-green-100 text-green-700" :
-                "bg-gray-100 text-gray-700"
-              }`}>
-                {booking.type === "video" ? <Video className="h-3 w-3 inline mr-1" /> :
-                 booking.type === "audio" ? <Phone className="h-3 w-3 inline mr-1" /> :
-                 <FileText className="h-3 w-3 inline mr-1" />}
-                {booking.type}
-              </span>
-            </div>
-            
-            {activeTab === "upcoming" && booking.status === "confirmed" && (
-              <div className="flex gap-2 mt-4">
-                <button
-                  onClick={() => onConfirm(booking.id)}
-                  className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium flex items-center justify-center gap-2"
-                >
-                  <Play className="h-4 w-4" />
-                  Rejoindre
-                </button>
-                <button
-                  onClick={() => onCancel(booking.id)}
-                  className="px-4 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors text-sm font-medium"
-                >
-                  Annuler
-                </button>
-              </div>
-            )}
-            
-            {activeTab === "past" && booking.status === "confirmed" && (
-              <div className="flex gap-2 mt-4">
-                <button
-                  onClick={() => onComplete(booking.id)}
-                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium flex items-center justify-center gap-2"
-                >
-                  <CheckCircle className="h-4 w-4" />
-                  Terminer
-                </button>
-              </div>
-            )}
-          </div>
-        ))}
-        
-        {(activeTab === "upcoming" ? upcomingBookings : pastBookings).length === 0 && (
+          )
+        )}
+
+        {(activeTab === "upcoming" ? upcomingBookings : pastBookings).length ===
+          0 && (
           <div className="text-center py-8">
             <Calendar className="h-12 w-12 text-gray-400 mx-auto mb-4" />
             <p className="text-gray-500">
-              {activeTab === "upcoming" ? "Aucune consultation à venir" : "Aucune consultation passée"}
+              {activeTab === "upcoming"
+                ? "Aucune consultation à venir"
+                : "Aucune consultation passée"}
             </p>
           </div>
         )}
@@ -829,55 +880,6 @@ const ProfessionalDashboard: React.FC = () => {
   //   ...
   // } // Supprimé car inutilisé
 
-  const getStatusLabel = (status: string) => {
-    switch (status) {
-      case "en_attente":
-        return "En attente";
-      case "confirmé":
-      case "confirmed":
-        return "Confirmé";
-      case "terminé":
-      case "completed":
-        return "Terminé";
-      case "annulé":
-        return "Annulé";
-      default:
-        return status;
-    }
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "en_attente":
-        return "bg-yellow-100 text-yellow-800";
-      case "confirmé":
-      case "confirmed":
-        return "bg-green-100 text-green-800";
-      case "terminé":
-      case "completed":
-        return "bg-blue-100 text-blue-800";
-      case "annulé":
-        return "bg-red-100 text-red-800";
-      default:
-        return "bg-gray-100 text-gray-800";
-    }
-  };
-
-  // Filter bookings based on activeTab
-  const upcomingBookings = Array.isArray(bookings)
-    ? bookings.filter(
-        (booking) =>
-          booking.status === "en_attente" || booking.status === "confirmé" || booking.status === "confirmed"
-      )
-    : [];
-  const pastBookings = Array.isArray(bookings)
-    ? bookings.filter(
-        (booking) => booking.status === "terminé" || booking.status === "completed" || booking.status === "annulé"
-      )
-    : [];
-  const displayedBookings =
-    activeTab === "upcoming" ? upcomingBookings : pastBookings;
-
   // Handle connection recovery
   const handleConnectionRecovery = async () => {
     if (!currentUser?.id) {
@@ -1006,7 +1008,7 @@ const ProfessionalDashboard: React.FC = () => {
         <TodaysAgenda bookings={bookings} />
 
         {/* Consultations Section */}
-        <ConsultationsSection 
+        <ConsultationsSection
           bookings={bookings}
           onConfirm={handleConfirmBooking}
           onCancel={handleCancelBooking}
