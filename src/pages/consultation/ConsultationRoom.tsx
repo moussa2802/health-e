@@ -504,8 +504,33 @@ const ConsultationRoom: React.FC = () => {
     }
   };
 
-  // Find patient ID from participants
-  const findPatientId = (): string | null => {
+  // Fetch booking data to get patient information
+  const fetchBookingData = async (bookingId: string): Promise<{ patientId?: string; patientName?: string } | null> => {
+    try {
+      console.log("🔍 [CONSULTATION DEBUG] Fetching booking data for:", bookingId);
+      
+      // Import booking service
+      const { getBookings } = await import("../../services/bookingService");
+      
+      const bookings = await getBookings();
+      const booking = bookings.find(b => b.id === bookingId);
+      
+      if (booking) {
+        console.log("✅ Found booking data:", booking);
+        return {
+          patientId: booking.patientId,
+          patientName: booking.patientName
+        };
+      }
+      
+      return null;
+    } catch (error) {
+      console.warn("⚠️ Could not fetch booking data:", error);
+      return null;
+    }
+  };
+
+  const findPatientId = async (): Promise<string | null> => {
     console.log("🔍 [CONSULTATION DEBUG] Finding patient ID...");
     console.log("🔍 [CONSULTATION DEBUG] Room ID:", roomId);
     console.log(
@@ -516,15 +541,31 @@ const ConsultationRoom: React.FC = () => {
     console.log("🔍 [CONSULTATION DEBUG] Remote user ID:", remoteUserId);
     console.log("🔍 [CONSULTATION DEBUG] Participants:", participants);
 
-    // First check if we have participants from Firebase
+    // First check if we have participants from Firebase Realtime Database
     if (participants.length > 0) {
-      const patientParticipant = participants.find((p) => p.type === "patient");
+      console.log("🔍 [CONSULTATION DEBUG] Checking Firebase participants...");
+      
+      // Find the patient participant (the one who is not the current user)
+      const patientParticipant = participants.find((p) => 
+        p.type === "patient" && p.id !== currentUser?.id
+      );
+      
       if (patientParticipant) {
         console.log(
           "✅ Found patient from Firebase participants:",
           patientParticipant.id
         );
         return patientParticipant.id;
+      }
+      
+      // If no patient found, try to find the other participant
+      const otherParticipant = participants.find((p) => p.id !== currentUser?.id);
+      if (otherParticipant) {
+        console.log(
+          "✅ Using other participant as patient:",
+          otherParticipant.id
+        );
+        return otherParticipant.id;
       }
     }
 
@@ -549,11 +590,11 @@ const ConsultationRoom: React.FC = () => {
 
       // Try to get patient ID from booking data
       try {
-        // This would require fetching booking data, but for now we'll use a fallback
-        console.log(
-          "🔍 [CONSULTATION DEBUG] Would fetch booking data for:",
-          bookingId
-        );
+        const bookingData = await fetchBookingData(bookingId);
+        if (bookingData?.patientId) {
+          console.log("✅ Found patient ID from booking data:", bookingData.patientId);
+          return bookingData.patientId;
+        }
       } catch (error) {
         console.warn("⚠️ Could not fetch booking data:", error);
       }
@@ -573,33 +614,25 @@ const ConsultationRoom: React.FC = () => {
       }
     }
 
-    // If all else fails, try to get from the other participant
-    if (participants.length > 0 && currentUser?.type === "professional") {
-      const otherParticipant = participants.find(
-        (p) => p.id !== currentUser.id
-      );
-      if (otherParticipant) {
-        console.log(
-          "✅ Using other participant as patient:",
-          otherParticipant.id
-        );
-        return otherParticipant.id;
-      }
-    }
-
     console.warn("⚠️ Could not determine patient ID");
     console.warn("⚠️ [CONSULTATION DEBUG] All identification methods failed");
+    console.warn("⚠️ [CONSULTATION DEBUG] Participants available:", participants);
+    console.warn("⚠️ [CONSULTATION DEBUG] Current user:", currentUser);
     return null;
   };
 
   // Create or get patient Firestore ID
   const getOrCreatePatientId = async (): Promise<string | null> => {
-    const patientId = findPatientId();
+    const patientId = await findPatientId();
 
     if (!patientId) {
       console.error("❌ Could not determine patient ID");
       return null;
     }
+
+    console.log("🔍 [CONSULTATION DEBUG] Found patient ID:", patientId);
+    console.log("🔍 [CONSULTATION DEBUG] Patient ID length:", patientId.length);
+    console.log("🔍 [CONSULTATION DEBUG] Patient ID format check:", /^[a-zA-Z0-9]+$/.test(patientId));
 
     // If the patient ID looks like a Firestore ID (long alphanumeric), use it directly
     if (patientId.length > 20 && /^[a-zA-Z0-9]+$/.test(patientId)) {
@@ -607,9 +640,9 @@ const ConsultationRoom: React.FC = () => {
       return patientId;
     }
 
-    // For Jitsi IDs, we'll use them directly and create the patient document if needed
+    // For shorter IDs (like Jitsi IDs), we'll use them directly and create the patient document if needed
     console.log(
-      "🔍 [CONSULTATION DEBUG] Using Jitsi ID as patient ID:",
+      "🔍 [CONSULTATION DEBUG] Using short ID as patient ID (will be created in Firestore):",
       patientId
     );
     return patientId;
