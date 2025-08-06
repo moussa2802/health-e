@@ -246,14 +246,9 @@ const ConsultationRoom: React.FC = () => {
           TOOLBAR_BUTTONS: [
             "microphone",
             "camera",
-            "desktop",
-            "fullscreen",
-            "fodeviceselection",
-            "hangup",
-            "profile",
-            "settings",
-            "raisehand",
-            "videoquality",
+            "chat",
+            "screenSharing",
+            "tileview"
           ],
           filmStripOnly: false,
           SHOW_JITSI_WATERMARK: false, // Supprime le watermark Jitsi
