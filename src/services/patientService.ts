@@ -219,35 +219,41 @@ export async function getMedicalRecordsByProfessional(
       professionalId
     );
 
-    const q = query(
-      collectionGroup(db, "medicalRecords"),
-      where("professionalId", "==", professionalId),
-      orderBy("consultationDate", "desc")
-    );
+    try {
+      const q = query(
+        collectionGroup(db, "medicalRecords"),
+        where("professionalId", "==", professionalId),
+        orderBy("consultationDate", "desc")
+      );
 
-    const snapshot = await getDocs(q);
-    console.log(
-      "🔍 [MEDICAL RECORDS DEBUG] CollectionGroup query result:",
-      snapshot.docs.length,
-      "records"
-    );
+      const snapshot = await getDocs(q);
+      console.log(
+        "🔍 [MEDICAL RECORDS DEBUG] CollectionGroup query result:",
+        snapshot.docs.length,
+        "records"
+      );
 
-    const records = snapshot.docs.map((doc) => {
-      // Get the patient ID from the path
-      const pathSegments = doc.ref.path.split("/");
-      const patientId = pathSegments[1]; // patients/{patientId}/medicalRecords/{recordId}
+      const records = snapshot.docs.map((doc) => {
+        // Get the patient ID from the path
+        const pathSegments = doc.ref.path.split("/");
+        const patientId = pathSegments[1]; // patients/{patientId}/medicalRecords/{recordId}
 
-      return {
-        id: doc.id,
-        patientId,
-        ...doc.data(),
-      } as MedicalRecord;
-    });
+        return {
+          id: doc.id,
+          patientId,
+          ...doc.data(),
+        } as MedicalRecord;
+      });
 
-    console.log(
-      `✅ Fetched ${records.length} medical records for professional`
-    );
-    return records;
+      console.log(
+        `✅ Fetched ${records.length} medical records for professional`
+      );
+      return records;
+    } catch (collectionGroupError) {
+      console.log(
+        "🔄 [MEDICAL RECORDS DEBUG] CollectionGroup query failed, falling back to patient-by-patient approach"
+      );
+      console.log("🔄 [MEDICAL RECORDS DEBUG] Error details:", collectionGroupError);
   } catch (error) {
     console.error("❌ Error fetching medical records by professional:", error);
 

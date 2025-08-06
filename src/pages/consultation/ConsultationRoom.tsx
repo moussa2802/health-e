@@ -525,51 +525,46 @@ const ConsultationRoom: React.FC = () => {
       return currentUser.id;
     }
 
-    // If we have a remote user ID and we're the professional, assume the remote user is the patient
+    // If we have a remote user ID and we're the professional, use it as patient ID
     if (remoteUserId && currentUser?.type === "professional") {
       console.log("✅ Using remote user as patient:", remoteUserId);
       return remoteUserId;
     }
 
-    // Extract from room ID if it's a booking ID format
-    if (roomId && !roomId.startsWith("instant-")) {
-      // Try to get patient ID from the URL parameters
+    // For instant consultations, extract patient ID from room ID
+    if (roomId && roomId.startsWith("instant-")) {
+      // Format: instant-patientId-timestamp
+      const parts = roomId.split("-");
+      if (parts.length >= 2) {
+        const possiblePatientId = parts[1];
+        console.log(
+          "✅ Extracted patient ID from instant consultation room ID:",
+          possiblePatientId
+        );
+        return possiblePatientId;
+      }
+    }
+
+    // For booking consultations, try to extract from room ID
+    if (roomId && roomId.startsWith("booking-")) {
+      const bookingId = roomId.replace("booking-", "");
+      console.log("🔍 [CONSULTATION DEBUG] Extracted booking ID:", bookingId);
+      
+      // Try to get patient ID from URL parameters
       const urlParams = new URLSearchParams(window.location.search);
       const patientIdFromUrl = urlParams.get("patientId");
       if (patientIdFromUrl) {
         console.log("✅ Found patient ID from URL:", patientIdFromUrl);
         return patientIdFromUrl;
       }
-
-      // Try to extract from booking ID format (booking-{bookingId})
-      if (roomId.startsWith("booking-")) {
-        const bookingId = roomId.replace("booking-", "");
-        console.log("🔍 [CONSULTATION DEBUG] Extracted booking ID:", bookingId);
-
-        // Try to get patient ID from booking data
-        try {
-          // This would require fetching booking data, but for now we'll log
-          console.log(
-            "🔍 [CONSULTATION DEBUG] Would fetch booking data for:",
-            bookingId
-          );
-        } catch (error) {
-          console.warn("⚠️ Could not fetch booking data:", error);
-        }
-      }
     }
 
-    // If all else fails, try to extract from the room ID for instant consultations
-    if (roomId && roomId.startsWith("instant-")) {
-      // For instant consultations, the format might be instant-patientId-timestamp
-      const parts = roomId.split("-");
-      if (parts.length >= 2) {
-        const possiblePatientId = parts[1];
-        console.log(
-          "✅ Extracted possible patient ID from room ID:",
-          possiblePatientId
-        );
-        return possiblePatientId;
+    // If all else fails, try to get from the other participant
+    if (participants.length > 0 && currentUser?.type === "professional") {
+      const otherParticipant = participants.find(p => p.id !== currentUser.id);
+      if (otherParticipant) {
+        console.log("✅ Using other participant as patient:", otherParticipant.id);
+        return otherParticipant.id;
       }
     }
 
