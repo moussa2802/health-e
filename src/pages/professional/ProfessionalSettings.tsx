@@ -456,7 +456,9 @@ const ProfessionalSettings: React.FC = () => {
     return () => clearInterval(interval);
   }, []);
 
-  const convertAvailabilityToTimeSlots = (availability: TimeSlot[]): TimeSlot[] => {
+  const convertAvailabilityToTimeSlots = (
+    availability: TimeSlot[]
+  ): TimeSlot[] => {
     return availability.map((slot) => ({
       day: slot.day,
       startTime: slot.startTime,
@@ -473,9 +475,9 @@ const ProfessionalSettings: React.FC = () => {
 
     try {
       setLoadingStep("loading_profile");
-      console.log("🔍 Loading profile for user:", currentUser.uid);
+      console.log("🔍 Loading profile for user:", currentUser.id);
 
-      const profile = await getProfessionalProfile(currentUser.uid);
+      const profile = await getProfessionalProfile(currentUser.id);
       console.log("✅ Profile loaded:", profile);
 
       if (profile) {
@@ -485,7 +487,9 @@ const ProfessionalSettings: React.FC = () => {
         });
       } else {
         console.log("⚠️ No profile found, creating default");
-        const defaultProfile = createDefaultProfessionalProfile(currentUser.uid);
+        const defaultProfile = createDefaultProfessionalProfile(
+          currentUser.id
+        );
         setProfileData({
           ...defaultProfile,
           education: defaultProfile.education || [],
@@ -494,7 +498,7 @@ const ProfessionalSettings: React.FC = () => {
 
       setLoadingStep("setting_up_subscription");
       const unsubscribe = subscribeToProfessionalProfile(
-        currentUser.uid,
+        currentUser.id,
         (updatedProfile) => {
           if (isMountedRef.current && updatedProfile) {
             console.log("🔄 Profile updated:", updatedProfile);
@@ -511,7 +515,9 @@ const ProfessionalSettings: React.FC = () => {
     } catch (error) {
       console.error("❌ Error loading profile:", error);
       setErrorMessage(
-        error instanceof Error ? error.message : "Erreur lors du chargement du profil"
+        error instanceof Error
+          ? error.message
+          : "Erreur lors du chargement du profil"
       );
     } finally {
       if (isMountedRef.current) {
@@ -616,7 +622,7 @@ const ProfessionalSettings: React.FC = () => {
 
       const imageUrl = await uploadAndSaveProfileImage(
         file,
-        currentUser!.uid,
+        currentUser!.id,
         (progress) => {
           if (isMountedRef.current) {
             setUploadProgress(progress);
@@ -635,7 +641,9 @@ const ProfessionalSettings: React.FC = () => {
       console.error("❌ Error uploading image:", error);
       if (isMountedRef.current) {
         setErrorMessage(
-          error instanceof Error ? error.message : "Erreur lors du téléchargement de l'image"
+          error instanceof Error
+            ? error.message
+            : "Erreur lors du téléchargement de l'image"
         );
       }
     } finally {
@@ -656,7 +664,7 @@ const ProfessionalSettings: React.FC = () => {
 
       const signatureUrl = await uploadAndSaveSignatureImage(
         file,
-        currentUser!.uid
+        currentUser!.id
       );
 
       if (isMountedRef.current) {
@@ -669,7 +677,9 @@ const ProfessionalSettings: React.FC = () => {
       console.error("❌ Error uploading signature:", error);
       if (isMountedRef.current) {
         setErrorMessage(
-          error instanceof Error ? error.message : "Erreur lors du téléchargement de la signature"
+          error instanceof Error
+            ? error.message
+            : "Erreur lors du téléchargement de la signature"
         );
       }
     } finally {
@@ -690,7 +700,7 @@ const ProfessionalSettings: React.FC = () => {
 
       const stampUrl = await uploadAndSaveSignatureImage(
         file,
-        currentUser!.uid
+        currentUser!.id
       );
 
       if (isMountedRef.current) {
@@ -703,7 +713,9 @@ const ProfessionalSettings: React.FC = () => {
       console.error("❌ Error uploading stamp:", error);
       if (isMountedRef.current) {
         setErrorMessage(
-          error instanceof Error ? error.message : "Erreur lors du téléchargement du cachet"
+          error instanceof Error
+            ? error.message
+            : "Erreur lors du téléchargement du cachet"
         );
       }
     } finally {
@@ -747,7 +759,10 @@ const ProfessionalSettings: React.FC = () => {
   };
 
   const handleAddLanguage = () => {
-    if (selectedLanguage && !profileData.languages?.includes(selectedLanguage)) {
+    if (
+      selectedLanguage &&
+      !profileData.languages?.includes(selectedLanguage)
+    ) {
       setProfileData((prev) => ({
         ...prev,
         languages: [...(prev.languages || []), selectedLanguage],
@@ -777,7 +792,7 @@ const ProfessionalSettings: React.FC = () => {
       console.log("💾 Saving profile data:", profileData);
 
       const updatedProfile = await updateProfessionalProfile(
-        currentUser.uid,
+        currentUser.id,
         profileData
       );
 
@@ -797,7 +812,9 @@ const ProfessionalSettings: React.FC = () => {
         );
       } else {
         setErrorMessage(
-          error instanceof Error ? error.message : "Erreur lors de la sauvegarde. Veuillez réessayer."
+          error instanceof Error
+            ? error.message
+            : "Erreur lors de la sauvegarde. Veuillez réessayer."
         );
       }
       window.scrollTo({ top: 0, behavior: "smooth" });
@@ -1103,18 +1120,13 @@ const ProfessionalSettings: React.FC = () => {
                       <>
                         <option value="psychologue">Psychologue</option>
                         <option value="psychiatre">Psychiatre</option>
-                        <option value="therapeute">Thérapeute</option>
-                        <option value="counselor">Counselor</option>
                       </>
                     )}
                     {profileData.type === "sexual" && (
                       <>
-                        <option value="sexologue">Sexologue</option>
                         <option value="gynecologue">Gynécologue</option>
                         <option value="urologue">Urologue</option>
-                        <option value="therapeute_sexuel">
-                          Thérapeute sexuel
-                        </option>
+                        <option value="sexologue">Sexologue</option>
                       </>
                     )}
                   </select>
