@@ -76,6 +76,23 @@ const [patientInfo, setPatientInfo] = useState<Partial<PatientProfileType>>({
     relationship: ''
   }
 });
+
+  // Déterminer le mode d'inscription (email ou téléphone)
+  const getRegistrationMethod = () => {
+    if (!patientInfo) return null;
+    
+    // Si l'email contient un @, c'est probablement un email valide
+    const hasValidEmail = patientInfo.email && patientInfo.email.includes('@');
+    // Si le téléphone contient des chiffres et est assez long, c'est probablement un téléphone
+    const hasValidPhone = patientInfo.phone && patientInfo.phone.replace(/\D/g, '').length >= 8;
+    
+    if (hasValidEmail && !hasValidPhone) return 'email';
+    if (hasValidPhone && !hasValidEmail) return 'phone';
+    if (hasValidEmail && hasValidPhone) return 'both';
+    return null;
+  };
+
+  const registrationMethod = getRegistrationMethod();
   const isRunningInBolt = typeof window !== 'undefined' &&
   (window.location.hostname.includes('localhost') ||
    window.location.hostname.includes('bolt.run') ||
@@ -684,16 +701,30 @@ if (!patientInfo) {
                 <label className="block text-sm font-semibold text-gray-700 mb-2 flex items-center">
                   <Mail className="h-4 w-4 mr-2 text-blue-500" />
                   Email
+                  {registrationMethod === 'email' && (
+                    <span className="ml-2 px-2 py-0.5 bg-blue-100 text-blue-800 text-xs rounded-full font-medium">
+                      Mode d'inscription
+                    </span>
+                  )}
                 </label>
                 {isEditing ? (
                   <input
                     type="email"
                     value={patientInfo?.email || ''}
                     onChange={(e) => handleChange('email', e.target.value)}
-                    className="w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 bg-white"
+                    className={`w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 bg-white ${
+                      registrationMethod === 'email' ? 'bg-gray-100 cursor-not-allowed' : ''
+                    }`}
+                    disabled={registrationMethod === 'email'}
+                    placeholder={registrationMethod === 'email' ? 'Email utilisé pour l\'inscription' : 'Votre email'}
                   />
                 ) : (
                   <p className="text-gray-900 font-medium">{patientInfo.email || 'Non renseigné'}</p>
+                )}
+                {registrationMethod === 'email' && (
+                  <p className="mt-1 text-xs text-gray-500">
+                    Cet email ne peut pas être modifié car il a été utilisé pour l'inscription
+                  </p>
                 )}
               </div>
 
@@ -701,16 +732,30 @@ if (!patientInfo) {
                 <label className="block text-sm font-semibold text-gray-700 mb-2 flex items-center">
                   <Phone className="h-4 w-4 mr-2 text-blue-500" />
                   Téléphone
+                  {registrationMethod === 'phone' && (
+                    <span className="ml-2 px-2 py-0.5 bg-blue-100 text-blue-800 text-xs rounded-full font-medium">
+                      Mode d'inscription
+                    </span>
+                  )}
                 </label>
                 {isEditing ? (
                   <input
                     type="tel"
                     value={patientInfo?.phone || ''}
                     onChange={(e) => handleChange('phone', e.target.value)}
-                    className="w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 bg-white"
+                    className={`w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 bg-white ${
+                      registrationMethod === 'phone' ? 'bg-gray-100 cursor-not-allowed' : ''
+                    }`}
+                    disabled={registrationMethod === 'phone'}
+                    placeholder={registrationMethod === 'phone' ? 'Téléphone utilisé pour l\'inscription' : 'Votre téléphone'}
                   />
                 ) : (
                   <p className="text-gray-900 font-medium">{patientInfo.phone || 'Non renseigné'}</p>
+                )}
+                {registrationMethod === 'phone' && (
+                  <p className="mt-1 text-xs text-gray-500">
+                    Ce téléphone ne peut pas être modifié car il a été utilisé pour l'inscription
+                  </p>
                 )}
               </div>
 
