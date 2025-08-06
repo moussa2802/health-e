@@ -1,6 +1,23 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
-import { Search, Send, ChevronLeft, X, Plus, User, AlertCircle, RefreshCw, Wifi, WifiOff } from 'lucide-react';
+import { 
+  Search, 
+  Send, 
+  ChevronLeft, 
+  X, 
+  Plus, 
+  User, 
+  AlertCircle, 
+  RefreshCw, 
+  Wifi, 
+  WifiOff,
+  MessageCircle,
+  Paperclip,
+  Smile,
+  MoreVertical,
+  Phone,
+  Video
+} from 'lucide-react';
 import { 
   subscribeToConversations, 
   subscribeToMessages, 
@@ -29,7 +46,6 @@ const MessagingCenter: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [sendingMessage, setSendingMessage] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [retryCount, setRetryCount] = useState(0);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -98,58 +114,28 @@ const MessagingCenter: React.FC = () => {
       })
       .finally(() => {
         try {
-          unsubscribeConversations.current = subscribeToConversations(
+          const unsubscribe = subscribeToConversations(
             currentUser.id,
-            (conversationsData) => {
-              console.log(`✅ Received ${conversationsData.length} conversations`);
-              setConversations(conversationsData);
-              console.log('📨 Conversations reçues :', conversationsData);
+            (conversations) => {
+              console.log('✅ Received conversations:', conversations.length);
+              setConversations(conversations);
               setLoading(false);
               setError(null);
-              setRetryCount(0);
             }
           );
-
-          // Timeout de sécurité pour arrêter le loading si rien ne se passe
-          const timeoutId = setTimeout(() => {
-  if (loading) {
-    if (conversations.length === 0) {
-      console.log('✅ Aucune conversation trouvée, arrêt du chargement sans erreur');
-      setLoading(false); // On arrête le loading même si le tableau est vide
-    } else {
-      console.warn('⚠️ Conversations loading timeout');
-      setLoading(false);
-      setError('Chargement lent détecté. Vérifiez votre connexion internet.');
-    }
-  }
-}, 15000); // ou un autre délai si tu veux (10-15s)
-
-          return () => {
-            clearTimeout(timeoutId);
-            if (unsubscribeConversations.current) {
-              unsubscribeConversations.current();
-              unsubscribeConversations.current = null;
-            }
-          };
+          
+          unsubscribeConversations.current = unsubscribe;
         } catch (error) {
-          console.error('❌ Error setting up conversations subscription:', error);
+          console.error('❌ Failed to set up conversations subscription:', error);
+          setError('Erreur lors de la configuration des conversations');
           setLoading(false);
-          setError('Erreur lors du chargement des conversations. Veuillez réessayer.');
         }
       });
-      
-    return () => {
-      if (unsubscribeConversations.current) {
-        unsubscribeConversations.current();
-        unsubscribeConversations.current = null;
-      }
-    };
-  }, [currentUser?.id, retryCount]);
+  }, [currentUser?.id]);
 
   // S'abonner aux messages de la conversation sélectionnée
   useEffect(() => {
-    if (!selectedConversation) {
-      setMessages([]);
+    if (!selectedConversation?.id || !currentUser?.id) {
       return;
     }
 
@@ -162,84 +148,45 @@ const MessagingCenter: React.FC = () => {
       unsubscribeMessages.current = null;
     }
 
-    // CRITICAL: Ensure Firestore is ready before setting up subscription
-    ensureFirestoreReady()
-      .then(() => {
-        console.log('✅ Firestore ready for messages subscription');
-        
-        unsubscribeMessages.current = subscribeToMessages(
-          selectedConversation.id,
-          (messagesData) => {
-            console.log(`✅ Received ${messagesData.length} messages`);
-            setMessages(messagesData);
-            // Marquer les messages comme lus
-            if (currentUser?.id) {
-              markMessagesAsRead(selectedConversation.id, currentUser.id);
-            }
-            
-            // Scroll to bottom after messages are loaded
-            setTimeout(() => {
-              scrollToBottom();
-            }, 100);
+    try {
+      const unsubscribe = subscribeToMessages(
+        selectedConversation.id,
+        (messages) => {
+          console.log('✅ Received messages:', messages.length);
+          setMessages(messages);
+          
+          // Marquer les messages comme lus
+          if (messages.length > 0) {
+            markMessagesAsRead(selectedConversation.id, currentUser.id);
           }
-        );
-      })
-      .catch(error => {
-        console.warn('⚠️ Failed to ensure Firestore is ready before messages subscription:', error);
-        
-        // Try to subscribe anyway
-        unsubscribeMessages.current = subscribeToMessages(
-          selectedConversation.id,
-          (messagesData) => {
-            console.log(`✅ Received ${messagesData.length} messages`);
-            setMessages(messagesData);
-            // Marquer les messages comme lus
-            if (currentUser?.id) {
-              markMessagesAsRead(selectedConversation.id, currentUser.id);
-            }
-            
-            // Scroll to bottom after messages are loaded
-            setTimeout(() => {
-              scrollToBottom();
-            }, 100);
-          }
-        );
-      });
-
-    return () => {
-      if (unsubscribeMessages.current) {
-        unsubscribeMessages.current();
-        unsubscribeMessages.current = null;
-      }
-    };
-  }, [selectedConversation, currentUser?.id]);
-
-  // Faire défiler vers le bas quand de nouveaux messages arrivent
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
-
-  const scrollToBottom = () => {
-    if (messagesEndRef.current) {
-      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+        },
+        (error) => {
+          console.error('❌ Error in messages subscription:', error);
+        }
+      );
+      
+      unsubscribeMessages.current = unsubscribe;
+    } catch (error) {
+      console.error('❌ Failed to set up messages subscription:', error);
     }
-  };
+  }, [selectedConversation?.id, currentUser?.id]);
 
-  // Rechercher des utilisateurs avec debounce optimisé
+  // Recherche d'utilisateurs
   useEffect(() => {
     if (searchTimeoutRef.current) {
       clearTimeout(searchTimeoutRef.current);
     }
 
-    if (userSearchTerm.length >= 2 && currentUser) {
-      searchTimeoutRef.current = setTimeout(() => {
-        searchUsers(userSearchTerm, currentUser.id, currentUser.type as any)
-          .then(setUserSearchResults)
-          .catch(error => {
-            console.error('❌ Error searching users:', error);
-            setUserSearchResults([]);
-          });
-      }, 300); // Debounce de 300ms
+    if (userSearchTerm.length >= 2) {
+      searchTimeoutRef.current = setTimeout(async () => {
+        try {
+          const results = await searchUsers(userSearchTerm);
+          setUserSearchResults(results);
+        } catch (error) {
+          console.error('❌ Error searching users:', error);
+          setUserSearchResults([]);
+        }
+      }, 300);
     } else {
       setUserSearchResults([]);
     }
@@ -249,129 +196,96 @@ const MessagingCenter: React.FC = () => {
         clearTimeout(searchTimeoutRef.current);
       }
     };
-  }, [userSearchTerm, currentUser]);
+  }, [userSearchTerm]);
 
-  const handleRetry = async () => {
-    console.log('🔄 Retrying conversations loading...');
-    clearMessageCaches(); // Nettoyer les caches
-    
-    // CRITICAL: Reset Firestore connection before retrying
-    try {
-      // Reset Firestore connection first
-      await resetFirestoreConnection();
-      console.log('✅ Firestore connection reset before retry');
-      
-      // Then ensure it's ready
-      await ensureFirestoreReady();
-      console.log('✅ Firestore ready before retry');
-    } catch (error) {
-      console.warn('⚠️ Failed to reset/ensure Firestore before retry:', error);
+  // Scroll to bottom when new messages arrive
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
+
+  // Cleanup subscriptions on unmount
+  useEffect(() => {
+    return () => {
+      if (unsubscribeConversations.current) {
+        unsubscribeConversations.current();
+      }
+      if (unsubscribeMessages.current) {
+        unsubscribeMessages.current();
+      }
+    };
+  }, []);
+
+  const scrollToBottom = () => {
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
     }
-    
-    setRetryCount(prev => prev + 1);
   };
 
-  const filteredConversations = conversations.filter(conversation => {
-    if (!currentUser?.id) return false;
+  const handleRetry = async () => {
+    setRetryCount(prev => prev + 1);
+    setError(null);
     
-    const otherParticipantId = conversation.participants.find(id => id !== currentUser.id);
-    const otherParticipantName = otherParticipantId ? conversation.participantNames[otherParticipantId] : '';
-    
-    return otherParticipantName.toLowerCase().includes(searchTerm.toLowerCase());
-  });
+    try {
+      await resetFirestoreConnection();
+      console.log('✅ Firestore connection reset');
+      
+      // Clear existing data
+      setConversations([]);
+      setMessages([]);
+      setSelectedConversation(null);
+      
+      // Clear caches
+      await clearMessageCaches();
+      console.log('✅ Message caches cleared');
+      
+      // Force re-subscription by updating currentUser dependency
+      // This will trigger the useEffect that sets up conversations subscription
+    } catch (error) {
+      console.error('❌ Error during retry:', error);
+      setError('Erreur lors de la reconnexion');
+    }
+  };
 
   const handleSendMessage = async () => {
-    if (!selectedConversation || !newMessage.trim() || !currentUser || sendingMessage) return;
+    if (!newMessage.trim() || !selectedConversation || !currentUser?.id || sendingMessage) {
+      return;
+    }
 
     setSendingMessage(true);
     try {
-      // CRITICAL: Ensure Firestore is ready before sending message
-      await ensureFirestoreReady();
-      
-      await sendMessage(
-        selectedConversation.id,
-        currentUser.id,
-        currentUser.name,
-        currentUser.type as any,
-        newMessage.trim()
-      );
+      await sendMessage(selectedConversation.id, newMessage.trim(), currentUser.id);
       setNewMessage('');
-      
-      // Scroll to bottom after sending
-      setTimeout(() => {
-        scrollToBottom();
-      }, 100);
     } catch (error) {
       console.error('❌ Error sending message:', error);
-      alert('Erreur lors de l\'envoi du message. Veuillez réessayer.');
+      setError('Erreur lors de l\'envoi du message');
     } finally {
       setSendingMessage(false);
     }
   };
 
   const handleStartNewConversation = async (targetUser: {id: string, name: string, type: string}) => {
-    if (!currentUser) return;
+    if (!currentUser?.id) return;
 
     try {
-      console.log('💬 Starting new conversation with:', targetUser.name);
-      
-      // CRITICAL: Ensure Firestore is ready before creating conversation
-      await ensureFirestoreReady();
-      
-      const conversationId = await getOrCreateConversation(
-        currentUser.id,
-        currentUser.name,
-        currentUser.type as any,
-        targetUser.id,
-        targetUser.name,
-        targetUser.type as any
-      );
-
-      // Trouver la conversation dans la liste ou attendre qu'elle apparaisse
-      const conversation = conversations.find(c => c.id === conversationId);
-      if (conversation) {
-        setSelectedConversation(conversation);
-        setShowMobileConversation(true);
-      } else {
-        // Si la conversation n'est pas encore dans la liste, on peut la créer temporairement
-        const tempConversation: Conversation = {
-          id: conversationId,
-          participants: [currentUser.id, targetUser.id],
-          participantNames: {
-            [currentUser.id]: currentUser.name,
-            [targetUser.id]: targetUser.name
-          },
-          participantTypes: {
-            [currentUser.id]: currentUser.type as any,
-            [targetUser.id]: targetUser.type as any
-          },
-          type: 'patient-professional',
-          createdAt: new Date() as any,
-          updatedAt: new Date() as any
-        };
-        setSelectedConversation(tempConversation);
-        setShowMobileConversation(true);
-      }
-
+      const conversation = await getOrCreateConversation(currentUser.id, targetUser.id);
+      setSelectedConversation(conversation);
       setShowNewConversationModal(false);
       setUserSearchTerm('');
+      setUserSearchResults([]);
+      setShowMobileConversation(true);
     } catch (error) {
-      console.error('❌ Error starting conversation:', error);
-      alert('Erreur lors de la création de la conversation. Veuillez réessayer.');
+      console.error('❌ Error starting new conversation:', error);
+      setError('Erreur lors de la création de la conversation');
     }
   };
 
   const getOtherParticipant = (conversation: Conversation) => {
-    if (!currentUser?.id) return null;
-    
-    const otherParticipantId = conversation.participants.find(id => id !== currentUser.id);
+    const otherParticipantId = conversation.participants.find(id => id !== currentUser?.id);
     if (!otherParticipantId) return null;
-    
-    return {
-      id: otherParticipantId,
-      name: conversation.participantNames[otherParticipantId],
-      type: conversation.participantTypes[otherParticipantId]
-    };
+
+    // Find the participant in the conversation data
+    const participant = conversation.participantDetails?.find(p => p.id === otherParticipantId);
+    return participant || { id: otherParticipantId, name: 'Utilisateur inconnu', type: 'unknown' };
   };
 
   const formatConversationTime = (timestamp: any) => {
@@ -380,19 +294,17 @@ const MessagingCenter: React.FC = () => {
     try {
       const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
       const now = new Date();
-      const diff = now.getTime() - date.getTime();
-      const minutes = Math.floor(diff / 60000);
-      const hours = Math.floor(minutes / 60);
-      const days = Math.floor(hours / 24);
-
-      if (minutes < 60) {
-        return `${minutes}m`;
-      } else if (hours < 24) {
-        return `${hours}h`;
+      const diffInHours = (now.getTime() - date.getTime()) / (1000 * 60 * 60);
+      
+      if (diffInHours < 24) {
+        return date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+      } else if (diffInHours < 48) {
+        return 'Hier';
       } else {
-        return `${days}j`;
+        return date.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' });
       }
     } catch (error) {
+      console.error('❌ Error formatting conversation time:', error);
       return '';
     }
   };
@@ -402,37 +314,28 @@ const MessagingCenter: React.FC = () => {
     
     try {
       const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
-      return date.toLocaleTimeString('fr-FR', { 
-        hour: '2-digit', 
-        minute: '2-digit' 
-      });
+      return date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
     } catch (error) {
+      console.error('❌ Error formatting message time:', error);
       return '';
     }
   };
 
+  const filteredConversations = conversations.filter(conversation => {
+    if (!searchTerm) return true;
+    
+    const otherParticipant = getOtherParticipant(conversation);
+    if (!otherParticipant) return false;
+    
+    return otherParticipant.name.toLowerCase().includes(searchTerm.toLowerCase());
+  });
+
   if (loading) {
     return (
-      <div className="h-[calc(100vh-8rem)] bg-white rounded-xl shadow-md overflow-hidden flex items-center justify-center">
+      <div className="h-[calc(100vh-8rem)] bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
         <div className="text-center">
           <LoadingSpinner size="lg" />
           <p className="mt-4 text-lg text-gray-600">Chargement des conversations...</p>
-          <p className="mt-2 text-sm text-gray-500">
-            {!isOnline ? 'Connexion internet requise' : 'Première connexion en cours, cela peut prendre quelques instants'}
-          </p>
-          <div className="mt-4 flex items-center justify-center">
-            {isOnline ? (
-              <div className="flex items-center text-green-600">
-                <Wifi className="h-4 w-4 mr-1" />
-                <span className="text-sm">En ligne</span>
-              </div>
-            ) : (
-              <div className="flex items-center text-red-600">
-                <WifiOff className="h-4 w-4 mr-1" />
-                <span className="text-sm">Hors ligne</span>
-              </div>
-            )}
-          </div>
         </div>
       </div>
     );
@@ -440,17 +343,15 @@ const MessagingCenter: React.FC = () => {
 
   if (error) {
     return (
-      <div className="h-[calc(100vh-8rem)] bg-white rounded-xl shadow-md overflow-hidden flex items-center justify-center">
-        <div className="text-center max-w-md mx-auto p-6">
+      <div className="h-[calc(100vh-8rem)] bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
+        <div className="text-center max-w-md mx-auto">
           <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">
-            Problème de chargement
-          </h3>
-          <p className="text-gray-600 mb-4">{error}</p>
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">Erreur de connexion</h3>
+          <p className="text-gray-600 mb-6">{error}</p>
           <div className="space-y-3">
             <button
               onClick={handleRetry}
-              className="inline-flex items-center px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+              className="inline-flex items-center px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
             >
               <RefreshCw className="h-4 w-4 mr-2" />
               Réessayer
@@ -475,18 +376,27 @@ const MessagingCenter: React.FC = () => {
   }
 
   return (
-    <div className="h-[calc(100vh-8rem)] bg-white rounded-xl shadow-md overflow-hidden">
-      <div className="flex h-full">
-        {/* Liste des conversations */}
-        <div className={`w-full md:w-1/3 border-r border-gray-200 ${
+    <div className="h-[calc(100vh-8rem)] bg-gradient-to-br from-blue-50 to-indigo-100 rounded-2xl shadow-xl overflow-hidden">
+      <div className="flex h-full bg-white">
+        {/* Liste des conversations - Colonne gauche */}
+        <div className={`w-full md:w-1/3 bg-white border-r border-gray-100 ${
           showMobileConversation ? 'hidden md:block' : 'block'
         }`}>
-          <div className="p-4 border-b border-gray-200">
+          {/* Header de la liste des conversations */}
+          <div className="p-6 border-b border-gray-100 bg-gradient-to-r from-blue-600 to-blue-700">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold">Messages</h2>
-              <div className="flex items-center space-x-2">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-white/20 rounded-xl">
+                  <MessageCircle className="h-6 w-6 text-white" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-bold text-white">Messages</h2>
+                  <p className="text-blue-100 text-sm">{conversations.length} conversations</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
                 {/* Indicateur de connexion */}
-                <div className={`flex items-center px-2 py-1 rounded-full text-xs ${
+                <div className={`flex items-center px-3 py-1 rounded-full text-xs font-medium ${
                   isOnline ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
                 }`}>
                   {isOnline ? <Wifi className="h-3 w-3 mr-1" /> : <WifiOff className="h-3 w-3 mr-1" />}
@@ -494,130 +404,159 @@ const MessagingCenter: React.FC = () => {
                 </div>
                 <button
                   onClick={() => setShowNewConversationModal(true)}
-                  className="p-2 text-blue-500 hover:bg-blue-50 rounded-full transition-colors"
+                  className="p-2 bg-white/20 text-white rounded-xl hover:bg-white/30 transition-all duration-200"
                   title="Nouvelle conversation"
                 >
                   <Plus className="h-5 w-5" />
                 </button>
               </div>
             </div>
+            
+            {/* Barre de recherche */}
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+              <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
               <input
                 type="text"
                 placeholder="Rechercher une conversation..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full pl-12 pr-4 py-3 bg-white/90 backdrop-blur-sm border-0 rounded-xl focus:outline-none focus:ring-2 focus:ring-white/50 text-gray-900 placeholder-gray-500"
               />
             </div>
           </div>
 
+          {/* Liste des conversations */}
           <div className="overflow-y-auto h-[calc(100%-8rem)]">
             {filteredConversations.length === 0 ? (
-              <div className="p-4 text-center text-gray-500">
+              <div className="p-8 text-center text-gray-500">
                 {conversations.length === 0 ? (
-                  <div>
-                    <p className="mb-2">Aucune conversation</p>
-                    <button
-                      onClick={() => setShowNewConversationModal(true)}
-                      className="text-blue-500 hover:text-blue-600 text-sm"
-                    >
-                      Démarrer une conversation
-                    </button>
+                  <div className="space-y-4">
+                    <div className="p-4 bg-gray-50 rounded-2xl">
+                      <MessageCircle className="h-12 w-12 text-gray-300 mx-auto mb-3" />
+                      <p className="text-gray-600 mb-3">Aucune conversation</p>
+                      <button
+                        onClick={() => setShowNewConversationModal(true)}
+                        className="px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-all duration-200 text-sm font-medium"
+                      >
+                        Démarrer une conversation
+                      </button>
+                    </div>
                   </div>
                 ) : (
-                  'Aucun résultat'
+                  <div className="p-4">
+                    <Search className="h-8 w-8 text-gray-300 mx-auto mb-2" />
+                    <p className="text-gray-500">Aucun résultat</p>
+                  </div>
                 )}
               </div>
             ) : (
-              filteredConversations.map((conversation) => {
-                const otherParticipant = getOtherParticipant(conversation);
-                if (!otherParticipant) return null;
+              <div className="p-2">
+                {filteredConversations.map((conversation) => {
+                  const otherParticipant = getOtherParticipant(conversation);
+                  if (!otherParticipant) return null;
 
-                return (
-                  <button
-                    key={conversation.id}
-                    onClick={() => {
-                      setSelectedConversation(conversation);
-                      setShowMobileConversation(true);
-                    }}
-                    className={`w-full p-4 text-left hover:bg-gray-50 border-b border-gray-100 transition-colors ${
-                      selectedConversation?.id === conversation.id ? 'bg-blue-50' : ''
-                    }`}
-                  >
-                    <div className="flex items-center space-x-3">
-                      <div className="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center flex-shrink-0">
-                        <User className="h-6 w-6 text-gray-500" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex justify-between items-start">
-                          <h3 className="font-medium truncate">{otherParticipant.name}</h3>
-                          {conversation.lastMessage && (
-                            <span className="text-xs text-gray-500 flex-shrink-0 ml-2">
-                              {formatConversationTime(conversation.lastMessage.timestamp)}
-                            </span>
-                          )}
+                  return (
+                    <button
+                      key={conversation.id}
+                      onClick={() => {
+                        setSelectedConversation(conversation);
+                        setShowMobileConversation(true);
+                      }}
+                      className={`w-full p-4 text-left hover:bg-gray-50 rounded-xl transition-all duration-200 mb-2 ${
+                        selectedConversation?.id === conversation.id 
+                          ? 'bg-blue-50 border border-blue-200 shadow-sm' 
+                          : 'hover:shadow-sm'
+                      }`}
+                    >
+                      <div className="flex items-center space-x-3">
+                        <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center flex-shrink-0 shadow-sm">
+                          <User className="h-6 w-6 text-white" />
                         </div>
-                        <div className="flex justify-between items-center mt-1">
-                          <p className="text-sm text-gray-500 capitalize">
-                            {otherParticipant.type === 'professional' ? 'Professionnel' : 
-                             otherParticipant.type === 'admin' ? 'Administrateur' : 'Patient'}
-                          </p>
-                          {conversation.lastMessage && (
-                            <p className="text-sm text-gray-500 truncate max-w-32">
-                              {conversation.lastMessage.senderId === currentUser?.id ? 'Vous: ' : ''}
-                              {conversation.lastMessage.content}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex justify-between items-start">
+                            <h3 className="font-semibold text-gray-900 truncate">{otherParticipant.name}</h3>
+                            {conversation.lastMessage && (
+                              <span className="text-xs text-gray-500 flex-shrink-0 ml-2">
+                                {formatConversationTime(conversation.lastMessage.timestamp)}
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex justify-between items-center mt-1">
+                            <p className="text-sm text-gray-500 capitalize">
+                              {otherParticipant.type === 'professional' ? 'Professionnel' : 
+                               otherParticipant.type === 'admin' ? 'Administrateur' : 'Patient'}
                             </p>
-                          )}
+                            {conversation.lastMessage && (
+                              <p className="text-sm text-gray-500 truncate max-w-32">
+                                {conversation.lastMessage.senderId === currentUser?.id ? 'Vous: ' : ''}
+                                {conversation.lastMessage.content}
+                              </p>
+                            )}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  </button>
-                );
-              })
+                    </button>
+                  );
+                })}
+              </div>
             )}
           </div>
         </div>
 
-        {/* Zone de chat */}
-        <div className={`w-full md:w-2/3 flex flex-col ${
+        {/* Zone de chat - Colonne droite */}
+        <div className={`w-full md:w-2/3 flex flex-col bg-white ${
           !showMobileConversation ? 'hidden md:flex' : 'flex'
         }`}>
           {selectedConversation ? (
             <>
               {/* En-tête du chat */}
-              <div className="p-4 border-b border-gray-200 flex items-center">
-                <button
-                  onClick={() => setShowMobileConversation(false)}
-                  className="md:hidden mr-2 text-gray-500 hover:text-gray-700"
-                >
-                  <ChevronLeft className="h-6 w-6" />
-                </button>
-                <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center">
-                  <User className="h-6 w-6 text-gray-500" />
-                </div>
-                <div className="ml-3 flex-1">
-                  {(() => {
-                    const otherParticipant = getOtherParticipant(selectedConversation);
-                    return otherParticipant ? (
-                      <>
-                        <h2 className="font-medium">{otherParticipant.name}</h2>
-                        <p className="text-sm text-gray-500 capitalize">
-                          {otherParticipant.type === 'professional' ? 'Professionnel' : 
-                           otherParticipant.type === 'admin' ? 'Administrateur' : 'Patient'}
-                        </p>
-                      </>
-                    ) : null;
-                  })()}
+              <div className="p-6 border-b border-gray-100 bg-gradient-to-r from-gray-50 to-white">
+                <div className="flex items-center">
+                  <button
+                    onClick={() => setShowMobileConversation(false)}
+                    className="md:hidden mr-3 p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-xl transition-all duration-200"
+                  >
+                    <ChevronLeft className="h-6 w-6" />
+                  </button>
+                  <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-sm">
+                    <User className="h-6 w-6 text-white" />
+                  </div>
+                  <div className="ml-4 flex-1">
+                    {(() => {
+                      const otherParticipant = getOtherParticipant(selectedConversation);
+                      return otherParticipant ? (
+                        <>
+                          <h2 className="font-semibold text-gray-900 text-lg">{otherParticipant.name}</h2>
+                          <p className="text-sm text-gray-500 capitalize">
+                            {otherParticipant.type === 'professional' ? 'Professionnel' : 
+                             otherParticipant.type === 'admin' ? 'Administrateur' : 'Patient'}
+                          </p>
+                        </>
+                      ) : null;
+                    })()}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-xl transition-all duration-200">
+                      <Phone className="h-5 w-5" />
+                    </button>
+                    <button className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-xl transition-all duration-200">
+                      <Video className="h-5 w-5" />
+                    </button>
+                    <button className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-xl transition-all duration-200">
+                      <MoreVertical className="h-5 w-5" />
+                    </button>
+                  </div>
                 </div>
               </div>
 
               {/* Messages */}
-              <div ref={messagesContainerRef} className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50">
+              <div ref={messagesContainerRef} className="flex-1 overflow-y-auto p-6 space-y-4 bg-gradient-to-b from-gray-50 to-white">
                 {messages.length === 0 ? (
-                  <div className="text-center text-gray-500 text-sm">
-                    Début de la conversation
+                  <div className="text-center py-8">
+                    <div className="p-4 bg-white rounded-2xl shadow-sm inline-block">
+                      <MessageCircle className="h-8 w-8 text-gray-300 mx-auto mb-2" />
+                      <p className="text-gray-500 text-sm">Début de la conversation</p>
+                    </div>
                   </div>
                 ) : (
                   messages.map((message) => (
@@ -628,14 +567,14 @@ const MessagingCenter: React.FC = () => {
                       }`}
                     >
                       <div
-                        className={`max-w-[70%] rounded-lg px-4 py-2 ${
+                        className={`max-w-[70%] rounded-2xl px-4 py-3 shadow-sm ${
                           message.senderId === currentUser?.id
-                            ? 'bg-blue-500 text-white'
+                            ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white'
                             : 'bg-white text-gray-900 border border-gray-200'
                         }`}
                       >
-                        <p className="text-sm">{message.content}</p>
-                        <p className={`text-xs mt-1 ${
+                        <p className="text-sm leading-relaxed">{message.content}</p>
+                        <p className={`text-xs mt-2 ${
                           message.senderId === currentUser?.id ? 'text-blue-100' : 'text-gray-500'
                         }`}>
                           {formatMessageTime(message.timestamp)}
@@ -648,46 +587,70 @@ const MessagingCenter: React.FC = () => {
               </div>
 
               {/* Zone de saisie */}
-              <div className="p-4 border-t border-gray-200">
+              <div className="p-6 border-t border-gray-100 bg-white">
                 <form onSubmit={(e) => {
                   e.preventDefault();
                   handleSendMessage();
-                }} className="flex gap-2">
-                  <input
-                    type="text"
-                    value={newMessage}
-                    onChange={(e) => setNewMessage(e.target.value)}
-                    placeholder="Écrivez votre message..."
-                    className="flex-1 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                    disabled={sendingMessage || !isOnline}
-                  />
+                }} className="flex gap-3">
+                  <div className="flex-1 relative">
+                    <input
+                      type="text"
+                      value={newMessage}
+                      onChange={(e) => setNewMessage(e.target.value)}
+                      placeholder="Écrivez votre message..."
+                      className="w-full pl-4 pr-12 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+                      disabled={sendingMessage || !isOnline}
+                    />
+                    <div className="absolute right-3 top-1/2 transform -translate-y-1/2 flex items-center gap-1">
+                      <button
+                        type="button"
+                        className="p-1 text-gray-400 hover:text-gray-600 transition-colors"
+                      >
+                        <Paperclip className="h-4 w-4" />
+                      </button>
+                      <button
+                        type="button"
+                        className="p-1 text-gray-400 hover:text-gray-600 transition-colors"
+                      >
+                        <Smile className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </div>
                   <button
                     type="submit"
                     disabled={!newMessage.trim() || sendingMessage || !isOnline}
-                    className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+                    className="px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl hover:from-blue-700 hover:to-blue-800 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200"
                   >
                     {sendingMessage ? (
-                      <LoadingSpinner size="sm" />
+                      <LoadingSpinner size="sm" color="white" />
                     ) : (
                       <Send className="h-5 w-5" />
                     )}
                   </button>
                 </form>
                 {!isOnline && (
-                  <p className="text-xs text-red-500 mt-1">Connexion internet requise pour envoyer des messages</p>
+                  <p className="text-xs text-red-500 mt-2 flex items-center gap-1">
+                    <WifiOff className="h-3 w-3" />
+                    Connexion internet requise pour envoyer des messages
+                  </p>
                 )}
               </div>
             </>
           ) : (
-            <div className="flex-1 flex items-center justify-center bg-gray-50">
-              <div className="text-center">
-                <p className="text-gray-500 mb-4">Sélectionnez une conversation pour commencer</p>
-                <button
-                  onClick={() => setShowNewConversationModal(true)}
-                  className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
-                >
-                  Nouvelle conversation
-                </button>
+            <div className="flex-1 flex items-center justify-center bg-gradient-to-br from-gray-50 to-white">
+              <div className="text-center max-w-md">
+                <div className="p-6 bg-white rounded-2xl shadow-lg">
+                  <MessageCircle className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">Sélectionnez une conversation</h3>
+                  <p className="text-gray-500 mb-6">Choisissez une conversation pour commencer à discuter</p>
+                  <button
+                    onClick={() => setShowNewConversationModal(true)}
+                    className="px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all duration-200 flex items-center gap-2 mx-auto shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+                  >
+                    <Plus className="h-5 w-5" />
+                    Nouvelle conversation
+                  </button>
+                </div>
               </div>
             </div>
           )}
@@ -696,13 +659,13 @@ const MessagingCenter: React.FC = () => {
 
       {/* Modal nouvelle conversation */}
       {showNewConversationModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-semibold">Nouvelle conversation</h2>
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-md mx-4">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-xl font-bold text-gray-900">Nouvelle conversation</h2>
               <button
                 onClick={() => setShowNewConversationModal(false)}
-                className="text-gray-400 hover:text-gray-600"
+                className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-xl transition-all duration-200"
               >
                 <X className="h-6 w-6" />
               </button>
@@ -710,31 +673,34 @@ const MessagingCenter: React.FC = () => {
 
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                   Rechercher un utilisateur
                 </label>
-                <input
-                  type="text"
-                  value={userSearchTerm}
-                  onChange={(e) => setUserSearchTerm(e.target.value)}
-                  placeholder="Tapez un nom..."
-                  className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                />
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                  <input
+                    type="text"
+                    value={userSearchTerm}
+                    onChange={(e) => setUserSearchTerm(e.target.value)}
+                    placeholder="Tapez un nom..."
+                    className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+                  />
+                </div>
               </div>
 
               {searchResults.length > 0 && (
-                <div className="max-h-48 overflow-y-auto border border-gray-200 rounded-md">
+                <div className="max-h-48 overflow-y-auto border border-gray-200 rounded-xl bg-gray-50">
                   {searchResults.map((user) => (
                     <button
                       key={user.id}
                       onClick={() => handleStartNewConversation(user)}
-                      className="w-full p-3 text-left hover:bg-gray-50 flex items-center space-x-3"
+                      className="w-full p-4 text-left hover:bg-white transition-all duration-200 flex items-center space-x-3 border-b border-gray-100 last:border-b-0"
                     >
-                      <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center">
-                        <User className="h-4 w-4 text-gray-500" />
+                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center">
+                        <User className="h-5 w-5 text-white" />
                       </div>
                       <div>
-                        <p className="font-medium">{user.name}</p>
+                        <p className="font-medium text-gray-900">{user.name}</p>
                         <p className="text-sm text-gray-500 capitalize">
                           {user.type === 'professional' ? 'Professionnel' : 
                            user.type === 'admin' ? 'Administrateur' : 'Patient'}
@@ -746,11 +712,17 @@ const MessagingCenter: React.FC = () => {
               )}
 
               {userSearchTerm.length >= 2 && searchResults.length === 0 && (
-                <p className="text-gray-500 text-sm">Aucun utilisateur trouvé</p>
+                <div className="p-4 text-center text-gray-500 bg-gray-50 rounded-xl">
+                  <Search className="h-8 w-8 text-gray-300 mx-auto mb-2" />
+                  <p className="text-sm">Aucun utilisateur trouvé</p>
+                </div>
               )}
 
               {userSearchTerm.length < 2 && (
-                <p className="text-gray-500 text-sm">Tapez au moins 2 caractères pour rechercher</p>
+                <div className="p-4 text-center text-gray-500 bg-gray-50 rounded-xl">
+                  <MessageCircle className="h-8 w-8 text-gray-300 mx-auto mb-2" />
+                  <p className="text-sm">Tapez au moins 2 caractères pour rechercher</p>
+                </div>
               )}
             </div>
           </div>
