@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import {
   Plus,
   AlertCircle,
@@ -80,7 +80,7 @@ const AvailabilityManagement: React.FC = () => {
   const [showAddModal, setShowAddModal] = useState<boolean>(false);
 
   // Fonction pour charger les créneaux pour le mois en cours
-  const loadSlotsForCurrentMonth = async () => {
+  const loadSlotsForCurrentMonth = useCallback(async () => {
     if (!currentUser?.id) return;
 
     try {
@@ -128,7 +128,7 @@ const AvailabilityManagement: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [currentUser?.id]);
 
   const getWeekdayName = (date: Date | string): string => {
     try {
@@ -157,7 +157,7 @@ const AvailabilityManagement: React.FC = () => {
     };
 
     loadProfile();
-  }, [currentUser, loadSlotsForCurrentMonth]);
+  }, [currentUser?.id]);
 
   const handleSlotsChange = (slots: TimeSlot[]) => {
     console.log("🔄 Créneaux modifiés:", slots);
