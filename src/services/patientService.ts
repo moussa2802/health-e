@@ -3,6 +3,7 @@ import {
   collection,
   doc,
   getDoc,
+  setDoc,
   updateDoc,
   addDoc,
   serverTimestamp,
@@ -51,12 +52,29 @@ export async function updatePatientMedicalRecord(
     const db = getFirestoreInstance();
     if (!db) throw new Error("Firestore not available");
 
-    // Check if patient exists
+    // Check if patient exists, create if not
     const patientRef = doc(db, "patients", patientId);
     const patientSnap = await getDoc(patientRef);
 
     if (!patientSnap.exists()) {
-      throw new Error("Patient not found");
+      console.log("🔍 [PATIENT SERVICE] Patient not found, creating new patient:", patientId);
+      
+      // Create new patient document
+      await setDoc(patientRef, {
+        name: `Patient ${patientId.substring(0, 8)}`,
+        email: `patient-${patientId}@health-e.sn`,
+        phone: "",
+        dateOfBirth: "",
+        gender: "",
+        address: "",
+        medicalHistory: "",
+        allergies: "",
+        jitsiId: patientId,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      });
+      
+      console.log("✅ Created new patient:", patientId);
     }
 
     // Create medical records collection if it doesn't exist

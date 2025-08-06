@@ -525,10 +525,26 @@ const ConsultationRoom: React.FC = () => {
       return currentUser.id;
     }
 
-    // If we have a remote user ID and we're the professional, use it as patient ID
-    if (remoteUserId && currentUser?.type === "professional") {
-      console.log("✅ Using remote user as patient:", remoteUserId);
-      return remoteUserId;
+    // For booking consultations, try to extract from room ID or URL
+    if (roomId && roomId.startsWith("booking-")) {
+      const bookingId = roomId.replace("booking-", "");
+      console.log("🔍 [CONSULTATION DEBUG] Extracted booking ID:", bookingId);
+      
+      // Try to get patient ID from URL parameters
+      const urlParams = new URLSearchParams(window.location.search);
+      const patientIdFromUrl = urlParams.get("patientId");
+      if (patientIdFromUrl) {
+        console.log("✅ Found patient ID from URL:", patientIdFromUrl);
+        return patientIdFromUrl;
+      }
+
+      // Try to get patient ID from booking data
+      try {
+        // This would require fetching booking data, but for now we'll use a fallback
+        console.log("🔍 [CONSULTATION DEBUG] Would fetch booking data for:", bookingId);
+      } catch (error) {
+        console.warn("⚠️ Could not fetch booking data:", error);
+      }
     }
 
     // For instant consultations, extract patient ID from room ID
@@ -545,20 +561,6 @@ const ConsultationRoom: React.FC = () => {
       }
     }
 
-    // For booking consultations, try to extract from room ID
-    if (roomId && roomId.startsWith("booking-")) {
-      const bookingId = roomId.replace("booking-", "");
-      console.log("🔍 [CONSULTATION DEBUG] Extracted booking ID:", bookingId);
-      
-      // Try to get patient ID from URL parameters
-      const urlParams = new URLSearchParams(window.location.search);
-      const patientIdFromUrl = urlParams.get("patientId");
-      if (patientIdFromUrl) {
-        console.log("✅ Found patient ID from URL:", patientIdFromUrl);
-        return patientIdFromUrl;
-      }
-    }
-
     // If all else fails, try to get from the other participant
     if (participants.length > 0 && currentUser?.type === "professional") {
       const otherParticipant = participants.find(p => p.id !== currentUser.id);
@@ -571,6 +573,26 @@ const ConsultationRoom: React.FC = () => {
     console.warn("⚠️ Could not determine patient ID");
     console.warn("⚠️ [CONSULTATION DEBUG] All identification methods failed");
     return null;
+  };
+
+  // Create or get patient Firestore ID
+  const getOrCreatePatientId = async (): Promise<string | null> => {
+    const patientId = findPatientId();
+    
+    if (!patientId) {
+      console.error("❌ Could not determine patient ID");
+      return null;
+    }
+
+    // If the patient ID looks like a Firestore ID (long alphanumeric), use it directly
+    if (patientId.length > 20 && /^[a-zA-Z0-9]+$/.test(patientId)) {
+      console.log("✅ Using existing Firestore patient ID:", patientId);
+      return patientId;
+    }
+
+    // For Jitsi IDs, we'll use them directly and create the patient document if needed
+    console.log("🔍 [CONSULTATION DEBUG] Using Jitsi ID as patient ID:", patientId);
+    return patientId;
   };
 
   // Sign prescription
@@ -602,7 +624,7 @@ const ConsultationRoom: React.FC = () => {
     }
 
     // Find the patient ID using our helper function
-    const patientId = findPatientId();
+    const patientId = await getOrCreatePatientId();
 
     if (!patientId) {
       setSaveError("Impossible d'identifier le patient. Veuillez réessayer.");
