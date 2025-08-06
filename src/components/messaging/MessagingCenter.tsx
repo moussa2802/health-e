@@ -1,48 +1,55 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { useAuth } from '../../contexts/AuthContext';
-import { 
-  Search, 
-  Send, 
-  ChevronLeft, 
-  X, 
-  Plus, 
-  User, 
-  AlertCircle, 
-  RefreshCw, 
-  Wifi, 
+import React, { useState, useRef, useEffect } from "react";
+import { useAuth } from "../../contexts/AuthContext";
+import {
+  Search,
+  Send,
+  ChevronLeft,
+  X,
+  Plus,
+  User,
+  AlertCircle,
+  RefreshCw,
+  Wifi,
   WifiOff,
   MessageCircle,
   Paperclip,
   Smile,
   MoreVertical,
   Phone,
-  Video
-} from 'lucide-react';
-import { 
-  subscribeToConversations, 
-  subscribeToMessages, 
-  sendMessage, 
+  Video,
+} from "lucide-react";
+import {
+  subscribeToConversations,
+  subscribeToMessages,
+  sendMessage,
   getOrCreateConversation,
   markMessagesAsRead,
   searchUsers,
   clearMessageCaches,
   type Message,
-  type Conversation 
-} from '../../services/messageService';
-import LoadingSpinner from '../ui/LoadingSpinner';
-import { ensureFirestoreReady, resetFirestoreConnection } from '../../utils/firebase';
+  type Conversation,
+} from "../../services/messageService";
+import LoadingSpinner from "../ui/LoadingSpinner";
+import {
+  ensureFirestoreReady,
+  resetFirestoreConnection,
+} from "../../utils/firebase";
 
 const MessagingCenter: React.FC = () => {
   const { currentUser } = useAuth();
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [messages, setMessages] = useState<Message[]>([]);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null);
-  const [newMessage, setNewMessage] = useState('');
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedConversation, setSelectedConversation] =
+    useState<Conversation | null>(null);
+  const [newMessage, setNewMessage] = useState("");
   const [showMobileConversation, setShowMobileConversation] = useState(false);
-  const [showNewConversationModal, setShowNewConversationModal] = useState(false);
-  const [userSearchTerm, setUserSearchTerm] = useState('');
-  const [searchResults, setUserSearchResults] = useState<Array<{id: string, name: string, type: string, profileImage?: string}>>([]);
+  const [showNewConversationModal, setShowNewConversationModal] =
+    useState(false);
+  const [userSearchTerm, setUserSearchTerm] = useState("");
+  const [searchResults, setUserSearchResults] = useState<
+    Array<{ id: string; name: string; type: string; profileImage?: string }>
+  >([]);
   const [loading, setLoading] = useState(true);
   const [sendingMessage, setSendingMessage] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -59,75 +66,86 @@ const MessagingCenter: React.FC = () => {
     const handleOnline = () => {
       setIsOnline(true);
       setError(null);
-      console.log('🌐 Connection restored');
-      
+      console.log("🌐 Connection restored");
+
       // Ensure Firestore is ready when connection is restored
       ensureFirestoreReady()
         .then(() => {
-          console.log('✅ Firestore ready after connection restored');
+          console.log("✅ Firestore ready after connection restored");
         })
-        .catch(error => {
-          console.warn('⚠️ Failed to ensure Firestore is ready after connection restored:', error);
+        .catch((error) => {
+          console.warn(
+            "⚠️ Failed to ensure Firestore is ready after connection restored:",
+            error
+          );
         });
     };
-    
+
     const handleOffline = () => {
       setIsOnline(false);
-      setError('Connexion internet perdue. Reconnexion automatique en cours...');
-      console.log('📡 Connection lost');
+      setError(
+        "Connexion internet perdue. Reconnexion automatique en cours..."
+      );
+      console.log("📡 Connection lost");
     };
 
-    window.addEventListener('online', handleOnline);
-    window.addEventListener('offline', handleOffline);
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("offline", handleOffline);
 
     return () => {
-      window.removeEventListener('online', handleOnline);
-      window.removeEventListener('offline', handleOffline);
+      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("offline", handleOffline);
     };
   }, []);
 
   // S'abonner aux conversations de l'utilisateur avec gestion d'erreur améliorée
-   useEffect(() => {
+  useEffect(() => {
     if (!currentUser?.id) {
       setLoading(false);
       return;
     }
 
-    console.log('🔔 Setting up conversations subscription...');
+    console.log("🔔 Setting up conversations subscription...");
     setLoading(true);
     setError(null);
-    
+
     // Clean up any existing subscription
     if (unsubscribeConversations.current) {
-      console.log('🧹 Cleaning up existing conversations subscription');
+      console.log("🧹 Cleaning up existing conversations subscription");
       unsubscribeConversations.current();
       unsubscribeConversations.current = null;
     }
-    
+
     // CRITICAL: Ensure Firestore is ready before setting up subscription
     ensureFirestoreReady()
       .then(() => {
-        console.log('✅ Firestore ready for conversations subscription');
+        console.log("✅ Firestore ready for conversations subscription");
       })
-      .catch(error => {
-        console.warn('⚠️ Failed to ensure Firestore is ready before conversations subscription:', error);
+      .catch((error) => {
+        console.warn(
+          "⚠️ Failed to ensure Firestore is ready before conversations subscription:",
+          error
+        );
       })
       .finally(() => {
         try {
           const unsubscribe = subscribeToConversations(
             currentUser.id,
             (conversations) => {
-              console.log('✅ Received conversations:', conversations.length);
+              console.log("✅ Received conversations:", conversations.length);
               setConversations(conversations);
               setLoading(false);
               setError(null);
             }
           );
-          
+
           unsubscribeConversations.current = unsubscribe;
         } catch (error) {
-          console.error('❌ Failed to set up conversations subscription:', error);
-          setError('Erreur lors de la configuration des conversations');
+          console.error(
+            "❌ Failed to set up conversations subscription:",
+            error
+          );
+          setError("Erreur lors de la configuration des conversations");
           setLoading(false);
         }
       });
@@ -139,11 +157,14 @@ const MessagingCenter: React.FC = () => {
       return;
     }
 
-    console.log('🔔 Setting up messages subscription for conversation:', selectedConversation.id);
-    
+    console.log(
+      "🔔 Setting up messages subscription for conversation:",
+      selectedConversation.id
+    );
+
     // Clean up any existing subscription
     if (unsubscribeMessages.current) {
-      console.log('🧹 Cleaning up existing messages subscription');
+      console.log("🧹 Cleaning up existing messages subscription");
       unsubscribeMessages.current();
       unsubscribeMessages.current = null;
     }
@@ -152,22 +173,19 @@ const MessagingCenter: React.FC = () => {
       const unsubscribe = subscribeToMessages(
         selectedConversation.id,
         (messages) => {
-          console.log('✅ Received messages:', messages.length);
+          console.log("✅ Received messages:", messages.length);
           setMessages(messages);
-          
+
           // Marquer les messages comme lus
           if (messages.length > 0) {
             markMessagesAsRead(selectedConversation.id, currentUser.id);
           }
-        },
-        (error) => {
-          console.error('❌ Error in messages subscription:', error);
         }
       );
-      
+
       unsubscribeMessages.current = unsubscribe;
     } catch (error) {
-      console.error('❌ Failed to set up messages subscription:', error);
+      console.error("❌ Failed to set up messages subscription:", error);
     }
   }, [selectedConversation?.id, currentUser?.id]);
 
@@ -180,10 +198,14 @@ const MessagingCenter: React.FC = () => {
     if (userSearchTerm.length >= 2) {
       searchTimeoutRef.current = setTimeout(async () => {
         try {
-          const results = await searchUsers(userSearchTerm);
+          const results = await searchUsers(
+            userSearchTerm,
+            currentUser?.id || "",
+            currentUser?.type as "patient" | "professional" | "admin"
+          );
           setUserSearchResults(results);
         } catch (error) {
-          console.error('❌ Error searching users:', error);
+          console.error("❌ Error searching users:", error);
           setUserSearchResults([]);
         }
       }, 300);
@@ -196,7 +218,7 @@ const MessagingCenter: React.FC = () => {
         clearTimeout(searchTimeoutRef.current);
       }
     };
-  }, [userSearchTerm]);
+  }, [userSearchTerm, currentUser?.id, currentUser?.type]);
 
   // Scroll to bottom when new messages arrive
   useEffect(() => {
@@ -217,117 +239,158 @@ const MessagingCenter: React.FC = () => {
 
   const scrollToBottom = () => {
     if (messagesEndRef.current) {
-      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+      messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
     }
   };
 
   const handleRetry = async () => {
-    setRetryCount(prev => prev + 1);
     setError(null);
-    
+
     try {
       await resetFirestoreConnection();
-      console.log('✅ Firestore connection reset');
-      
+      console.log("✅ Firestore connection reset");
+
       // Clear existing data
       setConversations([]);
       setMessages([]);
       setSelectedConversation(null);
-      
+
       // Clear caches
       await clearMessageCaches();
-      console.log('✅ Message caches cleared');
-      
+      console.log("✅ Message caches cleared");
+
       // Force re-subscription by updating currentUser dependency
       // This will trigger the useEffect that sets up conversations subscription
     } catch (error) {
-      console.error('❌ Error during retry:', error);
-      setError('Erreur lors de la reconnexion');
+      console.error("❌ Error during retry:", error);
+      setError("Erreur lors de la reconnexion");
     }
   };
 
   const handleSendMessage = async () => {
-    if (!newMessage.trim() || !selectedConversation || !currentUser?.id || sendingMessage) {
+    if (
+      !newMessage.trim() ||
+      !selectedConversation ||
+      !currentUser?.id ||
+      sendingMessage
+    ) {
       return;
     }
 
     setSendingMessage(true);
     try {
-      await sendMessage(selectedConversation.id, newMessage.trim(), currentUser.id);
-      setNewMessage('');
+      await sendMessage(
+        selectedConversation.id,
+        currentUser.id,
+        currentUser.name,
+        currentUser.type as "patient" | "professional" | "admin",
+        newMessage.trim()
+      );
+      setNewMessage("");
     } catch (error) {
-      console.error('❌ Error sending message:', error);
-      setError('Erreur lors de l\'envoi du message');
+      console.error("❌ Error sending message:", error);
+      setError("Erreur lors de l'envoi du message");
     } finally {
       setSendingMessage(false);
     }
   };
 
-  const handleStartNewConversation = async (targetUser: {id: string, name: string, type: string}) => {
+  const handleStartNewConversation = async (targetUser: {
+    id: string;
+    name: string;
+    type: string;
+  }) => {
     if (!currentUser?.id) return;
 
     try {
-      const conversation = await getOrCreateConversation(currentUser.id, targetUser.id);
-      setSelectedConversation(conversation);
-      setShowNewConversationModal(false);
-      setUserSearchTerm('');
-      setUserSearchResults([]);
-      setShowMobileConversation(true);
+      const conversationId = await getOrCreateConversation(
+        currentUser.id,
+        currentUser.name,
+        currentUser.type as "patient" | "professional" | "admin",
+        targetUser.id,
+        targetUser.name,
+        targetUser.type as "patient" | "professional" | "admin"
+      );
+      
+      // Trouver la conversation dans la liste
+      const conversation = conversations.find(c => c.id === conversationId);
+      if (conversation) {
+        setSelectedConversation(conversation);
+        setShowNewConversationModal(false);
+        setUserSearchTerm("");
+        setUserSearchResults([]);
+        setShowMobileConversation(true);
+      }
     } catch (error) {
-      console.error('❌ Error starting new conversation:', error);
-      setError('Erreur lors de la création de la conversation');
+      console.error("❌ Error starting new conversation:", error);
+      setError("Erreur lors de la création de la conversation");
     }
   };
 
   const getOtherParticipant = (conversation: Conversation) => {
-    const otherParticipantId = conversation.participants.find(id => id !== currentUser?.id);
+    const otherParticipantId = conversation.participants.find(
+      (id) => id !== currentUser?.id
+    );
     if (!otherParticipantId) return null;
 
-    // Find the participant in the conversation data
-    const participant = conversation.participantDetails?.find(p => p.id === otherParticipantId);
-    return participant || { id: otherParticipantId, name: 'Utilisateur inconnu', type: 'unknown' };
+    return {
+      id: otherParticipantId,
+      name: conversation.participantNames[otherParticipantId] || "Utilisateur inconnu",
+      type: conversation.participantTypes[otherParticipantId] || "unknown"
+    };
   };
 
   const formatConversationTime = (timestamp: any) => {
-    if (!timestamp) return '';
-    
+    if (!timestamp) return "";
+
     try {
       const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
       const now = new Date();
       const diffInHours = (now.getTime() - date.getTime()) / (1000 * 60 * 60);
-      
+
       if (diffInHours < 24) {
-        return date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+        return date.toLocaleTimeString("fr-FR", {
+          hour: "2-digit",
+          minute: "2-digit",
+        });
       } else if (diffInHours < 48) {
-        return 'Hier';
+        return "Hier";
       } else {
-        return date.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' });
+        return date.toLocaleDateString("fr-FR", {
+          day: "2-digit",
+          month: "2-digit",
+        });
       }
     } catch (error) {
-      console.error('❌ Error formatting conversation time:', error);
-      return '';
+      console.error("❌ Error formatting conversation time:", error);
+      return "";
     }
   };
 
   const formatMessageTime = (timestamp: any) => {
-    if (!timestamp) return '';
-    
+    if (!timestamp) return "";
+
     try {
       const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
-      return date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+      return date.toLocaleTimeString("fr-FR", {
+        hour: "2-digit",
+        minute: "2-digit",
+      });
     } catch (error) {
-      console.error('❌ Error formatting message time:', error);
-      return '';
+      console.error("❌ Error formatting message time:", error);
+      return "";
     }
   };
 
-  const filteredConversations = conversations.filter(conversation => {
+  const filteredConversations = conversations.filter((conversation) => {
     if (!searchTerm) return true;
-    
+
     const otherParticipant = getOtherParticipant(conversation);
     if (!otherParticipant) return false;
-    
-    return otherParticipant.name.toLowerCase().includes(searchTerm.toLowerCase());
+
+    return otherParticipant.name
+      .toLowerCase()
+      .includes(searchTerm.toLowerCase());
   });
 
   if (loading) {
@@ -335,7 +398,9 @@ const MessagingCenter: React.FC = () => {
       <div className="h-[calc(100vh-8rem)] bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
         <div className="text-center">
           <LoadingSpinner size="lg" />
-          <p className="mt-4 text-lg text-gray-600">Chargement des conversations...</p>
+          <p className="mt-4 text-lg text-gray-600">
+            Chargement des conversations...
+          </p>
         </div>
       </div>
     );
@@ -346,7 +411,9 @@ const MessagingCenter: React.FC = () => {
       <div className="h-[calc(100vh-8rem)] bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
         <div className="text-center max-w-md mx-auto">
           <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">Erreur de connexion</h3>
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">
+            Erreur de connexion
+          </h3>
           <p className="text-gray-600 mb-6">{error}</p>
           <div className="space-y-3">
             <button
@@ -379,9 +446,11 @@ const MessagingCenter: React.FC = () => {
     <div className="h-[calc(100vh-8rem)] bg-gradient-to-br from-blue-50 to-indigo-100 rounded-2xl shadow-xl overflow-hidden">
       <div className="flex h-full bg-white">
         {/* Liste des conversations - Colonne gauche */}
-        <div className={`w-full md:w-1/3 bg-white border-r border-gray-100 ${
-          showMobileConversation ? 'hidden md:block' : 'block'
-        }`}>
+        <div
+          className={`w-full md:w-1/3 bg-white border-r border-gray-100 ${
+            showMobileConversation ? "hidden md:block" : "block"
+          }`}
+        >
           {/* Header de la liste des conversations */}
           <div className="p-6 border-b border-gray-100 bg-gradient-to-r from-blue-600 to-blue-700">
             <div className="flex items-center justify-between mb-4">
@@ -391,16 +460,26 @@ const MessagingCenter: React.FC = () => {
                 </div>
                 <div>
                   <h2 className="text-xl font-bold text-white">Messages</h2>
-                  <p className="text-blue-100 text-sm">{conversations.length} conversations</p>
+                  <p className="text-blue-100 text-sm">
+                    {conversations.length} conversations
+                  </p>
                 </div>
               </div>
               <div className="flex items-center gap-2">
                 {/* Indicateur de connexion */}
-                <div className={`flex items-center px-3 py-1 rounded-full text-xs font-medium ${
-                  isOnline ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                }`}>
-                  {isOnline ? <Wifi className="h-3 w-3 mr-1" /> : <WifiOff className="h-3 w-3 mr-1" />}
-                  {isOnline ? 'En ligne' : 'Hors ligne'}
+                <div
+                  className={`flex items-center px-3 py-1 rounded-full text-xs font-medium ${
+                    isOnline
+                      ? "bg-green-100 text-green-800"
+                      : "bg-red-100 text-red-800"
+                  }`}
+                >
+                  {isOnline ? (
+                    <Wifi className="h-3 w-3 mr-1" />
+                  ) : (
+                    <WifiOff className="h-3 w-3 mr-1" />
+                  )}
+                  {isOnline ? "En ligne" : "Hors ligne"}
                 </div>
                 <button
                   onClick={() => setShowNewConversationModal(true)}
@@ -411,7 +490,7 @@ const MessagingCenter: React.FC = () => {
                 </button>
               </div>
             </div>
-            
+
             {/* Barre de recherche */}
             <div className="relative">
               <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
@@ -463,9 +542,9 @@ const MessagingCenter: React.FC = () => {
                         setShowMobileConversation(true);
                       }}
                       className={`w-full p-4 text-left hover:bg-gray-50 rounded-xl transition-all duration-200 mb-2 ${
-                        selectedConversation?.id === conversation.id 
-                          ? 'bg-blue-50 border border-blue-200 shadow-sm' 
-                          : 'hover:shadow-sm'
+                        selectedConversation?.id === conversation.id
+                          ? "bg-blue-50 border border-blue-200 shadow-sm"
+                          : "hover:shadow-sm"
                       }`}
                     >
                       <div className="flex items-center space-x-3">
@@ -474,21 +553,31 @@ const MessagingCenter: React.FC = () => {
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex justify-between items-start">
-                            <h3 className="font-semibold text-gray-900 truncate">{otherParticipant.name}</h3>
+                            <h3 className="font-semibold text-gray-900 truncate">
+                              {otherParticipant.name}
+                            </h3>
                             {conversation.lastMessage && (
                               <span className="text-xs text-gray-500 flex-shrink-0 ml-2">
-                                {formatConversationTime(conversation.lastMessage.timestamp)}
+                                {formatConversationTime(
+                                  conversation.lastMessage.timestamp
+                                )}
                               </span>
                             )}
                           </div>
                           <div className="flex justify-between items-center mt-1">
                             <p className="text-sm text-gray-500 capitalize">
-                              {otherParticipant.type === 'professional' ? 'Professionnel' : 
-                               otherParticipant.type === 'admin' ? 'Administrateur' : 'Patient'}
+                              {otherParticipant.type === "professional"
+                                ? "Professionnel"
+                                : otherParticipant.type === "admin"
+                                ? "Administrateur"
+                                : "Patient"}
                             </p>
                             {conversation.lastMessage && (
                               <p className="text-sm text-gray-500 truncate max-w-32">
-                                {conversation.lastMessage.senderId === currentUser?.id ? 'Vous: ' : ''}
+                                {conversation.lastMessage.senderId ===
+                                currentUser?.id
+                                  ? "Vous: "
+                                  : ""}
                                 {conversation.lastMessage.content}
                               </p>
                             )}
@@ -504,9 +593,11 @@ const MessagingCenter: React.FC = () => {
         </div>
 
         {/* Zone de chat - Colonne droite */}
-        <div className={`w-full md:w-2/3 flex flex-col bg-white ${
-          !showMobileConversation ? 'hidden md:flex' : 'flex'
-        }`}>
+        <div
+          className={`w-full md:w-2/3 flex flex-col bg-white ${
+            !showMobileConversation ? "hidden md:flex" : "flex"
+          }`}
+        >
           {selectedConversation ? (
             <>
               {/* En-tête du chat */}
@@ -523,13 +614,19 @@ const MessagingCenter: React.FC = () => {
                   </div>
                   <div className="ml-4 flex-1">
                     {(() => {
-                      const otherParticipant = getOtherParticipant(selectedConversation);
+                      const otherParticipant =
+                        getOtherParticipant(selectedConversation);
                       return otherParticipant ? (
                         <>
-                          <h2 className="font-semibold text-gray-900 text-lg">{otherParticipant.name}</h2>
+                          <h2 className="font-semibold text-gray-900 text-lg">
+                            {otherParticipant.name}
+                          </h2>
                           <p className="text-sm text-gray-500 capitalize">
-                            {otherParticipant.type === 'professional' ? 'Professionnel' : 
-                             otherParticipant.type === 'admin' ? 'Administrateur' : 'Patient'}
+                            {otherParticipant.type === "professional"
+                              ? "Professionnel"
+                              : otherParticipant.type === "admin"
+                              ? "Administrateur"
+                              : "Patient"}
                           </p>
                         </>
                       ) : null;
@@ -550,12 +647,17 @@ const MessagingCenter: React.FC = () => {
               </div>
 
               {/* Messages */}
-              <div ref={messagesContainerRef} className="flex-1 overflow-y-auto p-6 space-y-4 bg-gradient-to-b from-gray-50 to-white">
+              <div
+                ref={messagesContainerRef}
+                className="flex-1 overflow-y-auto p-6 space-y-4 bg-gradient-to-b from-gray-50 to-white"
+              >
                 {messages.length === 0 ? (
                   <div className="text-center py-8">
                     <div className="p-4 bg-white rounded-2xl shadow-sm inline-block">
                       <MessageCircle className="h-8 w-8 text-gray-300 mx-auto mb-2" />
-                      <p className="text-gray-500 text-sm">Début de la conversation</p>
+                      <p className="text-gray-500 text-sm">
+                        Début de la conversation
+                      </p>
                     </div>
                   </div>
                 ) : (
@@ -563,20 +665,28 @@ const MessagingCenter: React.FC = () => {
                     <div
                       key={message.id}
                       className={`flex ${
-                        message.senderId === currentUser?.id ? 'justify-end' : 'justify-start'
+                        message.senderId === currentUser?.id
+                          ? "justify-end"
+                          : "justify-start"
                       }`}
                     >
                       <div
                         className={`max-w-[70%] rounded-2xl px-4 py-3 shadow-sm ${
                           message.senderId === currentUser?.id
-                            ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white'
-                            : 'bg-white text-gray-900 border border-gray-200'
+                            ? "bg-gradient-to-r from-blue-600 to-blue-700 text-white"
+                            : "bg-white text-gray-900 border border-gray-200"
                         }`}
                       >
-                        <p className="text-sm leading-relaxed">{message.content}</p>
-                        <p className={`text-xs mt-2 ${
-                          message.senderId === currentUser?.id ? 'text-blue-100' : 'text-gray-500'
-                        }`}>
+                        <p className="text-sm leading-relaxed">
+                          {message.content}
+                        </p>
+                        <p
+                          className={`text-xs mt-2 ${
+                            message.senderId === currentUser?.id
+                              ? "text-blue-100"
+                              : "text-gray-500"
+                          }`}
+                        >
                           {formatMessageTime(message.timestamp)}
                         </p>
                       </div>
@@ -588,10 +698,13 @@ const MessagingCenter: React.FC = () => {
 
               {/* Zone de saisie */}
               <div className="p-6 border-t border-gray-100 bg-white">
-                <form onSubmit={(e) => {
-                  e.preventDefault();
-                  handleSendMessage();
-                }} className="flex gap-3">
+                <form
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    handleSendMessage();
+                  }}
+                  className="flex gap-3"
+                >
                   <div className="flex-1 relative">
                     <input
                       type="text"
@@ -622,7 +735,7 @@ const MessagingCenter: React.FC = () => {
                     className="px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl hover:from-blue-700 hover:to-blue-800 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200"
                   >
                     {sendingMessage ? (
-                      <LoadingSpinner size="sm" color="white" />
+                      <LoadingSpinner size="sm" />
                     ) : (
                       <Send className="h-5 w-5" />
                     )}
@@ -641,8 +754,12 @@ const MessagingCenter: React.FC = () => {
               <div className="text-center max-w-md">
                 <div className="p-6 bg-white rounded-2xl shadow-lg">
                   <MessageCircle className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">Sélectionnez une conversation</h3>
-                  <p className="text-gray-500 mb-6">Choisissez une conversation pour commencer à discuter</p>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                    Sélectionnez une conversation
+                  </h3>
+                  <p className="text-gray-500 mb-6">
+                    Choisissez une conversation pour commencer à discuter
+                  </p>
                   <button
                     onClick={() => setShowNewConversationModal(true)}
                     className="px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all duration-200 flex items-center gap-2 mx-auto shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
@@ -662,7 +779,9 @@ const MessagingCenter: React.FC = () => {
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
           <div className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-md mx-4">
             <div className="flex justify-between items-center mb-6">
-              <h2 className="text-xl font-bold text-gray-900">Nouvelle conversation</h2>
+              <h2 className="text-xl font-bold text-gray-900">
+                Nouvelle conversation
+              </h2>
               <button
                 onClick={() => setShowNewConversationModal(false)}
                 className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-xl transition-all duration-200"
@@ -702,8 +821,11 @@ const MessagingCenter: React.FC = () => {
                       <div>
                         <p className="font-medium text-gray-900">{user.name}</p>
                         <p className="text-sm text-gray-500 capitalize">
-                          {user.type === 'professional' ? 'Professionnel' : 
-                           user.type === 'admin' ? 'Administrateur' : 'Patient'}
+                          {user.type === "professional"
+                            ? "Professionnel"
+                            : user.type === "admin"
+                            ? "Administrateur"
+                            : "Patient"}
                         </p>
                       </div>
                     </button>
@@ -721,7 +843,9 @@ const MessagingCenter: React.FC = () => {
               {userSearchTerm.length < 2 && (
                 <div className="p-4 text-center text-gray-500 bg-gray-50 rounded-xl">
                   <MessageCircle className="h-8 w-8 text-gray-300 mx-auto mb-2" />
-                  <p className="text-sm">Tapez au moins 2 caractères pour rechercher</p>
+                  <p className="text-sm">
+                    Tapez au moins 2 caractères pour rechercher
+                  </p>
                 </div>
               )}
             </div>
