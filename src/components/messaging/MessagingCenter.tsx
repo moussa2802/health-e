@@ -54,7 +54,7 @@ const MessagingCenter: React.FC = () => {
   const [sendingMessage, setSendingMessage] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
-  
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const unsubscribeConversations = useRef<(() => void) | null>(null);
@@ -311,9 +311,9 @@ const MessagingCenter: React.FC = () => {
         targetUser.name,
         targetUser.type as "patient" | "professional" | "admin"
       );
-      
+
       // Trouver la conversation dans la liste
-      const conversation = conversations.find(c => c.id === conversationId);
+      const conversation = conversations.find((c) => c.id === conversationId);
       if (conversation) {
         setSelectedConversation(conversation);
         setShowNewConversationModal(false);
@@ -335,8 +335,10 @@ const MessagingCenter: React.FC = () => {
 
     return {
       id: otherParticipantId,
-      name: conversation.participantNames[otherParticipantId] || "Utilisateur inconnu",
-      type: conversation.participantTypes[otherParticipantId] || "unknown"
+      name:
+        conversation.participantNames[otherParticipantId] ||
+        "Utilisateur inconnu",
+      type: conversation.participantTypes[otherParticipantId] || "unknown",
     };
   };
 
@@ -451,12 +453,12 @@ const MessagingCenter: React.FC = () => {
             showMobileConversation ? "hidden md:block" : "block"
           }`}
         >
-          {/* Header de la liste des conversations */}
-          <div className="p-6 border-b border-gray-100 bg-gradient-to-r from-blue-600 to-blue-700">
-            <div className="flex items-center justify-between mb-4">
+          {/* Header */}
+          <div className="p-6 border-b border-gray-100 bg-gradient-to-r from-blue-500 to-blue-600">
+            <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-white/20 rounded-xl">
-                  <MessageCircle className="h-6 w-6 text-white" />
+                <div className="p-2 bg-blue-100 rounded-full">
+                  <MessageCircle className="h-6 w-6 text-blue-600" />
                 </div>
                 <div>
                   <h2 className="text-xl font-bold text-white">Messages</h2>
@@ -465,43 +467,33 @@ const MessagingCenter: React.FC = () => {
                   </p>
                 </div>
               </div>
-              <div className="flex items-center gap-2">
-                {/* Indicateur de connexion */}
-                <div
-                  className={`flex items-center px-3 py-1 rounded-full text-xs font-medium ${
-                    isOnline
-                      ? "bg-green-100 text-green-800"
-                      : "bg-red-100 text-red-800"
-                  }`}
-                >
-                  {isOnline ? (
-                    <Wifi className="h-3 w-3 mr-1" />
-                  ) : (
-                    <WifiOff className="h-3 w-3 mr-1" />
-                  )}
-                  {isOnline ? "En ligne" : "Hors ligne"}
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2 px-3 py-1 bg-green-100 rounded-full">
+                  <Wifi className="h-4 w-4 text-green-600" />
+                  <span className="text-green-700 text-sm font-medium">
+                    En ligne
+                  </span>
                 </div>
                 <button
                   onClick={() => setShowNewConversationModal(true)}
-                  className="p-2 bg-white/20 text-white rounded-xl hover:bg-white/30 transition-all duration-200"
-                  title="Nouvelle conversation"
+                  className="p-2 bg-white/20 hover:bg-white/30 rounded-full transition-colors"
                 >
-                  <Plus className="h-5 w-5" />
+                  <Plus className="h-5 w-5 text-white" />
                 </button>
               </div>
             </div>
+          </div>
 
-            {/* Barre de recherche */}
-            <div className="relative">
-              <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-              <input
-                type="text"
-                placeholder="Rechercher une conversation..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-12 pr-4 py-3 bg-white/90 backdrop-blur-sm border-0 rounded-xl focus:outline-none focus:ring-2 focus:ring-white/50 text-gray-900 placeholder-gray-500"
-              />
-            </div>
+          {/* Barre de recherche */}
+          <div className="relative">
+            <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+            <input
+              type="text"
+              placeholder="Rechercher une conversation..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-12 pr-4 py-3 bg-white/90 backdrop-blur-sm border-0 rounded-xl focus:outline-none focus:ring-2 focus:ring-white/50 text-gray-900 placeholder-gray-500"
+            />
           </div>
 
           {/* Liste des conversations */}
@@ -673,7 +665,7 @@ const MessagingCenter: React.FC = () => {
                       <div
                         className={`max-w-[70%] rounded-2xl px-4 py-3 shadow-sm ${
                           message.senderId === currentUser?.id
-                            ? "bg-gradient-to-r from-blue-600 to-blue-700 text-white"
+                            ? "bg-gradient-to-r from-blue-500 to-blue-600 text-white"
                             : "bg-white text-gray-900 border border-gray-200"
                         }`}
                       >
@@ -732,7 +724,7 @@ const MessagingCenter: React.FC = () => {
                   <button
                     type="submit"
                     disabled={!newMessage.trim() || sendingMessage || !isOnline}
-                    className="px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl hover:from-blue-700 hover:to-blue-800 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200"
+                    className="px-6 py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-xl hover:from-blue-600 hover:to-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200"
                   >
                     {sendingMessage ? (
                       <LoadingSpinner size="sm" />
@@ -762,7 +754,7 @@ const MessagingCenter: React.FC = () => {
                   </p>
                   <button
                     onClick={() => setShowNewConversationModal(true)}
-                    className="px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all duration-200 flex items-center gap-2 mx-auto shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+                    className="px-6 py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-xl hover:from-blue-600 hover:to-blue-700 transition-all duration-200 flex items-center gap-2 mx-auto shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
                   >
                     <Plus className="h-5 w-5" />
                     Nouvelle conversation
