@@ -78,7 +78,16 @@ const ModernInput: React.FC<{
   type?: string;
   required?: boolean;
   error?: string;
-}> = ({ label, value, onChange, icon: Icon, placeholder, type = "text", required = false, error }) => {
+}> = ({
+  label,
+  value,
+  onChange,
+  icon: Icon,
+  placeholder,
+  type = "text",
+  required = false,
+  error,
+}) => {
   return (
     <div className="space-y-2">
       <label className="block text-sm font-medium text-gray-700 flex items-center gap-2">
@@ -119,7 +128,15 @@ const ModernSelect: React.FC<{
   icon: React.ComponentType<any>;
   required?: boolean;
   error?: string;
-}> = ({ label, value, onChange, options, icon: Icon, required = false, error }) => {
+}> = ({
+  label,
+  value,
+  onChange,
+  options,
+  icon: Icon,
+  required = false,
+  error,
+}) => {
   return (
     <div className="space-y-2">
       <label className="block text-sm font-medium text-gray-700 flex items-center gap-2">
@@ -173,7 +190,9 @@ const Tag: React.FC<{
   };
 
   return (
-    <span className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm font-medium border ${colorClasses[color]}`}>
+    <span
+      className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm font-medium border ${colorClasses[color]}`}
+    >
       {label}
       {onRemove && (
         <button
@@ -206,7 +225,7 @@ const ProfileImage: React.FC<{
         ) : (
           <User className="h-16 w-16 text-gray-400" />
         )}
-        
+
         {/* Upload overlay */}
         {isUploading && (
           <div className="absolute inset-0 bg-black/50 flex items-center justify-center rounded-full">
@@ -216,13 +235,13 @@ const ProfileImage: React.FC<{
             </div>
           </div>
         )}
-        
+
         {/* Hover overlay */}
         <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center rounded-full cursor-pointer">
           <Camera className="h-8 w-8 text-white" />
         </div>
       </div>
-      
+
       <button
         onClick={onImageClick}
         className="absolute -bottom-2 -right-2 bg-blue-600 text-white p-2 rounded-full shadow-lg hover:bg-blue-700 transition-colors"
@@ -241,26 +260,47 @@ const SignatureSection: React.FC<{
   onStampClick: () => void;
   isUploadingSignature: boolean;
   isUploadingStamp: boolean;
-}> = ({ signatureUrl, stampUrl, onSignatureClick, onStampClick, isUploadingSignature, isUploadingStamp }) => {
+}> = ({
+  signatureUrl,
+  stampUrl,
+  onSignatureClick,
+  onStampClick,
+  isUploadingSignature,
+  isUploadingStamp,
+}) => {
   return (
     <div className="bg-white rounded-2xl shadow-lg p-6">
       <div className="flex items-center gap-2 mb-4">
         <PenTool className="h-5 w-5 text-blue-600" />
-        <h3 className="text-lg font-semibold text-gray-900">Signature & Cachet</h3>
-        <div className="flex items-center gap-1 text-gray-500" title="Ces éléments seront utilisés pour signer électroniquement vos prescriptions">
+        <h3 className="text-lg font-semibold text-gray-900">
+          Signature & Cachet
+        </h3>
+        <div
+          className="flex items-center gap-1 text-gray-500"
+          title="Ces éléments seront utilisés pour signer électroniquement vos prescriptions"
+        >
           <Info className="h-4 w-4" />
           <span className="text-xs">Électronique</span>
         </div>
       </div>
-      
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Signature */}
         <div className="space-y-3">
-          <label className="block text-sm font-medium text-gray-700">Signature</label>
-          <div className="border-2 border-dashed border-gray-300 rounded-xl p-4 hover:border-blue-400 transition-colors cursor-pointer" onClick={onSignatureClick}>
+          <label className="block text-sm font-medium text-gray-700">
+            Signature
+          </label>
+          <div
+            className="border-2 border-dashed border-gray-300 rounded-xl p-4 hover:border-blue-400 transition-colors cursor-pointer"
+            onClick={onSignatureClick}
+          >
             {signatureUrl ? (
               <div className="relative">
-                <img src={signatureUrl} alt="Signature" className="w-full h-20 object-contain" />
+                <img
+                  src={signatureUrl}
+                  alt="Signature"
+                  className="w-full h-20 object-contain"
+                />
                 {isUploadingSignature && (
                   <div className="absolute inset-0 bg-white/80 flex items-center justify-center">
                     <LoadingSpinner size="sm" />
@@ -270,19 +310,30 @@ const SignatureSection: React.FC<{
             ) : (
               <div className="text-center py-8">
                 <PenTool className="h-8 w-8 text-gray-400 mx-auto mb-2" />
-                <p className="text-sm text-gray-500">Cliquez pour ajouter votre signature</p>
+                <p className="text-sm text-gray-500">
+                  Cliquez pour ajouter votre signature
+                </p>
               </div>
             )}
           </div>
         </div>
-        
+
         {/* Stamp */}
         <div className="space-y-3">
-          <label className="block text-sm font-medium text-gray-700">Cachet</label>
-          <div className="border-2 border-dashed border-gray-300 rounded-xl p-4 hover:border-blue-400 transition-colors cursor-pointer" onClick={onStampClick}>
+          <label className="block text-sm font-medium text-gray-700">
+            Cachet
+          </label>
+          <div
+            className="border-2 border-dashed border-gray-300 rounded-xl p-4 hover:border-blue-400 transition-colors cursor-pointer"
+            onClick={onStampClick}
+          >
             {stampUrl ? (
               <div className="relative">
-                <img src={stampUrl} alt="Cachet" className="w-full h-20 object-contain" />
+                <img
+                  src={stampUrl}
+                  alt="Cachet"
+                  className="w-full h-20 object-contain"
+                />
                 {isUploadingStamp && (
                   <div className="absolute inset-0 bg-white/80 flex items-center justify-center">
                     <LoadingSpinner size="sm" />
@@ -292,7 +343,9 @@ const SignatureSection: React.FC<{
             ) : (
               <div className="text-center py-8">
                 <Shield className="h-8 w-8 text-gray-400 mx-auto mb-2" />
-                <p className="text-sm text-gray-500">Cliquez pour ajouter votre cachet</p>
+                <p className="text-sm text-gray-500">
+                  Cliquez pour ajouter votre cachet
+                </p>
               </div>
             )}
           </div>
@@ -1264,8 +1317,12 @@ const ProfessionalSettings: React.FC = () => {
         <div className="bg-white rounded-2xl shadow-lg p-6 mb-8">
           <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">Paramètres du profil</h1>
-              <p className="text-gray-600 mt-2">Gérez vos informations professionnelles et votre disponibilité</p>
+              <h1 className="text-3xl font-bold text-gray-900">
+                Paramètres du profil
+              </h1>
+              <p className="text-gray-600 mt-2">
+                Gérez vos informations professionnelles et votre disponibilité
+              </p>
             </div>
 
             <div className="flex items-center gap-4">
@@ -1335,6 +1392,58 @@ const ProfessionalSettings: React.FC = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Left Column - Personal Information */}
           <div className="lg:col-span-2 space-y-6">
+            {/* Profile Status Section */}
+            <div className="bg-white rounded-2xl shadow-lg p-6">
+              <div className="flex items-center gap-2 mb-4">
+                <Settings className="h-6 w-6 text-blue-600" />
+                <h2 className="text-xl font-semibold text-gray-900">Statut du profil</h2>
+              </div>
+              
+              <div className="flex justify-between items-center">
+                <div>
+                  <p className="text-sm text-gray-600 mb-2">
+                    Ce bouton permet de rendre votre profil visible pour les patients.
+                  </p>
+                  {!profileData.isApproved && (
+                    <p className="text-sm text-red-600">
+                      ⚠️ Votre profil est en attente de validation par un administrateur.
+                      Vous ne pouvez pas l'activer pour le moment.
+                    </p>
+                  )}
+                </div>
+                
+                <div>
+                  <label
+                    htmlFor="isActive"
+                    className={`inline-flex items-center px-4 py-2 rounded-xl font-medium text-sm shadow-sm transition-colors duration-150 ${
+                      profileData.isApproved
+                        ? profileData.isActive
+                          ? "bg-green-600 text-white hover:bg-green-700"
+                          : "bg-gray-300 text-gray-800 hover:bg-gray-400"
+                        : "bg-gray-200 text-gray-500 cursor-not-allowed"
+                    }`}
+                  >
+                    <input
+                      type="checkbox"
+                      id="isActive"
+                      checked={profileData.isActive || false}
+                      disabled={!profileData.isApproved}
+                      onChange={(e) => {
+                        if (profileData.isApproved) {
+                          setProfileData((prev) => ({
+                            ...prev,
+                            isActive: e.target.checked,
+                          }));
+                        }
+                      }}
+                      className="sr-only"
+                    />
+                    {profileData.isActive ? "Profil actif" : "Activer mon profil"}
+                  </label>
+                </div>
+              </div>
+            </div>
+
             {/* Personal Information Section */}
             <div className="bg-white rounded-2xl shadow-lg p-6">
               <div className="flex items-center gap-2 mb-6">
@@ -1346,38 +1455,114 @@ const ProfessionalSettings: React.FC = () => {
                 <ModernInput
                   label="Nom complet"
                   value={profileData.name || ""}
-                  onChange={(value) => setProfileData({ ...profileData, name: value })}
+                  onChange={(value) =>
+                    setProfileData({ ...profileData, name: value })
+                  }
                   icon={User}
                   placeholder="Votre nom complet"
                   required
                 />
                 
-                <ModernInput
-                  label="Email"
-                  value={profileData.email || ""}
-                  onChange={(value) => setProfileData({ ...profileData, email: value })}
-                  icon={Mail}
-                  type="email"
-                  placeholder="votre@email.com"
-                  required
-                />
-                
-                <ModernInput
-                  label="Téléphone"
-                  value={profileData.phone || ""}
-                  onChange={(value) => setProfileData({ ...profileData, phone: value })}
-                  icon={Phone}
-                  type="tel"
-                  placeholder="Votre numéro de téléphone"
-                />
-                
-                <ModernInput
-                  label="Localisation"
-                  value={profileData.location || ""}
-                  onChange={(value) => setProfileData({ ...profileData, location: value })}
-                  icon={MapPin}
-                  placeholder="Votre ville ou région"
-                />
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-gray-700 flex items-center gap-2">
+                    <Mail className="h-4 w-4 text-gray-500" />
+                    Email *
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="email"
+                      value={profileData.email || ""}
+                      disabled
+                      className="w-full px-4 py-3 pl-12 border border-gray-300 bg-gray-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+                    />
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <Mail className="h-5 w-5 text-gray-400" />
+                    </div>
+                  </div>
+                  <p className="text-sm text-gray-500">
+                    L'adresse email ne peut pas être modifiée pour des raisons de sécurité.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Service Type Section */}
+            <div className="bg-white rounded-2xl shadow-lg p-6">
+              <div className="flex items-center gap-2 mb-6">
+                <Award className="h-6 w-6 text-blue-600" />
+                <h2 className="text-xl font-semibold text-gray-900">Type de service</h2>
+              </div>
+              
+              <div className="space-y-4">
+                <div className="flex space-x-4">
+                  <label className="inline-flex items-center">
+                    <input
+                      type="radio"
+                      className="form-radio h-5 w-5 text-blue-600"
+                      name="serviceType"
+                      value="mental"
+                      checked={profileData.type === "mental"}
+                      onChange={(e) =>
+                        setProfileData((prev) => ({
+                          ...prev,
+                          type: e.target.value as "mental" | "sexual",
+                        }))
+                      }
+                    />
+                    <span className="ml-2 text-gray-700">Santé mentale</span>
+                  </label>
+                  <label className="inline-flex items-center">
+                    <input
+                      type="radio"
+                      className="form-radio h-5 w-5 text-blue-600"
+                      name="serviceType"
+                      value="sexual"
+                      checked={profileData.type === "sexual"}
+                      onChange={(e) =>
+                        setProfileData((prev) => ({
+                          ...prev,
+                          type: e.target.value as "mental" | "sexual",
+                        }))
+                      }
+                    />
+                    <span className="ml-2 text-gray-700">Santé sexuelle</span>
+                  </label>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Spécialité *
+                  </label>
+                  <select
+                    value={profileData.specialty || ""}
+                    onChange={(e) =>
+                      setProfileData((prev) => ({
+                        ...prev,
+                        specialty: e.target.value,
+                      }))
+                    }
+                    className="mt-1 block w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+                    required
+                  >
+                    <option value="">Sélectionnez une spécialité</option>
+                    {profileData.type === "mental" && (
+                      <>
+                        <option value="psychologue">Psychologue</option>
+                        <option value="psychiatre">Psychiatre</option>
+                        <option value="therapeute">Thérapeute</option>
+                        <option value="counselor">Counselor</option>
+                      </>
+                    )}
+                    {profileData.type === "sexual" && (
+                      <>
+                        <option value="sexologue">Sexologue</option>
+                        <option value="gynecologue">Gynécologue</option>
+                        <option value="urologue">Urologue</option>
+                        <option value="therapeute_sexuel">Thérapeute sexuel</option>
+                      </>
+                    )}
+                  </select>
+                </div>
               </div>
             </div>
 
@@ -1388,43 +1573,64 @@ const ProfessionalSettings: React.FC = () => {
                 <h2 className="text-xl font-semibold text-gray-900">Informations professionnelles</h2>
               </div>
               
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <ModernSelect
-                  label="Spécialité"
-                  value={profileData.specialty || ""}
-                  onChange={(value) => setProfileData({ ...profileData, specialty: value })}
-                  options={[
-                    { value: "mental", label: "Santé mentale" },
-                    { value: "sexual", label: "Santé sexuelle" },
-                    { value: "general", label: "Médecine générale" },
-                  ]}
-                  icon={Award}
-                  required
-                />
+              <div className="space-y-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Formation et diplômes
+                  </label>
+                  <textarea
+                    value={profileData.education || ""}
+                    onChange={(e) =>
+                      setProfileData((prev) => ({
+                        ...prev,
+                        education: e.target.value,
+                      }))
+                    }
+                    rows={4}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+                    placeholder="Décrivez votre formation, diplômes et certifications..."
+                  />
+                </div>
                 
-                <ModernInput
-                  label="Expérience"
-                  value={profileData.experience || ""}
-                  onChange={(value) => setProfileData({ ...profileData, experience: value })}
-                  icon={Star}
-                  placeholder="Nombre d'années d'expérience"
-                />
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Description professionnelle *
+                  </label>
+                  <textarea
+                    value={profileData.description || ""}
+                    onChange={(e) =>
+                      setProfileData((prev) => ({
+                        ...prev,
+                        description: e.target.value,
+                      }))
+                    }
+                    rows={4}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+                    placeholder="Décrivez votre pratique, votre approche et vos domaines d'expertise..."
+                    required
+                  />
+                  <p className="mt-1 text-sm text-gray-500">
+                    Décrivez votre pratique, votre approche et vos domaines d'expertise.
+                  </p>
+                </div>
                 
-                <ModernInput
-                  label="Description"
-                  value={profileData.description || ""}
-                  onChange={(value) => setProfileData({ ...profileData, description: value })}
-                  icon={FileText}
-                  placeholder="Description de votre pratique"
-                />
-                
-                <ModernInput
-                  label="Éducation"
-                  value={profileData.education || ""}
-                  onChange={(value) => setProfileData({ ...profileData, education: value })}
-                  icon={GraduationCap}
-                  placeholder="Formation et diplômes"
-                />
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Expérience professionnelle
+                  </label>
+                  <textarea
+                    value={profileData.experience || ""}
+                    onChange={(e) =>
+                      setProfileData((prev) => ({
+                        ...prev,
+                        experience: e.target.value,
+                      }))
+                    }
+                    rows={3}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+                    placeholder="Décrivez votre expérience professionnelle..."
+                  />
+                </div>
               </div>
             </div>
 
@@ -1448,7 +1654,10 @@ const ProfessionalSettings: React.FC = () => {
                         });
                       }
                     }}
-                    options={availableLanguages.map(lang => ({ value: lang.code, label: lang.name }))}
+                    options={availableLanguages.map((lang) => ({
+                      value: lang.code,
+                      label: lang.name,
+                    }))}
                     icon={Languages}
                   />
                 </div>
@@ -1457,7 +1666,10 @@ const ProfessionalSettings: React.FC = () => {
                   {profileData.languages?.map((language) => (
                     <Tag
                       key={language}
-                      label={availableLanguages.find((l) => l.code === language)?.name || language}
+                      label={
+                        availableLanguages.find((l) => l.code === language)
+                          ?.name || language
+                      }
                       onRemove={() => handleRemoveLanguage(language)}
                       color="blue"
                     />
@@ -1477,83 +1689,102 @@ const ProfessionalSettings: React.FC = () => {
                 <ModernInput
                   label="Prix par consultation (FCFA)"
                   value={profileData.price?.toString() || ""}
-                  onChange={(value) => setProfileData({ ...profileData, price: Number(value) })}
+                  onChange={(value) =>
+                    setProfileData({ ...profileData, price: Number(value) })
+                  }
                   icon={CreditCard}
                   type="number"
                   placeholder="5000"
                   required
                 />
                 
-                <ModernInput
-                  label="Durée par consultation (minutes)"
-                  value={profileData.duration?.toString() || ""}
-                  onChange={(value) => setProfileData({ ...profileData, duration: Number(value) })}
-                  icon={Clock}
-                  type="number"
-                  placeholder="30"
-                  required
-                />
-              </div>
-            </div>
-
-            {/* Availability Section */}
-            <div className="bg-white rounded-2xl shadow-lg p-6">
-              <div className="flex items-center gap-2 mb-6">
-                <Calendar className="h-6 w-6 text-blue-600" />
-                <h2 className="text-xl font-semibold text-gray-900">Disponibilités</h2>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Devise
+                  </label>
+                  <select
+                    value={profileData.currency || "XOF"}
+                    onChange={(e) =>
+                      setProfileData((prev) => ({
+                        ...prev,
+                        currency: e.target.value,
+                      }))
+                    }
+                    className="mt-1 block w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+                  >
+                    <option value="XOF">XOF</option>
+                    <option value="EUR">EUR</option>
+                    <option value="USD">USD</option>
+                  </select>
+                </div>
               </div>
               
-              <div className="space-y-4">
-                {profileData.availability?.map((slot, index) => (
-                  <div key={index} className="flex items-center gap-4 p-4 bg-gray-50 rounded-xl">
-                    <ModernSelect
-                      label="Jour"
-                      value={slot.day}
-                      onChange={(value) => handleTimeSlotChange(index, "day", value)}
-                      options={[
-                        { value: "lundi", label: "Lundi" },
-                        { value: "mardi", label: "Mardi" },
-                        { value: "mercredi", label: "Mercredi" },
-                        { value: "jeudi", label: "Jeudi" },
-                        { value: "vendredi", label: "Vendredi" },
-                        { value: "samedi", label: "Samedi" },
-                        { value: "dimanche", label: "Dimanche" },
-                      ]}
-                      icon={Calendar}
-                    />
-                    
-                    <ModernInput
-                      label="Début"
-                      value={slot.startTime}
-                      onChange={(value) => handleTimeSlotChange(index, "startTime", value)}
-                      icon={Clock}
-                      type="time"
-                    />
-                    
-                    <ModernInput
-                      label="Fin"
-                      value={slot.endTime}
-                      onChange={(value) => handleTimeSlotChange(index, "endTime", value)}
-                      icon={Clock}
-                      type="time"
-                    />
-                    
-                    <button
-                      onClick={() => handleRemoveTimeSlot(index)}
-                      className="mt-6 p-2 text-red-600 hover:bg-red-100 rounded-lg transition-colors"
-                    >
-                      <Trash2 className="h-5 w-5" />
-                    </button>
+              <div className="mt-6">
+                <div className="flex items-center">
+                  <input
+                    type="checkbox"
+                    id="offersFreeConsultations"
+                    checked={profileData.offersFreeConsultations || false}
+                    onChange={(e) =>
+                      setProfileData((prev) => ({
+                        ...prev,
+                        offersFreeConsultations: e.target.checked,
+                      }))
+                    }
+                    className="h-5 w-5 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                  />
+                  <label
+                    htmlFor="offersFreeConsultations"
+                    className="ml-3 block text-sm text-gray-700"
+                  >
+                    Proposer des consultations gratuites
+                  </label>
+                </div>
+
+                {profileData.offersFreeConsultations && (
+                  <div className="mt-4 pl-8 space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Durée des consultations gratuites (minutes)
+                        </label>
+                        <input
+                          type="number"
+                          value={profileData.freeConsultationDuration || 30}
+                          onChange={(e) =>
+                            setProfileData((prev) => ({
+                              ...prev,
+                              freeConsultationDuration: Number(e.target.value),
+                            }))
+                          }
+                          className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+                          min="15"
+                          max="60"
+                          step="15"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Nombre de consultations gratuites par semaine
+                        </label>
+                        <input
+                          type="number"
+                          value={profileData.freeConsultationsPerWeek || 5}
+                          onChange={(e) =>
+                            setProfileData((prev) => ({
+                              ...prev,
+                              freeConsultationsPerWeek: Number(e.target.value),
+                            }))
+                          }
+                          className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+                          min="1"
+                          max="20"
+                        />
+                      </div>
+                    </div>
                   </div>
-                ))}
-                
-                <button
-                  onClick={handleAddTimeSlot}
-                  className="w-full p-4 border-2 border-dashed border-gray-300 rounded-xl hover:border-blue-400 hover:bg-blue-50 transition-colors flex items-center justify-center gap-2"
-                >
-                  <Plus className="h-5 w-5 text-gray-400" />
-                  <span className="text-gray-600">Ajouter un créneau</span>
-                </button>
+                )}
               </div>
             </div>
           </div>
@@ -1564,9 +1795,11 @@ const ProfessionalSettings: React.FC = () => {
             <div className="bg-white rounded-2xl shadow-lg p-6">
               <div className="flex items-center gap-2 mb-6">
                 <Camera className="h-6 w-6 text-blue-600" />
-                <h2 className="text-xl font-semibold text-gray-900">Photo de profil</h2>
+                <h2 className="text-xl font-semibold text-gray-900">
+                  Photo de profil
+                </h2>
               </div>
-              
+
               <div className="flex justify-center">
                 <ProfileImage
                   imageUrl={profileData.profileImage}
@@ -1575,7 +1808,7 @@ const ProfessionalSettings: React.FC = () => {
                   uploadProgress={uploadProgress}
                 />
               </div>
-              
+
               <input
                 ref={fileInputRef}
                 type="file"
@@ -1595,7 +1828,7 @@ const ProfessionalSettings: React.FC = () => {
               isUploadingSignature={isUploadingSignature}
               isUploadingStamp={isUploadingStamp}
             />
-            
+
             <input
               ref={signatureInputRef}
               type="file"
@@ -1604,7 +1837,7 @@ const ProfessionalSettings: React.FC = () => {
               className="hidden"
               disabled={isUploadingSignature}
             />
-            
+
             <input
               ref={stampInputRef}
               type="file"
@@ -1618,9 +1851,11 @@ const ProfessionalSettings: React.FC = () => {
             <div className="bg-white rounded-2xl shadow-lg p-6">
               <div className="flex items-center gap-2 mb-4">
                 <Settings className="h-6 w-6 text-blue-600" />
-                <h3 className="text-lg font-semibold text-gray-900">Signature électronique</h3>
+                <h3 className="text-lg font-semibold text-gray-900">
+                  Signature électronique
+                </h3>
               </div>
-              
+
               <div className="flex items-center">
                 <input
                   type="checkbox"
