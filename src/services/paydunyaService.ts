@@ -1,4 +1,6 @@
 // Service pour gérer les paiements PayDunya
+// 🔄 FORCE REBUILD: Ajout d'un commentaire pour forcer le déploiement avec les nouvelles variables d'environnement
+// Mode: PRODUCTION - Variables Netlify mises à jour
 import { getFirestore, doc, setDoc, updateDoc } from "firebase/firestore";
 
 export interface PayDunyaInvoice {
@@ -29,6 +31,7 @@ export interface PayDunyaPaymentData {
 }
 
 // Configuration PayDunya (production ou test selon les variables d'environnement)
+// 🔄 FORCE REBUILD: Configuration mise à jour pour forcer l'utilisation des nouvelles variables
 const PAYDUNYA_CONFIG = {
   publicKey:
     process.env.REACT_APP_PAYDUNYA_PUBLIC_KEY ||
@@ -48,6 +51,7 @@ const PAYDUNYA_CONFIG = {
 };
 
 // 🔍 DEBUG: Vérifier la configuration au démarrage
+// 🔄 FORCE REBUILD: Debug amélioré pour vérifier les nouvelles variables
 console.log("🔍 [PAYDUNYA CONFIG DEBUG] Configuration chargée:");
 console.log("Mode:", PAYDUNYA_CONFIG.mode);
 console.log("Base URL:", PAYDUNYA_CONFIG.baseUrl);
