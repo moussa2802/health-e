@@ -113,7 +113,7 @@ const OptimizedHomePage: React.FC = () => {
 
   return (
     <ErrorBoundary>
-      <div className="flex flex-col min-h-screen">
+      <div className="flex flex-col min-h-screen pt-16">
         {/* Sticky Header */}
         <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
           isScrolled 
@@ -136,7 +136,7 @@ const OptimizedHomePage: React.FC = () => {
               <div className="flex items-center space-x-4">
                 <Link
                   to="/patient"
-                  className={`px-6 py-2 rounded-xl font-semibold transition-all duration-200 ${
+                  className={`px-6 py-3 rounded-xl font-semibold transition-all duration-200 ${
                     isScrolled
                       ? 'bg-blue-500 text-white hover:bg-blue-600'
                       : 'bg-white/20 text-white hover:bg-white/30 backdrop-blur-sm'
@@ -152,7 +152,7 @@ const OptimizedHomePage: React.FC = () => {
         {/* Hero Section */}
         <section
           ref={heroRef}
-          className="relative bg-gradient-to-br from-blue-500 via-teal-400 to-emerald-400 pt-32 pb-32 overflow-hidden"
+          className="relative bg-gradient-to-br from-blue-500 via-teal-400 to-emerald-400 pt-24 pb-32 overflow-hidden"
         >
           {/* Background illustration */}
           <div className="absolute inset-0 bg-[url('https://images.pexels.com/photos/3376799/pexels-photo-3376799.jpeg?auto=compress&cs=tinysrgb&w=1920')] bg-cover bg-center mix-blend-overlay opacity-10"></div>
