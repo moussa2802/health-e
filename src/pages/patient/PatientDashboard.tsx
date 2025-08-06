@@ -1,15 +1,36 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Calendar, Clock, Video, MessageSquare, FileText, ChevronRight, User, PhoneCall, Pill, AlertCircle, X } from 'lucide-react';
+import { 
+  Calendar, 
+  Clock, 
+  Video, 
+  MessageSquare, 
+  FileText, 
+  ChevronRight, 
+  User, 
+  PhoneCall, 
+  Pill, 
+  AlertCircle, 
+  X,
+  Heart,
+  Brain,
+  Activity,
+  Stethoscope,
+  Play,
+  XCircle,
+  Eye,
+  Plus
+} from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useBookings } from '../../hooks/useBookings';
-import { formatLocalDate, formatLocalTime, createDateWithTime, formatInDakarTime } from '../../utils/dateUtils';
+import { formatLocalDate } from '../../utils/dateUtils';
 import { cancelBooking } from '../../services/bookingService';
 import MessagingCenter from '../../components/messaging/MessagingCenter';
 import { jsPDF } from 'jspdf';
 import { getPatientMedicalRecords, MedicalRecord } from '../../services/patientService';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
 import EthicsReminder from '../../components/dashboard/EthicsReminder';
+
 async function convertImageUrlToBase64(url: string): Promise<string> {
   const response = await fetch(url);
   const blob = await response.blob();
@@ -23,13 +44,25 @@ async function convertImageUrlToBase64(url: string): Promise<string> {
   });
 }
 
-// Welcome banner component
+// Welcome banner component avec design moderne
 const WelcomeBanner: React.FC<{ name: string }> = ({ name }) => (
-  <div className="bg-gradient-to-r from-blue-500 to-teal-400 text-white p-6 rounded-lg shadow-md mb-6">
-    <h2 className="text-2xl font-bold flex items-center">
-      Bonjour, {name} 👋
-    </h2>
-    <p className="mt-2 opacity-90">Voici votre tableau de bord santé.</p>
+  <div className="bg-gradient-to-br from-blue-600 via-blue-500 to-indigo-600 text-white p-8 rounded-2xl shadow-xl mb-8 relative overflow-hidden">
+    <div className="absolute inset-0 bg-gradient-to-r from-white/10 to-transparent"></div>
+    <div className="relative z-10">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-3xl font-bold flex items-center mb-2">
+            Bonjour, {name} 👋
+          </h2>
+          <p className="text-blue-100 text-lg">Voici votre tableau de bord santé personnalisé</p>
+        </div>
+        <div className="hidden lg:block">
+          <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center">
+            <Heart className="h-8 w-8 text-white" />
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 );
 
@@ -373,98 +406,117 @@ const PatientDashboard: React.FC = () => {
         <div className="lg:col-span-2">
           {/* Upcoming Appointments Section */}
           <div className="mb-8">
-            <h2 className="text-xl font-semibold mb-4">Consultations à venir</h2>
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-2xl font-bold text-gray-900 flex items-center">
+                <Calendar className="h-6 w-6 mr-3 text-blue-600" />
+                Consultations
+              </h2>
+            </div>
             
-            {/* Tabs */}
-            <div className="flex border-b border-gray-200 mb-6">
+            {/* Tabs modernisés */}
+            <div className="flex bg-gray-100 rounded-xl p-1 mb-6">
               <button
                 onClick={() => setActiveTab('upcoming')}
-                className={`pb-4 px-4 text-sm font-medium ${
+                className={`flex-1 py-3 px-4 rounded-lg text-sm font-medium transition-all duration-200 ${
                   activeTab === 'upcoming' 
-                    ? 'border-b-2 border-blue-500 text-blue-600' 
-                    : 'text-gray-500 hover:text-gray-700'
+                    ? 'bg-white text-blue-600 shadow-sm' 
+                    : 'text-gray-600 hover:text-gray-800'
                 }`}
               >
-                À venir ({upcomingBookings.length})
+                <div className="flex items-center justify-center">
+                  <Play className="h-4 w-4 mr-2" />
+                  À venir ({upcomingBookings.length})
+                </div>
               </button>
               <button
                 onClick={() => setActiveTab('past')}
-                className={`pb-4 px-4 text-sm font-medium ${
+                className={`flex-1 py-3 px-4 rounded-lg text-sm font-medium transition-all duration-200 ${
                   activeTab === 'past' 
-                    ? 'border-b-2 border-blue-500 text-blue-600' 
-                    : 'text-gray-500 hover:text-gray-700'
+                    ? 'bg-white text-blue-600 shadow-sm' 
+                    : 'text-gray-600 hover:text-gray-800'
                 }`}
               >
-                Historique ({pastBookings.length})
+                <div className="flex items-center justify-center">
+                  <FileText className="h-4 w-4 mr-2" />
+                  Historique ({pastBookings.length})
+                </div>
               </button>
             </div>
             
-            {/* Bookings list */}
+            {/* Bookings list modernisée */}
             {displayedBookings.length > 0 ? (
               <div className="space-y-4">
                 {displayedBookings.map((booking) => (
                   <div 
                     key={booking.id} 
-                    className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow"
+                    className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-lg transition-all duration-300 hover:scale-[1.02]"
                   >
                     <div className="p-6">
                       <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4">
                         <div className="flex items-center mb-4 sm:mb-0">
-                          <div className="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center mr-4">
-                            <User className="h-6 w-6 text-gray-500" />
+                          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center mr-4 shadow-md">
+                            <User className="h-6 w-6 text-white" />
                           </div>
                           <div>
-                            <h3 className="font-semibold text-lg">{booking.professionalName}</h3>
-                            <p className="text-gray-600">Consultation {booking.type}</p>
+                            <h3 className="font-bold text-lg text-gray-900">{booking.professionalName}</h3>
+                            <p className="text-gray-600 flex items-center">
+                              <Stethoscope className="h-4 w-4 mr-1" />
+                              Consultation {booking.type}
+                            </p>
                           </div>
                         </div>
                         
                         <div className="flex items-center">
                           {getConsultationIcon(booking.type)}
-                          <span className="ml-1 text-sm text-gray-600 capitalize">
+                          <span className="ml-2 text-sm text-gray-600 capitalize font-medium">
                             {booking.type}
                           </span>
                         </div>
                       </div>
                       
-                      <div className="flex flex-wrap gap-4 mb-4">
-                        <div className="flex items-center text-gray-600">
-                          <Calendar className="h-4 w-4 mr-1" />
-                          <span className="text-sm">{booking.date} à {booking.startTime}</span>
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+                        <div className="flex items-center text-gray-600 bg-gray-50 rounded-lg p-3">
+                          <Calendar className="h-4 w-4 mr-2 text-blue-500" />
+                          <span className="text-sm font-medium">{booking.date} à {booking.startTime}</span>
                         </div>
-                        <div className="flex items-center text-gray-600">
-                          <Clock className="h-4 w-4 mr-1" />
-                          <span className="text-sm">Durée: {booking.duration} min</span>
+                        <div className="flex items-center text-gray-600 bg-gray-50 rounded-lg p-3">
+                          <Clock className="h-4 w-4 mr-2 text-green-500" />
+                          <span className="text-sm font-medium">Durée: {booking.duration} min</span>
                         </div>
                         <div className="flex items-center">
-                          <span className={`text-xs font-medium px-2 py-1 rounded-full ${getStatusColor(booking.status)}`}>
+                          <span className={`text-xs font-bold px-3 py-1.5 rounded-full ${getStatusColor(booking.status)}`}>
                             {getStatusLabel(booking.status)}
                           </span>
                         </div>
                       </div>
                       
                       {(booking.status === 'en_attente' || booking.status === 'confirmé' || booking.status === 'confirmed') ? (
-                        <div className="flex justify-between">
+                        <div className="flex justify-between items-center">
                           <button
                             onClick={() => {
                               setBookingToCancel(booking);
                               setShowCancelModal(true);
                             }}
-                            className="text-red-500 text-sm font-medium hover:text-red-600"
+                            className="flex items-center text-red-500 text-sm font-medium hover:text-red-600 transition-colors"
                           >
+                            <XCircle className="h-4 w-4 mr-1" />
                             Annuler
                           </button>
                           <Link
                             to={`/consultation/${booking.id}`}
-                            className="bg-blue-500 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-blue-600 transition-colors"
+                            className="bg-gradient-to-r from-blue-500 to-blue-600 text-white px-6 py-2.5 rounded-xl text-sm font-semibold hover:from-blue-600 hover:to-blue-700 transition-all duration-200 shadow-md hover:shadow-lg flex items-center"
                           >
+                            <Play className="h-4 w-4 mr-2" />
                             Rejoindre
                           </Link>
                         </div>
                       ) : (booking.status === 'terminé' || booking.status === 'completed') ? (
-                        <div className="mt-4 pt-4 border-t border-gray-200">
+                        <div className="mt-4 pt-4 border-t border-gray-100">
                           <div className="flex justify-between items-center">
-                            <h4 className="text-sm font-medium text-gray-700">Dossier médical:</h4>
+                            <h4 className="text-sm font-semibold text-gray-700 flex items-center">
+                              <FileText className="h-4 w-4 mr-1" />
+                              Dossier médical:
+                            </h4>
                             <button
                               onClick={() => {
                                 // Find the medical record for this booking
@@ -476,9 +528,9 @@ const PatientDashboard: React.FC = () => {
                                   alert("Dossier médical non disponible pour cette consultation");
                                 }
                               }}
-                              className="text-blue-500 hover:text-blue-600 text-sm flex items-center"
+                              className="text-blue-500 hover:text-blue-600 text-sm flex items-center font-medium"
                             >
-                              <FileText className="h-4 w-4 mr-1" />
+                              <Eye className="h-4 w-4 mr-1" />
                               Voir le dossier
                             </button>
                           </div>
@@ -489,8 +541,11 @@ const PatientDashboard: React.FC = () => {
                 ))}
               </div>
             ) : (
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8 text-center">
-                <p className="text-gray-500">
+              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 text-center">
+                <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Calendar className="h-8 w-8 text-gray-400" />
+                </div>
+                <p className="text-gray-500 font-medium">
                   {activeTab === 'upcoming' 
                     ? "Vous n'avez pas de rendez-vous à venir."
                     : "Vous n'avez pas encore eu de consultations."
@@ -503,46 +558,57 @@ const PatientDashboard: React.FC = () => {
           {/* Medical Records Section */}
           <div className="mt-8">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-semibold">Mes dossiers médicaux</h2>
+              <h2 className="text-2xl font-bold text-gray-900 flex items-center">
+                <FileText className="h-6 w-6 mr-3 text-green-600" />
+                Mes dossiers médicaux
+              </h2>
             </div>
             
             {loadingRecords ? (
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8 flex justify-center">
+              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 flex justify-center">
                 <LoadingSpinner size="lg" />
               </div>
             ) : recordError ? (
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
                 <div className="flex items-center text-red-500 mb-4">
                   <AlertCircle className="h-5 w-5 mr-2" />
                   <p>{recordError}</p>
                 </div>
                 <button
                   onClick={() => window.location.reload()}
-                  className="text-blue-500 hover:text-blue-600"
+                  className="text-blue-500 hover:text-blue-600 font-medium"
                 >
                   Réessayer
                 </button>
               </div>
             ) : medicalRecords.length > 0 ? (
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-                <div className="divide-y divide-gray-200">
+              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                <div className="divide-y divide-gray-100">
                   {medicalRecords.slice(0, 3).map((record) => (
-                    <div key={record.id} className="p-4 hover:bg-gray-50">
-                      <div className="flex justify-between items-center mb-2">
+                    <div key={record.id} className="p-6 hover:bg-gray-50 transition-colors">
+                      <div className="flex justify-between items-start mb-4">
                         <div className="flex items-center">
-                          <Calendar className="h-4 w-4 text-gray-500 mr-2" />
-                          <span className="text-sm font-medium">
-                            {formatLocalDate(new Date(record.consultationDate))}
-                          </span>
-                          <span className="ml-2 px-2 py-0.5 bg-blue-100 text-blue-800 text-xs rounded-full">
-                            {record.consultationType || 'Vidéo'}
-                          </span>
+                          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-green-500 to-green-600 flex items-center justify-center mr-4 shadow-md">
+                            <Stethoscope className="h-5 w-5 text-white" />
+                          </div>
+                          <div>
+                            <div className="flex items-center mb-1">
+                              <Calendar className="h-4 w-4 text-gray-500 mr-2" />
+                              <span className="text-sm font-semibold text-gray-900">
+                                {formatLocalDate(new Date(record.consultationDate))}
+                              </span>
+                              <span className="ml-3 px-2 py-0.5 bg-blue-100 text-blue-800 text-xs rounded-full font-medium">
+                                {record.consultationType || 'Vidéo'}
+                              </span>
+                            </div>
+                            <p className="text-sm text-gray-600">Dr. {record.professionalName}</p>
+                          </div>
                         </div>
                         <div className="flex space-x-2">
                           {record.treatment && (
                             <button
                               onClick={() => generatePrescription(record)}
-                              className="text-green-600 hover:text-green-700 text-sm flex items-center"
+                              className="text-green-600 hover:text-green-700 text-sm flex items-center font-medium bg-green-50 hover:bg-green-100 px-3 py-1.5 rounded-lg transition-colors"
                             >
                               <Pill className="h-4 w-4 mr-1" />
                               <span className="hidden sm:inline">Ordonnance</span>
@@ -553,44 +619,49 @@ const PatientDashboard: React.FC = () => {
                               setSelectedRecord(record);
                               setShowMedicalRecordModal(true);
                             }}
-                            className="text-blue-600 hover:text-blue-700 text-sm flex items-center"
+                            className="text-blue-600 hover:text-blue-700 text-sm flex items-center font-medium bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-lg transition-colors"
                           >
-                            <FileText className="h-4 w-4 mr-1" />
+                            <Eye className="h-4 w-4 mr-1" />
                             <span className="hidden sm:inline">Détails</span>
                           </button>
                         </div>
                       </div>
-                      <p className="text-gray-600 text-sm line-clamp-1">
-                        <span className="font-medium">Diagnostic:</span> {record.diagnosis || 'Non spécifié'}
-                      </p>
-                      {record.treatment && (
-                        <p className="text-gray-600 text-sm line-clamp-1 mt-1">
-                          <span className="font-medium">Traitement:</span> {record.treatment}
+                      <div className="space-y-2">
+                        <p className="text-gray-700 text-sm">
+                          <span className="font-semibold">Diagnostic:</span> {record.diagnosis || 'Non spécifié'}
                         </p>
-                      )}
+                        {record.treatment && (
+                          <p className="text-gray-700 text-sm">
+                            <span className="font-semibold">Traitement:</span> {record.treatment}
+                          </p>
+                        )}
+                      </div>
                     </div>
                   ))}
                 </div>
                 
                 {medicalRecords.length > 3 && (
-                  <div className="p-4 bg-gray-50 border-t border-gray-200 text-center">
+                  <div className="p-6 bg-gray-50 border-t border-gray-100 text-center">
                     <button
                       onClick={() => {
                         // Show all records in modal
                         setShowMedicalRecordModal(true);
                         setSelectedRecord(null);
                       }}
-                      className="text-blue-500 hover:text-blue-600 text-sm font-medium"
+                      className="text-blue-500 hover:text-blue-600 text-sm font-semibold flex items-center justify-center mx-auto"
                     >
+                      <Plus className="h-4 w-4 mr-1" />
                       Voir tous les dossiers ({medicalRecords.length})
                     </button>
                   </div>
                 )}
               </div>
             ) : (
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8 text-center">
-                <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">Aucun dossier médical</h3>
+              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 text-center">
+                <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <FileText className="h-8 w-8 text-gray-400" />
+                </div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">Aucun dossier médical</h3>
                 <p className="text-gray-500">
                   Vous n'avez pas encore de dossier médical enregistré.
                 </p>
@@ -601,69 +672,89 @@ const PatientDashboard: React.FC = () => {
           {/* Messaging Center */}
           <div className="mt-8 mb-8">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-semibold">Messages</h2>
+              <h2 className="text-2xl font-bold text-gray-900 flex items-center">
+                <MessageSquare className="h-6 w-6 mr-3 text-purple-600" />
+                Messages
+              </h2>
               <button
                 onClick={() => setShowMessaging(!showMessaging)}
-                className="text-blue-500 hover:text-blue-600"
+                className="text-purple-600 hover:text-purple-700 font-semibold flex items-center transition-colors"
               >
                 {showMessaging ? 'Réduire' : 'Voir tous les messages'}
               </button>
             </div>
-            {showMessaging && <MessagingCenter />}
+            {showMessaging && (
+              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                <MessagingCenter />
+              </div>
+            )}
           </div>
         </div>
         
         {/* Sidebar */}
         <div>
-          {/* Quick actions */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <h3 className="font-semibold text-lg mb-4">Actions rapides</h3>
-            <div className="space-y-2">
+          {/* Quick actions modernisées */}
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+            <h3 className="font-bold text-xl text-gray-900 mb-6 flex items-center">
+              <Activity className="h-6 w-6 mr-3 text-purple-600" />
+              Actions rapides
+            </h3>
+            <div className="space-y-4">
               <Link
                 to="/professionals/mental"
-                className="block p-3 border border-gray-200 rounded-md hover:bg-gray-50 transition-colors"
+                className="block p-4 border border-gray-200 rounded-xl hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 transition-all duration-200 hover:shadow-md group"
               >
                 <div className="flex items-center text-gray-800">
-                  <User className="h-5 w-5 text-blue-500 mr-3" />
-                  <span>Consulter en santé mentale</span>
+                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center mr-4 shadow-md group-hover:shadow-lg transition-shadow">
+                    <Brain className="h-6 w-6 text-white" />
+                  </div>
+                  <div>
+                    <span className="font-semibold text-gray-900">Consulter en santé mentale</span>
+                    <p className="text-sm text-gray-600 mt-1">Psychologues et psychiatres</p>
+                  </div>
                 </div>
               </Link>
               <Link
                 to="/professionals/sexual"
-                className="block p-3 border border-gray-200 rounded-md hover:bg-gray-50 transition-colors"
+                className="block p-4 border border-gray-200 rounded-xl hover:bg-gradient-to-r hover:from-teal-50 hover:to-cyan-50 transition-all duration-200 hover:shadow-md group"
               >
                 <div className="flex items-center text-gray-800">
-                  <User className="h-5 w-5 text-teal-500 mr-3" />
-                  <span>Consulter en santé sexuelle</span>
+                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-teal-500 to-teal-600 flex items-center justify-center mr-4 shadow-md group-hover:shadow-lg transition-shadow">
+                    <Heart className="h-6 w-6 text-white" />
+                  </div>
+                  <div>
+                    <span className="font-semibold text-gray-900">Consulter en santé sexuelle</span>
+                    <p className="text-sm text-gray-600 mt-1">Gynécologues et sexologues</p>
+                  </div>
                 </div>
               </Link>
             </div>
           </div>
           
-          {/* User profile card */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mt-6">
-            <div className="flex items-center">
+          {/* User profile card modernisée */}
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mt-6">
+            <div className="flex items-center mb-4">
               {currentUser?.profileImage ? (
                 <img 
                   src={currentUser.profileImage} 
                   alt={currentUser.name} 
-                  className="w-16 h-16 rounded-full object-cover mr-4"
+                  className="w-16 h-16 rounded-2xl object-cover mr-4 shadow-md"
                 />
               ) : (
-                <div className="w-16 h-16 rounded-full bg-blue-100 flex items-center justify-center mr-4">
-                  <User className="h-8 w-8 text-blue-500" />
+                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center mr-4 shadow-md">
+                  <User className="h-8 w-8 text-white" />
                 </div>
               )}
               <div>
-                <h2 className="font-semibold text-lg">{currentUser?.name}</h2>
-                <p className="text-gray-600">{currentUser?.email}</p>
+                <h2 className="font-bold text-lg text-gray-900">{currentUser?.name}</h2>
+                <p className="text-gray-600 text-sm">{currentUser?.email}</p>
               </div>
             </div>
             
-            <div className="mt-4 pt-4 border-t border-gray-200">
+            <div className="pt-4 border-t border-gray-100">
               <Link
                 to="/patient/profile"
-                className="flex items-center justify-between text-blue-500 font-medium hover:text-blue-600"
+                className="flex items-center justify-between text-blue-600 font-semibold hover:text-blue-700 transition-colors p-3 rounded-lg hover:bg-blue-50"
               >
                 <span>Gérer mon profil</span>
                 <ChevronRight className="h-5 w-5" />
