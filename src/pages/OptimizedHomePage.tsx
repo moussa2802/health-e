@@ -53,8 +53,8 @@ const OptimizedHomePage: React.FC = () => {
       setIsScrolled(window.scrollY > 50);
     };
 
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
   // Intersection Observer pour le contenu en vedette
@@ -133,29 +133,29 @@ const OptimizedHomePage: React.FC = () => {
     <ErrorBoundary>
       <div className="flex flex-col min-h-screen">
         {/* Transparent Header */}
-        <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-          isScrolled
-            ? 'bg-white/95 backdrop-blur-md shadow-lg text-gray-900'
-            : 'bg-white/20 backdrop-blur-md text-white'
-        }`}>
+        <header
+          className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
+            isScrolled
+              ? "bg-white/95 backdrop-blur-md shadow-lg text-gray-900"
+              : "bg-white/20 backdrop-blur-md text-white"
+          }`}
+        >
           <div className="container mx-auto px-4">
             <div className="flex items-center justify-between py-4">
               <div className="flex items-center">
                 <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-teal-400 rounded-xl flex items-center justify-center mr-3">
                   <Heart className="h-6 w-6 text-white" />
                 </div>
-                <span className="text-xl font-bold">
-                  Health-e
-                </span>
+                <span className="text-xl font-bold">Health-e</span>
               </div>
-              
+
               <div className="flex items-center space-x-4">
                 <Link
                   to="/patient"
                   className={`px-6 py-3 rounded-xl font-semibold transition-all duration-200 border ${
                     isScrolled
-                      ? 'bg-blue-500 text-white hover:bg-blue-600 border-blue-500 shadow-md hover:shadow-lg'
-                      : 'bg-white/20 text-white hover:bg-white/30 backdrop-blur-sm border-white/30 shadow-md hover:shadow-lg'
+                      ? "bg-blue-500 text-white hover:bg-blue-600 border-blue-500 shadow-md hover:shadow-lg"
+                      : "bg-white/20 text-white hover:bg-white/30 backdrop-blur-sm border-white/30 shadow-md hover:shadow-lg"
                   }`}
                 >
                   Prendre rendez-vous
