@@ -6,16 +6,23 @@ import {
   Calendar,
   Clock,
   Settings,
-  Users,
-  ChevronRight,
   Wallet,
-  ArrowDownToLine,
-  History,
   X,
-  MessageSquare,
   AlertCircle,
   Wifi,
   WifiOff,
+  TrendingUp,
+  User,
+  Video,
+  Phone,
+  FileText,
+  CheckCircle,
+  Play,
+  BarChart3,
+  CalendarDays,
+  Users2,
+  MessageCircle,
+  CalendarCheck,
 } from "lucide-react";
 import ConsultationRequests from "../../components/professional/ConsultationRequests";
 import { useConsultationStore } from "../../store/consultationStore";
@@ -31,20 +38,387 @@ import {
   resetFirestoreConnection,
 } from "../../utils/firebase";
 import EthicsReminder from "../../components/dashboard/EthicsReminder";
+import LoadingSpinner from "../../components/ui/LoadingSpinner";
 
-// Welcome banner component
+// Welcome banner component with improved design
 const WelcomeBanner: React.FC<{ name: string }> = ({ name }) => {
-  // Remove "Dr." prefix if it already exists in the name
   const displayName = name.startsWith("Dr.") ? name : `Dr. ${name}`;
+  const currentHour = new Date().getHours();
+  const greeting = currentHour < 12 ? "Bonjour" : currentHour < 18 ? "Bon après-midi" : "Bonsoir";
 
   return (
-    <div className="bg-gradient-to-r from-blue-500 to-teal-400 text-white p-6 rounded-lg shadow-md mb-6">
-      <h2 className="text-2xl font-bold flex items-center">
-        Bonjour, {displayName} 👋
+    <div className="bg-gradient-to-br from-blue-600 via-blue-500 to-teal-500 text-white p-8 rounded-2xl shadow-xl mb-8 relative overflow-hidden">
+      <div className="absolute inset-0 bg-black/10"></div>
+      <div className="relative z-10">
+        <h1 className="text-3xl font-bold mb-2">
+          {greeting}, {displayName.split(" ")[0]} 👋
+        </h1>
+        <p className="text-blue-50 text-lg opacity-90">
+          Voici votre tableau de bord professionnel
+        </p>
+        <div className="mt-4 flex items-center gap-2 text-blue-100">
+          <Calendar className="h-5 w-5" />
+          <span>{new Date().toLocaleDateString("fr-FR", { 
+            weekday: "long", 
+            year: "numeric", 
+            month: "long", 
+            day: "numeric" 
+          })}</span>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Financial Statistics Card
+const FinancialStats: React.FC<{ revenue: Revenue }> = ({ revenue }) => {
+  const stats = [
+    {
+      title: "Revenus disponibles",
+      value: `${revenue.available.toLocaleString()} FCFA`,
+      icon: Wallet,
+      color: "from-green-500 to-emerald-500",
+      bgColor: "bg-green-50",
+      textColor: "text-green-700",
+    },
+    {
+      title: "En attente",
+      value: `${revenue.pending.toLocaleString()} FCFA`,
+      icon: Clock,
+      color: "from-yellow-500 to-orange-500",
+      bgColor: "bg-yellow-50",
+      textColor: "text-yellow-700",
+    },
+    {
+      title: "Total retiré",
+      value: `${revenue.withdrawn.toLocaleString()} FCFA`,
+      icon: TrendingUp,
+      color: "from-blue-500 to-indigo-500",
+      bgColor: "bg-blue-50",
+      textColor: "text-blue-700",
+    },
+  ];
+
+  return (
+    <div className="bg-white rounded-2xl shadow-lg p-6 mb-8">
+      <div className="flex items-center justify-between mb-6">
+        <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+          <BarChart3 className="h-6 w-6 text-blue-600" />
+          Statistiques financières
+        </h2>
+        <button className="px-4 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors text-sm font-medium">
+          Voir détails
+        </button>
+      </div>
+      
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {stats.map((stat, index) => {
+          const IconComponent = stat.icon;
+          return (
+            <div key={index} className={`${stat.bgColor} rounded-xl p-4 border border-gray-100`}>
+              <div className="flex items-center justify-between mb-3">
+                <div className={`p-2 rounded-lg bg-gradient-to-r ${stat.color}`}>
+                  <IconComponent className="h-5 w-5 text-white" />
+                </div>
+                <span className={`text-sm font-medium ${stat.textColor}`}>
+                  {stat.title}
+                </span>
+              </div>
+              <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+
+// Quick Actions Grid
+const QuickActions: React.FC = () => {
+  const actions = [
+    {
+      title: "Gérer mon profil",
+      icon: User,
+      link: "/professional/settings",
+      color: "from-blue-500 to-blue-600",
+      bgColor: "bg-blue-50",
+    },
+    {
+      title: "Mes disponibilités",
+      icon: CalendarCheck,
+      link: "/professional/availability",
+      color: "from-green-500 to-green-600",
+      bgColor: "bg-green-50",
+    },
+    {
+      title: "Mes patients",
+      icon: Users2,
+      link: "/professional/patients",
+      color: "from-purple-500 to-purple-600",
+      bgColor: "bg-purple-50",
+    },
+    {
+      title: "Messages",
+      icon: MessageCircle,
+      link: "/professional/messages",
+      color: "from-orange-500 to-orange-600",
+      bgColor: "bg-orange-50",
+    },
+  ];
+
+  return (
+    <div className="bg-white rounded-2xl shadow-lg p-6 mb-8">
+      <h2 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
+        <Settings className="h-6 w-6 text-gray-600" />
+        Actions rapides
       </h2>
-      <p className="mt-2 opacity-90">
-        Voici votre tableau de bord professionnel.
-      </p>
+      
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        {actions.map((action, index) => {
+          const IconComponent = action.icon;
+          return (
+            <Link
+              key={index}
+              to={action.link}
+              className={`${action.bgColor} rounded-xl p-4 text-center hover:scale-105 transition-all duration-200 group`}
+            >
+              <div className={`p-3 rounded-lg bg-gradient-to-r ${action.color} inline-block mb-3 group-hover:scale-110 transition-transform`}>
+                <IconComponent className="h-6 w-6 text-white" />
+              </div>
+              <p className="text-sm font-medium text-gray-700">{action.title}</p>
+            </Link>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+
+// Today's Agenda
+const TodaysAgenda: React.FC<{ bookings: any[] }> = ({ bookings }) => {
+  const today = new Date().toDateString();
+  const todaysBookings = bookings.filter(booking => 
+    new Date(booking.date).toDateString() === today
+  );
+
+  const getConsultationTypeIcon = (type: string) => {
+    switch (type) {
+      case "video":
+        return <Video className="h-4 w-4 text-blue-600" />;
+      case "audio":
+        return <Phone className="h-4 w-4 text-green-600" />;
+      default:
+        return <FileText className="h-4 w-4 text-gray-600" />;
+    }
+  };
+
+  const getConsultationTypeColor = (type: string) => {
+    switch (type) {
+      case "video":
+        return "bg-blue-100 text-blue-700";
+      case "audio":
+        return "bg-green-100 text-green-700";
+      default:
+        return "bg-gray-100 text-gray-700";
+    }
+  };
+
+  return (
+    <div className="bg-white rounded-2xl shadow-lg p-6 mb-8">
+      <div className="flex items-center justify-between mb-6">
+        <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+          <CalendarDays className="h-6 w-6 text-blue-600" />
+          Agenda du jour
+        </h2>
+        <span className="text-sm text-gray-500">
+          {todaysBookings.length} consultation{todaysBookings.length > 1 ? 's' : ''}
+        </span>
+      </div>
+      
+      {todaysBookings.length === 0 ? (
+        <div className="text-center py-8">
+          <Calendar className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+          <p className="text-gray-500">Aucune consultation prévue aujourd'hui</p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {todaysBookings.map((booking) => (
+            <div key={booking.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors">
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2">
+                  {getConsultationTypeIcon(booking.type)}
+                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${getConsultationTypeColor(booking.type)}`}>
+                    {booking.type}
+                  </span>
+                </div>
+                <div>
+                  <p className="font-medium text-gray-900">{booking.patientName}</p>
+                  <p className="text-sm text-gray-500">
+                    {new Date(booking.date).toLocaleTimeString("fr-FR", { 
+                      hour: "2-digit", 
+                      minute: "2-digit" 
+                    })}
+                  </p>
+                </div>
+              </div>
+              <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium flex items-center gap-2">
+                <Play className="h-4 w-4" />
+                Rejoindre
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
+// Consultations Section with Tabs
+const ConsultationsSection: React.FC<{ 
+  bookings: any[], 
+  onConfirm: (bookingId: string) => void, 
+  onCancel: (bookingId: string) => void, 
+  onComplete: (bookingId: string, notes?: string) => void 
+}> = ({ 
+  bookings, onConfirm, onCancel, onComplete 
+}) => {
+  const [activeTab, setActiveTab] = useState<"upcoming" | "past">("upcoming");
+  
+  const upcomingBookings = bookings.filter(booking => 
+    new Date(booking.date) > new Date() && booking.status === "confirmed"
+  );
+  
+  const pastBookings = bookings.filter(booking => 
+    new Date(booking.date) < new Date() || booking.status === "completed"
+  );
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString("fr-FR", {
+      day: "numeric",
+      month: "long",
+      hour: "2-digit",
+      minute: "2-digit"
+    });
+  };
+
+  const getStatusBadge = (status: string) => {
+    const statusConfig = {
+      confirmed: { label: "Confirmé", color: "bg-green-100 text-green-700" },
+      pending: { label: "En attente", color: "bg-yellow-100 text-yellow-700" },
+      completed: { label: "Terminé", color: "bg-blue-100 text-blue-700" },
+      cancelled: { label: "Annulé", color: "bg-red-100 text-red-700" },
+    };
+    
+    const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.pending;
+    return (
+      <span className={`px-2 py-1 rounded-full text-xs font-medium ${config.color}`}>
+        {config.label}
+      </span>
+    );
+  };
+
+  return (
+    <div className="bg-white rounded-2xl shadow-lg p-6 mb-8">
+      <h2 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
+        <Calendar className="h-6 w-6 text-blue-600" />
+        Consultations
+      </h2>
+      
+      {/* Tabs */}
+      <div className="flex space-x-1 bg-gray-100 p-1 rounded-xl mb-6">
+        <button
+          onClick={() => setActiveTab("upcoming")}
+          className={`flex-1 py-3 px-4 rounded-lg font-medium transition-all duration-200 ${
+            activeTab === "upcoming"
+              ? "bg-white text-blue-600 shadow-sm"
+              : "text-gray-600 hover:text-gray-900"
+          }`}
+        >
+          À venir ({upcomingBookings.length})
+        </button>
+        <button
+          onClick={() => setActiveTab("past")}
+          className={`flex-1 py-3 px-4 rounded-lg font-medium transition-all duration-200 ${
+            activeTab === "past"
+              ? "bg-white text-blue-600 shadow-sm"
+              : "text-gray-600 hover:text-gray-900"
+          }`}
+        >
+          Historique ({pastBookings.length})
+        </button>
+      </div>
+
+      {/* Content */}
+      <div className="space-y-4">
+        {(activeTab === "upcoming" ? upcomingBookings : pastBookings).map((booking) => (
+          <div key={booking.id} className="border border-gray-200 rounded-xl p-4 hover:shadow-md transition-shadow">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                  <User className="h-5 w-5 text-blue-600" />
+                </div>
+                <div>
+                  <p className="font-medium text-gray-900">{booking.patientName}</p>
+                  <p className="text-sm text-gray-500">{formatDate(booking.date)}</p>
+                </div>
+              </div>
+              {getStatusBadge(booking.status)}
+            </div>
+            
+            <div className="flex items-center gap-2">
+              <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                booking.type === "video" ? "bg-blue-100 text-blue-700" :
+                booking.type === "audio" ? "bg-green-100 text-green-700" :
+                "bg-gray-100 text-gray-700"
+              }`}>
+                {booking.type === "video" ? <Video className="h-3 w-3 inline mr-1" /> :
+                 booking.type === "audio" ? <Phone className="h-3 w-3 inline mr-1" /> :
+                 <FileText className="h-3 w-3 inline mr-1" />}
+                {booking.type}
+              </span>
+            </div>
+            
+            {activeTab === "upcoming" && booking.status === "confirmed" && (
+              <div className="flex gap-2 mt-4">
+                <button
+                  onClick={() => onConfirm(booking.id)}
+                  className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium flex items-center justify-center gap-2"
+                >
+                  <Play className="h-4 w-4" />
+                  Rejoindre
+                </button>
+                <button
+                  onClick={() => onCancel(booking.id)}
+                  className="px-4 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors text-sm font-medium"
+                >
+                  Annuler
+                </button>
+              </div>
+            )}
+            
+            {activeTab === "past" && booking.status === "confirmed" && (
+              <div className="flex gap-2 mt-4">
+                <button
+                  onClick={() => onComplete(booking.id)}
+                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium flex items-center justify-center gap-2"
+                >
+                  <CheckCircle className="h-4 w-4" />
+                  Terminer
+                </button>
+              </div>
+            )}
+          </div>
+        ))}
+        
+        {(activeTab === "upcoming" ? upcomingBookings : pastBookings).length === 0 && (
+          <div className="text-center py-8">
+            <Calendar className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+            <p className="text-gray-500">
+              {activeTab === "upcoming" ? "Aucune consultation à venir" : "Aucune consultation passée"}
+            </p>
+          </div>
+        )}
+      </div>
     </div>
   );
 };
@@ -71,7 +445,6 @@ interface Revenue {
 
 const ProfessionalDashboard: React.FC = () => {
   const { currentUser } = useAuth();
-  const [activeTab, setActiveTab] = useState<"upcoming" | "past">("upcoming");
   const [showWithdrawalModal, setShowWithdrawalModal] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState(
     getFirestoreConnectionStatus()
@@ -545,381 +918,122 @@ const ProfessionalDashboard: React.FC = () => {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <ConsultationRequests />
-      {showEthicsReminder && (
-        <EthicsReminder
-          userType="professional"
-          onDismiss={dismissEthicsReminder}
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+      <div className="container mx-auto px-4 py-8">
+        <ConsultationRequests />
+        {showEthicsReminder && (
+          <EthicsReminder
+            userType="professional"
+            onDismiss={dismissEthicsReminder}
+          />
+        )}
+
+        {/* Welcome Banner */}
+        <WelcomeBanner
+          name={currentUser?.name?.split(" ")[0] || "Professionnel"}
         />
-      )}
 
-      {/* Welcome Banner */}
-      <WelcomeBanner
-        name={currentUser?.name?.split(" ")[0] || "Professionnel"}
-      />
-
-      {/* Connection Status Banner */}
-      {(connectionError || error) && (
-        <div className="mb-6 p-4 bg-yellow-100 border border-yellow-400 text-yellow-700 rounded-lg flex items-center justify-between">
-          <div className="flex items-center">
-            <AlertCircle className="h-5 w-5 mr-2" />
-            <div className="flex-1">
-              <p className="font-medium">Problème de connexion détecté</p>
-              <p className="text-sm mt-1">
-                {connectionError ||
-                  error ||
-                  "Certaines données peuvent ne pas être à jour. Vérifiez votre connexion internet."}
-              </p>
+        {/* Connection Status Banner */}
+        {(connectionError || error) && (
+          <div className="mb-6 p-4 bg-yellow-100 border border-yellow-400 text-yellow-700 rounded-xl flex items-center justify-between">
+            <div className="flex items-center">
+              <AlertCircle className="h-5 w-5 mr-2" />
+              <div className="flex-1">
+                <p className="font-medium">Problème de connexion détecté</p>
+                <p className="text-sm mt-1">
+                  {connectionError ||
+                    error ||
+                    "Certaines données peuvent ne pas être à jour. Vérifiez votre connexion internet."}
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center space-x-3">
+              <div
+                className={`flex items-center px-3 py-1 rounded-full text-sm ${
+                  connectionStatus.isOnline && connectionStatus.isInitialized
+                    ? "bg-green-100 text-green-800"
+                    : "bg-red-100 text-red-800"
+                }`}
+              >
+                {connectionStatus.isOnline && connectionStatus.isInitialized ? (
+                  <>
+                    <Wifi className="h-4 w-4 mr-1" />
+                    Connecté
+                  </>
+                ) : (
+                  <>
+                    <WifiOff className="h-4 w-4 mr-1" />
+                    Hors ligne
+                  </>
+                )}
+              </div>
+              <button
+                onClick={handleConnectionRecovery}
+                className="px-3 py-1 bg-blue-500 text-white rounded-lg hover:bg-blue-600 text-sm transition-colors"
+              >
+                Reconnecter
+              </button>
             </div>
           </div>
-          <div className="flex items-center space-x-3">
-            <div
-              className={`flex items-center px-3 py-1 rounded-full text-sm ${
-                connectionStatus.isOnline && connectionStatus.isInitialized
-                  ? "bg-green-100 text-green-800"
-                  : "bg-red-100 text-red-800"
-              }`}
-            >
-              {connectionStatus.isOnline && connectionStatus.isInitialized ? (
-                <>
-                  <Wifi className="h-4 w-4 mr-1" />
-                  Connecté
-                </>
-              ) : (
-                <>
-                  <WifiOff className="h-4 w-4 mr-1" />
-                  Hors ligne
-                </>
-              )}
-            </div>
+        )}
+
+        {/* Migration Result Banner */}
+        {migrationResult && (
+          <div
+            className={`mb-6 p-4 ${
+              migrationResult.startsWith("✅")
+                ? "bg-green-100 border border-green-400 text-green-700"
+                : "bg-red-100 border border-red-400 text-red-700"
+            } rounded-xl flex items-center justify-between`}
+          >
+            <p>{migrationResult}</p>
             <button
-              onClick={handleConnectionRecovery}
-              className="px-3 py-1 bg-blue-500 text-white rounded-md hover:bg-blue-600 text-sm"
+              onClick={() => setMigrationResult(null)}
+              className="text-gray-500 hover:text-gray-700"
             >
-              Reconnecter
+              <X className="h-5 w-5" />
             </button>
           </div>
-        </div>
-      )}
+        )}
 
-      {/* Migration Result Banner */}
-      {migrationResult && (
-        <div
-          className={`mb-6 p-4 ${
-            migrationResult.startsWith("✅")
-              ? "bg-green-100 border border-green-400 text-green-700"
-              : "bg-red-100 border border-red-400 text-red-700"
-          } rounded-lg flex items-center justify-between`}
-        >
-          <p>{migrationResult}</p>
-          <button
-            onClick={() => setMigrationResult(null)}
-            className="text-gray-500 hover:text-gray-700"
-          >
-            <X className="h-5 w-5" />
-          </button>
-        </div>
-      )}
+        {/* Financial Statistics */}
+        <FinancialStats revenue={revenue} />
 
-      <div className="flex flex-col lg:flex-row gap-8">
-        <div className="lg:w-2/3">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-            <div className="bg-white rounded-lg p-6 shadow-md">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-gray-700">
-                  Revenus disponibles
-                </h3>
-                <Wallet className="h-6 w-6 text-green-500" />
-              </div>
-              <div className="space-y-4">
-                <div>
-                  <p className="text-3xl font-bold text-green-600">
-                    {revenue.available.toLocaleString()} XOF
-                  </p>
-                </div>
+        {/* Quick Actions */}
+        <QuickActions />
+
+        {/* Today's Agenda */}
+        <TodaysAgenda bookings={bookings} />
+
+        {/* Consultations Section */}
+        <ConsultationsSection 
+          bookings={bookings}
+          onConfirm={handleConfirmBooking}
+          onCancel={handleCancelBooking}
+          onComplete={handleCompleteBooking}
+        />
+
+        {/* Withdrawal Modal */}
+        {showWithdrawalModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-6">
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-xl font-bold">Retrait de fonds</h2>
                 <button
-                  onClick={() => setShowWithdrawalModal(true)}
-                  disabled={revenue.available === 0 || !currentUser?.id}
-                  className="mt-4 w-full bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600 transition-colors flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
+                  onClick={() => setShowWithdrawalModal(false)}
+                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
                 >
-                  <ArrowDownToLine className="h-4 w-4 mr-2" />
-                  Retirer
+                  <X className="h-6 w-6" />
                 </button>
               </div>
-            </div>
 
-            <div className="bg-white rounded-lg p-6 shadow-md">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-gray-700">
-                  En attente
-                </h3>
-                <Clock className="h-6 w-6 text-orange-500" />
-              </div>
-              <div className="space-y-4">
+              <form onSubmit={handleWithdrawal} className="space-y-4">
                 <div>
-                  <p className="text-3xl font-bold text-orange-600">
-                    {revenue.pending.toLocaleString()} XOF
-                  </p>
-                </div>
-                <p className="mt-4 text-sm text-gray-500">
-                  Disponible dans 7 jours
-                </p>
-              </div>
-            </div>
-
-            <div className="bg-white rounded-lg p-6 shadow-md">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-gray-700">
-                  Total retiré
-                </h3>
-                <History className="h-6 w-6 text-blue-500" />
-              </div>
-              <div className="space-y-4">
-                <div>
-                  <p className="text-3xl font-bold text-blue-600">
-                    {revenue.withdrawn.toLocaleString()} XOF
-                  </p>
-                </div>
-                <p className="mt-4 text-sm text-gray-500">Depuis le début</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-lg shadow-md overflow-hidden">
-            <h2 className="text-xl font-semibold p-6 border-b border-gray-200">
-              Consultations
-            </h2>
-            <div className="flex border-b border-gray-200">
-              <button
-                onClick={() => setActiveTab("upcoming")}
-                className={`flex-1 py-4 px-6 text-center font-medium ${
-                  activeTab === "upcoming"
-                    ? "text-blue-600 border-b-2 border-blue-500"
-                    : "text-gray-500 hover:text-gray-700"
-                }`}
-              >
-                Consultations à venir ({upcomingBookings.length})
-              </button>
-              <button
-                onClick={() => setActiveTab("past")}
-                className={`flex-1 py-4 px-6 text-center font-medium ${
-                  activeTab === "past"
-                    ? "text-blue-600 border-b-2 border-blue-500"
-                    : "text-gray-500 hover:text-gray-700"
-                }`}
-              >
-                Historique ({pastBookings.length})
-              </button>
-            </div>
-
-            <div className="p-6">
-              {displayedBookings.length > 0 ? (
-                <div className="space-y-4">
-                  {displayedBookings.map((booking) => (
-                    <div
-                      key={booking.id}
-                      className="flex items-center justify-between p-4 bg-gray-50 rounded-lg"
-                    >
-                      <div className="flex-1">
-                        <h3 className="font-medium text-gray-900">
-                          {booking.patientName || "Patient"}
-                        </h3>
-                        <div className="flex items-center text-sm text-gray-500 mt-1">
-                          <Calendar className="h-4 w-4 mr-1" />
-                          {booking.date || "Date non spécifiée"} à{" "}
-                          {booking.startTime?.trim() || "Heure non spécifiée"}
-                        </div>
-                        <div className="mt-2">
-                          <span
-                            className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(
-                              booking.status
-                            )}`}
-                          >
-                            {getStatusLabel(booking.status)}
-                          </span>
-                        </div>
-                      </div>
-
-                      <div className="flex space-x-2">
-                        {booking.status === "en_attente" && (
-                          <>
-                            <button
-                              onClick={() => handleConfirmBooking(booking.id)}
-                              className="px-3 py-1 bg-green-500 text-white rounded text-sm hover:bg-green-600"
-                            >
-                              Confirmer
-                            </button>
-                            <button
-                              onClick={() => handleCancelBooking(booking.id)}
-                              className="px-3 py-1 bg-red-500 text-white rounded text-sm hover:bg-red-600"
-                            >
-                              Refuser
-                            </button>
-                          </>
-                        )}
-                        {booking.status === "confirmé" && (
-                          <>
-                            <Link
-                              to={`/consultation/${booking.id}`}
-                              className="px-3 py-1 bg-blue-500 text-white rounded text-sm hover:bg-blue-600"
-                            >
-                              Rejoindre
-                            </Link>
-                            <button
-                              onClick={() => handleCompleteBooking(booking.id)}
-                              className="px-3 py-1 bg-green-500 text-white rounded text-sm hover:bg-green-600"
-                            >
-                              Terminer
-                            </button>
-                          </>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-8">
-                  <Calendar className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-                  <p className="text-gray-500">
-                    {activeTab === "upcoming"
-                      ? "Aucune consultation à venir."
-                      : "Aucune consultation passée."}
-                  </p>
-                  {connectionError && (
-                    <p className="text-sm text-gray-400 mt-2">
-                      Les données peuvent ne pas être à jour en raison d'un
-                      problème de connexion.
-                    </p>
-                  )}
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-
-        <div className="lg:w-1/3">
-          {/* User profile card */}
-          <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-            <div className="flex items-center">
-              {currentUser?.profileImage ? (
-                <img
-                  src={currentUser.profileImage}
-                  alt={currentUser.name}
-                  className="w-16 h-16 rounded-full object-cover mr-4"
-                />
-              ) : (
-                <div className="w-16 h-16 rounded-full bg-blue-100 flex items-center justify-center mr-4">
-                  <Users className="h-8 w-8 text-blue-500" />
-                </div>
-              )}
-              <div>
-                <h2 className="font-semibold text-lg">
-                  {currentUser?.name?.startsWith("Dr.")
-                    ? currentUser?.name
-                    : `Dr. ${currentUser?.name || "Professionnel"}`}
-                </h2>
-                <p className="text-gray-600">
-                  {currentUser?.specialty || "Professionnel de santé"}
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-            <h2 className="text-lg font-semibold mb-4">Actions rapides</h2>
-            <div className="space-y-3">
-              <Link
-                to="/professional/settings"
-                className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
-              >
-                <div className="flex items-center">
-                  <Settings className="h-5 w-5 text-gray-500 mr-3" />
-                  <span>Gérer mon profil</span>
-                </div>
-                <ChevronRight className="h-5 w-5 text-gray-400" />
-              </Link>
-              <Link
-                to="/professional/availability"
-                className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
-              >
-                <div className="flex items-center">
-                  <Clock className="h-5 w-5 text-gray-500 mr-3" />
-                  <span>Gérer mes disponibilités</span>
-                </div>
-                <ChevronRight className="h-5 w-5 text-gray-400" />
-              </Link>
-              <Link
-                to="/professional/patients"
-                className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
-              >
-                <div className="flex items-center">
-                  <Users className="h-5 w-5 text-gray-500 mr-3" />
-                  <span>Mes patients</span>
-                </div>
-                <ChevronRight className="h-5 w-5 text-gray-400" />
-              </Link>
-              <Link
-                to="/professional/messages"
-                className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
-              >
-                <div className="flex items-center">
-                  <MessageSquare className="h-5 w-5 text-gray-500 mr-3" />
-                  <span>Messages</span>
-                </div>
-                <ChevronRight className="h-5 w-5 text-gray-400" />
-              </Link>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-            <h2 className="text-lg font-semibold mb-4">Agenda du jour</h2>
-            <div className="space-y-3">
-              {upcomingBookings.slice(0, 3).map((booking) => (
-                <div key={booking.id} className="p-3 bg-gray-50 rounded-lg">
-                  <div className="flex items-center justify-between">
-                    <span className="font-medium">
-                      {booking.startTime || "Heure non spécifiée"}
-                    </span>
-                    <span className="text-blue-500 capitalize">
-                      {booking.type || "Consultation"}
-                    </span>
-                  </div>
-                  <p className="text-gray-600 mt-1">
-                    Consultation avec {booking.patientName || "Patient"}
-                  </p>
-                </div>
-              ))}
-              {upcomingBookings.length === 0 && (
-                <div className="text-center py-4">
-                  <p className="text-gray-500">Aucun rendez-vous aujourd'hui</p>
-                  {connectionError && (
-                    <p className="text-sm text-gray-400 mt-1">
-                      Vérifiez votre connexion pour voir les dernières données.
-                    </p>
-                  )}
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Withdrawal Modal */}
-      {showWithdrawalModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full">
-            <h2 className="text-xl font-semibold mb-4">Retirer des fonds</h2>
-
-            <form onSubmit={handleWithdrawal}>
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">
-                    Montant à retirer
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Montant (FCFA)
                   </label>
                   <input
                     type="number"
-                    max={revenue.available}
                     value={withdrawalData.amount}
                     onChange={(e) =>
                       setWithdrawalData({
@@ -927,16 +1041,14 @@ const ProfessionalDashboard: React.FC = () => {
                         amount: Number(e.target.value),
                       })
                     }
-                    className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="Montant à retirer"
                     required
                   />
-                  <p className="text-sm text-gray-500 mt-1">
-                    Maximum disponible: {revenue.available.toLocaleString()} XOF
-                  </p>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
                     Méthode de retrait
                   </label>
                   <select
@@ -944,11 +1056,10 @@ const ProfessionalDashboard: React.FC = () => {
                     onChange={(e) =>
                       setWithdrawalData({
                         ...withdrawalData,
-                        method: e.target.value as WithdrawalFormData["method"],
+                        method: e.target.value as any,
                       })
                     }
-                    className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                    required
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   >
                     <option value="wave">Wave</option>
                     <option value="orange-money">Orange Money</option>
@@ -957,7 +1068,7 @@ const ProfessionalDashboard: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
                     Numéro de compte
                   </label>
                   <input
@@ -969,38 +1080,40 @@ const ProfessionalDashboard: React.FC = () => {
                         accountNumber: e.target.value,
                       })
                     }
-                    className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                    placeholder="Numéro de téléphone ou RIB"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="Numéro de compte"
                     required
                   />
                 </div>
-              </div>
 
-              <div className="mt-6 flex justify-end space-x-3">
-                <button
-                  type="button"
-                  onClick={() => setShowWithdrawalModal(false)}
-                  className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
-                >
-                  Annuler
-                </button>
-                <button
-                  type="submit"
-                  disabled={
-                    isSaving ||
-                    withdrawalData.amount > revenue.available ||
-                    withdrawalData.amount <= 0 ||
-                    !currentUser?.id
-                  }
-                  className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {isSaving ? "Traitement..." : "Confirmer le retrait"}
-                </button>
-              </div>
-            </form>
+                <div className="flex gap-3 pt-4">
+                  <button
+                    type="button"
+                    onClick={() => setShowWithdrawalModal(false)}
+                    className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                  >
+                    Annuler
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isSaving}
+                    className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
+                  >
+                    {isSaving ? (
+                      <div className="flex items-center justify-center">
+                        <LoadingSpinner size="sm" />
+                        <span className="ml-2">Traitement...</span>
+                      </div>
+                    ) : (
+                      "Confirmer le retrait"
+                    )}
+                  </button>
+                </div>
+              </form>
+            </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 };
