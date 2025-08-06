@@ -758,12 +758,12 @@ const PatientDashboard: React.FC = () => {
           <div className="mt-8 mb-8">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-2xl font-bold text-gray-900 flex items-center">
-                <MessageSquare className="h-6 w-6 mr-3 text-purple-600" />
+                <MessageSquare className="h-6 w-6 mr-3 text-blue-600" />
                 Messages
               </h2>
               <button
                 onClick={() => setShowMessaging(!showMessaging)}
-                className="text-purple-600 hover:text-purple-700 font-semibold flex items-center transition-colors bg-purple-50 hover:bg-purple-100 px-3 py-1.5 rounded-lg"
+                className="text-blue-600 hover:text-blue-700 font-semibold flex items-center transition-colors bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-lg"
               >
                 {showMessaging ? (
                   <>
@@ -780,10 +780,10 @@ const PatientDashboard: React.FC = () => {
             </div>
             {showMessaging ? (
               <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-                <div className="p-4 border-b border-gray-100 bg-gradient-to-r from-purple-50 to-blue-50">
+                <div className="p-4 border-b border-gray-100 bg-gradient-to-r from-blue-50 to-indigo-50">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center">
-                      <MessageSquare className="h-5 w-5 text-purple-600 mr-2" />
+                      <MessageSquare className="h-5 w-5 text-blue-600 mr-2" />
                       <span className="font-semibold text-gray-900">Centre de messagerie</span>
                     </div>
                     <div className="flex items-center text-sm text-green-600">
@@ -799,8 +799,8 @@ const PatientDashboard: React.FC = () => {
             ) : (
               <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
                 <div className="text-center">
-                  <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <MessageSquare className="h-8 w-8 text-purple-600" />
+                  <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <MessageSquare className="h-8 w-8 text-blue-600" />
                   </div>
                   <h3 className="text-lg font-semibold text-gray-900 mb-2">Centre de messagerie</h3>
                   <p className="text-gray-600 mb-4">
@@ -808,7 +808,7 @@ const PatientDashboard: React.FC = () => {
                   </p>
                   <button
                     onClick={() => setShowMessaging(true)}
-                    className="bg-gradient-to-r from-purple-500 to-purple-600 text-white px-6 py-2.5 rounded-xl font-semibold hover:from-purple-600 hover:to-purple-700 transition-all duration-200 shadow-md hover:shadow-lg flex items-center mx-auto"
+                    className="bg-gradient-to-r from-blue-500 to-blue-600 text-white px-6 py-2.5 rounded-xl font-semibold hover:from-blue-600 hover:to-blue-700 transition-all duration-200 shadow-md hover:shadow-lg flex items-center mx-auto"
                   >
                     <MessageSquare className="h-4 w-4 mr-2" />
                     Ouvrir la messagerie
