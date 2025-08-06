@@ -487,9 +487,7 @@ const ProfessionalSettings: React.FC = () => {
         });
       } else {
         console.log("⚠️ No profile found, creating default");
-        const defaultProfile = createDefaultProfessionalProfile(
-          currentUser.id
-        );
+        const defaultProfile = createDefaultProfessionalProfile(currentUser.id);
         setProfileData({
           ...defaultProfile,
           education: defaultProfile.education || [],
@@ -698,10 +696,7 @@ const ProfessionalSettings: React.FC = () => {
     try {
       setIsUploadingStamp(true);
 
-      const stampUrl = await uploadAndSaveSignatureImage(
-        file,
-        currentUser!.id
-      );
+      const stampUrl = await uploadAndSaveSignatureImage(file, currentUser!.id);
 
       if (isMountedRef.current) {
         setProfileData((prev) => ({
@@ -800,9 +795,14 @@ const ProfessionalSettings: React.FC = () => {
 
       if (isMountedRef.current) {
         setSaveSuccess(true);
+        
+        // Redirection vers le tableau de bord après 2 secondes
         setTimeout(() => {
-          setSaveSuccess(false);
-        }, 3000);
+          if (isMountedRef.current) {
+            setSaveSuccess(false);
+            navigate("/professional/dashboard");
+          }
+        }, 2000);
       }
     } catch (error) {
       console.error("❌ Error saving profile:", error);
@@ -937,7 +937,7 @@ const ProfessionalSettings: React.FC = () => {
           <div className="mb-6 p-4 bg-green-100 border border-green-400 text-green-700 rounded-xl flex items-center justify-between">
             <div className="flex items-center">
               <CheckCircle className="h-5 w-5 mr-2" />
-              <span>Profil sauvegardé avec succès !</span>
+              <span>Profil sauvegardé avec succès ! Redirection vers le tableau de bord...</span>
             </div>
             <button
               onClick={() => setSaveSuccess(false)}
