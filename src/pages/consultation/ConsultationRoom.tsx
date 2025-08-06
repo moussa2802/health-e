@@ -972,51 +972,56 @@ const ConsultationRoom: React.FC = () => {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gray-100">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
       {/* Header */}
-      <header className="bg-white shadow-sm py-4 px-6">
-        <div className="max-w-6xl mx-auto flex justify-between items-center">
-          <div className="flex items-center space-x-4">
-            <h1 className="text-xl font-semibold">Consultation vidéo</h1>
-            <span
-              className={`px-3 py-1 rounded-full text-sm ${
-                bothConnected
-                  ? "bg-green-100 text-green-800"
-                  : "bg-yellow-100 text-yellow-800"
-              }`}
-            >
-              {bothConnected
-                ? "Consultation active"
-                : "En attente de connexion..."}
-            </span>
-          </div>
-          <div className="flex items-center space-x-4">
-            <span className="text-gray-600">
-              Durée: {formatDuration(callDuration)}
-            </span>
-            <div
-              className={`flex items-center px-2 py-1 rounded-full text-xs ${
-                isOnline
-                  ? "bg-green-100 text-green-800"
-                  : "bg-red-100 text-red-800"
-              }`}
-            >
-              {isOnline ? (
-                <Wifi className="h-3 w-3 mr-1" />
-              ) : (
-                <WifiOff className="h-3 w-3 mr-1" />
-              )}
-              {isOnline ? "En ligne" : "Hors ligne"}
+      <header className="bg-white shadow-lg border-b border-gray-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center py-4">
+            <div className="flex items-center space-x-4">
+              <h1 className="text-2xl font-bold text-gray-900">Consultation vidéo</h1>
+              <span
+                className={`px-4 py-2 rounded-full text-sm font-medium ${
+                  bothConnected
+                    ? "bg-green-100 text-green-800 border border-green-200"
+                    : "bg-yellow-100 text-yellow-800 border border-yellow-200"
+                }`}
+              >
+                {bothConnected
+                  ? "✅ Consultation active"
+                  : "⏳ En attente de connexion..."}
+              </span>
+            </div>
+            <div className="flex items-center space-x-6">
+              <div className="flex items-center space-x-2 bg-white px-4 py-2 rounded-lg shadow-sm border">
+                <span className="text-sm font-medium text-gray-700">
+                  Durée: {formatDuration(callDuration)}
+                </span>
+              </div>
+              <div
+                className={`flex items-center px-3 py-2 rounded-lg text-sm font-medium ${
+                  isOnline
+                    ? "bg-green-100 text-green-800 border border-green-200"
+                    : "bg-red-100 text-red-800 border border-red-200"
+                }`}
+              >
+                {isOnline ? (
+                  <Wifi className="h-4 w-4 mr-2" />
+                ) : (
+                  <WifiOff className="h-4 w-4 mr-2" />
+                )}
+                {isOnline ? "En ligne" : "Hors ligne"}
+              </div>
             </div>
           </div>
         </div>
       </header>
 
-      <div className="max-w-6xl mx-auto p-6">
+      <div className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
+        {/* Error Messages */}
         {connectionError && (
           <div className="mb-6">
-            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative">
-              <strong className="font-bold">Erreur : </strong>
+            <div className="bg-red-50 border border-red-200 text-red-700 px-6 py-4 rounded-xl shadow-sm">
+              <strong className="font-semibold">Erreur de connexion : </strong>
               <span className="block sm:inline">{connectionError}</span>
             </div>
           </div>
@@ -1024,258 +1029,274 @@ const ConsultationRoom: React.FC = () => {
 
         {timeoutMessage && (
           <div className="mb-6">
-            <div className="bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded relative flex items-center">
-              <AlertCircle className="h-5 w-5 mr-2" />
-              <span>{timeoutMessage}</span>
+            <div className="bg-yellow-50 border border-yellow-200 text-yellow-700 px-6 py-4 rounded-xl shadow-sm flex items-center">
+              <AlertCircle className="h-5 w-5 mr-3" />
+              <span className="font-medium">{timeoutMessage}</span>
             </div>
           </div>
         )}
 
         {/* Success notification */}
         {saveSuccess && (
-          <div className="fixed top-20 right-4 z-50 bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded shadow-lg animate-fade-in-out flex items-center">
-            <CheckCircle className="h-5 w-5 mr-2" />
-            <span>Dossier médical enregistré avec succès</span>
+          <div className="fixed top-24 right-6 z-50 bg-green-50 border border-green-200 text-green-700 px-6 py-4 rounded-xl shadow-lg animate-fade-in-out flex items-center">
+            <CheckCircle className="h-5 w-5 mr-3" />
+            <span className="font-medium">Dossier médical enregistré avec succès</span>
           </div>
         )}
 
         {/* Main content area */}
-        <div className="flex flex-col lg:flex-row gap-6">
-          {/* Main video area */}
-          <div className="lg:flex-1 relative">
-            {!jitsiLoaded ? (
-              <div className="bg-black rounded-xl overflow-hidden aspect-video w-full flex items-center justify-center">
-                <div className="text-center text-white">
-                  <LoadingSpinner size="lg" color="blue" />
-                  <p className="mt-4">Chargement de la vidéoconférence...</p>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Video Container - Takes 2/3 on desktop */}
+          <div className="lg:col-span-2">
+            <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
+              {/* Video Area */}
+              <div className="relative">
+                {!jitsiLoaded ? (
+                  <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-t-2xl overflow-hidden aspect-video w-full flex items-center justify-center">
+                    <div className="text-center text-white">
+                      <LoadingSpinner size="lg" color="white" />
+                      <p className="mt-4 text-lg font-medium">Chargement de la vidéoconférence...</p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="bg-black rounded-t-2xl overflow-hidden" style={{ height: '70vh', maxHeight: '600px' }}>
+                    <div ref={jitsiContainerRef} className="w-full h-full"></div>
+                  </div>
+                )}
+
+                {/* Connection Status Banner */}
+                {bothConnected && (
+                  <div className="absolute bottom-4 left-4 right-4">
+                    <div className="bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded-xl shadow-sm flex items-center justify-center">
+                      <div className="flex items-center">
+                        <div className="w-3 h-3 bg-green-500 rounded-full mr-3 animate-pulse"></div>
+                        <span className="font-medium">
+                          ✅ Consultation active - Les deux participants sont connectés
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Controls */}
+              <div className="p-6 bg-gray-50 border-t border-gray-200">
+                <div className="flex flex-col sm:flex-row justify-center space-y-3 sm:space-y-0 sm:space-x-4">
+                  {currentUser?.type === "professional" && (
+                    <button
+                      onClick={() =>
+                        setShowMedicalRecordPanel(!showMedicalRecordPanel)
+                      }
+                      className={`px-6 py-3 rounded-xl font-medium transition-all duration-200 flex items-center justify-center ${
+                        showMedicalRecordPanel
+                          ? "bg-blue-600 text-white shadow-lg transform scale-105"
+                          : "bg-blue-100 text-blue-700 hover:bg-blue-200 hover:shadow-md"
+                      }`}
+                    >
+                      <FileText className="h-5 w-5 mr-2" />
+                      Dossier médical
+                    </button>
+                  )}
+
+                  <button
+                    onClick={endCall}
+                    className="px-6 py-3 rounded-xl bg-red-600 text-white hover:bg-red-700 transition-all duration-200 flex items-center justify-center font-medium shadow-lg hover:shadow-xl transform hover:scale-105"
+                  >
+                    <PhoneOff className="h-5 w-5 mr-2" />
+                    Terminer l'appel
+                  </button>
                 </div>
               </div>
-            ) : (
-              <div className="bg-black rounded-xl overflow-hidden aspect-video w-full">
-                <div ref={jitsiContainerRef} className="w-full h-full"></div>
-              </div>
-            )}
-
-            {/* Connection Status Banner */}
-            {bothConnected && (
-              <div className="mt-4 p-3 bg-green-100 text-green-800 rounded-lg flex items-center justify-center">
-                <div className="flex items-center">
-                  <div className="w-3 h-3 bg-green-500 rounded-full mr-2 animate-pulse"></div>
-                  <span className="font-medium">
-                    Consultation active - Les deux participants sont connectés
-                  </span>
-                </div>
-              </div>
-            )}
-
-            {/* Controls */}
-            <div className="mt-6 flex justify-center space-x-6">
-              {currentUser?.type === "professional" && (
-                <button
-                  onClick={() =>
-                    setShowMedicalRecordPanel(!showMedicalRecordPanel)
-                  }
-                  className={`px-6 py-3 rounded-lg ${
-                    showMedicalRecordPanel
-                      ? "bg-blue-600 text-white"
-                      : "bg-blue-100 text-blue-700 hover:bg-blue-200"
-                  } transition-colors flex items-center font-medium`}
-                >
-                  <FileText className="h-5 w-5 mr-2" />
-                  Dossier médical
-                </button>
-              )}
-
-              <button
-                onClick={endCall}
-                className="px-6 py-3 rounded-lg bg-red-600 text-white hover:bg-red-700 transition-colors flex items-center font-medium"
-              >
-                <PhoneOff className="h-5 w-5 mr-2" />
-                Terminer l'appel
-              </button>
             </div>
           </div>
 
-          {/* Medical Record Panel */}
+          {/* Medical Record Panel - Takes 1/3 on desktop */}
           {showMedicalRecordPanel && currentUser?.type === "professional" && (
-            <div className="lg:w-96 bg-white rounded-xl shadow-lg overflow-hidden flex flex-col">
-              <div className="p-4 bg-gray-50 border-b">
-                <h2 className="font-semibold">Dossier médical</h2>
-              </div>
+            <div className="lg:col-span-1">
+              <div className="bg-white rounded-2xl shadow-lg overflow-hidden h-full flex flex-col">
+                <div className="p-6 bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-gray-200">
+                  <h2 className="text-xl font-bold text-gray-900">Dossier médical</h2>
+                  <p className="text-sm text-gray-600 mt-1">Remplissez les informations de consultation</p>
+                </div>
 
-              <div className="flex-1 p-4 overflow-y-auto">
-                {saveSuccess && (
-                  <div className="mb-4 p-3 bg-green-100 text-green-800 rounded-lg flex items-center">
-                    <CheckCircle className="h-5 w-5 mr-2" />
-                    <span>Dossier médical enregistré avec succès</span>
-                  </div>
-                )}
+                <div className="flex-1 p-6 overflow-y-auto">
+                  {saveSuccess && (
+                    <div className="mb-6 p-4 bg-green-50 text-green-800 rounded-xl border border-green-200 flex items-center">
+                      <CheckCircle className="h-5 w-5 mr-3" />
+                      <span className="font-medium">Dossier médical enregistré avec succès</span>
+                    </div>
+                  )}
 
-                {saveError && (
-                  <div className="mb-4 p-3 bg-red-100 text-red-800 rounded-lg flex items-center">
-                    <AlertCircle className="h-5 w-5 mr-2" />
-                    <span>{saveError}</span>
-                  </div>
-                )}
+                  {saveError && (
+                    <div className="mb-6 p-4 bg-red-50 text-red-800 rounded-xl border border-red-200 flex items-center">
+                      <AlertCircle className="h-5 w-5 mr-3" />
+                      <span className="font-medium">{saveError}</span>
+                    </div>
+                  )}
 
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Diagnostic
-                    </label>
-                    <textarea
-                      value={medicalRecordData.diagnosis}
-                      onChange={(e) =>
-                        setMedicalRecordData({
-                          ...medicalRecordData,
-                          diagnosis: e.target.value,
-                        })
-                      }
-                      rows={4}
-                      className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center">
-                      <Pill className="h-4 w-4 mr-1" />
-                      Traitement
-                    </label>
-                    <textarea
-                      value={medicalRecordData.treatment}
-                      onChange={(e) => {
-                        setMedicalRecordData({
-                          ...medicalRecordData,
-                          treatment: e.target.value,
-                        });
-                        // Reset signed status when treatment changes
-                        setIsPrescriptionSigned(false);
-                      }}
-                      rows={4}
-                      className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Recommandations
-                    </label>
-                    <textarea
-                      value={medicalRecordData.recommendations}
-                      onChange={(e) =>
-                        setMedicalRecordData({
-                          ...medicalRecordData,
-                          recommendations: e.target.value,
-                        })
-                      }
-                      rows={4}
-                      className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Prochain rendez-vous
-                    </label>
-                    <div className="flex items-center">
-                      <Calendar className="h-5 w-5 text-gray-400 mr-2" />
-                      <input
-                        type="date"
-                        value={medicalRecordData.nextAppointmentDate}
+                  <div className="space-y-6">
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">
+                        Diagnostic
+                      </label>
+                      <textarea
+                        value={medicalRecordData.diagnosis}
                         onChange={(e) =>
                           setMedicalRecordData({
                             ...medicalRecordData,
-                            nextAppointmentDate: e.target.value,
+                            diagnosis: e.target.value,
                           })
                         }
-                        className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                        rows={4}
+                        className="w-full rounded-xl border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 resize-none"
+                        placeholder="Entrez le diagnostic..."
                       />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2 flex items-center">
+                        <Pill className="h-4 w-4 mr-2" />
+                        Traitement
+                      </label>
+                      <textarea
+                        value={medicalRecordData.treatment}
+                        onChange={(e) => {
+                          setMedicalRecordData({
+                            ...medicalRecordData,
+                            treatment: e.target.value,
+                          });
+                          setIsPrescriptionSigned(false);
+                        }}
+                        rows={4}
+                        className="w-full rounded-xl border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 resize-none"
+                        placeholder="Prescrire le traitement..."
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">
+                        Recommandations
+                      </label>
+                      <textarea
+                        value={medicalRecordData.recommendations}
+                        onChange={(e) =>
+                          setMedicalRecordData({
+                            ...medicalRecordData,
+                            recommendations: e.target.value,
+                          })
+                        }
+                        rows={4}
+                        className="w-full rounded-xl border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 resize-none"
+                        placeholder="Ajoutez des recommandations..."
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">
+                        Prochain rendez-vous
+                      </label>
+                      <div className="flex items-center">
+                        <Calendar className="h-5 w-5 text-gray-400 mr-3" />
+                        <input
+                          type="date"
+                          value={medicalRecordData.nextAppointmentDate}
+                          onChange={(e) =>
+                            setMedicalRecordData({
+                              ...medicalRecordData,
+                              nextAppointmentDate: e.target.value,
+                            })
+                          }
+                          className="w-full rounded-xl border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                        />
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
 
-              <div className="p-4 border-t flex justify-between">
-                <div className="flex space-x-2">
-                  <button
-                    onClick={generateMedicalReport}
-                    className="px-3 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 transition-colors flex items-center text-sm"
-                  >
-                    <FileText className="h-4 w-4 mr-1" />
-                    Rapport
-                  </button>
-
-                  {/* Sign Prescription Button */}
-                  {medicalRecordData.treatment &&
-                    professionalProfile?.useElectronicSignature &&
-                    (professionalProfile?.signatureUrl ||
-                      professionalProfile?.stampUrl) && (
+                <div className="p-6 border-t border-gray-200 bg-gray-50">
+                  <div className="flex flex-col space-y-3">
+                    <div className="flex flex-wrap gap-2">
                       <button
-                        onClick={handleSignPrescription}
-                        disabled={isPrescriptionSigned || isSigningPrescription}
-                        className={`px-3 py-2 ${
-                          isPrescriptionSigned
-                            ? "bg-green-100 text-green-700"
-                            : isSigningPrescription
-                            ? "bg-blue-100 text-blue-700 opacity-75"
-                            : "bg-blue-100 text-blue-700 hover:bg-blue-200"
-                        } rounded-md transition-colors flex items-center text-sm`}
+                        onClick={generateMedicalReport}
+                        className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors flex items-center text-sm font-medium"
                       >
-                        {isSigningPrescription ? (
-                          <>
-                            <LoadingSpinner size="sm" className="mr-1" />
-                            Signature...
-                          </>
-                        ) : isPrescriptionSigned ? (
-                          <>
-                            <CheckCircle className="h-4 w-4 mr-1" />
-                            Signé
-                          </>
-                        ) : (
-                          <>
-                            <PenTool className="h-4 w-4 mr-1" />
-                            Signer
-                          </>
-                        )}
+                        <FileText className="h-4 w-4 mr-2" />
+                        Rapport
                       </button>
-                    )}
 
-                  <button
-                    onClick={generatePrescription}
-                    disabled={
-                      !medicalRecordData.treatment ||
-                      (!isPrescriptionSigned &&
+                      {/* Sign Prescription Button */}
+                      {medicalRecordData.treatment &&
                         professionalProfile?.useElectronicSignature &&
                         (professionalProfile?.signatureUrl ||
-                          professionalProfile?.stampUrl))
-                    }
-                    className={`px-3 py-2 ${
-                      !medicalRecordData.treatment ||
-                      (!isPrescriptionSigned &&
-                        professionalProfile?.useElectronicSignature &&
-                        (professionalProfile?.signatureUrl ||
-                          professionalProfile?.stampUrl))
-                        ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                        : "bg-green-100 text-green-700 hover:bg-green-200"
-                    } rounded-md transition-colors flex items-center text-sm`}
-                  >
-                    <Pill className="h-4 w-4 mr-1" />
-                    Ordonnance
-                  </button>
+                          professionalProfile?.stampUrl) && (
+                          <button
+                            onClick={handleSignPrescription}
+                            disabled={isPrescriptionSigned || isSigningPrescription}
+                            className={`px-4 py-2 rounded-lg transition-colors flex items-center text-sm font-medium ${
+                              isPrescriptionSigned
+                                ? "bg-green-100 text-green-700 border border-green-200"
+                                : isSigningPrescription
+                                ? "bg-blue-100 text-blue-700 opacity-75"
+                                : "bg-blue-100 text-blue-700 hover:bg-blue-200"
+                            }`}
+                          >
+                            {isSigningPrescription ? (
+                              <>
+                                <LoadingSpinner size="sm" className="mr-2" />
+                                Signature...
+                              </>
+                            ) : isPrescriptionSigned ? (
+                              <>
+                                <CheckCircle className="h-4 w-4 mr-2" />
+                                Signé
+                              </>
+                            ) : (
+                              <>
+                                <PenTool className="h-4 w-4 mr-2" />
+                                Signer
+                              </>
+                            )}
+                          </button>
+                        )}
+
+                      <button
+                        onClick={generatePrescription}
+                        disabled={
+                          !medicalRecordData.treatment ||
+                          (!isPrescriptionSigned &&
+                            professionalProfile?.useElectronicSignature &&
+                            (professionalProfile?.signatureUrl ||
+                              professionalProfile?.stampUrl))
+                        }
+                        className={`px-4 py-2 rounded-lg transition-colors flex items-center text-sm font-medium ${
+                          !medicalRecordData.treatment ||
+                          (!isPrescriptionSigned &&
+                            professionalProfile?.useElectronicSignature &&
+                            (professionalProfile?.signatureUrl ||
+                              professionalProfile?.stampUrl))
+                            ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                            : "bg-green-100 text-green-700 hover:bg-green-200"
+                        }`}
+                      >
+                        <Pill className="h-4 w-4 mr-2" />
+                        Ordonnance
+                      </button>
+                    </div>
+
+                    <button
+                      onClick={handleSaveMedicalRecord}
+                      disabled={isSaving}
+                      className="w-full px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-all duration-200 flex items-center justify-center font-medium shadow-lg hover:shadow-xl disabled:opacity-50"
+                    >
+                      {isSaving ? (
+                        <LoadingSpinner size="sm" className="mr-3" />
+                      ) : (
+                        <Save className="h-5 w-5 mr-3" />
+                      )}
+                      Enregistrer le dossier
+                    </button>
+                  </div>
                 </div>
-
-                <button
-                  onClick={handleSaveMedicalRecord}
-                  disabled={isSaving}
-                  className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors flex items-center disabled:opacity-50"
-                >
-                  {isSaving ? (
-                    <LoadingSpinner size="sm" className="mr-2" />
-                  ) : (
-                    <Save className="h-5 w-5 mr-2" />
-                  )}
-                  Enregistrer
-                </button>
               </div>
             </div>
           )}
