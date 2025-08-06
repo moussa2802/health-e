@@ -81,7 +81,7 @@ service cloud.firestore {
       allow delete: if request.auth != null;
     }
     
-    // Règles pour les paiements PayDunya - TEMPORAIREMENT PLUS PERMISSIVES POUR LES TESTS
+    // Règles pour les paiements - TEMPORAIREMENT PLUS PERMISSIVES POUR LES TESTS
     match /payments/{paymentId} {
       // Lecture : par tous les utilisateurs authentifiés
       allow read: if request.auth != null;

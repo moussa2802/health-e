@@ -1,11 +1,13 @@
-import React, { useEffect, useState } from 'react';
-import { Link, useParams, useSearchParams } from 'react-router-dom';
-import { CheckCircle, Calendar, Clock, Video, User, AlertCircle } from 'lucide-react';
-import { getFirestoreInstance } from '../../utils/firebase';
-import { formatLocalDate, formatLocalTime, createDateWithTime, formatInDakarTime } from '../../utils/dateUtils';
-import { doc, getDoc, collection, query, where, orderBy, limit, getDocs } from 'firebase/firestore';
-import paydunyaService from '../../services/paydunyaService';
-import { useAuth } from '../../contexts/AuthContext';
+import React, { useState, useEffect } from "react";
+import { useNavigate, useSearchParams, useParams, Link } from "react-router-dom";
+import { useAuth } from "../../contexts/AuthContext";
+import { useLanguage } from "../../contexts/LanguageContext";
+import { CheckCircle, AlertCircle, ArrowLeft, Calendar, Clock, User, MapPin, Video } from "lucide-react";
+import { format } from "date-fns";
+import { fr, enUS } from "date-fns/locale";
+import { doc, getDoc, updateDoc, collection, query, where, orderBy, limit, getDocs } from "firebase/firestore";
+import { db } from "../../config/firebase";
+import LoadingSpinner from "../../components/ui/LoadingSpinner";
 
 interface AppointmentSuccessParams {
   bookingId: string;
@@ -46,25 +48,9 @@ const AppointmentSuccess: React.FC = () => {
           const data = snapshot.data();
           setBookingData(data);
           
-          // Vérifier le statut de paiement PayDunya
+          // Vérifier le statut de paiement
           if (data.paymentStatus) {
             setPaymentStatus(data.paymentStatus);
-          }
-          
-          // Si c'est un retour de PayDunya, vérifier le statut
-          const token = searchParams.get('token');
-          if (token) {
-            console.log('🔔 [PAYDUNYA] Checking payment status for token:', token);
-            const paymentResult = await paydunyaService.checkPaymentStatus(token);
-            if (paymentResult.success) {
-              setPaymentStatus(paymentResult.status || 'completed');
-              
-              // Si le paiement est confirmé, mettre à jour le statut de la réservation
-              if (paymentResult.status === 'completed' || paymentResult.status === 'success') {
-                console.log('✅ [PAYDUNYA] Payment confirmed, updating booking status');
-                await paydunyaService.updateBookingStatus(bookingId, 'confirmed');
-              }
-            }
           }
           
           // Si la réservation est en statut "pending", afficher un message d'attente
@@ -152,20 +138,20 @@ const AppointmentSuccess: React.FC = () => {
 
   // Ajouter un bouton de test pour mettre à jour manuellement le statut
   const handleManualUpdate = async () => {
-    if (!bookingId) return;
-    
     try {
-      console.log("🔧 [MANUAL UPDATE] Updating booking status manually");
-      const result = await paydunyaService.updateBookingStatus(bookingId, "confirmed");
+      console.log("🔧 [MANUAL UPDATE] Attempting to manually update booking status");
       
-      if (result.success) {
-        console.log("✅ [MANUAL UPDATE] Booking status updated successfully");
-        // Recharger la page pour voir les changements
-        window.location.reload();
-      } else {
-        console.error("❌ [MANUAL UPDATE] Failed to update booking status:", result.error);
-        alert("Erreur lors de la mise à jour du statut");
-      }
+      // Mettre à jour le statut de la réservation
+      const bookingRef = doc(db, 'bookings', bookingId);
+      await updateDoc(bookingRef, {
+        status: 'confirmed',
+        paymentStatus: 'completed',
+        updatedAt: new Date()
+      });
+      
+      console.log("✅ [MANUAL UPDATE] Booking status updated successfully");
+      alert("Statut mis à jour avec succès !");
+      window.location.reload();
     } catch (error) {
       console.error("❌ [MANUAL UPDATE] Error:", error);
       alert("Erreur lors de la mise à jour du statut");
