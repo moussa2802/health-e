@@ -337,7 +337,7 @@ const PatientAccess: React.FC = () => {
                 <ArrowLeft className="h-5 w-5 mr-2" />
                 Retour à l'accueil
               </Link>
-              <h1 className="text-white text-xl font-bold">Espace Patient</h1>
+              <h1 className="text-white text-xl font-bold">Espace Patient - Design Amélioré ✅</h1>
             </div>
           </div>
         </div>
