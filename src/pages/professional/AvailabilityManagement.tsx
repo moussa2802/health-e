@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { Plus, AlertCircle, CheckCircle, RefreshCw, Info, Clock, Calendar, Save, Settings } from "lucide-react";
 import { format } from "date-fns";
+import { fr } from "date-fns/locale";
 import { useAuth } from "../../contexts/AuthContext";
 import {
   updateProfessionalProfile,
@@ -124,7 +125,7 @@ const AvailabilityManagement: React.FC = () => {
   const getWeekdayName = (date: Date | string): string => {
     try {
       const dateObj = typeof date === "string" ? new Date(date) : date;
-      return format(dateObj, "EEEE", { locale: require("date-fns/locale/fr") });
+      return format(dateObj, "EEEE", { locale: fr });
     } catch (error) {
       console.error("❌ Erreur lors du formatage de la date:", error);
       return "Inconnu";
@@ -148,7 +149,7 @@ const AvailabilityManagement: React.FC = () => {
     };
 
     loadProfile();
-  }, [currentUser]);
+  }, [currentUser, loadSlotsForCurrentMonth]);
 
   const handleSlotsChange = (slots: TimeSlot[]) => {
     console.log("🔄 Créneaux modifiés:", slots);
