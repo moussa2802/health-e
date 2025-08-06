@@ -2,6 +2,7 @@
 // 🔄 FORCE REBUILD: Ajout d'un commentaire pour forcer le déploiement avec les nouvelles variables d'environnement
 // Mode: PRODUCTION - Variables Netlify mises à jour
 import { getFirestore, doc, setDoc, updateDoc } from "firebase/firestore";
+import { PAYDUNYA_FORCE_CONFIG } from "../config/paydunyaConfig";
 
 export interface PayDunyaInvoice {
   token: string;
@@ -33,24 +34,42 @@ export interface PayDunyaPaymentData {
 // Configuration PayDunya (production ou test selon les variables d'environnement)
 // 🔄 FORCE REBUILD: Configuration mise à jour pour forcer l'utilisation des nouvelles variables
 const PAYDUNYA_CONFIG = {
+  // 🔧 Utilise la configuration forcée si disponible
   publicKey:
-    process.env.REACT_APP_PAYDUNYA_PUBLIC_KEY ||
-    "test_public_p64arhicc9ELdNg7kD78tmEYE3a",
+    PAYDUNYA_FORCE_CONFIG.publicKey !== "live_public_YOUR_PRODUCTION_KEY_HERE"
+      ? PAYDUNYA_FORCE_CONFIG.publicKey
+      : process.env.REACT_APP_PAYDUNYA_PUBLIC_KEY ||
+        "test_public_p64arhicc9ELdNg7kD78tmEYE3a",
   privateKey:
-    process.env.REACT_APP_PAYDUNYA_PRIVATE_KEY ||
-    "test_private_CvygOZ3E0kuBE20lWqZbjTxzKhf",
+    PAYDUNYA_FORCE_CONFIG.privateKey !== "live_private_YOUR_PRODUCTION_KEY_HERE"
+      ? PAYDUNYA_FORCE_CONFIG.privateKey
+      : process.env.REACT_APP_PAYDUNYA_PRIVATE_KEY ||
+        "test_private_CvygOZ3E0kuBE20lWqZbjTxzKhf",
   masterKey:
-    process.env.REACT_APP_PAYDUNYA_MASTER_KEY ||
-    "gzt0lrr3-IhY9-Cl5D-nQjQ-4YiQ3HmHdWtF",
-  token: process.env.REACT_APP_PAYDUNYA_TOKEN || "wZTFnRBd87rYZIdoQmyh",
+    PAYDUNYA_FORCE_CONFIG.masterKey !== "live_master_YOUR_PRODUCTION_KEY_HERE"
+      ? PAYDUNYA_FORCE_CONFIG.masterKey
+      : process.env.REACT_APP_PAYDUNYA_MASTER_KEY ||
+        "gzt0lrr3-IhY9-Cl5D-nQjQ-4YiQ3HmHdWtF",
+  token:
+    PAYDUNYA_FORCE_CONFIG.token !== "live_token_YOUR_PRODUCTION_KEY_HERE"
+      ? PAYDUNYA_FORCE_CONFIG.token
+      : process.env.REACT_APP_PAYDUNYA_TOKEN || "wZTFnRBd87rYZIdoQmyh",
   // URL automatique selon le mode
   baseUrl:
-    (process.env.REACT_APP_PAYDUNYA_MODE || "test") === "live" || process.env.REACT_APP_PAYDUNYA_MASTER_KEY?.startsWith('live_')
+    PAYDUNYA_FORCE_CONFIG.forceProduction
+      ? PAYDUNYA_FORCE_CONFIG.baseUrl
+      : (process.env.REACT_APP_PAYDUNYA_MODE || "test") === "live" ||
+        process.env.REACT_APP_PAYDUNYA_MASTER_KEY?.startsWith("live_")
       ? "https://app.paydunya.com/api/v1"
       : "https://app.paydunya.com/sandbox-api/v1",
-  mode: process.env.REACT_APP_PAYDUNYA_MODE || "test",
+  mode: PAYDUNYA_FORCE_CONFIG.forceProduction
+    ? PAYDUNYA_FORCE_CONFIG.mode
+    : process.env.REACT_APP_PAYDUNYA_MODE || "test",
   // 🔧 Force le mode production si les clés de production sont détectées
-  forceProduction: process.env.REACT_APP_PAYDUNYA_MASTER_KEY?.startsWith('live_') || false,
+  forceProduction:
+    PAYDUNYA_FORCE_CONFIG.forceProduction ||
+    process.env.REACT_APP_PAYDUNYA_MASTER_KEY?.startsWith("live_") ||
+    false,
 };
 
 // 🔍 DEBUG: Vérifier la configuration au démarrage
@@ -59,10 +78,22 @@ console.log("🔍 [PAYDUNYA CONFIG DEBUG] Configuration chargée:");
 console.log("Mode:", PAYDUNYA_CONFIG.mode);
 console.log("Base URL:", PAYDUNYA_CONFIG.baseUrl);
 console.log("REACT_APP_PAYDUNYA_MODE:", process.env.REACT_APP_PAYDUNYA_MODE);
-console.log("REACT_APP_PAYDUNYA_MODE type:", typeof process.env.REACT_APP_PAYDUNYA_MODE);
-console.log("REACT_APP_PAYDUNYA_MODE === 'live':", process.env.REACT_APP_PAYDUNYA_MODE === 'live');
-console.log("REACT_APP_PAYDUNYA_MODE === 'test':", process.env.REACT_APP_PAYDUNYA_MODE === 'test');
-console.log("REACT_APP_PAYDUNYA_MODE === undefined:", process.env.REACT_APP_PAYDUNYA_MODE === undefined);
+console.log(
+  "REACT_APP_PAYDUNYA_MODE type:",
+  typeof process.env.REACT_APP_PAYDUNYA_MODE
+);
+console.log(
+  "REACT_APP_PAYDUNYA_MODE === 'live':",
+  process.env.REACT_APP_PAYDUNYA_MODE === "live"
+);
+console.log(
+  "REACT_APP_PAYDUNYA_MODE === 'test':",
+  process.env.REACT_APP_PAYDUNYA_MODE === "test"
+);
+console.log(
+  "REACT_APP_PAYDUNYA_MODE === undefined:",
+  process.env.REACT_APP_PAYDUNYA_MODE === undefined
+);
 console.log(
   "REACT_APP_PAYDUNYA_PUBLIC_KEY:",
   process.env.REACT_APP_PAYDUNYA_PUBLIC_KEY
@@ -109,11 +140,27 @@ console.log("Token starts with:", PAYDUNYA_CONFIG.token.substring(0, 15));
 
 // 🔍 DEBUG: Vérifier toutes les variables d'environnement PayDunya
 console.log("🔍 [PAYDUNYA DEBUG] Toutes les variables d'environnement:");
-Object.keys(process.env).forEach(key => {
-  if (key.includes('PAYDUNYA')) {
+Object.keys(process.env).forEach((key) => {
+  if (key.includes("PAYDUNYA")) {
     console.log(`${key}:`, process.env[key]);
   }
 });
+
+// 🔍 DEBUG: Vérifier TOUTES les variables d'environnement
+console.log("🔍 [PAYDUNYA DEBUG] Toutes les variables d'environnement disponibles:");
+Object.keys(process.env).forEach((key) => {
+  if (key.startsWith("REACT_APP_")) {
+    console.log(`${key}:`, process.env[key]);
+  }
+});
+
+// 🔍 DEBUG: Vérifier si les variables sont undefined
+console.log("🔍 [PAYDUNYA DEBUG] Test des variables:");
+console.log("process.env.REACT_APP_PAYDUNYA_MODE:", process.env.REACT_APP_PAYDUNYA_MODE);
+console.log("process.env.REACT_APP_PAYDUNYA_PUBLIC_KEY:", process.env.REACT_APP_PAYDUNYA_PUBLIC_KEY);
+console.log("process.env.REACT_APP_PAYDUNYA_PRIVATE_KEY:", process.env.REACT_APP_PAYDUNYA_PRIVATE_KEY);
+console.log("process.env.REACT_APP_PAYDUNYA_MASTER_KEY:", process.env.REACT_APP_PAYDUNYA_MASTER_KEY);
+console.log("process.env.REACT_APP_PAYDUNYA_TOKEN:", process.env.REACT_APP_PAYDUNYA_TOKEN);
 
 export class PayDunyaService {
   private static instance: PayDunyaService;
