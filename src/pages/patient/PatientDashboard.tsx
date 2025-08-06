@@ -763,14 +763,57 @@ const PatientDashboard: React.FC = () => {
               </h2>
               <button
                 onClick={() => setShowMessaging(!showMessaging)}
-                className="text-purple-600 hover:text-purple-700 font-semibold flex items-center transition-colors"
+                className="text-purple-600 hover:text-purple-700 font-semibold flex items-center transition-colors bg-purple-50 hover:bg-purple-100 px-3 py-1.5 rounded-lg"
               >
-                {showMessaging ? "Réduire" : "Voir tous les messages"}
+                {showMessaging ? (
+                  <>
+                    <X className="h-4 w-4 mr-1" />
+                    Réduire
+                  </>
+                ) : (
+                  <>
+                    <MessageSquare className="h-4 w-4 mr-1" />
+                    Voir tous les messages
+                  </>
+                )}
               </button>
             </div>
-            {showMessaging && (
+            {showMessaging ? (
               <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-                <MessagingCenter />
+                <div className="p-4 border-b border-gray-100 bg-gradient-to-r from-purple-50 to-blue-50">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center">
+                      <MessageSquare className="h-5 w-5 text-purple-600 mr-2" />
+                      <span className="font-semibold text-gray-900">Centre de messagerie</span>
+                    </div>
+                    <div className="flex items-center text-sm text-green-600">
+                      <div className="w-2 h-2 bg-green-500 rounded-full mr-1"></div>
+                      En ligne
+                    </div>
+                  </div>
+                </div>
+                <div className="max-h-96 overflow-y-auto">
+                  <MessagingCenter />
+                </div>
+              </div>
+            ) : (
+              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+                <div className="text-center">
+                  <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <MessageSquare className="h-8 w-8 text-purple-600" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">Centre de messagerie</h3>
+                  <p className="text-gray-600 mb-4">
+                    Gérez vos conversations avec les professionnels de santé
+                  </p>
+                  <button
+                    onClick={() => setShowMessaging(true)}
+                    className="bg-gradient-to-r from-purple-500 to-purple-600 text-white px-6 py-2.5 rounded-xl font-semibold hover:from-purple-600 hover:to-purple-700 transition-all duration-200 shadow-md hover:shadow-lg flex items-center mx-auto"
+                  >
+                    <MessageSquare className="h-4 w-4 mr-2" />
+                    Ouvrir la messagerie
+                  </button>
+                </div>
               </div>
             )}
           </div>
