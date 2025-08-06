@@ -943,14 +943,6 @@ export async function searchUsers(
     const db = getFirestoreInstance();
     if (!db) throw new Error("Firestore not available");
 
-    // Ensure users collection exists
-    const usersRef = collection(db, "users");
-
-    // Requête simple sans filtres complexes pour éviter les problèmes d'index
-    const snapshot = await retryFirestoreOperation(async () => {
-      return await getDocs(query(usersRef, limit(50))); // Limiter les résultats
-    });
-
     type UserSearchResult = {
       id: string;
       name: string;
@@ -958,29 +950,74 @@ export async function searchUsers(
       profileImage?: string;
     };
 
-    const users = snapshot.docs
-      .map((doc) => ({ id: doc.id, ...doc.data() } as UserSearchResult))
-      .filter(
-        (user) =>
-          user.id !== currentUserId &&
-          user.name &&
-          user.name.toLowerCase().includes(searchTerm.toLowerCase())
-      );
+    const allUsers: UserSearchResult[] = [];
 
-    // Filtrer selon le type d'utilisateur côté client
-    let filteredUsers = users;
+    // 1. Rechercher dans la collection "users" (professionnels et admins)
+    try {
+      const usersRef = collection(db, "users");
+      const usersSnapshot = await retryFirestoreOperation(async () => {
+        return await getDocs(query(usersRef, limit(50)));
+      });
+
+      usersSnapshot.docs.forEach((doc) => {
+        const userData = doc.data();
+        if (userData.name && userData.type) {
+          allUsers.push({
+            id: doc.id,
+            name: userData.name,
+            type: userData.type,
+            profileImage: userData.profileImage,
+          });
+        }
+      });
+    } catch (error) {
+      console.log("⚠️ Error searching in users collection:", error);
+    }
+
+    // 2. Rechercher dans la collection "patients" (patients)
+    try {
+      const patientsRef = collection(db, "patients");
+      const patientsSnapshot = await retryFirestoreOperation(async () => {
+        return await getDocs(query(patientsRef, limit(50)));
+      });
+
+      patientsSnapshot.docs.forEach((doc) => {
+        const patientData = doc.data();
+        if (patientData.name) {
+          allUsers.push({
+            id: doc.id,
+            name: patientData.name,
+            type: "patient",
+            profileImage: patientData.profileImage,
+          });
+        }
+      });
+    } catch (error) {
+      console.log("⚠️ Error searching in patients collection:", error);
+    }
+
+    // 3. Filtrer par nom et exclure l'utilisateur actuel
+    const filteredUsers = allUsers.filter(
+      (user) =>
+        user.id !== currentUserId &&
+        user.name &&
+        user.name.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+
+    // 4. Filtrer selon le type d'utilisateur côté client
+    let finalUsers = filteredUsers;
     if (userType === "patient") {
       // Les patients peuvent contacter les professionnels
-      filteredUsers = users.filter((user) => user.type === "professional");
+      finalUsers = filteredUsers.filter((user) => user.type === "professional");
     } else if (userType === "professional") {
       // Les professionnels peuvent contacter les patients et les admins
-      filteredUsers = users.filter(
+      finalUsers = filteredUsers.filter(
         (user) => user.type === "patient" || user.type === "admin"
       );
     }
     // Les admins peuvent contacter tout le monde (pas de filtre)
 
-    const results = filteredUsers.slice(0, 10); // Limiter à 10 résultats
+    const results = finalUsers.slice(0, 10); // Limiter à 10 résultats
 
     // Mettre en cache pour 1 minute
     usersCache.set(cacheKey, results);
