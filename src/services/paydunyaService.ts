@@ -44,10 +44,13 @@ const PAYDUNYA_CONFIG = {
     "gzt0lrr3-IhY9-Cl5D-nQjQ-4YiQ3HmHdWtF",
   token: process.env.REACT_APP_PAYDUNYA_TOKEN || "wZTFnRBd87rYZIdoQmyh",
   // URL automatique selon le mode
-  baseUrl: (process.env.REACT_APP_PAYDUNYA_MODE || "test") === "live" 
-    ? "https://app.paydunya.com/api/v1" 
-    : "https://app.paydunya.com/sandbox-api/v1",
+  baseUrl:
+    (process.env.REACT_APP_PAYDUNYA_MODE || "test") === "live" || process.env.REACT_APP_PAYDUNYA_MASTER_KEY?.startsWith('live_')
+      ? "https://app.paydunya.com/api/v1"
+      : "https://app.paydunya.com/sandbox-api/v1",
   mode: process.env.REACT_APP_PAYDUNYA_MODE || "test",
+  // 🔧 Force le mode production si les clés de production sont détectées
+  forceProduction: process.env.REACT_APP_PAYDUNYA_MASTER_KEY?.startsWith('live_') || false,
 };
 
 // 🔍 DEBUG: Vérifier la configuration au démarrage
@@ -56,22 +59,61 @@ console.log("🔍 [PAYDUNYA CONFIG DEBUG] Configuration chargée:");
 console.log("Mode:", PAYDUNYA_CONFIG.mode);
 console.log("Base URL:", PAYDUNYA_CONFIG.baseUrl);
 console.log("REACT_APP_PAYDUNYA_MODE:", process.env.REACT_APP_PAYDUNYA_MODE);
-console.log("REACT_APP_PAYDUNYA_PUBLIC_KEY:", process.env.REACT_APP_PAYDUNYA_PUBLIC_KEY ? "✅ Configuré" : "❌ Non configuré");
-console.log("REACT_APP_PAYDUNYA_PRIVATE_KEY:", process.env.REACT_APP_PAYDUNYA_PRIVATE_KEY ? "✅ Configuré" : "❌ Non configuré");
+console.log("REACT_APP_PAYDUNYA_MODE type:", typeof process.env.REACT_APP_PAYDUNYA_MODE);
+console.log("REACT_APP_PAYDUNYA_MODE === 'live':", process.env.REACT_APP_PAYDUNYA_MODE === 'live');
+console.log("REACT_APP_PAYDUNYA_MODE === 'test':", process.env.REACT_APP_PAYDUNYA_MODE === 'test');
+console.log("REACT_APP_PAYDUNYA_MODE === undefined:", process.env.REACT_APP_PAYDUNYA_MODE === undefined);
+console.log(
+  "REACT_APP_PAYDUNYA_PUBLIC_KEY:",
+  process.env.REACT_APP_PAYDUNYA_PUBLIC_KEY
+    ? "✅ Configuré"
+    : "❌ Non configuré"
+);
+console.log(
+  "REACT_APP_PAYDUNYA_PRIVATE_KEY:",
+  process.env.REACT_APP_PAYDUNYA_PRIVATE_KEY
+    ? "✅ Configuré"
+    : "❌ Non configuré"
+);
 console.log(
   "REACT_APP_PAYDUNYA_MASTER_KEY:",
-  process.env.REACT_APP_PAYDUNYA_MASTER_KEY ? "✅ Configuré" : "❌ Non configuré"
+  process.env.REACT_APP_PAYDUNYA_MASTER_KEY
+    ? "✅ Configuré"
+    : "❌ Non configuré"
 );
-console.log("REACT_APP_PAYDUNYA_TOKEN:", process.env.REACT_APP_PAYDUNYA_TOKEN ? "✅ Configuré" : "❌ Non configuré");
-console.log("masterKey final:", PAYDUNYA_CONFIG.masterKey.substring(0, 10) + "...");
+console.log(
+  "REACT_APP_PAYDUNYA_TOKEN:",
+  process.env.REACT_APP_PAYDUNYA_TOKEN ? "✅ Configuré" : "❌ Non configuré"
+);
+console.log(
+  "masterKey final:",
+  PAYDUNYA_CONFIG.masterKey.substring(0, 10) + "..."
+);
 console.log("token final:", PAYDUNYA_CONFIG.token.substring(0, 10) + "...");
 
 // 🔍 DEBUG: Vérifier si on utilise les clés de test ou production
 console.log("🔍 [PAYDUNYA DEBUG] Clés utilisées:");
-console.log("Public Key starts with:", PAYDUNYA_CONFIG.publicKey.substring(0, 15));
-console.log("Private Key starts with:", PAYDUNYA_CONFIG.privateKey.substring(0, 15));
-console.log("Master Key starts with:", PAYDUNYA_CONFIG.masterKey.substring(0, 15));
+console.log(
+  "Public Key starts with:",
+  PAYDUNYA_CONFIG.publicKey.substring(0, 15)
+);
+console.log(
+  "Private Key starts with:",
+  PAYDUNYA_CONFIG.privateKey.substring(0, 15)
+);
+console.log(
+  "Master Key starts with:",
+  PAYDUNYA_CONFIG.masterKey.substring(0, 15)
+);
 console.log("Token starts with:", PAYDUNYA_CONFIG.token.substring(0, 15));
+
+// 🔍 DEBUG: Vérifier toutes les variables d'environnement PayDunya
+console.log("🔍 [PAYDUNYA DEBUG] Toutes les variables d'environnement:");
+Object.keys(process.env).forEach(key => {
+  if (key.includes('PAYDUNYA')) {
+    console.log(`${key}:`, process.env[key]);
+  }
+});
 
 export class PayDunyaService {
   private static instance: PayDunyaService;
@@ -174,11 +216,15 @@ export class PayDunyaService {
               quantity: 1,
               unit_price: price,
               total_price: price,
-              description: `Consultation ${bookingData.consultationType || "Vidéo"} - ${bookingData.professionalName || "Professionnel"}`,
+              description: `Consultation ${
+                bookingData.consultationType || "Vidéo"
+              } - ${bookingData.professionalName || "Professionnel"}`,
             },
           ],
           total_amount: price,
-          description: `Consultation médicale avec ${bookingData.professionalName || "Professionnel"}`,
+          description: `Consultation médicale avec ${
+            bookingData.professionalName || "Professionnel"
+          }`,
           currency: "XOF",
         },
         store: {
@@ -243,16 +289,25 @@ export class PayDunyaService {
       console.log("🔔 [PAYDUNYA] Price value:", price, typeof price);
 
       // 🔍 Validation des clés PayDunya
-      if (!PAYDUNYA_CONFIG.masterKey || PAYDUNYA_CONFIG.masterKey.trim() === "") {
+      if (
+        !PAYDUNYA_CONFIG.masterKey ||
+        PAYDUNYA_CONFIG.masterKey.trim() === ""
+      ) {
         throw new Error("PAYDUNYA_MASTER_KEY is missing or empty");
       }
       if (!PAYDUNYA_CONFIG.token || PAYDUNYA_CONFIG.token.trim() === "") {
         throw new Error("PAYDUNYA_TOKEN is missing or empty");
       }
-      if (!PAYDUNYA_CONFIG.publicKey || PAYDUNYA_CONFIG.publicKey.trim() === "") {
+      if (
+        !PAYDUNYA_CONFIG.publicKey ||
+        PAYDUNYA_CONFIG.publicKey.trim() === ""
+      ) {
         throw new Error("PAYDUNYA_PUBLIC_KEY is missing or empty");
       }
-      if (!PAYDUNYA_CONFIG.privateKey || PAYDUNYA_CONFIG.privateKey.trim() === "") {
+      if (
+        !PAYDUNYA_CONFIG.privateKey ||
+        PAYDUNYA_CONFIG.privateKey.trim() === ""
+      ) {
         throw new Error("PAYDUNYA_PRIVATE_KEY is missing or empty");
       }
 
@@ -346,12 +401,13 @@ export class PayDunyaService {
         console.error("🔍 [PAYDUNYA DEBUG] Error details:", {
           code: result.response_code,
           text: result.response_text,
-          full_response: result
+          full_response: result,
         });
-        
+
         return {
           success: false,
-          error: result.response_text || "Erreur lors de la création de la facture",
+          error:
+            result.response_text || "Erreur lors de la création de la facture",
         };
       }
     } catch (error) {
