@@ -441,7 +441,7 @@ const PatientAccess: React.FC = () => {
                             type="email"
                             value={loginEmail}
                             onChange={(e) => setLoginEmail(e.target.value)}
-                            className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                            className="w-full px-4 py-3 rounded-xl border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 transition-colors"
                             placeholder="Votre email"
                             required
                           />
@@ -459,7 +459,7 @@ const PatientAccess: React.FC = () => {
                             type="password"
                             value={loginPassword}
                             onChange={(e) => setLoginPassword(e.target.value)}
-                            className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                            className="w-full px-4 py-3 rounded-xl border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 transition-colors"
                             placeholder="Votre mot de passe"
                             required
                           />
@@ -497,7 +497,7 @@ const PatientAccess: React.FC = () => {
                             disabled={
                               isLoggingIn || !loginEmail || !loginPassword
                             }
-                            className="w-full bg-blue-500 text-white py-2 px-4 rounded-md hover:bg-blue-600 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-3 rounded-xl shadow transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                           >
                             {isLoggingIn
                               ? "Connexion en cours..."
@@ -509,7 +509,7 @@ const PatientAccess: React.FC = () => {
                             disabled={
                               isLoggingIn || !loginPhone || isInCooldown
                             }
-                            className="w-full bg-blue-500 text-white py-2 px-4 rounded-md hover:bg-blue-600 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-3 rounded-xl shadow transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                           >
                             {isLoggingIn
                               ? "Envoi en cours..."
@@ -795,7 +795,7 @@ const PatientAccess: React.FC = () => {
                           type="text"
                           value={registerName}
                           onChange={(e) => setRegisterName(e.target.value)}
-                          className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                          className="w-full px-4 py-3 rounded-xl border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 transition-colors"
                           placeholder="Votre nom et prénom"
                           required
                         />
@@ -813,7 +813,7 @@ const PatientAccess: React.FC = () => {
                           type="email"
                           value={registerEmail}
                           onChange={(e) => setRegisterEmail(e.target.value)}
-                          className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                          className="w-full px-4 py-3 rounded-xl border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 transition-colors"
                           placeholder="Votre email"
                           required
                         />
@@ -831,7 +831,7 @@ const PatientAccess: React.FC = () => {
                           type="password"
                           value={registerPassword}
                           onChange={(e) => setRegisterPassword(e.target.value)}
-                          className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                          className="w-full px-4 py-3 rounded-xl border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 transition-colors"
                           placeholder="Créez un mot de passe"
                           required
                         />
@@ -881,7 +881,7 @@ const PatientAccess: React.FC = () => {
                       <button
                         type="submit"
                         disabled={isRegistering || emailVerificationLoading}
-                        className="w-full bg-blue-500 text-white py-2 px-4 rounded-md hover:bg-blue-600 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-3 rounded-xl shadow transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         {isRegistering || emailVerificationLoading
                           ? "Création en cours..."
@@ -1122,9 +1122,9 @@ const PatientAccess: React.FC = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
               <Link
                 to="/professionals/mental"
-                className="bg-white rounded-xl shadow-md p-6 hover:shadow-lg transition-all duration-300 flex flex-col"
+                className="bg-white rounded-xl shadow-md p-6 hover:shadow-lg hover:scale-105 transition-all duration-300 flex flex-col"
               >
-                <div className="w-16 h-16 bg-blue-100 rounded-2xl flex items-center justify-center mb-4">
+                <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mb-4 p-3">
                   <Brain className="h-8 w-8 text-blue-500" />
                 </div>
                 <h3 className="text-xl font-bold mb-2">Santé mentale</h3>
@@ -1142,10 +1142,10 @@ const PatientAccess: React.FC = () => {
 
               <Link
                 to="/professionals/sexual"
-                className="bg-white rounded-xl shadow-md p-6 hover:shadow-lg transition-all duration-300 flex flex-col"
+                className="bg-white rounded-xl shadow-md p-6 hover:shadow-lg hover:scale-105 transition-all duration-300 flex flex-col"
               >
-                <div className="w-16 h-16 bg-rose-100 rounded-2xl flex items-center justify-center mb-4">
-                  <Heart className="h-8 w-8 text-rose-500" />
+                <div className="w-16 h-16 bg-pink-100 rounded-full flex items-center justify-center mb-4 p-3">
+                  <Heart className="h-8 w-8 text-pink-500" />
                 </div>
                 <h3 className="text-xl font-bold mb-2">Santé sexuelle</h3>
                 <p className="text-gray-600 mb-4">
@@ -1156,19 +1156,19 @@ const PatientAccess: React.FC = () => {
                   <span className="text-sm text-gray-500">
                     Gynécologues, Sexologues, Urologues
                   </span>
-                  <ArrowRight className="h-5 w-5 text-rose-500" />
+                  <ArrowRight className="h-5 w-5 text-pink-500" />
                 </div>
               </Link>
             </div>
 
             {/* Benefits */}
-            <div className="bg-white rounded-xl shadow-md p-6 mb-12">
+            <div className="bg-gray-50 rounded-xl shadow-md p-6 mb-12">
               <h3 className="text-xl font-semibold mb-6 text-center">
                 Pourquoi choisir Health-e ?
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div className="text-center">
-                  <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4 p-3">
                     <ShieldCheck className="h-6 w-6 text-blue-500" />
                   </div>
                   <h4 className="font-medium mb-2">Confidentialité</h4>
@@ -1177,7 +1177,7 @@ const PatientAccess: React.FC = () => {
                   </p>
                 </div>
                 <div className="text-center">
-                  <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4 p-3">
                     <Clock className="h-6 w-6 text-blue-500" />
                   </div>
                   <h4 className="font-medium mb-2">Flexibilité</h4>
@@ -1186,7 +1186,7 @@ const PatientAccess: React.FC = () => {
                   </p>
                 </div>
                 <div className="text-center">
-                  <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4 p-3">
                     <Users className="h-6 w-6 text-blue-500" />
                   </div>
                   <h4 className="font-medium mb-2">Professionnels qualifiés</h4>
