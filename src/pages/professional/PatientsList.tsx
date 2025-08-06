@@ -147,7 +147,7 @@ const PatientsList: React.FC = () => {
   // Handle patient archive/unarchive
   const handleArchivePatient = async (patientId: string, archive: boolean) => {
     if (!currentUser?.id) return;
-    
+
     try {
       await archivePatient(patientId, currentUser.id, archive);
       setPatients((prevPatients) =>

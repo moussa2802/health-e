@@ -795,7 +795,7 @@ const ProfessionalSettings: React.FC = () => {
 
       if (isMountedRef.current) {
         setSaveSuccess(true);
-        
+
         // Redirection vers le tableau de bord après 2 secondes
         setTimeout(() => {
           if (isMountedRef.current) {
@@ -937,7 +937,10 @@ const ProfessionalSettings: React.FC = () => {
           <div className="mb-6 p-4 bg-green-100 border border-green-400 text-green-700 rounded-xl flex items-center justify-between">
             <div className="flex items-center">
               <CheckCircle className="h-5 w-5 mr-2" />
-              <span>Profil sauvegardé avec succès ! Redirection vers le tableau de bord...</span>
+              <span>
+                Profil sauvegardé avec succès ! Redirection vers le tableau de
+                bord...
+              </span>
             </div>
             <button
               onClick={() => setSaveSuccess(false)}

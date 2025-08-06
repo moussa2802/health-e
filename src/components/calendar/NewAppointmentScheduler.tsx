@@ -197,7 +197,10 @@ const NewAppointmentScheduler: React.FC<NewAppointmentSchedulerProps> = ({
 
         // Filter active bookings (already filtered by professional in getUserBookings)
         const reserved = bookings.filter(
-          (b) => b.status === "en_attente" || b.status === "confirmé" || b.status === "confirmed"
+          (b) =>
+            b.status === "en_attente" ||
+            b.status === "confirmé" ||
+            b.status === "confirmed"
         );
 
         console.log(
@@ -265,9 +268,14 @@ const NewAppointmentScheduler: React.FC<NewAppointmentSchedulerProps> = ({
       setSlotError(null);
 
       console.log(
-        `🔄 Loading available slots for date: ${format(selectedDate, "yyyy-MM-dd")}`
+        `🔄 Loading available slots for date: ${format(
+          selectedDate,
+          "yyyy-MM-dd"
+        )}`
       );
-      console.log(`🔍 Professional ID utilisé pour la requête: ${professionalId}`);
+      console.log(
+        `🔍 Professional ID utilisé pour la requête: ${professionalId}`
+      );
 
       await ensureFirestoreReady();
 
@@ -327,20 +335,32 @@ const NewAppointmentScheduler: React.FC<NewAppointmentSchedulerProps> = ({
       const updatedSlots = slots.map((slot) => {
         const slotKey = generateSlotKey(slot.date, slot.time);
         console.log(`🔍 [SLOT CHECK] Créneau: ${slotKey}`);
-        console.log(`🔍 [SLOT CHECK] Dans reservedSlotKeys: ${reservedSlotKeys.includes(slotKey)}`);
-        console.log(`🔍 [SLOT CHECK] Firestore isAvailable: ${slot.isBooked !== true}`);
-        
+        console.log(
+          `🔍 [SLOT CHECK] Dans reservedSlotKeys: ${reservedSlotKeys.includes(
+            slotKey
+          )}`
+        );
+        console.log(
+          `🔍 [SLOT CHECK] Firestore isAvailable: ${slot.isBooked !== true}`
+        );
+
         const isBooked = reservedSlotKeys.includes(slotKey);
         console.log(`🔍 [SLOT CHECK] Final isBooked: ${isBooked}`);
-        
+
         return {
           ...slot,
           isBooked,
         };
       });
 
-      console.log(`✅ [SLOT CHECK] Updated ${updatedSlots.length} slots with booking status`);
-      console.log(`📊 [SLOT CHECK] ${updatedSlots.filter(s => s.isBooked).length} slots marked as booked`);
+      console.log(
+        `✅ [SLOT CHECK] Updated ${updatedSlots.length} slots with booking status`
+      );
+      console.log(
+        `📊 [SLOT CHECK] ${
+          updatedSlots.filter((s) => s.isBooked).length
+        } slots marked as booked`
+      );
 
       setAvailableSlots(updatedSlots);
 

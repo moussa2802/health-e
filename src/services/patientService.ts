@@ -280,10 +280,14 @@ export async function getMedicalRecordsByProfessional(
           const patientSnap = await getDoc(patientRef);
           if (patientSnap.exists()) {
             const patientData = patientSnap.data() as { name?: string };
-            patientName = patientData.name || `Patient ${patientId.substring(0, 8)}`;
+            patientName =
+              patientData.name || `Patient ${patientId.substring(0, 8)}`;
           }
         } catch (error) {
-          console.log(`⚠️ Error fetching patient data for ${patientId}:`, error);
+          console.log(
+            `⚠️ Error fetching patient data for ${patientId}:`,
+            error
+          );
           patientName = `Patient ${patientId.substring(0, 8)}`;
         }
 

@@ -175,7 +175,10 @@ const ConsultationRoom: React.FC = () => {
       try {
         const roomParticipants = await getRoomParticipants(roomId);
         console.log("👥 Room participants:", roomParticipants);
-        console.log("👥 [CONSULTATION DEBUG] Participants structure:", JSON.stringify(roomParticipants, null, 2));
+        console.log(
+          "👥 [CONSULTATION DEBUG] Participants structure:",
+          JSON.stringify(roomParticipants, null, 2)
+        );
         setParticipants(roomParticipants);
       } catch (error) {
         console.error("❌ Error fetching room participants:", error);
