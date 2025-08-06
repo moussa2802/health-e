@@ -1,22 +1,21 @@
-import { getFirestoreInstance, ensureFirestoreReady } from "../utils/firebase";
 import {
-  collection,
   doc,
-  getDoc,
   setDoc,
-  updateDoc,
-  addDoc,
-  serverTimestamp,
-  arrayUnion,
-  Timestamp,
+  getDoc,
   getDocs,
+  collection,
   query,
-  orderBy,
   where,
+  orderBy,
+  updateDoc,
+  serverTimestamp,
   collectionGroup,
+  Timestamp,
+  addDoc,
+  arrayUnion,
 } from "firebase/firestore";
+import { getFirestoreInstance, ensureFirestoreReady } from "../utils/firebase";
 
-// Interface for medical record
 export interface MedicalRecord {
   id: string;
   patientId: string;
@@ -38,6 +37,21 @@ export interface MedicalRecord {
   useElectronicSignature?: boolean;
 }
 
+export interface Patient {
+  id: string;
+  name: string;
+  email?: string;
+  profileImage?: string;
+  lastConsultation?: string;
+  consultationsCount: number;
+  nextAppointment?: string;
+  medicalRecords?: MedicalRecord[];
+  isArchived?: boolean;
+  archivedAt?: string;
+  createdAt?: Timestamp;
+  updatedAt?: Timestamp;
+}
+
 // Update patient medical record
 export async function updatePatientMedicalRecord(
   patientId: string,
@@ -57,8 +71,11 @@ export async function updatePatientMedicalRecord(
     const patientSnap = await getDoc(patientRef);
 
     if (!patientSnap.exists()) {
-      console.log("🔍 [PATIENT SERVICE] Patient not found, creating new patient:", patientId);
-      
+      console.log(
+        "🔍 [PATIENT SERVICE] Patient not found, creating new patient:",
+        patientId
+      );
+
       // Create new patient document
       await setDoc(patientRef, {
         name: `Patient ${patientId.substring(0, 8)}`,
@@ -73,7 +90,7 @@ export async function updatePatientMedicalRecord(
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
       });
-      
+
       console.log("✅ Created new patient:", patientId);
     }
 
@@ -271,28 +288,36 @@ export async function getMedicalRecordsByProfessional(
       console.log(
         "🔄 [MEDICAL RECORDS DEBUG] CollectionGroup query failed, falling back to patient-by-patient approach"
       );
-      console.log("🔄 [MEDICAL RECORDS DEBUG] Error details:", collectionGroupError);
+      console.log(
+        "🔄 [MEDICAL RECORDS DEBUG] Error details:",
+        collectionGroupError
+      );
 
       // Fallback: Get all patients and their medical records
       const patientsRef = collection(db, "patients");
       const patientsSnapshot = await getDocs(patientsRef);
-      
+
       const allRecords: MedicalRecord[] = [];
-      
+
       for (const patientDoc of patientsSnapshot.docs) {
         const patientId = patientDoc.id;
         const patientData = patientDoc.data();
-        
+
         try {
-          const medicalRecordsRef = collection(db, "patients", patientId, "medicalRecords");
+          const medicalRecordsRef = collection(
+            db,
+            "patients",
+            patientId,
+            "medicalRecords"
+          );
           const recordsQuery = query(
             medicalRecordsRef,
             where("professionalId", "==", professionalId),
             orderBy("consultationDate", "desc")
           );
-          
+
           const recordsSnapshot = await getDocs(recordsQuery);
-          
+
           recordsSnapshot.docs.forEach((recordDoc) => {
             allRecords.push({
               id: recordDoc.id,
@@ -302,11 +327,14 @@ export async function getMedicalRecordsByProfessional(
             } as MedicalRecord);
           });
         } catch (patientError) {
-          console.log(`⚠️ Error fetching records for patient ${patientId}:`, patientError);
+          console.log(
+            `⚠️ Error fetching records for patient ${patientId}:`,
+            patientError
+          );
           // Continue with other patients
         }
       }
-      
+
       console.log(
         `✅ Fetched ${allRecords.length} medical records for professional (fallback method)`
       );
@@ -324,4 +352,73 @@ export function generatePrescriptionPDF(): string {
   // For now, we'll just return a placeholder
   console.log("📄 Generating prescription PDF");
   return "prescription.pdf";
+}
+
+// Archive or unarchive a patient
+export async function archivePatient(
+  patientId: string,
+  professionalId: string,
+  archive: boolean
+): Promise<void> {
+  try {
+    console.log(
+      `📦 [PATIENT SERVICE] ${archive ? "Archiving" : "Unarchiving"} patient:`,
+      patientId
+    );
+
+    const db = getFirestoreInstance();
+    if (!db) throw new Error("Firestore not available");
+
+    // Update patient document with archive status
+    const patientRef = doc(db, "patients", patientId);
+    await updateDoc(patientRef, {
+      isArchived: archive,
+      archivedAt: archive ? serverTimestamp() : null,
+      updatedAt: serverTimestamp(),
+    });
+
+    console.log(
+      `✅ Patient ${archive ? "archived" : "unarchived"} successfully:`,
+      patientId
+    );
+  } catch (error) {
+    console.error("❌ Error archiving patient:", error);
+    throw new Error(`Failed to ${archive ? "archive" : "unarchive"} patient`);
+  }
+}
+
+// Get archived patients for a professional
+export async function getArchivedPatients(
+  professionalId: string
+): Promise<Patient[]> {
+  try {
+    console.log(
+      "📦 [PATIENT SERVICE] Fetching archived patients for professional:",
+      professionalId
+    );
+
+    const db = getFirestoreInstance();
+    if (!db) throw new Error("Firestore not available");
+
+    // Get all patients that are archived
+    const patientsRef = collection(db, "patients");
+    const q = query(
+      patientsRef,
+      where("isArchived", "==", true)
+    );
+
+    const snapshot = await getDocs(q);
+    const archivedPatients = snapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    })) as Patient[];
+
+    console.log(
+      `✅ Found ${archivedPatients.length} archived patients`
+    );
+    return archivedPatients;
+  } catch (error) {
+    console.error("❌ Error fetching archived patients:", error);
+    throw new Error("Failed to fetch archived patients");
+  }
 }
