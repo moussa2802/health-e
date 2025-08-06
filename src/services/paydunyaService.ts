@@ -52,6 +52,8 @@ console.log("🔍 [PAYDUNYA CONFIG DEBUG] Configuration chargée:");
 console.log("Mode:", PAYDUNYA_CONFIG.mode);
 console.log("Base URL:", PAYDUNYA_CONFIG.baseUrl);
 console.log("REACT_APP_PAYDUNYA_MODE:", process.env.REACT_APP_PAYDUNYA_MODE);
+console.log("REACT_APP_PAYDUNYA_PUBLIC_KEY:", process.env.REACT_APP_PAYDUNYA_PUBLIC_KEY ? "✅ Configuré" : "❌ Non configuré");
+console.log("REACT_APP_PAYDUNYA_PRIVATE_KEY:", process.env.REACT_APP_PAYDUNYA_PRIVATE_KEY ? "✅ Configuré" : "❌ Non configuré");
 console.log(
   "REACT_APP_PAYDUNYA_MASTER_KEY:",
   process.env.REACT_APP_PAYDUNYA_MASTER_KEY ? "✅ Configuré" : "❌ Non configuré"
@@ -59,6 +61,13 @@ console.log(
 console.log("REACT_APP_PAYDUNYA_TOKEN:", process.env.REACT_APP_PAYDUNYA_TOKEN ? "✅ Configuré" : "❌ Non configuré");
 console.log("masterKey final:", PAYDUNYA_CONFIG.masterKey.substring(0, 10) + "...");
 console.log("token final:", PAYDUNYA_CONFIG.token.substring(0, 10) + "...");
+
+// 🔍 DEBUG: Vérifier si on utilise les clés de test ou production
+console.log("🔍 [PAYDUNYA DEBUG] Clés utilisées:");
+console.log("Public Key starts with:", PAYDUNYA_CONFIG.publicKey.substring(0, 15));
+console.log("Private Key starts with:", PAYDUNYA_CONFIG.privateKey.substring(0, 15));
+console.log("Master Key starts with:", PAYDUNYA_CONFIG.masterKey.substring(0, 15));
+console.log("Token starts with:", PAYDUNYA_CONFIG.token.substring(0, 15));
 
 export class PayDunyaService {
   private static instance: PayDunyaService;
