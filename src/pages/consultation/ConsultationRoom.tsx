@@ -130,7 +130,7 @@ const ConsultationRoom: React.FC = () => {
     }
 
     const script = document.createElement("script");
-    script.src = "https://meet.jit.si/external_api.js";
+    script.src = "https://meet.health-e.sn/external_api.js";
     script.async = true;
     script.onload = () => {
       setJitsiLoaded(true);
@@ -212,7 +212,7 @@ const ConsultationRoom: React.FC = () => {
       console.log("📺 Nom final de la salle Jitsi:", roomName);
 
       // Initialize Jitsi Meet API
-      const domain = "meet.jit.si";
+      const domain = "meet.health-e.sn";
       const options = {
         roomName,
         width: "100%",
@@ -224,7 +224,7 @@ const ConsultationRoom: React.FC = () => {
             (currentUser.type === "patient" ? "Patient" : "Professionnel"),
         },
         configOverwrite: {
-          prejoinPageEnabled: false,
+          prejoinPageEnabled: false, // Désactive l'écran "Je suis l'hôte"
           startWithAudioMuted: false,
           startWithVideoMuted: false,
           startAudioOnly: false,
@@ -233,6 +233,14 @@ const ConsultationRoom: React.FC = () => {
           disableInviteFunctions: true,
           requireDisplayName: false,
           startSilent: false,
+          // Configuration pour instance privée
+          guestDialOutEnabled: false,
+          guestDialInEnabled: false,
+          liveStreamingEnabled: false,
+          recordingEnabled: false,
+          transcribingEnabled: false,
+          breakoutRoomsEnabled: false,
+          prejoinPageEnabled: false,
         },
         interfaceConfigOverwrite: {
           TOOLBAR_BUTTONS: [
@@ -248,12 +256,26 @@ const ConsultationRoom: React.FC = () => {
             "videoquality",
           ],
           filmStripOnly: false,
-          SHOW_JITSI_WATERMARK: false,
+          SHOW_JITSI_WATERMARK: false, // Supprime le watermark Jitsi
           SHOW_WATERMARK_FOR_GUESTS: false,
           DEFAULT_BACKGROUND: "#3c4043",
           DEFAULT_REMOTE_DISPLAY_NAME: "Participant",
           DISABLE_JOIN_LEAVE_NOTIFICATIONS: true,
           HIDE_INVITE_MORE_HEADER: true,
+          // Suppression des éléments inutiles
+          SHOW_POWERED_BY: false, // Supprime "Powered by Jitsi"
+          SHOW_JITSI_WATERMARK: false, // Supprime le watermark
+          SHOW_WATERMARK_FOR_GUESTS: false,
+          SHOW_BRAND_WATERMARK: false, // Supprime les marques
+          SHOW_PROMOTIONAL_SPOTLIGHT: false, // Supprime les promotions
+          SHOW_MEETING_TIMER: true, // Garde le timer de réunion
+          SHOW_PARTICIPANT_COUNT: true, // Garde le compteur de participants
+          // Interface épurée pour téléconsultation
+          TOOLBAR_ALWAYS_VISIBLE: true,
+          VERTICAL_FILMSTRIP: true,
+          HIDE_KICK_PARTICIPANT: true, // Cache l'option d'expulsion
+          HIDE_RAISE_HAND: false, // Garde la main levée
+          HIDE_VIDEO_QUALITY_BUTTON: false, // Garde la qualité vidéo
         },
       };
 

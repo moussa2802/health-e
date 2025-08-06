@@ -55,13 +55,12 @@ const PAYDUNYA_CONFIG = {
       ? PAYDUNYA_FORCE_CONFIG.token
       : process.env.REACT_APP_PAYDUNYA_TOKEN || "wZTFnRBd87rYZIdoQmyh",
   // URL automatique selon le mode
-  baseUrl:
-    PAYDUNYA_FORCE_CONFIG.forceProduction
-      ? PAYDUNYA_FORCE_CONFIG.baseUrl
-      : (process.env.REACT_APP_PAYDUNYA_MODE || "test") === "live" ||
-        process.env.REACT_APP_PAYDUNYA_MASTER_KEY?.startsWith("live_")
-      ? "https://app.paydunya.com/api/v1"
-      : "https://app.paydunya.com/sandbox-api/v1",
+  baseUrl: PAYDUNYA_FORCE_CONFIG.forceProduction
+    ? PAYDUNYA_FORCE_CONFIG.baseUrl
+    : (process.env.REACT_APP_PAYDUNYA_MODE || "test") === "live" ||
+      process.env.REACT_APP_PAYDUNYA_MASTER_KEY?.startsWith("live_")
+    ? "https://app.paydunya.com/api/v1"
+    : "https://app.paydunya.com/sandbox-api/v1",
   mode: PAYDUNYA_FORCE_CONFIG.forceProduction
     ? PAYDUNYA_FORCE_CONFIG.mode
     : process.env.REACT_APP_PAYDUNYA_MODE || "test",
@@ -147,7 +146,9 @@ Object.keys(process.env).forEach((key) => {
 });
 
 // 🔍 DEBUG: Vérifier TOUTES les variables d'environnement
-console.log("🔍 [PAYDUNYA DEBUG] Toutes les variables d'environnement disponibles:");
+console.log(
+  "🔍 [PAYDUNYA DEBUG] Toutes les variables d'environnement disponibles:"
+);
 Object.keys(process.env).forEach((key) => {
   if (key.startsWith("REACT_APP_")) {
     console.log(`${key}:`, process.env[key]);
@@ -156,11 +157,26 @@ Object.keys(process.env).forEach((key) => {
 
 // 🔍 DEBUG: Vérifier si les variables sont undefined
 console.log("🔍 [PAYDUNYA DEBUG] Test des variables:");
-console.log("process.env.REACT_APP_PAYDUNYA_MODE:", process.env.REACT_APP_PAYDUNYA_MODE);
-console.log("process.env.REACT_APP_PAYDUNYA_PUBLIC_KEY:", process.env.REACT_APP_PAYDUNYA_PUBLIC_KEY);
-console.log("process.env.REACT_APP_PAYDUNYA_PRIVATE_KEY:", process.env.REACT_APP_PAYDUNYA_PRIVATE_KEY);
-console.log("process.env.REACT_APP_PAYDUNYA_MASTER_KEY:", process.env.REACT_APP_PAYDUNYA_MASTER_KEY);
-console.log("process.env.REACT_APP_PAYDUNYA_TOKEN:", process.env.REACT_APP_PAYDUNYA_TOKEN);
+console.log(
+  "process.env.REACT_APP_PAYDUNYA_MODE:",
+  process.env.REACT_APP_PAYDUNYA_MODE
+);
+console.log(
+  "process.env.REACT_APP_PAYDUNYA_PUBLIC_KEY:",
+  process.env.REACT_APP_PAYDUNYA_PUBLIC_KEY
+);
+console.log(
+  "process.env.REACT_APP_PAYDUNYA_PRIVATE_KEY:",
+  process.env.REACT_APP_PAYDUNYA_PRIVATE_KEY
+);
+console.log(
+  "process.env.REACT_APP_PAYDUNYA_MASTER_KEY:",
+  process.env.REACT_APP_PAYDUNYA_MASTER_KEY
+);
+console.log(
+  "process.env.REACT_APP_PAYDUNYA_TOKEN:",
+  process.env.REACT_APP_PAYDUNYA_TOKEN
+);
 
 export class PayDunyaService {
   private static instance: PayDunyaService;
