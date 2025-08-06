@@ -1064,9 +1064,9 @@ const ConsultationRoom: React.FC = () => {
                   </div>
                 )}
 
-                {/* Connection Status Banner */}
+                {/* Connection Status Banner - Moved outside video area to avoid overlapping Jitsi controls */}
                 {bothConnected && (
-                  <div className="absolute bottom-4 left-4 right-4">
+                  <div className="mt-4 px-4">
                     <div className="bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded-xl shadow-sm flex items-center justify-center">
                       <div className="flex items-center">
                         <div className="w-3 h-3 bg-green-500 rounded-full mr-3 animate-pulse"></div>
