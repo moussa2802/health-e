@@ -1,11 +1,11 @@
 import React, { useState, useEffect, Suspense, lazy, useRef } from "react";
 import { Link, Navigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
-import { 
-  Brain, 
-  Heart, 
-  User, 
-  Stethoscope, 
+import {
+  Brain,
+  Heart,
+  User,
+  Stethoscope,
   ShieldAlert,
   Calendar,
   Video,
@@ -13,7 +13,7 @@ import {
   Star,
   ArrowRight,
   Users,
-  MessageCircle
+  MessageCircle,
 } from "lucide-react";
 import { useOptimizedProfessionals } from "../hooks/useOptimizedProfessionals";
 import { useDebounce } from "../hooks/useDebounce";
@@ -30,6 +30,7 @@ const OptimizedHomePage: React.FC = () => {
   const { isAuthenticated, currentUser } = useAuth();
   const [searchTerm] = useState("");
   const searchContainerRef = useRef<HTMLDivElement>(null);
+  const [isScrolled, setIsScrolled] = useState(false);
 
   // Debounce search to reduce API calls
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
@@ -45,6 +46,34 @@ const OptimizedHomePage: React.FC = () => {
     targetRef: featuredContentRef,
     isIntersecting: featuredContentVisible,
   } = useIntersectionObserver();
+
+  // Gestion du scroll pour le header
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 50);
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  // Intersection Observer pour le contenu en vedette
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          // setFeaturedContentVisible(true); // supprimé car inutilisé
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    if (featuredContentRef.current) {
+      observer.observe(featuredContentRef.current);
+    }
+
+    return () => observer.disconnect();
+  }, []);
 
   // Close suggestions when clicking outside
   useEffect(() => {
@@ -104,14 +133,18 @@ const OptimizedHomePage: React.FC = () => {
     <ErrorBoundary>
       <div className="flex flex-col min-h-screen">
         {/* Transparent Header */}
-        <header className="fixed top-0 left-0 right-0 z-50 bg-white/20 backdrop-blur-md">
+        <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
+          isScrolled
+            ? 'bg-white/95 backdrop-blur-md shadow-lg text-gray-900'
+            : 'bg-white/20 backdrop-blur-md text-white'
+        }`}>
           <div className="container mx-auto px-4">
             <div className="flex items-center justify-between py-4">
               <div className="flex items-center">
                 <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-teal-400 rounded-xl flex items-center justify-center mr-3">
                   <Heart className="h-6 w-6 text-white" />
                 </div>
-                <span className="text-xl font-bold text-white">
+                <span className="text-xl font-bold">
                   Health-e
                 </span>
               </div>
@@ -119,7 +152,11 @@ const OptimizedHomePage: React.FC = () => {
               <div className="flex items-center space-x-4">
                 <Link
                   to="/patient"
-                  className="px-6 py-3 rounded-xl font-semibold bg-white/20 text-white hover:bg-white/30 backdrop-blur-sm transition-all duration-200 border border-white/30 shadow-md hover:shadow-lg"
+                  className={`px-6 py-3 rounded-xl font-semibold transition-all duration-200 border ${
+                    isScrolled
+                      ? 'bg-blue-500 text-white hover:bg-blue-600 border-blue-500 shadow-md hover:shadow-lg'
+                      : 'bg-white/20 text-white hover:bg-white/30 backdrop-blur-sm border-white/30 shadow-md hover:shadow-lg'
+                  }`}
                 >
                   Prendre rendez-vous
                 </Link>
@@ -135,10 +172,10 @@ const OptimizedHomePage: React.FC = () => {
         >
           {/* Background illustration */}
           <div className="absolute inset-0 bg-[url('https://images.pexels.com/photos/3376799/pexels-photo-3376799.jpeg?auto=compress&cs=tinysrgb&w=1920')] bg-cover bg-center mix-blend-overlay opacity-10"></div>
-          
+
           {/* Medical illustration overlay */}
           <div className="absolute inset-0 bg-gradient-to-r from-blue-400/20 to-teal-400/20"></div>
-          
+
           {/* Floating medical icons */}
           <div className="absolute top-20 right-10 opacity-20">
             <Stethoscope className="h-16 w-16 text-white animate-pulse" />
@@ -154,7 +191,8 @@ const OptimizedHomePage: React.FC = () => {
               </h1>
               <p className="text-xl md:text-2xl text-white/90 mb-16 animate-fade-in-delay">
                 Consultez des professionnels de santé qualifiés en ligne, en
-                toute discrétion. Une plateforme pensée pour les Sénégalais, au Sénégal et dans la diaspora.
+                toute discrétion. Une plateforme pensée pour les Sénégalais, au
+                Sénégal et dans la diaspora.
               </p>
 
               {/* User Type Selection Buttons */}
@@ -166,7 +204,9 @@ const OptimizedHomePage: React.FC = () => {
                   <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
                     <User className="h-8 w-8 text-white" />
                   </div>
-                  <span className="text-2xl font-bold mb-2">Je suis un patient</span>
+                  <span className="text-2xl font-bold mb-2">
+                    Je suis un patient
+                  </span>
                   <span className="text-sm text-gray-600 text-center">
                     Je souhaite consulter un professionnel de santé
                   </span>
@@ -235,7 +275,8 @@ const OptimizedHomePage: React.FC = () => {
                 Nos services
               </h2>
               <p className="text-gray-600 text-center mb-16 max-w-2xl mx-auto">
-                Des soins spécialisés avec des professionnels qualifiés qui comprennent votre culture et vos besoins
+                Des soins spécialisés avec des professionnels qualifiés qui
+                comprennent votre culture et vos besoins
               </p>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-5xl mx-auto">
@@ -248,12 +289,15 @@ const OptimizedHomePage: React.FC = () => {
                     Santé mentale
                   </h3>
                   <p className="text-gray-600 mb-6 leading-relaxed">
-                    Un soutien mental bienveillant et confidentiel. Nos psychologues et psychiatres vous accompagnent 
-                    avec empathie et professionnalisme pour votre bien-être mental.
+                    Un soutien mental bienveillant et confidentiel. Nos
+                    psychologues et psychiatres vous accompagnent avec empathie
+                    et professionnalisme pour votre bien-être mental.
                   </p>
                   <div className="mb-6 text-sm text-gray-500 flex items-center">
                     <Users className="h-4 w-4 mr-2" />
-                    {professionals.filter((p) => p.type === "mental").length}{" "}
+                    {
+                      professionals.filter((p) => p.type === "mental").length
+                    }{" "}
                     professionnel
                     {professionals.filter((p) => p.type === "mental").length > 1
                       ? "s"
@@ -281,12 +325,15 @@ const OptimizedHomePage: React.FC = () => {
                     Santé sexuelle
                   </h3>
                   <p className="text-gray-600 mb-6 leading-relaxed">
-                    Votre intimité respectée, votre santé écoutée. Échangez avec des gynécologues, sexologues 
-                    et urologues expérimentés dans un cadre sécurisé et bienveillant.
+                    Votre intimité respectée, votre santé écoutée. Échangez avec
+                    des gynécologues, sexologues et urologues expérimentés dans
+                    un cadre sécurisé et bienveillant.
                   </p>
                   <div className="mb-6 text-sm text-gray-500 flex items-center">
                     <Users className="h-4 w-4 mr-2" />
-                    {professionals.filter((p) => p.type === "sexual").length}{" "}
+                    {
+                      professionals.filter((p) => p.type === "sexual").length
+                    }{" "}
                     professionnel
                     {professionals.filter((p) => p.type === "sexual").length > 1
                       ? "s"
@@ -342,12 +389,17 @@ const OptimizedHomePage: React.FC = () => {
                   description: "Bénéficiez d'un suivi adapté à vos besoins",
                 },
               ].map((step, index) => (
-                <div key={index} className="text-center group hover:bg-white/30 p-6 rounded-xl transition-all duration-200">
+                <div
+                  key={index}
+                  className="text-center group hover:bg-white/30 p-6 rounded-xl transition-all duration-200"
+                >
                   <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-xl flex items-center justify-center text-xl font-bold mx-auto mb-6 group-hover:scale-110 transition-transform shadow-lg">
                     <step.icon className="h-8 w-8" />
                   </div>
                   <h3 className="text-xl font-semibold mb-3">{step.title}</h3>
-                  <p className="text-gray-600 leading-relaxed">{step.description}</p>
+                  <p className="text-gray-600 leading-relaxed">
+                    {step.description}
+                  </p>
                 </div>
               ))}
             </div>
@@ -372,8 +424,9 @@ const OptimizedHomePage: React.FC = () => {
               Prêt à prendre soin de votre santé ?
             </h2>
             <p className="text-xl md:text-2xl mb-8 max-w-3xl mx-auto text-blue-50 leading-relaxed">
-              Rejoignez des milliers de patients accompagnés avec humanité et confidentialité. 
-              Une plateforme pensée pour les Sénégalais, au Sénégal et dans la diaspora.
+              Rejoignez des milliers de patients accompagnés avec humanité et
+              confidentialité. Une plateforme pensée pour les Sénégalais, au
+              Sénégal et dans la diaspora.
             </p>
             <div className="flex flex-col sm:flex-row justify-center gap-6">
               <Link
@@ -419,11 +472,10 @@ const OptimizedHomePage: React.FC = () => {
 
             <div className="mt-8 pt-8 border-t border-gray-700 text-center text-gray-400">
               <p className="mb-4">
-                &copy; 2025 Health-e. Plateforme de téléconsultation en santé mentale et sexuelle.
+                &copy; 2025 Health-e. Plateforme de téléconsultation en santé
+                mentale et sexuelle.
               </p>
-              <p className="text-sm">
-                Tous droits réservés.
-              </p>
+              <p className="text-sm">Tous droits réservés.</p>
             </div>
           </div>
         </footer>
