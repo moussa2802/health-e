@@ -21,8 +21,8 @@ import {
   isFirestoreInternalError,
   ensureFirestoreReady,
 } from "../utils/firebase";
-import { getDatabase, ref, set } from 'firebase/database';
-import { createNotification } from './notificationService';
+import { getDatabase, ref, set } from "firebase/database";
+import { createNotification } from "./notificationService";
 // Types pour les messages
 export interface Message {
   id: string;
@@ -192,9 +192,11 @@ export async function sendMessage(
       db,
       `conversations/${conversationId}/messages`
     );
-// Récupérer l'identifiant du destinataire
-const conversationData = conversationSnap.data() as Conversation;
-const recipientId = conversationData.participants.find(id => id !== senderId);
+    // Récupérer l'identifiant du destinataire
+    const conversationData = conversationSnap.data() as Conversation;
+    const recipientId = conversationData.participants.find(
+      (id) => id !== senderId
+    );
     // Ajouter le message à la sous-collection
     await retryFirestoreOperation(async () => {
       return await addDoc(messagesRef, {
@@ -211,36 +213,39 @@ const recipientId = conversationData.participants.find(id => id !== senderId);
     // Notify the recipient
     try {
       // Get the recipient ID (the other participant)
-        
-        if (recipientId) {
-          // Add to Realtime Database for real-time notifications
-          const database = getDatabase();
-          const messageNotificationRef = ref(database, `message_notifications/${recipientId}/${conversationId}`);
-          
-          await set(messageNotificationRef, {
-            senderId,
-            senderName,
-            content: content.substring(0, 50) + (content.length > 50 ? '...' : ''),
-            timestamp: Date.now()
-          });
-          
-          console.log('✅ Message notification sent to recipient:', recipientId);
-                // ✅ Create Firestore notification
-      const participantNames = conversationData.participantNames || {};
-      const recipientName = participantNames[recipientId] || 'Utilisateur';
 
-      await createNotification(
-        recipientId,
-        'message',
-        'Nouveau message',
-        `${senderName} vous a envoyé un message.`,
-        conversationId,
-        'message'
-      );
-        }
-      
+      if (recipientId) {
+        // Add to Realtime Database for real-time notifications
+        const database = getDatabase();
+        const messageNotificationRef = ref(
+          database,
+          `message_notifications/${recipientId}/${conversationId}`
+        );
+
+        await set(messageNotificationRef, {
+          senderId,
+          senderName,
+          content:
+            content.substring(0, 50) + (content.length > 50 ? "..." : ""),
+          timestamp: Date.now(),
+        });
+
+        console.log("✅ Message notification sent to recipient:", recipientId);
+        // ✅ Create Firestore notification
+        const participantNames = conversationData.participantNames || {};
+        const recipientName = participantNames[recipientId] || "Utilisateur";
+
+        await createNotification(
+          recipientId,
+          "message",
+          "Nouveau message",
+          `${senderName} vous a envoyé un message.`,
+          conversationId,
+          "message"
+        );
+      }
     } catch (notifyError) {
-      console.warn('⚠️ Failed to send message notification:', notifyError);
+      console.warn("⚠️ Failed to send message notification:", notifyError);
       // Continue anyway, this is just a notification
     }
 
@@ -951,6 +956,7 @@ export async function searchUsers(
     };
 
     const allUsers: UserSearchResult[] = [];
+    const seenIds = new Set<string>();
 
     // 1. Rechercher dans la collection "users" (professionnels et admins)
     try {
@@ -961,7 +967,8 @@ export async function searchUsers(
 
       usersSnapshot.docs.forEach((doc) => {
         const userData = doc.data();
-        if (userData.name && userData.type) {
+        if (userData.name && userData.type && !seenIds.has(doc.id)) {
+          seenIds.add(doc.id);
           allUsers.push({
             id: doc.id,
             name: userData.name,
@@ -983,7 +990,8 @@ export async function searchUsers(
 
       patientsSnapshot.docs.forEach((doc) => {
         const patientData = doc.data();
-        if (patientData.name) {
+        if (patientData.name && !seenIds.has(doc.id)) {
+          seenIds.add(doc.id);
           allUsers.push({
             id: doc.id,
             name: patientData.name,
