@@ -2,37 +2,25 @@ import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
 import {
-  Clock,
   Save,
-  Plus,
-  Trash2,
   CheckCircle,
   Camera,
-  Upload,
   AlertCircle,
-  RefreshCw,
   Wifi,
   WifiOff,
   Globe,
   X,
-  Database,
-  PenTool,
   User,
   Mail,
-  Phone,
-  MapPin,
   GraduationCap,
   Languages,
   Award,
   FileText,
   CreditCard,
-  Calendar,
   Settings,
-  Star,
   Info,
   Edit3,
   Shield,
-  Check,
   ChevronRight,
 } from "lucide-react";
 import {
@@ -40,7 +28,6 @@ import {
   updateProfessionalProfile,
   uploadAndSaveProfileImage,
   validateProfessionalProfile,
-  getOrCreateProfessionalProfile,
   subscribeToProfessionalProfile,
   generateTimeSlots,
   createDefaultProfessionalProfile,
@@ -73,7 +60,7 @@ const ModernInput: React.FC<{
   label: string;
   value: string;
   onChange: (value: string) => void;
-  icon: React.ComponentType<any>;
+  icon: React.ComponentType<{ className?: string }>;
   placeholder?: string;
   type?: string;
   required?: boolean;
@@ -125,7 +112,7 @@ const ModernSelect: React.FC<{
   value: string;
   onChange: (value: string) => void;
   options: { value: string; label: string }[];
-  icon: React.ComponentType<any>;
+  icon: React.ComponentType<{ className?: string }>;
   required?: boolean;
   error?: string;
 }> = ({
@@ -230,7 +217,7 @@ const ProfileImage: React.FC<{
         {isUploading && (
           <div className="absolute inset-0 bg-black/50 flex items-center justify-center rounded-full">
             <div className="text-center text-white">
-              <LoadingSpinner size="sm" color="white" />
+              <LoadingSpinner size="sm" color="gray" />
               <p className="text-xs mt-1">{uploadProgress}%</p>
             </div>
           </div>
@@ -271,7 +258,7 @@ const SignatureSection: React.FC<{
   return (
     <div className="bg-white rounded-2xl shadow-lg p-6">
       <div className="flex items-center gap-2 mb-4">
-        <PenTool className="h-5 w-5 text-blue-600" />
+        <FileText className="h-5 w-5 text-blue-600" />
         <h3 className="text-lg font-semibold text-gray-900">
           Signature & Cachet
         </h3>
@@ -309,7 +296,7 @@ const SignatureSection: React.FC<{
               </div>
             ) : (
               <div className="text-center py-8">
-                <PenTool className="h-8 w-8 text-gray-400 mx-auto mb-2" />
+                <FileText className="h-8 w-8 text-gray-400 mx-auto mb-2" />
                 <p className="text-sm text-gray-500">
                   Cliquez pour ajouter votre signature
                 </p>
@@ -367,19 +354,13 @@ const ProfessionalSettings: React.FC = () => {
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [isUploadingImage, setIsUploadingImage] = useState(false);
-  const [redirecting, setRedirecting] = useState(false);
   const [isUploadingSignature, setIsUploadingSignature] = useState(false);
   const [isUploadingStamp, setIsUploadingStamp] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
-  const [signatureUploadProgress, setSignatureUploadProgress] = useState(0);
-  const [stampUploadProgress, setStampUploadProgress] = useState(0);
-  const [isReconnecting, setIsReconnecting] = useState(false);
-  const [isResettingCache, setIsResettingCache] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState(
     getFirestoreConnectionStatus()
   );
   const [isLocalEnvironment, setIsLocalEnvironment] = useState(false);
-  const [uploadError, setUploadError] = useState("");
   const [loadingStep, setLoadingStep] = useState("initializing");
   const [retryCount, setRetryCount] = useState(0);
 
@@ -403,67 +384,47 @@ const ProfessionalSettings: React.FC = () => {
     email: "",
     specialty: "",
     type: "mental",
-    languages: ["fr"],
     description: "",
-    education: [],
     experience: "",
-    profileImage: "",
-    price: 100,
+    education: [] as string[],
+    price: null,
     currency: "XOF",
-    offersFreeConsultations: false,
-    freeConsultationDuration: 30,
-    freeConsultationsPerWeek: 5,
-    availability: [],
-    isAvailableNow: false,
-    isActive: true,
-    rating: 4.5,
-    reviews: 0,
+    languages: [],
+    profileImage: "",
     signatureUrl: "",
     stampUrl: "",
     useElectronicSignature: false,
+    isActive: false,
+    isApproved: false,
+    offersFreeConsultations: false,
+    freeConsultationDuration: 30,
+    freeConsultationsPerWeek: 5,
   });
+
+  const [selectedLanguage, setSelectedLanguage] = useState("");
+  const [newEducation, setNewEducation] = useState("");
+
+  const availableLanguages = [
+    { code: "fr", name: "Français" },
+    { code: "en", name: "Anglais" },
+    { code: "ar", name: "Arabe" },
+    { code: "wo", name: "Wolof" },
+    { code: "ff", name: "Peul" },
+    { code: "sr", name: "Sérère" },
+    { code: "mn", name: "Mandinka" },
+    { code: "dy", name: "Diola" },
+  ];
 
   const [consultationDurations, setConsultationDurations] = useState<
     ConsultationDuration[]
-  >([
-    { duration: 30, price: 100 },
-    { duration: 45, price: 150 },
-    { duration: 60, price: 200 },
-  ]);
-  const [newDuration, setNewDuration] = useState<ConsultationDuration>({
-    duration: 30,
-    price: 100,
-  });
+  >([]);
   const [showDurationModal, setShowDurationModal] = useState(false);
-  const [newEducation, setNewEducation] = useState("");
-  const [selectedLanguage, setSelectedLanguage] = useState("");
-
   const [timeSlots, setTimeSlots] = useState<TimeSlot[]>([]);
 
-  const daysOfWeek = [
-    "Lundi",
-    "Mardi",
-    "Mercredi",
-    "Jeudi",
-    "Vendredi",
-    "Samedi",
-  ];
-
   const specialties = {
-    mental: ["Psychologue", "Psychiatre"],
+    mental: ["Psychologue", "Psychiatre", "Thérapeute", "Counselor"],
     sexual: ["Sexologue", "Gynécologue", "Urologue"],
   };
-
-  const availableLanguages = [
-    { code: "fr", name: "Français 🇫🇷" },
-    { code: "en", name: "Anglais 🇬🇧" },
-    { code: "ar", name: "Arabe 🇸🇦" },
-    { code: "wo", name: "Wolof 🗣️" },
-    { code: "ff", name: "Pulaar" },
-    { code: "sr", name: "Sérère" },
-    { code: "mn", name: "Mandingue" },
-    { code: "di", name: "Diola" },
-  ];
 
   const timeOptions = Array.from({ length: 24 }, (_, i) => {
     const hour = i.toString().padStart(2, "0");
@@ -486,224 +447,84 @@ const ProfessionalSettings: React.FC = () => {
     };
   }, []);
 
-  useEffect(() => {
-    console.log("🔍 Connection status monitoring effect running");
-    const updateConnectionStatus = () => {
-      const status = getFirestoreConnectionStatus();
-      console.log("🔍 Connection status updated:", status);
-      setConnectionStatus(status);
-    };
-
-    const interval = setInterval(updateConnectionStatus, 5000);
-
-    window.addEventListener("online", updateConnectionStatus);
-    window.addEventListener("offline", updateConnectionStatus);
-
-    return () => {
-      console.log("🔍 Connection status monitoring effect cleanup");
-      clearInterval(interval);
-      window.removeEventListener("online", updateConnectionStatus);
-      window.removeEventListener("offline", updateConnectionStatus);
-    };
-  }, []);
-
-  // Convert availability to time slots for editing
-  const convertAvailabilityToTimeSlots = (availability: any[]): TimeSlot[] => {
-    console.log("🔄 Converting availability to time slots for editing...");
-    console.log("📋 Input availability:", availability);
-
-    if (!availability || !Array.isArray(availability)) {
-      console.warn("⚠️ Availability is not an array, returning empty array");
-      return [];
-    }
-
-    const timeSlots: TimeSlot[] = [];
-
-    availability.forEach((avail) => {
-      if (avail && avail.day && avail.startTime && avail.endTime) {
-        timeSlots.push({
-          day: avail.day,
-          startTime: avail.startTime,
-          endTime: avail.endTime,
-        });
-      }
-    });
-
-    console.log("✅ Converted time slots:", timeSlots);
-    return timeSlots;
+  const updateConnectionStatus = () => {
+    setConnectionStatus(getFirestoreConnectionStatus());
   };
 
-  // ✅ FIXED: Added retry mechanism and better error handling
   useEffect(() => {
-    console.log("🔍 Profile loading effect running, retry count:", retryCount);
-    console.log("🔍 currentUser in profile loading effect:", currentUser);
+    const interval = setInterval(updateConnectionStatus, 5000);
+    return () => clearInterval(interval);
+  }, []);
 
-    const loadProfile = async () => {
-      // CRITICAL: Check if currentUser exists and has an ID
-      if (!currentUser?.id) {
-        console.log("⚠️ No currentUser.id available, skipping profile load");
-        setLoading(false); // ✅ FIXED: Set loading to false when no user
-        return;
+  const convertAvailabilityToTimeSlots = (availability: TimeSlot[]): TimeSlot[] => {
+    return availability.map((slot) => ({
+      day: slot.day,
+      startTime: slot.startTime,
+      endTime: slot.endTime,
+    }));
+  };
+
+  const loadProfile = async () => {
+    if (!currentUser) {
+      console.log("❌ No current user, cannot load profile");
+      setLoading(false);
+      return;
+    }
+
+    try {
+      setLoadingStep("loading_profile");
+      console.log("🔍 Loading profile for user:", currentUser.uid);
+
+      const profile = await getProfessionalProfile(currentUser.uid);
+      console.log("✅ Profile loaded:", profile);
+
+      if (profile) {
+        setProfileData({
+          ...profile,
+          education: profile.education || [],
+        });
+      } else {
+        console.log("⚠️ No profile found, creating default");
+        const defaultProfile = createDefaultProfessionalProfile(currentUser.uid);
+        setProfileData({
+          ...defaultProfile,
+          education: defaultProfile.education || [],
+        });
       }
 
-      try {
-        setLoading(true);
-        setErrorMessage("");
-        setLoadingStep("starting");
-
-        console.log(
-          "🔄 Loading professional profile for user:",
-          currentUser.id
-        );
-
-        setLoadingStep("ensuring_firestore_ready");
-        await ensureFirestoreReady();
-        console.log("✅ Firestore ready");
-
-        setLoadingStep("getting_profile");
-        // ✅ FIXED: Direct document access by userId
-        const profile = await getProfessionalProfile(currentUser.id);
-
-        if (!profile) {
-          console.log("⚠️ No profile found, creating default profile");
-          setLoadingStep("creating_profile");
-
-          // Get user data
-          const db = getFirestoreInstance();
-          if (!db) throw new Error("Firestore not available");
-
-          const userRef = doc(db, "users", currentUser.id);
-          const userSnap = await getDoc(userRef);
-
-          if (!userSnap.exists()) {
-            throw new Error("Utilisateur non trouvé");
-          }
-
-          const userData = userSnap.data();
-
-          // Create default profile
-          const newProfile = await createDefaultProfessionalProfile(
-            currentUser.id,
-            userData.name || currentUser.name || "Professionnel",
-            userData.email || currentUser.email || "",
-            userData.serviceType || "mental"
-          );
-
-          if (isMountedRef.current) {
-            setProfileData(newProfile);
-
-            if (
-              newProfile.availability &&
-              Array.isArray(newProfile.availability)
-            ) {
-              const convertedTimeSlots = convertAvailabilityToTimeSlots(
-                newProfile.availability
-              );
-              setTimeSlots(convertedTimeSlots);
-            }
-          }
-        } else {
-          console.log("✅ Profile found successfully:", profile);
-
-          if (isMountedRef.current) {
-            setProfileData(profile);
-            console.log("✅ profileData:", profileData);
-
-            if (profile.availability && Array.isArray(profile.availability)) {
-              const convertedTimeSlots = convertAvailabilityToTimeSlots(
-                profile.availability
-              );
-              setTimeSlots(convertedTimeSlots);
-            }
+      setLoadingStep("setting_up_subscription");
+      const unsubscribe = subscribeToProfessionalProfile(
+        currentUser.uid,
+        (updatedProfile) => {
+          if (isMountedRef.current && updatedProfile) {
+            console.log("🔄 Profile updated:", updatedProfile);
+            setProfileData({
+              ...updatedProfile,
+              education: updatedProfile.education || [],
+            });
           }
         }
+      );
 
-        setLoadingStep("setting_up_subscription");
-        // ✅ FIXED: Direct document subscription
-        try {
-          const unsubscribe = subscribeToProfessionalProfile(
-            currentUser.id,
-            (updatedProfile) => {
-              if (updatedProfile && isMountedRef.current) {
-                console.log("🔄 Profile updated from Firestore");
-                setProfileData(updatedProfile);
-
-                if (
-                  updatedProfile.availability &&
-                  Array.isArray(updatedProfile.availability)
-                ) {
-                  const convertedTimeSlots = convertAvailabilityToTimeSlots(
-                    updatedProfile.availability
-                  );
-                  setTimeSlots(convertedTimeSlots);
-                }
-              }
-            }
-          );
-
-          unsubscribeRef.current = unsubscribe;
-          setLoadingStep("complete");
-
-          if (isMountedRef.current) {
-            setLoading(false);
-          }
-        } catch (e) {
-          console.error("❌ Failed to subscribe to profile:", e);
-          setErrorMessage(
-            "Erreur lors de la souscription au profil. Veuillez réessayer."
-          );
-          setLoading(false);
-        }
-      } catch (error) {
-        console.error("❌ Error loading profile:", error);
-        setLoadingStep("error");
-
-        if (error instanceof Error) {
-          if (
-            error.message.includes("Target ID already exists") ||
-            error.message.includes("Firestore operation failed")
-          ) {
-            setErrorMessage(
-              'Problème de cache Firestore détecté. Cliquez sur "Réinitialiser le cache" pour résoudre le problème.'
-            );
-          } else if (isLocalEnvironment) {
-            setErrorMessage(
-              "Mode développement détecté. Certaines fonctionnalités Firestore peuvent être limitées. Déployez l'application pour un test complet."
-            );
-          } else if (error.message.includes("connexion internet")) {
-            setErrorMessage(
-              'Problème de connexion à la base de données. Vérifiez votre connexion internet et cliquez sur "Reconnecter".'
-            );
-          } else if (error.message.includes("Accès refusé")) {
-            setErrorMessage(
-              "Accès refusé à vos données. Veuillez vous reconnecter à votre compte."
-            );
-          } else {
-            setErrorMessage(
-              'Erreur lors du chargement du profil. Cliquez sur "Reconnecter" pour réessayer.'
-            );
-          }
-        } else {
-          setErrorMessage("Erreur inconnue lors du chargement du profil.");
-        }
-
-        // ✅ FIXED: Set loading to false on error
-        if (isMountedRef.current) {
-          setLoading(false);
-        }
+      unsubscribeRef.current = unsubscribe;
+      setLoadingStep("complete");
+    } catch (error) {
+      console.error("❌ Error loading profile:", error);
+      setErrorMessage(
+        error instanceof Error ? error.message : "Erreur lors du chargement du profil"
+      );
+    } finally {
+      if (isMountedRef.current) {
+        setLoading(false);
       }
-    };
+    }
+  };
 
-    loadProfile();
-
-    return () => {
-      console.log("🔍 Profile loading effect cleanup");
-      if (unsubscribeRef.current) {
-        unsubscribeRef.current();
-        unsubscribeRef.current = null;
-      }
-    };
-  }, [currentUser, isLocalEnvironment, retryCount]); // ✅ FIXED: Added retryCount dependency
+  useEffect(() => {
+    if (currentUser) {
+      loadProfile();
+    }
+  }, [currentUser]);
 
   const handleReconnect = async () => {
     console.log("🔍 handleReconnect called");
@@ -772,106 +593,54 @@ const ProfessionalSettings: React.FC = () => {
   };
 
   const handleImageClick = () => {
-    if (!isUploadingImage) {
-      fileInputRef.current?.click();
-    }
+    fileInputRef.current?.click();
   };
 
   const handleSignatureClick = () => {
-    if (!isUploadingSignature) {
-      signatureInputRef.current?.click();
-    }
+    signatureInputRef.current?.click();
   };
 
   const handleStampClick = () => {
-    if (!isUploadingStamp) {
-      stampInputRef.current?.click();
-    }
+    stampInputRef.current?.click();
   };
 
   const handleImageChange = async (
     event: React.ChangeEvent<HTMLInputElement>
   ) => {
     const file = event.target.files?.[0];
-    if (!file || !currentUser?.id) return;
-
-    setErrorMessage("");
-    setUploadError("");
-    setUploadProgress(0);
-
-    if (file.size > 5 * 1024 * 1024) {
-      setUploadError("L'image ne doit pas dépasser 5MB");
-      return;
-    }
-
-    if (!file.type.startsWith("image/")) {
-      setUploadError("Veuillez sélectionner un fichier image valide");
-      return;
-    }
-
-    setIsUploadingImage(true);
+    if (!file) return;
 
     try {
-      console.log("📤 Starting complete image upload and save process...");
+      setIsUploadingImage(true);
+      setUploadProgress(0);
 
-      await ensureFirestoreReady();
-      const downloadURL = await uploadAndSaveProfileImage(
+      const imageUrl = await uploadAndSaveProfileImage(
         file,
-        currentUser.id,
-        "professional",
+        currentUser!.uid,
         (progress) => {
           if (isMountedRef.current) {
             setUploadProgress(progress);
           }
-          console.log(`📊 Upload progress: ${progress}%`);
         }
       );
 
       if (isMountedRef.current) {
-        setProfileData((prev) => ({ ...prev, profileImage: downloadURL }));
+        setProfileData((prev) => ({
+          ...prev,
+          profileImage: imageUrl,
+        }));
+        setUploadProgress(100);
       }
-
+    } catch (error) {
+      console.error("❌ Error uploading image:", error);
       if (isMountedRef.current) {
-        setSaveSuccess(true);
-        setTimeout(() => {
-          if (isMountedRef.current) {
-            setSaveSuccess(false);
-          }
-        }, 3000);
-      }
-
-      console.log("✅ Profile image upload and save completed successfully");
-    } catch (error: any) {
-      console.error("❌ Error uploading and saving image:", error);
-
-      if (error.message.includes("Timeout")) {
-        setUploadError(
-          "L'opération a pris trop de temps. Vérifiez votre connexion internet et réessayez."
-        );
-      } else if (error.message.includes("Accès refusé")) {
-        setUploadError("Accès refusé au stockage. Veuillez vous reconnecter.");
-      } else if (error.message.includes("connexion internet")) {
-        setUploadError(
-          "Problème de connexion. Vérifiez votre connexion internet et réessayez."
-        );
-      } else if (isLocalEnvironment) {
-        setUploadError(
-          "Upload impossible en environnement local. Déployez l'application pour tester l'upload d'images."
-        );
-      } else {
-        setUploadError(
-          error.message ||
-            "Erreur lors du téléchargement de l'image. Veuillez réessayer."
+        setErrorMessage(
+          error instanceof Error ? error.message : "Erreur lors du téléchargement de l'image"
         );
       }
     } finally {
       if (isMountedRef.current) {
         setIsUploadingImage(false);
-        setUploadProgress(0);
-      }
-
-      if (fileInputRef.current) {
-        fileInputRef.current.value = "";
       }
     }
   };
@@ -880,85 +649,32 @@ const ProfessionalSettings: React.FC = () => {
     event: React.ChangeEvent<HTMLInputElement>
   ) => {
     const file = event.target.files?.[0];
-    if (!file || !currentUser?.id) return;
-
-    setErrorMessage("");
-    setUploadError("");
-    setSignatureUploadProgress(0);
-
-    if (file.size > 2 * 1024 * 1024) {
-      setUploadError("L'image de signature ne doit pas dépasser 2MB");
-      return;
-    }
-
-    if (!file.type.startsWith("image/")) {
-      setUploadError("Veuillez sélectionner un fichier image valide");
-      return;
-    }
-
-    setIsUploadingSignature(true);
+    if (!file) return;
 
     try {
-      console.log("📤 Starting signature image upload and save process...");
+      setIsUploadingSignature(true);
 
-      await ensureFirestoreReady();
-      const downloadURL = await uploadAndSaveSignatureImage(
+      const signatureUrl = await uploadAndSaveSignatureImage(
         file,
-        currentUser.id,
-        "signature",
-        (progress) => {
-          if (isMountedRef.current) {
-            setSignatureUploadProgress(progress);
-          }
-          console.log(`📊 Signature upload progress: ${progress}%`);
-        }
+        currentUser!.uid
       );
 
       if (isMountedRef.current) {
-        setProfileData((prev) => ({ ...prev, signatureUrl: downloadURL }));
+        setProfileData((prev) => ({
+          ...prev,
+          signatureUrl,
+        }));
       }
-
+    } catch (error) {
+      console.error("❌ Error uploading signature:", error);
       if (isMountedRef.current) {
-        setSaveSuccess(true);
-        setTimeout(() => {
-          if (isMountedRef.current) {
-            setSaveSuccess(false);
-          }
-        }, 3000);
-      }
-
-      console.log("✅ Signature image upload and save completed successfully");
-    } catch (error: any) {
-      console.error("❌ Error uploading and saving signature image:", error);
-
-      if (error.message.includes("Timeout")) {
-        setUploadError(
-          "L'opération a pris trop de temps. Vérifiez votre connexion internet et réessayez."
-        );
-      } else if (error.message.includes("Accès refusé")) {
-        setUploadError("Accès refusé au stockage. Veuillez vous reconnecter.");
-      } else if (error.message.includes("connexion internet")) {
-        setUploadError(
-          "Problème de connexion. Vérifiez votre connexion internet et réessayez."
-        );
-      } else if (isLocalEnvironment) {
-        setUploadError(
-          "Upload impossible en environnement local. Déployez l'application pour tester l'upload d'images."
-        );
-      } else {
-        setUploadError(
-          error.message ||
-            "Erreur lors du téléchargement de la signature. Veuillez réessayer."
+        setErrorMessage(
+          error instanceof Error ? error.message : "Erreur lors du téléchargement de la signature"
         );
       }
     } finally {
       if (isMountedRef.current) {
         setIsUploadingSignature(false);
-        setSignatureUploadProgress(0);
-      }
-
-      if (signatureInputRef.current) {
-        signatureInputRef.current.value = "";
       }
     }
   };
@@ -967,85 +683,32 @@ const ProfessionalSettings: React.FC = () => {
     event: React.ChangeEvent<HTMLInputElement>
   ) => {
     const file = event.target.files?.[0];
-    if (!file || !currentUser?.id) return;
-
-    setErrorMessage("");
-    setUploadError("");
-    setStampUploadProgress(0);
-
-    if (file.size > 2 * 1024 * 1024) {
-      setUploadError("L'image du cachet ne doit pas dépasser 2MB");
-      return;
-    }
-
-    if (!file.type.startsWith("image/")) {
-      setUploadError("Veuillez sélectionner un fichier image valide");
-      return;
-    }
-
-    setIsUploadingStamp(true);
+    if (!file) return;
 
     try {
-      console.log("📤 Starting stamp image upload and save process...");
+      setIsUploadingStamp(true);
 
-      await ensureFirestoreReady();
-      const downloadURL = await uploadAndSaveSignatureImage(
+      const stampUrl = await uploadAndSaveSignatureImage(
         file,
-        currentUser.id,
-        "stamp",
-        (progress) => {
-          if (isMountedRef.current) {
-            setStampUploadProgress(progress);
-          }
-          console.log(`📊 Stamp upload progress: ${progress}%`);
-        }
+        currentUser!.uid
       );
 
       if (isMountedRef.current) {
-        setProfileData((prev) => ({ ...prev, stampUrl: downloadURL }));
+        setProfileData((prev) => ({
+          ...prev,
+          stampUrl,
+        }));
       }
-
+    } catch (error) {
+      console.error("❌ Error uploading stamp:", error);
       if (isMountedRef.current) {
-        setSaveSuccess(true);
-        setTimeout(() => {
-          if (isMountedRef.current) {
-            setSaveSuccess(false);
-          }
-        }, 3000);
-      }
-
-      console.log("✅ Stamp image upload and save completed successfully");
-    } catch (error: any) {
-      console.error("❌ Error uploading and saving stamp image:", error);
-
-      if (error.message.includes("Timeout")) {
-        setUploadError(
-          "L'opération a pris trop de temps. Vérifiez votre connexion internet et réessayez."
-        );
-      } else if (error.message.includes("Accès refusé")) {
-        setUploadError("Accès refusé au stockage. Veuillez vous reconnecter.");
-      } else if (error.message.includes("connexion internet")) {
-        setUploadError(
-          "Problème de connexion. Vérifiez votre connexion internet et réessayez."
-        );
-      } else if (isLocalEnvironment) {
-        setUploadError(
-          "Upload impossible en environnement local. Déployez l'application pour tester l'upload d'images."
-        );
-      } else {
-        setUploadError(
-          error.message ||
-            "Erreur lors du téléchargement du cachet. Veuillez réessayer."
+        setErrorMessage(
+          error instanceof Error ? error.message : "Erreur lors du téléchargement du cachet"
         );
       }
     } finally {
       if (isMountedRef.current) {
         setIsUploadingStamp(false);
-        setStampUploadProgress(0);
-      }
-
-      if (stampInputRef.current) {
-        stampInputRef.current.value = "";
       }
     }
   };
@@ -1084,10 +747,7 @@ const ProfessionalSettings: React.FC = () => {
   };
 
   const handleAddLanguage = () => {
-    if (
-      selectedLanguage &&
-      !profileData.languages?.includes(selectedLanguage)
-    ) {
+    if (selectedLanguage && !profileData.languages?.includes(selectedLanguage)) {
       setProfileData((prev) => ({
         ...prev,
         languages: [...(prev.languages || []), selectedLanguage],
@@ -1105,156 +765,39 @@ const ProfessionalSettings: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    if (!currentUser?.id) return;
-
-    setErrorMessage("");
-    setSaveSuccess(false);
-
-    await ensureFirestoreReady();
-
-    // Convert time slots to availability format
-    const formattedAvailability: any[] = [];
-
-    // Group time slots by day
-    const slotsByDay = timeSlots.reduce((acc, slot) => {
-      if (!acc[slot.day]) {
-        acc[slot.day] = [];
-      }
-      acc[slot.day].push(slot);
-      return acc;
-    }, {} as Record<string, TimeSlot[]>);
-
-    // For each day, merge overlapping time slots
-    Object.entries(slotsByDay).forEach(([day, slots]) => {
-      // Sort slots by start time
-      slots.sort((a, b) => a.startTime.localeCompare(b.startTime));
-
-      // Merge overlapping slots
-      let mergedSlots: TimeSlot[] = [];
-      let currentSlot = slots[0];
-
-      for (let i = 1; i < slots.length; i++) {
-        const nextSlot = slots[i];
-
-        // If slots overlap or are adjacent, merge them
-        if (nextSlot.startTime <= currentSlot.endTime) {
-          currentSlot.endTime =
-            nextSlot.endTime > currentSlot.endTime
-              ? nextSlot.endTime
-              : currentSlot.endTime;
-        } else {
-          mergedSlots.push(currentSlot);
-          currentSlot = nextSlot;
-        }
-      }
-
-      mergedSlots.push(currentSlot);
-
-      // Create availability slots for each merged slot
-      mergedSlots.forEach((slot) => {
-        formattedAvailability.push({
-          day,
-          startTime: slot.startTime,
-          endTime: slot.endTime,
-          slots: generateTimeSlots(slot.startTime, slot.endTime),
-        });
-      });
-    });
-
-    console.log(
-      "💾 Saving professional profile with formatted availability..."
-    );
-    console.log(
-      "📋 Formatted availability being saved:",
-      formattedAvailability
-    );
-
-    const updatedProfileData = {
-      ...profileData,
-      availability: formattedAvailability,
-    };
-
-    const validationErrors = validateProfessionalProfile(updatedProfileData);
-    if (validationErrors.length > 0) {
-      setErrorMessage(
-        `Veuillez corriger les erreurs suivantes: ${validationErrors.join(
-          ", "
-        )}`
-      );
-      window.scrollTo({ top: 0, behavior: "smooth" });
+    if (!currentUser) {
+      setErrorMessage("Utilisateur non connecté");
       return;
     }
 
-    setIsSaving(true);
-
     try {
-      console.log("💾 Saving professional profile...");
-      console.log("📋 Profile data being saved:", {
-        name: updatedProfileData.name,
-        specialty: updatedProfileData.specialty,
-        type: updatedProfileData.type,
-        isActive: updatedProfileData.isActive,
-        languages: updatedProfileData.languages,
-        availabilityCount: updatedProfileData.availability?.length,
-        availabilityDetails: updatedProfileData.availability,
-      });
+      setIsSaving(true);
+      setErrorMessage("");
 
-      // ✅ FIXED: Direct document update by userId
-      await updateProfessionalProfile(currentUser.id, updatedProfileData);
+      console.log("💾 Saving profile data:", profileData);
 
-      // ✅ Clear cache to ensure fresh data
-      try {
-        sessionStorage.removeItem(`professional_${currentUser.id}`);
-        console.log("🗑️ Cache cleared for professional profile");
-      } catch (cacheError) {
-        console.warn("⚠️ Failed to clear cache:", cacheError);
-      }
+      const updatedProfile = await updateProfessionalProfile(
+        currentUser.uid,
+        profileData
+      );
 
-      // ✅ Refresh user data in AuthContext to update the name everywhere
-      try {
-        await refreshUser();
-        console.log("🔄 User data refreshed in AuthContext");
-      } catch (refreshError) {
-        console.warn("⚠️ Failed to refresh user data:", refreshError);
-      }
+      console.log("✅ Profile saved successfully:", updatedProfile);
 
       if (isMountedRef.current) {
         setSaveSuccess(true);
-        console.log("✅ Profile saved successfully");
-        console.log(
-          "🎉 Professional should now be visible in the professionals list with proper availability slots!"
-        );
-
-        // Redirect to dashboard after successful save
-        setRedirecting(true);
         setTimeout(() => {
-          if (isMountedRef.current) {
-            navigate("/professional/dashboard");
-          }
-        }, 2000);
+          setSaveSuccess(false);
+        }, 3000);
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error("❌ Error saving profile:", error);
-
-      if (isLocalEnvironment) {
-        setErrorMessage(
-          "Sauvegarde impossible en environnement local. Les données seront sauvegardées lors du déploiement."
-        );
-      } else if (
-        error.message &&
-        error.message.includes("connexion internet")
-      ) {
-        setErrorMessage(
-          "Problème de connexion. Vérifiez votre connexion internet et réessayez."
-        );
-      } else if (error.message && error.message.includes("Accès refusé")) {
+      if (error instanceof Error && error.message.includes("permission")) {
         setErrorMessage(
           "Accès refusé. Veuillez vous reconnecter à votre compte."
         );
       } else {
         setErrorMessage(
-          error.message || "Erreur lors de la sauvegarde. Veuillez réessayer."
+          error instanceof Error ? error.message : "Erreur lors de la sauvegarde. Veuillez réessayer."
         );
       }
       window.scrollTo({ top: 0, behavior: "smooth" });
@@ -1396,22 +939,26 @@ const ProfessionalSettings: React.FC = () => {
             <div className="bg-white rounded-2xl shadow-lg p-6">
               <div className="flex items-center gap-2 mb-4">
                 <Settings className="h-6 w-6 text-blue-600" />
-                <h2 className="text-xl font-semibold text-gray-900">Statut du profil</h2>
+                <h2 className="text-xl font-semibold text-gray-900">
+                  Statut du profil
+                </h2>
               </div>
-              
+
               <div className="flex justify-between items-center">
                 <div>
                   <p className="text-sm text-gray-600 mb-2">
-                    Ce bouton permet de rendre votre profil visible pour les patients.
+                    Ce bouton permet de rendre votre profil visible pour les
+                    patients.
                   </p>
                   {!profileData.isApproved && (
                     <p className="text-sm text-red-600">
-                      ⚠️ Votre profil est en attente de validation par un administrateur.
-                      Vous ne pouvez pas l'activer pour le moment.
+                      ⚠️ Votre profil est en attente de validation par un
+                      administrateur. Vous ne pouvez pas l'activer pour le
+                      moment.
                     </p>
                   )}
                 </div>
-                
+
                 <div>
                   <label
                     htmlFor="isActive"
@@ -1438,7 +985,9 @@ const ProfessionalSettings: React.FC = () => {
                       }}
                       className="sr-only"
                     />
-                    {profileData.isActive ? "Profil actif" : "Activer mon profil"}
+                    {profileData.isActive
+                      ? "Profil actif"
+                      : "Activer mon profil"}
                   </label>
                 </div>
               </div>
@@ -1448,9 +997,11 @@ const ProfessionalSettings: React.FC = () => {
             <div className="bg-white rounded-2xl shadow-lg p-6">
               <div className="flex items-center gap-2 mb-6">
                 <User className="h-6 w-6 text-blue-600" />
-                <h2 className="text-xl font-semibold text-gray-900">Informations personnelles</h2>
+                <h2 className="text-xl font-semibold text-gray-900">
+                  Informations personnelles
+                </h2>
               </div>
-              
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <ModernInput
                   label="Nom complet"
@@ -1462,7 +1013,7 @@ const ProfessionalSettings: React.FC = () => {
                   placeholder="Votre nom complet"
                   required
                 />
-                
+
                 <div className="space-y-2">
                   <label className="block text-sm font-medium text-gray-700 flex items-center gap-2">
                     <Mail className="h-4 w-4 text-gray-500" />
@@ -1480,7 +1031,8 @@ const ProfessionalSettings: React.FC = () => {
                     </div>
                   </div>
                   <p className="text-sm text-gray-500">
-                    L'adresse email ne peut pas être modifiée pour des raisons de sécurité.
+                    L'adresse email ne peut pas être modifiée pour des raisons
+                    de sécurité.
                   </p>
                 </div>
               </div>
@@ -1490,9 +1042,11 @@ const ProfessionalSettings: React.FC = () => {
             <div className="bg-white rounded-2xl shadow-lg p-6">
               <div className="flex items-center gap-2 mb-6">
                 <Award className="h-6 w-6 text-blue-600" />
-                <h2 className="text-xl font-semibold text-gray-900">Type de service</h2>
+                <h2 className="text-xl font-semibold text-gray-900">
+                  Type de service
+                </h2>
               </div>
-              
+
               <div className="space-y-4">
                 <div className="flex space-x-4">
                   <label className="inline-flex items-center">
@@ -1558,7 +1112,9 @@ const ProfessionalSettings: React.FC = () => {
                         <option value="sexologue">Sexologue</option>
                         <option value="gynecologue">Gynécologue</option>
                         <option value="urologue">Urologue</option>
-                        <option value="therapeute_sexuel">Thérapeute sexuel</option>
+                        <option value="therapeute_sexuel">
+                          Thérapeute sexuel
+                        </option>
                       </>
                     )}
                   </select>
@@ -1570,9 +1126,11 @@ const ProfessionalSettings: React.FC = () => {
             <div className="bg-white rounded-2xl shadow-lg p-6">
               <div className="flex items-center gap-2 mb-6">
                 <GraduationCap className="h-6 w-6 text-blue-600" />
-                <h2 className="text-xl font-semibold text-gray-900">Informations professionnelles</h2>
+                <h2 className="text-xl font-semibold text-gray-900">
+                  Informations professionnelles
+                </h2>
               </div>
-              
+
               <div className="space-y-6">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -1591,7 +1149,7 @@ const ProfessionalSettings: React.FC = () => {
                     placeholder="Décrivez votre formation, diplômes et certifications..."
                   />
                 </div>
-                
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Description professionnelle *
@@ -1610,10 +1168,11 @@ const ProfessionalSettings: React.FC = () => {
                     required
                   />
                   <p className="mt-1 text-sm text-gray-500">
-                    Décrivez votre pratique, votre approche et vos domaines d'expertise.
+                    Décrivez votre pratique, votre approche et vos domaines
+                    d'expertise.
                   </p>
                 </div>
-                
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Expérience professionnelle
@@ -1638,9 +1197,11 @@ const ProfessionalSettings: React.FC = () => {
             <div className="bg-white rounded-2xl shadow-lg p-6">
               <div className="flex items-center gap-2 mb-6">
                 <Languages className="h-6 w-6 text-blue-600" />
-                <h2 className="text-xl font-semibold text-gray-900">Langues parlées</h2>
+                <h2 className="text-xl font-semibold text-gray-900">
+                  Langues parlées
+                </h2>
               </div>
-              
+
               <div className="space-y-4">
                 <div className="flex gap-2">
                   <ModernSelect
@@ -1661,7 +1222,7 @@ const ProfessionalSettings: React.FC = () => {
                     icon={Languages}
                   />
                 </div>
-                
+
                 <div className="flex flex-wrap gap-2">
                   {profileData.languages?.map((language) => (
                     <Tag
@@ -1682,9 +1243,11 @@ const ProfessionalSettings: React.FC = () => {
             <div className="bg-white rounded-2xl shadow-lg p-6">
               <div className="flex items-center gap-2 mb-6">
                 <CreditCard className="h-6 w-6 text-blue-600" />
-                <h2 className="text-xl font-semibold text-gray-900">Tarification</h2>
+                <h2 className="text-xl font-semibold text-gray-900">
+                  Tarification
+                </h2>
               </div>
-              
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <ModernInput
                   label="Prix par consultation (FCFA)"
@@ -1697,7 +1260,7 @@ const ProfessionalSettings: React.FC = () => {
                   placeholder="5000"
                   required
                 />
-                
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Devise
@@ -1718,7 +1281,7 @@ const ProfessionalSettings: React.FC = () => {
                   </select>
                 </div>
               </div>
-              
+
               <div className="mt-6">
                 <div className="flex items-center">
                   <input
