@@ -2,8 +2,26 @@ import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useProfessionals } from '../../hooks/useProfessionals';
-import { Star, Search, Filter, Languages, Clock, Calendar, CheckCircle, User, AlertCircle, RefreshCw, Wifi, WifiOff } from 'lucide-react';
+import { Star, Search, Filter, Languages, Clock, Calendar, CheckCircle, User, AlertCircle, RefreshCw, Wifi, WifiOff, Globe, Award } from 'lucide-react';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
+
+// Styles pour l'animation d'apparition
+const fadeInUpStyles = `
+  @keyframes fadeInUp {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  .animate-fade-in-up {
+    animation: fadeInUp 0.6s ease-out forwards;
+  }
+`;
 
 const ProfessionalsList = () => {
   const { specialty } = useParams<{ specialty: 'mental' | 'sexual' }>();
@@ -128,6 +146,7 @@ const ProfessionalsList = () => {
 
   return (
     <div className="container mx-auto px-4 py-8">
+      <style>{fadeInUpStyles}</style>
       <div className="mb-8">
         <h1 className={`text-3xl font-bold mb-4 text-${colors.primary}-600`}>
           {specialty === 'mental' ? 'Santé mentale' : 'Santé sexuelle'}
@@ -167,7 +186,7 @@ const ProfessionalsList = () => {
         </div>
       ) : (
         <div className="space-y-6">
-          {filteredProfessionals.map((professional) => {
+          {filteredProfessionals.map((professional, index) => {
             // Safety checks for each professional
             const professionalName = safeValue(professional.name, 'Nom non disponible');
             const professionalSpecialty = safeValue(professional.specialty, 'Spécialité non précisée');
@@ -180,10 +199,17 @@ const ProfessionalsList = () => {
             const professionalAvailability = safeArray(professional.availability);
             const isAvailableNow = false; // Désactivé temporairement
 
+            // Vérifier si le professionnel est disponible aujourd'hui
+            const today = new Date().toLocaleDateString('fr-FR', { weekday: 'long' });
+            const isAvailableToday = professionalAvailability.some((avail: any) => 
+              avail?.day?.toLowerCase() === today.toLowerCase()
+            );
+
             return (
               <div 
                 key={professional.id} 
-                className={`bg-white rounded-lg shadow-md overflow-hidden transition-transform duration-300 hover:shadow-lg hover:scale-[1.01] border-l-4 border-${colors.primary}-500`}
+                className={`bg-white rounded-xl shadow-md hover:shadow-lg border border-gray-100 overflow-hidden transition-all duration-300 ease-in-out hover:scale-105 group animate-fade-in-up`}
+                style={{ animationDelay: `${index * 100}ms` }}
               >
                 <div className="flex flex-col md:flex-row">
                   <div className="md:w-1/4 bg-gray-50 relative">
@@ -191,7 +217,7 @@ const ProfessionalsList = () => {
                       <img 
                         src={professional.profileImage} 
                         alt={professionalName} 
-                        className="h-64 md:h-full w-full object-cover object-center"
+                        className="h-40 md:h-full w-full object-cover object-center rounded-xl group-hover:scale-105 transition-transform duration-300"
                         onError={(e) => {
                           // Fallback if image fails to load
                           e.currentTarget.style.display = 'none';
@@ -199,38 +225,55 @@ const ProfessionalsList = () => {
                         }}
                       />
                     ) : null}
-                    <div className={`h-64 md:h-full w-full flex items-center justify-center bg-gray-200 ${professional.profileImage ? 'hidden' : ''}`}>
+                    <div className={`h-40 md:h-full w-full flex items-center justify-center bg-gray-200 rounded-xl ${professional.profileImage ? 'hidden' : ''}`}>
                       <User className="h-16 w-16 text-gray-400" />
                     </div>
                     {isAvailableNow && (
-                      <div className={`absolute top-4 right-4 bg-${colors.primary}-500 text-white px-3 py-1 rounded-full text-sm font-medium flex items-center`}>
+                      <div className={`absolute top-4 right-4 bg-green-500 text-white px-3 py-1 rounded-full text-sm font-medium flex items-center shadow-lg`}>
                         <div className="w-2 h-2 bg-white rounded-full mr-2 animate-pulse"></div>
                         Disponible maintenant
+                      </div>
+                    )}
+                    {isAvailableToday && !isAvailableNow && (
+                      <div className="absolute top-4 right-4 bg-blue-500 text-white px-3 py-1 rounded-full text-sm font-medium flex items-center shadow-lg">
+                        <Calendar className="h-3 w-3 mr-1" />
+                        Disponible aujourd'hui
                       </div>
                     )}
                   </div>
                   
                   <div className="p-6 md:w-3/4 flex flex-col">
                     <div className="flex flex-col md:flex-row md:justify-between md:items-start mb-4">
-                      <div>
-                        <h2 className="text-xl font-bold text-gray-800">{professionalName}</h2>
-                        <p className={`text-${colors.primary}-600 font-medium`}>{professionalSpecialty}</p>
+                      <div className="flex items-center gap-2">
+                        <h2 className="text-xl font-semibold text-gray-800">{professionalName}</h2>
+                        <CheckCircle className="h-5 w-5 text-green-500" />
                       </div>
                       
                       <div className="flex items-center mt-2 md:mt-0">
                         <Star className="h-5 w-5 text-yellow-400 fill-current" />
-                        <span className="ml-1 font-medium">{professionalRating}</span>
+                        <span className="ml-1 font-semibold">{professionalRating}</span>
                         <span className="ml-1 text-gray-500">({professionalReviews} avis)</span>
                       </div>
                     </div>
                     
+                    <p className={`text-lg font-medium text-${colors.primary}-600 mb-2`}>{professionalSpecialty}</p>
                     <p className="text-gray-600 mb-4 line-clamp-2">{professionalDescription}</p>
                     
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                       <div className="flex items-center">
-                        <Languages className={`h-5 w-5 text-${colors.primary}-500 mr-2`} />
+                        <Globe className={`h-5 w-5 text-${colors.primary}-500 mr-2`} />
                         <span className="text-sm text-gray-600">
-                          {professionalLanguages.length > 0 ? professionalLanguages.join(', ') : 'Langues non précisées'}
+                          {professionalLanguages.length > 0 ? (
+                            <span className="flex flex-wrap gap-1">
+                              {professionalLanguages.map((lang: string, index: number) => (
+                                <span key={index} className="bg-gray-100 text-gray-700 px-2 py-1 rounded-full text-xs">
+                                  {lang}
+                                </span>
+                              ))}
+                            </span>
+                          ) : (
+                            'Langues non précisées'
+                          )}
                         </span>
                       </div>
                       
@@ -250,7 +293,7 @@ const ProfessionalsList = () => {
                     </div>
                     
                     <div className="flex flex-col sm:flex-row justify-between items-center mt-auto">
-                      <div className={`text-lg font-bold text-${colors.primary}-600 mb-4 sm:mb-0`}>
+                      <div className={`text-lg font-bold text-${colors.primary}-700 mb-4 sm:mb-0`}>
                         {professionalPrice === null 
                           ? 'Tarif sur demande'
                           : `${professionalPrice.toLocaleString()} ${professionalCurrency} / consultation`
@@ -260,7 +303,7 @@ const ProfessionalsList = () => {
                       <div className="flex space-x-4">
                         <Link
                           to={`/professional/${professional.id}`}
-                          className={`px-4 py-2 border border-${colors.primary}-500 text-${colors.primary}-500 rounded-md hover:bg-${colors.primary}-50 transition-colors`}
+                          className={`px-4 py-2 border border-${colors.primary}-500 text-${colors.primary}-500 rounded-md hover:bg-${colors.primary}-50 transition-colors font-medium`}
                           onClick={() => {
                             // Preload professional data in sessionStorage
                             try {
@@ -277,8 +320,8 @@ const ProfessionalsList = () => {
                           className={`px-4 py-2 ${
                             isAvailableNow 
                               ? `bg-green-500 hover:bg-green-600` 
-                              : `bg-${colors.primary}-500 hover:bg-${colors.primary}-600`
-                          } text-white rounded-md transition-colors`}
+                              : `bg-${colors.primary}-600 hover:bg-${colors.primary}-700`
+                          } text-white rounded-md transition-colors font-medium`}
                           onClick={() => {
                             // Preload professional data in sessionStorage
                             try {
