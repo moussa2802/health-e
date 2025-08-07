@@ -6,7 +6,7 @@ import { CheckCircle, AlertCircle, ArrowLeft, Calendar, Clock, User, MapPin, Vid
 import { format } from "date-fns";
 import { fr, enUS } from "date-fns/locale";
 import { doc, getDoc, updateDoc, collection, query, where, orderBy, limit, getDocs } from "firebase/firestore";
-import { db } from "../../config/firebase";
+import { getFirestoreInstance } from "../../utils/firebase";
 import LoadingSpinner from "../../components/ui/LoadingSpinner";
 
 interface AppointmentSuccessParams {
