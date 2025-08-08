@@ -14,26 +14,26 @@ const db = admin.firestore();
 exports.handler = async (event, context) => {
   // Gestion CORS pour Netlify
   const headers = {
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Headers': 'Content-Type',
-    'Access-Control-Allow-Methods': 'POST, OPTIONS'
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Headers": "Content-Type",
+    "Access-Control-Allow-Methods": "POST, OPTIONS",
   };
 
   // Répondre aux requêtes OPTIONS (preflight)
-  if (event.httpMethod === 'OPTIONS') {
+  if (event.httpMethod === "OPTIONS") {
     return {
       statusCode: 200,
       headers,
-      body: ''
+      body: "",
     };
   }
 
   // Vérifier que c'est une requête POST
-  if (event.httpMethod !== 'POST') {
+  if (event.httpMethod !== "POST") {
     return {
       statusCode: 405,
       headers,
-      body: JSON.stringify({ error: 'Method not allowed' })
+      body: JSON.stringify({ error: "Method not allowed" }),
     };
   }
 
@@ -55,7 +55,7 @@ exports.handler = async (event, context) => {
       return {
         statusCode: 400,
         headers,
-        body: JSON.stringify({ error: "Missing required fields" })
+        body: JSON.stringify({ error: "Missing required fields" }),
       };
     }
 
@@ -67,18 +67,18 @@ exports.handler = async (event, context) => {
       console.warn("⚠️ [PAYTECH IPN] Error parsing custom_field:", error);
     }
 
-    const { 
-      booking_id, 
-      user_id, 
-      patientId, 
-      professionalId, 
-      patientName, 
-      professionalName, 
-      date, 
-      startTime, 
-      endTime, 
-      type, 
-      price 
+    const {
+      booking_id,
+      user_id,
+      patientId,
+      professionalId,
+      patientName,
+      professionalName,
+      date,
+      startTime,
+      endTime,
+      type,
+      price,
     } = customData;
 
     console.log("🔍 [PAYTECH IPN] Processing payment:", {
@@ -132,7 +132,10 @@ exports.handler = async (event, context) => {
           type,
         });
 
-        console.log("✅ [PAYTECH IPN] Booking created successfully:", booking_id);
+        console.log(
+          "✅ [PAYTECH IPN] Booking created successfully:",
+          booking_id
+        );
 
         // Envoyer une notification au patient
         if (user_id) {
@@ -161,7 +164,7 @@ exports.handler = async (event, context) => {
         return {
           statusCode: 500,
           headers,
-          body: JSON.stringify({ error: "Database error" })
+          body: JSON.stringify({ error: "Database error" }),
         };
       }
     }
@@ -186,14 +189,14 @@ exports.handler = async (event, context) => {
       body: JSON.stringify({
         success: true,
         message: "IPN processed successfully",
-      })
+      }),
     };
   } catch (error) {
     console.error("❌ [PAYTECH IPN] Error processing webhook:", error);
     return {
       statusCode: 500,
       headers,
-      body: JSON.stringify({ error: "Internal server error" })
+      body: JSON.stringify({ error: "Internal server error" }),
     };
   }
 };

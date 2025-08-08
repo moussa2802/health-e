@@ -34,14 +34,16 @@ console.log("🔍 [DEBUG] CANCEL_URL:", PAYTECH_CONFIG.cancelUrl);
  * Cette fonction est appelée depuis le frontend pour créer une transaction
  */
 exports.handler = async (event, context) => {
-  console.log("🚀 [DEBUG] Function paytech-initiate-payment called");
-  console.log("🚀 [DEBUG] HTTP Method:", event.httpMethod);
-  console.log(
-    "🚀 [DEBUG] Event body length:",
-    event.body ? event.body.length : 0
-  );
+  try {
+    console.log("🚀 [DEBUG] Function paytech-initiate-payment called");
+    console.log("🚀 [DEBUG] HTTP Method:", event.httpMethod);
+    console.log(
+      "🚀 [DEBUG] Event body length:",
+      event.body ? event.body.length : 0
+    );
+    console.log("🚀 [DEBUG] Event body:", event.body);
 
-  // Gestion CORS pour Netlify
+    // Gestion CORS pour Netlify
   const headers = {
     "Access-Control-Allow-Origin": "*",
     "Access-Control-Allow-Headers": "Content-Type",
@@ -67,6 +69,7 @@ exports.handler = async (event, context) => {
   }
 
   try {
+    console.log("🔍 [DEBUG] Parsing event body...");
     const data = JSON.parse(event.body);
     console.log("🔍 [DEBUG] Request body received:", data);
     // Vérification des données requises
@@ -105,21 +108,21 @@ exports.handler = async (event, context) => {
       success_url: `${PAYTECH_CONFIG.successUrl}/${bookingId}`,
       cancel_url: `${PAYTECH_CONFIG.cancelUrl}/${professionalId}`,
       ipn_url: PAYTECH_CONFIG.ipnUrl,
-              custom_field: JSON.stringify({
-          booking_id: bookingId,
-          customer_email: customerEmail,
-          customer_phone: customerPhone,
-          customer_name: customerName,
-          patientId: currentUser.id, // Pour l'IPN
-          professionalId: paymentData.professionalId,
-          patientName: customerName,
-          professionalName: paymentData.professionalName,
-          date: dateString,
-          startTime: startTime,
-          endTime: endTime,
-          type: consultationType,
-          price: paymentData.amount,
-        }),
+      custom_field: JSON.stringify({
+        booking_id: bookingId,
+        customer_email: customerEmail,
+        customer_phone: customerPhone,
+        customer_name: customerName,
+        patientId: currentUser.id, // Pour l'IPN
+        professionalId: paymentData.professionalId,
+        patientName: customerName,
+        professionalName: paymentData.professionalName,
+        date: dateString,
+        startTime: startTime,
+        endTime: endTime,
+        type: consultationType,
+        price: paymentData.amount,
+      }),
       target_payment: "Orange Money, Wave, Free Money",
     };
 
@@ -191,4 +194,19 @@ exports.handler = async (event, context) => {
       }),
     };
   }
+} catch (globalError) {
+  console.error("❌ [PAYTECH] Global error:", globalError);
+  return {
+    statusCode: 500,
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Headers': 'Content-Type',
+      'Access-Control-Allow-Methods': 'POST, OPTIONS'
+    },
+    body: JSON.stringify({
+      success: 0,
+      error: "Erreur interne du serveur",
+    }),
+  };
+}
 };

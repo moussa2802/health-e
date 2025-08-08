@@ -79,24 +79,27 @@ const AppointmentSuccess: React.FC = () => {
           const data = snapshot.data();
           setBookingData(data);
 
-                  // Vérifier le statut de paiement
-        if (data.paymentStatus) {
-          setPaymentStatus(data.paymentStatus);
-          console.log("🔍 [APPOINTMENT SUCCESS] Payment status:", data.paymentStatus);
-        }
+          // Vérifier le statut de paiement
+          if (data.paymentStatus) {
+            setPaymentStatus(data.paymentStatus);
+            console.log(
+              "🔍 [APPOINTMENT SUCCESS] Payment status:",
+              data.paymentStatus
+            );
+          }
 
-        // Si la réservation est en statut "pending", afficher un message d'attente
-        if (data.status === "pending") {
-          console.log(
-            "⏳ [APPOINTMENT SUCCESS] Booking is pending payment confirmation"
-          );
-        }
+          // Si la réservation est en statut "pending", afficher un message d'attente
+          if (data.status === "pending") {
+            console.log(
+              "⏳ [APPOINTMENT SUCCESS] Booking is pending payment confirmation"
+            );
+          }
 
-        // Si le paiement est confirmé, mettre à jour le statut
-        if (data.paymentStatus === "paid" || data.status === "confirmed") {
-          setPaymentStatus("confirmed");
-          console.log("✅ [APPOINTMENT SUCCESS] Payment confirmed");
-        }
+          // Si le paiement est confirmé, mettre à jour le statut
+          if (data.paymentStatus === "paid" || data.status === "confirmed") {
+            setPaymentStatus("confirmed");
+            console.log("✅ [APPOINTMENT SUCCESS] Payment confirmed");
+          }
         } else {
           console.log("⚠️ No booking found with ID:", bookingId);
           console.log(

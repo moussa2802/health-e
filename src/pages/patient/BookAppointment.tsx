@@ -574,8 +574,13 @@ const BookAppointment: React.FC = () => {
       console.log("🩺 Professional ID:", professional.id);
 
       // Générer un ID temporaire pour le paiement (pas de création en base)
-      const tempBookingId = `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-      console.log("🔔 [PAYMENT] Generated temporary booking ID:", tempBookingId);
+      const tempBookingId = `temp_${Date.now()}_${Math.random()
+        .toString(36)
+        .substr(2, 9)}`;
+      console.log(
+        "🔔 [PAYMENT] Generated temporary booking ID:",
+        tempBookingId
+      );
 
       // Préparer les données de paiement sans créer le booking
       console.log("🔔 [PAYMENT] Preparing payment data for:", tempBookingId);
