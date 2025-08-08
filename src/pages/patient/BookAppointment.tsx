@@ -605,32 +605,31 @@ const BookAppointment: React.FC = () => {
         const paymentData = {
           amount: totalAmount,
           bookingId,
-          customerEmail: currentUser.email || '',
-          customerPhone: currentUser.phoneNumber || '',
-          customerName: currentUser.name || 'Patient',
+          customerEmail: currentUser.email || "",
+          customerPhone: currentUser.phoneNumber || "",
+          customerName: currentUser.name || "Patient",
           professionalId: professional.id,
           professionalName: professional.name,
-          description: `Consultation ${consultationType} avec ${professional.name}`
+          description: `Consultation ${consultationType} avec ${professional.name}`,
         };
 
-        console.log('🔔 [PAYTECH] Initiating payment with data:', paymentData);
-        
+        console.log("🔔 [PAYTECH] Initiating payment with data:", paymentData);
+
         // Valider les données de paiement
         if (!paytechService.validatePaymentData(paymentData)) {
-          throw new Error('Données de paiement invalides');
+          throw new Error("Données de paiement invalides");
         }
 
         // Initier le paiement
         const response = await paytechService.initiatePayment(paymentData);
-        
-        console.log('✅ [PAYTECH] Payment initiated successfully:', response);
-        
+
+        console.log("✅ [PAYTECH] Payment initiated successfully:", response);
+
         // Rediriger vers PayTech
         paytechService.redirectToPayment(response.redirect_url);
-        
       } catch (paymentError) {
-        console.error('❌ [PAYTECH] Payment error:', paymentError);
-        
+        console.error("❌ [PAYTECH] Payment error:", paymentError);
+
         // En cas d'erreur de paiement, rediriger vers la page de succès avec un message d'erreur
         navigate(`/appointment-success/${bookingId}?payment_error=true`);
       }

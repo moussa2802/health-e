@@ -6,7 +6,7 @@ interface PaymentData {
   amount: number;
   bookingId: string;
   customerEmail: string;
-  customerPhone: string;
+  customerPhone?: string; // Optionnel, valeur par défaut sera utilisée si manquant
   customerName: string;
   professionalId: string;
   professionalName?: string;
@@ -103,13 +103,19 @@ class PayTechService {
    * Valider les données de paiement
    */
   validatePaymentData(data: PaymentData): boolean {
-    const requiredFields = ['amount', 'bookingId', 'customerEmail', 'customerPhone', 'customerName', 'professionalId'];
+    const requiredFields = ['amount', 'bookingId', 'customerEmail', 'customerName', 'professionalId'];
     
     for (const field of requiredFields) {
       if (!data[field as keyof PaymentData]) {
         console.error(`❌ [PAYTECH] Missing required field: ${field}`);
         return false;
       }
+    }
+
+    // Le numéro de téléphone est optionnel, utiliser une valeur par défaut si manquant
+    if (!data.customerPhone) {
+      console.log('⚠️ [PAYTECH] No phone number provided, using default');
+      data.customerPhone = '770000000'; // Numéro par défaut pour PayTech
     }
 
     if (data.amount <= 0) {
