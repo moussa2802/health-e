@@ -1,24 +1,18 @@
 import React, { useState, useEffect } from "react";
 import {
-  useNavigate,
   useSearchParams,
   useParams,
   Link,
 } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
-import { useLanguage } from "../../contexts/LanguageContext";
 import {
   CheckCircle,
   AlertCircle,
-  ArrowLeft,
   Calendar,
   Clock,
   User,
-  MapPin,
   Video,
 } from "lucide-react";
-import { format } from "date-fns";
-import { fr, enUS } from "date-fns/locale";
 import {
   doc,
   getDoc,
@@ -33,12 +27,8 @@ import {
 import { getFirestoreInstance } from "../../utils/firebase";
 import LoadingSpinner from "../../components/ui/LoadingSpinner";
 
-interface AppointmentSuccessParams {
-  bookingId: string;
-}
-
 const AppointmentSuccess: React.FC = () => {
-  const { bookingId } = useParams<AppointmentSuccessParams>();
+  const { bookingId } = useParams<{ bookingId: string }>();
   const [searchParams] = useSearchParams();
   const { currentUser } = useAuth();
   const [bookingData, setBookingData] = useState<any>(null);
@@ -52,6 +42,21 @@ const AppointmentSuccess: React.FC = () => {
         setError("ID de réservation manquant");
         setLoading(false);
         return;
+      }
+
+      // Vérifier les paramètres PayTech dans l'URL
+      const paytechStatus = searchParams.get('status');
+      const paytechRef = searchParams.get('ref_command');
+      
+      if (paytechStatus && paytechRef) {
+        console.log('🔔 [PAYTECH] Payment callback received:', { paytechStatus, paytechRef });
+        
+        // Si PayTech confirme le paiement, mettre à jour le statut
+        if (paytechStatus === 'success') {
+          setPaymentStatus('confirmed');
+        } else if (paytechStatus === 'cancelled') {
+          setPaymentStatus('cancelled');
+        }
       }
 
       try {

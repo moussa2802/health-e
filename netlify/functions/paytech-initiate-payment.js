@@ -7,9 +7,9 @@ const PAYTECH_CONFIG = {
   apiKey: process.env.PAYTECH_API_KEY,
   apiSecret: process.env.PAYTECH_API_SECRET,
   env: process.env.PAYTECH_ENV || 'test',
-  successUrl: process.env.PAYTECH_SUCCESS_URL || 'https://health-e.sn/payment/success',
-  cancelUrl: process.env.PAYTECH_CANCEL_URL || 'https://health-e.sn/payment/cancel',
-  ipnUrl: process.env.PAYTECH_IPN_URL || 'https://health-e.sn/payment/ipn'
+  successUrl: process.env.PAYTECH_SUCCESS_URL || 'https://health-e.sn/appointment-success',
+  cancelUrl: process.env.PAYTECH_CANCEL_URL || 'https://health-e.sn/book',
+  ipnUrl: process.env.PAYTECH_IPN_URL || 'https://health-e.sn/.netlify/functions/paytech-ipn'
 };
 
 /**
@@ -45,8 +45,8 @@ exports.initiatePayment = functions.https.onCall(async (data, context) => {
       command_name: `Paiement consultation ${data.professionalName || 'professionnel'}`,
       currency: 'XOF',
       env: PAYTECH_CONFIG.env,
-      success_url: PAYTECH_CONFIG.successUrl,
-      cancel_url: PAYTECH_CONFIG.cancelUrl,
+      success_url: `${PAYTECH_CONFIG.successUrl}/${bookingId}`,
+      cancel_url: `${PAYTECH_CONFIG.cancelUrl}/${data.professionalId}`,
       ipn_url: PAYTECH_CONFIG.ipnUrl,
       custom_field: JSON.stringify({
         booking_id: bookingId,
