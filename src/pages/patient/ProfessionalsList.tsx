@@ -43,7 +43,9 @@ const ProfessionalsList = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [filteredProfessionals, setFilteredProfessionals] = useState<any[]>([]);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
-  const [realAvailabilities, setRealAvailabilities] = useState<Map<string, any>>(new Map());
+  const [realAvailabilities, setRealAvailabilities] = useState<
+    Map<string, any>
+  >(new Map());
 
   // Utiliser le hook useProfessionals avec le filtre de spécialité
   const { professionals, loading, error, refreshProfessionals } =
@@ -84,30 +86,47 @@ const ProfessionalsList = () => {
     const loadRealAvailabilities = async () => {
       if (filteredProfessionals.length === 0) return;
 
-      console.log("🔍 Loading real availabilities for", filteredProfessionals.length, "professionals");
-      
-      const availabilityPromises = filteredProfessionals.map(async (professional) => {
-        try {
-          const availability = await fetchRealAvailability(professional.id);
-          return { professionalId: professional.id, availability };
-        } catch (error) {
-          console.error(`Error loading availability for ${professional.name}:`, error);
-          return { 
-            professionalId: professional.id, 
-            availability: { upcomingDays: [], totalDays: 0, nextAvailableDay: null } 
-          };
+      console.log(
+        "🔍 Loading real availabilities for",
+        filteredProfessionals.length,
+        "professionals"
+      );
+
+      const availabilityPromises = filteredProfessionals.map(
+        async (professional) => {
+          try {
+            const availability = await fetchRealAvailability(professional.id);
+            return { professionalId: professional.id, availability };
+          } catch (error) {
+            console.error(
+              `Error loading availability for ${professional.name}:`,
+              error
+            );
+            return {
+              professionalId: professional.id,
+              availability: {
+                upcomingDays: [],
+                totalDays: 0,
+                nextAvailableDay: null,
+              },
+            };
+          }
         }
-      });
+      );
 
       const results = await Promise.all(availabilityPromises);
-      
+
       const newAvailabilities = new Map();
       results.forEach(({ professionalId, availability }) => {
         newAvailabilities.set(professionalId, availability);
       });
 
       setRealAvailabilities(newAvailabilities);
-      console.log("✅ Real availabilities loaded for", results.length, "professionals");
+      console.log(
+        "✅ Real availabilities loaded for",
+        results.length,
+        "professionals"
+      );
     };
 
     loadRealAvailabilities();
@@ -136,7 +155,8 @@ const ProfessionalsList = () => {
     try {
       // Import dynamique pour éviter les erreurs côté serveur
       const { getFirestoreInstance } = await import("../../utils/firebase");
-      const { collection, query, where, getDocs, startOfDay, addDays } = await import("firebase/firestore");
+      const { collection, query, where, getDocs, startOfDay, addDays } =
+        await import("firebase/firestore");
       const { format, addMonths } = await import("date-fns");
 
       const db = getFirestoreInstance();
@@ -179,7 +199,7 @@ const ProfessionalsList = () => {
       // Grouper par jour et calculer les statistiques
       const dayNames = [
         "Dimanche",
-        "Lundi", 
+        "Lundi",
         "Mardi",
         "Mercredi",
         "Jeudi",
@@ -193,7 +213,7 @@ const ProfessionalsList = () => {
       availableSlots.forEach((slot) => {
         const dayName = dayNames[slot.date.getDay()];
         availableDaysSet.add(dayName);
-        
+
         // Déterminer le prochain jour disponible
         if (!nextAvailableDay) {
           nextAvailableDay = dayName;
@@ -360,7 +380,9 @@ const ProfessionalsList = () => {
             const isAvailableNow = false; // Désactivé temporairement
 
             // Utiliser les vraies disponibilités si disponibles, sinon fallback
-            const availabilityInfo = realAvailabilities.get(professional.id) || {
+            const availabilityInfo = realAvailabilities.get(
+              professional.id
+            ) || {
               upcomingDays: [],
               totalDays: 0,
               nextAvailableDay: "Chargement...",
@@ -493,11 +515,12 @@ const ProfessionalsList = () => {
                           {availabilityInfo.totalDays} jour
                           {availabilityInfo.totalDays > 1 ? "s" : ""} disponible
                           {availabilityInfo.totalDays > 1 ? "s" : ""}
-                          {availabilityInfo.totalSlots && availabilityInfo.totalSlots > 0 && (
-                            <span className="text-xs text-green-600 ml-1">
-                              ({availabilityInfo.totalSlots} créneaux)
-                            </span>
-                          )}
+                          {availabilityInfo.totalSlots &&
+                            availabilityInfo.totalSlots > 0 && (
+                              <span className="text-xs text-green-600 ml-1">
+                                ({availabilityInfo.totalSlots} créneaux)
+                              </span>
+                            )}
                         </span>
                       </div>
                     </div>

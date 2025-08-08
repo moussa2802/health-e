@@ -684,7 +684,9 @@ const BookAppointment: React.FC = () => {
       <div className="container mx-auto px-4 py-8">
         <div className="flex items-center justify-center h-64">
           <LoadingSpinner size="lg" />
-          <span className="ml-4 text-lg text-gray-600">Redirection en cours...</span>
+          <span className="ml-4 text-lg text-gray-600">
+            Redirection en cours...
+          </span>
         </div>
       </div>
     );

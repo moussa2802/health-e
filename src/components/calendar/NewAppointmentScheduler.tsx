@@ -176,7 +176,9 @@ const NewAppointmentScheduler: React.FC<NewAppointmentSchedulerProps> = ({
 
       // Skip if user is not authenticated (for public view)
       if (!currentUser && !isProfessional) {
-        console.log("🔍 [RESERVED DEBUG] User not authenticated, skipping reserved slots fetch");
+        console.log(
+          "🔍 [RESERVED DEBUG] User not authenticated, skipping reserved slots fetch"
+        );
         return;
       }
 
@@ -263,7 +265,9 @@ const NewAppointmentScheduler: React.FC<NewAppointmentSchedulerProps> = ({
 
     // Skip if user is not authenticated (for public view)
     if (!currentUser && !isProfessional) {
-      console.log("🔍 [SLOTS DEBUG] User not authenticated, skipping slots fetch");
+      console.log(
+        "🔍 [SLOTS DEBUG] User not authenticated, skipping slots fetch"
+      );
       return;
     }
 
