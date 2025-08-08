@@ -1,4 +1,3 @@
-const functions = require('firebase-functions');
 const fetch = require('node-fetch');
 
 // Configuration PayTech selon les instructions officielles
@@ -13,28 +12,58 @@ const PAYTECH_CONFIG = {
 };
 
 /**
- * Fonction pour initier un paiement PayTech
+ * Fonction Netlify pour initier un paiement PayTech
  * Cette fonction est appelée depuis le frontend pour créer une transaction
  */
-exports.initiatePayment = functions.https.onCall(async (data, context) => {
-  try {
-    // Vérification de l'authentification
-    if (!context.auth) {
-      throw new functions.https.HttpsError('unauthenticated', 'Utilisateur non authentifié');
-    }
+exports.handler = async (event, context) => {
+  // Gestion CORS pour Netlify
+  const headers = {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Headers': 'Content-Type',
+    'Access-Control-Allow-Methods': 'POST, OPTIONS'
+  };
 
+  // Répondre aux requêtes OPTIONS (preflight)
+  if (event.httpMethod === 'OPTIONS') {
+    return {
+      statusCode: 200,
+      headers,
+      body: ''
+    };
+  }
+
+  // Vérifier que c'est une requête POST
+  if (event.httpMethod !== 'POST') {
+    return {
+      statusCode: 405,
+      headers,
+      body: JSON.stringify({ error: 'Method not allowed' })
+    };
+  }
+
+  try {
+    const data = JSON.parse(event.body);
+      // Vérification des données requises
     const { 
       amount, 
       bookingId, 
       customerEmail, 
       customerPhone, 
       customerName,
+      professionalId,
       description = 'Consultation médicale'
     } = data;
 
     // Validation des données
     if (!amount || !bookingId || !customerEmail || !customerPhone) {
-      throw new functions.https.HttpsError('invalid-argument', 'Données manquantes');
+      return {
+        statusCode: 400,
+        headers,
+        body: JSON.stringify({ 
+          success: 0, 
+          error: 'Données manquantes' 
+        })
+      };
     }
 
     // Préparation des données pour PayTech selon les instructions officielles
@@ -46,14 +75,13 @@ exports.initiatePayment = functions.https.onCall(async (data, context) => {
       currency: 'XOF',
       env: PAYTECH_CONFIG.env,
       success_url: `${PAYTECH_CONFIG.successUrl}/${bookingId}`,
-      cancel_url: `${PAYTECH_CONFIG.cancelUrl}/${data.professionalId}`,
+      cancel_url: `${PAYTECH_CONFIG.cancelUrl}/${professionalId}`,
       ipn_url: PAYTECH_CONFIG.ipnUrl,
       custom_field: JSON.stringify({
         booking_id: bookingId,
         customer_email: customerEmail,
         customer_phone: customerPhone,
-        customer_name: customerName,
-        user_id: context.auth.uid
+        customer_name: customerName
       }),
       target_payment: 'Orange Money, Wave, Free Money'
     };
@@ -76,25 +104,39 @@ exports.initiatePayment = functions.https.onCall(async (data, context) => {
 
     if (!response.ok) {
       console.error('❌ [PAYTECH] API Error:', responseData);
-      throw new functions.https.HttpsError('internal', 'Erreur lors de l\'initialisation du paiement');
+      return {
+        statusCode: 500,
+        headers,
+        body: JSON.stringify({ 
+          success: 0, 
+          error: 'Erreur lors de l\'initialisation du paiement' 
+        })
+      };
     }
 
     console.log('✅ [PAYTECH] Payment initiated successfully:', responseData);
 
     // Retourner les données de paiement au frontend selon les instructions officielles
     return {
-      success: 1,
-      redirect_url: responseData.redirect_url,
-      refCommand: paymentData.ref_command
+      statusCode: 200,
+      headers,
+      body: JSON.stringify({
+        success: 1,
+        redirect_url: responseData.redirect_url,
+        refCommand: paymentData.ref_command
+      })
     };
 
   } catch (error) {
     console.error('❌ [PAYTECH] Error initiating payment:', error);
     
-    if (error instanceof functions.https.HttpsError) {
-      throw error;
-    }
-    
-    throw new functions.https.HttpsError('internal', 'Erreur serveur lors de l\'initialisation du paiement');
+    return {
+      statusCode: 500,
+      headers,
+      body: JSON.stringify({ 
+        success: 0, 
+        error: 'Erreur serveur lors de l\'initialisation du paiement' 
+      })
+    };
   }
-});
+};
