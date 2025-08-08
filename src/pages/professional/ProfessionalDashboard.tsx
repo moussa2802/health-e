@@ -78,11 +78,11 @@ const WelcomeBanner: React.FC<{ name: string }> = ({ name }) => {
 };
 
 // Financial Statistics Card
-const FinancialStats: React.FC<{ revenue: Revenue; onHide?: () => void }> = ({ revenue, onHide }) => {
+const FinancialStats: React.FC<{ revenue: Revenue; showBalance: boolean; onToggleBalance: () => void }> = ({ revenue, showBalance, onToggleBalance }) => {
   const stats = [
     {
       title: "Revenus disponibles",
-      value: `${revenue.available.toLocaleString()} FCFA`,
+      value: showBalance ? `${revenue.available.toLocaleString()} FCFA` : "••••••",
       icon: Wallet,
       color: "from-green-500 to-emerald-500",
       bgColor: "bg-green-50",
@@ -90,7 +90,7 @@ const FinancialStats: React.FC<{ revenue: Revenue; onHide?: () => void }> = ({ r
     },
     {
       title: "En attente",
-      value: `${revenue.pending.toLocaleString()} FCFA`,
+      value: showBalance ? `${revenue.pending.toLocaleString()} FCFA` : "••••••",
       icon: Clock,
       color: "from-yellow-500 to-orange-500",
       bgColor: "bg-yellow-50",
@@ -98,7 +98,7 @@ const FinancialStats: React.FC<{ revenue: Revenue; onHide?: () => void }> = ({ r
     },
     {
       title: "Total retiré",
-      value: `${revenue.withdrawn.toLocaleString()} FCFA`,
+      value: showBalance ? `${revenue.withdrawn.toLocaleString()} FCFA` : "••••••",
       icon: TrendingUp,
       color: "from-blue-500 to-indigo-500",
       bgColor: "bg-blue-50",
@@ -120,14 +120,12 @@ const FinancialStats: React.FC<{ revenue: Revenue; onHide?: () => void }> = ({ r
           >
             Voir détails
           </Link>
-          {onHide && (
-            <button
-              onClick={onHide}
-              className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium"
-            >
-              Masquer
-            </button>
-          )}
+          <button
+            onClick={onToggleBalance}
+            className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium"
+          >
+            {showBalance ? "Masquer" : "Afficher"}
+          </button>
         </div>
       </div>
 
@@ -531,6 +529,7 @@ const ProfessionalDashboard: React.FC = () => {
   const isMountedRef = useRef(true);
   const [showEthicsReminder, setShowEthicsReminder] = useState(true);
   const [showFinancialStats, setShowFinancialStats] = useState(true);
+  const [showBalance, setShowBalance] = useState(true);
 
   // Only fetch bookings if user is authenticated
   const { bookings, loading, error, refreshBookings } = useBookings(
@@ -1016,7 +1015,8 @@ const ProfessionalDashboard: React.FC = () => {
         {showFinancialStats && (
           <FinancialStats 
             revenue={revenue} 
-            onHide={() => setShowFinancialStats(false)}
+            showBalance={showBalance}
+            onToggleBalance={() => setShowBalance(!showBalance)}
           />
         )}
 

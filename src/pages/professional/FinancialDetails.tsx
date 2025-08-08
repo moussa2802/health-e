@@ -18,6 +18,13 @@ import {
 } from "lucide-react";
 import { useAuth } from "../../contexts/AuthContext";
 import LoadingSpinner from "../../components/ui/LoadingSpinner";
+import { 
+  getProfessionalRevenue, 
+  getProfessionalTransactions,
+  createWithdrawalRequest,
+  type ProfessionalRevenue,
+  type RevenueTransaction 
+} from "../../services/revenueService";
 
 interface Transaction {
   id: string;
@@ -30,22 +37,11 @@ interface Transaction {
   consultationType?: string;
 }
 
-interface FinancialStats {
-  totalEarnings: number;
-  availableBalance: number;
-  pendingAmount: number;
-  totalWithdrawn: number;
-  platformFees: number;
-  netEarnings: number;
-  thisMonth: number;
-  lastMonth: number;
-}
-
 const FinancialDetails: React.FC = () => {
   const { currentUser } = useAuth();
   const [showBalance, setShowBalance] = useState(true);
   const [loading, setLoading] = useState(true);
-  const [stats, setStats] = useState<FinancialStats>({
+  const [stats, setStats] = useState<ProfessionalRevenue>({
     totalEarnings: 0,
     availableBalance: 0,
     pendingAmount: 0,
@@ -55,7 +51,7 @@ const FinancialDetails: React.FC = () => {
     thisMonth: 0,
     lastMonth: 0,
   });
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [transactions, setTransactions] = useState<RevenueTransaction[]>([]);
   const [filter, setFilter] = useState<"all" | "consultations" | "withdrawals">("all");
   const [showWithdrawalModal, setShowWithdrawalModal] = useState(false);
   const [withdrawalAmount, setWithdrawalAmount] = useState("");
@@ -68,54 +64,19 @@ const FinancialDetails: React.FC = () => {
   const loadFinancialData = async () => {
     try {
       setLoading(true);
-      // Simuler le chargement des données
-      await new Promise(resolve => setTimeout(resolve, 1000));
       
-      // Données simulées - à remplacer par des vraies données Firebase
-      const mockStats: FinancialStats = {
-        totalEarnings: 150000,
-        availableBalance: 85000,
-        pendingAmount: 25000,
-        totalWithdrawn: 40000,
-        platformFees: 22500, // 15% de 150000
-        netEarnings: 127500,
-        thisMonth: 45000,
-        lastMonth: 35000,
-      };
+      if (!currentUser?.id) {
+        throw new Error("Utilisateur non connecté");
+      }
 
-      const mockTransactions: Transaction[] = [
-        {
-          id: "1",
-          type: "consultation",
-          amount: 20000,
-          description: "Consultation vidéo - Papa Moussa LO",
-          date: "2025-08-08",
-          status: "completed",
-          patientName: "Papa Moussa LO",
-          consultationType: "Vidéo",
-        },
-        {
-          id: "2",
-          type: "withdrawal",
-          amount: 15000,
-          description: "Retrait vers Wave",
-          date: "2025-08-05",
-          status: "completed",
-        },
-        {
-          id: "3",
-          type: "consultation",
-          amount: 25000,
-          description: "Consultation audio - Marie Diop",
-          date: "2025-08-03",
-          status: "completed",
-          patientName: "Marie Diop",
-          consultationType: "Audio",
-        },
-      ];
+      // Charger les vraies données depuis Firebase
+      const [revenueData, transactionsData] = await Promise.all([
+        getProfessionalRevenue(currentUser.id),
+        getProfessionalTransactions(currentUser.id, 50)
+      ]);
 
-      setStats(mockStats);
-      setTransactions(mockTransactions);
+      setStats(revenueData);
+      setTransactions(transactionsData);
     } catch (error) {
       console.error("Erreur lors du chargement des données financières:", error);
     } finally {
@@ -132,26 +93,23 @@ const FinancialDetails: React.FC = () => {
       return;
     }
 
-    try {
-      // Simuler la demande de retrait
-      console.log("Demande de retrait:", { amount, method: withdrawalMethod });
-      
-      // Ici, on ajouterait la logique pour créer une demande de retrait
-      const newTransaction: Transaction = {
-        id: Date.now().toString(),
-        type: "withdrawal",
-        amount,
-        description: `Retrait vers ${withdrawalMethod}`,
-        date: new Date().toISOString().split('T')[0],
-        status: "pending",
-      };
+    if (!currentUser?.id) {
+      alert("Utilisateur non connecté");
+      return;
+    }
 
-      setTransactions([newTransaction, ...transactions]);
-      setStats(prev => ({
-        ...prev,
-        availableBalance: prev.availableBalance - amount,
-        pendingAmount: prev.pendingAmount + amount,
-      }));
+    try {
+      // Créer la vraie demande de retrait
+      const transactionId = await createWithdrawalRequest(
+        currentUser.id,
+        amount,
+        withdrawalMethod
+      );
+
+      console.log("Demande de retrait créée:", transactionId);
+
+      // Recharger les données pour avoir les vraies données mises à jour
+      await loadFinancialData();
 
       setShowWithdrawalModal(false);
       setWithdrawalAmount("");
@@ -190,7 +148,16 @@ const FinancialDetails: React.FC = () => {
   const filteredTransactions = transactions.filter(transaction => {
     if (filter === "all") return true;
     return transaction.type === filter;
-  });
+  }).map(transaction => ({
+    id: transaction.id,
+    type: transaction.type,
+    amount: transaction.type === "consultation" ? transaction.professionalAmount : transaction.amount,
+    description: transaction.description,
+    date: transaction.createdAt.toDate().toISOString().split('T')[0],
+    status: transaction.status,
+    patientName: transaction.patientName,
+    consultationType: transaction.consultationType,
+  }));
 
   if (loading) {
     return (
