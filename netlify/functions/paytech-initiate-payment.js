@@ -117,7 +117,7 @@ exports.handler = async (event, context) => {
           professionalId: professionalId,
           patientName: customerName,
           professionalName: data.professionalName || "Professionnel",
-          date: data.date || new Date().toISOString().split('T')[0],
+          date: data.date || new Date().toISOString().split("T")[0],
           startTime: data.startTime || "00:00",
           endTime: data.endTime || "01:00",
           type: data.type || "video",

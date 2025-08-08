@@ -765,9 +765,7 @@ const BookAppointment: React.FC = () => {
   const professionalCurrency = professional?.currency || "XOF";
   const isAvailableNow = professional?.isAvailableNow || false;
 
-  const serviceFee = professionalPrice === null ? 0 : 1000;
-  const totalAmount =
-    professionalPrice === null ? 0 : professionalPrice + serviceFee;
+  const totalAmount = professionalPrice === null ? 0 : professionalPrice;
 
   if (showPaymentStep) {
     return (
@@ -814,14 +812,6 @@ const BookAppointment: React.FC = () => {
                     {professionalPrice === null
                       ? "Gratuit"
                       : `${professionalPrice.toLocaleString()} ${professionalCurrency}`}
-                  </span>
-                </div>
-                <div className="flex justify-between mt-2">
-                  <span className="text-gray-600">Frais de service</span>
-                  <span className="font-medium">
-                    {serviceFee === 0
-                      ? "Gratuit"
-                      : `${serviceFee.toLocaleString()} ${professionalCurrency}`}
                   </span>
                 </div>
                 <div className="flex justify-between mt-3 pt-3 border-t">
