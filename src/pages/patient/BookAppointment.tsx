@@ -609,7 +609,7 @@ const BookAppointment: React.FC = () => {
             : currentUser.phoneNumber || "";
 
         const paymentData = {
-          amount: totalAmount,
+          amount: professionalPrice || 0,
           bookingId,
           customerEmail: currentUser.email || "",
           customerPhone,
@@ -1270,21 +1270,13 @@ const BookAppointment: React.FC = () => {
                         : `${professionalPrice.toLocaleString()} ${professionalCurrency}`}
                     </span>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Frais de service</span>
-                    <span className="font-medium">
-                      {serviceFee === 0
-                        ? "Gratuit"
-                        : `${serviceFee.toLocaleString()} ${professionalCurrency}`}
-                    </span>
-                  </div>
                   <div className="pt-3 border-t">
                     <div className="flex justify-between">
                       <span className="font-semibold">Total</span>
                       <span className="font-semibold">
-                        {totalAmount === 0
+                        {professionalPrice === null || professionalPrice === 0
                           ? "Gratuit"
-                          : `${totalAmount.toLocaleString()} ${professionalCurrency}`}
+                          : `${professionalPrice.toLocaleString()} ${professionalCurrency}`}
                       </span>
                     </div>
                   </div>
