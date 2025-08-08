@@ -105,12 +105,21 @@ exports.handler = async (event, context) => {
       success_url: `${PAYTECH_CONFIG.successUrl}/${bookingId}`,
       cancel_url: `${PAYTECH_CONFIG.cancelUrl}/${professionalId}`,
       ipn_url: PAYTECH_CONFIG.ipnUrl,
-      custom_field: JSON.stringify({
-        booking_id: bookingId,
-        customer_email: customerEmail,
-        customer_phone: customerPhone,
-        customer_name: customerName,
-      }),
+              custom_field: JSON.stringify({
+          booking_id: bookingId,
+          customer_email: customerEmail,
+          customer_phone: customerPhone,
+          customer_name: customerName,
+          patientId: currentUser.id, // Pour l'IPN
+          professionalId: paymentData.professionalId,
+          patientName: customerName,
+          professionalName: paymentData.professionalName,
+          date: dateString,
+          startTime: startTime,
+          endTime: endTime,
+          type: consultationType,
+          price: paymentData.amount,
+        }),
       target_payment: "Orange Money, Wave, Free Money",
     };
 

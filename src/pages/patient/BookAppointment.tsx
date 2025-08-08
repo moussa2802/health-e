@@ -573,32 +573,12 @@ const BookAppointment: React.FC = () => {
       );
       console.log("🩺 Professional ID:", professional.id);
 
-      // Créer une réservation temporaire avec statut "pending"
-      const tempBookingData = {
-        ...bookingData,
-        status: "pending", // Statut temporaire en attente de paiement
-        paymentStatus: "pending",
-        createdAt: new Date().toISOString(),
-      };
+      // Générer un ID temporaire pour le paiement (pas de création en base)
+      const tempBookingId = `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      console.log("🔔 [PAYMENT] Generated temporary booking ID:", tempBookingId);
 
-      const bookingId = await createBooking(tempBookingData);
-      console.log("✅ Temporary booking created with ID:", bookingId);
-
-      // Créer une entrée temporaire dans la Realtime Database
-      const roomRef = ref(database, `scheduled_rooms/${bookingId}`);
-      await set(roomRef, {
-        createdAt: new Date().toISOString(),
-        scheduledFor: `${dateString}T${startTime}:00`,
-        patientId: currentUser.id,
-        patientName: currentUser.name || "Patient",
-        professionalId: professional.id,
-        professionalName: professional.name || "Professionnel",
-        status: "pending", // Statut temporaire
-        type: consultationType,
-      });
-
-      // Créer la facture de paiement
-      console.log("🔔 [PAYMENT] Creating payment for booking:", bookingId);
+      // Préparer les données de paiement sans créer le booking
+      console.log("🔔 [PAYMENT] Preparing payment data for:", tempBookingId);
 
       // Initier le paiement PayTech
       try {
@@ -610,7 +590,7 @@ const BookAppointment: React.FC = () => {
 
         const paymentData = {
           amount: professionalPrice || 0,
-          bookingId,
+          bookingId: tempBookingId,
           customerEmail: currentUser.email || "",
           customerPhone,
           customerName: currentUser.name || "Patient",
@@ -637,7 +617,7 @@ const BookAppointment: React.FC = () => {
         console.error("❌ [PAYTECH] Payment error:", paymentError);
 
         // En cas d'erreur de paiement, rediriger vers la page de succès avec un message d'erreur
-        navigate(`/appointment-success/${bookingId}?payment_error=true`);
+        navigate(`/appointment-success/${tempBookingId}?payment_error=true`);
       }
     } catch (error) {
       console.error("❌ Error during booking creation:", error);
