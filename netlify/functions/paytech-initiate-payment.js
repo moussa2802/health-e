@@ -44,169 +44,172 @@ exports.handler = async (event, context) => {
     console.log("🚀 [DEBUG] Event body:", event.body);
 
     // Gestion CORS pour Netlify
-  const headers = {
-    "Access-Control-Allow-Origin": "*",
-    "Access-Control-Allow-Headers": "Content-Type",
-    "Access-Control-Allow-Methods": "POST, OPTIONS",
-  };
-
-  // Répondre aux requêtes OPTIONS (preflight)
-  if (event.httpMethod === "OPTIONS") {
-    return {
-      statusCode: 200,
-      headers,
-      body: "",
+    const headers = {
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Headers": "Content-Type",
+      "Access-Control-Allow-Methods": "POST, OPTIONS",
     };
-  }
 
-  // Vérifier que c'est une requête POST
-  if (event.httpMethod !== "POST") {
-    return {
-      statusCode: 405,
-      headers,
-      body: JSON.stringify({ error: "Method not allowed" }),
-    };
-  }
-
-  try {
-    console.log("🔍 [DEBUG] Parsing event body...");
-    const data = JSON.parse(event.body);
-    console.log("🔍 [DEBUG] Request body received:", data);
-    // Vérification des données requises
-    const {
-      amount,
-      bookingId,
-      customerEmail,
-      customerPhone,
-      customerName,
-      professionalId,
-      description = "Consultation médicale",
-    } = data;
-
-    // Validation des données
-    if (!amount || !bookingId || !customerEmail || !customerPhone) {
+    // Répondre aux requêtes OPTIONS (preflight)
+    if (event.httpMethod === "OPTIONS") {
       return {
-        statusCode: 400,
+        statusCode: 200,
         headers,
-        body: JSON.stringify({
-          success: 0,
-          error: "Données manquantes",
-        }),
+        body: "",
       };
     }
 
-    // Préparation des données pour PayTech selon les instructions officielles
-    const paymentData = {
-      item_name: description,
-      item_price: amount,
-      ref_command: `CMD_${bookingId}_${Date.now()}`,
-      command_name: `Paiement consultation ${
-        data.professionalName || "professionnel"
-      }`,
-      currency: "XOF",
-      env: PAYTECH_CONFIG.env,
-      success_url: `${PAYTECH_CONFIG.successUrl}/${bookingId}`,
-      cancel_url: `${PAYTECH_CONFIG.cancelUrl}/${professionalId}`,
-      ipn_url: PAYTECH_CONFIG.ipnUrl,
-      custom_field: JSON.stringify({
-        booking_id: bookingId,
-        customer_email: customerEmail,
-        customer_phone: customerPhone,
-        customer_name: customerName,
-        patientId: currentUser.id, // Pour l'IPN
-        professionalId: paymentData.professionalId,
-        patientName: customerName,
-        professionalName: paymentData.professionalName,
-        date: dateString,
-        startTime: startTime,
-        endTime: endTime,
-        type: consultationType,
-        price: paymentData.amount,
-      }),
-      target_payment: "Orange Money, Wave, Free Money",
-    };
+    // Vérifier que c'est une requête POST
+    if (event.httpMethod !== "POST") {
+      return {
+        statusCode: 405,
+        headers,
+        body: JSON.stringify({ error: "Method not allowed" }),
+      };
+    }
 
-    console.log("🔔 [PAYTECH] Initiating payment for booking:", bookingId);
-    console.log("📦 [DEBUG] Final payment data sent to PayTech:", paymentData);
-    console.log("🔔 [PAYTECH] API URL:", PAYTECH_CONFIG.apiUrl);
-    console.log("🔔 [PAYTECH] Headers:", {
-      API_KEY: PAYTECH_CONFIG.apiKey ? "✅ Présent" : "❌ Manquant",
-      API_SECRET: PAYTECH_CONFIG.apiSecret ? "✅ Présent" : "❌ Manquant",
-      "Content-Type": "application/json",
-    });
+    try {
+      console.log("🔍 [DEBUG] Parsing event body...");
+      const data = JSON.parse(event.body);
+      console.log("🔍 [DEBUG] Request body received:", data);
+      // Vérification des données requises
+      const {
+        amount,
+        bookingId,
+        customerEmail,
+        customerPhone,
+        customerName,
+        professionalId,
+        description = "Consultation médicale",
+      } = data;
 
-    // Appel à l'API PayTech selon les instructions officielles
-    const response = await fetch(PAYTECH_CONFIG.apiUrl, {
-      method: "POST",
-      headers: {
-        API_KEY: PAYTECH_CONFIG.apiKey,
-        API_SECRET: PAYTECH_CONFIG.apiSecret,
+      // Validation des données
+      if (!amount || !bookingId || !customerEmail || !customerPhone) {
+        return {
+          statusCode: 400,
+          headers,
+          body: JSON.stringify({
+            success: 0,
+            error: "Données manquantes",
+          }),
+        };
+      }
+
+      // Préparation des données pour PayTech selon les instructions officielles
+      const paymentData = {
+        item_name: description,
+        item_price: amount,
+        ref_command: `CMD_${bookingId}_${Date.now()}`,
+        command_name: `Paiement consultation ${
+          data.professionalName || "professionnel"
+        }`,
+        currency: "XOF",
+        env: PAYTECH_CONFIG.env,
+        success_url: `${PAYTECH_CONFIG.successUrl}/${bookingId}`,
+        cancel_url: `${PAYTECH_CONFIG.cancelUrl}/${professionalId}`,
+        ipn_url: PAYTECH_CONFIG.ipnUrl,
+        custom_field: JSON.stringify({
+          booking_id: bookingId,
+          customer_email: customerEmail,
+          customer_phone: customerPhone,
+          customer_name: customerName,
+          patientId: data.patientId || "unknown", // Pour l'IPN
+          professionalId: professionalId,
+          patientName: customerName,
+          professionalName: data.professionalName || "Professionnel",
+          date: data.date || new Date().toISOString().split('T')[0],
+          startTime: data.startTime || "00:00",
+          endTime: data.endTime || "01:00",
+          type: data.type || "video",
+          price: amount,
+        }),
+        target_payment: "Orange Money, Wave, Free Money",
+      };
+
+      console.log("🔔 [PAYTECH] Initiating payment for booking:", bookingId);
+      console.log(
+        "📦 [DEBUG] Final payment data sent to PayTech:",
+        paymentData
+      );
+      console.log("🔔 [PAYTECH] API URL:", PAYTECH_CONFIG.apiUrl);
+      console.log("🔔 [PAYTECH] Headers:", {
+        API_KEY: PAYTECH_CONFIG.apiKey ? "✅ Présent" : "❌ Manquant",
+        API_SECRET: PAYTECH_CONFIG.apiSecret ? "✅ Présent" : "❌ Manquant",
         "Content-Type": "application/json",
-      },
-      body: JSON.stringify(paymentData),
-    });
-
-    const responseData = await response.json();
-    console.log(
-      "📩 [DEBUG] Raw response from PayTech:",
-      response.status,
-      response.statusText,
-      responseData
-    );
-
-    if (!response.ok) {
-      console.error("❌ [PAYTECH] API Error:", {
-        status: response.status,
-        statusText: response.statusText,
-        body: responseData,
       });
+
+      // Appel à l'API PayTech selon les instructions officielles
+      const response = await fetch(PAYTECH_CONFIG.apiUrl, {
+        method: "POST",
+        headers: {
+          API_KEY: PAYTECH_CONFIG.apiKey,
+          API_SECRET: PAYTECH_CONFIG.apiSecret,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(paymentData),
+      });
+
+      const responseData = await response.json();
+      console.log(
+        "📩 [DEBUG] Raw response from PayTech:",
+        response.status,
+        response.statusText,
+        responseData
+      );
+
+      if (!response.ok) {
+        console.error("❌ [PAYTECH] API Error:", {
+          status: response.status,
+          statusText: response.statusText,
+          body: responseData,
+        });
+        return {
+          statusCode: 500,
+          headers,
+          body: JSON.stringify({
+            success: 0,
+            error: `Erreur lors de l'initialisation du paiement: ${response.status} ${response.statusText}`,
+          }),
+        };
+      }
+
+      console.log("✅ [PAYTECH] Payment initiated successfully:", responseData);
+
+      // Retourner les données de paiement au frontend selon les instructions officielles
+      return {
+        statusCode: 200,
+        headers,
+        body: JSON.stringify({
+          success: 1,
+          redirect_url: responseData.redirect_url,
+          refCommand: paymentData.ref_command,
+        }),
+      };
+    } catch (error) {
+      console.error("❌ [PAYTECH] Error initiating payment:", error);
+
       return {
         statusCode: 500,
         headers,
         body: JSON.stringify({
           success: 0,
-          error: `Erreur lors de l'initialisation du paiement: ${response.status} ${response.statusText}`,
+          error: "Erreur serveur lors de l'initialisation du paiement",
         }),
       };
     }
-
-    console.log("✅ [PAYTECH] Payment initiated successfully:", responseData);
-
-    // Retourner les données de paiement au frontend selon les instructions officielles
-    return {
-      statusCode: 200,
-      headers,
-      body: JSON.stringify({
-        success: 1,
-        redirect_url: responseData.redirect_url,
-        refCommand: paymentData.ref_command,
-      }),
-    };
-  } catch (error) {
-    console.error("❌ [PAYTECH] Error initiating payment:", error);
-
+  } catch (globalError) {
+    console.error("❌ [PAYTECH] Global error:", globalError);
     return {
       statusCode: 500,
-      headers,
+      headers: {
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Headers": "Content-Type",
+        "Access-Control-Allow-Methods": "POST, OPTIONS",
+      },
       body: JSON.stringify({
         success: 0,
-        error: "Erreur serveur lors de l'initialisation du paiement",
+        error: "Erreur interne du serveur",
       }),
     };
   }
-} catch (globalError) {
-  console.error("❌ [PAYTECH] Global error:", globalError);
-  return {
-    statusCode: 500,
-    headers: {
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Headers': 'Content-Type',
-      'Access-Control-Allow-Methods': 'POST, OPTIONS'
-    },
-    body: JSON.stringify({
-      success: 0,
-      error: "Erreur interne du serveur",
-    }),
-  };
-}
 };

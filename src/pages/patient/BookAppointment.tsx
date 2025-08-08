@@ -602,6 +602,12 @@ const BookAppointment: React.FC = () => {
           professionalId: professional.id,
           professionalName: professional.name,
           description: `Consultation ${consultationType} avec ${professional.name}`,
+          // Données supplémentaires pour l'IPN
+          patientId: currentUser.id,
+          date: selectedDay,
+          startTime: selectedTimeSlot?.time || selectedTime,
+          endTime: "01:00", // Valeur par défaut - 1 heure après
+          type: consultationType,
         };
 
         console.log("🔔 [PAYTECH] Initiating payment with data:", paymentData);
