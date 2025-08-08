@@ -89,6 +89,15 @@ const BookAppointment: React.FC = () => {
   const navigate = useNavigate();
   const database = getDatabase();
 
+  // Rediriger les utilisateurs non connectés vers la page de connexion
+  useEffect(() => {
+    if (!isAuthenticated) {
+      console.log("🔒 User not authenticated, redirecting to login");
+      navigate("/patient");
+      return;
+    }
+  }, [isAuthenticated, navigate]);
+
   const paymentMethods: PaymentMethod[] = [
     {
       id: "mobile",
@@ -265,7 +274,9 @@ const BookAppointment: React.FC = () => {
           availabilityCount: found?.availability?.length || 0,
           hasSlots: found?.availability?.some(
             (avail) =>
-              avail?.slots && Array.isArray(avail.slots) && avail.slots.length > 0
+              avail?.slots &&
+              Array.isArray(avail.slots) &&
+              avail.slots.length > 0
           ),
         });
 
@@ -467,10 +478,10 @@ const BookAppointment: React.FC = () => {
       // Utiliser directement la date du créneau sélectionné
       if (selectedTimeSlot && selectedTimeSlot.date) {
         let dateObj: Date;
-        
+
         if (selectedTimeSlot.date instanceof Date) {
           dateObj = selectedTimeSlot.date;
-        } else if (typeof selectedTimeSlot.date === 'string') {
+        } else if (typeof selectedTimeSlot.date === "string") {
           dateObj = new Date(selectedTimeSlot.date);
         } else {
           // Fallback pour les objets Firestore Timestamp ou autres
@@ -568,7 +579,7 @@ const BookAppointment: React.FC = () => {
         paymentStatus: "pending",
         createdAt: new Date().toISOString(),
       };
-      
+
       const bookingId = await createBooking(tempBookingData);
       console.log("✅ Temporary booking created with ID:", bookingId);
 
@@ -587,10 +598,9 @@ const BookAppointment: React.FC = () => {
 
       // Créer la facture de paiement
       console.log("🔔 [PAYMENT] Creating payment for booking:", bookingId);
-      
+
       // Rediriger vers la page de succès avec l'ID de réservation
       navigate(`/appointment-success/${bookingId}`);
-
     } catch (error) {
       console.error("❌ Error during booking creation:", error);
       setPaymentError(
@@ -667,6 +677,18 @@ const BookAppointment: React.FC = () => {
     console.log("🔄 Opening payment step");
     setShowPaymentStep(true);
   };
+
+  // Ne pas afficher le composant si l'utilisateur n'est pas connecté
+  if (!isAuthenticated) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <div className="flex items-center justify-center h-64">
+          <LoadingSpinner size="lg" />
+          <span className="ml-4 text-lg text-gray-600">Redirection en cours...</span>
+        </div>
+      </div>
+    );
+  }
 
   if (loading || professionalsLoading) {
     return (

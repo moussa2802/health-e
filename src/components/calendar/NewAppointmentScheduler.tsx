@@ -174,6 +174,12 @@ const NewAppointmentScheduler: React.FC<NewAppointmentSchedulerProps> = ({
         return;
       }
 
+      // Skip if user is not authenticated (for public view)
+      if (!currentUser && !isProfessional) {
+        console.log("🔍 [RESERVED DEBUG] User not authenticated, skipping reserved slots fetch");
+        return;
+      }
+
       try {
         console.log(
           "🔍 [RESERVED DEBUG] Loading reserved slots for professional:",
@@ -254,6 +260,12 @@ const NewAppointmentScheduler: React.FC<NewAppointmentSchedulerProps> = ({
   // Load available slots for the selected date
   const loadAvailableSlots = useCallback(async () => {
     if (!selectedDate || !professionalId) return;
+
+    // Skip if user is not authenticated (for public view)
+    if (!currentUser && !isProfessional) {
+      console.log("🔍 [SLOTS DEBUG] User not authenticated, skipping slots fetch");
+      return;
+    }
 
     // Loop detection
     loopDetectionCountRef.current += 1;
