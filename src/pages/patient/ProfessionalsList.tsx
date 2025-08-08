@@ -43,6 +43,7 @@ const ProfessionalsList = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [filteredProfessionals, setFilteredProfessionals] = useState<any[]>([]);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
+  const [realAvailabilities, setRealAvailabilities] = useState<Map<string, any>>(new Map());
 
   // Utiliser le hook useProfessionals avec le filtre de spécialité
   const { professionals, loading, error, refreshProfessionals } =
@@ -78,6 +79,40 @@ const ProfessionalsList = () => {
     setFilteredProfessionals(filtered);
   }, [searchTerm, professionals]);
 
+  // Charger les vraies disponibilités pour chaque professionnel
+  useEffect(() => {
+    const loadRealAvailabilities = async () => {
+      if (filteredProfessionals.length === 0) return;
+
+      console.log("🔍 Loading real availabilities for", filteredProfessionals.length, "professionals");
+      
+      const availabilityPromises = filteredProfessionals.map(async (professional) => {
+        try {
+          const availability = await fetchRealAvailability(professional.id);
+          return { professionalId: professional.id, availability };
+        } catch (error) {
+          console.error(`Error loading availability for ${professional.name}:`, error);
+          return { 
+            professionalId: professional.id, 
+            availability: { upcomingDays: [], totalDays: 0, nextAvailableDay: null } 
+          };
+        }
+      });
+
+      const results = await Promise.all(availabilityPromises);
+      
+      const newAvailabilities = new Map();
+      results.forEach(({ professionalId, availability }) => {
+        newAvailabilities.set(professionalId, availability);
+      });
+
+      setRealAvailabilities(newAvailabilities);
+      console.log("✅ Real availabilities loaded for", results.length, "professionals");
+    };
+
+    loadRealAvailabilities();
+  }, [filteredProfessionals]);
+
   const getServiceColors = () => {
     return specialty === "mental"
       ? { primary: "blue", accent: "teal" }
@@ -96,55 +131,87 @@ const ProfessionalsList = () => {
     return Array.isArray(arr) ? arr : [];
   };
 
-  // Fonction pour calculer les disponibilités à venir
-  const calculateUpcomingAvailability = (availability: any[]) => {
-    if (!Array.isArray(availability) || availability.length === 0) {
-      return { upcomingDays: [], totalDays: 0, nextAvailableDay: null };
-    }
+  // Fonction pour récupérer les vraies disponibilités depuis calendar_events
+  const fetchRealAvailability = async (professionalId: string) => {
+    try {
+      // Import dynamique pour éviter les erreurs côté serveur
+      const { getFirestoreInstance } = await import("../../utils/firebase");
+      const { collection, query, where, getDocs, startOfDay, addDays } = await import("firebase/firestore");
+      const { format, addMonths } = await import("date-fns");
 
-    const today = new Date();
-    const dayNames = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
-    const todayDayName = dayNames[today.getDay()];
-    
-    // Filtrer les disponibilités valides (avec des créneaux)
-    const validAvailability = availability.filter((avail: any) => 
-      avail?.day && avail?.slots && Array.isArray(avail.slots) && avail.slots.length > 0
-    );
-
-    if (validAvailability.length === 0) {
-      return { upcomingDays: [], totalDays: 0, nextAvailableDay: null };
-    }
-
-    // Calculer les prochaines 4 semaines pour trouver les disponibilités
-    const upcomingDays: string[] = [];
-    let nextAvailableDay: string | null = null;
-
-    for (let i = 0; i < 28; i++) {
-      const futureDate = new Date(today);
-      futureDate.setDate(today.getDate() + i);
-      const futureDayName = dayNames[futureDate.getDay()];
-      
-      // Vérifier si ce jour est dans les disponibilités
-      const isAvailable = validAvailability.some((avail: any) => 
-        avail.day.toLowerCase() === futureDayName.toLowerCase()
-      );
-      
-      if (isAvailable) {
-        upcomingDays.push(futureDayName);
-        if (!nextAvailableDay) {
-          nextAvailableDay = futureDayName;
-        }
+      const db = getFirestoreInstance();
+      if (!db) {
+        console.warn("Firestore not available for availability check");
+        return { upcomingDays: [], totalDays: 0, nextAvailableDay: null };
       }
-    }
 
-    // Dédupliquer les jours
-    const uniqueUpcomingDays = [...new Set(upcomingDays)];
-    
-    return {
-      upcomingDays: uniqueUpcomingDays,
-      totalDays: uniqueUpcomingDays.length,
-      nextAvailableDay: nextAvailableDay
-    };
+      const today = new Date();
+      const endDate = addMonths(today, 2); // Chercher sur 2 mois
+
+      // Requête pour récupérer tous les créneaux disponibles du professionnel
+      const eventsRef = collection(db, "calendar_events");
+      const availabilityQuery = query(
+        eventsRef,
+        where("professionalId", "==", professionalId),
+        where("isAvailable", "==", true),
+        where("start", ">=", today),
+        where("start", "<=", endDate)
+      );
+
+      const querySnapshot = await getDocs(availabilityQuery);
+      const availableSlots: { date: Date; time: string }[] = [];
+
+      querySnapshot.forEach((doc) => {
+        const data = doc.data();
+        if (data.start && data.start.toDate) {
+          const startDate = data.start.toDate();
+          availableSlots.push({
+            date: startDate,
+            time: format(startDate, "HH:mm"),
+          });
+        }
+      });
+
+      if (availableSlots.length === 0) {
+        return { upcomingDays: [], totalDays: 0, nextAvailableDay: null };
+      }
+
+      // Grouper par jour et calculer les statistiques
+      const dayNames = [
+        "Dimanche",
+        "Lundi", 
+        "Mardi",
+        "Mercredi",
+        "Jeudi",
+        "Vendredi",
+        "Samedi",
+      ];
+
+      const availableDaysSet = new Set<string>();
+      let nextAvailableDay: string | null = null;
+
+      availableSlots.forEach((slot) => {
+        const dayName = dayNames[slot.date.getDay()];
+        availableDaysSet.add(dayName);
+        
+        // Déterminer le prochain jour disponible
+        if (!nextAvailableDay) {
+          nextAvailableDay = dayName;
+        }
+      });
+
+      const upcomingDays = Array.from(availableDaysSet);
+
+      return {
+        upcomingDays,
+        totalDays: upcomingDays.length,
+        nextAvailableDay,
+        totalSlots: availableSlots.length,
+      };
+    } catch (error) {
+      console.error("Error fetching real availability:", error);
+      return { upcomingDays: [], totalDays: 0, nextAvailableDay: null };
+    }
   };
 
   if (loading) {
@@ -292,8 +359,13 @@ const ProfessionalsList = () => {
             );
             const isAvailableNow = false; // Désactivé temporairement
 
-            // Calculer les disponibilités à venir
-            const availabilityInfo = calculateUpcomingAvailability(professionalAvailability);
+            // Utiliser les vraies disponibilités si disponibles, sinon fallback
+            const availabilityInfo = realAvailabilities.get(professional.id) || {
+              upcomingDays: [],
+              totalDays: 0,
+              nextAvailableDay: "Chargement...",
+              totalSlots: 0,
+            };
 
             // Vérifier si le professionnel est disponible aujourd'hui
             const today = new Date().toLocaleDateString("fr-FR", {
@@ -419,9 +491,13 @@ const ProfessionalsList = () => {
                         />
                         <span className="text-sm text-gray-600">
                           {availabilityInfo.totalDays} jour
-                          {availabilityInfo.totalDays > 1 ? "s" : ""}{" "}
-                          disponible
+                          {availabilityInfo.totalDays > 1 ? "s" : ""} disponible
                           {availabilityInfo.totalDays > 1 ? "s" : ""}
+                          {availabilityInfo.totalSlots && availabilityInfo.totalSlots > 0 && (
+                            <span className="text-xs text-green-600 ml-1">
+                              ({availabilityInfo.totalSlots} créneaux)
+                            </span>
+                          )}
                         </span>
                       </div>
                     </div>
