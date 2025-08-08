@@ -1,9 +1,5 @@
 import React, { useState, useEffect } from "react";
-import {
-  useSearchParams,
-  useParams,
-  Link,
-} from "react-router-dom";
+import { useSearchParams, useParams, Link } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
 import {
   CheckCircle,
@@ -45,17 +41,20 @@ const AppointmentSuccess: React.FC = () => {
       }
 
       // Vérifier les paramètres PayTech dans l'URL
-      const paytechStatus = searchParams.get('status');
-      const paytechRef = searchParams.get('ref_command');
-      
+      const paytechStatus = searchParams.get("status");
+      const paytechRef = searchParams.get("ref_command");
+
       if (paytechStatus && paytechRef) {
-        console.log('🔔 [PAYTECH] Payment callback received:', { paytechStatus, paytechRef });
-        
+        console.log("🔔 [PAYTECH] Payment callback received:", {
+          paytechStatus,
+          paytechRef,
+        });
+
         // Si PayTech confirme le paiement, mettre à jour le statut
-        if (paytechStatus === 'success') {
-          setPaymentStatus('confirmed');
-        } else if (paytechStatus === 'cancelled') {
-          setPaymentStatus('cancelled');
+        if (paytechStatus === "success") {
+          setPaymentStatus("confirmed");
+        } else if (paytechStatus === "cancelled") {
+          setPaymentStatus("cancelled");
         }
       }
 

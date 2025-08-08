@@ -33,6 +33,7 @@ import LoadingSpinner from "../../components/ui/LoadingSpinner";
 import { getDatabase, ref, set } from "firebase/database";
 import { createInstantConsultationRequest } from "../../services/jitsiService";
 import { ensureFirestoreReady } from "../../utils/firebase";
+import { paytechService } from "../../services/paytechService";
 
 type ConsultationType = "video" | "audio";
 
@@ -599,8 +600,40 @@ const BookAppointment: React.FC = () => {
       // Créer la facture de paiement
       console.log("🔔 [PAYMENT] Creating payment for booking:", bookingId);
 
-      // Rediriger vers la page de succès avec l'ID de réservation
-      navigate(`/appointment-success/${bookingId}`);
+      // Initier le paiement PayTech
+      try {
+        const paymentData = {
+          amount: totalAmount,
+          bookingId,
+          customerEmail: currentUser.email || '',
+          customerPhone: currentUser.phoneNumber || '',
+          customerName: currentUser.name || 'Patient',
+          professionalId: professional.id,
+          professionalName: professional.name,
+          description: `Consultation ${consultationType} avec ${professional.name}`
+        };
+
+        console.log('🔔 [PAYTECH] Initiating payment with data:', paymentData);
+        
+        // Valider les données de paiement
+        if (!paytechService.validatePaymentData(paymentData)) {
+          throw new Error('Données de paiement invalides');
+        }
+
+        // Initier le paiement
+        const response = await paytechService.initiatePayment(paymentData);
+        
+        console.log('✅ [PAYTECH] Payment initiated successfully:', response);
+        
+        // Rediriger vers PayTech
+        paytechService.redirectToPayment(response.redirect_url);
+        
+      } catch (paymentError) {
+        console.error('❌ [PAYTECH] Payment error:', paymentError);
+        
+        // En cas d'erreur de paiement, rediriger vers la page de succès avec un message d'erreur
+        navigate(`/appointment-success/${bookingId}?payment_error=true`);
+      }
     } catch (error) {
       console.error("❌ Error during booking creation:", error);
       setPaymentError(
@@ -1270,7 +1303,7 @@ const BookAppointment: React.FC = () => {
                   ) : (
                     <>
                       <CreditCard className="h-5 w-5 mr-2" />
-                      Payer avec PayDunya
+                      Payer avec PayTech
                     </>
                   )}
                 </button>
