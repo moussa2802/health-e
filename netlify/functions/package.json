@@ -4,6 +4,8 @@
   "description": "Netlify Functions for payment processing",
   "main": "index.js",
   "dependencies": {
-    "firebase-admin": "^13.4.0"
+    "firebase-admin": "^12.0.0",
+    "firebase-functions": "^4.8.0",
+    "node-fetch": "^2.7.0"
   }
 }
