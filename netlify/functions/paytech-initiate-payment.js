@@ -11,6 +11,14 @@ const PAYTECH_CONFIG = {
   ipnUrl: process.env.PAYTECH_IPN_URL || 'https://health-e.sn/.netlify/functions/paytech-ipn'
 };
 
+// Vérification des variables d'environnement
+console.log("🔍 [DEBUG] PAYTECH_API_KEY:", PAYTECH_CONFIG.apiKey ? "✅ OK" : "❌ Manquante");
+console.log("🔍 [DEBUG] PAYTECH_API_SECRET:", PAYTECH_CONFIG.apiSecret ? "✅ OK" : "❌ Manquante");
+console.log("🔍 [DEBUG] PAYTECH_ENV:", PAYTECH_CONFIG.env);
+console.log("🔍 [DEBUG] PAYTECH_SUCCESS_URL:", PAYTECH_CONFIG.successUrl);
+console.log("🔍 [DEBUG] PAYTECH_CANCEL_URL:", PAYTECH_CONFIG.cancelUrl);
+console.log("🔍 [DEBUG] PAYTECH_IPN_URL:", PAYTECH_CONFIG.ipnUrl);
+
 /**
  * Fonction Netlify pour initier un paiement PayTech
  * Cette fonction est appelée depuis le frontend pour créer une transaction
@@ -87,7 +95,13 @@ exports.handler = async (event, context) => {
     };
 
     console.log('🔔 [PAYTECH] Initiating payment for booking:', bookingId);
-    console.log('🔔 [PAYTECH] Payment data:', paymentData);
+    console.log('🔔 [PAYTECH] Payment data:', JSON.stringify(paymentData, null, 2));
+    console.log('🔔 [PAYTECH] API URL:', PAYTECH_CONFIG.apiUrl);
+    console.log('🔔 [PAYTECH] Headers:', {
+      'API_KEY': PAYTECH_CONFIG.apiKey ? '✅ Présent' : '❌ Manquant',
+      'API_SECRET': PAYTECH_CONFIG.apiSecret ? '✅ Présent' : '❌ Manquant',
+      'Content-Type': 'application/json'
+    });
 
     // Appel à l'API PayTech selon les instructions officielles
     const response = await fetch(PAYTECH_CONFIG.apiUrl, {
@@ -103,13 +117,17 @@ exports.handler = async (event, context) => {
     const responseData = await response.json();
 
     if (!response.ok) {
-      console.error('❌ [PAYTECH] API Error:', responseData);
+      console.error('❌ [PAYTECH] API Error:', {
+        status: response.status,
+        statusText: response.statusText,
+        body: responseData
+      });
       return {
         statusCode: 500,
         headers,
         body: JSON.stringify({ 
           success: 0, 
-          error: 'Erreur lors de l\'initialisation du paiement' 
+          error: `Erreur lors de l'initialisation du paiement: ${response.status} ${response.statusText}` 
         })
       };
     }
