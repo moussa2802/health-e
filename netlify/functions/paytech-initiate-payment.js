@@ -16,8 +16,14 @@ const PAYTECH_CONFIG = {
 };
 
 // Vérification des variables d'environnement
-console.log("🔍 [DEBUG] PAYTECH_API_KEY:", PAYTECH_CONFIG.apiKey ? "✅ OK" : "❌ MISSING");
-console.log("🔍 [DEBUG] PAYTECH_API_SECRET:", PAYTECH_CONFIG.apiSecret ? "✅ OK" : "❌ MISSING");
+console.log(
+  "🔍 [DEBUG] PAYTECH_API_KEY:",
+  PAYTECH_CONFIG.apiKey ? "✅ OK" : "❌ MISSING"
+);
+console.log(
+  "🔍 [DEBUG] PAYTECH_API_SECRET:",
+  PAYTECH_CONFIG.apiSecret ? "✅ OK" : "❌ MISSING"
+);
 console.log("🔍 [DEBUG] IPN URL:", PAYTECH_CONFIG.ipnUrl);
 console.log("🔍 [DEBUG] ENV:", PAYTECH_CONFIG.env);
 console.log("🔍 [DEBUG] SUCCESS_URL:", PAYTECH_CONFIG.successUrl);
@@ -30,8 +36,11 @@ console.log("🔍 [DEBUG] CANCEL_URL:", PAYTECH_CONFIG.cancelUrl);
 exports.handler = async (event, context) => {
   console.log("🚀 [DEBUG] Function paytech-initiate-payment called");
   console.log("🚀 [DEBUG] HTTP Method:", event.httpMethod);
-  console.log("🚀 [DEBUG] Event body length:", event.body ? event.body.length : 0);
-  
+  console.log(
+    "🚀 [DEBUG] Event body length:",
+    event.body ? event.body.length : 0
+  );
+
   // Gestion CORS pour Netlify
   const headers = {
     "Access-Control-Allow-Origin": "*",
@@ -126,7 +135,12 @@ exports.handler = async (event, context) => {
     });
 
     const responseData = await response.json();
-    console.log("📩 [DEBUG] Raw response from PayTech:", response.status, response.statusText, responseData);
+    console.log(
+      "📩 [DEBUG] Raw response from PayTech:",
+      response.status,
+      response.statusText,
+      responseData
+    );
 
     if (!response.ok) {
       console.error("❌ [PAYTECH] API Error:", {
