@@ -1,4 +1,3 @@
-import { getFunctions, httpsCallable } from 'firebase/functions';
 import { getAuth } from 'firebase/auth';
 
 // Interface pour les données de paiement
@@ -24,7 +23,6 @@ interface PaymentResponse {
  * Service PayTech pour gérer les paiements
  */
 class PayTechService {
-  private functions = getFunctions();
   private auth = getAuth();
 
   /**
@@ -40,18 +38,27 @@ class PayTechService {
         throw new Error('Utilisateur non authentifié');
       }
 
-      // Appeler la fonction Firebase
-      const initiatePaymentFunction = httpsCallable(this.functions, 'initiatePayment');
-      const result = await initiatePaymentFunction(paymentData);
+      // Appeler la fonction Netlify
+      const response = await fetch('/.netlify/functions/paytech-initiate-payment', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(paymentData),
+      });
 
-      const response = result.data as PaymentResponse;
+      if (!response.ok) {
+        throw new Error(`Erreur HTTP: ${response.status}`);
+      }
 
-      if (response.success !== 1) {
+      const result = await response.json();
+
+      if (result.success !== 1) {
         throw new Error('Échec de l\'initialisation du paiement');
       }
 
-      console.log('✅ [PAYTECH] Payment initiated successfully:', response);
-      return response;
+      console.log('✅ [PAYTECH] Payment initiated successfully:', result);
+      return result;
 
     } catch (error) {
       console.error('❌ [PAYTECH] Error initiating payment:', error);

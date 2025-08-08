@@ -603,9 +603,10 @@ const BookAppointment: React.FC = () => {
       // Initier le paiement PayTech
       try {
         // Utiliser le numéro de téléphone saisi par l'utilisateur si disponible
-        const customerPhone = selectedPaymentMethod === "mobile" && phoneNumber 
-          ? `+221${phoneNumber}` 
-          : currentUser.phoneNumber || "";
+        const customerPhone =
+          selectedPaymentMethod === "mobile" && phoneNumber
+            ? `+221${phoneNumber}`
+            : currentUser.phoneNumber || "";
 
         const paymentData = {
           amount: totalAmount,
@@ -989,21 +990,21 @@ const BookAppointment: React.FC = () => {
               <button
                 onClick={handlePayment}
                 disabled={
-                  isSubmitting || 
+                  isSubmitting ||
                   (selectedPaymentMethod === "mobile" && !phoneNumber.trim())
                 }
                 className={`px-6 py-2 rounded-lg transition-colors flex items-center ${
-                  isSubmitting || (selectedPaymentMethod === "mobile" && !phoneNumber.trim())
+                  isSubmitting ||
+                  (selectedPaymentMethod === "mobile" && !phoneNumber.trim())
                     ? "bg-gray-300 text-gray-500 cursor-not-allowed"
                     : "bg-blue-500 text-white hover:bg-blue-600"
                 }`}
               >
-                {isSubmitting 
-                  ? "Traitement..." 
+                {isSubmitting
+                  ? "Traitement..."
                   : selectedPaymentMethod === "mobile" && !phoneNumber.trim()
                   ? "Saisissez votre numéro de téléphone"
-                  : "Payer et confirmer"
-                }
+                  : "Payer et confirmer"}
               </button>
             </div>
           </div>
