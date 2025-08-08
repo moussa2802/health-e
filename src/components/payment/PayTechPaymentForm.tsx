@@ -59,10 +59,10 @@ const PayTechPaymentForm: React.FC<PayTechPaymentFormProps> = ({
       // Initier le paiement
       const response = await paytechService.initiatePayment(paymentData);
 
-      console.log('✅ [PAYTECH] Payment initiated, redirecting to:', response.paymentUrl);
+      console.log('✅ [PAYTECH] Payment initiated, redirecting to:', response.redirect_url);
 
-      // Rediriger vers la page de paiement PayTech
-      paytechService.redirectToPayment(response.paymentUrl);
+      // Rediriger vers la page de paiement PayTech selon les instructions officielles
+      paytechService.redirectToPayment(response.redirect_url);
 
       // Appeler le callback de succès si défini
       if (onSuccess) {

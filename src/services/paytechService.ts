@@ -13,11 +13,10 @@ interface PaymentData {
   description?: string;
 }
 
-// Interface pour la réponse de paiement
+// Interface pour la réponse de paiement selon les instructions officielles
 interface PaymentResponse {
-  success: boolean;
-  paymentUrl: string;
-  token: string;
+  success: number;
+  redirect_url: string;
   refCommand: string;
 }
 
@@ -47,7 +46,7 @@ class PayTechService {
 
       const response = result.data as PaymentResponse;
 
-      if (!response.success) {
+      if (response.success !== 1) {
         throw new Error('Échec de l\'initialisation du paiement');
       }
 
@@ -61,12 +60,12 @@ class PayTechService {
   }
 
   /**
-   * Rediriger vers la page de paiement PayTech
+   * Rediriger vers la page de paiement PayTech selon les instructions officielles
    */
-  redirectToPayment(paymentUrl: string): void {
+  redirectToPayment(redirectUrl: string): void {
     try {
-      console.log('🔔 [PAYTECH] Redirecting to payment URL:', paymentUrl);
-      window.location.href = paymentUrl;
+      console.log('🔔 [PAYTECH] Redirecting to payment URL:', redirectUrl);
+      window.location.href = redirectUrl;
     } catch (error) {
       console.error('❌ [PAYTECH] Error redirecting to payment:', error);
       throw new Error('Erreur lors de la redirection vers le paiement');
@@ -96,7 +95,7 @@ class PayTechService {
    * Formater le montant pour PayTech (en centimes)
    */
   formatAmount(amount: number): number {
-    // PayTech attend le montant en centimes
+    // PayTech attend le montant en centimes selon les instructions officielles
     return Math.round(amount * 100);
   }
 

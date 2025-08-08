@@ -23,17 +23,15 @@ exports.paytechIpn = functions.https.onRequest(async (req, res) => {
     }
 
     const {
-      token,
+      type_event,
       ref_command,
-      amount,
-      currency,
-      status,
-      message,
+      item_price,
+      payment_method,
       custom_field
     } = req.body;
 
-    // Validation des données reçues
-    if (!token || !ref_command || !status) {
+    // Validation des données reçues selon les instructions officielles
+    if (!type_event || !ref_command || !item_price) {
       console.error('❌ [PAYTECH IPN] Missing required fields');
       return res.status(400).json({ error: 'Missing required fields' });
     }
@@ -49,9 +47,10 @@ exports.paytechIpn = functions.https.onRequest(async (req, res) => {
     const { booking_id, user_id } = customData;
 
     console.log('🔍 [PAYTECH IPN] Processing payment:', {
-      token,
+      type_event,
       ref_command,
-      status,
+      item_price,
+      payment_method,
       booking_id,
       user_id
     });
@@ -62,40 +61,38 @@ exports.paytechIpn = functions.https.onRequest(async (req, res) => {
         const bookingRef = db.collection('bookings').doc(booking_id);
         
         const updateData = {
-          paymentStatus: status,
-          paymentToken: token,
+          paymentStatus: type_event,
           paymentRef: ref_command,
-          paymentAmount: amount,
-          paymentCurrency: currency,
-          paymentMessage: message,
+          paymentAmount: item_price,
+          paymentMethod: payment_method,
           updatedAt: admin.firestore.FieldValue.serverTimestamp()
         };
 
         // Si le paiement est réussi
-        if (status === 'success') {
+        if (type_event === 'sale_complete') {
           updateData.status = 'confirmed';
           updateData.paidAt = admin.firestore.FieldValue.serverTimestamp();
           
           console.log('✅ [PAYTECH IPN] Payment successful for booking:', booking_id);
-        } else if (status === 'failed') {
+        } else if (type_event === 'sale_cancelled') {
           updateData.status = 'cancelled';
-          console.log('❌ [PAYTECH IPN] Payment failed for booking:', booking_id);
+          console.log('❌ [PAYTECH IPN] Payment cancelled for booking:', booking_id);
         }
 
         await bookingRef.update(updateData);
 
         // Envoyer une notification au patient si le paiement est réussi
-        if (status === 'success' && user_id) {
+        if (type_event === 'sale_complete' && user_id) {
           try {
-            await db.collection('notifications').add({
-              userId: user_id,
-              type: 'payment_success',
-              title: 'Paiement confirmé',
-              message: `Votre paiement de ${amount} ${currency} a été confirmé. Votre consultation est confirmée.`,
-              bookingId: booking_id,
-              createdAt: admin.firestore.FieldValue.serverTimestamp(),
-              read: false
-            });
+                          await db.collection('notifications').add({
+                userId: user_id,
+                type: 'payment_success',
+                title: 'Paiement confirmé',
+                message: `Votre paiement de ${item_price} XOF via ${payment_method} a été confirmé. Votre consultation est confirmée.`,
+                bookingId: booking_id,
+                createdAt: admin.firestore.FieldValue.serverTimestamp(),
+                read: false
+              });
           } catch (notificationError) {
             console.warn('⚠️ [PAYTECH IPN] Error sending notification:', notificationError);
           }
@@ -109,12 +106,10 @@ exports.paytechIpn = functions.https.onRequest(async (req, res) => {
 
     // Log de l'événement
     await db.collection('payment_logs').add({
-      token,
+      type_event,
       ref_command,
-      amount,
-      currency,
-      status,
-      message,
+      item_price,
+      payment_method,
       customData,
       receivedAt: admin.firestore.FieldValue.serverTimestamp(),
       source: 'paytech_ipn'

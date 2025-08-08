@@ -1,13 +1,15 @@
 const functions = require('firebase-functions');
 const fetch = require('node-fetch');
 
-// Configuration PayTech
+// Configuration PayTech selon les instructions officielles
 const PAYTECH_CONFIG = {
-  apiUrl: process.env.PAYTECH_API_URL || 'https://paytech.sn/api',
-  merchantId: process.env.PAYTECH_MERCHANT_ID,
-  merchantKey: process.env.PAYTECH_MERCHANT_KEY,
-  currency: 'XOF',
-  env: process.env.PAYTECH_ENV || 'test' // 'test' ou 'prod'
+  apiUrl: 'https://paytech.sn/api/payment/request-payment',
+  apiKey: process.env.PAYTECH_API_KEY,
+  apiSecret: process.env.PAYTECH_API_SECRET,
+  env: process.env.PAYTECH_ENV || 'test',
+  successUrl: process.env.PAYTECH_SUCCESS_URL || 'https://health-e.sn/payment/success',
+  cancelUrl: process.env.PAYTECH_CANCEL_URL || 'https://health-e.sn/payment/cancel',
+  ipnUrl: process.env.PAYTECH_IPN_URL || 'https://health-e.sn/payment/ipn'
 };
 
 /**
@@ -35,17 +37,17 @@ exports.initiatePayment = functions.https.onCall(async (data, context) => {
       throw new functions.https.HttpsError('invalid-argument', 'Données manquantes');
     }
 
-    // Préparation des données pour PayTech
+    // Préparation des données pour PayTech selon les instructions officielles
     const paymentData = {
-      merchant_id: PAYTECH_CONFIG.merchantId,
-      merchant_key: PAYTECH_CONFIG.merchantKey,
-      amount: amount,
-      currency: PAYTECH_CONFIG.currency,
-      ref_command: `BOOKING_${bookingId}_${Date.now()}`,
+      item_name: description,
+      item_price: amount,
+      ref_command: `CMD_${bookingId}_${Date.now()}`,
+      command_name: `Paiement consultation ${data.professionalName || 'professionnel'}`,
+      currency: 'XOF',
       env: PAYTECH_CONFIG.env,
-      success_url: `${process.env.FRONTEND_URL}/appointment-success/${bookingId}`,
-      cancel_url: `${process.env.FRONTEND_URL}/book/${data.professionalId}`,
-      ipn_url: `${process.env.BACKEND_URL}/paytech-ipn`,
+      success_url: PAYTECH_CONFIG.successUrl,
+      cancel_url: PAYTECH_CONFIG.cancelUrl,
+      ipn_url: PAYTECH_CONFIG.ipnUrl,
       custom_field: JSON.stringify({
         booking_id: bookingId,
         customer_email: customerEmail,
@@ -53,22 +55,19 @@ exports.initiatePayment = functions.https.onCall(async (data, context) => {
         customer_name: customerName,
         user_id: context.auth.uid
       }),
-      item_name: description,
-      item_description: `Consultation avec ${data.professionalName || 'professionnel'}`,
-      customer_name: customerName,
-      customer_email: customerEmail,
-      customer_phone_number: customerPhone
+      target_payment: 'Orange Money, Wave, Free Money'
     };
 
     console.log('🔔 [PAYTECH] Initiating payment for booking:', bookingId);
     console.log('🔔 [PAYTECH] Payment data:', paymentData);
 
-    // Appel à l'API PayTech
-    const response = await fetch(`${PAYTECH_CONFIG.apiUrl}/payment/request-payment`, {
+    // Appel à l'API PayTech selon les instructions officielles
+    const response = await fetch(PAYTECH_CONFIG.apiUrl, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json'
+        'API_KEY': PAYTECH_CONFIG.apiKey,
+        'API_SECRET': PAYTECH_CONFIG.apiSecret,
+        'Content-Type': 'application/json'
       },
       body: JSON.stringify(paymentData)
     });
@@ -82,11 +81,10 @@ exports.initiatePayment = functions.https.onCall(async (data, context) => {
 
     console.log('✅ [PAYTECH] Payment initiated successfully:', responseData);
 
-    // Retourner les données de paiement au frontend
+    // Retourner les données de paiement au frontend selon les instructions officielles
     return {
-      success: true,
-      paymentUrl: responseData.payment_url,
-      token: responseData.token,
+      success: 1,
+      redirect_url: responseData.redirect_url,
       refCommand: paymentData.ref_command
     };
 
