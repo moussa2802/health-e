@@ -602,11 +602,16 @@ const BookAppointment: React.FC = () => {
 
       // Initier le paiement PayTech
       try {
+        // Utiliser le numéro de téléphone saisi par l'utilisateur si disponible
+        const customerPhone = selectedPaymentMethod === "mobile" && phoneNumber 
+          ? `+221${phoneNumber}` 
+          : currentUser.phoneNumber || "";
+
         const paymentData = {
           amount: totalAmount,
           bookingId,
           customerEmail: currentUser.email || "",
-          customerPhone: currentUser.phoneNumber || "",
+          customerPhone,
           customerName: currentUser.name || "Patient",
           professionalId: professional.id,
           professionalName: professional.name,
@@ -885,8 +890,7 @@ const BookAppointment: React.FC = () => {
               <div className="mt-6 pt-6 border-t">
                 <h3 className="font-medium mb-4">Informations de paiement</h3>
 
-                {(selectedPaymentMethod === "wave" ||
-                  selectedPaymentMethod === "orange-money") && (
+                {selectedPaymentMethod === "mobile" && (
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Numéro de téléphone
@@ -984,12 +988,22 @@ const BookAppointment: React.FC = () => {
               </button>
               <button
                 onClick={handlePayment}
-                disabled={isSubmitting}
-                className={`px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors flex items-center ${
-                  isSubmitting ? "opacity-50 cursor-not-allowed" : ""
+                disabled={
+                  isSubmitting || 
+                  (selectedPaymentMethod === "mobile" && !phoneNumber.trim())
+                }
+                className={`px-6 py-2 rounded-lg transition-colors flex items-center ${
+                  isSubmitting || (selectedPaymentMethod === "mobile" && !phoneNumber.trim())
+                    ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                    : "bg-blue-500 text-white hover:bg-blue-600"
                 }`}
               >
-                {isSubmitting ? "Traitement..." : "Payer et confirmer"}
+                {isSubmitting 
+                  ? "Traitement..." 
+                  : selectedPaymentMethod === "mobile" && !phoneNumber.trim()
+                  ? "Saisissez votre numéro de téléphone"
+                  : "Payer et confirmer"
+                }
               </button>
             </div>
           </div>
