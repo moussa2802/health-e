@@ -78,7 +78,7 @@ const WelcomeBanner: React.FC<{ name: string }> = ({ name }) => {
 };
 
 // Financial Statistics Card
-const FinancialStats: React.FC<{ revenue: Revenue }> = ({ revenue }) => {
+const FinancialStats: React.FC<{ revenue: Revenue; onHide?: () => void }> = ({ revenue, onHide }) => {
   const stats = [
     {
       title: "Revenus disponibles",
@@ -113,9 +113,22 @@ const FinancialStats: React.FC<{ revenue: Revenue }> = ({ revenue }) => {
           <BarChart3 className="h-6 w-6 text-blue-600" />
           Statistiques financières
         </h2>
-        <button className="px-4 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors text-sm font-medium">
-          Voir détails
-        </button>
+        <div className="flex items-center gap-2">
+          <Link
+            to="/professional/financial-details"
+            className="px-4 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors text-sm font-medium"
+          >
+            Voir détails
+          </Link>
+          {onHide && (
+            <button
+              onClick={onHide}
+              className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium"
+            >
+              Masquer
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -517,6 +530,7 @@ const ProfessionalDashboard: React.FC = () => {
   const { listenForRequests, stopListening } = useConsultationStore();
   const isMountedRef = useRef(true);
   const [showEthicsReminder, setShowEthicsReminder] = useState(true);
+  const [showFinancialStats, setShowFinancialStats] = useState(true);
 
   // Only fetch bookings if user is authenticated
   const { bookings, loading, error, refreshBookings } = useBookings(
@@ -999,7 +1013,12 @@ const ProfessionalDashboard: React.FC = () => {
         )}
 
         {/* Financial Statistics */}
-        <FinancialStats revenue={revenue} />
+        {showFinancialStats && (
+          <FinancialStats 
+            revenue={revenue} 
+            onHide={() => setShowFinancialStats(false)}
+          />
+        )}
 
         {/* Quick Actions */}
         <QuickActions />

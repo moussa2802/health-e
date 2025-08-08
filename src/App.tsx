@@ -62,6 +62,9 @@ const PatientMessages = lazy(() => import("./pages/patient/Messages"));
 const ProfessionalMessages = lazy(
   () => import("./pages/professional/Messages")
 );
+const FinancialDetails = lazy(
+  () => import("./pages/professional/FinancialDetails")
+);
 const ProtectedRoute = lazy(() => import("./components/auth/ProtectedRoute"));
 const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard"));
 const AdminUsers = lazy(() => import("./pages/admin/AdminUsers"));
@@ -369,6 +372,14 @@ function App() {
                         element={
                           <ProtectedRoute userType="professional">
                             <ProfessionalMessages />
+                          </ProtectedRoute>
+                        }
+                      />
+                      <Route
+                        path="/professional/financial-details"
+                        element={
+                          <ProtectedRoute userType="professional">
+                            <FinancialDetails />
                           </ProtectedRoute>
                         }
                       />

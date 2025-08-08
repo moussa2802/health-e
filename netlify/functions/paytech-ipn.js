@@ -137,6 +137,23 @@ exports.handler = async (event, context) => {
           booking_id
         );
 
+        // Créer une transaction de revenu pour le professionnel
+        try {
+          const { createConsultationRevenue } = require('./revenueService.js');
+          await createConsultationRevenue(
+            professionalId,
+            patientId,
+            booking_id,
+            parseFloat(item_price) || price || 0,
+            patientName,
+            professionalName,
+            type
+          );
+          console.log("✅ [PAYTECH IPN] Revenue transaction created for professional");
+        } catch (revenueError) {
+          console.error("❌ [PAYTECH IPN] Error creating revenue transaction:", revenueError);
+        }
+
         // Envoyer une notification au patient
         if (user_id) {
           try {
