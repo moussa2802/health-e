@@ -33,6 +33,7 @@ import {
 } from "../../services/patientService";
 import LoadingSpinner from "../../components/ui/LoadingSpinner";
 import EthicsReminder from "../../components/dashboard/EthicsReminder";
+import UserSupportTickets from "../../components/support/UserSupportTickets";
 
 async function convertImageUrlToBase64(url: string): Promise<string> {
   const response = await fetch(url);
@@ -87,6 +88,7 @@ const PatientDashboard: React.FC = () => {
     null
   );
   const [showEthicsReminder, setShowEthicsReminder] = useState(true);
+  const [showSupport, setShowSupport] = useState(false);
 
   // Fetch medical records
   useEffect(() => {
@@ -864,6 +866,25 @@ const PatientDashboard: React.FC = () => {
                   </div>
                 </div>
               </Link>
+              
+              <button
+                onClick={() => setShowSupport(true)}
+                className="block w-full p-4 border border-gray-200 rounded-xl hover:bg-gradient-to-r hover:from-orange-50 hover:to-red-50 transition-all duration-200 hover:shadow-md group"
+              >
+                <div className="flex items-center text-gray-800">
+                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-orange-500 to-red-600 flex items-center justify-center mr-4 shadow-md group-hover:shadow-lg transition-shadow">
+                    <MessageSquare className="h-6 w-6 text-white" />
+                  </div>
+                  <div>
+                    <span className="font-semibold text-gray-900">
+                      Support et assistance
+                    </span>
+                    <p className="text-sm text-gray-600 mt-1">
+                      Besoin d'aide ? Contactez-nous
+                    </p>
+                  </div>
+                </div>
+              </button>
             </div>
           </div>
 
@@ -1079,6 +1100,26 @@ const PatientDashboard: React.FC = () => {
                   )}
                 </div>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Support Modal */}
+      {showSupport && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col">
+            <div className="p-6 border-b border-gray-200 flex justify-between items-center flex-shrink-0">
+              <h2 className="text-xl font-semibold">Support et assistance</h2>
+              <button
+                onClick={() => setShowSupport(false)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X className="h-6 w-6" />
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto">
+              <UserSupportTickets />
             </div>
           </div>
         </div>

@@ -39,6 +39,7 @@ import {
 } from "../../utils/firebase";
 import EthicsReminder from "../../components/dashboard/EthicsReminder";
 import LoadingSpinner from "../../components/ui/LoadingSpinner";
+import UserSupportTickets from "../../components/support/UserSupportTickets";
 
 // Welcome banner component with improved design
 const WelcomeBanner: React.FC<{ name: string }> = ({ name }) => {
@@ -187,6 +188,13 @@ const QuickActions: React.FC = () => {
       color: "from-orange-500 to-orange-600",
       bgColor: "bg-orange-50",
     },
+    {
+      title: "Support",
+      icon: MessageCircle,
+      action: "support",
+      color: "from-red-500 to-red-600",
+      bgColor: "bg-red-50",
+    },
   ];
 
   return (
@@ -199,6 +207,26 @@ const QuickActions: React.FC = () => {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {actions.map((action, index) => {
           const IconComponent = action.icon;
+          
+          if (action.action === 'support') {
+            return (
+              <button
+                key={index}
+                onClick={() => window.dispatchEvent(new CustomEvent('showSupport'))}
+                className={`${action.bgColor} rounded-xl p-4 text-center hover:scale-105 transition-all duration-200 group cursor-pointer`}
+              >
+                <div
+                  className={`p-3 rounded-lg bg-gradient-to-r ${action.color} inline-block mb-3 group-hover:scale-110 transition-transform`}
+                >
+                  <IconComponent className="h-6 w-6 text-white" />
+                </div>
+                <p className="text-sm font-medium text-gray-700">
+                  {action.title}
+                </p>
+              </button>
+            );
+          }
+          
           return (
             <Link
               key={index}
@@ -528,6 +556,7 @@ const ProfessionalDashboard: React.FC = () => {
   const { listenForRequests, stopListening } = useConsultationStore();
   const isMountedRef = useRef(true);
   const [showEthicsReminder, setShowEthicsReminder] = useState(true);
+  const [showSupport, setShowSupport] = useState(false);
   const [showFinancialStats, setShowFinancialStats] = useState(true);
   const [showBalance, setShowBalance] = useState(true);
 
@@ -552,6 +581,16 @@ const ProfessionalDashboard: React.FC = () => {
       stopListening();
     };
   }, [currentUser?.id, listenForRequests, stopListening]);
+
+  // Écouter l'événement pour afficher le support
+  useEffect(() => {
+    const handleShowSupport = () => setShowSupport(true);
+    window.addEventListener('showSupport', handleShowSupport);
+    
+    return () => {
+      window.removeEventListener('showSupport', handleShowSupport);
+    };
+  }, []);
 
   // Check if ethics reminder should be shown
   useEffect(() => {
@@ -1131,6 +1170,26 @@ const ProfessionalDashboard: React.FC = () => {
                   </button>
                 </div>
               </form>
+            </div>
+          </div>
+        )}
+
+        {/* Support Modal */}
+        {showSupport && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-xl shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col">
+              <div className="p-6 border-b border-gray-200 flex justify-between items-center flex-shrink-0">
+                <h2 className="text-xl font-semibold">Support et assistance</h2>
+                <button
+                  onClick={() => setShowSupport(false)}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <X className="h-6 w-6" />
+                </button>
+              </div>
+              <div className="flex-1 overflow-y-auto">
+                <UserSupportTickets />
+              </div>
             </div>
           </div>
         )}
