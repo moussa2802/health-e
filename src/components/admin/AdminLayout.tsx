@@ -47,6 +47,38 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
   >([]);
   const [allNotifications, setAllNotifications] = useState<Notification[]>([]);
 
+  // Fonction pour obtenir le titre de la page basé sur l'URL
+  const getPageTitle = () => {
+    const path = window.location.pathname;
+    const titles: { [key: string]: string } = {
+      '/admin/dashboard': language === 'fr' ? 'Tableau de bord' : 'Dashboard',
+      '/admin/users': language === 'fr' ? 'Gestion des utilisateurs' : 'User Management',
+      '/admin/patients': language === 'fr' ? 'Gestion des patients' : 'Patient Management',
+      '/admin/appointments': language === 'fr' ? 'Gestion des consultations' : 'Appointment Management',
+      '/admin/statistics': language === 'fr' ? 'Statistiques' : 'Statistics',
+      '/admin/content': language === 'fr' ? 'Gestion du contenu' : 'Content Management',
+      '/admin/messages': language === 'fr' ? 'Messagerie' : 'Messaging',
+      '/admin/support': language === 'fr' ? 'Support et modération' : 'Support & Moderation',
+    };
+    return titles[path] || (language === 'fr' ? 'Administration' : 'Administration');
+  };
+
+  // Fonction pour obtenir la description de la page
+  const getPageDescription = () => {
+    const path = window.location.pathname;
+    const descriptions: { [key: string]: string } = {
+      '/admin/dashboard': language === 'fr' ? 'Vue d\'ensemble de la plateforme Health-e' : 'Overview of the Health-e platform',
+      '/admin/users': language === 'fr' ? 'Gérez les comptes utilisateurs et leurs permissions' : 'Manage user accounts and their permissions',
+      '/admin/patients': language === 'fr' ? 'Suivez et gérez les dossiers patients' : 'Track and manage patient records',
+      '/admin/appointments': language === 'fr' ? 'Surveillez et gérez les consultations' : 'Monitor and manage consultations',
+      '/admin/statistics': language === 'fr' ? 'Analysez les données et performances de la plateforme' : 'Analyze platform data and performance',
+      '/admin/content': language === 'fr' ? 'Modérez et gérez le contenu de la plateforme' : 'Moderate and manage platform content',
+      '/admin/messages': language === 'fr' ? 'Communiquez avec les utilisateurs et professionnels' : 'Communicate with users and professionals',
+      '/admin/support': language === 'fr' ? 'Assistez les utilisateurs et gérez les signalements' : 'Assist users and manage reports',
+    };
+    return descriptions[path] || (language === 'fr' ? 'Interface d\'administration de Health-e' : 'Health-e administration interface');
+  };
+
   const handleLogout = () => {
     console.log("🔄 [ADMIN DEBUG] Starting admin logout");
 
@@ -290,7 +322,27 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
             sidebarOpen ? "ml-64" : "ml-0"
           }`}
         >
-          {children}
+          {/* Page Header */}
+          <div className="bg-white border-b border-gray-200 px-6 py-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900">
+                  {getPageTitle()}
+                </h1>
+                <p className="mt-1 text-sm text-gray-500">
+                  {getPageDescription()}
+                </p>
+              </div>
+              <div className="flex items-center space-x-3">
+                {/* Actions spécifiques à la page peuvent être ajoutées ici */}
+              </div>
+            </div>
+          </div>
+          
+          {/* Page Content */}
+          <div className="p-6">
+            {children}
+          </div>
         </main>
       </div>
 

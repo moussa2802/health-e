@@ -8,7 +8,7 @@ import {
   BarChart2, 
   FileText, 
   MessageSquare,
-  Share2
+  Users2
 } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
 
@@ -56,16 +56,14 @@ const AdminSidebar = () => {
       path: '/admin/support', 
       icon: MessageSquare, 
       label: language === 'fr' ? 'Support' : 'Support' 
-    }
-  ];
-
-  // Item externe pour Health-eShare
-  const externalItems = [
+    },
+    // Item externe pour Health-eShare intégré dans le menu principal
     {
-      href: 'https://health-eshare.netlify.app/',
-      icon: Share2,
+      path: 'https://health-eshare.netlify.app/',
+      icon: Users2,
       label: language === 'fr' ? 'Collaborateurs' : 'Collaborators',
-      external: true
+      external: true,
+      highlight: true
     }
   ];
 
@@ -73,44 +71,54 @@ const AdminSidebar = () => {
     <aside className="h-full pt-16">
       <nav className="mt-8">
         <ul className="space-y-2 px-4">
-          {menuItems.map(({ path, icon: Icon, label }) => (
-            <li key={path}>
-              <Link
-                to={path}
-                className={`flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ${
-                  location.pathname === path
-                    ? 'bg-blue-50 text-blue-600'
-                    : 'text-gray-600 hover:bg-gray-50'
-                }`}
-              >
-                <Icon className="h-5 w-5" />
-                <span>{label}</span>
-              </Link>
-            </li>
-          ))}
-          
-          {/* Séparateur pour les liens externes */}
-          <div className="border-t border-gray-200 my-4"></div>
-          
-          {/* Liens externes */}
-          {externalItems.map(({ href, icon: Icon, label, external }) => (
-            <li key={href}>
-              <a
-                href={href}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors text-gray-600 hover:bg-gray-50"
-              >
-                <Icon className="h-5 w-5" />
-                <span>{label}</span>
-                {external && (
-                  <svg className="h-4 w-4 ml-auto text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                  </svg>
-                )}
-              </a>
-            </li>
-          ))}
+          {menuItems.map(({ path, icon: Icon, label, external, highlight }) => {
+            // Vérifier si c'est un lien externe
+            const isExternal = external && path.startsWith('http');
+            
+            if (isExternal) {
+              return (
+                <li key={path}>
+                  <a
+                    href={path}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={`flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ${
+                      highlight 
+                        ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white hover:from-blue-600 hover:to-blue-700 shadow-md' 
+                        : 'text-gray-600 hover:bg-gray-50'
+                    }`}
+                  >
+                    <Icon className={`h-5 w-5 ${highlight ? 'text-white' : ''}`} />
+                    <span className="font-medium">{label}</span>
+                    <svg className="h-4 w-4 ml-auto text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                    </svg>
+                    {highlight && (
+                      <span className="ml-2 px-2 py-1 bg-white bg-opacity-20 rounded-full text-xs font-medium">
+                        Nouveau
+                      </span>
+                    )}
+                  </a>
+                </li>
+              );
+            }
+            
+            return (
+              <li key={path}>
+                <Link
+                  to={path}
+                  className={`flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ${
+                    location.pathname === path
+                      ? 'bg-blue-50 text-blue-600'
+                      : 'text-gray-600 hover:bg-gray-50'
+                  }`}
+                >
+                  <Icon className="h-5 w-5" />
+                  <span>{label}</span>
+                </Link>
+              </li>
+            );
+          })}
         </ul>
       </nav>
     </aside>
