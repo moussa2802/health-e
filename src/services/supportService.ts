@@ -26,8 +26,8 @@ export interface SupportTicket {
   category: 'technical' | 'billing' | 'account' | 'consultation' | 'other';
   createdAt: Timestamp;
   updatedAt: Timestamp;
-  assignedTo?: string;
-  adminNotes?: string;
+  assignedTo?: string | null;
+  adminNotes?: string | null;
 }
 
 export interface SupportMessage {
@@ -63,8 +63,8 @@ export async function createSupportTicket(
       priority,
       status: 'open',
       category,
-      assignedTo: undefined,
-      adminNotes: undefined,
+      assignedTo: null,
+      adminNotes: null,
     };
 
     const docRef = await addDoc(collection(db, 'supportTickets'), {
@@ -178,7 +178,7 @@ export async function getTicketMessages(ticketId: string): Promise<SupportMessag
 export async function updateTicketStatus(
   ticketId: string, 
   status: SupportTicket['status'],
-  adminNotes?: string
+  adminNotes?: string | null
 ): Promise<void> {
   try {
     const updateData: Partial<SupportTicket> = {

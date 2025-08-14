@@ -147,6 +147,41 @@ service cloud.firestore {
           get(/databases/$(database)/documents/users/$(request.auth.uid)).data.type == 'admin'));
     }
     
+    // Règles pour les tickets de support
+    match /supportTickets/{ticketId} {
+      // Lecture : par l'utilisateur qui a créé le ticket OU admin
+      allow read: if request.auth != null && 
+        (resource.data.userId == request.auth.uid ||
+         (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.type == 'admin'));
+      
+      // Création : par tous les utilisateurs authentifiés
+      allow create: if request.auth != null;
+      
+      // Mise à jour : par l'utilisateur qui a créé le ticket OU admin
+      allow update: if request.auth != null && 
+        (resource.data.userId == request.auth.uid ||
+         (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.type == 'admin'));
+    }
+    
+    // Règles pour les messages de support
+    match /supportMessages/{messageId} {
+      // Lecture : par l'utilisateur qui a créé le ticket associé OU admin
+      allow read: if request.auth != null && 
+        (exists(/databases/$(database)/documents/supportTickets/$(resource.data.ticketId)) &&
+         (get(/databases/$(database)/documents/supportTickets/$(resource.data.ticketId)).data.userId == request.auth.uid ||
+          (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+           get(/databases/$(database)/documents/users/$(request.auth.uid)).data.type == 'admin')));
+      
+      // Création : par l'utilisateur qui a créé le ticket associé OU admin
+      allow create: if request.auth != null && 
+        (exists(/databases/$(database)/documents/supportTickets/$(resource.data.ticketId)) &&
+         (get(/databases/$(database)/documents/supportTickets/$(resource.data.ticketId)).data.userId == request.auth.uid ||
+          (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+           get(/databases/$(database)/documents/users/$(request.auth.uid)).data.type == 'admin')));
+    }
+    
     // 🛡️ ADMIN — accès basé sur le type dans Firestore (PLACÉ À LA FIN)
     match /{document=**} {
       allow read, write: if request.auth != null &&
