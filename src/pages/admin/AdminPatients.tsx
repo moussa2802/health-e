@@ -189,7 +189,6 @@ const AdminPatients: React.FC = () => {
       <div className="p-6">
         <div className="flex justify-between items-center mb-6">
           <div>
-            <h1 className="text-2xl font-bold">Gestion des patients</h1>
             <p className="text-gray-600">
               {filteredPatients.length} patient{filteredPatients.length > 1 ? 's' : ''} 
               {patients.length !== filteredPatients.length && ` sur ${patients.length} au total`}

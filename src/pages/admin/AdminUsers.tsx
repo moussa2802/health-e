@@ -238,7 +238,6 @@ console.log('✅ Liste des professionnels chargés :', professionals);
       <div className="p-6">
         <div className="flex justify-between items-center mb-6">
           <div>
-            <h1 className="text-2xl font-bold">Gestion des utilisateurs</h1>
             <p className="text-gray-600">
               {filteredUsers.length} utilisateur{filteredUsers.length > 1 ? 's' : ''} 
               {users.length !== filteredUsers.length && ` sur ${users.length} au total`}
