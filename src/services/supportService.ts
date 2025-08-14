@@ -11,7 +11,7 @@ import {
   Timestamp,
   getDoc
 } from 'firebase/firestore';
-import { db } from '../config/firebase';
+import { db } from '../utils/firebase';
 
 export interface SupportTicket {
   id?: string;
