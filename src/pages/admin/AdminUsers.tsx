@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Search, Download, User, Shield, ShieldCheck, Trash2 } from 'lucide-react';
 import AdminLayout from '../../components/admin/AdminLayout';
 
@@ -36,28 +36,29 @@ const AdminUsers: React.FC = () => {
     fetchData();
   }, []);
 
-  const fetchData = useCallback(async () => {
+  const fetchData = async () => {
     try {
       setLoading(true);
       setError(null);
       
-      const { collection, getDocs } = await import('firebase/firestore');
+      const { collection, getDocs, query, where } = await import('firebase/firestore');
       const { getFirestoreInstance } = await import('../../utils/firebase');
       const db = getFirestoreInstance();
       
       if (db) {
-        const [usersSnapshot, professionalsSnapshot] = await Promise.all([
-          getDocs(collection(db, 'users')),
-          getDocs(collection(db, 'users'))
-        ]);
-        
+        // Charger tous les utilisateurs
+        const usersSnapshot = await getDocs(collection(db, 'users'));
         const usersData = usersSnapshot.docs.map((doc) => ({
           id: doc.id,
           ...doc.data()
         })) as User[];
         
+        // Charger les professionnels depuis la collection users
+        const professionalsQuery = query(collection(db, 'users'), where('type', '==', 'professional'));
+        const professionalsSnapshot = await getDocs(professionalsQuery);
         const professionalsData = professionalsSnapshot.docs.map((doc) => ({
           id: doc.id,
+          userId: doc.id,
           ...doc.data()
         })) as Professional[];
         
@@ -75,10 +76,10 @@ const AdminUsers: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, []);
+  };
 
-  // Filtrer les utilisateurs de manière simple et directe
-  const getFilteredUsers = useCallback(() => {
+  // Filtrer les utilisateurs de manière simple
+  const getFilteredUsers = () => {
     let filtered = [...users];
 
     // Filtre par recherche (nom, email, téléphone)
@@ -96,13 +97,13 @@ const AdminUsers: React.FC = () => {
     }
 
     return filtered;
-  }, [users, searchTerm, selectedType]);
+  };
 
-  const getProfessionalInfo = useCallback((userId: string): Professional | null => {
+  const getProfessionalInfo = (userId: string): Professional | null => {
     return professionals.find(prof => prof.userId === userId) || null;
-  }, [professionals]);
+  };
 
-  const handleUpdateStatus = useCallback(async (userId: string, isActive: boolean) => {
+  const handleUpdateStatus = async (userId: string, isActive: boolean) => {
     try {
       setActionLoading(userId);
       
@@ -122,9 +123,9 @@ const AdminUsers: React.FC = () => {
     } finally {
       setActionLoading(null);
     }
-  }, [fetchData]);
+  };
 
-  const handleProfessionalApproval = useCallback(async (userId: string, isApproved: boolean) => {
+  const handleProfessionalApproval = async (userId: string, isApproved: boolean) => {
     try {
       setActionLoading(userId);
       
@@ -143,9 +144,9 @@ const AdminUsers: React.FC = () => {
     } finally {
       setActionLoading(null);
     }
-  }, [fetchData]);
+  };
 
-  const handleDeleteUser = useCallback(async (userId: string) => {
+  const handleDeleteUser = async (userId: string) => {
     if (!confirm('Êtes-vous sûr de vouloir supprimer cet utilisateur ?')) {
       return;
     }
@@ -166,9 +167,9 @@ const AdminUsers: React.FC = () => {
     } finally {
       setActionLoading(null);
     }
-  }, [fetchData]);
+  };
 
-  const handleExport = useCallback(() => {
+  const handleExport = () => {
     try {
       const filtered = getFilteredUsers();
       const csvContent = [
@@ -196,7 +197,7 @@ const AdminUsers: React.FC = () => {
       console.error('Erreur lors de l\'export:', error);
       alert('Erreur lors de l\'export');
     }
-  }, [getFilteredUsers]);
+  };
 
   const getUserTypeIcon = (type: string) => {
     switch (type) {
@@ -421,17 +422,17 @@ const AdminUsers: React.FC = () => {
                               )}
                             </button>
 
-                            {user.type === 'professional' && professionalInfo && (
+                            {user.type === 'professional' && (
                               <button
-                                onClick={() => handleProfessionalApproval(user.id, !professionalInfo.isApproved)}
+                                onClick={() => handleProfessionalApproval(user.id, !(professionalInfo?.isApproved || false))}
                                 disabled={actionLoading === user.id}
                                 className={`px-3 py-1 rounded text-xs font-medium ${
-                                  professionalInfo.isApproved 
+                                  (professionalInfo?.isApproved || false)
                                     ? 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200' 
                                     : 'bg-blue-100 text-blue-700 hover:bg-blue-200'
                                 } disabled:opacity-50`}
                               >
-                                {actionLoading === user.id ? '...' : (professionalInfo.isApproved ? 'Révoquer' : 'Approuver')}
+                                {actionLoading === user.id ? '...' : ((professionalInfo?.isApproved || false) ? 'Révoquer' : 'Approuver')}
                               </button>
                             )}
 
