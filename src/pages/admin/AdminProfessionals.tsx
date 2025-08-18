@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Search,
   Download,
@@ -404,14 +404,14 @@ const AdminProfessionals: React.FC = () => {
     );
   }
 
-  // Calculer les professionnels filtrés avec useMemo pour éviter les re-calculs inutiles
-  const filteredProfessionals = useMemo(() => {
+  // Calculer les professionnels filtrés de manière simple et stable
+  const filteredProfessionals = (() => {
     // Protection contre les données instables
     if (!professionals || professionals.length === 0) {
       return [];
     }
     return getFilteredProfessionals();
-  }, [professionals, searchTerm, selectedSpecialty, selectedStatus]);
+  })();
 
   return (
     <AdminLayout>
@@ -508,7 +508,12 @@ const AdminProfessionals: React.FC = () => {
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
                   {filteredProfessionals.map((professional, index) => (
-                    <tr key={`${professional.userId || professional.id || index}-${professional.email}`} className="hover:bg-gray-50">
+                    <tr
+                      key={`${
+                        professional.userId || professional.id || index
+                      }-${professional.email}`}
+                      className="hover:bg-gray-50"
+                    >
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
                           <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center mr-3">
