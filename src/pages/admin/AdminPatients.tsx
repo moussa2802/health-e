@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Search, Download, User, Phone, Mail, Calendar, MapPin, FileText, Eye, Edit2, Trash2 } from 'lucide-react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Search, Download, User, Calendar, Phone, Mail } from 'lucide-react';
 import AdminLayout from '../../components/admin/AdminLayout';
 
 interface Patient {
@@ -7,153 +7,89 @@ interface Patient {
   name: string;
   email: string;
   phone?: string;
+  dateOfBirth?: any;
   gender?: string;
-  age?: number;
-  medicalHistory?: string;
   createdAt?: any;
-}
-
-interface PatientFilters {
-  gender: string;
-  dateRange: string;
-  status: string;
 }
 
 const AdminPatients: React.FC = () => {
   const [patients, setPatients] = useState<Patient[]>([]);
-  const [filteredPatients, setFilteredPatients] = useState<Patient[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
-  const [filters, setFilters] = useState<PatientFilters>({
-    gender: '',
-    status: '',
-    dateRange: '',
-  });
+  const [selectedGender, setSelectedGender] = useState('all');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Charger les données une seule fois au montage
   useEffect(() => {
     fetchPatients();
   }, []);
 
-  useEffect(() => {
-    if (patients.length > 0) {
-      applyFilters();
-    }
-  }, [patients, searchTerm, filters]);
-
-  const fetchPatients = async () => {
+  const fetchPatients = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
       
-      // Simuler un délai pour éviter les problèmes de rendu
-      await new Promise(resolve => setTimeout(resolve, 100));
-      
-      const { collection, getDocs } = await import('firebase/firestore');
+      const { collection, getDocs, query, where } = await import('firebase/firestore');
       const { getFirestoreInstance } = await import('../../utils/firebase');
       const db = getFirestoreInstance();
       
       if (db) {
-        const querySnapshot = await getDocs(collection(db, 'patients'));
-        const results = querySnapshot.docs.map((doc) => ({
+        const patientsQuery = query(collection(db, 'users'), where('type', '==', 'patient'));
+        const snapshot = await getDocs(patientsQuery);
+        
+        const patientsData = snapshot.docs.map((doc) => ({
           id: doc.id,
           ...doc.data()
         })) as Patient[];
         
-        setPatients(results);
-        setFilteredPatients(results);
+        setPatients(patientsData);
       } else {
         setPatients([]);
-        setFilteredPatients([]);
       }
-    } catch (error) {
-      console.error('Erreur lors du chargement des patients:', error);
+    } catch (err) {
+      console.error('Error fetching patients:', err);
       setError('Erreur lors du chargement des patients');
       setPatients([]);
-      setFilteredPatients([]);
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const applyFilters = () => {
-    try {
-      let filtered = [...patients];
+  // Filtrer les patients de manière simple et directe
+  const getFilteredPatients = useCallback(() => {
+    let filtered = [...patients];
 
-      // Filter by search term
-      if (searchTerm.trim()) {
-        filtered = filtered.filter(patient =>
-          patient.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          patient.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          (patient.phone && patient.phone.includes(searchTerm))
-        );
-      }
-
-      // Filter by gender
-      if (filters.gender) {
-        filtered = filtered.filter(patient => patient.gender === filters.gender);
-      }
-
-      // Filter by date range
-      if (filters.dateRange) {
-        const now = new Date();
-        const filterDate = new Date();
-        
-        switch (filters.dateRange) {
-          case 'today':
-            filterDate.setHours(0, 0, 0, 0);
-            break;
-          case 'week':
-            filterDate.setDate(now.getDate() - 7);
-            break;
-          case 'month':
-            filterDate.setMonth(now.getMonth() - 1);
-            break;
-          default:
-            filterDate.setFullYear(1970);
-        }
-
-        filtered = filtered.filter(patient => {
-          if (!patient.createdAt) return false;
-          
-          try {
-            let patientDate;
-            
-            // Handle Firestore Timestamp
-            if (patient.createdAt && typeof patient.createdAt === 'object' && patient.createdAt.toDate) {
-              patientDate = patient.createdAt.toDate();
-            } else if (patient.createdAt instanceof Date) {
-              patientDate = patient.createdAt;
-            } else if (typeof patient.createdAt === 'string') {
-              patientDate = new Date(patient.createdAt);
-            } else {
-              return false;
-            }
-            
-            return patientDate >= filterDate;
-          } catch (error) {
-            return false;
-          }
-        });
-      }
-
-      setFilteredPatients(filtered);
-    } catch (error) {
-      console.error('Erreur lors du filtrage des patients:', error);
-      setFilteredPatients(patients);
+    // Filtre par recherche
+    if (searchTerm.trim()) {
+      filtered = filtered.filter(patient =>
+        patient.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        patient.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        patient.phone?.toLowerCase().includes(searchTerm.toLowerCase())
+      );
     }
-  };
 
-  const handleExport = () => {
+    // Filtre par genre
+    if (selectedGender !== 'all') {
+      filtered = filtered.filter(patient => patient.gender === selectedGender);
+    }
+
+    return filtered;
+  }, [patients, searchTerm, selectedGender]);
+
+  const handleExport = useCallback(() => {
     try {
+      const filtered = getFilteredPatients();
       const csvContent = [
-        ['Nom', 'Email', 'Téléphone', 'Genre', 'Date d\'inscription'],
-        ...filteredPatients.map(patient => [
+        ['Nom', 'Email', 'Téléphone', 'Genre', 'Date de naissance', 'Date d\'inscription'],
+        ...filtered.map(patient => [
           patient.name || '',
           patient.email || '',
           patient.phone || '',
           patient.gender || '',
-          patient.createdAt && typeof patient.createdAt === 'object' && patient.createdAt.toDate
+          patient.dateOfBirth && typeof patient.dateOfBirth.toDate === 'function' 
+            ? patient.dateOfBirth.toDate().toLocaleDateString('fr-FR')
+            : 'Non disponible',
+          patient.createdAt && typeof patient.createdAt.toDate === 'function' 
             ? patient.createdAt.toDate().toLocaleDateString('fr-FR')
             : 'Non disponible'
         ])
@@ -170,61 +106,35 @@ const AdminPatients: React.FC = () => {
       console.error('Erreur lors de l\'export:', error);
       alert('Erreur lors de l\'export');
     }
-  };
+  }, [getFilteredPatients]);
 
-  const formatCreatedAt = (createdAt: any): string => {
-    if (!createdAt) return 'Non disponible';
-    
-    try {
-      // Handle Firestore Timestamp object
-      if (createdAt && typeof createdAt === 'object' && createdAt.toDate) {
-        return createdAt.toDate().toLocaleDateString('fr-FR', {
-          year: 'numeric',
-          month: 'long',
-          day: 'numeric',
-          hour: '2-digit',
-          minute: '2-digit'
-        });
-      }
-      
-      // Handle regular Date object
-      if (createdAt instanceof Date) {
-        return createdAt.toLocaleDateString('fr-FR', {
-          year: 'numeric',
-          month: 'long',
-          day: 'numeric',
-          hour: '2-digit',
-          minute: '2-digit'
-        });
-      }
-      
-      // Handle string dates
-      if (typeof createdAt === 'string') {
-        const date = new Date(createdAt);
-        if (!isNaN(date.getTime())) {
-          return date.toLocaleDateString('fr-FR', {
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit'
-          });
-        }
-      }
-      
+  const resetFilters = useCallback(() => {
+    setSearchTerm('');
+    setSelectedGender('all');
+  }, []);
+
+  const formatDate = (date: any) => {
+    if (!date || typeof date.toDate !== 'function') {
       return 'Non disponible';
-    } catch (error) {
+    }
+    try {
+      return date.toDate().toLocaleDateString('fr-FR');
+    } catch {
       return 'Non disponible';
     }
   };
 
-  const resetFilters = () => {
-    setSearchTerm('');
-    setFilters({
-      gender: '',
-      status: '',
-      dateRange: '',
-    });
+  const getGenderLabel = (gender?: string) => {
+    switch (gender) {
+      case 'male':
+        return 'Homme';
+      case 'female':
+        return 'Femme';
+      case 'other':
+        return 'Autre';
+      default:
+        return 'Non spécifié';
+    }
   };
 
   if (loading) {
@@ -259,6 +169,8 @@ const AdminPatients: React.FC = () => {
     );
   }
 
+  const filteredPatients = getFilteredPatients();
+
   return (
     <AdminLayout>
       <div className="p-6">
@@ -278,7 +190,7 @@ const AdminPatients: React.FC = () => {
           </button>
         </div>
 
-        {/* Search and Filters */}
+        {/* Filtres simplifiés */}
         <div className="bg-white rounded-lg shadow p-4 mb-6">
           <div className="flex flex-col md:flex-row gap-4">
             <div className="flex-1 relative">
@@ -293,30 +205,26 @@ const AdminPatients: React.FC = () => {
             </div>
             <div className="flex flex-wrap gap-4">
               <select
-                value={filters.gender}
-                onChange={(e) => setFilters({ ...filters, gender: e.target.value })}
+                value={selectedGender}
+                onChange={(e) => setSelectedGender(e.target.value)}
                 className="border border-gray-300 rounded-md p-2"
               >
-                <option value="">Tous les genres</option>
-                <option value="male">Masculin</option>
-                <option value="female">Féminin</option>
-                <option value="other">Autre</option>
+                <option value="all">Tous les genres</option>
+                <option value="male">Hommes</option>
+                <option value="female">Femmes</option>
+                <option value="other">Autres</option>
               </select>
-              <select
-                value={filters.dateRange}
-                onChange={(e) => setFilters({ ...filters, dateRange: e.target.value })}
-                className="border border-gray-300 rounded-md p-2"
+              <button
+                onClick={resetFilters}
+                className="px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600"
               >
-                <option value="">Toutes les dates</option>
-                <option value="today">Aujourd'hui</option>
-                <option value="week">Cette semaine</option>
-                <option value="month">Ce mois</option>
-              </select>
+                Réinitialiser
+              </button>
             </div>
           </div>
         </div>
 
-        {/* Patients Table */}
+        {/* Table des patients */}
         <div className="bg-white rounded-lg shadow overflow-hidden">
           {filteredPatients.length > 0 ? (
             <div className="overflow-x-auto">
@@ -335,9 +243,6 @@ const AdminPatients: React.FC = () => {
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Date d'inscription
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Actions
-                    </th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
@@ -345,8 +250,8 @@ const AdminPatients: React.FC = () => {
                     <tr key={patient.id} className="hover:bg-gray-50">
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
-                          <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center mr-3">
-                            <User className="h-6 w-6 text-gray-500" />
+                          <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center mr-3">
+                            <User className="h-6 w-6 text-blue-500" />
                           </div>
                           <div>
                             <div className="text-sm font-medium text-gray-900">{patient.name}</div>
@@ -355,51 +260,38 @@ const AdminPatients: React.FC = () => {
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">
+                        <div className="flex items-center space-x-2">
                           {patient.phone && (
-                            <div className="flex items-center mb-1">
-                              <Phone className="h-4 w-4 text-gray-400 mr-2" />
+                            <div className="flex items-center text-sm text-gray-500">
+                              <Phone className="w-4 h-4 mr-1" />
                               {patient.phone}
                             </div>
                           )}
-                          <div className="flex items-center">
-                            <Mail className="h-4 w-4 text-gray-400 mr-2" />
+                          <div className="flex items-center text-sm text-gray-500">
+                            <Mail className="w-4 h-4 mr-1" />
                             {patient.email}
                           </div>
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm text-gray-900">
-                          {patient.gender && (
-                            <div className="flex items-center mb-1">
-                              <User className="h-4 w-4 text-gray-400 mr-2" />
-                              {patient.gender === 'male' ? 'Masculin' : 
-                               patient.gender === 'female' ? 'Féminin' : 'Autre'}
-                            </div>
-                          )}
-                          {patient.age && (
-                            <div className="flex items-center">
-                              <Calendar className="h-4 w-4 text-gray-400 mr-2" />
-                              {patient.age} ans
-                            </div>
-                          )}
+                          <div className="flex items-center">
+                            <Calendar className="w-4 h-4 mr-2 text-gray-400" />
+                            {patient.dateOfBirth ? formatDate(patient.dateOfBirth) : 'Non spécifiée'}
+                          </div>
+                          <div className="mt-1">
+                            <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                              patient.gender === 'male' ? 'bg-blue-100 text-blue-800' :
+                              patient.gender === 'female' ? 'bg-pink-100 text-pink-800' :
+                              'bg-gray-100 text-gray-800'
+                            }`}>
+                              {getGenderLabel(patient.gender)}
+                            </span>
+                          </div>
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {formatCreatedAt(patient.createdAt)}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        <div className="flex space-x-2">
-                          <button className="px-3 py-1 bg-blue-100 text-blue-700 hover:bg-blue-200 rounded text-xs font-medium">
-                            <Eye className="h-3 w-3" />
-                          </button>
-                          <button className="px-3 py-1 bg-green-100 text-green-700 hover:bg-green-200 rounded text-xs font-medium">
-                            <Edit2 className="h-3 w-3" />
-                          </button>
-                          <button className="px-3 py-1 bg-red-100 text-red-700 hover:bg-red-200 rounded text-xs font-medium">
-                            <Trash2 className="h-3 w-3" />
-                          </button>
-                        </div>
+                        {formatDate(patient.createdAt)}
                       </td>
                     </tr>
                   ))}
@@ -410,18 +302,18 @@ const AdminPatients: React.FC = () => {
             <div className="text-center py-12">
               <User className="mx-auto h-12 w-12 text-gray-400" />
               <h3 className="mt-2 text-sm font-medium text-gray-900">
-                {searchTerm || filters.gender || filters.dateRange
+                {searchTerm || selectedGender !== 'all'
                   ? 'Aucun patient ne correspond à vos critères'
                   : 'Aucun patient trouvé'
                 }
               </h3>
               <p className="mt-1 text-sm text-gray-500">
-                {searchTerm || filters.gender || filters.dateRange
+                {searchTerm || selectedGender !== 'all'
                   ? 'Essayez de modifier vos critères de recherche ou de filtrage.'
                   : 'Aucun patient n\'est encore inscrit.'
                 }
               </p>
-              {(searchTerm || filters.gender || filters.dateRange) && (
+              {(searchTerm || selectedGender !== 'all') && (
                 <button
                   onClick={resetFilters}
                   className="mt-4 px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors"
