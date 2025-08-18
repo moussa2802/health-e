@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Search, Filter, Download, User, Phone, Mail, Calendar, MapPin, FileText, Eye, Edit2, Trash2 } from 'lucide-react';
 import AdminLayout from '../../components/admin/AdminLayout';
-import { usePatients } from '../../hooks/usePatients';
 
 interface PatientFilters {
   gender: string;
@@ -10,7 +9,8 @@ interface PatientFilters {
 }
 
 const AdminPatients: React.FC = () => {
-  const { patients, loading } = usePatients();
+  const [patients, setPatients] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
   const [filteredPatients, setFilteredPatients] = useState<any[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [filters, setFilters] = useState<PatientFilters>({
@@ -70,8 +70,34 @@ const AdminPatients: React.FC = () => {
   };
 
   useEffect(() => {
+    fetchPatients();
+  }, []);
+
+  useEffect(() => {
     filterPatients();
   }, [patients, searchTerm, filters]);
+
+  const fetchPatients = async () => {
+    try {
+      setLoading(true);
+      const { collection, getDocs } = await import('firebase/firestore');
+      const { getFirestoreInstance } = await import('../../utils/firebase');
+      const db = getFirestoreInstance();
+      if (db) {
+        const querySnapshot = await getDocs(collection(db, 'patients'));
+        const results = querySnapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data()
+        }));
+        setPatients(results);
+      }
+    } catch (error) {
+      console.error('Erreur lors du chargement des patients:', error);
+      setPatients([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const filterPatients = () => {
     let filtered = patients;

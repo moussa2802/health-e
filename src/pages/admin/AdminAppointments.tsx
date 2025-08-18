@@ -10,7 +10,6 @@ import {
   User,
 } from "lucide-react";
 import AdminLayout from "../../components/admin/AdminLayout";
-import { useBookings } from "../../hooks/useBookings";
 import {
   updateBookingStatus,
   deleteBooking,
@@ -27,14 +26,10 @@ const AdminAppointments: React.FC = () => {
   const { currentUser } = useAuth();
 
   // Debug: Afficher l'état de currentUser
-  console.log("🔍 [ADMIN DEBUG] currentUser:", currentUser);
-  console.log("🔍 [ADMIN DEBUG] currentUser?.type:", currentUser?.type);
-  console.log("🔍 [ADMIN DEBUG] currentUser?.id:", currentUser?.id);
 
-  const { bookings, loading, error } = useBookings(
-    currentUser?.id || "",
-    currentUser?.type || "admin"
-  );
+  const [bookings, setBookings] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [filteredBookings, setFilteredBookings] = useState<any[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [filters, setFilters] = useState<AppointmentFilters>({
@@ -44,8 +39,36 @@ const AdminAppointments: React.FC = () => {
   });
 
   useEffect(() => {
+    fetchBookings();
+  }, []);
+
+  useEffect(() => {
     filterBookings();
   }, [bookings, searchTerm, filters]);
+
+  const fetchBookings = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const { collection, getDocs } = await import('firebase/firestore');
+      const { getFirestoreInstance } = await import('../../utils/firebase');
+      const db = getFirestoreInstance();
+      if (db) {
+        const querySnapshot = await getDocs(collection(db, 'bookings'));
+        const results = querySnapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data()
+        }));
+        setBookings(results);
+      }
+    } catch (error) {
+      console.error('Erreur lors du chargement des consultations:', error);
+      setError('Erreur lors du chargement des consultations');
+      setBookings([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const filterBookings = () => {
     let filtered = bookings;

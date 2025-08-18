@@ -210,9 +210,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
             </button>
 
             {notifDropdownOpen && (
-              <>
-                {console.log("🔔 Ouverture dropdown :", unreadNotifications)}
-                <div
+              <div
                   className="absolute right-0 mt-2 w-80 bg-white shadow-xl rounded-lg z-50 max-h-96 overflow-y-auto border"
                   onClick={(e) => e.stopPropagation()} // 👈 éviter que ça se ferme quand tu cliques dedans
                 >
@@ -269,7 +267,6 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
                     </div>
                   )}
                 </div>
-              </>
             )}
           </div>
 
