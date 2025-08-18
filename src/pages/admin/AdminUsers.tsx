@@ -48,7 +48,7 @@ const AdminUsers: React.FC = () => {
       if (db) {
         const [usersSnapshot, professionalsSnapshot] = await Promise.all([
           getDocs(collection(db, 'users')),
-          getDocs(collection(db, 'professionals'))
+          getDocs(collection(db, 'users'))
         ]);
         
         const usersData = usersSnapshot.docs.map((doc) => ({
@@ -228,7 +228,7 @@ const AdminUsers: React.FC = () => {
     }
     try {
       return createdAt.toDate().toLocaleDateString('fr-FR');
-    } catch (error) {
+    } catch {
       return 'Non disponible';
     }
   };
@@ -265,6 +265,7 @@ const AdminUsers: React.FC = () => {
     );
   }
 
+  // Calculer les utilisateurs filtrés une seule fois
   const filteredUsers = getFilteredUsers();
 
   return (
