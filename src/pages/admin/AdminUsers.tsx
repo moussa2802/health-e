@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Search, Download, User, Shield, ShieldCheck, Trash2 } from 'lucide-react';
 import AdminLayout from '../../components/admin/AdminLayout';
 
@@ -22,6 +22,7 @@ const AdminUsers: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [isFiltering, setIsFiltering] = useState(false);
 
   // Charger les données une seule fois au montage
   useEffect(() => {
@@ -58,23 +59,35 @@ const AdminUsers: React.FC = () => {
     }
   };
 
-  // Filtrer les utilisateurs de manière simple
-  const getFilteredUsers = () => {
-    let filtered = [...users];
+  // Filtrer les utilisateurs avec protection robuste
+  const getFilteredUsers = useCallback(() => {
+    try {
+      // Vérifier que les données sont disponibles
+      if (!users || users.length === 0) {
+        return [];
+      }
 
-    // Filtre par recherche (nom, email, téléphone)
-    if (searchTerm.trim()) {
-      filtered = filtered.filter(user =>
-        user.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        user.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        user.phone?.toLowerCase().includes(searchTerm.toLowerCase())
-      );
+      let filtered = [...users];
+
+      // Filtre par recherche (nom, email, téléphone)
+      if (searchTerm.trim()) {
+        filtered = filtered.filter(user =>
+          user.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          user.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          user.phone?.toLowerCase().includes(searchTerm.toLowerCase())
+        );
+      }
+
+      // Mettre à jour l'état de filtrage
+      const hasActiveFilters = searchTerm.trim();
+      setIsFiltering(hasActiveFilters);
+
+      return filtered;
+    } catch (error) {
+      console.error('Erreur lors du filtrage:', error);
+      return [];
     }
-
-
-
-    return filtered;
-  };
+  }, [users, searchTerm]);
 
 
 

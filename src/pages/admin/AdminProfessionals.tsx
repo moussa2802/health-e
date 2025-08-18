@@ -1,6 +1,18 @@
-import React, { useState, useEffect } from 'react';
-import { Search, Download, ShieldCheck, Star, Calendar, MapPin, Phone, Mail, User, CheckCircle, XCircle } from 'lucide-react';
-import AdminLayout from '../../components/admin/AdminLayout';
+import React, { useState, useEffect } from "react";
+import {
+  Search,
+  Download,
+  ShieldCheck,
+  Star,
+  Calendar,
+  MapPin,
+  Phone,
+  Mail,
+  User,
+  CheckCircle,
+  XCircle,
+} from "lucide-react";
+import AdminLayout from "../../components/admin/AdminLayout";
 
 interface Professional {
   id: string;
@@ -9,7 +21,7 @@ interface Professional {
   email: string;
   phone?: string;
   specialty?: string;
-  type?: 'mental' | 'sexual';
+  type?: "mental" | "sexual";
   rating?: number;
   reviews?: number;
   isApproved: boolean;
@@ -25,12 +37,18 @@ interface Professional {
 
 const AdminProfessionals: React.FC = () => {
   const [professionals, setProfessionals] = useState<Professional[]>([]);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedSpecialty, setSelectedSpecialty] = useState('all');
-  const [selectedStatus, setSelectedStatus] = useState('all');
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedSpecialty, setSelectedSpecialty] = useState("all");
+  const [selectedStatus, setSelectedStatus] = useState("all");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [isFiltering, setIsFiltering] = useState(false);
+  const [lastFilterState, setLastFilterState] = useState({
+    search: "",
+    specialty: "all",
+    status: "all",
+  });
 
   // Charger les données une seule fois au montage
   useEffect(() => {
@@ -41,51 +59,59 @@ const AdminProfessionals: React.FC = () => {
     try {
       setLoading(true);
       setError(null);
-      
-      const { collection, getDocs, query, where, orderBy } = await import('firebase/firestore');
-      const { getFirestoreInstance } = await import('../../utils/firebase');
+
+      const { collection, getDocs, query, where, orderBy } = await import(
+        "firebase/firestore"
+      );
+      const { getFirestoreInstance } = await import("../../utils/firebase");
       const db = getFirestoreInstance();
-      
+
       if (db) {
         // Charger tous les professionnels depuis la collection users
         const professionalsQuery = query(
-          collection(db, 'users'), 
-          where('type', '==', 'professional'),
-          orderBy('createdAt', 'desc')
+          collection(db, "users"),
+          where("type", "==", "professional"),
+          orderBy("createdAt", "desc")
         );
         const usersSnapshot = await getDocs(professionalsQuery);
-        
+
         // Charger les informations détaillées depuis la collection professionals
-        const professionalsDetailsSnapshot = await getDocs(collection(db, 'professionals'));
-        const professionalsDetails = professionalsDetailsSnapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        }));
+        const professionalsDetailsSnapshot = await getDocs(
+          collection(db, "professionals")
+        );
+        const professionalsDetails = professionalsDetailsSnapshot.docs.map(
+          (doc) => ({
+            id: doc.id,
+            ...doc.data(),
+          })
+        );
 
         // Combiner les données des deux collections
-        const combinedProfessionals = usersSnapshot.docs.map(userDoc => {
+        const combinedProfessionals = usersSnapshot.docs.map((userDoc) => {
           const userData = userDoc.data();
-          const professionalDetails = professionalsDetails.find(details => details.userId === userDoc.id);
-          
+          const professionalDetails = professionalsDetails.find(
+            (details) => details.userId === userDoc.id
+          );
+
           return {
             id: userDoc.id,
             userId: userDoc.id,
-            name: userData.name || '',
-            email: userData.email || '',
-            phone: userData.phone || '',
+            name: userData.name || "",
+            email: userData.email || "",
+            phone: userData.phone || "",
             isActive: userData.isActive || false,
             createdAt: userData.createdAt,
             lastActive: userData.lastActive,
-            specialty: professionalDetails?.specialty || '',
-            type: professionalDetails?.type || '',
+            specialty: professionalDetails?.specialty || "",
+            type: professionalDetails?.type || "",
             rating: professionalDetails?.rating || 0,
             reviews: professionalDetails?.reviews || 0,
             isApproved: professionalDetails?.isApproved || false,
-            experience: professionalDetails?.experience || '',
-            education: professionalDetails?.education || '',
-            bio: professionalDetails?.bio || '',
+            experience: professionalDetails?.experience || "",
+            education: professionalDetails?.education || "",
+            bio: professionalDetails?.bio || "",
             availability: professionalDetails?.availability || [],
-            consultationFee: professionalDetails?.consultationFee || 0
+            consultationFee: professionalDetails?.consultationFee || 0,
           };
         });
 
@@ -94,80 +120,167 @@ const AdminProfessionals: React.FC = () => {
         setProfessionals([]);
       }
     } catch (err) {
-      console.error('Error fetching professionals:', err);
-      setError('Erreur lors du chargement des professionnels');
+      console.error("Error fetching professionals:", err);
+      setError("Erreur lors du chargement des professionnels");
       setProfessionals([]);
     } finally {
       setLoading(false);
     }
   };
 
-  // Filtrer les professionnels
-  const getFilteredProfessionals = () => {
-    let filtered = [...professionals];
-
-    // Filtre par recherche (nom, email, spécialité)
-    if (searchTerm.trim()) {
-      filtered = filtered.filter(professional =>
-        professional.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        professional.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        professional.specialty?.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-    }
-
-    // Filtre par spécialité
-    if (selectedSpecialty !== 'all') {
-      filtered = filtered.filter(professional => professional.specialty === selectedSpecialty);
-    }
-
-    // Filtre par statut
-    if (selectedStatus !== 'all') {
-      if (selectedStatus === 'approved') {
-        filtered = filtered.filter(professional => professional.isApproved);
-      } else if (selectedStatus === 'pending') {
-        filtered = filtered.filter(professional => !professional.isApproved);
+  // Filtrer les professionnels avec protection robuste
+  const getFilteredProfessionals = useCallback(() => {
+    try {
+      // Vérifier que les données sont disponibles
+      if (!professionals || professionals.length === 0) {
+        return [];
       }
-    }
 
-    return filtered;
-  };
+      let filtered = [...professionals];
+
+      // Filtre par recherche (nom, email, spécialité)
+      if (searchTerm.trim()) {
+        filtered = filtered.filter(
+          (professional) =>
+            professional.name
+              ?.toLowerCase()
+              .includes(searchTerm.toLowerCase()) ||
+            professional.email
+              ?.toLowerCase()
+              .includes(searchTerm.toLowerCase()) ||
+            professional.specialty
+              ?.toLowerCase()
+              .includes(searchTerm.toLowerCase())
+        );
+      }
+
+      // Filtre par spécialité
+      if (selectedSpecialty !== "all") {
+        filtered = filtered.filter(
+          (professional) => professional.specialty === selectedSpecialty
+        );
+      }
+
+      // Filtre par statut
+      if (selectedStatus !== "all") {
+        if (selectedStatus === "approved") {
+          filtered = filtered.filter((professional) => professional.isApproved);
+        } else if (selectedStatus === "pending") {
+          filtered = filtered.filter(
+            (professional) => !professional.isApproved
+          );
+        }
+      }
+
+      // Mettre à jour l'état de filtrage
+      const hasActiveFilters =
+        searchTerm.trim() ||
+        selectedSpecialty !== "all" ||
+        selectedStatus !== "all";
+      setIsFiltering(hasActiveFilters);
+
+      return filtered;
+    } catch (error) {
+      console.error("Erreur lors du filtrage:", error);
+      return [];
+    }
+  }, [professionals, searchTerm, selectedSpecialty, selectedStatus]);
+
+  // Gestionnaires robustes pour les changements de filtres
+  const handleSearchChange = useCallback(
+    (value: string) => {
+      try {
+        setSearchTerm(value);
+        // Mettre à jour l'état de filtrage
+        const hasActiveFilters =
+          value.trim() ||
+          selectedSpecialty !== "all" ||
+          selectedStatus !== "all";
+        setIsFiltering(hasActiveFilters);
+      } catch (error) {
+        console.error("Erreur lors du changement de recherche:", error);
+      }
+    },
+    [selectedSpecialty, selectedStatus]
+  );
+
+  const handleSpecialtyChange = useCallback(
+    (value: string) => {
+      try {
+        setSelectedSpecialty(value);
+        // Mettre à jour l'état de filtrage
+        const hasActiveFilters =
+          searchTerm.trim() || value !== "all" || selectedStatus !== "all";
+        setIsFiltering(hasActiveFilters);
+      } catch (error) {
+        console.error("Erreur lors du changement de spécialité:", error);
+      }
+    },
+    [searchTerm, selectedStatus]
+  );
+
+  const handleStatusChange = useCallback(
+    (value: string) => {
+      try {
+        setSelectedStatus(value);
+        // Mettre à jour l'état de filtrage
+        const hasActiveFilters =
+          searchTerm.trim() || selectedSpecialty !== "all" || value !== "all";
+        setIsFiltering(hasActiveFilters);
+      } catch (error) {
+        console.error("Erreur lors du changement de statut:", error);
+      }
+    },
+    [searchTerm, selectedSpecialty]
+  );
 
   const handleUpdateStatus = async (userId: string, isActive: boolean) => {
     try {
       setActionLoading(`status-${userId}`);
-      
+
       // Mise à jour locale immédiate
-      setProfessionals(prev => prev.map(prof => 
-        prof.userId === userId ? { ...prof, isActive } : prof
-      ));
-      
+      setProfessionals((prev) =>
+        prev.map((prof) =>
+          prof.userId === userId ? { ...prof, isActive } : prof
+        )
+      );
+
       // Mise à jour dans Firebase
-      const { updateUserStatus } = await import('../../services/firebaseService');
+      const { updateUserStatus } = await import(
+        "../../services/firebaseService"
+      );
       await updateUserStatus(userId, isActive);
     } catch (err) {
-      console.error('Error updating professional status:', err);
-      alert('Erreur lors de la mise à jour du statut');
+      console.error("Error updating professional status:", err);
+      alert("Erreur lors de la mise à jour du statut");
       fetchProfessionals();
     } finally {
       setActionLoading(null);
     }
   };
 
-  const handleProfessionalApproval = async (userId: string, isApproved: boolean) => {
+  const handleProfessionalApproval = async (
+    userId: string,
+    isApproved: boolean
+  ) => {
     try {
       setActionLoading(`approval-${userId}`);
-      
+
       // Mise à jour locale immédiate
-      setProfessionals(prev => prev.map(prof => 
-        prof.userId === userId ? { ...prof, isApproved } : prof
-      ));
-      
+      setProfessionals((prev) =>
+        prev.map((prof) =>
+          prof.userId === userId ? { ...prof, isApproved } : prof
+        )
+      );
+
       // Mise à jour dans Firebase
-      const { updateProfessionalApproval } = await import('../../services/firebaseService');
+      const { updateProfessionalApproval } = await import(
+        "../../services/firebaseService"
+      );
       await updateProfessionalApproval(userId, isApproved);
     } catch (err) {
-      console.error('Error updating professional approval:', err);
-      alert('Erreur lors de la mise à jour de l\'approbation');
+      console.error("Error updating professional approval:", err);
+      alert("Erreur lors de la mise à jour de l'approbation");
       fetchProfessionals();
     } finally {
       setActionLoading(null);
@@ -175,22 +288,22 @@ const AdminProfessionals: React.FC = () => {
   };
 
   const handleDeleteProfessional = async (userId: string) => {
-    if (!confirm('Êtes-vous sûr de vouloir supprimer ce professionnel ?')) {
+    if (!confirm("Êtes-vous sûr de vouloir supprimer ce professionnel ?")) {
       return;
     }
 
     try {
       setActionLoading(`delete-${userId}`);
-      
+
       // Suppression locale immédiate
-      setProfessionals(prev => prev.filter(prof => prof.userId !== userId));
-      
+      setProfessionals((prev) => prev.filter((prof) => prof.userId !== userId));
+
       // Suppression dans Firebase
-      const { deleteUser } = await import('../../services/firebaseService');
+      const { deleteUser } = await import("../../services/firebaseService");
       await deleteUser(userId);
     } catch (err) {
-      console.error('Error deleting professional:', err);
-      alert('Erreur lors de la suppression');
+      console.error("Error deleting professional:", err);
+      alert("Erreur lors de la suppression");
       fetchProfessionals();
     } finally {
       setActionLoading(null);
@@ -201,73 +314,108 @@ const AdminProfessionals: React.FC = () => {
     try {
       const filtered = getFilteredProfessionals();
       const csvContent = [
-        ['Nom', 'Email', 'Téléphone', 'Spécialité', 'Type', 'Note', 'Avis', 'Statut', 'Approuvé', 'Frais de consultation', 'Date d\'inscription'],
-        ...filtered.map(professional => [
-          professional.name || '',
-          professional.email || '',
-          professional.phone || '',
-          professional.specialty || '',
-          professional.type === 'mental' ? 'Santé mentale' : 
-          professional.type === 'sexual' ? 'Santé sexuelle' : 'Non défini',
+        [
+          "Nom",
+          "Email",
+          "Téléphone",
+          "Spécialité",
+          "Type",
+          "Note",
+          "Avis",
+          "Statut",
+          "Approuvé",
+          "Frais de consultation",
+          "Date d'inscription",
+        ],
+        ...filtered.map((professional) => [
+          professional.name || "",
+          professional.email || "",
+          professional.phone || "",
+          professional.specialty || "",
+          professional.type === "mental"
+            ? "Santé mentale"
+            : professional.type === "sexual"
+            ? "Santé sexuelle"
+            : "Non défini",
           (professional.rating || 0).toString(),
           (professional.reviews || 0).toString(),
-          professional.isActive ? 'Actif' : 'Inactif',
-          professional.isApproved ? 'Oui' : 'Non',
-          professional.consultationFee ? `${professional.consultationFee} FCFA` : 'Non défini',
-          professional.createdAt && typeof professional.createdAt.toDate === 'function' 
-            ? professional.createdAt.toDate().toLocaleDateString('fr-FR')
-            : 'Non disponible'
-        ])
-      ].map(row => row.join(',')).join('\n');
+          professional.isActive ? "Actif" : "Inactif",
+          professional.isApproved ? "Oui" : "Non",
+          professional.consultationFee
+            ? `${professional.consultationFee} FCFA`
+            : "Non défini",
+          professional.createdAt &&
+          typeof professional.createdAt.toDate === "function"
+            ? professional.createdAt.toDate().toLocaleDateString("fr-FR")
+            : "Non disponible",
+        ]),
+      ]
+        .map((row) => row.join(","))
+        .join("\n");
 
-      const blob = new Blob([csvContent], { type: 'text/csv' });
+      const blob = new Blob([csvContent], { type: "text/csv" });
       const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
+      const a = document.createElement("a");
       a.href = url;
-      a.download = `professionnels_${new Date().toISOString().split('T')[0]}.csv`;
+      a.download = `professionnels_${
+        new Date().toISOString().split("T")[0]
+      }.csv`;
       a.click();
       window.URL.revokeObjectURL(url);
     } catch (error) {
-      console.error('Erreur lors de l\'export:', error);
-      alert('Erreur lors de l\'export');
+      console.error("Erreur lors de l'export:", error);
+      alert("Erreur lors de l'export");
     }
   };
 
   const getSpecialtyLabel = (specialty?: string) => {
-    if (!specialty) return 'Non définie';
+    if (!specialty) return "Non définie";
     return specialty;
   };
 
   const getTypeLabel = (type?: string) => {
     switch (type) {
-      case 'mental':
-        return 'Santé mentale';
-      case 'sexual':
-        return 'Santé sexuelle';
+      case "mental":
+        return "Santé mentale";
+      case "sexual":
+        return "Santé sexuelle";
       default:
-        return 'Non défini';
+        return "Non défini";
+    }
+  };
+
+  // Fonction utilitaire pour protéger les manipulations DOM
+  const safeDOMOperation = (operation: () => void) => {
+    try {
+      operation();
+    } catch (error) {
+      console.warn("Opération DOM sécurisée:", error);
+      // Forcer un re-render en cas d'erreur DOM
+      setTimeout(() => {
+        setProfessionals([...professionals]);
+      }, 100);
     }
   };
 
   const getTypeColor = (type?: string) => {
     switch (type) {
-      case 'mental':
-        return 'bg-blue-100 text-blue-800';
-      case 'sexual':
-        return 'bg-purple-100 text-purple-800';
+      case "mental":
+        return "bg-blue-100 text-blue-800";
+      case "sexual":
+        return "bg-purple-100 text-purple-800";
       default:
-        return 'bg-gray-100 text-gray-800';
+        return "bg-gray-100 text-gray-800";
     }
   };
 
   const formatDate = (date: any) => {
-    if (!date || typeof date.toDate !== 'function') {
-      return 'Non disponible';
+    if (!date || typeof date.toDate !== "function") {
+      return "Non disponible";
     }
     try {
-      return date.toDate().toLocaleDateString('fr-FR');
+      return date.toDate().toLocaleDateString("fr-FR");
     } catch {
-      return 'Non disponible';
+      return "Non disponible";
     }
   };
 
@@ -277,7 +425,9 @@ const AdminProfessionals: React.FC = () => {
         <div className="p-6">
           <div className="flex items-center justify-center h-64">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
-            <span className="ml-4 text-lg text-gray-600">Chargement des professionnels...</span>
+            <span className="ml-4 text-lg text-gray-600">
+              Chargement des professionnels...
+            </span>
           </div>
         </div>
       </AdminLayout>
@@ -311,10 +461,14 @@ const AdminProfessionals: React.FC = () => {
       <div className="p-6">
         <div className="flex justify-between items-center mb-6">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Gestion des Professionnels</h1>
+            <h1 className="text-2xl font-bold text-gray-900">
+              Gestion des Professionnels
+            </h1>
             <p className="text-gray-600">
-              {filteredProfessionals.length} professionnel{filteredProfessionals.length > 1 ? 's' : ''} 
-              {professionals.length !== filteredProfessionals.length && ` sur ${professionals.length} au total`}
+              {filteredProfessionals.length} professionnel
+              {filteredProfessionals.length > 1 ? "s" : ""}
+              {professionals.length !== filteredProfessionals.length &&
+                ` sur ${professionals.length} au total`}
             </p>
           </div>
           <button
@@ -336,13 +490,13 @@ const AdminProfessionals: React.FC = () => {
                 placeholder="Rechercher par nom, email ou spécialité..."
                 className="pl-10 w-full border border-gray-300 rounded-md p-2"
                 value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                onChange={(e) => handleSearchChange(e.target.value)}
               />
             </div>
             <div className="flex flex-wrap gap-4">
               <select
                 value={selectedSpecialty}
-                onChange={(e) => setSelectedSpecialty(e.target.value)}
+                onChange={(e) => handleSpecialtyChange(e.target.value)}
                 className="border border-gray-300 rounded-md p-2"
               >
                 <option value="all">Toutes les spécialités</option>
@@ -354,7 +508,7 @@ const AdminProfessionals: React.FC = () => {
               </select>
               <select
                 value={selectedStatus}
-                onChange={(e) => setSelectedStatus(e.target.value)}
+                onChange={(e) => handleStatusChange(e.target.value)}
                 className="border border-gray-300 rounded-md p-2"
               >
                 <option value="all">Tous les statuts</option>
@@ -404,8 +558,12 @@ const AdminProfessionals: React.FC = () => {
                             <ShieldCheck className="h-6 w-6 text-blue-500" />
                           </div>
                           <div>
-                            <div className="text-sm font-medium text-gray-900">{professional.name}</div>
-                            <div className="text-sm text-gray-500">{professional.email}</div>
+                            <div className="text-sm font-medium text-gray-900">
+                              {professional.name}
+                            </div>
+                            <div className="text-sm text-gray-500">
+                              {professional.email}
+                            </div>
                             {professional.phone && (
                               <div className="text-sm text-gray-400 flex items-center">
                                 <Phone className="h-3 w-3 mr-1" />
@@ -420,7 +578,11 @@ const AdminProfessionals: React.FC = () => {
                           <div className="font-medium text-gray-900">
                             {getSpecialtyLabel(professional.specialty)}
                           </div>
-                          <span className={`px-2 py-1 text-xs font-semibold rounded-full ${getTypeColor(professional.type)}`}>
+                          <span
+                            className={`px-2 py-1 text-xs font-semibold rounded-full ${getTypeColor(
+                              professional.type
+                            )}`}
+                          >
                             {getTypeLabel(professional.type)}
                           </span>
                         </div>
@@ -439,12 +601,18 @@ const AdminProfessionals: React.FC = () => {
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm text-gray-900">
                           {professional.consultationFee ? (
-                            <div className="font-medium">{professional.consultationFee} FCFA</div>
+                            <div className="font-medium">
+                              {professional.consultationFee} FCFA
+                            </div>
                           ) : (
-                            <div className="text-gray-400">Frais non définis</div>
+                            <div className="text-gray-400">
+                              Frais non définis
+                            </div>
                           )}
                           {professional.experience && (
-                            <div className="text-gray-500">{professional.experience}</div>
+                            <div className="text-gray-500">
+                              {professional.experience}
+                            </div>
                           )}
                         </div>
                       </td>
@@ -453,58 +621,94 @@ const AdminProfessionals: React.FC = () => {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="space-y-1">
-                          <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
-                            professional.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                          }`}>
-                            {professional.isActive ? 'Actif' : 'Inactif'}
+                          <span
+                            className={`px-2 py-1 text-xs font-semibold rounded-full ${
+                              professional.isActive
+                                ? "bg-green-100 text-green-800"
+                                : "bg-red-100 text-red-800"
+                            }`}
+                          >
+                            {professional.isActive ? "Actif" : "Inactif"}
                           </span>
-                          <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
-                            professional.isApproved ? 'bg-blue-100 text-blue-800' : 'bg-yellow-100 text-yellow-800'
-                          }`}>
-                            {professional.isApproved ? 'Approuvé' : 'En attente'}
+                          <span
+                            className={`px-2 py-1 text-xs font-semibold rounded-full ${
+                              professional.isApproved
+                                ? "bg-blue-100 text-blue-800"
+                                : "bg-yellow-100 text-yellow-800"
+                            }`}
+                          >
+                            {professional.isApproved
+                              ? "Approuvé"
+                              : "En attente"}
                           </span>
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                         <div className="flex space-x-2">
                           <button
-                            onClick={() => handleUpdateStatus(professional.userId, !professional.isActive)}
-                            disabled={actionLoading === `status-${professional.userId}`}
+                            onClick={() =>
+                              handleUpdateStatus(
+                                professional.userId,
+                                !professional.isActive
+                              )
+                            }
+                            disabled={
+                              actionLoading === `status-${professional.userId}`
+                            }
                             className={`px-3 py-1 rounded text-xs font-medium ${
-                              professional.isActive 
-                                ? 'bg-red-100 text-red-700 hover:bg-red-200' 
-                                : 'bg-green-100 text-green-700 hover:bg-green-200'
+                              professional.isActive
+                                ? "bg-red-100 text-red-700 hover:bg-red-200"
+                                : "bg-green-100 text-green-700 hover:bg-green-200"
                             } disabled:opacity-50`}
                           >
-                            {actionLoading === `status-${professional.userId}` ? (
+                            {actionLoading ===
+                            `status-${professional.userId}` ? (
                               <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-current"></div>
+                            ) : professional.isActive ? (
+                              "Désactiver"
                             ) : (
-                              professional.isActive ? 'Désactiver' : 'Activer'
+                              "Activer"
                             )}
                           </button>
 
                           <button
-                            onClick={() => handleProfessionalApproval(professional.userId, !professional.isApproved)}
-                            disabled={actionLoading === `approval-${professional.userId}`}
+                            onClick={() =>
+                              handleProfessionalApproval(
+                                professional.userId,
+                                !professional.isApproved
+                              )
+                            }
+                            disabled={
+                              actionLoading ===
+                              `approval-${professional.userId}`
+                            }
                             className={`px-3 py-1 rounded text-xs font-medium ${
                               professional.isApproved
-                                ? 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200' 
-                                : 'bg-blue-100 text-blue-700 hover:bg-blue-200'
+                                ? "bg-yellow-100 text-yellow-700 hover:bg-yellow-200"
+                                : "bg-blue-100 text-blue-700 hover:bg-blue-200"
                             } disabled:opacity-50`}
                           >
-                            {actionLoading === `approval-${professional.userId}` ? (
+                            {actionLoading ===
+                            `approval-${professional.userId}` ? (
                               <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-current"></div>
+                            ) : professional.isApproved ? (
+                              "Révoquer"
                             ) : (
-                              professional.isApproved ? 'Révoquer' : 'Approuver'
+                              "Approuver"
                             )}
                           </button>
 
                           <button
-                            onClick={() => handleDeleteProfessional(professional.userId)}
-                            disabled={actionLoading === `delete-${professional.userId}`}
+                            onClick={() =>
+                              handleDeleteProfessional(professional.userId)
+                            }
+                            disabled={
+                              actionLoading === `delete-${professional.userId}`
+                            }
                             className="px-3 py-1 bg-red-100 text-red-700 hover:bg-red-200 rounded text-xs font-medium disabled:opacity-50"
                           >
-                            {actionLoading === `delete-${professional.userId}` ? (
+                            {actionLoading ===
+                            `delete-${professional.userId}` ? (
                               <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-current"></div>
                             ) : (
                               <XCircle className="h-3 w-3" />
@@ -521,23 +725,48 @@ const AdminProfessionals: React.FC = () => {
             <div className="text-center py-12">
               <ShieldCheck className="mx-auto h-12 w-12 text-gray-400" />
               <h3 className="mt-2 text-sm font-medium text-gray-900">
-                {searchTerm || selectedSpecialty !== 'all' || selectedStatus !== 'all'
-                  ? 'Aucun professionnel ne correspond à vos critères'
-                  : 'Aucun professionnel trouvé'
-                }
+                {searchTerm ||
+                selectedSpecialty !== "all" ||
+                selectedStatus !== "all"
+                  ? "Aucun professionnel ne correspond à vos critères"
+                  : "Aucun professionnel trouvé"}
               </h3>
               <p className="mt-1 text-sm text-gray-500">
-                {searchTerm 
-                  ? 'Essayez de modifier vos critères de recherche.'
-                  : selectedSpecialty !== 'all'
+                {searchTerm
+                  ? "Essayez de modifier vos critères de recherche."
+                  : selectedSpecialty !== "all"
                   ? `Aucun professionnel trouvé pour la spécialité "${selectedSpecialty}".`
-                  : selectedStatus !== 'all'
-                  ? selectedStatus === 'approved' 
-                    ? 'Aucun professionnel n\'est actuellement approuvé.'
-                    : 'Aucun professionnel n\'est actuellement révoqué.'
-                  : 'Aucun professionnel n\'est encore inscrit.'
-                }
+                  : selectedStatus !== "all"
+                  ? selectedStatus === "approved"
+                    ? "Aucun professionnel n'est actuellement approuvé."
+                    : "Aucun professionnel n'est actuellement révoqué."
+                  : "Aucun professionnel n'est encore inscrit."}
               </p>
+              {isFiltering && (
+                <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-md">
+                  <p className="text-sm text-blue-700">
+                    <strong>Filtres actifs :</strong>
+                    {searchTerm && ` Recherche: "${searchTerm}"`}
+                    {selectedSpecialty !== "all" &&
+                      ` Spécialité: ${selectedSpecialty}`}
+                    {selectedStatus !== "all" &&
+                      ` Statut: ${
+                        selectedStatus === "approved" ? "Approuvé" : "Révoqué"
+                      }`}
+                  </p>
+                  <button
+                    onClick={() => {
+                      setSearchTerm("");
+                      setSelectedSpecialty("all");
+                      setSelectedStatus("all");
+                      setIsFiltering(false);
+                    }}
+                    className="mt-2 text-sm text-blue-600 hover:text-blue-800 underline"
+                  >
+                    Effacer tous les filtres
+                  </button>
+                </div>
+              )}
             </div>
           )}
         </div>
