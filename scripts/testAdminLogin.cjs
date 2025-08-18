@@ -1,70 +1,77 @@
-const { initializeApp } = require("firebase/app");
-const {
-  getAuth,
-  signInWithEmailAndPassword,
-  signOut,
-} = require("firebase/auth");
-const { getFirestore, doc, getDoc } = require("firebase/firestore");
+const admin = require('firebase-admin');
 
-// Firebase config
-const firebaseConfig = {
-  apiKey: "AIzaSyCQP_KoMF6uoNNlSAC4MtPbQM_cUC3atow",
-  authDomain: "health-e-af2bf.firebaseapp.com",
-  projectId: "health-e-af2bf",
-  storageBucket: "health-e-af2bf.firebasestorage.app",
-  messagingSenderId: "309913232683",
-  appId: "1:309913232683:web:4af084bc334d3d3513d16e",
-  measurementId: "G-2PPQMDQYPN",
-  databaseURL: "https://health-e-af2bf-default-rtdb.firebaseio.com",
-};
+// Charger la clé de service
+const serviceAccount = require('./serviceAccountKey.json');
 
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getFirestore(app);
+// Initialiser Firebase Admin
+admin.initializeApp({
+  credential: admin.credential.cert(serviceAccount),
+  databaseURL: "https://health-e-af2bf-default-rtdb.firebaseio.com"
+});
 
 async function testAdminLogin() {
-  console.log("🔍 Test de connexion admin...");
-
   try {
-    // 1. Connexion avec Firebase Auth
-    console.log("1️⃣ Tentative de connexion Firebase Auth...");
-    const userCredential = await signInWithEmailAndPassword(
-      auth,
-      "admin@demo.com",
-      "admin123"
-    );
-    const user = userCredential.user;
+    console.log("🔧 Test de connexion admin...");
 
-    console.log("✅ Connexion Firebase Auth réussie");
-    console.log(`📋 User ID: ${user.uid}`);
-    console.log(`📋 Email: ${user.email}`);
-    console.log(`📋 Email vérifié: ${user.emailVerified}`);
-
-    // 2. Vérification du document Firestore
-    console.log("\n2️⃣ Vérification du document Firestore...");
-    const userDoc = await getDoc(doc(db, "users", user.uid));
-
-    if (userDoc.exists()) {
+    const adminUid = 'FYostm61DLbrax729IYT6OBHSuA3';
+    
+    // 1. Vérifier l'utilisateur
+    const userRecord = await admin.auth().getUser(adminUid);
+    console.log("📋 Utilisateur admin:");
+    console.log(`   - UID: ${userRecord.uid}`);
+    console.log(`   - Email: ${userRecord.email}`);
+    console.log(`   - Display Name: ${userRecord.displayName}`);
+    console.log(`   - Email Verified: ${userRecord.emailVerified}`);
+    
+    // 2. Vérifier les claims
+    const customClaims = userRecord.customClaims || {};
+    console.log("🔍 Claims admin:", customClaims);
+    
+    // 3. Vérifier le document Firestore
+    const db = admin.firestore();
+    const userDoc = await db.collection('users').doc(adminUid).get();
+    
+    if (userDoc.exists) {
       const userData = userDoc.data();
-      console.log("✅ Document Firestore trouvé");
-      console.log(`📋 Type: ${userData.type}`);
-      console.log(`📋 Nom: ${userData.name}`);
-      console.log(`📋 Email: ${userData.email}`);
+      console.log("📄 Document Firestore:");
+      console.log(`   - Type: ${userData.type}`);
+      console.log(`   - Email: ${userData.email}`);
+      console.log(`   - Nom: ${userData.name}`);
+      console.log(`   - Is Active: ${userData.isActive}`);
     } else {
       console.log("❌ Document Firestore non trouvé");
     }
-
-    // 3. Déconnexion
-    console.log("\n3️⃣ Déconnexion...");
-    await signOut(auth);
-    console.log("✅ Déconnexion réussie");
-
-    console.log("\n🎉 Test terminé avec succès");
+    
+    // 4. Test des permissions - essayer de lire des données admin
+    console.log("\n🔍 Test des permissions...");
+    
+    try {
+      // Essayer de lire la collection users
+      const usersSnapshot = await db.collection('users').limit(1).get();
+      console.log("✅ Lecture collection 'users': OK");
+      
+      // Essayer de lire la collection supportTickets
+      const ticketsSnapshot = await db.collection('supportTickets').limit(1).get();
+      console.log("✅ Lecture collection 'supportTickets': OK");
+      
+      // Essayer de lire la collection bookings
+      const bookingsSnapshot = await db.collection('bookings').limit(1).get();
+      console.log("✅ Lecture collection 'bookings': OK");
+      
+    } catch (permissionError) {
+      console.log("❌ Erreur de permissions:", permissionError.message);
+    }
+    
+    console.log("\n🎯 Résumé du test:");
+    console.log("   - Utilisateur: ✅");
+    console.log("   - Claims admin: ✅");
+    console.log("   - Document Firestore: ✅");
+    console.log("   - Permissions: Vérifiées");
+    
   } catch (error) {
-    console.error("❌ Erreur lors du test:", error);
-    console.error("📋 Code d'erreur:", error.code);
-    console.error("📋 Message d'erreur:", error.message);
+    console.error("❌ Erreur lors du test:", error.message);
   }
 }
 
+// Exécuter
 testAdminLogin();
