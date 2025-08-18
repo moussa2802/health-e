@@ -28,7 +28,6 @@ const AdminUsers: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
 
-
   // Charger les données une seule fois au montage
   useEffect(() => {
     fetchData();
@@ -83,8 +82,6 @@ const AdminUsers: React.FC = () => {
             user.phone?.toLowerCase().includes(searchTerm.toLowerCase())
         );
       }
-
-
 
       return filtered;
     } catch (error) {

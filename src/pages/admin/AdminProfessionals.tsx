@@ -43,12 +43,7 @@ const AdminProfessionals: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
-  const [isFiltering, setIsFiltering] = useState(false);
-  const [lastFilterState, setLastFilterState] = useState({
-    search: "",
-    specialty: "all",
-    status: "all",
-  });
+
 
   // Charger les données une seule fois au montage
   useEffect(() => {
@@ -190,12 +185,7 @@ const AdminProfessionals: React.FC = () => {
   const handleSearchChange = (value: string) => {
     try {
       setSearchTerm(value);
-      // Mettre à jour l'état de filtrage
-      const hasActiveFilters =
-        value.trim() ||
-        selectedSpecialty !== "all" ||
-        selectedStatus !== "all";
-      setIsFiltering(hasActiveFilters);
+
     } catch (error) {
       console.error("Erreur lors du changement de recherche:", error);
     }
@@ -204,10 +194,7 @@ const AdminProfessionals: React.FC = () => {
   const handleSpecialtyChange = (value: string) => {
     try {
       setSelectedSpecialty(value);
-      // Mettre à jour l'état de filtrage
-      const hasActiveFilters =
-        searchTerm.trim() || value !== "all" || selectedStatus !== "all";
-      setIsFiltering(hasActiveFilters);
+
     } catch (error) {
       console.error("Erreur lors du changement de spécialité:", error);
     }
@@ -216,10 +203,7 @@ const AdminProfessionals: React.FC = () => {
   const handleStatusChange = (value: string) => {
     try {
       setSelectedStatus(value);
-      // Mettre à jour l'état de filtrage
-      const hasActiveFilters =
-        searchTerm.trim() || selectedSpecialty !== "all" || value !== "all";
-      setIsFiltering(hasActiveFilters);
+
     } catch (error) {
       console.error("Erreur lors du changement de statut:", error);
     }
@@ -375,18 +359,7 @@ const AdminProfessionals: React.FC = () => {
     }
   };
 
-  // Fonction utilitaire pour protéger les manipulations DOM
-  const safeDOMOperation = (operation: () => void) => {
-    try {
-      operation();
-    } catch (error) {
-      console.warn("Opération DOM sécurisée:", error);
-      // Forcer un re-render en cas d'erreur DOM
-      setTimeout(() => {
-        setProfessionals([...professionals]);
-      }, 100);
-    }
-  };
+
 
   const getTypeColor = (type?: string) => {
     switch (type) {
@@ -733,31 +706,7 @@ const AdminProfessionals: React.FC = () => {
                     : "Aucun professionnel n'est actuellement révoqué."
                   : "Aucun professionnel n'est encore inscrit."}
               </p>
-              {isFiltering && (
-                <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-md">
-                  <p className="text-sm text-blue-700">
-                    <strong>Filtres actifs :</strong>
-                    {searchTerm && ` Recherche: "${searchTerm}"`}
-                    {selectedSpecialty !== "all" &&
-                      ` Spécialité: ${selectedSpecialty}`}
-                    {selectedStatus !== "all" &&
-                      ` Statut: ${
-                        selectedStatus === "approved" ? "Approuvé" : "Révoqué"
-                      }`}
-                  </p>
-                  <button
-                    onClick={() => {
-                      setSearchTerm("");
-                      setSelectedSpecialty("all");
-                      setSelectedStatus("all");
-                      setIsFiltering(false);
-                    }}
-                    className="mt-2 text-sm text-blue-600 hover:text-blue-800 underline"
-                  >
-                    Effacer tous les filtres
-                  </button>
-                </div>
-              )}
+              
             </div>
           )}
         </div>
