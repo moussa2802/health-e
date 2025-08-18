@@ -128,8 +128,8 @@ const AdminProfessionals: React.FC = () => {
     }
   };
 
-  // Filtrer les professionnels avec protection robuste
-  const getFilteredProfessionals = useCallback(() => {
+  // Filtrer les professionnels de manière simple et stable
+  const getFilteredProfessionals = () => {
     try {
       // Vérifier que les données sont disponibles
       if (!professionals || professionals.length === 0) {
@@ -184,55 +184,46 @@ const AdminProfessionals: React.FC = () => {
       console.error("Erreur lors du filtrage:", error);
       return [];
     }
-  }, [professionals, searchTerm, selectedSpecialty, selectedStatus]);
+  };
 
-  // Gestionnaires robustes pour les changements de filtres
-  const handleSearchChange = useCallback(
-    (value: string) => {
-      try {
-        setSearchTerm(value);
-        // Mettre à jour l'état de filtrage
-        const hasActiveFilters =
-          value.trim() ||
-          selectedSpecialty !== "all" ||
-          selectedStatus !== "all";
-        setIsFiltering(hasActiveFilters);
-      } catch (error) {
-        console.error("Erreur lors du changement de recherche:", error);
-      }
-    },
-    [selectedSpecialty, selectedStatus]
-  );
+  // Gestionnaires simples pour les changements de filtres
+  const handleSearchChange = (value: string) => {
+    try {
+      setSearchTerm(value);
+      // Mettre à jour l'état de filtrage
+      const hasActiveFilters =
+        value.trim() ||
+        selectedSpecialty !== "all" ||
+        selectedStatus !== "all";
+      setIsFiltering(hasActiveFilters);
+    } catch (error) {
+      console.error("Erreur lors du changement de recherche:", error);
+    }
+  };
 
-  const handleSpecialtyChange = useCallback(
-    (value: string) => {
-      try {
-        setSelectedSpecialty(value);
-        // Mettre à jour l'état de filtrage
-        const hasActiveFilters =
-          searchTerm.trim() || value !== "all" || selectedStatus !== "all";
-        setIsFiltering(hasActiveFilters);
-      } catch (error) {
-        console.error("Erreur lors du changement de spécialité:", error);
-      }
-    },
-    [searchTerm, selectedStatus]
-  );
+  const handleSpecialtyChange = (value: string) => {
+    try {
+      setSelectedSpecialty(value);
+      // Mettre à jour l'état de filtrage
+      const hasActiveFilters =
+        searchTerm.trim() || value !== "all" || selectedStatus !== "all";
+      setIsFiltering(hasActiveFilters);
+    } catch (error) {
+      console.error("Erreur lors du changement de spécialité:", error);
+    }
+  };
 
-  const handleStatusChange = useCallback(
-    (value: string) => {
-      try {
-        setSelectedStatus(value);
-        // Mettre à jour l'état de filtrage
-        const hasActiveFilters =
-          searchTerm.trim() || selectedSpecialty !== "all" || value !== "all";
-        setIsFiltering(hasActiveFilters);
-      } catch (error) {
-        console.error("Erreur lors du changement de statut:", error);
-      }
-    },
-    [searchTerm, selectedSpecialty]
-  );
+  const handleStatusChange = (value: string) => {
+    try {
+      setSelectedStatus(value);
+      // Mettre à jour l'état de filtrage
+      const hasActiveFilters =
+        searchTerm.trim() || selectedSpecialty !== "all" || value !== "all";
+      setIsFiltering(hasActiveFilters);
+    } catch (error) {
+      console.error("Erreur lors du changement de statut:", error);
+    }
+  };
 
   const handleUpdateStatus = async (userId: string, isActive: boolean) => {
     try {

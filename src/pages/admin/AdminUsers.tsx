@@ -1,28 +1,33 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { Search, Download, User, Shield, ShieldCheck, Trash2 } from 'lucide-react';
-import AdminLayout from '../../components/admin/AdminLayout';
+import React, { useState, useEffect } from "react";
+import {
+  Search,
+  Download,
+  User,
+  Shield,
+  ShieldCheck,
+  Trash2,
+} from "lucide-react";
+import AdminLayout from "../../components/admin/AdminLayout";
 
 interface User {
   id: string;
   name: string;
   email: string;
   phone?: string;
-  type: 'patient' | 'professional' | 'admin';
+  type: "patient" | "professional" | "admin";
   isActive: boolean;
   createdAt?: any;
 }
 
-
-
 const AdminUsers: React.FC = () => {
   const [users, setUsers] = useState<User[]>([]);
 
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useState("");
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
-  const [isFiltering, setIsFiltering] = useState(false);
+
 
   // Charger les données une seule fois au montage
   useEffect(() => {
@@ -33,34 +38,34 @@ const AdminUsers: React.FC = () => {
     try {
       setLoading(true);
       setError(null);
-      
-              const { collection, getDocs } = await import('firebase/firestore');
-      const { getFirestoreInstance } = await import('../../utils/firebase');
+
+      const { collection, getDocs } = await import("firebase/firestore");
+      const { getFirestoreInstance } = await import("../../utils/firebase");
       const db = getFirestoreInstance();
-      
+
       if (db) {
         // Charger tous les utilisateurs
-        const usersSnapshot = await getDocs(collection(db, 'users'));
+        const usersSnapshot = await getDocs(collection(db, "users"));
         const usersData = usersSnapshot.docs.map((doc) => ({
           id: doc.id,
-          ...doc.data()
+          ...doc.data(),
         })) as User[];
-        
+
         setUsers(usersData);
-              } else {
-          setUsers([]);
-        }
+      } else {
+        setUsers([]);
+      }
     } catch (err) {
-      console.error('Error fetching data:', err);
-      setError('Erreur lors du chargement des données');
+      console.error("Error fetching data:", err);
+      setError("Erreur lors du chargement des données");
       setUsers([]);
     } finally {
       setLoading(false);
     }
   };
 
-  // Filtrer les utilisateurs avec protection robuste
-  const getFilteredUsers = useCallback(() => {
+  // Filtrer les utilisateurs de manière simple et stable
+  const getFilteredUsers = () => {
     try {
       // Vérifier que les données sont disponibles
       if (!users || users.length === 0) {
@@ -71,41 +76,40 @@ const AdminUsers: React.FC = () => {
 
       // Filtre par recherche (nom, email, téléphone)
       if (searchTerm.trim()) {
-        filtered = filtered.filter(user =>
-          user.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          user.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          user.phone?.toLowerCase().includes(searchTerm.toLowerCase())
+        filtered = filtered.filter(
+          (user) =>
+            user.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            user.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            user.phone?.toLowerCase().includes(searchTerm.toLowerCase())
         );
       }
 
-      // Mettre à jour l'état de filtrage
-      const hasActiveFilters = searchTerm.trim();
-      setIsFiltering(hasActiveFilters);
+
 
       return filtered;
     } catch (error) {
-      console.error('Erreur lors du filtrage:', error);
+      console.error("Erreur lors du filtrage:", error);
       return [];
     }
-  }, [users, searchTerm]);
-
-
+  };
 
   const handleUpdateStatus = async (userId: string, isActive: boolean) => {
     try {
       setActionLoading(userId);
-      
+
       // Mise à jour locale immédiate
-      setUsers(prev => prev.map(user => 
-        user.id === userId ? { ...user, isActive } : user
-      ));
-      
+      setUsers((prev) =>
+        prev.map((user) => (user.id === userId ? { ...user, isActive } : user))
+      );
+
       // Mise à jour dans Firebase
-      const { updateUserStatus } = await import('../../services/firebaseService');
+      const { updateUserStatus } = await import(
+        "../../services/firebaseService"
+      );
       await updateUserStatus(userId, isActive);
     } catch (err) {
-      console.error('Error updating user status:', err);
-      alert('Erreur lors de la mise à jour du statut');
+      console.error("Error updating user status:", err);
+      alert("Erreur lors de la mise à jour du statut");
       // Restaurer l'état précédent
       fetchData();
     } finally {
@@ -113,25 +117,23 @@ const AdminUsers: React.FC = () => {
     }
   };
 
-
-
   const handleDeleteUser = async (userId: string) => {
-    if (!confirm('Êtes-vous sûr de vouloir supprimer cet utilisateur ?')) {
+    if (!confirm("Êtes-vous sûr de vouloir supprimer cet utilisateur ?")) {
       return;
     }
 
     try {
       setActionLoading(userId);
-      
+
       // Suppression locale immédiate
-      setUsers(prev => prev.filter(user => user.id !== userId));
-      
+      setUsers((prev) => prev.filter((user) => user.id !== userId));
+
       // Suppression dans Firebase
-      const { deleteUser } = await import('../../services/firebaseService');
+      const { deleteUser } = await import("../../services/firebaseService");
       await deleteUser(userId);
     } catch (err) {
-      console.error('Error deleting user:', err);
-      alert('Erreur lors de la suppression');
+      console.error("Error deleting user:", err);
+      alert("Erreur lors de la suppression");
       fetchData();
     } finally {
       setActionLoading(null);
@@ -142,37 +144,39 @@ const AdminUsers: React.FC = () => {
     try {
       const filtered = getFilteredUsers();
       const csvContent = [
-        ['Nom', 'Email', 'Téléphone', 'Type', 'Statut', 'Date de création'],
-        ...filtered.map(user => [
-          user.name || '',
-          user.email || '',
-          user.phone || '',
-          user.type || '',
-          user.isActive ? 'Actif' : 'Inactif',
-          user.createdAt && typeof user.createdAt.toDate === 'function' 
-            ? user.createdAt.toDate().toLocaleDateString('fr-FR')
-            : 'Non disponible'
-        ])
-      ].map(row => row.join(',')).join('\n');
+        ["Nom", "Email", "Téléphone", "Type", "Statut", "Date de création"],
+        ...filtered.map((user) => [
+          user.name || "",
+          user.email || "",
+          user.phone || "",
+          user.type || "",
+          user.isActive ? "Actif" : "Inactif",
+          user.createdAt && typeof user.createdAt.toDate === "function"
+            ? user.createdAt.toDate().toLocaleDateString("fr-FR")
+            : "Non disponible",
+        ]),
+      ]
+        .map((row) => row.join(","))
+        .join("\n");
 
-      const blob = new Blob([csvContent], { type: 'text/csv' });
+      const blob = new Blob([csvContent], { type: "text/csv" });
       const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
+      const a = document.createElement("a");
       a.href = url;
-      a.download = `utilisateurs_${new Date().toISOString().split('T')[0]}.csv`;
+      a.download = `utilisateurs_${new Date().toISOString().split("T")[0]}.csv`;
       a.click();
       window.URL.revokeObjectURL(url);
     } catch (error) {
-      console.error('Erreur lors de l\'export:', error);
-      alert('Erreur lors de l\'export');
+      console.error("Erreur lors de l'export:", error);
+      alert("Erreur lors de l'export");
     }
   };
 
   const getUserTypeIcon = (type: string) => {
     switch (type) {
-      case 'admin':
+      case "admin":
         return <Shield className="h-5 w-5 text-red-500" />;
-      case 'professional':
+      case "professional":
         return <ShieldCheck className="h-5 w-5 text-blue-500" />;
       default:
         return <User className="h-5 w-5 text-gray-500" />;
@@ -181,25 +185,25 @@ const AdminUsers: React.FC = () => {
 
   const getUserTypeLabel = (type: string) => {
     switch (type) {
-      case 'admin':
-        return 'Administrateur';
-      case 'professional':
-        return 'Professionnel';
-      case 'patient':
-        return 'Patient';
+      case "admin":
+        return "Administrateur";
+      case "professional":
+        return "Professionnel";
+      case "patient":
+        return "Patient";
       default:
         return type;
     }
   };
 
   const formatCreatedAt = (createdAt: any) => {
-    if (!createdAt || typeof createdAt.toDate !== 'function') {
-      return 'Non disponible';
+    if (!createdAt || typeof createdAt.toDate !== "function") {
+      return "Non disponible";
     }
     try {
-      return createdAt.toDate().toLocaleDateString('fr-FR');
+      return createdAt.toDate().toLocaleDateString("fr-FR");
     } catch {
-      return 'Non disponible';
+      return "Non disponible";
     }
   };
 
@@ -209,7 +213,9 @@ const AdminUsers: React.FC = () => {
         <div className="p-6">
           <div className="flex items-center justify-center h-64">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
-            <span className="ml-4 text-lg text-gray-600">Chargement des utilisateurs...</span>
+            <span className="ml-4 text-lg text-gray-600">
+              Chargement des utilisateurs...
+            </span>
           </div>
         </div>
       </AdminLayout>
@@ -244,9 +250,10 @@ const AdminUsers: React.FC = () => {
         <div className="flex justify-between items-center mb-6">
           <div>
             <p className="text-gray-600">
-              {filteredUsers.length} utilisateur{filteredUsers.length > 1 ? 's' : ''} 
-              {users.length !== filteredUsers.length && ` sur ${users.length} au total`}
-  
+              {filteredUsers.length} utilisateur
+              {filteredUsers.length > 1 ? "s" : ""}
+              {users.length !== filteredUsers.length &&
+                ` sur ${users.length} au total`}
             </p>
           </div>
           <button
@@ -271,7 +278,6 @@ const AdminUsers: React.FC = () => {
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
-
           </div>
         </div>
 
@@ -302,74 +308,90 @@ const AdminUsers: React.FC = () => {
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
                   {filteredUsers.map((user) => (
-                      <tr key={user.id} className="hover:bg-gray-50">
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="flex items-center">
-                            <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center mr-3">
-                              <User className="h-6 w-6 text-gray-500" />
-                            </div>
-                            <div>
-                              <div className="text-sm font-medium text-gray-900">{user.name}</div>
-                              <div className="text-sm text-gray-500">{user.email}</div>
-                              {user.phone && (
-                                <div className="text-sm text-gray-400">{user.phone}</div>
-                              )}
-                            </div>
+                    <tr key={user.id} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center">
+                          <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center mr-3">
+                            <User className="h-6 w-6 text-gray-500" />
                           </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="flex items-center">
-                            {getUserTypeIcon(user.type)}
-                            <span className={`ml-2 px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                              user.type === 'admin' ? 'bg-red-100 text-red-800' :
-                              user.type === 'professional' ? 'bg-blue-100 text-blue-800' : 
-                              'bg-green-100 text-green-800'
-                            }`}>
-                              {getUserTypeLabel(user.type)}
-                            </span>
+                          <div>
+                            <div className="text-sm font-medium text-gray-900">
+                              {user.name}
+                            </div>
+                            <div className="text-sm text-gray-500">
+                              {user.email}
+                            </div>
+                            {user.phone && (
+                              <div className="text-sm text-gray-400">
+                                {user.phone}
+                              </div>
+                            )}
                           </div>
-                        </td>
-
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {formatCreatedAt(user.createdAt)}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                            user.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                          }`}>
-                            {user.isActive ? 'Actif' : 'Inactif'}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center">
+                          {getUserTypeIcon(user.type)}
+                          <span
+                            className={`ml-2 px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                              user.type === "admin"
+                                ? "bg-red-100 text-red-800"
+                                : user.type === "professional"
+                                ? "bg-blue-100 text-blue-800"
+                                : "bg-green-100 text-green-800"
+                            }`}
+                          >
+                            {getUserTypeLabel(user.type)}
                           </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                          <div className="flex space-x-2">
-                            <button
-                              onClick={() => handleUpdateStatus(user.id, !user.isActive)}
-                              disabled={actionLoading === user.id}
-                              className={`px-3 py-1 rounded text-xs font-medium ${
-                                user.isActive 
-                                  ? 'bg-red-100 text-red-700 hover:bg-red-200' 
-                                  : 'bg-green-100 text-green-700 hover:bg-green-200'
-                              } disabled:opacity-50`}
-                            >
-                              {actionLoading === user.id ? (
-                                <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-current"></div>
-                              ) : (
-                                user.isActive ? 'Désactiver' : 'Activer'
-                              )}
-                            </button>
+                        </div>
+                      </td>
 
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {formatCreatedAt(user.createdAt)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span
+                          className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                            user.isActive
+                              ? "bg-green-100 text-green-800"
+                              : "bg-red-100 text-red-800"
+                          }`}
+                        >
+                          {user.isActive ? "Actif" : "Inactif"}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <div className="flex space-x-2">
+                          <button
+                            onClick={() =>
+                              handleUpdateStatus(user.id, !user.isActive)
+                            }
+                            disabled={actionLoading === user.id}
+                            className={`px-3 py-1 rounded text-xs font-medium ${
+                              user.isActive
+                                ? "bg-red-100 text-red-700 hover:bg-red-200"
+                                : "bg-green-100 text-green-700 hover:bg-green-200"
+                            } disabled:opacity-50`}
+                          >
+                            {actionLoading === user.id ? (
+                              <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-current"></div>
+                            ) : user.isActive ? (
+                              "Désactiver"
+                            ) : (
+                              "Activer"
+                            )}
+                          </button>
 
-
-                            <button
-                              onClick={() => handleDeleteUser(user.id)}
-                              disabled={actionLoading === user.id}
-                              className="px-3 py-1 bg-red-100 text-red-700 hover:bg-red-200 rounded text-xs font-medium disabled:opacity-50"
-                            >
-                              <Trash2 className="h-3 w-3" />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
+                          <button
+                            onClick={() => handleDeleteUser(user.id)}
+                            disabled={actionLoading === user.id}
+                            className="px-3 py-1 bg-red-100 text-red-700 hover:bg-red-200 rounded text-xs font-medium disabled:opacity-50"
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
                   ))}
                 </tbody>
               </table>
@@ -379,15 +401,13 @@ const AdminUsers: React.FC = () => {
               <User className="mx-auto h-12 w-12 text-gray-400" />
               <h3 className="mt-2 text-sm font-medium text-gray-900">
                 {searchTerm
-                  ? 'Aucun utilisateur ne correspond à vos critères'
-                  : 'Aucun utilisateur trouvé'
-                }
+                  ? "Aucun utilisateur ne correspond à vos critères"
+                  : "Aucun utilisateur trouvé"}
               </h3>
               <p className="mt-1 text-sm text-gray-500">
                 {searchTerm
-                  ? 'Essayez de modifier vos critères de recherche.'
-                  : 'Aucun utilisateur n\'est encore inscrit.'
-                }
+                  ? "Essayez de modifier vos critères de recherche."
+                  : "Aucun utilisateur n'est encore inscrit."}
               </p>
             </div>
           )}
