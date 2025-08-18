@@ -1,6 +1,16 @@
-import React, { useState, useEffect } from 'react';
-import { Search, Download, Calendar, User, Clock, FileText, Eye, Edit2, Trash2 } from 'lucide-react';
-import AdminLayout from '../../components/admin/AdminLayout';
+import React, { useState, useEffect } from "react";
+import {
+  Search,
+  Download,
+  Calendar,
+  User,
+  Clock,
+  FileText,
+  Eye,
+  Edit2,
+  Trash2,
+} from "lucide-react";
+import AdminLayout from "../../components/admin/AdminLayout";
 
 interface Appointment {
   id: string;
@@ -8,8 +18,8 @@ interface Appointment {
   professionalName: string;
   date: string;
   time: string;
-  status: 'pending' | 'confirmed' | 'completed' | 'cancelled';
-  type: 'video' | 'audio' | 'chat';
+  status: "pending" | "confirmed" | "completed" | "cancelled";
+  type: "video" | "audio" | "chat";
   createdAt?: unknown;
 }
 
@@ -21,12 +31,14 @@ interface AppointmentFilters {
 
 const AdminAppointments: React.FC = () => {
   const [appointments, setAppointments] = useState<Appointment[]>([]);
-  const [filteredAppointments, setFilteredAppointments] = useState<Appointment[]>([]);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [filteredAppointments, setFilteredAppointments] = useState<
+    Appointment[]
+  >([]);
+  const [searchTerm, setSearchTerm] = useState("");
   const [filters, setFilters] = useState<AppointmentFilters>({
-    status: '',
-    type: '',
-    dateRange: '',
+    status: "",
+    type: "",
+    dateRange: "",
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -45,21 +57,21 @@ const AdminAppointments: React.FC = () => {
     try {
       setLoading(true);
       setError(null);
-      
+
       // Simuler un délai pour éviter les problèmes de rendu
-      await new Promise(resolve => setTimeout(resolve, 100));
-      
-      const { collection, getDocs } = await import('firebase/firestore');
-      const { getFirestoreInstance } = await import('../../utils/firebase');
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
+      const { collection, getDocs } = await import("firebase/firestore");
+      const { getFirestoreInstance } = await import("../../utils/firebase");
       const db = getFirestoreInstance();
-      
+
       if (db) {
-        const querySnapshot = await getDocs(collection(db, 'bookings'));
+        const querySnapshot = await getDocs(collection(db, "bookings"));
         const results = querySnapshot.docs.map((doc) => ({
           id: doc.id,
-          ...doc.data()
+          ...doc.data(),
         })) as Appointment[];
-        
+
         setAppointments(results);
         setFilteredAppointments(results);
       } else {
@@ -67,8 +79,8 @@ const AdminAppointments: React.FC = () => {
         setFilteredAppointments([]);
       }
     } catch (error) {
-      console.error('Erreur lors du chargement des consultations:', error);
-      setError('Erreur lors du chargement des consultations');
+      console.error("Erreur lors du chargement des consultations:", error);
+      setError("Erreur lors du chargement des consultations");
       setAppointments([]);
       setFilteredAppointments([]);
     } finally {
@@ -82,44 +94,53 @@ const AdminAppointments: React.FC = () => {
 
       // Filter by search term
       if (searchTerm.trim()) {
-        filtered = filtered.filter(appointment =>
-          appointment.patientName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          appointment.professionalName?.toLowerCase().includes(searchTerm.toLowerCase())
+        filtered = filtered.filter(
+          (appointment) =>
+            appointment.patientName
+              ?.toLowerCase()
+              .includes(searchTerm.toLowerCase()) ||
+            appointment.professionalName
+              ?.toLowerCase()
+              .includes(searchTerm.toLowerCase())
         );
       }
 
       // Filter by status
       if (filters.status) {
-        filtered = filtered.filter(appointment => appointment.status === filters.status);
+        filtered = filtered.filter(
+          (appointment) => appointment.status === filters.status
+        );
       }
 
       // Filter by type
       if (filters.type) {
-        filtered = filtered.filter(appointment => appointment.type === filters.type);
+        filtered = filtered.filter(
+          (appointment) => appointment.type === filters.type
+        );
       }
 
       // Filter by date range
       if (filters.dateRange) {
         const now = new Date();
         const filterDate = new Date();
-        
+
         switch (filters.dateRange) {
-          case 'today':
+          case "today":
             filterDate.setHours(0, 0, 0, 0);
             break;
-          case 'week':
+          case "week":
             filterDate.setDate(now.getDate() - 7);
             break;
-          case 'month':
+          case "month":
             filterDate.setMonth(now.getMonth() - 1);
             break;
           default:
             filterDate.setFullYear(1970);
         }
 
-        filtered = filtered.filter(appointment => {
+        filtered = filtered.filter((appointment) => {
           if (!appointment.date) return false;
-          
+
           try {
             const appointmentDate = new Date(appointment.date);
             return appointmentDate >= filterDate;
@@ -131,7 +152,7 @@ const AdminAppointments: React.FC = () => {
 
       setFilteredAppointments(filtered);
     } catch {
-      console.error('Erreur lors du filtrage des consultations');
+      console.error("Erreur lors du filtrage des consultations");
       setFilteredAppointments(appointments);
     }
   };
@@ -139,40 +160,44 @@ const AdminAppointments: React.FC = () => {
   const handleExport = () => {
     try {
       const csvContent = [
-        ['Patient', 'Professionnel', 'Date', 'Heure', 'Type', 'Statut'],
-        ...filteredAppointments.map(appointment => [
-          appointment.patientName || '',
-          appointment.professionalName || '',
-          appointment.date || '',
-          appointment.time || '',
-          appointment.type || '',
-          appointment.status || ''
-        ])
-      ].map(row => row.join(',')).join('\n');
+        ["Patient", "Professionnel", "Date", "Heure", "Type", "Statut"],
+        ...filteredAppointments.map((appointment) => [
+          appointment.patientName || "",
+          appointment.professionalName || "",
+          appointment.date || "",
+          appointment.time || "",
+          appointment.type || "",
+          appointment.status || "",
+        ]),
+      ]
+        .map((row) => row.join(","))
+        .join("\n");
 
-      const blob = new Blob([csvContent], { type: 'text/csv' });
+      const blob = new Blob([csvContent], { type: "text/csv" });
       const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
+      const a = document.createElement("a");
       a.href = url;
-      a.download = `consultations_${new Date().toISOString().split('T')[0]}.csv`;
+      a.download = `consultations_${
+        new Date().toISOString().split("T")[0]
+      }.csv`;
       a.click();
       window.URL.revokeObjectURL(url);
     } catch (error) {
-      console.error('Erreur lors de l\'export:', error);
-      alert('Erreur lors de l\'export');
+      console.error("Erreur lors de l'export:", error);
+      alert("Erreur lors de l'export");
     }
   };
 
   const getStatusLabel = (status: string) => {
     switch (status) {
-      case 'pending':
-        return 'En attente';
-      case 'confirmed':
-        return 'Confirmée';
-      case 'completed':
-        return 'Terminée';
-      case 'cancelled':
-        return 'Annulée';
+      case "pending":
+        return "En attente";
+      case "confirmed":
+        return "Confirmée";
+      case "completed":
+        return "Terminée";
+      case "cancelled":
+        return "Annulée";
       default:
         return status;
     }
@@ -180,27 +205,27 @@ const AdminAppointments: React.FC = () => {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'pending':
-        return 'bg-yellow-100 text-yellow-800';
-      case 'confirmed':
-        return 'bg-blue-100 text-blue-800';
-      case 'completed':
-        return 'bg-green-100 text-green-800';
-      case 'cancelled':
-        return 'bg-red-100 text-red-800';
+      case "pending":
+        return "bg-yellow-100 text-yellow-800";
+      case "confirmed":
+        return "bg-blue-100 text-blue-800";
+      case "completed":
+        return "bg-green-100 text-green-800";
+      case "cancelled":
+        return "bg-red-100 text-red-800";
       default:
-        return 'bg-gray-100 text-gray-800';
+        return "bg-gray-100 text-gray-800";
     }
   };
 
   const getTypeLabel = (type: string) => {
     switch (type) {
-      case 'video':
-        return 'Vidéo';
-      case 'audio':
-        return 'Audio';
-      case 'chat':
-        return 'Chat';
+      case "video":
+        return "Vidéo";
+      case "audio":
+        return "Audio";
+      case "chat":
+        return "Chat";
       default:
         return type;
     }
@@ -208,11 +233,11 @@ const AdminAppointments: React.FC = () => {
 
   const getTypeIcon = (type: string) => {
     switch (type) {
-      case 'video':
+      case "video":
         return <Calendar className="h-4 w-4 text-blue-500" />;
-      case 'audio':
+      case "audio":
         return <Clock className="h-4 w-4 text-green-500" />;
-      case 'chat':
+      case "chat":
         return <FileText className="h-4 w-4 text-purple-500" />;
       default:
         return <Calendar className="h-4 w-4 text-gray-500" />;
@@ -222,10 +247,10 @@ const AdminAppointments: React.FC = () => {
   const formatDate = (dateString: string) => {
     try {
       const date = new Date(dateString);
-      return date.toLocaleDateString('fr-FR', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric'
+      return date.toLocaleDateString("fr-FR", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
       });
     } catch (error) {
       return dateString;
@@ -233,11 +258,11 @@ const AdminAppointments: React.FC = () => {
   };
 
   const resetFilters = () => {
-    setSearchTerm('');
+    setSearchTerm("");
     setFilters({
-      status: '',
-      type: '',
-      dateRange: '',
+      status: "",
+      type: "",
+      dateRange: "",
     });
   };
 
@@ -247,7 +272,9 @@ const AdminAppointments: React.FC = () => {
         <div className="p-6">
           <div className="flex items-center justify-center h-64">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
-            <span className="ml-4 text-lg text-gray-600">Chargement des consultations...</span>
+            <span className="ml-4 text-lg text-gray-600">
+              Chargement des consultations...
+            </span>
           </div>
         </div>
       </AdminLayout>
@@ -279,8 +306,10 @@ const AdminAppointments: React.FC = () => {
         <div className="flex justify-between items-center mb-6">
           <div>
             <p className="text-gray-600">
-              {filteredAppointments.length} consultation{filteredAppointments.length > 1 ? 's' : ''} 
-              {appointments.length !== filteredAppointments.length && ` sur ${appointments.length} au total`}
+              {filteredAppointments.length} consultation
+              {filteredAppointments.length > 1 ? "s" : ""}
+              {appointments.length !== filteredAppointments.length &&
+                ` sur ${appointments.length} au total`}
             </p>
           </div>
           <button
@@ -308,7 +337,9 @@ const AdminAppointments: React.FC = () => {
             <div className="flex flex-wrap gap-4">
               <select
                 value={filters.status}
-                onChange={(e) => setFilters({ ...filters, status: e.target.value })}
+                onChange={(e) =>
+                  setFilters({ ...filters, status: e.target.value })
+                }
                 className="border border-gray-300 rounded-md p-2"
               >
                 <option value="">Tous les statuts</option>
@@ -319,7 +350,9 @@ const AdminAppointments: React.FC = () => {
               </select>
               <select
                 value={filters.type}
-                onChange={(e) => setFilters({ ...filters, type: e.target.value })}
+                onChange={(e) =>
+                  setFilters({ ...filters, type: e.target.value })
+                }
                 className="border border-gray-300 rounded-md p-2"
               >
                 <option value="">Tous les types</option>
@@ -329,7 +362,9 @@ const AdminAppointments: React.FC = () => {
               </select>
               <select
                 value={filters.dateRange}
-                onChange={(e) => setFilters({ ...filters, dateRange: e.target.value })}
+                onChange={(e) =>
+                  setFilters({ ...filters, dateRange: e.target.value })
+                }
                 className="border border-gray-300 rounded-md p-2"
               >
                 <option value="">Toutes les dates</option>
@@ -404,7 +439,11 @@ const AdminAppointments: React.FC = () => {
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(appointment.status)}`}>
+                        <span
+                          className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(
+                            appointment.status
+                          )}`}
+                        >
                           {getStatusLabel(appointment.status)}
                         </span>
                       </td>
@@ -430,18 +469,25 @@ const AdminAppointments: React.FC = () => {
             <div className="text-center py-12">
               <Calendar className="mx-auto h-12 w-12 text-gray-400" />
               <h3 className="mt-2 text-sm font-medium text-gray-900">
-                {searchTerm || filters.status || filters.type || filters.dateRange
-                  ? 'Aucune consultation ne correspond à vos critères'
-                  : 'Aucune consultation trouvée'
-                }
+                {searchTerm ||
+                filters.status ||
+                filters.type ||
+                filters.dateRange
+                  ? "Aucune consultation ne correspond à vos critères"
+                  : "Aucune consultation trouvée"}
               </h3>
               <p className="mt-1 text-sm text-gray-500">
-                {searchTerm || filters.status || filters.type || filters.dateRange
-                  ? 'Essayez de modifier vos critères de recherche ou de filtrage.'
-                  : 'Aucune consultation n\'est encore programmée.'
-                }
+                {searchTerm ||
+                filters.status ||
+                filters.type ||
+                filters.dateRange
+                  ? "Essayez de modifier vos critères de recherche ou de filtrage."
+                  : "Aucune consultation n'est encore programmée."}
               </p>
-              {(searchTerm || filters.status || filters.type || filters.dateRange) && (
+              {(searchTerm ||
+                filters.status ||
+                filters.type ||
+                filters.dateRange) && (
                 <button
                   onClick={resetFilters}
                   className="mt-4 px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors"
