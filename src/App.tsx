@@ -68,6 +68,7 @@ const FinancialDetails = lazy(
 const ProtectedRoute = lazy(() => import("./components/auth/ProtectedRoute"));
 const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard"));
 const AdminUsers = lazy(() => import("./pages/admin/AdminUsers"));
+const AdminProfessionals = lazy(() => import("./pages/admin/AdminProfessionals"));
 const AdminPatients = lazy(() => import("./pages/admin/AdminPatients"));
 const AdminAppointments = lazy(() => import("./pages/admin/AdminAppointments"));
 const AdminStatistics = lazy(() => import("./pages/admin/AdminStatistics"));
@@ -398,6 +399,14 @@ function App() {
                         element={
                           <ProtectedRoute userType="admin">
                             <AdminUsers />
+                          </ProtectedRoute>
+                        }
+                      />
+                      <Route
+                        path="/admin/professionals"
+                        element={
+                          <ProtectedRoute userType="admin">
+                            <AdminProfessionals />
                           </ProtectedRoute>
                         }
                       />

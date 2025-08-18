@@ -12,19 +12,11 @@ interface User {
   createdAt?: any;
 }
 
-interface Professional {
-  id: string;
-  userId: string;
-  specialty?: string;
-  type?: 'mental' | 'sexual';
-  rating?: number;
-  reviews?: number;
-  isApproved: boolean;
-}
+
 
 const AdminUsers: React.FC = () => {
   const [users, setUsers] = useState<User[]>([]);
-  const [professionals, setProfessionals] = useState<Professional[]>([]);
+
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedType, setSelectedType] = useState('all');
   const [loading, setLoading] = useState(true);
@@ -41,7 +33,7 @@ const AdminUsers: React.FC = () => {
       setLoading(true);
       setError(null);
       
-      const { collection, getDocs, query, where, doc, getDoc } = await import('firebase/firestore');
+              const { collection, getDocs } = await import('firebase/firestore');
       const { getFirestoreInstance } = await import('../../utils/firebase');
       const db = getFirestoreInstance();
       
@@ -53,24 +45,14 @@ const AdminUsers: React.FC = () => {
           ...doc.data()
         })) as User[];
         
-        // Charger les informations des professionnels depuis la collection professionals
-        const professionalsSnapshot = await getDocs(collection(db, 'professionals'));
-        const professionalsData = professionalsSnapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data()
-        })) as Professional[];
-        
         setUsers(usersData);
-        setProfessionals(professionalsData);
-      } else {
-        setUsers([]);
-        setProfessionals([]);
-      }
+              } else {
+          setUsers([]);
+        }
     } catch (err) {
       console.error('Error fetching data:', err);
       setError('Erreur lors du chargement des données');
       setUsers([]);
-      setProfessionals([]);
     } finally {
       setLoading(false);
     }
@@ -97,9 +79,7 @@ const AdminUsers: React.FC = () => {
     return filtered;
   };
 
-  const getProfessionalInfo = (userId: string): Professional | null => {
-    return professionals.find(prof => prof.userId === userId) || null;
-  };
+
 
   const handleUpdateStatus = async (userId: string, isActive: boolean) => {
     try {
@@ -123,26 +103,7 @@ const AdminUsers: React.FC = () => {
     }
   };
 
-  const handleProfessionalApproval = async (userId: string, isApproved: boolean) => {
-    try {
-      setActionLoading(userId);
-      
-      // Mise à jour locale immédiate
-      setProfessionals(prev => prev.map(prof => 
-        prof.userId === userId ? { ...prof, isApproved } : prof
-      ));
-      
-      // Mise à jour dans Firebase
-      const { updateProfessionalApproval } = await import('../../services/firebaseService');
-      await updateProfessionalApproval(userId, isApproved);
-    } catch (err) {
-      console.error('Error updating professional approval:', err);
-      alert('Erreur lors de la mise à jour de l\'approbation');
-      fetchData();
-    } finally {
-      setActionLoading(null);
-    }
-  };
+
 
   const handleDeleteUser = async (userId: string) => {
     if (!confirm('Êtes-vous sûr de vouloir supprimer cet utilisateur ?')) {
@@ -275,7 +236,7 @@ const AdminUsers: React.FC = () => {
             <p className="text-gray-600">
               {filteredUsers.length} utilisateur{filteredUsers.length > 1 ? 's' : ''} 
               {users.length !== filteredUsers.length && ` sur ${users.length} au total`}
-              {professionals.length > 0 && ` • ${professionals.length} professionnel${professionals.length > 1 ? 's' : ''} actif${professionals.length > 1 ? 's' : ''}`}
+  
             </p>
           </div>
           <button
@@ -420,19 +381,7 @@ const AdminUsers: React.FC = () => {
                               )}
                             </button>
 
-                            {user.type === 'professional' && (
-                              <button
-                                onClick={() => handleProfessionalApproval(user.id, !(professionalInfo?.isApproved || false))}
-                                disabled={actionLoading === user.id}
-                                className={`px-3 py-1 rounded text-xs font-medium ${
-                                  (professionalInfo?.isApproved || false)
-                                    ? 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200' 
-                                    : 'bg-blue-100 text-blue-700 hover:bg-blue-200'
-                                } disabled:opacity-50`}
-                              >
-                                {actionLoading === user.id ? '...' : ((professionalInfo?.isApproved || false) ? 'Révoquer' : 'Approuver')}
-                              </button>
-                            )}
+
 
                             <button
                               onClick={() => handleDeleteUser(user.id)}

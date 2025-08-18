@@ -8,7 +8,8 @@ import {
   BarChart2, 
   FileText, 
   MessageSquare,
-  Users2
+  Users2,
+  ShieldCheck
 } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
 
@@ -26,6 +27,11 @@ const AdminSidebar = () => {
       path: '/admin/users', 
       icon: Users, 
       label: language === 'fr' ? 'Utilisateurs' : 'Users' 
+    },
+    { 
+      path: '/admin/professionals', 
+      icon: ShieldCheck, 
+      label: language === 'fr' ? 'Professionnels' : 'Professionals' 
     },
     { 
       path: '/admin/patients', 
