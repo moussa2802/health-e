@@ -81,7 +81,13 @@ const AdminUsers: React.FC = () => {
 
   const filterUsers = () => {
     try {
-      let filtered = [...users]; // Créer une copie pour éviter les mutations
+      // Vérifier que users est un tableau valide
+      if (!Array.isArray(users)) {
+        setFilteredUsers([]);
+        return;
+      }
+
+      let filtered = users.filter(user => user && user.id); // Filtrer les utilisateurs invalides
 
       // Filter by search term
       if (searchTerm.trim()) {
@@ -135,10 +141,11 @@ const AdminUsers: React.FC = () => {
         });
       }
 
-      setFilteredUsers(filtered);
+      // Toujours définir un tableau valide
+      setFilteredUsers(filtered || []);
     } catch (error) {
       console.error('Erreur lors du filtrage:', error);
-      setFilteredUsers(users); // Fallback vers la liste complète
+      setFilteredUsers([]); // Fallback vers un tableau vide
     }
   };
 
@@ -353,7 +360,7 @@ const AdminUsers: React.FC = () => {
 
         {/* Users Table */}
         <div className="bg-white rounded-lg shadow overflow-hidden">
-          {filteredUsers && filteredUsers.length > 0 ? (
+          {Array.isArray(filteredUsers) && filteredUsers.length > 0 ? (
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
@@ -379,17 +386,16 @@ const AdminUsers: React.FC = () => {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {filteredUsers.map((user, index) => {
-                    // Protection contre les utilisateurs invalides
-                    if (!user || !user.id) {
-                      console.warn('Utilisateur invalide détecté:', user);
+                  {filteredUsers.map((user) => {
+                    // Protection renforcée contre les utilisateurs invalides
+                    if (!user || !user.id || typeof user !== 'object') {
                       return null;
                     }
                     
                     const professionalInfo = user.type === 'professional' ? getProfessionalInfo(user.id) : null;
                     
                     return (
-                      <tr key={user.id} className="hover:bg-gray-50">
+                      <tr key={`user-${user.id}`} className="hover:bg-gray-50">
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex items-center">
                             {user.profileImage ? (
@@ -510,13 +516,33 @@ const AdminUsers: React.FC = () => {
           ) : (
             <div className="text-center py-12">
               <User className="mx-auto h-12 w-12 text-gray-400" />
-              <h3 className="mt-2 text-sm font-medium text-gray-900">Aucun utilisateur trouvé</h3>
+              <h3 className="mt-2 text-sm font-medium text-gray-900">
+                {Array.isArray(filteredUsers) && filteredUsers.length === 0 && (searchTerm || filters.type !== 'all' || filters.status !== 'all' || filters.dateRange)
+                  ? 'Aucun utilisateur ne correspond à vos critères'
+                  : 'Aucun utilisateur trouvé'
+                }
+              </h3>
               <p className="mt-1 text-sm text-gray-500">
-                {searchTerm || filters.type !== 'all' || filters.status !== 'all' 
-                  ? 'Essayez de modifier vos critères de recherche.'
+                {searchTerm || filters.type !== 'all' || filters.status !== 'all' || filters.dateRange
+                  ? 'Essayez de modifier vos critères de recherche ou de filtrage.'
                   : 'Aucun utilisateur n\'est encore inscrit.'
                 }
               </p>
+              {(searchTerm || filters.type !== 'all' || filters.status !== 'all' || filters.dateRange) && (
+                <button
+                  onClick={() => {
+                    setSearchTerm('');
+                    setFilters({
+                      type: 'all',
+                      status: 'all',
+                      dateRange: '',
+                    });
+                  }}
+                  className="mt-4 px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors"
+                >
+                  Réinitialiser les filtres
+                </button>
+              )}
             </div>
           )}
         </div>

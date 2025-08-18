@@ -100,67 +100,79 @@ const AdminPatients: React.FC = () => {
   };
 
   const filterPatients = () => {
-    let filtered = patients;
-
-    // Filter by search term
-    if (searchTerm) {
-      filtered = filtered.filter(patient =>
-        patient.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        patient.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (patient.phone && patient.phone.includes(searchTerm))
-      );
-    }
-
-    // Filter by gender
-    if (filters.gender) {
-      filtered = filtered.filter(patient => patient.gender === filters.gender);
-    }
-
-    // Filter by date range
-    if (filters.dateRange) {
-      const now = new Date();
-      const filterDate = new Date();
-      
-      switch (filters.dateRange) {
-        case 'today':
-          filterDate.setHours(0, 0, 0, 0);
-          break;
-        case 'week':
-          filterDate.setDate(now.getDate() - 7);
-          break;
-        case 'month':
-          filterDate.setMonth(now.getMonth() - 1);
-          break;
-        default:
-          filterDate.setFullYear(1970);
+    try {
+      // Vérifier que patients est un tableau valide
+      if (!Array.isArray(patients)) {
+        setFilteredPatients([]);
+        return;
       }
 
-      filtered = filtered.filter(patient => {
-        if (!patient.createdAt) return false;
+      let filtered = patients.filter(patient => patient && patient.id); // Filtrer les patients invalides
+
+      // Filter by search term
+      if (searchTerm.trim()) {
+        filtered = filtered.filter(patient =>
+          (patient.name && patient.name.toLowerCase().includes(searchTerm.toLowerCase())) ||
+          (patient.email && patient.email.toLowerCase().includes(searchTerm.toLowerCase())) ||
+          (patient.phone && patient.phone.includes(searchTerm))
+        );
+      }
+
+      // Filter by gender
+      if (filters.gender) {
+        filtered = filtered.filter(patient => patient.gender === filters.gender);
+      }
+
+      // Filter by date range
+      if (filters.dateRange) {
+        const now = new Date();
+        const filterDate = new Date();
         
-        try {
-          let patientDate;
+        switch (filters.dateRange) {
+          case 'today':
+            filterDate.setHours(0, 0, 0, 0);
+            break;
+          case 'week':
+            filterDate.setDate(now.getDate() - 7);
+            break;
+          case 'month':
+            filterDate.setMonth(now.getMonth() - 1);
+            break;
+          default:
+            filterDate.setFullYear(1970);
+        }
+
+        filtered = filtered.filter(patient => {
+          if (!patient.createdAt) return false;
           
-          // Handle Firestore Timestamp
-          if (patient.createdAt && typeof patient.createdAt === 'object' && patient.createdAt.toDate) {
-            patientDate = patient.createdAt.toDate();
-          } else if (patient.createdAt instanceof Date) {
-            patientDate = patient.createdAt;
-          } else if (typeof patient.createdAt === 'string') {
-            patientDate = new Date(patient.createdAt);
-          } else {
+          try {
+            let patientDate;
+            
+            // Handle Firestore Timestamp
+            if (patient.createdAt && typeof patient.createdAt === 'object' && patient.createdAt.toDate) {
+              patientDate = patient.createdAt.toDate();
+            } else if (patient.createdAt instanceof Date) {
+              patientDate = patient.createdAt;
+            } else if (typeof patient.createdAt === 'string') {
+              patientDate = new Date(patient.createdAt);
+            } else {
+              return false;
+            }
+            
+            return patientDate >= filterDate;
+          } catch (error) {
+            console.warn('Error filtering by date:', error);
             return false;
           }
-          
-          return patientDate >= filterDate;
-        } catch (error) {
-          console.warn('Error filtering by date:', error);
-          return false;
-        }
-      });
-    }
+        });
+      }
 
-    setFilteredPatients(filtered);
+      // Toujours définir un tableau valide
+      setFilteredPatients(filtered || []);
+    } catch (error) {
+      console.error('Erreur lors du filtrage des patients:', error);
+      setFilteredPatients([]); // Fallback vers un tableau vide
+    }
   };
 
   const handleExport = () => {

@@ -50,20 +50,20 @@ const AdminAppointments: React.FC = () => {
     try {
       setLoading(true);
       setError(null);
-      const { collection, getDocs } = await import('firebase/firestore');
-      const { getFirestoreInstance } = await import('../../utils/firebase');
+      const { collection, getDocs } = await import("firebase/firestore");
+      const { getFirestoreInstance } = await import("../../utils/firebase");
       const db = getFirestoreInstance();
       if (db) {
-        const querySnapshot = await getDocs(collection(db, 'bookings'));
+        const querySnapshot = await getDocs(collection(db, "bookings"));
         const results = querySnapshot.docs.map((doc) => ({
           id: doc.id,
-          ...doc.data()
+          ...doc.data(),
         }));
         setBookings(results);
       }
     } catch (error) {
-      console.error('Erreur lors du chargement des consultations:', error);
-      setError('Erreur lors du chargement des consultations');
+      console.error("Erreur lors du chargement des consultations:", error);
+      setError("Erreur lors du chargement des consultations");
       setBookings([]);
     } finally {
       setLoading(false);
