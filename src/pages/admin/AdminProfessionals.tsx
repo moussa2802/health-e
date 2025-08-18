@@ -126,10 +126,6 @@ const AdminProfessionals: React.FC = () => {
         filtered = filtered.filter(professional => professional.isApproved);
       } else if (selectedStatus === 'pending') {
         filtered = filtered.filter(professional => !professional.isApproved);
-      } else if (selectedStatus === 'active') {
-        filtered = filtered.filter(professional => professional.isActive);
-      } else if (selectedStatus === 'inactive') {
-        filtered = filtered.filter(professional => !professional.isActive);
       }
     }
 
@@ -353,8 +349,8 @@ const AdminProfessionals: React.FC = () => {
                 <option value="Psychologue">Psychologue</option>
                 <option value="Psychiatre">Psychiatre</option>
                 <option value="Sexologue">Sexologue</option>
-                <option value="Thérapeute">Thérapeute</option>
-                <option value="Coach">Coach</option>
+                <option value="Gynécologue">Gynécologue</option>
+                <option value="Urologue">Urologue</option>
               </select>
               <select
                 value={selectedStatus}
@@ -363,9 +359,7 @@ const AdminProfessionals: React.FC = () => {
               >
                 <option value="all">Tous les statuts</option>
                 <option value="approved">Approuvés</option>
-                <option value="pending">En attente</option>
-                <option value="active">Actifs</option>
-                <option value="inactive">Inactifs</option>
+                <option value="pending">Révoqués</option>
               </select>
             </div>
           </div>
@@ -533,8 +527,14 @@ const AdminProfessionals: React.FC = () => {
                 }
               </h3>
               <p className="mt-1 text-sm text-gray-500">
-                {searchTerm || selectedSpecialty !== 'all' || selectedStatus !== 'all'
-                  ? 'Essayez de modifier vos critères de recherche ou de filtrage.'
+                {searchTerm 
+                  ? 'Essayez de modifier vos critères de recherche.'
+                  : selectedSpecialty !== 'all'
+                  ? `Aucun professionnel trouvé pour la spécialité "${selectedSpecialty}".`
+                  : selectedStatus !== 'all'
+                  ? selectedStatus === 'approved' 
+                    ? 'Aucun professionnel n\'est actuellement approuvé.'
+                    : 'Aucun professionnel n\'est actuellement révoqué.'
                   : 'Aucun professionnel n\'est encore inscrit.'
                 }
               </p>

@@ -18,7 +18,7 @@ const AdminUsers: React.FC = () => {
   const [users, setUsers] = useState<User[]>([]);
 
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedType, setSelectedType] = useState('all');
+
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
@@ -71,10 +71,7 @@ const AdminUsers: React.FC = () => {
       );
     }
 
-    // Filtre par type (professionnel/patient)
-    if (selectedType !== 'all') {
-      filtered = filtered.filter(user => user.type === selectedType);
-    }
+
 
     return filtered;
   };
@@ -261,18 +258,7 @@ const AdminUsers: React.FC = () => {
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
-            <div className="flex flex-wrap gap-4">
-              <select
-                value={selectedType}
-                onChange={(e) => setSelectedType(e.target.value)}
-                className="border border-gray-300 rounded-md p-2"
-              >
-                <option value="all">Tous les types</option>
-                <option value="patient">Patients</option>
-                <option value="professional">Professionnels</option>
-                <option value="admin">Administrateurs</option>
-              </select>
-            </div>
+
           </div>
         </div>
 
@@ -379,14 +365,14 @@ const AdminUsers: React.FC = () => {
             <div className="text-center py-12">
               <User className="mx-auto h-12 w-12 text-gray-400" />
               <h3 className="mt-2 text-sm font-medium text-gray-900">
-                {searchTerm || selectedType !== 'all'
+                {searchTerm
                   ? 'Aucun utilisateur ne correspond à vos critères'
                   : 'Aucun utilisateur trouvé'
                 }
               </h3>
               <p className="mt-1 text-sm text-gray-500">
-                {searchTerm || selectedType !== 'all'
-                  ? 'Essayez de modifier vos critères de recherche ou de filtrage.'
+                {searchTerm
+                  ? 'Essayez de modifier vos critères de recherche.'
                   : 'Aucun utilisateur n\'est encore inscrit.'
                 }
               </p>
