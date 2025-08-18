@@ -5,6 +5,34 @@
 [build.environment]
   NODE_VERSION = "18"
 
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+    X-Content-Type-Options = "nosniff"
+
+[[headers]]
+  for = "/*.js"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+    X-Content-Type-Options = "nosniff"
+
+[[headers]]
+  for = "/*.css"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+    X-Content-Type-Options = "nosniff"
+
+[[redirects]]
+  from = "/assets/AdminUsers-DybC3eRH.js"
+  to = "/assets/AdminUsers-uVJGCwIS.js"
+  status = 301
+
+[[redirects]]
+  from = "/assets/AdminUsers-*.js"
+  to = "/assets/AdminUsers-uVJGCwIS.js"
+  status = 301
+
 [[redirects]]
   from = "/*"
   to = "/index.html"
