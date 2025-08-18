@@ -41,7 +41,7 @@ const AdminUsers: React.FC = () => {
       setLoading(true);
       setError(null);
       
-      const { collection, getDocs, query, where } = await import('firebase/firestore');
+      const { collection, getDocs, query, where, doc, getDoc } = await import('firebase/firestore');
       const { getFirestoreInstance } = await import('../../utils/firebase');
       const db = getFirestoreInstance();
       
@@ -53,12 +53,10 @@ const AdminUsers: React.FC = () => {
           ...doc.data()
         })) as User[];
         
-        // Charger les professionnels depuis la collection users
-        const professionalsQuery = query(collection(db, 'users'), where('type', '==', 'professional'));
-        const professionalsSnapshot = await getDocs(professionalsQuery);
+        // Charger les informations des professionnels depuis la collection professionals
+        const professionalsSnapshot = await getDocs(collection(db, 'professionals'));
         const professionalsData = professionalsSnapshot.docs.map((doc) => ({
           id: doc.id,
-          userId: doc.id,
           ...doc.data()
         })) as Professional[];
         
