@@ -44,7 +44,6 @@ const AdminProfessionals: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
 
-
   // Charger les données une seule fois au montage
   useEffect(() => {
     fetchProfessionals();
@@ -167,12 +166,7 @@ const AdminProfessionals: React.FC = () => {
         }
       }
 
-      // Mettre à jour l'état de filtrage
-      const hasActiveFilters =
-        searchTerm.trim() ||
-        selectedSpecialty !== "all" ||
-        selectedStatus !== "all";
-      setIsFiltering(hasActiveFilters);
+
 
       return filtered;
     } catch (error) {
@@ -185,7 +179,6 @@ const AdminProfessionals: React.FC = () => {
   const handleSearchChange = (value: string) => {
     try {
       setSearchTerm(value);
-
     } catch (error) {
       console.error("Erreur lors du changement de recherche:", error);
     }
@@ -194,7 +187,6 @@ const AdminProfessionals: React.FC = () => {
   const handleSpecialtyChange = (value: string) => {
     try {
       setSelectedSpecialty(value);
-
     } catch (error) {
       console.error("Erreur lors du changement de spécialité:", error);
     }
@@ -203,7 +195,6 @@ const AdminProfessionals: React.FC = () => {
   const handleStatusChange = (value: string) => {
     try {
       setSelectedStatus(value);
-
     } catch (error) {
       console.error("Erreur lors du changement de statut:", error);
     }
@@ -358,8 +349,6 @@ const AdminProfessionals: React.FC = () => {
         return "Non défini";
     }
   };
-
-
 
   const getTypeColor = (type?: string) => {
     switch (type) {
@@ -706,7 +695,6 @@ const AdminProfessionals: React.FC = () => {
                     : "Aucun professionnel n'est actuellement révoqué."
                   : "Aucun professionnel n'est encore inscrit."}
               </p>
-              
             </div>
           )}
         </div>
