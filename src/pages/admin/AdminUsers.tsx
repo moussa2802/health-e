@@ -289,9 +289,7 @@ const AdminUsers: React.FC = () => {
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Type
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Informations professionnelles
-                    </th>
+
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Date d'inscription
                     </th>
@@ -304,10 +302,7 @@ const AdminUsers: React.FC = () => {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {filteredUsers.map((user) => {
-                    const professionalInfo = user.type === 'professional' ? getProfessionalInfo(user.id) : null;
-                    
-                    return (
+                  {filteredUsers.map((user) => (
                       <tr key={user.id} className="hover:bg-gray-50">
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex items-center">
@@ -335,24 +330,7 @@ const AdminUsers: React.FC = () => {
                             </span>
                           </div>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          {professionalInfo ? (
-                            <div className="text-sm">
-                              <div className="font-medium text-gray-900">
-                                {professionalInfo.specialty || 'Spécialité non définie'}
-                              </div>
-                              <div className="text-gray-500">
-                                {professionalInfo.type === 'mental' ? 'Santé mentale' : 
-                                 professionalInfo.type === 'sexual' ? 'Santé sexuelle' : 'Type non défini'}
-                              </div>
-                              <div className="text-gray-500">
-                                Note: {professionalInfo.rating || 0}/5 ({professionalInfo.reviews || 0} avis)
-                              </div>
-                            </div>
-                          ) : (
-                            <span className="text-gray-400">-</span>
-                          )}
-                        </td>
+
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                           {formatCreatedAt(user.createdAt)}
                         </td>
@@ -393,8 +371,7 @@ const AdminUsers: React.FC = () => {
                           </div>
                         </td>
                       </tr>
-                    );
-                  })}
+                  ))}
                 </tbody>
               </table>
             </div>
