@@ -1,7 +1,15 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { Search, Download, Calendar, Clock, User, MapPin, DollarSign } from 'lucide-react';
-import AdminLayout from '../../components/admin/AdminLayout';
-import { where } from 'firebase/firestore';
+import React, { useState, useEffect, useCallback } from "react";
+import {
+  Search,
+  Download,
+  Calendar,
+  Clock,
+  User,
+  MapPin,
+  DollarSign,
+} from "lucide-react";
+import AdminLayout from "../../components/admin/AdminLayout";
+import { where } from "firebase/firestore";
 
 interface Appointment {
   id: string;
@@ -11,15 +19,15 @@ interface Appointment {
   professionalName?: string;
   date: any;
   time: string;
-  status: 'pending' | 'confirmed' | 'completed' | 'cancelled';
+  status: "pending" | "confirmed" | "completed" | "cancelled";
   amount?: number;
   createdAt?: any;
 }
 
 const AdminAppointments: React.FC = () => {
   const [appointments, setAppointments] = useState<Appointment[]>([]);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedStatus, setSelectedStatus] = useState('all');
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedStatus, setSelectedStatus] = useState("all");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -32,50 +40,65 @@ const AdminAppointments: React.FC = () => {
     try {
       setLoading(true);
       setError(null);
-      
-      const { collection, getDocs, query, orderBy } = await import('firebase/firestore');
-      const { getFirestoreInstance } = await import('../../utils/firebase');
+
+      const { collection, getDocs, query, orderBy } = await import(
+        "firebase/firestore"
+      );
+      const { getFirestoreInstance } = await import("../../utils/firebase");
       const db = getFirestoreInstance();
-      
+
       if (db) {
         const appointmentsQuery = query(
-          collection(db, 'appointments'),
-          orderBy('date', 'desc')
+          collection(db, "appointments"),
+          orderBy("date", "desc")
         );
         const snapshot = await getDocs(appointmentsQuery);
-        
+
         const appointmentsData = snapshot.docs.map((doc) => ({
           id: doc.id,
-          ...doc.data()
+          ...doc.data(),
         })) as Appointment[];
-        
+
         // Enrichir avec les noms des utilisateurs
         const enrichedAppointments = await Promise.all(
           appointmentsData.map(async (appointment) => {
             try {
               const [patientDoc, professionalDoc] = await Promise.all([
-                getDocs(query(collection(db, 'users'), where('id', '==', appointment.patientId))),
-                getDocs(query(collection(db, 'users'), where('id', '==', appointment.professionalId)))
+                getDocs(
+                  query(
+                    collection(db, "users"),
+                    where("id", "==", appointment.patientId)
+                  )
+                ),
+                getDocs(
+                  query(
+                    collection(db, "users"),
+                    where("id", "==", appointment.professionalId)
+                  )
+                ),
               ]);
-              
+
               return {
                 ...appointment,
-                patientName: patientDoc.docs[0]?.data()?.name || 'Patient inconnu',
-                professionalName: professionalDoc.docs[0]?.data()?.name || 'Professionnel inconnu'
+                patientName:
+                  patientDoc.docs[0]?.data()?.name || "Patient inconnu",
+                professionalName:
+                  professionalDoc.docs[0]?.data()?.name ||
+                  "Professionnel inconnu",
               };
             } catch {
               return appointment;
             }
           })
         );
-        
+
         setAppointments(enrichedAppointments);
       } else {
         setAppointments([]);
       }
     } catch (err) {
-      console.error('Error fetching appointments:', err);
-      setError('Erreur lors du chargement des consultations');
+      console.error("Error fetching appointments:", err);
+      setError("Erreur lors du chargement des consultations");
       setAppointments([]);
     } finally {
       setLoading(false);
@@ -88,15 +111,22 @@ const AdminAppointments: React.FC = () => {
 
     // Filtre par recherche
     if (searchTerm.trim()) {
-      filtered = filtered.filter(appointment =>
-        appointment.patientName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        appointment.professionalName?.toLowerCase().includes(searchTerm.toLowerCase())
+      filtered = filtered.filter(
+        (appointment) =>
+          appointment.patientName
+            ?.toLowerCase()
+            .includes(searchTerm.toLowerCase()) ||
+          appointment.professionalName
+            ?.toLowerCase()
+            .includes(searchTerm.toLowerCase())
       );
     }
 
     // Filtre par statut
-    if (selectedStatus !== 'all') {
-      filtered = filtered.filter(appointment => appointment.status === selectedStatus);
+    if (selectedStatus !== "all") {
+      filtered = filtered.filter(
+        (appointment) => appointment.status === selectedStatus
+      );
     }
 
     return filtered;
@@ -106,61 +136,74 @@ const AdminAppointments: React.FC = () => {
     try {
       const filtered = getFilteredAppointments();
       const csvContent = [
-        ['Patient', 'Professionnel', 'Date', 'Heure', 'Statut', 'Montant', 'Date de création'],
-        ...filtered.map(appointment => [
-          appointment.patientName || 'Patient inconnu',
-          appointment.professionalName || 'Professionnel inconnu',
-          appointment.date && typeof appointment.date.toDate === 'function' 
-            ? appointment.date.toDate().toLocaleDateString('fr-FR')
-            : 'Non disponible',
-          appointment.time || '',
+        [
+          "Patient",
+          "Professionnel",
+          "Date",
+          "Heure",
+          "Statut",
+          "Montant",
+          "Date de création",
+        ],
+        ...filtered.map((appointment) => [
+          appointment.patientName || "Patient inconnu",
+          appointment.professionalName || "Professionnel inconnu",
+          appointment.date && typeof appointment.date.toDate === "function"
+            ? appointment.date.toDate().toLocaleDateString("fr-FR")
+            : "Non disponible",
+          appointment.time || "",
           getStatusLabel(appointment.status),
-          appointment.amount ? `${appointment.amount} FCFA` : 'Non spécifié',
-          appointment.createdAt && typeof appointment.createdAt.toDate === 'function' 
-            ? appointment.createdAt.toDate().toLocaleDateString('fr-FR')
-            : 'Non disponible'
-        ])
-      ].map(row => row.join(',')).join('\n');
+          appointment.amount ? `${appointment.amount} FCFA` : "Non spécifié",
+          appointment.createdAt &&
+          typeof appointment.createdAt.toDate === "function"
+            ? appointment.createdAt.toDate().toLocaleDateString("fr-FR")
+            : "Non disponible",
+        ]),
+      ]
+        .map((row) => row.join(","))
+        .join("\n");
 
-      const blob = new Blob([csvContent], { type: 'text/csv' });
+      const blob = new Blob([csvContent], { type: "text/csv" });
       const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
+      const a = document.createElement("a");
       a.href = url;
-      a.download = `consultations_${new Date().toISOString().split('T')[0]}.csv`;
+      a.download = `consultations_${
+        new Date().toISOString().split("T")[0]
+      }.csv`;
       a.click();
       window.URL.revokeObjectURL(url);
     } catch (error) {
-      console.error('Erreur lors de l\'export:', error);
-      alert('Erreur lors de l\'export');
+      console.error("Erreur lors de l'export:", error);
+      alert("Erreur lors de l'export");
     }
   }, [getFilteredAppointments]);
 
   const resetFilters = useCallback(() => {
-    setSearchTerm('');
-    setSelectedStatus('all');
+    setSearchTerm("");
+    setSelectedStatus("all");
   }, []);
 
   const formatDate = (date: any) => {
-    if (!date || typeof date.toDate !== 'function') {
-      return 'Non disponible';
+    if (!date || typeof date.toDate !== "function") {
+      return "Non disponible";
     }
     try {
-      return date.toDate().toLocaleDateString('fr-FR');
+      return date.toDate().toLocaleDateString("fr-FR");
     } catch {
-      return 'Non disponible';
+      return "Non disponible";
     }
   };
 
   const getStatusLabel = (status: string) => {
     switch (status) {
-      case 'pending':
-        return 'En attente';
-      case 'confirmed':
-        return 'Confirmée';
-      case 'completed':
-        return 'Terminée';
-      case 'cancelled':
-        return 'Annulée';
+      case "pending":
+        return "En attente";
+      case "confirmed":
+        return "Confirmée";
+      case "completed":
+        return "Terminée";
+      case "cancelled":
+        return "Annulée";
       default:
         return status;
     }
@@ -168,16 +211,16 @@ const AdminAppointments: React.FC = () => {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'pending':
-        return 'bg-yellow-100 text-yellow-800';
-      case 'confirmed':
-        return 'bg-blue-100 text-blue-800';
-      case 'completed':
-        return 'bg-green-100 text-green-800';
-      case 'cancelled':
-        return 'bg-red-100 text-red-800';
+      case "pending":
+        return "bg-yellow-100 text-yellow-800";
+      case "confirmed":
+        return "bg-blue-100 text-blue-800";
+      case "completed":
+        return "bg-green-100 text-green-800";
+      case "cancelled":
+        return "bg-red-100 text-red-800";
       default:
-        return 'bg-gray-100 text-gray-800';
+        return "bg-gray-100 text-gray-800";
     }
   };
 
@@ -187,7 +230,9 @@ const AdminAppointments: React.FC = () => {
         <div className="p-6">
           <div className="flex items-center justify-center h-64">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
-            <span className="ml-4 text-lg text-gray-600">Chargement des consultations...</span>
+            <span className="ml-4 text-lg text-gray-600">
+              Chargement des consultations...
+            </span>
           </div>
         </div>
       </AdminLayout>
@@ -221,8 +266,10 @@ const AdminAppointments: React.FC = () => {
         <div className="flex justify-between items-center mb-6">
           <div>
             <p className="text-gray-600">
-              {filteredAppointments.length} consultation{filteredAppointments.length > 1 ? 's' : ''} 
-              {appointments.length !== filteredAppointments.length && ` sur ${appointments.length} au total`}
+              {filteredAppointments.length} consultation
+              {filteredAppointments.length > 1 ? "s" : ""}
+              {appointments.length !== filteredAppointments.length &&
+                ` sur ${appointments.length} au total`}
             </p>
           </div>
           <button
@@ -303,10 +350,12 @@ const AdminAppointments: React.FC = () => {
                           </div>
                           <div>
                             <div className="text-sm font-medium text-gray-900">
-                              {appointment.patientName || 'Patient inconnu'}
+                              {appointment.patientName || "Patient inconnu"}
                             </div>
                             <div className="text-sm text-gray-500">
-                              avec {appointment.professionalName || 'Professionnel inconnu'}
+                              avec{" "}
+                              {appointment.professionalName ||
+                                "Professionnel inconnu"}
                             </div>
                           </div>
                         </div>
@@ -324,14 +373,20 @@ const AdminAppointments: React.FC = () => {
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(appointment.status)}`}>
+                        <span
+                          className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(
+                            appointment.status
+                          )}`}
+                        >
                           {getStatusLabel(appointment.status)}
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                         <div className="flex items-center">
                           <DollarSign className="w-4 h-4 mr-2 text-gray-400" />
-                          {appointment.amount ? `${appointment.amount} FCFA` : 'Non spécifié'}
+                          {appointment.amount
+                            ? `${appointment.amount} FCFA`
+                            : "Non spécifié"}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
@@ -346,18 +401,16 @@ const AdminAppointments: React.FC = () => {
             <div className="text-center py-12">
               <Calendar className="mx-auto h-12 w-12 text-gray-400" />
               <h3 className="mt-2 text-sm font-medium text-gray-900">
-                {searchTerm || selectedStatus !== 'all'
-                  ? 'Aucune consultation ne correspond à vos critères'
-                  : 'Aucune consultation trouvée'
-                }
+                {searchTerm || selectedStatus !== "all"
+                  ? "Aucune consultation ne correspond à vos critères"
+                  : "Aucune consultation trouvée"}
               </h3>
               <p className="mt-1 text-sm text-gray-500">
-                {searchTerm || selectedStatus !== 'all'
-                  ? 'Essayez de modifier vos critères de recherche ou de filtrage.'
-                  : 'Aucune consultation n\'a encore été programmée.'
-                }
+                {searchTerm || selectedStatus !== "all"
+                  ? "Essayez de modifier vos critères de recherche ou de filtrage."
+                  : "Aucune consultation n'a encore été programmée."}
               </p>
-              {(searchTerm || selectedStatus !== 'all') && (
+              {(searchTerm || selectedStatus !== "all") && (
                 <button
                   onClick={resetFilters}
                   className="mt-4 px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors"

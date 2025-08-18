@@ -6,6 +6,7 @@ interface User {
   id: string;
   name: string;
   email: string;
+  phone?: string;
   type: 'patient' | 'professional' | 'admin';
   isActive: boolean;
   createdAt?: any;
@@ -26,7 +27,6 @@ const AdminUsers: React.FC = () => {
   const [professionals, setProfessionals] = useState<Professional[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedType, setSelectedType] = useState('all');
-  const [selectedStatus, setSelectedStatus] = useState('all');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
@@ -81,28 +81,22 @@ const AdminUsers: React.FC = () => {
   const getFilteredUsers = useCallback(() => {
     let filtered = [...users];
 
-    // Filtre par recherche
+    // Filtre par recherche (nom, email, téléphone)
     if (searchTerm.trim()) {
       filtered = filtered.filter(user =>
         user.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        user.email?.toLowerCase().includes(searchTerm.toLowerCase())
+        user.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        user.phone?.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
 
-    // Filtre par type
+    // Filtre par type (professionnel/patient)
     if (selectedType !== 'all') {
       filtered = filtered.filter(user => user.type === selectedType);
     }
 
-    // Filtre par statut
-    if (selectedStatus !== 'all') {
-      filtered = filtered.filter(user => 
-        selectedStatus === 'active' ? user.isActive : !user.isActive
-      );
-    }
-
     return filtered;
-  }, [users, searchTerm, selectedType, selectedStatus]);
+  }, [users, searchTerm, selectedType]);
 
   const getProfessionalInfo = useCallback((userId: string): Professional | null => {
     return professionals.find(prof => prof.userId === userId) || null;
@@ -178,10 +172,11 @@ const AdminUsers: React.FC = () => {
     try {
       const filtered = getFilteredUsers();
       const csvContent = [
-        ['Nom', 'Email', 'Type', 'Statut', 'Date de création'],
+        ['Nom', 'Email', 'Téléphone', 'Type', 'Statut', 'Date de création'],
         ...filtered.map(user => [
           user.name || '',
           user.email || '',
+          user.phone || '',
           user.type || '',
           user.isActive ? 'Actif' : 'Inactif',
           user.createdAt && typeof user.createdAt.toDate === 'function' 
@@ -202,12 +197,6 @@ const AdminUsers: React.FC = () => {
       alert('Erreur lors de l\'export');
     }
   }, [getFilteredUsers]);
-
-  const resetFilters = useCallback(() => {
-    setSearchTerm('');
-    setSelectedType('all');
-    setSelectedStatus('all');
-  }, []);
 
   const getUserTypeIcon = (type: string) => {
     switch (type) {
@@ -305,7 +294,7 @@ const AdminUsers: React.FC = () => {
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
               <input
                 type="text"
-                placeholder="Rechercher un utilisateur..."
+                placeholder="Rechercher par nom, email ou téléphone..."
                 className="pl-10 w-full border border-gray-300 rounded-md p-2"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
@@ -322,21 +311,6 @@ const AdminUsers: React.FC = () => {
                 <option value="professional">Professionnels</option>
                 <option value="admin">Administrateurs</option>
               </select>
-              <select
-                value={selectedStatus}
-                onChange={(e) => setSelectedStatus(e.target.value)}
-                className="border border-gray-300 rounded-md p-2"
-              >
-                <option value="all">Tous les statuts</option>
-                <option value="active">Actifs</option>
-                <option value="inactive">Inactifs</option>
-              </select>
-              <button
-                onClick={resetFilters}
-                className="px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600"
-              >
-                Réinitialiser
-              </button>
             </div>
           </div>
         </div>
@@ -382,6 +356,9 @@ const AdminUsers: React.FC = () => {
                             <div>
                               <div className="text-sm font-medium text-gray-900">{user.name}</div>
                               <div className="text-sm text-gray-500">{user.email}</div>
+                              {user.phone && (
+                                <div className="text-sm text-gray-400">{user.phone}</div>
+                              )}
                             </div>
                           </div>
                         </td>
@@ -476,25 +453,17 @@ const AdminUsers: React.FC = () => {
             <div className="text-center py-12">
               <User className="mx-auto h-12 w-12 text-gray-400" />
               <h3 className="mt-2 text-sm font-medium text-gray-900">
-                {searchTerm || selectedType !== 'all' || selectedStatus !== 'all'
+                {searchTerm || selectedType !== 'all'
                   ? 'Aucun utilisateur ne correspond à vos critères'
                   : 'Aucun utilisateur trouvé'
                 }
               </h3>
               <p className="mt-1 text-sm text-gray-500">
-                {searchTerm || selectedType !== 'all' || selectedStatus !== 'all'
+                {searchTerm || selectedType !== 'all'
                   ? 'Essayez de modifier vos critères de recherche ou de filtrage.'
                   : 'Aucun utilisateur n\'est encore inscrit.'
                 }
               </p>
-              {(searchTerm || selectedType !== 'all' || selectedStatus !== 'all') && (
-                <button
-                  onClick={resetFilters}
-                  className="mt-4 px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors"
-                >
-                  Réinitialiser les filtres
-                </button>
-              )}
             </div>
           )}
         </div>
