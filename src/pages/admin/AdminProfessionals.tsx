@@ -124,16 +124,28 @@ const AdminProfessionals: React.FC = () => {
 
   // Filtrer les professionnels de manière simple et stable
   const getFilteredProfessionals = () => {
+    console.log("🔍 [GETFILTERED] Début de getFilteredProfessionals");
+    console.log("🔍 [GETFILTERED] Paramètres:", {
+      searchTerm: `"${searchTerm}"`,
+      selectedSpecialty,
+      selectedStatus,
+      totalProfessionals: professionals?.length || 0
+    });
+    
     try {
       // Vérifier que les données sont disponibles
       if (!professionals || professionals.length === 0) {
+        console.log("⚠️ [GETFILTERED] Aucun professionnel disponible");
         return [];
       }
 
       let filtered = [...professionals];
+      console.log("🔍 [GETFILTERED] Copie initiale:", filtered.length);
 
       // Filtre par recherche (nom, email, spécialité)
       if (searchTerm.trim()) {
+        console.log("🔍 [GETFILTERED] Application du filtre de recherche:", `"${searchTerm}"`);
+        const beforeSearch = filtered.length;
         filtered = filtered.filter(
           (professional) =>
             professional.name
@@ -146,17 +158,31 @@ const AdminProfessionals: React.FC = () => {
               ?.toLowerCase()
               .includes(searchTerm.toLowerCase())
         );
+        console.log("🔍 [GETFILTERED] Après recherche:", {
+          avant: beforeSearch,
+          apres: filtered.length,
+          difference: beforeSearch - filtered.length
+        });
       }
 
       // Filtre par spécialité
       if (selectedSpecialty !== "all") {
+        console.log("🔍 [GETFILTERED] Application du filtre spécialité:", selectedSpecialty);
+        const beforeSpecialty = filtered.length;
         filtered = filtered.filter(
           (professional) => professional.specialty === selectedSpecialty
         );
+        console.log("🔍 [GETFILTERED] Après spécialité:", {
+          avant: beforeSpecialty,
+          apres: filtered.length,
+          difference: beforeSpecialty - filtered.length
+        });
       }
 
       // Filtre par statut
       if (selectedStatus !== "all") {
+        console.log("🔍 [GETFILTERED] Application du filtre statut:", selectedStatus);
+        const beforeStatus = filtered.length;
         if (selectedStatus === "approved") {
           filtered = filtered.filter((professional) => professional.isApproved);
         } else if (selectedStatus === "pending") {
@@ -164,37 +190,76 @@ const AdminProfessionals: React.FC = () => {
             (professional) => !professional.isApproved
           );
         }
+        console.log("🔍 [GETFILTERED] Après statut:", {
+          avant: beforeStatus,
+          apres: filtered.length,
+          difference: beforeStatus - filtered.length
+        });
       }
 
+      console.log("✅ [GETFILTERED] Filtrage terminé:", {
+        totalInitial: professionals.length,
+        totalFinal: filtered.length,
+        totalFiltre: professionals.length - filtered.length
+      });
+      
       return filtered;
     } catch (error) {
-      console.error("Erreur lors du filtrage:", error);
+      console.error("❌ [GETFILTERED] Erreur lors du filtrage:", error);
+      console.error("❌ [GETFILTERED] Stack trace:", error.stack);
       return [];
     }
   };
 
   // Gestionnaires simples pour les changements de filtres
   const handleSearchChange = (value: string) => {
+    console.log("🔍 [SEARCH] Changement de recherche:", {
+      ancienneValeur: `"${searchTerm}"`,
+      nouvelleValeur: `"${value}"`,
+      longueurAncienne: searchTerm.length,
+      longueurNouvelle: value.length,
+      estVide: value.length === 0,
+      timestamp: new Date().toISOString()
+    });
+    
     try {
       setSearchTerm(value);
+      console.log("✅ [SEARCH] SearchTerm mis à jour avec succès");
     } catch (error) {
-      console.error("Erreur lors du changement de recherche:", error);
+      console.error("❌ [SEARCH] Erreur lors du changement de recherche:", error);
+      console.error("❌ [SEARCH] Stack trace:", error.stack);
     }
   };
 
   const handleSpecialtyChange = (value: string) => {
+    console.log("🔍 [SPECIALTY] Changement de spécialité:", {
+      ancienneValeur: selectedSpecialty,
+      nouvelleValeur: value,
+      timestamp: new Date().toISOString()
+    });
+    
     try {
       setSelectedSpecialty(value);
+      console.log("✅ [SPECIALTY] Spécialité mise à jour avec succès");
     } catch (error) {
-      console.error("Erreur lors du changement de spécialité:", error);
+      console.error("❌ [SPECIALTY] Erreur lors du changement de spécialité:", error);
+      console.error("❌ [SPECIALTY] Stack trace:", error.stack);
     }
   };
 
   const handleStatusChange = (value: string) => {
+    console.log("🔍 [STATUS] Changement de statut:", {
+      ancienneValeur: selectedStatus,
+      nouvelleValeur: value,
+      timestamp: new Date().toISOString()
+    });
+    
     try {
       setSelectedStatus(value);
+      console.log("✅ [STATUS] Statut mis à jour avec succès");
     } catch (error) {
-      console.error("Erreur lors du changement de statut:", error);
+      console.error("❌ [STATUS] Erreur lors du changement de statut:", error);
+      console.error("❌ [STATUS] Stack trace:", error.stack);
     }
   };
 
@@ -406,11 +471,30 @@ const AdminProfessionals: React.FC = () => {
 
   // Calculer les professionnels filtrés de manière simple et stable
   const filteredProfessionals = (() => {
+    console.log("🔍 [FILTRAGE] Début du calcul des professionnels filtrés");
+    console.log("🔍 [FILTRAGE] État actuel:", {
+      totalProfessionals: professionals?.length || 0,
+      searchTerm,
+      selectedSpecialty,
+      selectedStatus,
+      hasProfessionals: !!professionals,
+      professionalsType: typeof professionals
+    });
+    
     // Protection contre les données instables
     if (!professionals || professionals.length === 0) {
+      console.log("⚠️ [FILTRAGE] Aucun professionnel disponible, retour tableau vide");
       return [];
     }
-    return getFilteredProfessionals();
+    
+    const result = getFilteredProfessionals();
+    console.log("✅ [FILTRAGE] Résultat du filtrage:", {
+      totalAvant: professionals.length,
+      totalApres: result.length,
+      difference: professionals.length - result.length
+    });
+    
+    return result;
   })();
 
   return (
@@ -478,7 +562,24 @@ const AdminProfessionals: React.FC = () => {
 
         {/* Table des professionnels */}
         <div className="bg-white rounded-lg shadow overflow-hidden">
-          {filteredProfessionals.length > 0 ? (
+          {(() => {
+            console.log("🔍 [RENDU] Rendu du tableau des professionnels:", {
+              totalFiltered: filteredProfessionals.length,
+              totalOriginal: professionals.length,
+              searchTerm: `"${searchTerm}"`,
+              selectedSpecialty,
+              selectedStatus,
+              timestamp: new Date().toISOString()
+            });
+            
+            if (filteredProfessionals.length > 0) {
+              console.log("✅ [RENDU] Affichage du tableau avec données");
+              return true;
+            } else {
+              console.log("⚠️ [RENDU] Affichage du message 'aucun résultat'");
+              return false;
+            }
+          })() ? (
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
