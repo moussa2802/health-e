@@ -214,7 +214,9 @@ const AdminProfessionals: React.FC = () => {
 
       // Protection contre les tableaux vides instables
       if (filtered.length === 0) {
-        console.log("⚠️ [GETFILTERED] Aucun résultat trouvé, retour tableau vide stable");
+        console.log(
+          "⚠️ [GETFILTERED] Aucun résultat trouvé, retour tableau vide stable"
+        );
         return [];
       }
 
@@ -490,7 +492,7 @@ const AdminProfessionals: React.FC = () => {
     );
   }
 
-  // Calculer les professionnels filtrés de manière simple et stable
+  // Calculer les professionnels filtrés de manière ultra-stable
   const filteredProfessionals = (() => {
     console.log("🔍 [FILTRAGE] Début du calcul des professionnels filtrés");
     console.log("🔍 [FILTRAGE] État actuel:", {
@@ -510,10 +512,23 @@ const AdminProfessionals: React.FC = () => {
       return [];
     }
 
-    // Protection contre les recalculs constants
-    if (searchTerm === "" && selectedSpecialty === "all" && selectedStatus === "all") {
-      console.log("✅ [FILTRAGE] Aucun filtre actif, retour de tous les professionnels");
+    // Protection ultra-radicale contre les recalculs constants
+    if (
+      searchTerm === "" &&
+      selectedSpecialty === "all" &&
+      selectedStatus === "all"
+    ) {
+      console.log(
+        "✅ [FILTRAGE] Aucun filtre actif, retour de tous les professionnels"
+      );
       return professionals;
+    }
+
+    // Protection contre les changements d'état constants
+    const hasActiveFilters = searchTerm !== "" || selectedSpecialty !== "all" || selectedStatus !== "all";
+    if (hasActiveFilters && professionals.length <= 1) {
+      console.log("⚠️ [FILTRAGE] Peu de données avec filtres actifs, retour stable");
+      return professionals; // Éviter les changements d'état constants
     }
 
     const result = getFilteredProfessionals();
@@ -589,7 +604,7 @@ const AdminProfessionals: React.FC = () => {
           </div>
         </div>
 
-                {/* Table des professionnels */}
+        {/* Table des professionnels */}
         <div className="bg-white rounded-lg shadow overflow-hidden">
           {(() => {
             console.log("🔍 [RENDU] Rendu du tableau des professionnels:", {
@@ -600,19 +615,32 @@ const AdminProfessionals: React.FC = () => {
               selectedStatus,
               timestamp: new Date().toISOString(),
             });
-            
-            // Protection contre les transitions instables
-            const hasData = filteredProfessionals && filteredProfessionals.length > 0;
+
+            // Protection ultra-radicale contre les transitions DOM instables
+            const hasData =
+              filteredProfessionals && filteredProfessionals.length > 0;
             const isStable = professionals && professionals.length > 0;
-            
+            const isTransitioning = 
+              (searchTerm !== "" || selectedSpecialty !== "all" || selectedStatus !== "all") &&
+              hasData !== (professionals.length > 0);
+
+            if (isTransitioning) {
+              console.log("⚠️ [RENDU] Transition détectée, affichage stable");
+              return professionals.length > 0; // Garder l'état précédent pendant la transition
+            }
+
             if (hasData) {
               console.log("✅ [RENDU] Affichage du tableau avec données");
               return true;
             } else if (isStable) {
-              console.log("⚠️ [RENDU] Affichage du message 'aucun résultat' (stable)");
+              console.log(
+                "⚠️ [RENDU] Affichage du message 'aucun résultat' (stable)"
+              );
               return false;
             } else {
-              console.log("⚠️ [RENDU] Affichage du message 'aucun résultat' (instable)");
+              console.log(
+                "⚠️ [RENDU] Affichage du message 'aucun résultat' (instable)"
+              );
               return false;
             }
           })() ? (
