@@ -129,9 +129,9 @@ const AdminProfessionals: React.FC = () => {
       searchTerm: `"${searchTerm}"`,
       selectedSpecialty,
       selectedStatus,
-      totalProfessionals: professionals?.length || 0
+      totalProfessionals: professionals?.length || 0,
     });
-    
+
     try {
       // Vérifier que les données sont disponibles
       if (!professionals || professionals.length === 0) {
@@ -144,7 +144,10 @@ const AdminProfessionals: React.FC = () => {
 
       // Filtre par recherche (nom, email, spécialité)
       if (searchTerm.trim()) {
-        console.log("🔍 [GETFILTERED] Application du filtre de recherche:", `"${searchTerm}"`);
+        console.log(
+          "🔍 [GETFILTERED] Application du filtre de recherche:",
+          `"${searchTerm}"`
+        );
         const beforeSearch = filtered.length;
         filtered = filtered.filter(
           (professional) =>
@@ -161,13 +164,16 @@ const AdminProfessionals: React.FC = () => {
         console.log("🔍 [GETFILTERED] Après recherche:", {
           avant: beforeSearch,
           apres: filtered.length,
-          difference: beforeSearch - filtered.length
+          difference: beforeSearch - filtered.length,
         });
       }
 
       // Filtre par spécialité
       if (selectedSpecialty !== "all") {
-        console.log("🔍 [GETFILTERED] Application du filtre spécialité:", selectedSpecialty);
+        console.log(
+          "🔍 [GETFILTERED] Application du filtre spécialité:",
+          selectedSpecialty
+        );
         const beforeSpecialty = filtered.length;
         filtered = filtered.filter(
           (professional) => professional.specialty === selectedSpecialty
@@ -175,13 +181,16 @@ const AdminProfessionals: React.FC = () => {
         console.log("🔍 [GETFILTERED] Après spécialité:", {
           avant: beforeSpecialty,
           apres: filtered.length,
-          difference: beforeSpecialty - filtered.length
+          difference: beforeSpecialty - filtered.length,
         });
       }
 
       // Filtre par statut
       if (selectedStatus !== "all") {
-        console.log("🔍 [GETFILTERED] Application du filtre statut:", selectedStatus);
+        console.log(
+          "🔍 [GETFILTERED] Application du filtre statut:",
+          selectedStatus
+        );
         const beforeStatus = filtered.length;
         if (selectedStatus === "approved") {
           filtered = filtered.filter((professional) => professional.isApproved);
@@ -193,16 +202,22 @@ const AdminProfessionals: React.FC = () => {
         console.log("🔍 [GETFILTERED] Après statut:", {
           avant: beforeStatus,
           apres: filtered.length,
-          difference: beforeStatus - filtered.length
+          difference: beforeStatus - filtered.length,
         });
       }
 
       console.log("✅ [GETFILTERED] Filtrage terminé:", {
         totalInitial: professionals.length,
         totalFinal: filtered.length,
-        totalFiltre: professionals.length - filtered.length
+        totalFiltre: professionals.length - filtered.length,
       });
-      
+
+      // Protection contre les tableaux vides instables
+      if (filtered.length === 0) {
+        console.log("⚠️ [GETFILTERED] Aucun résultat trouvé, retour tableau vide stable");
+        return [];
+      }
+
       return filtered;
     } catch (error) {
       console.error("❌ [GETFILTERED] Erreur lors du filtrage:", error);
@@ -219,14 +234,17 @@ const AdminProfessionals: React.FC = () => {
       longueurAncienne: searchTerm.length,
       longueurNouvelle: value.length,
       estVide: value.length === 0,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
-    
+
     try {
       setSearchTerm(value);
       console.log("✅ [SEARCH] SearchTerm mis à jour avec succès");
     } catch (error) {
-      console.error("❌ [SEARCH] Erreur lors du changement de recherche:", error);
+      console.error(
+        "❌ [SEARCH] Erreur lors du changement de recherche:",
+        error
+      );
       console.error("❌ [SEARCH] Stack trace:", error.stack);
     }
   };
@@ -235,14 +253,17 @@ const AdminProfessionals: React.FC = () => {
     console.log("🔍 [SPECIALTY] Changement de spécialité:", {
       ancienneValeur: selectedSpecialty,
       nouvelleValeur: value,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
-    
+
     try {
       setSelectedSpecialty(value);
       console.log("✅ [SPECIALTY] Spécialité mise à jour avec succès");
     } catch (error) {
-      console.error("❌ [SPECIALTY] Erreur lors du changement de spécialité:", error);
+      console.error(
+        "❌ [SPECIALTY] Erreur lors du changement de spécialité:",
+        error
+      );
       console.error("❌ [SPECIALTY] Stack trace:", error.stack);
     }
   };
@@ -251,9 +272,9 @@ const AdminProfessionals: React.FC = () => {
     console.log("🔍 [STATUS] Changement de statut:", {
       ancienneValeur: selectedStatus,
       nouvelleValeur: value,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
-    
+
     try {
       setSelectedStatus(value);
       console.log("✅ [STATUS] Statut mis à jour avec succès");
@@ -478,22 +499,30 @@ const AdminProfessionals: React.FC = () => {
       selectedSpecialty,
       selectedStatus,
       hasProfessionals: !!professionals,
-      professionalsType: typeof professionals
+      professionalsType: typeof professionals,
     });
-    
+
     // Protection contre les données instables
     if (!professionals || professionals.length === 0) {
-      console.log("⚠️ [FILTRAGE] Aucun professionnel disponible, retour tableau vide");
+      console.log(
+        "⚠️ [FILTRAGE] Aucun professionnel disponible, retour tableau vide"
+      );
       return [];
     }
-    
+
+    // Protection contre les recalculs constants
+    if (searchTerm === "" && selectedSpecialty === "all" && selectedStatus === "all") {
+      console.log("✅ [FILTRAGE] Aucun filtre actif, retour de tous les professionnels");
+      return professionals;
+    }
+
     const result = getFilteredProfessionals();
     console.log("✅ [FILTRAGE] Résultat du filtrage:", {
       totalAvant: professionals.length,
       totalApres: result.length,
-      difference: professionals.length - result.length
+      difference: professionals.length - result.length,
     });
-    
+
     return result;
   })();
 
@@ -560,7 +589,7 @@ const AdminProfessionals: React.FC = () => {
           </div>
         </div>
 
-        {/* Table des professionnels */}
+                {/* Table des professionnels */}
         <div className="bg-white rounded-lg shadow overflow-hidden">
           {(() => {
             console.log("🔍 [RENDU] Rendu du tableau des professionnels:", {
@@ -569,14 +598,21 @@ const AdminProfessionals: React.FC = () => {
               searchTerm: `"${searchTerm}"`,
               selectedSpecialty,
               selectedStatus,
-              timestamp: new Date().toISOString()
+              timestamp: new Date().toISOString(),
             });
             
-            if (filteredProfessionals.length > 0) {
+            // Protection contre les transitions instables
+            const hasData = filteredProfessionals && filteredProfessionals.length > 0;
+            const isStable = professionals && professionals.length > 0;
+            
+            if (hasData) {
               console.log("✅ [RENDU] Affichage du tableau avec données");
               return true;
+            } else if (isStable) {
+              console.log("⚠️ [RENDU] Affichage du message 'aucun résultat' (stable)");
+              return false;
             } else {
-              console.log("⚠️ [RENDU] Affichage du message 'aucun résultat'");
+              console.log("⚠️ [RENDU] Affichage du message 'aucun résultat' (instable)");
               return false;
             }
           })() ? (
