@@ -31,7 +31,12 @@ console.log('✅ Liste des professionnels chargés :', professionals);
   }, []);
 
   useEffect(() => {
-    filterUsers();
+    // Utiliser un timeout pour éviter les filtrages trop fréquents
+    const timeoutId = setTimeout(() => {
+      filterUsers();
+    }, 100);
+
+    return () => clearTimeout(timeoutId);
   }, [users, searchTerm, filters]);
 
   const fetchUsers = async () => {
@@ -50,56 +55,66 @@ console.log('✅ Liste des professionnels chargés :', professionals);
   };
 
   const filterUsers = () => {
-    let filtered = users;
+    try {
+      let filtered = [...users]; // Créer une copie pour éviter les mutations
 
-    // Filter by search term
-    if (searchTerm) {
-      filtered = filtered.filter(user =>
-        user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        user.email.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-    }
-
-    // Filter by type
-    if (filters.type !== 'all') {
-      filtered = filtered.filter(user => user.type === filters.type);
-    }
-
-    // Filter by status
-    if (filters.status !== 'all') {
-      filtered = filtered.filter(user => 
-        filters.status === 'active' ? user.isActive : !user.isActive
-      );
-    }
-
-    // Filter by date range
-    if (filters.dateRange) {
-      const now = new Date();
-      const filterDate = new Date();
-      
-      switch (filters.dateRange) {
-        case 'today':
-          filterDate.setHours(0, 0, 0, 0);
-          break;
-        case 'week':
-          filterDate.setDate(now.getDate() - 7);
-          break;
-        case 'month':
-          filterDate.setMonth(now.getMonth() - 1);
-          break;
-        default:
-          filterDate.setFullYear(1970);
+      // Filter by search term
+      if (searchTerm.trim()) {
+        filtered = filtered.filter(user =>
+          (user.name && user.name.toLowerCase().includes(searchTerm.toLowerCase())) ||
+          (user.email && user.email.toLowerCase().includes(searchTerm.toLowerCase()))
+        );
       }
 
-      filtered = filtered.filter(user => {
-        if (!user.createdAt || typeof user.createdAt.toDate !== 'function') {
-          return false;
-        }
-        return user.createdAt.toDate() >= filterDate;
-      });
-    }
+      // Filter by type
+      if (filters.type !== 'all') {
+        filtered = filtered.filter(user => user.type === filters.type);
+      }
 
-    setFilteredUsers(filtered);
+      // Filter by status
+      if (filters.status !== 'all') {
+        filtered = filtered.filter(user => 
+          filters.status === 'active' ? user.isActive : !user.isActive
+        );
+      }
+
+      // Filter by date range
+      if (filters.dateRange) {
+        const now = new Date();
+        const filterDate = new Date();
+        
+        switch (filters.dateRange) {
+          case 'today':
+            filterDate.setHours(0, 0, 0, 0);
+            break;
+          case 'week':
+            filterDate.setDate(now.getDate() - 7);
+            break;
+          case 'month':
+            filterDate.setMonth(now.getMonth() - 1);
+            break;
+          default:
+            filterDate.setFullYear(1970);
+        }
+
+        filtered = filtered.filter(user => {
+          if (!user.createdAt || typeof user.createdAt.toDate !== 'function') {
+            return false;
+          }
+          try {
+            return user.createdAt.toDate() >= filterDate;
+          } catch (error) {
+            console.warn('Erreur lors du filtrage par date pour l\'utilisateur:', user.id);
+            return false;
+          }
+        });
+      }
+
+      setFilteredUsers(filtered);
+    } catch (error) {
+      console.error('Erreur lors du filtrage:', error);
+      setFilteredUsers(users); // Fallback vers la liste complète
+    }
   };
 
   const handleUpdateStatus = async (userId: string, isActive: boolean) => {
@@ -186,8 +201,11 @@ console.log('✅ Liste des professionnels chargés :', professionals);
   };
 
   const getProfessionalInfo = (userId: string) => {
-  return professionals.find(prof => prof.userId === userId || prof.id === userId);
-};
+    if (!professionals || !Array.isArray(professionals)) {
+      return null;
+    }
+    return professionals.find(prof => prof.userId === userId || prof.id === userId);
+  };
 
   const formatCreatedAt = (createdAt: any) => {
     if (!createdAt || typeof createdAt.toDate !== 'function') {
@@ -302,7 +320,7 @@ console.log('✅ Liste des professionnels chargés :', professionals);
 
         {/* Users Table */}
         <div className="bg-white rounded-lg shadow overflow-hidden">
-          {filteredUsers.length > 0 ? (
+          {filteredUsers && filteredUsers.length > 0 ? (
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
@@ -330,9 +348,6 @@ console.log('✅ Liste des professionnels chargés :', professionals);
                 <tbody className="bg-white divide-y divide-gray-200">
                   {filteredUsers.map((user) => {
                     const professionalInfo = user.type === 'professional' ? getProfessionalInfo(user.id) : null;
-              console.log(`👤 Utilisateur : ${user.fullName} (${user.id}) | Type: ${user.type}`);
-    console.log('📋 Info professionnel trouvée :', professionalInfo);
-              console.log('🧪 Utilisateur brut dans .map() :', user);
                     
                     return (
                       <tr key={user.id} className="hover:bg-gray-50">
