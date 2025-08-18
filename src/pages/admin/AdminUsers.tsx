@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Search, Filter, Download, User, Shield, ShieldCheck, Trash2, Eye } from 'lucide-react';
 import AdminLayout from '../../components/admin/AdminLayout';
-import { useProfessionals } from '../../hooks/useProfessionals';
 import { getUsers, updateUserStatus, deleteUser, updateProfessionalApproval, type FirebaseUser } from '../../services/firebaseService';
 
 interface UserFilters {
@@ -23,9 +22,9 @@ const AdminUsers: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
 
-  // Utiliser le hook pour les professionnels
-  const { professionals, loading: professionalsLoading } = useProfessionals();
-console.log('✅ Liste des professionnels chargés :', professionals);
+  // État pour les professionnels
+  const [professionals, setProfessionals] = useState<any[]>([]);
+  const [professionalsLoading, setProfessionalsLoading] = useState(false);
   useEffect(() => {
     fetchUsers();
   }, []);
@@ -42,15 +41,41 @@ console.log('✅ Liste des professionnels chargés :', professionals);
   const fetchUsers = async () => {
     try {
       setLoading(true);
+      setProfessionalsLoading(true);
       setError(null);
-      const usersData = await getUsers();
-      console.log('✅ Utilisateurs chargés :', usersData);
+      
+      // Charger les utilisateurs et les professionnels en parallèle
+      const [usersData, professionalsData] = await Promise.all([
+        getUsers(),
+        // Charger les professionnels depuis Firestore de manière simple
+        (async () => {
+          try {
+            const { collection, getDocs } = await import('firebase/firestore');
+            const { getFirestoreInstance } = await import('../../utils/firebase');
+            const db = getFirestoreInstance();
+            if (db) {
+              const querySnapshot = await getDocs(collection(db, 'professionals'));
+              return querySnapshot.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data()
+              }));
+            }
+            return [];
+          } catch (error) {
+            console.warn('Erreur lors du chargement des professionnels:', error);
+            return [];
+          }
+        })()
+      ]);
+      
       setUsers(usersData);
+      setProfessionals(professionalsData);
     } catch (err) {
       console.error('Error fetching users:', err);
       setError(err instanceof Error ? err.message : 'Erreur lors du chargement des utilisateurs');
     } finally {
       setLoading(false);
+      setProfessionalsLoading(false);
     }
   };
 
@@ -204,7 +229,15 @@ console.log('✅ Liste des professionnels chargés :', professionals);
     if (!professionals || !Array.isArray(professionals)) {
       return null;
     }
-    return professionals.find(prof => prof.userId === userId || prof.id === userId);
+    // Chercher par userId ou id, avec protection contre les erreurs
+    try {
+      return professionals.find(prof => 
+        prof && (prof.userId === userId || prof.id === userId)
+      ) || null;
+    } catch (error) {
+      console.warn('Erreur lors de la recherche d\'info professionnel:', error);
+      return null;
+    }
   };
 
   const formatCreatedAt = (createdAt: any) => {
@@ -346,7 +379,13 @@ console.log('✅ Liste des professionnels chargés :', professionals);
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {filteredUsers.map((user) => {
+                  {filteredUsers.map((user, index) => {
+                    // Protection contre les utilisateurs invalides
+                    if (!user || !user.id) {
+                      console.warn('Utilisateur invalide détecté:', user);
+                      return null;
+                    }
+                    
                     const professionalInfo = user.type === 'professional' ? getProfessionalInfo(user.id) : null;
                     
                     return (
@@ -383,11 +422,18 @@ console.log('✅ Liste des professionnels chargés :', professionals);
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          {professionalInfo ? (
+                          {professionalInfo && professionalInfo.specialty ? (
                             <div className="text-sm">
-                              <div className="font-medium text-gray-900">{professionalInfo.specialty}</div>
-                              <div className="text-gray-500">{professionalInfo.type === 'mental' ? 'Santé mentale' : 'Santé sexuelle'}</div>
-                              <div className="text-gray-500">Note: {professionalInfo.rating}/5 ({professionalInfo.reviews} avis)</div>
+                              <div className="font-medium text-gray-900">
+                                {professionalInfo.specialty || 'Spécialité non définie'}
+                              </div>
+                              <div className="text-gray-500">
+                                {professionalInfo.type === 'mental' ? 'Santé mentale' : 
+                                 professionalInfo.type === 'sexual' ? 'Santé sexuelle' : 'Type non défini'}
+                              </div>
+                              <div className="text-gray-500">
+                                Note: {professionalInfo.rating || 0}/5 ({professionalInfo.reviews || 0} avis)
+                              </div>
                             </div>
                           ) : (
                             <span className="text-gray-400">-</span>
@@ -424,12 +470,12 @@ console.log('✅ Liste des professionnels chargés :', professionals);
   {user.type === 'professional' && professionalInfo && (
     <button
       onClick={async () => {
-        console.log('🟡 Changement statut approbation pour :', user.id, 'Nouveau statut :', !professionalInfo.isApproved);
         try {
           setActionLoading(user.id);
           await updateProfessionalApproval(user.id, !professionalInfo.isApproved);
           await fetchUsers(); // recharge les données à jour
         } catch (err) {
+          console.error('Erreur lors de l\'approbation:', err);
           alert("Erreur lors de l'approbation");
         } finally {
           setActionLoading(null);
