@@ -6,7 +6,7 @@ import { fr } from "date-fns/locale";
 // Types simplifiés
 export interface SimpleTimeSlot {
   id: string;
-  date: string;
+  date: string | Date;
   time: string;
   isBooked?: boolean;
 }
@@ -82,7 +82,13 @@ const UltraStableSlotManager: React.FC<UltraStableSlotManagerProps> = ({
   // Vérifier si un jour a des créneaux
   const getSlotsForDay = (date: Date) => {
     const dateStr = format(date, 'yyyy-MM-dd');
-    return existingSlots.filter(slot => slot.date === dateStr);
+    return existingSlots.filter(slot => {
+      if (typeof slot.date === 'string') {
+        return slot.date === dateStr;
+      } else {
+        return format(slot.date, 'yyyy-MM-dd') === dateStr;
+      }
+    });
   };
 
   // Générer des heures disponibles
@@ -227,7 +233,12 @@ const UltraStableSlotManager: React.FC<UltraStableSlotManagerProps> = ({
               >
                 <div className="flex items-center gap-3">
                   <Calendar className="h-4 w-4 text-gray-500" />
-                  <span className="font-medium">{slot.date}</span>
+                  <span className="font-medium">
+                    {typeof slot.date === 'string' 
+                      ? slot.date 
+                      : format(slot.date, 'dd/MM/yyyy')
+                    }
+                  </span>
                   <Clock className="h-4 w-4 text-gray-500" />
                   <span>{slot.time}</span>
                 </div>

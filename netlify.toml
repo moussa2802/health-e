@@ -24,48 +24,33 @@
     X-Content-Type-Options = "nosniff"
 
 [[redirects]]
-  from = "/assets/AdminUsers-DybC3eRH.js"
-  to = "/assets/AdminUsers-ypgX3BOh.js"
-  status = 301
-
-[[redirects]]
-  from = "/assets/AdminUsers-uVJGCwIS.js"
-  to = "/assets/AdminUsers-ypgX3BOh.js"
-  status = 301
-
-[[redirects]]
   from = "/assets/AdminUsers-*.js"
-  to = "/assets/AdminUsers-BaL-xDo3.js"
+  to = "/assets/AdminUsers-t086xzSd.js"
   status = 301
 
 [[redirects]]
   from = "/assets/AdminProfessionals-*.js"
-  to = "/assets/AdminProfessionals-D48UutxA.js"
+  to = "/assets/AdminProfessionals-Be8Mtvsg.js"
   status = 301
 
 [[redirects]]
   from = "/assets/AdminPatients-*.js"
-  to = "/assets/AdminPatients-DReOvp0Y.js"
+  to = "/assets/AdminPatients-CYBrx2rw.js"
   status = 301
 
 [[redirects]]
   from = "/assets/StableProfessionalSettings-*.js"
-  to = "/assets/StableProfessionalSettings-CcahB3YW.js"
+  to = "/assets/StableProfessionalSettings-DtEWIw4g.js"
   status = 301
 
 [[redirects]]
   from = "/assets/AvailabilityManagement-*.js"
-  to = "/assets/AvailabilityManagement-BRi0MXgQ.js"
-  status = 301
-
-[[redirects]]
-  from = "/assets/AdminPatients-*.js"
-  to = "/assets/AdminPatients-C1hbI-1D.js"
+  to = "/assets/AvailabilityManagement-DaxDZNGB.js"
   status = 301
 
 [[redirects]]
   from = "/assets/AdminAppointments-*.js"
-  to = "/assets/AdminAppointments-DsW3Gk_M.js"
+  to = "/assets/AdminAppointments-i5DwowDc.js"
   status = 301
 
 [[redirects]]
