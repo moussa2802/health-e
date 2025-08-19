@@ -19,9 +19,9 @@ import {
 } from "../../services/profileService";
 import { ensureFirestoreReady } from "../../utils/firebase";
 import LoadingSpinner from "../../components/ui/LoadingSpinner";
-import NewAppointmentScheduler, {
-  type TimeSlot,
-} from "../../components/calendar/NewAppointmentScheduler";
+import UltraStableSlotManager, {
+  type SimpleTimeSlot,
+} from "../../components/calendar/UltraStableSlotManager";
 import { getAvailableTimeSlots } from "../../services/slotService";
 
 const AvailabilityManagement: React.FC = () => {
@@ -31,7 +31,7 @@ const AvailabilityManagement: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [existingSlots, setExistingSlots] = useState<TimeSlot[]>([]);
+  const [existingSlots, setExistingSlots] = useState<SimpleTimeSlot[]>([]);
 
   const availableSlots = useMemo(() => {
     // Assurons-nous que tous les slots ont des dates valides
@@ -396,14 +396,10 @@ const AvailabilityManagement: React.FC = () => {
             </div>
 
             <div className="p-6">
-              <NewAppointmentScheduler
+              <UltraStableSlotManager
                 professionalId={currentUser?.id || ""}
-                isProfessional={true}
-                existingSlots={availableSlots}
+                existingSlots={existingSlots}
                 onSlotsChange={handleSlotsChange}
-                showAddModal={showAddModal}
-                setShowAddModal={setShowAddModal}
-                key={`scheduler-${refreshTrigger}`} // Force re-render on refresh
               />
             </div>
           </div>

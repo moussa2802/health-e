@@ -1,10 +1,5 @@
 import React, { useState, useEffect } from "react";
-import {
-  User,
-  Shield,
-  ShieldCheck,
-  Trash2,
-} from "lucide-react";
+import { User, Shield, ShieldCheck, Trash2 } from "lucide-react";
 import AdminLayout from "../../components/admin/AdminLayout";
 import UserListPage from "../../components/admin/UserListPage";
 
@@ -166,16 +161,10 @@ const AdminUsers: React.FC = () => {
             <User className="h-6 w-6 text-gray-500" />
           </div>
           <div>
-            <div className="text-sm font-medium text-gray-900">
-              {user.name}
-            </div>
-            <div className="text-sm text-gray-500">
-              {user.email}
-            </div>
+            <div className="text-sm font-medium text-gray-900">{user.name}</div>
+            <div className="text-sm text-gray-500">{user.email}</div>
             {user.phone && (
-              <div className="text-sm text-gray-400">
-                {user.phone}
-              </div>
+              <div className="text-sm text-gray-400">{user.phone}</div>
             )}
           </div>
         </div>
