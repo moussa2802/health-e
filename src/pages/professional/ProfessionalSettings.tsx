@@ -42,6 +42,7 @@ import {
   getFirestoreInstance,
 } from "../../utils/firebase";
 import LoadingSpinner from "../../components/ui/LoadingSpinner";
+import StableProfileForm from "../../components/professional/StableProfileForm";
 import { getDoc, doc } from "firebase/firestore";
 
 interface TimeSlot {
