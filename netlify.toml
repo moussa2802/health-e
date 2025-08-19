@@ -35,12 +35,17 @@
 
 [[redirects]]
   from = "/assets/AdminUsers-*.js"
-  to = "/assets/AdminUsers-DlTPqurk.js"
+  to = "/assets/AdminUsers-o3As3ngH.js"
   status = 301
 
 [[redirects]]
   from = "/assets/AdminProfessionals-*.js"
-  to = "/assets/AdminProfessionals-mQNxj0W2.js"
+  to = "/assets/AdminProfessionals-B8JKsB5v.js"
+  status = 301
+
+[[redirects]]
+  from = "/assets/AdminPatients-*.js"
+  to = "/assets/AdminPatients-BGQfVpKj.js"
   status = 301
 
 [[redirects]]
