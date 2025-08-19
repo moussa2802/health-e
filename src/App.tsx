@@ -52,7 +52,7 @@ const ConsultationRoom = lazy(
 );
 const PatientProfile = lazy(() => import("./pages/patient/PatientProfile"));
 const ProfessionalSettings = lazy(
-  () => import("./pages/professional/ProfessionalSettings")
+  () => import("./pages/professional/StableProfessionalSettings")
 );
 const AvailabilityManagement = lazy(
   () => import("./pages/professional/AvailabilityManagement")
