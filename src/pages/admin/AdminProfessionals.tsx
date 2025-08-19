@@ -538,6 +538,19 @@ const AdminProfessionals: React.FC = () => {
       return professionals; // Éviter les changements d'état constants uniquement sans recherche
     }
 
+    // FORCER l'appel de getFilteredProfessionals pour la recherche
+    if (searchTerm !== "") {
+      console.log("🔍 [FILTRAGE] Recherche active, appel forcé de getFilteredProfessionals");
+      const result = getFilteredProfessionals();
+      console.log("✅ [FILTRAGE] Résultat du filtrage (recherche):", {
+        totalAvant: professionals.length,
+        totalApres: result.length,
+        difference: professionals.length - result.length,
+        searchTerm: `"${searchTerm}"`,
+      });
+      return result;
+    }
+
     const result = getFilteredProfessionals();
     console.log("✅ [FILTRAGE] Résultat du filtrage:", {
       totalAvant: professionals.length,
@@ -633,11 +646,19 @@ const AdminProfessionals: React.FC = () => {
               searchTerm !== "" ||
               selectedSpecialty !== "all" ||
               selectedStatus !== "all";
+            
+            // Protection contre les transitions DOM instables lors de la recherche
+            const isSearchTransition = searchTerm !== "" && hasData !== (professionals.length > 0);
             const isCriticalTransition =
               hasActiveFilters &&
               hasData !== professionals.length > 0 &&
               professionals.length > 0 &&
               filteredProfessionals.length === 0;
+
+            if (isSearchTransition) {
+              console.log("⚠️ [RENDU] Transition de recherche détectée, affichage stable");
+              return professionals.length > 0; // Garder l'état précédent pendant la transition de recherche
+            }
 
             if (isCriticalTransition) {
               console.log(
