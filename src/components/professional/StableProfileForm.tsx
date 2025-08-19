@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Save, User, Mail, Phone, MapPin, GraduationCap, Briefcase, FileText } from "lucide-react";
+import { Save, User, Mail, Phone, MapPin, GraduationCap, Briefcase, FileText, Upload, X, Image } from "lucide-react";
 
 interface ProfessionalProfile {
   name: string;
@@ -30,11 +30,34 @@ const StableProfileForm: React.FC<StableProfileFormProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
 
-  const handleInputChange = (field: keyof ProfessionalProfile, value: string | number) => {
+  const handleInputChange = (field: keyof ProfessionalProfile, value: string | number | boolean) => {
     setFormData(prev => ({
       ...prev,
       [field]: value
     }));
+  };
+
+  const handleImageUpload = (field: 'signatureUrl' | 'stampUrl') => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.onchange = (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (file) {
+        // Simuler l'upload d'image (dans un vrai projet, vous utiliseriez un service d'upload)
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const result = e.target?.result as string;
+          handleInputChange(field, result);
+        };
+        reader.readAsDataURL(file);
+      }
+    };
+    input.click();
+  };
+
+  const removeImage = (field: 'signatureUrl' | 'stampUrl') => {
+    handleInputChange(field, '');
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -231,7 +254,7 @@ const StableProfileForm: React.FC<StableProfileFormProps> = ({
             Signatures et cachets
           </h3>
           
-          <div className="space-y-4">
+          <div className="space-y-6">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Signature électronique
@@ -251,30 +274,80 @@ const StableProfileForm: React.FC<StableProfileFormProps> = ({
 
             {formData.useElectronicSignature && (
               <>
+                {/* Signature */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    URL de la signature
+                    Image de signature
                   </label>
-                  <input
-                    type="text"
-                    value={formData.signatureUrl || ""}
-                    onChange={(e) => handleInputChange('signatureUrl', e.target.value)}
-                    placeholder="URL de l'image de signature"
-                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
+                  <div className="space-y-3">
+                    {formData.signatureUrl ? (
+                      <div className="relative inline-block">
+                        <img
+                          src={formData.signatureUrl}
+                          alt="Signature"
+                          className="max-w-xs max-h-32 border border-gray-300 rounded-lg"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => removeImage('signatureUrl')}
+                          className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors"
+                        >
+                          <X className="h-4 w-4" />
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+                        <Image className="mx-auto h-12 w-12 text-gray-400" />
+                        <p className="mt-2 text-sm text-gray-600">Aucune signature</p>
+                      </div>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => handleImageUpload('signatureUrl')}
+                      className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors flex items-center gap-2"
+                    >
+                      <Upload className="h-4 w-4" />
+                      {formData.signatureUrl ? 'Changer la signature' : 'Ajouter une signature'}
+                    </button>
+                  </div>
                 </div>
 
+                {/* Cachet */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    URL du cachet
+                    Image du cachet
                   </label>
-                  <input
-                    type="text"
-                    value={formData.stampUrl || ""}
-                    onChange={(e) => handleInputChange('stampUrl', e.target.value)}
-                    placeholder="URL de l'image du cachet"
-                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
+                  <div className="space-y-3">
+                    {formData.stampUrl ? (
+                      <div className="relative inline-block">
+                        <img
+                          src={formData.stampUrl}
+                          alt="Cachet"
+                          className="max-w-xs max-h-32 border border-gray-300 rounded-lg"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => removeImage('stampUrl')}
+                          className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors"
+                        >
+                          <X className="h-4 w-4" />
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+                        <Image className="mx-auto h-12 w-12 text-gray-300" />
+                        <p className="mt-2 text-sm text-gray-600">Aucun cachet</p>
+                      </div>
+                      )}
+                    <button
+                      type="button"
+                      onClick={() => handleImageUpload('stampUrl')}
+                      className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors flex items-center gap-2"
+                    >
+                      <Upload className="h-4 w-4" />
+                      {formData.stampUrl ? 'Changer le cachet' : 'Ajouter un cachet'}
+                    </button>
+                  </div>
                 </div>
               </>
             )}

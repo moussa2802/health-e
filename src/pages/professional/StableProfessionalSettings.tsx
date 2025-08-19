@@ -334,24 +334,36 @@ const StableProfessionalSettings: React.FC = () => {
                   </span>
                 </div>
 
-                <label className="relative inline-flex items-center cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={profileData.isActive}
-                    onChange={(e) => {
-                      if (profileData.isApproved) {
+                <button
+                  onClick={async () => {
+                    if (profileData.isApproved) {
+                      try {
+                        await updateProfessionalProfile(currentUser.id, {
+                          isActive: !profileData.isActive,
+                        });
                         setProfileData((prev) => ({
                           ...prev,
-                          isActive: e.target.checked,
+                          isActive: !prev.isActive,
                         }));
+                      } catch (error) {
+                        console.error("Erreur lors de la mise à jour du statut:", error);
+                        setErrorMessage("Erreur lors de la mise à jour du statut");
                       }
-                    }}
-                    className="sr-only"
-                  />
-                  {profileData.isActive
-                    ? "Profil actif"
-                    : "Activer mon profil"}
-                </label>
+                    }
+                  }}
+                  disabled={!profileData.isApproved}
+                  className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                    profileData.isActive
+                      ? "bg-green-100 text-green-700 hover:bg-green-200 border border-green-300"
+                      : "bg-gray-100 text-gray-700 hover:bg-gray-200 border border-gray-300"
+                  } ${
+                    !profileData.isApproved
+                      ? "opacity-50 cursor-not-allowed"
+                      : "cursor-pointer"
+                  }`}
+                >
+                  {profileData.isActive ? "Profil actif" : "Activer mon profil"}
+                </button>
               </div>
             </div>
           </div>
