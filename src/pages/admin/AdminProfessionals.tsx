@@ -540,7 +540,9 @@ const AdminProfessionals: React.FC = () => {
 
     // FORCER l'appel de getFilteredProfessionals pour la recherche
     if (searchTerm !== "") {
-      console.log("🔍 [FILTRAGE] Recherche active, appel forcé de getFilteredProfessionals");
+      console.log(
+        "🔍 [FILTRAGE] Recherche active, appel forcé de getFilteredProfessionals"
+      );
       const result = getFilteredProfessionals();
       console.log("✅ [FILTRAGE] Résultat du filtrage (recherche):", {
         totalAvant: professionals.length,
@@ -646,18 +648,27 @@ const AdminProfessionals: React.FC = () => {
               searchTerm !== "" ||
               selectedSpecialty !== "all" ||
               selectedStatus !== "all";
-            
-            // Protection contre les transitions DOM instables lors de la recherche
-            const isSearchTransition = searchTerm !== "" && hasData !== (professionals.length > 0);
+
+            // Protection complète contre les transitions DOM instables lors de la recherche
+            const isSearchTransition =
+              searchTerm !== "" && hasData !== professionals.length > 0;
             const isCriticalTransition =
               hasActiveFilters &&
               hasData !== professionals.length > 0 &&
               professionals.length > 0 &&
               filteredProfessionals.length === 0;
 
+            // Protection ultra-stable contre les transitions de recherche
             if (isSearchTransition) {
-              console.log("⚠️ [RENDU] Transition de recherche détectée, affichage stable");
-              return professionals.length > 0; // Garder l'état précédent pendant la transition de recherche
+              console.log(
+                "⚠️ [RENDU] Transition de recherche détectée, affichage ultra-stable"
+              );
+              // Retourner l'état le plus stable possible
+              if (professionals.length > 0) {
+                return true; // Afficher le tableau avec les données originales
+              } else {
+                return false; // Afficher le message "aucun résultat"
+              }
             }
 
             if (isCriticalTransition) {
