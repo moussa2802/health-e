@@ -143,10 +143,10 @@ const AdminProfessionals: React.FC = () => {
       console.log("🔍 [GETFILTERED] Copie initiale:", filtered.length);
 
       // Filtre par recherche (nom, email, spécialité)
-      if (searchTerm.trim()) {
+      if (searchTerm && searchTerm.trim()) {
         console.log(
           "🔍 [GETFILTERED] Application du filtre de recherche:",
-          `"${searchTerm}"`
+          searchTerm
         );
         const beforeSearch = filtered.length;
         filtered = filtered.filter(
@@ -230,17 +230,20 @@ const AdminProfessionals: React.FC = () => {
 
   // Gestionnaires simples pour les changements de filtres
   const handleSearchChange = (value: string) => {
+    // Nettoyer le champ de recherche des guillemets et espaces inutiles
+    const cleanValue = value.replace(/['"]+/g, "").trim();
+
     console.log("🔍 [SEARCH] Changement de recherche:", {
-      ancienneValeur: `"${searchTerm}"`,
-      nouvelleValeur: `"${value}"`,
+      ancienneValeur: searchTerm,
+      nouvelleValeur: cleanValue,
       longueurAncienne: searchTerm.length,
-      longueurNouvelle: value.length,
-      estVide: value.length === 0,
+      longueurNouvelle: cleanValue.length,
+      estVide: cleanValue.length === 0,
       timestamp: new Date().toISOString(),
     });
 
     try {
-      setSearchTerm(value);
+      setSearchTerm(cleanValue);
       console.log("✅ [SEARCH] SearchTerm mis à jour avec succès");
     } catch (error) {
       console.error(
@@ -514,7 +517,7 @@ const AdminProfessionals: React.FC = () => {
 
     // Protection ultra-radicale contre les recalculs constants
     if (
-      searchTerm === "" &&
+      (!searchTerm || searchTerm === "") &&
       selectedSpecialty === "all" &&
       selectedStatus === "all"
     ) {
@@ -526,12 +529,16 @@ const AdminProfessionals: React.FC = () => {
 
     // Protection intelligente contre les changements d'état constants
     const hasActiveFilters =
-      searchTerm !== "" ||
+      (searchTerm && searchTerm !== "") ||
       selectedSpecialty !== "all" ||
       selectedStatus !== "all";
 
     // Permettre le filtrage même avec peu de données, mais éviter les changements constants
-    if (hasActiveFilters && professionals.length <= 1 && searchTerm === "") {
+    if (
+      hasActiveFilters &&
+      professionals.length <= 1 &&
+      (!searchTerm || searchTerm === "")
+    ) {
       console.log(
         "⚠️ [FILTRAGE] Peu de données avec filtres actifs (sans recherche), retour stable"
       );
@@ -539,7 +546,7 @@ const AdminProfessionals: React.FC = () => {
     }
 
     // FORCER l'appel de getFilteredProfessionals pour la recherche
-    if (searchTerm !== "") {
+    if (searchTerm && searchTerm !== "") {
       console.log(
         "🔍 [FILTRAGE] Recherche active, appel forcé de getFilteredProfessionals"
       );
@@ -548,7 +555,7 @@ const AdminProfessionals: React.FC = () => {
         totalAvant: professionals.length,
         totalApres: result.length,
         difference: professionals.length - result.length,
-        searchTerm: `"${searchTerm}"`,
+        searchTerm: searchTerm,
       });
       return result;
     }
@@ -632,7 +639,7 @@ const AdminProfessionals: React.FC = () => {
             console.log("🔍 [RENDU] Rendu du tableau des professionnels:", {
               totalFiltered: filteredProfessionals.length,
               totalOriginal: professionals.length,
-              searchTerm: `"${searchTerm}"`,
+              searchTerm: searchTerm || "",
               selectedSpecialty,
               selectedStatus,
               timestamp: new Date().toISOString(),
@@ -645,13 +652,15 @@ const AdminProfessionals: React.FC = () => {
 
             // Détection de transition uniquement pour les changements critiques
             const hasActiveFilters =
-              searchTerm !== "" ||
+              (searchTerm && searchTerm !== "") ||
               selectedSpecialty !== "all" ||
               selectedStatus !== "all";
 
             // Protection complète contre les transitions DOM instables lors de la recherche
             const isSearchTransition =
-              searchTerm !== "" && hasData !== professionals.length > 0;
+              searchTerm &&
+              searchTerm !== "" &&
+              hasData !== professionals.length > 0;
             const isCriticalTransition =
               hasActiveFilters &&
               hasData !== professionals.length > 0 &&
@@ -901,14 +910,14 @@ const AdminProfessionals: React.FC = () => {
             <div className="text-center py-12">
               <ShieldCheck className="mx-auto h-12 w-12 text-gray-400" />
               <h3 className="mt-2 text-sm font-medium text-gray-900">
-                {searchTerm ||
+                {(searchTerm && searchTerm !== "") ||
                 selectedSpecialty !== "all" ||
                 selectedStatus !== "all"
                   ? "Aucun professionnel ne correspond à vos critères"
                   : "Aucun professionnel trouvé"}
               </h3>
               <p className="mt-1 text-sm text-gray-500">
-                {searchTerm
+                {searchTerm && searchTerm !== ""
                   ? "Essayez de modifier vos critères de recherche."
                   : selectedSpecialty !== "all"
                   ? `Aucun professionnel trouvé pour la spécialité "${selectedSpecialty}".`
