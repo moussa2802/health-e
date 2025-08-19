@@ -50,6 +50,8 @@ const StableProfessionalSettings: React.FC = () => {
     signatureUrl: "",
     stampUrl: "",
     useElectronicSignature: false,
+    languages: ["fr"],
+    profileImage: "",
   });
   const [loading, setLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -109,6 +111,8 @@ const StableProfessionalSettings: React.FC = () => {
             signatureUrl: profile.signatureUrl || "",
             stampUrl: profile.stampUrl || "",
             useElectronicSignature: profile.useElectronicSignature || false,
+            languages: profile.languages || ["fr"],
+            profileImage: profile.profileImage || "",
           });
         }
 
@@ -132,6 +136,8 @@ const StableProfessionalSettings: React.FC = () => {
                  signatureUrl: updatedProfile.signatureUrl || "",
                  stampUrl: updatedProfile.stampUrl || "",
                  useElectronicSignature: updatedProfile.useElectronicSignature || false,
+                 languages: updatedProfile.languages || ["fr"],
+                 profileImage: updatedProfile.profileImage || "",
                });
              }
           }
@@ -180,6 +186,9 @@ const StableProfessionalSettings: React.FC = () => {
         signatureUrl: updatedProfile.signatureUrl,
         stampUrl: updatedProfile.stampUrl,
         useElectronicSignature: updatedProfile.useElectronicSignature,
+        languages: updatedProfile.languages,
+        profileImage: updatedProfile.profileImage,
+        type: updatedProfile.type,
       });
 
       setSaveSuccess(true);
