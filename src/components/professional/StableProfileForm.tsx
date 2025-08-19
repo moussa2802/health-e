@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Save,
   User,
@@ -93,13 +93,27 @@ const StableProfileForm: React.FC<StableProfileFormProps> = ({
     }
   };
 
-  const specialties = [
-    "Psychologue",
-    "Psychiatre",
-    "Sexologue",
-    "Gynécologue",
-    "Urologue",
-  ];
+  const getSpecialtiesByType = (type: string) => {
+    switch (type) {
+      case "mental":
+        return ["Psychologue", "Psychiatre"];
+      case "sexual":
+        return ["Sexologue", "Gynécologue", "Urologue"];
+      default:
+        return ["Psychologue", "Psychiatre", "Sexologue", "Gynécologue", "Urologue"];
+    }
+  };
+
+  const specialties = getSpecialtiesByType(formData.type);
+
+  // Réinitialiser la spécialité quand le type change
+  useEffect(() => {
+    const currentSpecialties = getSpecialtiesByType(formData.type);
+    if (!currentSpecialties.includes(formData.specialty)) {
+      // Si la spécialité actuelle n'est pas dans le nouveau type, on prend la première disponible
+      handleInputChange("specialty", currentSpecialties[0]);
+    }
+  }, [formData.type]);
 
   return (
     <div className="space-y-6">
