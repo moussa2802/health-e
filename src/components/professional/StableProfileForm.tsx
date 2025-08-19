@@ -11,6 +11,7 @@ import {
   Upload,
   X,
   Image,
+  Languages,
 } from "lucide-react";
 
 interface ProfessionalProfile {
