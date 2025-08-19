@@ -524,11 +524,18 @@ const AdminProfessionals: React.FC = () => {
       return professionals;
     }
 
-    // Protection contre les changements d'état constants
-    const hasActiveFilters = searchTerm !== "" || selectedSpecialty !== "all" || selectedStatus !== "all";
-    if (hasActiveFilters && professionals.length <= 1) {
-      console.log("⚠️ [FILTRAGE] Peu de données avec filtres actifs, retour stable");
-      return professionals; // Éviter les changements d'état constants
+    // Protection intelligente contre les changements d'état constants
+    const hasActiveFilters =
+      searchTerm !== "" ||
+      selectedSpecialty !== "all" ||
+      selectedStatus !== "all";
+
+    // Permettre le filtrage même avec peu de données, mais éviter les changements constants
+    if (hasActiveFilters && professionals.length <= 1 && searchTerm === "") {
+      console.log(
+        "⚠️ [FILTRAGE] Peu de données avec filtres actifs (sans recherche), retour stable"
+      );
+      return professionals; // Éviter les changements d'état constants uniquement sans recherche
     }
 
     const result = getFilteredProfessionals();
@@ -616,17 +623,27 @@ const AdminProfessionals: React.FC = () => {
               timestamp: new Date().toISOString(),
             });
 
-            // Protection ultra-radicale contre les transitions DOM instables
+            // Protection intelligente contre les transitions DOM instables
             const hasData =
               filteredProfessionals && filteredProfessionals.length > 0;
             const isStable = professionals && professionals.length > 0;
-            const isTransitioning = 
-              (searchTerm !== "" || selectedSpecialty !== "all" || selectedStatus !== "all") &&
-              hasData !== (professionals.length > 0);
 
-            if (isTransitioning) {
-              console.log("⚠️ [RENDU] Transition détectée, affichage stable");
-              return professionals.length > 0; // Garder l'état précédent pendant la transition
+            // Détection de transition uniquement pour les changements critiques
+            const hasActiveFilters =
+              searchTerm !== "" ||
+              selectedSpecialty !== "all" ||
+              selectedStatus !== "all";
+            const isCriticalTransition =
+              hasActiveFilters &&
+              hasData !== professionals.length > 0 &&
+              professionals.length > 0 &&
+              filteredProfessionals.length === 0;
+
+            if (isCriticalTransition) {
+              console.log(
+                "⚠️ [RENDU] Transition critique détectée, affichage stable"
+              );
+              return professionals.length > 0; // Garder l'état précédent pendant la transition critique
             }
 
             if (hasData) {
