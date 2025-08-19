@@ -10,6 +10,9 @@ interface ProfessionalProfile {
   education: string;
   bio: string;
   consultationFee: number;
+  signatureUrl?: string;
+  stampUrl?: string;
+  useElectronicSignature?: boolean;
 }
 
 interface StableProfileFormProps {
@@ -101,10 +104,13 @@ const StableProfileForm: React.FC<StableProfileFormProps> = ({
               <input
                 type="email"
                 value={formData.email}
-                onChange={(e) => handleInputChange('email', e.target.value)}
-                className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                disabled
+                className="w-full border border-gray-300 bg-gray-100 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 required
               />
+              <p className="text-sm text-gray-500 mt-1">
+                L'adresse email ne peut pas être modifiée pour des raisons de sécurité.
+              </p>
             </div>
 
             <div>
@@ -215,6 +221,63 @@ const StableProfileForm: React.FC<StableProfileFormProps> = ({
               min="0"
               required
             />
+          </div>
+        </div>
+
+        {/* Signatures et cachets */}
+        <div className="bg-white p-6 rounded-lg shadow-sm border">
+          <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center">
+            <FileText className="h-5 w-5 mr-2 text-blue-600" />
+            Signatures et cachets
+          </h3>
+          
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Signature électronique
+              </label>
+              <div className="flex items-center space-x-3">
+                <input
+                  type="checkbox"
+                  checked={formData.useElectronicSignature || false}
+                  onChange={(e) => handleInputChange('useElectronicSignature', e.target.checked)}
+                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                />
+                <span className="text-sm text-gray-700">
+                  Utiliser la signature électronique
+                </span>
+              </div>
+            </div>
+
+            {formData.useElectronicSignature && (
+              <>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    URL de la signature
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.signatureUrl || ""}
+                    onChange={(e) => handleInputChange('signatureUrl', e.target.value)}
+                    placeholder="URL de l'image de signature"
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    URL du cachet
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.stampUrl || ""}
+                    onChange={(e) => handleInputChange('stampUrl', e.target.value)}
+                    placeholder="URL de l'image du cachet"
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+              </>
+            )}
           </div>
         </div>
 

@@ -27,10 +27,14 @@ interface ProfessionalProfile {
   isApproved?: boolean;
   isActive?: boolean;
   type?: string;
+  signatureUrl?: string;
+  stampUrl?: string;
+  useElectronicSignature?: boolean;
 }
 
 const StableProfessionalSettings: React.FC = () => {
   const { currentUser } = useAuth();
+  const navigate = useNavigate();
   const [profileData, setProfileData] = useState<ProfessionalProfile>({
     name: "",
     email: "",
@@ -43,6 +47,9 @@ const StableProfessionalSettings: React.FC = () => {
     isApproved: false,
     isActive: false,
     type: "mental",
+    signatureUrl: "",
+    stampUrl: "",
+    useElectronicSignature: false,
   });
   const [loading, setLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -99,6 +106,9 @@ const StableProfessionalSettings: React.FC = () => {
             isApproved: profile.isApproved || false,
             isActive: profile.isActive || false,
             type: profile.type || "mental",
+            signatureUrl: profile.signatureUrl || "",
+            stampUrl: profile.stampUrl || "",
+            useElectronicSignature: profile.useElectronicSignature || false,
           });
         }
 
@@ -106,21 +116,24 @@ const StableProfessionalSettings: React.FC = () => {
         const unsubscribe = subscribeToProfessionalProfile(
           currentUser.id,
           (updatedProfile) => {
-            if (updatedProfile) {
-              setProfileData({
-                name: updatedProfile.name || "",
-                email: updatedProfile.email || "",
-                phone: updatedProfile.phone || "",
-                specialty: updatedProfile.specialty || "Psychologue",
-                experience: updatedProfile.experience || "",
-                education: Array.isArray(updatedProfile.education) ? updatedProfile.education.join(", ") : "",
-                bio: updatedProfile.bio || "",
-                consultationFee: updatedProfile.consultationFee || 0,
-                isApproved: updatedProfile.isApproved || false,
-                isActive: updatedProfile.isActive || false,
-                type: updatedProfile.type || "mental",
-              });
-            }
+                         if (updatedProfile) {
+               setProfileData({
+                 name: updatedProfile.name || "",
+                 email: updatedProfile.email || "",
+                 phone: updatedProfile.phone || "",
+                 specialty: updatedProfile.specialty || "Psychologue",
+                 experience: updatedProfile.experience || "",
+                 education: Array.isArray(updatedProfile.education) ? updatedProfile.education.join(", ") : "",
+                 bio: updatedProfile.bio || "",
+                 consultationFee: updatedProfile.consultationFee || 0,
+                 isApproved: updatedProfile.isApproved || false,
+                 isActive: updatedProfile.isActive || false,
+                 type: updatedProfile.type || "mental",
+                 signatureUrl: updatedProfile.signatureUrl || "",
+                 stampUrl: updatedProfile.stampUrl || "",
+                 useElectronicSignature: updatedProfile.useElectronicSignature || false,
+               });
+             }
           }
         );
 
@@ -164,12 +177,16 @@ const StableProfessionalSettings: React.FC = () => {
         education: updatedProfile.education.split(", ").filter(Boolean),
         bio: updatedProfile.bio,
         consultationFee: updatedProfile.consultationFee,
+        signatureUrl: updatedProfile.signatureUrl,
+        stampUrl: updatedProfile.stampUrl,
+        useElectronicSignature: updatedProfile.useElectronicSignature,
       });
 
       setSaveSuccess(true);
       setTimeout(() => {
         setSaveSuccess(false);
-      }, 3000);
+        navigate("/professional/dashboard");
+      }, 2000);
     } catch (error) {
       console.error("Erreur lors de la sauvegarde:", error);
       setErrorMessage("Erreur lors de la sauvegarde du profil");
