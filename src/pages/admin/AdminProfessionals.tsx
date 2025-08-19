@@ -125,8 +125,10 @@ const AdminProfessionals: React.FC = () => {
   // Filtrer les professionnels de manière simple et stable
   const getFilteredProfessionals = () => {
     // Nettoyer le searchTerm pour éviter les guillemets parasites dans la logique interne
-    const cleanSearchTerm = searchTerm ? searchTerm.replace(/['"]+/g, "").trim() : "";
-    
+    const cleanSearchTerm = searchTerm
+      ? searchTerm.replace(/['"]+/g, "").trim()
+      : "";
+
     console.log("🔍 [GETFILTERED] Début de getFilteredProfessionals");
     console.log("🔍 [GETFILTERED] Paramètres:", {
       searchTerm: cleanSearchTerm,
@@ -664,7 +666,7 @@ const AdminProfessionals: React.FC = () => {
               searchTerm &&
               searchTerm !== "" &&
               hasData !== professionals.length > 0;
-            
+
             // Protection ultra-maximale : éviter TOUTES les transitions pendant la recherche
             const isSearching = searchTerm && searchTerm !== "";
             const isCriticalTransition =
@@ -678,22 +680,28 @@ const AdminProfessionals: React.FC = () => {
               console.log(
                 "⚠️ [RENDU] Transition de recherche détectée, affichage ultra-stable"
               );
-              // Protection renforcée : toujours retourner l'état le plus stable
-              // pour éviter complètement les erreurs removeChild
-              return professionals.length > 0; // Garder l'état précédent pendant TOUTE la transition
+              // Protection ultra-définitive : TOUJOURS afficher le tableau pendant les transitions
+              // pour éviter COMPLÈTEMENT les erreurs removeChild
+              return true; // Forcer l'affichage du tableau pendant les transitions
             }
-            
+
             // Protection ultra-maximale : bloquer TOUTES les transitions pendant la recherche active
             if (isSearching) {
-              console.log("🚫 [RENDU] Recherche active, blocage de toutes les transitions DOM");
-              return professionals.length > 0; // Garder l'état stable pendant la recherche
+              console.log(
+                "🚫 [RENDU] Recherche active, blocage de toutes les transitions DOM"
+              );
+              // Protection ultra-définitive : TOUJOURS afficher le tableau pendant la recherche
+              // pour éviter COMPLÈTEMENT les erreurs removeChild
+              return true; // Forcer l'affichage du tableau pendant la recherche
             }
 
             if (isCriticalTransition) {
               console.log(
                 "⚠️ [RENDU] Transition critique détectée, affichage stable"
               );
-              return professionals.length > 0; // Garder l'état précédent pendant la transition critique
+              // Protection ultra-définitive : TOUJOURS afficher le tableau pendant les transitions critiques
+              // pour éviter COMPLÈTEMENT les erreurs removeChild
+              return true; // Forcer l'affichage du tableau pendant les transitions critiques
             }
 
             if (hasData) {
