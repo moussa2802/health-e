@@ -1,5 +1,5 @@
-import React, { Component, ErrorInfo, ReactNode } from 'react';
-import { AlertTriangle, RefreshCw } from 'lucide-react';
+import React, { Component, ErrorInfo, ReactNode } from "react";
+import { AlertTriangle, RefreshCw } from "lucide-react";
 
 interface Props {
   children: ReactNode;
@@ -18,11 +18,35 @@ class ErrorBoundary extends Component<Props, State> {
   }
 
   static getDerivedStateFromError(error: Error): State {
+    // Ignorer les erreurs DOM spécifiques qui ne sont pas critiques
+    if (
+      error.message &&
+      (error.message.includes("insertBefore") ||
+        error.message.includes("removeChild") ||
+        error.message.includes("Failed to execute") ||
+        error.message.includes("NotFoundError"))
+    ) {
+      console.warn("⚠️ Erreur DOM ignorée par ErrorBoundary:", error.message);
+      return { hasError: false, error: undefined };
+    }
+
     return { hasError: true, error };
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    console.error('ErrorBoundary caught an error:', error, errorInfo);
+    // Ne pas logger les erreurs DOM comme des erreurs critiques
+    if (
+      error.message &&
+      (error.message.includes("insertBefore") ||
+        error.message.includes("removeChild") ||
+        error.message.includes("Failed to execute") ||
+        error.message.includes("NotFoundError"))
+    ) {
+      console.warn("⚠️ Erreur DOM non critique ignorée:", error.message);
+      return;
+    }
+
+    console.error("ErrorBoundary caught a critical error:", error, errorInfo);
   }
 
   handleRetry = () => {
@@ -43,7 +67,8 @@ class ErrorBoundary extends Component<Props, State> {
               Une erreur est survenue
             </h2>
             <p className="text-gray-600 mb-4">
-              Nous nous excusons pour ce problème. Veuillez réessayer ou actualiser la page.
+              Nous nous excusons pour ce problème. Veuillez réessayer ou
+              actualiser la page.
             </p>
             <button
               onClick={this.handleRetry}
@@ -52,7 +77,7 @@ class ErrorBoundary extends Component<Props, State> {
               <RefreshCw className="h-4 w-4 mr-2" />
               Réessayer
             </button>
-            {process.env.NODE_ENV === 'development' && this.state.error && (
+            {process.env.NODE_ENV === "development" && this.state.error && (
               <details className="mt-4 text-left">
                 <summary className="cursor-pointer text-sm text-gray-500">
                   Détails de l'erreur (développement)

@@ -51,6 +51,7 @@ type AuthContextType = {
   userType: UserType;
   isAuthenticated: boolean;
   isAdmin: boolean;
+  loading: boolean;
   login: (email: string, password: string, userType: UserType) => Promise<void>;
   loginWithPhone: (userId: string, phoneNumber: string) => Promise<void>;
   register: (
@@ -140,14 +141,19 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
         if (userDoc.exists()) {
           const userData = userDoc.data();
+          // Ne récupérer serviceType et specialty que pour les professionnels
+          const userType = userData.type || null;
           setCurrentUser({
             id: firebaseUser.uid,
             name: userData.name || "",
             email: userData.email || firebaseUser.email || "",
-            type: userData.type || null,
+            type: userType,
             profileImage: userData.profileImage,
-            serviceType: userData.serviceType,
-            specialty: userData.specialty,
+            // Seuls les professionnels ont besoin de serviceType et specialty
+            ...(userType === "professional" && {
+              serviceType: userData.serviceType,
+              specialty: userData.specialty,
+            }),
           });
         } else {
           // User exists in Auth but not in Firestore - check if it's a demo admin
@@ -783,6 +789,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         userType: currentUser?.type || null,
         isAuthenticated: currentUser !== null,
         isAdmin: currentUser?.type === "admin",
+        loading,
         login,
         loginWithPhone,
         register,

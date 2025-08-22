@@ -167,10 +167,24 @@ export async function getPatientMedicalRecords(
       "medicalRecords"
     );
 
-    // Create a query with ordering by consultationDate (newest first)
-    const q = query(medicalRecordsRef, orderBy("consultationDate", "desc"));
+    // Create a query with ordering by createdAt (newest first)
+    const q = query(medicalRecordsRef, orderBy("createdAt", "desc"));
 
+    console.log(
+      "🔍 [DEBUG] Executing query on collection:",
+      medicalRecordsRef.path
+    );
     const snapshot = await getDocs(q);
+    console.log("🔍 [DEBUG] Query snapshot:", {
+      empty: snapshot.empty,
+      size: snapshot.size,
+      docs: snapshot.docs.length,
+    });
+
+    if (snapshot.empty) {
+      console.log("⚠️ [DEBUG] Snapshot is empty - no documents found");
+      return [];
+    }
 
     const records = snapshot.docs.map(
       (doc) =>
@@ -181,6 +195,16 @@ export async function getPatientMedicalRecords(
     );
 
     console.log(`✅ Fetched ${records.length} medical records`);
+    console.log(
+      "🔍 [DEBUG] First record sample:",
+      records[0]
+        ? {
+            id: records[0].id,
+            patientId: records[0].patientId,
+            professionalName: records[0].professionalName,
+          }
+        : "No records"
+    );
     return records;
   } catch (error) {
     console.error("❌ Error fetching medical records:", error);

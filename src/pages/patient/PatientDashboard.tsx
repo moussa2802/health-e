@@ -20,13 +20,16 @@ import {
   XCircle,
   Eye,
   Plus,
+  Download,
 } from "lucide-react";
 import { useAuth } from "../../contexts/AuthContext";
 import { useBookings } from "../../hooks/useBookings";
 import { formatLocalDate } from "../../utils/dateUtils";
 import { cancelBooking } from "../../services/bookingService";
 import MessagingCenter from "../../components/messaging/MessagingCenter";
-import { jsPDF } from "jspdf";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
+import QRCode from "qrcode";
 import {
   getPatientMedicalRecords,
   MedicalRecord,
@@ -89,19 +92,25 @@ const PatientDashboard: React.FC = () => {
   );
   const [showEthicsReminder, setShowEthicsReminder] = useState(true);
   const [showSupport, setShowSupport] = useState(false);
+  const [showPrescriptionModal, setShowPrescriptionModal] = useState(false);
+  const [currentPrescription, setCurrentPrescription] =
+    useState<MedicalRecord | null>(null);
 
   // Fetch medical records
   useEffect(() => {
+    console.log(
+      "🔍 [DASHBOARD DEBUG] useEffect triggered, currentUser:",
+      currentUser?.id
+    );
+
     const fetchMedicalRecords = async () => {
       if (!currentUser?.id) {
-        console.log(
-          "📚 [DASHBOARD DEBUG] No current user, skipping medical records fetch"
-        );
+        console.log("🔍 [DASHBOARD DEBUG] No currentUser.id, skipping fetch");
         return;
       }
 
       console.log(
-        "📚 [DASHBOARD DEBUG] Fetching medical records for user:",
+        "🔍 [DASHBOARD DEBUG] Starting fetch for user:",
         currentUser.id
       );
       setLoadingRecords(true);
@@ -110,15 +119,12 @@ const PatientDashboard: React.FC = () => {
       try {
         const records = await getPatientMedicalRecords(currentUser.id);
         console.log(
-          "📚 [DASHBOARD DEBUG] Medical records fetched successfully:",
+          "🔍 [DASHBOARD DEBUG] Fetch completed, records:",
           records.length
         );
         setMedicalRecords(records);
       } catch (error) {
-        console.error(
-          "📚 [DASHBOARD DEBUG] Error fetching medical records:",
-          error
-        );
+        console.error("Error fetching medical records:", error);
         setRecordError(
           "Impossible de charger vos dossiers médicaux. Vérifiez vos permissions."
         );
@@ -145,135 +151,424 @@ const PatientDashboard: React.FC = () => {
     setShowEthicsReminder(false);
   };
 
-  const generatePrescription = async (record: MedicalRecord) => {
+  const showPrescription = (record: MedicalRecord) => {
     if (!record.treatment || record.treatment.trim() === "") {
       alert("Ce dossier ne contient pas de traitement à prescrire.");
       return;
     }
+    setCurrentPrescription(record);
+    setShowPrescriptionModal(true);
+  };
 
-    const doc = new jsPDF();
+  // Fonction pour créer le logo Health-e avec le design réel
+  const createHealthELogo = () => {
+    const svg = `
+      <svg width="80" height="40" viewBox="0 0 80 40" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="logoGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" style="stop-color:#3B82F6;stop-opacity:1" />
+            <stop offset="100%" style="stop-color:#14B8A6;stop-opacity:1" />
+          </linearGradient>
+        </defs>
+        <!-- Icône carrée arrondie avec gradient -->
+        <rect x="2" y="2" width="36" height="36" rx="8" fill="url(#logoGradient)"/>
+        <!-- Cœur blanc au centre -->
+        <path d="M20 12c-1.5-1.5-3.5-2-5.5-2s-4 0.5-5.5 2c-3 3-3 8 0 11l10.5 10.5L20 23c3-3 3-8 0-11z" fill="white" stroke="white" stroke-width="0.5"/>
+        <!-- Texte Health-e -->
+        <text x="45" y="25" font-family="Arial, sans-serif" font-size="16" font-weight="bold" fill="#1E40AF">Health-e</text>
+      </svg>
+    `;
+    return "data:image/svg+xml;base64," + btoa(svg);
+  };
 
-    // Add header with logo
-    doc.setFontSize(22);
-    doc.setTextColor(0, 102, 204);
-    doc.text("ORDONNANCE MÉDICALE", 105, 20, { align: "center" });
-    doc.setTextColor(0, 0, 0);
-
-    // Add professional info
-    doc.setFontSize(12);
-    doc.setFont("helvetica", "bold");
-    doc.text(`Dr. ${record.professionalName || "Professionnel"}`, 20, 40);
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(11);
-    doc.text(`Professionnel de santé`, 20, 47);
-
-    // Add line separator
-    doc.setDrawColor(0, 102, 204);
-    doc.setLineWidth(0.5);
-    doc.line(20, 55, 190, 55);
-
-    // Calculate patient age if possible
-    let patientAge = "";
-    if (currentUser?.dateOfBirth) {
-      const birthDate = new Date(currentUser.dateOfBirth);
-      const today = new Date();
-      let age = today.getFullYear() - birthDate.getFullYear();
-      const monthDiff = today.getMonth() - birthDate.getMonth();
-      if (
-        monthDiff < 0 ||
-        (monthDiff === 0 && today.getDate() < birthDate.getDate())
-      ) {
-        age--;
+  // --- Helpers fonts / slug / images ---
+  let _fontsLoaded = false;
+  async function ensureFontsLoaded(doc: jsPDF) {
+    if (_fontsLoaded) return;
+    async function loadTtf(path: string) {
+      const res = await fetch(path);
+      if (!res.ok) {
+        throw new Error(`Failed to load font: ${res.status} ${res.statusText}`);
       }
-      patientAge = `(Âge : ${age} ans)`;
+      const buf = await res.arrayBuffer();
+      // Convert ArrayBuffer -> base64
+      let binary = "";
+      const bytes = new Uint8Array(buf);
+      const len = bytes.byteLength;
+      for (let i = 0; i < len; i++) binary += String.fromCharCode(bytes[i]);
+      return btoa(binary);
+    }
+    try {
+      console.log("🔍 [FONT DEBUG] Loading Inter fonts...");
+      const regularB64 = await loadTtf("/fonts/Inter-Regular.ttf");
+      const boldB64 = await loadTtf("/fonts/Inter-Bold.ttf");
+
+      doc.addFileToVFS("Inter-Regular.ttf", regularB64);
+      doc.addFileToVFS("Inter-Bold.ttf", boldB64);
+      doc.addFont("Inter-Regular.ttf", "Inter", "normal");
+      doc.addFont("Inter-Bold.ttf", "Inter", "bold");
+
+      _fontsLoaded = true;
+      console.log("✅ [FONT DEBUG] Inter fonts loaded successfully");
+    } catch (e) {
+      console.warn(
+        "⚠️ [FONT DEBUG] Failed to load Inter fonts, using helvetica fallback:",
+        e
+      );
+      _fontsLoaded = false;
+    }
+  }
+
+  function slugify(input: string) {
+    return (input || "patient")
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "") // remove accents
+      .replace(/[^a-zA-Z0-9]+/g, "_") // non alphanum -> _
+      .replace(/^_+|_+$/g, "")
+      .toLowerCase();
+  }
+
+  async function toDataURL(url: string): Promise<string> {
+    const res = await fetch(url);
+    const blob = await res.blob();
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+  }
+
+  const generatePrescription = async (record: MedicalRecord) => {
+    if (!record?.treatment || record.treatment.trim() === "") {
+      alert("Ce dossier ne contient pas de traitement à prescrire.");
+      return;
     }
 
-    // Add patient info on a single line with age
-    doc.setFontSize(11);
-    doc.text(
-      `Patient : ${currentUser?.name || "Patient"} ${patientAge}`,
-      20,
-      65
-    );
-
-    // Format date
-    const consultationDate = new Date(record.consultationDate);
-    const formattedDate = consultationDate.toLocaleDateString();
-    doc.text(`Date : ${formattedDate}`, 20, 72);
-
-    // Add Rx symbol
-    doc.setFont("zapfdingbats", "normal");
-    doc.setFontSize(14);
-    doc.text("R", 20, 85);
-
-    // Add prescription content
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(12);
-
-    // Split treatment into lines
-    const treatmentLines = doc.splitTextToSize(record.treatment, 160);
-    let yPos = 90;
-
-    treatmentLines.forEach((line) => {
-      doc.text(line, 25, yPos);
-      yPos += 7;
-    });
-
-    // Add line separator
-    doc.setDrawColor(0, 102, 204);
-    doc.setLineWidth(0.5);
-    doc.line(20, yPos + 10, 190, yPos + 10);
-
-    // Add signature area
-    doc.setFontSize(11);
-    doc.text("Signature et cachet:", 130, yPos + 25);
-
-    // Add signature and stamp if available
     try {
-      if (
-        record.useElectronicSignature &&
-        (record.signatureUrl || record.stampUrl)
-      ) {
-        // Ajouter le cachet (si disponible)
-        if (record.stampUrl) {
-          const stampBase64 = await convertImageUrlToBase64(record.stampUrl);
-          doc.addImage(stampBase64, "PNG", 140, yPos + 30, 40, 40);
-        }
+      // A4 mm
+      const doc = new jsPDF({ unit: "mm", format: "a4" });
+      await ensureFontsLoaded(doc);
 
-        // Ajouter la signature (si disponible)
-        if (record.signatureUrl) {
-          const signatureBase64 = await convertImageUrlToBase64(
-            record.signatureUrl
-          );
-          doc.addImage(signatureBase64, "PNG", 140, yPos + 75, 50, 20);
-        }
+      // Vérifier les polices disponibles
+      console.log("🔍 [FONT DEBUG] Available fonts:", doc.getFontList());
 
-        // Mention légale
-        doc.setFontSize(8);
-        doc.text(
-          "Document signé électroniquement conformément à la réglementation en vigueur.",
-          20,
-          yPos + 100
+      // Essayer de récupérer le profil patient complet pour avoir la date de naissance
+      let patientProfile = null;
+      try {
+        const { getPatientProfile } = await import(
+          "../../services/profileService"
+        );
+        patientProfile = await getPatientProfile(currentUser?.id || "");
+        console.log("🔍 [PDF DEBUG] Profil patient récupéré:", patientProfile);
+      } catch (e) {
+        console.warn(
+          "⚠️ [PDF DEBUG] Impossible de récupérer le profil patient:",
+          e
         );
       }
+
+      // Utiliser helvetica par défaut pour éviter les erreurs
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(0, 0, 0);
+
+      const page = { w: 210, h: 297, margin: 20 };
+      let y = page.margin;
+
+      // --- Header ---
+      try {
+        const logoBase64 = createHealthELogo();
+        doc.addImage(logoBase64, "SVG", page.margin, y - 5, 40, 20);
+      } catch {}
+
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(16);
+      doc.setTextColor(59, 130, 246);
+      doc.text("ORDONNANCE MÉDICALE", page.w / 2, y + 5, { align: "center" });
+
+      // Infos pro (droite)
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(10);
+      doc.setTextColor(60, 60, 60);
+      const proName = record.professionalName || "Professionnel";
+      const proLines = [`Dr. ${proName}`, `Professionnel de santé`];
+      proLines.forEach((t, i) =>
+        doc.text(t, page.w - page.margin - 40, y + 2 + i * 5)
+      );
+
+      // trait
+      doc.setDrawColor(59, 130, 246);
+      doc.setLineWidth(0.8);
+      y += 18;
+      doc.line(page.margin, y, page.w - page.margin, y);
+      y += 6;
+
+      // --- Bloc patient ---
+      const fmt = new Intl.DateTimeFormat("fr-FR", {
+        day: "numeric",
+        month: "long",
+        year: "numeric",
+      });
+      const cDate = record.consultationDate
+        ? new Date(record.consultationDate)
+        : new Date();
+      const dateFr = fmt.format(cDate);
+
+      // âge et date de naissance - récupérer depuis le profil patient
+      let ageTxt = "";
+      let birthDateTxt = "";
+
+      // Essayer différentes sources pour la date de naissance
+      const patientBirthDate =
+        patientProfile?.dateOfBirth ||
+        currentUser?.dateOfBirth ||
+        (currentUser as any)?.profile?.dateOfBirth ||
+        record.patientDateOfBirth;
+
+      console.log("🔍 [PDF DEBUG] Recherche date de naissance:", {
+        patientProfileDateOfBirth: patientProfile?.dateOfBirth,
+        currentUserDateOfBirth: currentUser?.dateOfBirth,
+        profileDateOfBirth: (currentUser as any)?.profile?.dateOfBirth,
+        recordPatientDateOfBirth: record.patientDateOfBirth,
+        finalDate: patientBirthDate,
+      });
+
+      if (patientBirthDate) {
+        try {
+          const bd = new Date(patientBirthDate);
+          if (!isNaN(bd.getTime())) {
+            // Vérifier que la date est valide
+            const today = new Date();
+            let age = today.getFullYear() - bd.getFullYear();
+            const md = today.getMonth() - bd.getMonth();
+            if (md < 0 || (md === 0 && today.getDate() < bd.getDate())) age--;
+            ageTxt = ` (${age} ans)`;
+            birthDateTxt = ` • Né(e) le ${bd.toLocaleDateString("fr-FR")}`;
+          }
+        } catch (e) {
+          console.warn("⚠️ [PDF DEBUG] Erreur calcul âge:", e);
+        }
+      }
+
+      // Préparer les lignes d'information patient
+      const row1 = `Nom : ${currentUser?.name || "Patient"}${ageTxt}`;
+      const row2 = `Type de consultation : ${
+        record.consultationType || "Vidéo"
+      } • Consultation du ${dateFr}`;
+      const row3 = birthDateTxt
+        ? `Date de naissance : ${birthDateTxt.replace(" • ", "")}`
+        : "";
+
+      // cadre patient - agrandi pour inclure la date de naissance
+      const patientBoxHeight = row3 ? 30 : 24; // Plus haut si on a la date de naissance
+      doc.setFillColor(248, 250, 252);
+      doc.setDrawColor(216, 222, 233);
+      doc.setLineWidth(0.5);
+      doc.rect(page.margin, y, page.w - page.margin * 2, patientBoxHeight, "F");
+      doc.rect(page.margin, y, page.w - page.margin * 2, patientBoxHeight);
+
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(11);
+      doc.setTextColor(0, 0, 0);
+      doc.text("INFORMATIONS PATIENT", page.margin + 5, y + 7);
+
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(10);
+
+      doc.text(row1, page.margin + 5, y + 14);
+      doc.text(row2, page.margin + 5, y + 20);
+      if (row3) {
+        doc.text(row3, page.margin + 5, y + 26);
+        y += 6; // Ajuster la hauteur si on ajoute une ligne
+      }
+
+      y += 30;
+
+      // --- Prescription ---
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(12);
+      doc.setTextColor(34, 197, 94);
+      // ℞ n'est pas garanti par toutes les polices → "Rx"
+      doc.text("PRESCRIPTION MÉDICALE", page.margin + 7, y);
+      doc.setTextColor(59, 130, 246);
+      doc.text("Rx", page.margin, y);
+
+      y += 4;
+      doc.setDrawColor(34, 197, 94);
+      doc.setLineWidth(0.5);
+      doc.line(page.margin, y, page.w - page.margin, y);
+      y += 6;
+
+      // Si tu as un tableau de médicaments (optionnel)
+      // record.medications?: Array<{ drug, dosage, posology, duration, instructions }>
+      if (
+        Array.isArray((record as any).medications) &&
+        (record as any).medications.length
+      ) {
+        const rows = (record as any).medications.map((m: any) => [
+          m.drug || "",
+          m.dosage || "",
+          m.posology || "",
+          m.duration || "",
+          m.instructions || "",
+        ]);
+        autoTable(doc, {
+          head: [
+            ["Médicament", "Dosage", "Posologie", "Durée", "Instructions"],
+          ],
+          body: rows,
+          startY: y,
+          styles: {
+            font: "helvetica",
+            fontSize: 9,
+            cellPadding: 2,
+          },
+          headStyles: { fillColor: [240, 253, 244], textColor: [0, 0, 0] },
+          alternateRowStyles: { fillColor: [250, 250, 250] },
+          theme: "grid",
+          margin: { left: page.margin, right: page.margin },
+          tableWidth: page.w - page.margin * 2,
+        });
+        // positionner y sous la table
+        // @ts-ignore
+        y = (doc as any).lastAutoTable.finalY + 10;
+      } else {
+        // Texte libre: record.treatment
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(11);
+        doc.setTextColor(0, 0, 0);
+
+        const maxWidth = page.w - page.margin * 2 - 5;
+        const lines = doc.splitTextToSize(record.treatment, maxWidth);
+
+        // gestion pagination simple
+        for (const line of lines) {
+          if (y > page.h - 30) {
+            doc.addPage();
+            await ensureFontsLoaded(doc);
+            doc.setFont("helvetica", "normal");
+            y = page.margin;
+          }
+          doc.text(line, page.margin + 5, y);
+          y += 6;
+        }
+        y += 4;
+      }
+
+      // Espace après la prescription
+      y += 10;
+
+      // --- Signature & cachet (en bas de chaque page) ---
+      const pageCount = doc.getNumberOfPages();
+      for (let i = 1; i <= pageCount; i++) {
+        doc.setPage(i);
+
+        // Position de la signature (60mm du bas)
+        const signatureY = page.h - 60;
+
+        // Titre de la section signature
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(11);
+        doc.setTextColor(0, 0, 0);
+        doc.text("SIGNATURE ET CACHET", page.margin, signatureY);
+
+        // Cadre pour la signature
+        doc.setDrawColor(216, 222, 233);
+        doc.setLineWidth(0.5);
+        doc.rect(page.margin, signatureY + 4, page.w - page.margin * 2, 42);
+
+        // cachet / signature à droite
+        try {
+          if (
+            record.useElectronicSignature &&
+            (record.stampUrl || record.signatureUrl)
+          ) {
+            if (record.stampUrl) {
+              const b64 = await toDataURL(record.stampUrl);
+              doc.addImage(
+                b64,
+                "PNG",
+                page.w - page.margin - 50,
+                signatureY + 7,
+                34,
+                34
+              );
+            }
+            if (record.signatureUrl) {
+              const b64s = await toDataURL(record.signatureUrl);
+              doc.addImage(
+                b64s,
+                "PNG",
+                page.w - page.margin - 50,
+                signatureY + 32,
+                40,
+                15
+              );
+            }
+            doc.setFontSize(9);
+            doc.setTextColor(100, 100, 100);
+            doc.text(
+              "Document signé électroniquement conformément à la réglementation en vigueur.",
+              page.margin + 2,
+              signatureY + 44
+            );
+          } else {
+            doc.setFontSize(9);
+            doc.setTextColor(150, 150, 150);
+            doc.text(
+              "Signature électronique non disponible",
+              page.margin + 2,
+              signatureY + 16
+            );
+          }
+        } catch (e) {
+          doc.setFontSize(9);
+          doc.setTextColor(150, 150, 150);
+          doc.text(
+            "Signature électronique non disponible",
+            page.margin + 2,
+            signatureY + 16
+          );
+        }
+
+        // QR code (vérification)
+        try {
+          const verifyUrl = `${window.location.origin}/verify/prescription/${record.id}`;
+          const qrDataUrl = await QRCode.toDataURL(verifyUrl, {
+            margin: 0,
+            width: 72,
+          });
+          doc.addImage(
+            qrDataUrl,
+            "PNG",
+            page.margin + 2,
+            signatureY + 7,
+            22,
+            22
+          );
+          doc.setFontSize(8);
+          doc.setTextColor(100, 100, 100);
+          doc.text("Vérifier l'authenticité", page.margin + 2, signatureY + 33);
+        } catch {}
+
+        // Footer en bas de page
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(9);
+        doc.setTextColor(120, 120, 120);
+        const footerText = `Document signé électroniquement via Health-e | www.health-e.sn | Page ${i} / ${pageCount}`;
+        doc.text(footerText, page.w / 2, page.h - 10, { align: "center" });
+      }
+
+      // --- Save ---
+      const dateStr = new Date().toISOString().split("T")[0];
+      const safeName = slugify(currentUser?.name || "patient");
+      doc.save(`ordonnance-${safeName}-${dateStr}.pdf`);
     } catch (error) {
-      console.error("Erreur ajout signature/cachet PDF (patient) :", error);
-      doc.setFontSize(9);
-      doc.text("Signature électronique non disponible", 130, yPos + 35);
+      console.error("❌ [PDF DEBUG] Error generating prescription:", error);
+      alert(
+        "Erreur lors de la génération de l'ordonnance. Veuillez réessayer."
+      );
     }
-
-    // Add footer
-    doc.setFontSize(8);
-    doc.setTextColor(100, 100, 100);
-    doc.text("Health-e - Plateforme de téléconsultation", 105, 280, {
-      align: "center",
-    });
-
-    // Save the PDF
-    const dateStr = new Date().toISOString().split("T")[0];
-    doc.save(
-      `ordonnance-${currentUser?.name.replace(" ", "_")}-${dateStr}.pdf`
-    );
   };
 
   const generateRecommendations = (record: MedicalRecord) => {
@@ -418,17 +713,40 @@ const PatientDashboard: React.FC = () => {
     });
   });
 
+  // Fonction pour comparer les dates en tenant compte seulement du jour (pas de l'heure)
+  const isDatePassed = (dateString: string) => {
+    const bookingDate = new Date(dateString);
+    const today = new Date();
+
+    // Réinitialiser l'heure à minuit pour la comparaison
+    const bookingDay = new Date(
+      bookingDate.getFullYear(),
+      bookingDate.getMonth(),
+      bookingDate.getDate()
+    );
+    const todayDay = new Date(
+      today.getFullYear(),
+      today.getMonth(),
+      today.getDate()
+    );
+
+    return bookingDay < todayDay;
+  };
+
   const upcomingBookings = bookings.filter(
     (booking) =>
-      booking.status === "en_attente" ||
-      booking.status === "confirmé" ||
-      booking.status === "confirmed"
+      (booking.status === "en_attente" ||
+        booking.status === "confirmé" ||
+        booking.status === "confirmed") &&
+      !isDatePassed(booking.date)
   );
+
   const pastBookings = bookings.filter(
     (booking) =>
       booking.status === "terminé" ||
       booking.status === "completed" ||
-      booking.status === "annulé"
+      booking.status === "annulé" ||
+      isDatePassed(booking.date)
   );
 
   console.log("🔍 [DASHBOARD DEBUG] Filtered bookings:", {
@@ -550,17 +868,35 @@ const PatientDashboard: React.FC = () => {
                         <div className="flex items-center">
                           <span
                             className={`text-xs font-bold px-3 py-1.5 rounded-full ${getStatusColor(
-                              booking.status
+                              // Si c'est dans l'historique et que la date est passée, afficher comme "terminé"
+                              activeTab === "past" &&
+                                isDatePassed(booking.date) &&
+                                (booking.status === "en_attente" ||
+                                  booking.status === "confirmé" ||
+                                  booking.status === "confirmed")
+                                ? "completed"
+                                : booking.status
                             )}`}
                           >
-                            {getStatusLabel(booking.status)}
+                            {getStatusLabel(
+                              // Si c'est dans l'historique et que la date est passée, afficher comme "terminé"
+                              activeTab === "past" &&
+                                isDatePassed(booking.date) &&
+                                (booking.status === "en_attente" ||
+                                  booking.status === "confirmé" ||
+                                  booking.status === "confirmed")
+                                ? "completed"
+                                : booking.status
+                            )}
                           </span>
                         </div>
                       </div>
 
-                      {booking.status === "en_attente" ||
-                      booking.status === "confirmé" ||
-                      booking.status === "confirmed" ? (
+                      {/* Afficher les boutons seulement pour les consultations à venir */}
+                      {activeTab === "upcoming" &&
+                      (booking.status === "en_attente" ||
+                        booking.status === "confirmé" ||
+                        booking.status === "confirmed") ? (
                         <div className="flex justify-between items-center">
                           <button
                             onClick={() => {
@@ -579,36 +915,6 @@ const PatientDashboard: React.FC = () => {
                             <Play className="h-4 w-4 mr-2" />
                             Rejoindre
                           </Link>
-                        </div>
-                      ) : booking.status === "terminé" ||
-                        booking.status === "completed" ? (
-                        <div className="mt-4 pt-4 border-t border-gray-100">
-                          <div className="flex justify-between items-center">
-                            <h4 className="text-sm font-semibold text-gray-700 flex items-center">
-                              <FileText className="h-4 w-4 mr-1" />
-                              Dossier médical:
-                            </h4>
-                            <button
-                              onClick={() => {
-                                // Find the medical record for this booking
-                                const record = medicalRecords.find(
-                                  (r) => r.consultationId === booking.id
-                                );
-                                if (record) {
-                                  setSelectedRecord(record);
-                                  setShowMedicalRecordModal(true);
-                                } else {
-                                  alert(
-                                    "Dossier médical non disponible pour cette consultation"
-                                  );
-                                }
-                              }}
-                              className="text-blue-500 hover:text-blue-600 text-sm flex items-center font-medium"
-                            >
-                              <Eye className="h-4 w-4 mr-1" />
-                              Voir le dossier
-                            </button>
-                          </div>
                         </div>
                       ) : null}
                     </div>
@@ -655,7 +961,22 @@ const PatientDashboard: React.FC = () => {
                   Réessayer
                 </button>
               </div>
-            ) : medicalRecords.length > 0 ? (
+            ) : medicalRecords.length === 0 ? (
+              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 text-center">
+                <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <FileText className="h-8 w-8 text-gray-400" />
+                </div>
+                <p className="text-gray-500 font-medium">
+                  Vous n'avez pas encore de dossiers médicaux.
+                </p>
+                <p className="text-gray-400 text-sm mt-2">
+                  Vos dossiers médicaux apparaîtront ici après vos
+                  consultations.
+                </p>
+              </div>
+            ) : null}
+
+            {medicalRecords.length > 0 ? (
               <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
                 <div className="divide-y divide-gray-100">
                   {medicalRecords.slice(0, 3).map((record) => (
@@ -673,7 +994,11 @@ const PatientDashboard: React.FC = () => {
                               <Calendar className="h-4 w-4 text-gray-500 mr-2" />
                               <span className="text-sm font-semibold text-gray-900">
                                 {formatLocalDate(
-                                  new Date(record.consultationDate)
+                                  record.consultationDate
+                                    ? new Date(record.consultationDate)
+                                    : record.createdAt?.toDate
+                                    ? record.createdAt.toDate()
+                                    : new Date()
                                 )}
                               </span>
                               <span className="ml-3 px-2 py-0.5 bg-blue-100 text-blue-800 text-xs rounded-full font-medium">
@@ -688,7 +1013,7 @@ const PatientDashboard: React.FC = () => {
                         <div className="flex space-x-2">
                           {record.treatment && (
                             <button
-                              onClick={() => generatePrescription(record)}
+                              onClick={() => showPrescription(record)}
                               className="text-green-600 hover:text-green-700 text-sm flex items-center font-medium bg-green-50 hover:bg-green-100 px-3 py-1.5 rounded-lg transition-colors"
                             >
                               <Pill className="h-4 w-4 mr-1" />
@@ -718,6 +1043,14 @@ const PatientDashboard: React.FC = () => {
                           <p className="text-gray-700 text-sm">
                             <span className="font-semibold">Traitement:</span>{" "}
                             {record.treatment}
+                          </p>
+                        )}
+                        {record.recommendations && (
+                          <p className="text-gray-700 text-sm">
+                            <span className="font-semibold">
+                              Recommandations:
+                            </span>{" "}
+                            {record.recommendations}
                           </p>
                         )}
                       </div>
@@ -786,7 +1119,9 @@ const PatientDashboard: React.FC = () => {
                   <div className="flex items-center justify-between">
                     <div className="flex items-center">
                       <MessageSquare className="h-5 w-5 text-blue-600 mr-2" />
-                      <span className="font-semibold text-gray-900">Centre de messagerie</span>
+                      <span className="font-semibold text-gray-900">
+                        Centre de messagerie
+                      </span>
                     </div>
                     <div className="flex items-center text-sm text-green-600">
                       <div className="w-2 h-2 bg-green-500 rounded-full mr-1"></div>
@@ -804,7 +1139,9 @@ const PatientDashboard: React.FC = () => {
                   <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
                     <MessageSquare className="h-8 w-8 text-blue-600" />
                   </div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">Centre de messagerie</h3>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                    Centre de messagerie
+                  </h3>
                   <p className="text-gray-600 mb-4">
                     Gérez vos conversations avec les professionnels de santé
                   </p>
@@ -866,7 +1203,7 @@ const PatientDashboard: React.FC = () => {
                   </div>
                 </div>
               </Link>
-              
+
               <button
                 onClick={() => setShowSupport(true)}
                 className="block w-full p-4 border border-gray-200 rounded-xl hover:bg-gradient-to-r hover:from-orange-50 hover:to-red-50 transition-all duration-200 hover:shadow-md group"
@@ -999,7 +1336,7 @@ const PatientDashboard: React.FC = () => {
                     <div className="flex space-x-2">
                       {selectedRecord.treatment && (
                         <button
-                          onClick={() => generatePrescription(selectedRecord)}
+                          onClick={() => showPrescription(selectedRecord)}
                           className="flex items-center text-green-600 hover:text-green-700 bg-green-50 hover:bg-green-100 px-3 py-1.5 rounded text-sm"
                         >
                           <Pill className="h-4 w-4 mr-1" />
@@ -1100,6 +1437,102 @@ const PatientDashboard: React.FC = () => {
                   )}
                 </div>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Prescription Modal */}
+      {showPrescriptionModal && currentPrescription && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col">
+            <div className="p-6 border-b border-gray-200 flex justify-between items-center flex-shrink-0">
+              <h2 className="text-xl font-semibold flex items-center">
+                <Pill className="h-6 w-6 mr-2 text-green-600" />
+                Ordonnance médicale
+              </h2>
+              <button
+                onClick={() => setShowPrescriptionModal(false)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X className="h-6 w-6" />
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto p-6">
+              <div className="space-y-6">
+                {/* Header */}
+                <div className="text-center border-b border-gray-200 pb-4">
+                  <h3 className="text-2xl font-bold text-blue-600 mb-2">
+                    ORDONNANCE MÉDICALE
+                  </h3>
+                  <div className="flex justify-between items-center text-sm text-gray-600">
+                    <span>Dr. {currentPrescription.professionalName}</span>
+                    <span>
+                      Date: {formatDate(currentPrescription.consultationDate)}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Patient Info */}
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <h4 className="font-semibold text-gray-900 mb-2">
+                    Informations patient
+                  </h4>
+                  <p className="text-gray-700">Nom: {currentUser?.name}</p>
+                  <p className="text-gray-700">
+                    Type de consultation:{" "}
+                    {currentPrescription.consultationType || "Vidéo"}
+                  </p>
+                </div>
+
+                {/* Diagnosis */}
+                {currentPrescription.diagnosis && (
+                  <div>
+                    <h4 className="font-semibold text-gray-900 mb-2">
+                      Diagnostic
+                    </h4>
+                    <p className="text-gray-700 bg-yellow-50 p-3 rounded-lg border-l-4 border-yellow-400">
+                      {currentPrescription.diagnosis}
+                    </p>
+                  </div>
+                )}
+
+                {/* Treatment */}
+                <div>
+                  <h4 className="font-semibold text-gray-900 mb-2 flex items-center">
+                    <Pill className="h-5 w-5 mr-2 text-green-600" />
+                    Traitement prescrit
+                  </h4>
+                  <div className="bg-green-50 p-4 rounded-lg border-l-4 border-green-400">
+                    <p className="text-gray-800 whitespace-pre-wrap">
+                      {currentPrescription.treatment}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Recommendations */}
+                {currentPrescription.recommendations && (
+                  <div>
+                    <h4 className="font-semibold text-gray-900 mb-2">
+                      Recommandations
+                    </h4>
+                    <p className="text-gray-700 bg-blue-50 p-3 rounded-lg border-l-4 border-blue-400">
+                      {currentPrescription.recommendations}
+                    </p>
+                  </div>
+                )}
+
+                {/* Download Button */}
+                <div className="text-center pt-4 border-t border-gray-200">
+                  <button
+                    onClick={() => generatePrescription(currentPrescription)}
+                    className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-semibold flex items-center mx-auto transition-colors"
+                  >
+                    <Download className="h-5 w-5 mr-2" />
+                    Télécharger l'ordonnance en PDF
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         </div>

@@ -79,11 +79,17 @@ const WelcomeBanner: React.FC<{ name: string }> = ({ name }) => {
 };
 
 // Financial Statistics Card
-const FinancialStats: React.FC<{ revenue: Revenue; showBalance: boolean; onToggleBalance: () => void }> = ({ revenue, showBalance, onToggleBalance }) => {
+const FinancialStats: React.FC<{
+  revenue: Revenue;
+  showBalance: boolean;
+  onToggleBalance: () => void;
+}> = ({ revenue, showBalance, onToggleBalance }) => {
   const stats = [
     {
       title: "Revenus disponibles",
-      value: showBalance ? `${revenue.available.toLocaleString()} FCFA` : "••••••",
+      value: showBalance
+        ? `${revenue.available.toLocaleString()} FCFA`
+        : "••••••",
       icon: Wallet,
       color: "from-green-500 to-emerald-500",
       bgColor: "bg-green-50",
@@ -91,7 +97,9 @@ const FinancialStats: React.FC<{ revenue: Revenue; showBalance: boolean; onToggl
     },
     {
       title: "En attente",
-      value: showBalance ? `${revenue.pending.toLocaleString()} FCFA` : "••••••",
+      value: showBalance
+        ? `${revenue.pending.toLocaleString()} FCFA`
+        : "••••••",
       icon: Clock,
       color: "from-yellow-500 to-orange-500",
       bgColor: "bg-yellow-50",
@@ -99,7 +107,9 @@ const FinancialStats: React.FC<{ revenue: Revenue; showBalance: boolean; onToggl
     },
     {
       title: "Total retiré",
-      value: showBalance ? `${revenue.withdrawn.toLocaleString()} FCFA` : "••••••",
+      value: showBalance
+        ? `${revenue.withdrawn.toLocaleString()} FCFA`
+        : "••••••",
       icon: TrendingUp,
       color: "from-blue-500 to-indigo-500",
       bgColor: "bg-blue-50",
@@ -207,12 +217,14 @@ const QuickActions: React.FC = () => {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {actions.map((action, index) => {
           const IconComponent = action.icon;
-          
-          if (action.action === 'support') {
+
+          if (action.action === "support") {
             return (
               <button
                 key={index}
-                onClick={() => window.dispatchEvent(new CustomEvent('showSupport'))}
+                onClick={() =>
+                  window.dispatchEvent(new CustomEvent("showSupport"))
+                }
                 className={`${action.bgColor} rounded-xl p-4 text-center hover:scale-105 transition-all duration-200 group cursor-pointer`}
               >
                 <div
@@ -226,7 +238,7 @@ const QuickActions: React.FC = () => {
               </button>
             );
           }
-          
+
           return (
             <Link
               key={index}
@@ -349,14 +361,32 @@ const ConsultationsSection: React.FC<{
 }> = ({ bookings, onConfirm, onCancel, onComplete }) => {
   const [activeTab, setActiveTab] = useState<"upcoming" | "past">("upcoming");
 
+  // Fonction pour comparer les dates en tenant compte seulement du jour (pas de l'heure)
+  const isDatePassed = (dateString: string) => {
+    const bookingDate = new Date(dateString);
+    const today = new Date();
+
+    // Réinitialiser l'heure à minuit pour la comparaison
+    const bookingDay = new Date(
+      bookingDate.getFullYear(),
+      bookingDate.getMonth(),
+      bookingDate.getDate()
+    );
+    const todayDay = new Date(
+      today.getFullYear(),
+      today.getMonth(),
+      today.getDate()
+    );
+
+    return bookingDay < todayDay;
+  };
+
   const upcomingBookings = bookings.filter(
-    (booking) =>
-      new Date(booking.date) > new Date() && booking.status === "confirmed"
+    (booking) => booking.status === "confirmed" && !isDatePassed(booking.date)
   );
 
   const pastBookings = bookings.filter(
-    (booking) =>
-      new Date(booking.date) < new Date() || booking.status === "completed"
+    (booking) => booking.status === "completed" || isDatePassed(booking.date)
   );
 
   const formatDate = (dateString: string) => {
@@ -440,7 +470,14 @@ const ConsultationsSection: React.FC<{
                     </p>
                   </div>
                 </div>
-                {getStatusBadge(booking.status)}
+                {getStatusBadge(
+                  // Si c'est dans l'historique et que la date est passée, afficher comme "completed"
+                  activeTab === "past" &&
+                    isDatePassed(booking.date) &&
+                    booking.status === "confirmed"
+                    ? "completed"
+                    : booking.status
+                )}
               </div>
 
               <div className="flex items-center gap-2">
@@ -482,17 +519,20 @@ const ConsultationsSection: React.FC<{
                 </div>
               )}
 
-              {activeTab === "past" && booking.status === "confirmed" && (
-                <div className="flex gap-2 mt-4">
-                  <button
-                    onClick={() => onComplete(booking.id)}
-                    className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium flex items-center justify-center gap-2"
-                  >
-                    <CheckCircle className="h-4 w-4" />
-                    Terminer
-                  </button>
-                </div>
-              )}
+              {/* Pour les consultations dans l'historique qui ne sont pas encore terminées */}
+              {activeTab === "past" &&
+                booking.status === "confirmed" &&
+                !isDatePassed(booking.date) && (
+                  <div className="flex gap-2 mt-4">
+                    <button
+                      onClick={() => onComplete(booking.id)}
+                      className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium flex items-center justify-center gap-2"
+                    >
+                      <CheckCircle className="h-4 w-4" />
+                      Terminer
+                    </button>
+                  </div>
+                )}
             </div>
           )
         )}
@@ -585,10 +625,10 @@ const ProfessionalDashboard: React.FC = () => {
   // Écouter l'événement pour afficher le support
   useEffect(() => {
     const handleShowSupport = () => setShowSupport(true);
-    window.addEventListener('showSupport', handleShowSupport);
-    
+    window.addEventListener("showSupport", handleShowSupport);
+
     return () => {
-      window.removeEventListener('showSupport', handleShowSupport);
+      window.removeEventListener("showSupport", handleShowSupport);
     };
   }, []);
 
@@ -1052,8 +1092,8 @@ const ProfessionalDashboard: React.FC = () => {
 
         {/* Financial Statistics */}
         {showFinancialStats && (
-          <FinancialStats 
-            revenue={revenue} 
+          <FinancialStats
+            revenue={revenue}
             showBalance={showBalance}
             onToggleBalance={() => setShowBalance(!showBalance)}
           />

@@ -301,26 +301,6 @@ const NewAppointmentScheduler: React.FC<NewAppointmentSchedulerProps> = ({
       }
       const slotsRef = collection(db, "calendar_events");
 
-      // Get the day of the week for the selected date
-      const dayOfWeek = getDay(selectedDate);
-      const dayNames = [
-        "sunday",
-        "monday",
-        "tuesday",
-        "wednesday",
-        "thursday",
-        "friday",
-        "saturday",
-      ];
-      const dayName = dayNames[dayOfWeek];
-
-      console.log(
-        `🔍 Looking for slots on ${debugDayOfWeek(selectedDate)} (${format(
-          selectedDate,
-          "yyyy-MM-dd"
-        )}) - Day index: ${dayOfWeek}`
-      );
-
       // Query for slots on this specific date
       const dateQuery = query(
         slotsRef,
@@ -480,17 +460,26 @@ const NewAppointmentScheduler: React.FC<NewAppointmentSchedulerProps> = ({
       setLoading(true);
       setError(null);
 
+      // Vérifier l'authentification AVANT toute opération
+      if (!currentUser?.id) {
+        console.error(
+          "❌ Utilisateur non authentifié lors de la création des créneaux"
+        );
+        throw new Error("Utilisateur non authentifié");
+      }
+
+      console.log("🔐 Vérification de l'authentification:", {
+        currentUser: currentUser.id,
+        isProfessional,
+        professionalId,
+      });
+
       // Ensure Firestore is ready
       await ensureFirestoreReady();
 
       const db = getFirestoreInstance();
       if (!db) {
         throw new Error("Firestore not available");
-      }
-
-      // Vérifier que l'utilisateur est authentifié et est un professionnel
-      if (!currentUser?.id) {
-        throw new Error("Utilisateur non authentifié");
       }
 
       // Validation supplémentaire
@@ -599,12 +588,52 @@ const NewAppointmentScheduler: React.FC<NewAppointmentSchedulerProps> = ({
 
       console.log(`Created ${createdSlots.length} slots`);
 
+      // Vérifier l'état de l'authentification
+      console.log("🔐 État de l'authentification après création:", {
+        currentUser: currentUser?.id,
+        isProfessional,
+        professionalId,
+      });
+
       // Fermer le modal et rafraîchir
       setShowAddModal(false);
       setRefreshTrigger((prev) => prev + 1);
 
       // Réinitialiser les dates sélectionnées
       setSelectedDates([]);
+
+      // Afficher une notification de succès
+      if (createdSlots.length > 0) {
+        // Créer une notification temporaire
+        const notification = document.createElement("div");
+        notification.className =
+          "fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 transform transition-all duration-300 translate-x-full";
+        notification.innerHTML = `
+          <div class="flex items-center space-x-2">
+            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+            </svg>
+            <span class="font-medium">${createdSlots.length} créneau(x) créé(s) avec succès !</span>
+          </div>
+        `;
+
+        document.body.appendChild(notification);
+
+        // Animer l'entrée
+        setTimeout(() => {
+          notification.classList.remove("translate-x-full");
+        }, 100);
+
+        // Supprimer après 3 secondes
+        setTimeout(() => {
+          notification.classList.add("translate-x-full");
+          setTimeout(() => {
+            if (notification.parentNode) {
+              notification.parentNode.removeChild(notification);
+            }
+          }, 300);
+        }, 3000);
+      }
     } catch (err) {
       console.error("Error adding slots:", err);
       setError(
@@ -678,7 +707,7 @@ const NewAppointmentScheduler: React.FC<NewAppointmentSchedulerProps> = ({
   // Render calendar days
   const renderDays = () => {
     // Jours de la semaine en français
-    const days = ["lun.", "mar.", "mer.", "jeu.", "ven.", "sam.", "dim."];
+    const days = ["Lun.", "Mar.", "Mer.", "Jeu.", "Ven.", "Sam.", "Dim."];
 
     return (
       <div className="grid grid-cols-7 mb-2">

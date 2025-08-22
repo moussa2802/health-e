@@ -1,37 +1,68 @@
-import React, { useState, useEffect, useMemo, useCallback } from "react";
-import {
-  Plus,
-  AlertCircle,
-  CheckCircle,
-  RefreshCw,
-  Info,
-  Clock,
-  Calendar,
-  Save,
-  Settings,
-} from "lucide-react";
+import React, { useState, useEffect, useMemo } from "react";
+import { Plus, RefreshCw, Info } from "lucide-react";
 import { format } from "date-fns";
-import { fr } from "date-fns/locale";
 import { useAuth } from "../../contexts/AuthContext";
-import {
-  updateProfessionalProfile,
-  type AvailabilitySlot,
-} from "../../services/profileService";
-import { ensureFirestoreReady } from "../../utils/firebase";
+import { resetFirestoreConnection } from "../../utils/firebase";
 import LoadingSpinner from "../../components/ui/LoadingSpinner";
-import UltraStableSlotManager, {
-  type SimpleTimeSlot,
-} from "../../components/calendar/UltraStableSlotManager";
+import NewAppointmentScheduler, {
+  type TimeSlot,
+} from "../../components/calendar/NewAppointmentScheduler";
 import { getAvailableTimeSlots } from "../../services/slotService";
 
 const AvailabilityManagement: React.FC = () => {
   const { currentUser } = useAuth();
-  const [isSaving, setIsSaving] = useState(false);
-  const [saveSuccess, setSaveSuccess] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [existingSlots, setExistingSlots] = useState<SimpleTimeSlot[]>([]);
+  const [existingSlots, setExistingSlots] = useState<TimeSlot[]>([]);
+
+  // Gestionnaire d'erreur global pour éviter les pages d'erreur
+  useEffect(() => {
+    const handleGlobalError = (event: ErrorEvent) => {
+      // Capturer les erreurs insertBefore/removeChild silencieusement
+      if (
+        event.error &&
+        event.error.message &&
+        (event.error.message.includes("insertBefore") ||
+          event.error.message.includes("removeChild") ||
+          event.error.message.includes("Failed to execute"))
+      ) {
+        console.warn("⚠️ Erreur DOM capturée et ignorée:", event.error.message);
+        event.preventDefault();
+        event.stopPropagation();
+        return false;
+      }
+    };
+
+    const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
+      // Capturer les promesses rejetées liées aux erreurs DOM
+      if (
+        event.reason &&
+        event.reason.message &&
+        (event.reason.message.includes("insertBefore") ||
+          event.reason.message.includes("removeChild") ||
+          event.reason.message.includes("Failed to execute"))
+      ) {
+        console.warn(
+          "⚠️ Promesse rejetée capturée et ignorée:",
+          event.reason.message
+        );
+        event.preventDefault();
+        event.stopPropagation();
+        return false;
+      }
+    };
+
+    window.addEventListener("error", handleGlobalError);
+    window.addEventListener("unhandledrejection", handleUnhandledRejection);
+
+    return () => {
+      window.removeEventListener("error", handleGlobalError);
+      window.removeEventListener(
+        "unhandledrejection",
+        handleUnhandledRejection
+      );
+    };
+  }, []);
 
   const availableSlots = useMemo(() => {
     // Assurons-nous que tous les slots ont des dates valides
@@ -79,12 +110,74 @@ const AvailabilityManagement: React.FC = () => {
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [showAddModal, setShowAddModal] = useState<boolean>(false);
 
+  // Fonction pour nettoyer automatiquement les créneaux passés
+  const cleanupPastSlots = async () => {
+    if (!currentUser?.id) return;
+
+    try {
+      console.log("🧹 Nettoyage automatique des créneaux passés...");
+
+      // Récupérer tous les créneaux
+      const today = new Date();
+      const startDate = new Date(today.getFullYear(), today.getMonth() - 1, 1); // 2 mois en arrière
+      const endDate = new Date(today.getFullYear(), today.getMonth() + 2, 0); // 2 mois en avant
+
+      const allSlots = await getAvailableTimeSlots(
+        startDate,
+        endDate,
+        currentUser.id
+      );
+
+      // Identifier les créneaux passés
+      const pastSlots = allSlots.filter((slot) => {
+        const slotDate = new Date(slot.date);
+        return slotDate < today && !slot.isBooked; // Seulement les créneaux non réservés
+      });
+
+      if (pastSlots.length > 0) {
+        console.log(
+          `🗑️ ${pastSlots.length} créneaux passés identifiés pour suppression`
+        );
+
+        // Supprimer chaque créneau passé
+        for (const slot of pastSlots) {
+          if (slot.id) {
+            try {
+              // Importer la fonction de suppression
+              const { deleteAvailabilitySlot } = await import(
+                "../../services/calendarService"
+              );
+              await deleteAvailabilitySlot(slot.id);
+              console.log(
+                `✅ Créneau passé supprimé: ${slot.date} ${slot.time}`
+              );
+            } catch (error) {
+              console.error(
+                `❌ Erreur lors de la suppression du créneau passé:`,
+                error
+              );
+            }
+          }
+        }
+
+        console.log("✅ Nettoyage des créneaux passés terminé");
+      } else {
+        console.log("✅ Aucun créneau passé à nettoyer");
+      }
+    } catch (error) {
+      console.error("❌ Erreur lors du nettoyage des créneaux passés:", error);
+    }
+  };
+
   // Fonction pour charger les créneaux pour le mois en cours
-  const loadSlotsForCurrentMonth = useCallback(async () => {
+  const loadSlotsForCurrentMonth = async () => {
     if (!currentUser?.id) return;
 
     try {
       setLoading(true);
+
+      // Nettoyer d'abord les créneaux passés
+      await cleanupPastSlots();
 
       // Calculer le premier et le dernier jour du mois en cours
       const today = new Date();
@@ -103,178 +196,232 @@ const AvailabilityManagement: React.FC = () => {
         `🔍 Chargement des créneaux du ${format(
           startOfCurrentMonth,
           "dd/MM/yyyy"
-        )} au ${format(endOfCurrentMonth, "dd/MM/yyyy")}`
+        )} au ${format(endOfCurrentMonth, "yyyy-MM-dd")}`
       );
 
+      // Récupérer tous les créneaux pour cette période
       const slots = await getAvailableTimeSlots(
         startOfCurrentMonth,
         endOfCurrentMonth,
         currentUser.id
       );
 
-      console.log("✅ Créneaux chargés:", slots);
-      setExistingSlots(slots);
+      // Convertir en format TimeSlot attendu par le composant
+      const formattedSlots: TimeSlot[] = slots.map((slot) => ({
+        date: format(slot.date, "yyyy-MM-dd"),
+        time: slot.time,
+        isBooked: slot.isBooked,
+      }));
 
-      if (slots.length === 0) {
+      console.log(
+        `✅ ${formattedSlots.length} créneaux chargés pour la période`
+      );
+
+      setExistingSlots(formattedSlots);
+
+      if (formattedSlots.length === 0) {
         setNoSlotsMessage(
-          "Aucun créneau disponible pour le mois en cours. Ajoutez des créneaux pour commencer."
+          "Aucun créneau n'a été trouvé pour cette période. Utilisez le bouton 'Ajouter des créneaux' pour en créer."
         );
       } else {
         setNoSlotsMessage(null);
       }
     } catch (error) {
       console.error("❌ Erreur lors du chargement des créneaux:", error);
-      setError("Erreur lors du chargement des créneaux");
     } finally {
       setLoading(false);
     }
-  }, [currentUser?.id]);
-
-  const getWeekdayName = (date: Date | string): string => {
-    try {
-      const dateObj = typeof date === "string" ? new Date(date) : date;
-      return format(dateObj, "EEEE", { locale: fr });
-    } catch (error) {
-      console.error("❌ Erreur lors du formatage de la date:", error);
-      return "Inconnu";
-    }
   };
 
+  // Load professional profile and availability data
   useEffect(() => {
     const loadProfile = async () => {
-      if (!currentUser?.id) return;
-
-      try {
-        setLoading(true);
-        await ensureFirestoreReady();
-        await loadSlotsForCurrentMonth();
-      } catch (error) {
-        console.error("❌ Erreur lors du chargement du profil:", error);
-        setError("Erreur lors du chargement du profil");
-      } finally {
-        setLoading(false);
+      // Vérifier que l'utilisateur est toujours connecté
+      if (!currentUser?.id) {
+        console.warn("⚠️ Utilisateur non connecté, arrêt du chargement");
+        return;
       }
+
+      console.log(
+        "🔐 Chargement du profil pour l'utilisateur:",
+        currentUser.id
+      );
+      await loadSlotsForCurrentMonth();
     };
 
     loadProfile();
   }, [currentUser?.id]);
 
-  const handleSlotsChange = useCallback((slots: TimeSlot[]) => {
-    console.log("🔄 Créneaux modifiés:", slots);
-    setExistingSlots(slots);
-  }, []);
+  // Function to load profile (for refresh)
+  const loadProfile = async () => {
+    if (!currentUser?.id) return;
+    await loadSlotsForCurrentMonth();
+  };
 
-  const handleSave = useCallback(async () => {
-    if (!currentUser?.id) {
-      setError("Utilisateur non connecté");
-      return;
-    }
+  // Handle slots change from AppointmentScheduler
+  const handleSlotsChange = (slots: TimeSlot[]) => {
+    console.log(
+      "🔄 Slots changed in AvailabilityManagement:",
+      slots.length,
+      "slots"
+    );
 
-    try {
-      setIsSaving(true);
-      setError(null);
+    if (slots.length === 0) {
+      // Only update if we don't already have slots to avoid infinite loop
+      if (existingSlots.length === 0) {
+        setNoSlotsMessage(
+          "Aucun créneau disponible pour cette date. Utilisez le bouton 'Ajouter des créneaux' pour en créer."
+        );
+      }
+    } else {
+      // Vérifier et filtrer les slots invalides avant de mettre à jour l'état
+      const validSlots = slots.filter((slot) => {
+        if (!slot.date || !slot.time) {
+          console.warn("⚠️ Invalid slot data: missing date or time", slot);
+          return false;
+        }
+        return true;
+      });
 
-      // Normaliser les créneaux avant sauvegarde
-      const normalizeSlots = (slots: TimeSlot[]) =>
-        slots
-          .filter((slot) => slot.date && slot.time && !slot.isBooked)
-          .map((slot) => {
-            // S'assurer que la date est au bon format
-            let normalizedDate = slot.date;
+      // Normaliser les dates pour éviter les problèmes de comparaison
+      const normalizedSlots = validSlots
+        .map((slot) => {
+          try {
+            let normalizedDate: string;
             if (typeof slot.date === "string") {
-              if (slot.date.match(/^\d{4}-\d{2}-\d{2}$/)) {
-                normalizedDate = slot.date;
-              } else {
-                try {
-                  normalizedDate = format(new Date(slot.date), "yyyy-MM-dd");
-                } catch (error) {
-                  console.error("❌ Erreur de formatage de date:", error);
-                  return null;
-                }
-              }
+              normalizedDate = slot.date;
+            } else if (slot.date instanceof Date) {
+              normalizedDate = format(slot.date, "yyyy-MM-dd");
             } else {
-              try {
-                normalizedDate = format(new Date(slot.date), "yyyy-MM-dd");
-              } catch (error) {
-                console.error("❌ Erreur de formatage de date:", error);
-                return null;
-              }
+              console.warn("⚠️ Format de date non reconnu:", slot.date);
+              return null;
             }
 
             return {
               ...slot,
               date: normalizedDate,
             };
-          })
-          .filter(Boolean) as TimeSlot[];
-
-      const normalizedSlots = normalizeSlots(existingSlots);
-      console.log("💾 Sauvegarde des créneaux normalisés:", normalizedSlots);
-
-      // Convertir les créneaux en format de disponibilité
-      const availabilitySlots: AvailabilitySlot[] = normalizedSlots.map(
-        (slot) => ({
-          date: slot.date as string,
-          time: slot.time as string,
-          isAvailable: true,
-          isBooked: false,
+          } catch (error) {
+            console.error("❌ Erreur lors de la normalisation:", error);
+            return null;
+          }
         })
-      );
+        .filter(Boolean) as TimeSlot[];
 
-      // Mettre à jour le profil professionnel
-      await updateProfessionalProfile(currentUser.id, {
-        availability: availabilitySlots,
-      });
+      // Mettre à jour l'état seulement si les créneaux ont vraiment changé
+      const hasChanged =
+        JSON.stringify(normalizedSlots) !== JSON.stringify(existingSlots);
 
-      console.log("✅ Créneaux sauvegardés avec succès");
-      setSaveSuccess(true);
-      setTimeout(() => {
-        setSaveSuccess(false);
-      }, 3000);
-
-      // Ne pas recharger automatiquement pour éviter la boucle
-      // await loadSlotsForCurrentMonth();
-    } catch (error) {
-      console.error("❌ Erreur lors de la sauvegarde:", error);
-      setError(
-        error instanceof Error
-          ? error.message
-          : "Erreur lors de l'enregistrement des disponibilités"
-      );
-    } finally {
-      setIsSaving(false);
+      if (hasChanged) {
+        console.log("🎯 Créneaux modifiés, mise à jour de l'état");
+        setExistingSlots(normalizedSlots);
+        setNoSlotsMessage(null);
+        console.log("✅ Slots updated");
+      } else {
+        console.log("ℹ️ Aucun changement détecté");
+      }
     }
-  }, [currentUser?.id, existingSlots]);
+  };
 
+  // Function to refresh data
   const handleRefresh = async () => {
-    if (!currentUser?.id) return;
+    setRefreshing(true);
 
     try {
-      setRefreshing(true);
-      setError(null);
+      // Reset Firestore connection to ensure fresh data
+      await resetFirestoreConnection();
+      console.log("✅ Firestore connection reset");
+
+      // Clear existing slots and reload
+      setExistingSlots([]);
+      console.log("✅ Existing slots cleared");
+
+      // Reload profile data
+      await loadProfile();
+      console.log("✅ Profile data reloaded");
+
+      // Update refresh trigger to force component re-render
       setRefreshTrigger((prev) => prev + 1);
-      await loadSlotsForCurrentMonth();
     } catch (error) {
-      console.error("❌ Erreur lors du rafraîchissement:", error);
-      setError("Erreur lors du rafraîchissement");
+      console.error("❌ Error refreshing data:", error);
     } finally {
       setRefreshing(false);
     }
   };
 
+  // Vérification d'authentification avec délai de grâce
+  const [authGracePeriod, setAuthGracePeriod] = useState(true);
+
+  useEffect(() => {
+    // Délai de 3 secondes avant de vérifier l'authentification
+    const timer = setTimeout(() => {
+      setAuthGracePeriod(false);
+    }, 3000);
+
+    return () => clearTimeout(timer);
+  }, []);
+
+  if (!currentUser?.id && !authGracePeriod) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <div className="text-red-500 mb-4">
+              <svg
+                className="w-16 h-16 mx-auto"
+                fill="currentColor"
+                viewBox="0 0 20 20"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
+                  clipRule="evenodd"
+                />
+              </svg>
+            </div>
+            <h2 className="text-xl font-semibold text-gray-900 mb-2">
+              Session expirée
+            </h2>
+            <p className="text-gray-600 mb-4">
+              Votre session a expiré. Veuillez vous reconnecter.
+            </p>
+            <button
+              onClick={() => window.location.reload()}
+              className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+            >
+              Recharger la page
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Pendant la période de grâce, afficher un loader
+  if (!currentUser?.id && authGracePeriod) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
+            <p className="mt-4 text-lg text-gray-600">
+              Vérification de la session...
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
-        <div className="container mx-auto px-4 py-8">
-          <div className="max-w-4xl mx-auto">
-            <div className="flex items-center justify-center h-64">
-              <div className="text-center">
-                <LoadingSpinner size="lg" />
-                <p className="mt-4 text-lg text-gray-600">
-                  Chargement des disponibilités...
-                </p>
-              </div>
-            </div>
+      <div className="container mx-auto px-4 py-8">
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <LoadingSpinner size="lg" />
+            <p className="mt-4 text-lg text-gray-600">
+              Chargement des disponibilités...
+            </p>
           </div>
         </div>
       </div>
@@ -282,151 +429,53 @@ const AvailabilityManagement: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
-      <div className="container mx-auto px-4 py-8">
-        <div className="max-w-6xl mx-auto">
-          {/* Header Section */}
-          <div className="bg-white rounded-2xl shadow-lg p-6 mb-8">
-            <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
-              <div className="flex items-center gap-3">
-                <div className="p-3 bg-blue-100 rounded-xl">
-                  <Calendar className="h-8 w-8 text-blue-600" />
-                </div>
-                <div>
-                  <h1 className="text-3xl font-bold text-gray-900">
-                    Gérer mes disponibilités
-                  </h1>
-                  <p className="text-gray-600 mt-1">
-                    Planifiez vos créneaux de consultation
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex flex-col sm:flex-row gap-3">
-                <div className="flex items-center gap-2 px-4 py-2 bg-blue-50 rounded-xl">
-                  <Clock className="h-4 w-4 text-blue-600" />
-                  <span className="text-sm font-medium text-blue-700">
-                    {existingSlots.length} créneaux disponibles
-                  </span>
-                </div>
-
-                <button
-                  onClick={() => setShowAddModal(true)}
-                  className="px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all duration-200 flex items-center gap-2 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
-                >
-                  <Plus className="h-5 w-5" />
-                  <span className="font-medium">Ajouter des créneaux</span>
-                </button>
-
-                <button
-                  onClick={handleRefresh}
-                  disabled={refreshing}
-                  className="px-4 py-3 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 transition-all duration-200 flex items-center gap-2 disabled:opacity-50"
-                >
-                  {refreshing ? (
-                    <LoadingSpinner size="sm" />
-                  ) : (
-                    <RefreshCw className="h-5 w-5" />
-                  )}
-                  <span className="font-medium">Rafraîchir</span>
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* Success Message */}
-          {saveSuccess && (
-            <div className="mb-6 p-4 bg-green-100 border border-green-400 text-green-700 rounded-xl flex items-center justify-between">
-              <div className="flex items-center">
-                <CheckCircle className="h-5 w-5 mr-3" />
-                <span className="font-medium">
-                  Vos disponibilités ont été enregistrées avec succès
-                </span>
-              </div>
-              <button
-                onClick={() => setSaveSuccess(false)}
-                className="text-green-500 hover:text-green-700"
-              >
-                <AlertCircle className="h-5 w-5" />
-              </button>
-            </div>
-          )}
-
-          {/* Error Message */}
-          {error && (
-            <div className="mb-6 p-4 bg-red-100 border border-red-400 text-red-700 rounded-xl flex items-center justify-between">
-              <div className="flex items-center">
-                <AlertCircle className="h-5 w-5 mr-3" />
-                <span className="font-medium">{error}</span>
-              </div>
-              <button
-                onClick={() => setError(null)}
-                className="text-red-500 hover:text-red-700"
-              >
-                <AlertCircle className="h-5 w-5" />
-              </button>
-            </div>
-          )}
-
-          {/* Info Message */}
-          {noSlotsMessage && (
-            <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 text-yellow-700 rounded-xl flex items-center justify-between">
-              <div className="flex items-center">
-                <Info className="h-5 w-5 mr-3" />
-                <span className="font-medium">{noSlotsMessage}</span>
-              </div>
-              <button
-                onClick={() => setNoSlotsMessage(null)}
-                className="text-yellow-500 hover:text-yellow-700"
-              >
-                <AlertCircle className="h-5 w-5" />
-              </button>
-            </div>
-          )}
-
-          {/* Calendar Section */}
-          <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
-            <div className="p-6 border-b border-gray-100">
-              <div className="flex items-center gap-3">
-                <Settings className="h-6 w-6 text-gray-600" />
-                <h2 className="text-xl font-semibold text-gray-900">
-                  Calendrier des disponibilités
-                </h2>
-              </div>
-            </div>
-
-            <div className="p-6">
-              <UltraStableSlotManager
-                professionalId={currentUser?.id || ""}
-                existingSlots={existingSlots}
-                onSlotsChange={handleSlotsChange}
-              />
-            </div>
-          </div>
-
-          {/* Save Button Section */}
-          <div className="mt-8 flex justify-center">
+    <div className="container mx-auto px-4 py-8">
+      <div className="max-w-4xl mx-auto">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+          <h1 className="text-2xl font-bold">Gérer mes disponibilités</h1>
+          <div className="flex space-x-3">
             <button
-              onClick={handleSave}
-              disabled={isSaving || existingSlots.length === 0}
-              className="px-8 py-4 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-xl hover:from-green-700 hover:to-green-800 transition-all duration-200 flex items-center gap-3 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 disabled:opacity-50 disabled:transform-none disabled:hover:shadow-lg disabled:cursor-not-allowed"
+              onClick={() => setShowAddModal(true)}
+              className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-all duration-200 flex items-center shadow-md hover:shadow-lg transform hover:-translate-y-0.5"
             >
-              {isSaving ? (
-                <>
-                  <LoadingSpinner size="sm" color="white" />
-                  <span className="font-medium">Enregistrement...</span>
-                </>
+              <Plus className="h-4 w-4 mr-2" />
+              Ajouter des créneaux
+            </button>
+            <div className="text-sm text-gray-500 flex items-center">
+              {existingSlots.length} créneaux disponibles
+            </div>
+            <button
+              onClick={handleRefresh}
+              disabled={refreshing}
+              className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors flex items-center"
+            >
+              {refreshing ? (
+                <LoadingSpinner size="sm" className="mr-2" />
               ) : (
-                <>
-                  <Save className="h-5 w-5" />
-                  <span className="font-medium">
-                    Enregistrer les modifications
-                  </span>
-                </>
-              )}
+                <RefreshCw className="h-4 w-4 mr-2" />
+              )}{" "}
+              Rafraîchir
             </button>
           </div>
         </div>
+
+        {noSlotsMessage && (
+          <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 text-yellow-700 rounded-lg flex items-center">
+            <Info className="h-5 w-5 mr-2" />
+            <span>{noSlotsMessage}</span>
+          </div>
+        )}
+
+        {/* Calendar view */}
+        <NewAppointmentScheduler
+          professionalId={currentUser?.id || ""}
+          isProfessional={true}
+          existingSlots={availableSlots}
+          onSlotsChange={handleSlotsChange}
+          showAddModal={showAddModal}
+          setShowAddModal={setShowAddModal}
+          key={`scheduler-${refreshTrigger}`} // Force re-render on refresh
+        />
       </div>
     </div>
   );

@@ -449,12 +449,12 @@ const MessagingCenter: React.FC = () => {
       <div className="flex h-full bg-white">
         {/* Liste des conversations - Colonne gauche */}
         <div
-          className={`w-full md:w-1/3 bg-white border-r border-gray-100 ${
+          className={`w-full md:w-1/3 bg-white border-r border-gray-100 flex flex-col ${
             showMobileConversation ? "hidden md:block" : "block"
           }`}
         >
           {/* Header */}
-          <div className="p-6 border-b border-gray-100 bg-gradient-to-r from-blue-500 to-blue-600">
+          <div className="p-4 border-b border-gray-100 bg-gradient-to-r from-blue-500 to-blue-600 flex-shrink-0">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-blue-100 rounded-full">
@@ -485,8 +485,8 @@ const MessagingCenter: React.FC = () => {
           </div>
 
           {/* Barre de recherche */}
-          <div className="relative">
-            <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+          <div className="relative p-4 flex-shrink-0">
+            <Search className="absolute left-8 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
             <input
               type="text"
               placeholder="Rechercher une conversation..."
@@ -497,7 +497,7 @@ const MessagingCenter: React.FC = () => {
           </div>
 
           {/* Liste des conversations */}
-          <div className="overflow-y-auto h-[calc(100%-8rem)]">
+          <div className="overflow-y-auto flex-1">
             {filteredConversations.length === 0 ? (
               <div className="p-8 text-center text-gray-500">
                 {conversations.length === 0 ? (
