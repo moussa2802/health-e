@@ -160,6 +160,17 @@ const OptimizedHomePage: React.FC = () => {
                 >
                   Prendre rendez-vous
                 </Link>
+
+                <Link
+                  to="/professional/access"
+                  className={`px-6 py-3 rounded-xl font-semibold transition-all duration-200 border ${
+                    isScrolled
+                      ? "bg-teal-500 text-white hover:bg-teal-600 border-teal-500 shadow-md hover:shadow-lg"
+                      : "bg-white/20 text-white hover:bg-white/30 backdrop-blur-sm border-white/30 shadow-md hover:shadow-lg"
+                  }`}
+                >
+                  Espace professionnel
+                </Link>
               </div>
             </div>
           </div>
@@ -196,7 +207,7 @@ const OptimizedHomePage: React.FC = () => {
               </p>
 
               {/* User Type Selection Buttons */}
-              <div className="flex flex-col md:flex-row justify-center gap-6 mt-16 animate-fade-in-delay-2">
+              <div className="flex justify-center mt-16 animate-fade-in-delay-2">
                 <Link
                   to="/patient"
                   className="group bg-white text-blue-600 px-8 py-8 rounded-2xl shadow-xl hover:shadow-2xl transition-all transform hover:-translate-y-2 flex flex-col items-center border border-white/30 shadow-md hover:shadow-lg"
@@ -205,25 +216,10 @@ const OptimizedHomePage: React.FC = () => {
                     <User className="h-8 w-8 text-white" />
                   </div>
                   <span className="text-2xl font-bold mb-2">
-                    Je suis un patient
+                    Je veux consulter un professionnel
                   </span>
                   <span className="text-sm text-gray-600 text-center">
-                    Je souhaite consulter un professionnel de santé
-                  </span>
-                </Link>
-
-                <Link
-                  to="/professional/access"
-                  className="group bg-white text-teal-600 px-8 py-8 rounded-2xl shadow-xl hover:shadow-2xl transition-all transform hover:-translate-y-2 flex flex-col items-center border border-white/30 shadow-md hover:shadow-lg"
-                >
-                  <div className="w-16 h-16 bg-gradient-to-br from-teal-500 to-teal-600 rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                    <Stethoscope className="h-8 w-8 text-white" />
-                  </div>
-                  <span className="text-2xl font-bold mb-2">
-                    Je suis un professionnel de santé
-                  </span>
-                  <span className="text-sm text-gray-600 text-center">
-                    Je souhaite offrir des consultations en ligne
+                    Prenez rendez-vous avec nos spécialistes
                   </span>
                 </Link>
               </div>
