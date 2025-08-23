@@ -202,8 +202,8 @@ const OptimizedHomePage: React.FC = () => {
               </h1>
               <p className="text-xl md:text-2xl text-white/90 mb-16 animate-fade-in-delay">
                 Consultez des professionnels de santé qualifiés en ligne, en
-                toute discrétion. Une plateforme pensée pour les Sénégalais, au
-                Sénégal et dans la diaspora.
+                toute discrétion. Une plateforme pensée pour tous, où que vous
+                soyez.
               </p>
 
               {/* User Type Selection Buttons */}
