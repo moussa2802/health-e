@@ -1,16 +1,16 @@
-import React, { useState, useEffect } from 'react';
-import { User, Calendar, Phone, Mail } from 'lucide-react';
-import AdminLayout from '../../components/admin/AdminLayout';
-import UserListPage from '../../components/admin/UserListPage';
+import React, { useState, useEffect } from "react";
+import { User, Calendar, Phone, Mail } from "lucide-react";
+import AdminLayout from "../../components/admin/AdminLayout";
+import UserListPage from "../../components/admin/UserListPage";
 
 interface Patient {
   id: string;
   name: string;
   email: string;
   phone?: string;
-  dateOfBirth?: any;
-  gender?: string;
-  createdAt?: any;
+  dateOfBirth?: string | null;
+  gender?: "M" | "F" | "O" | string;
+  createdAt?: { toDate(): Date } | null;
 }
 
 const AdminPatients: React.FC = () => {
@@ -27,27 +27,62 @@ const AdminPatients: React.FC = () => {
     try {
       setLoading(true);
       setError(null);
-      
-      const { collection, getDocs, query, where } = await import('firebase/firestore');
-      const { getFirestoreInstance } = await import('../../utils/firebase');
+
+      const { collection, getDocs, query, where, doc, getDoc } = await import(
+        "firebase/firestore"
+      );
+      const { getFirestoreInstance } = await import("../../utils/firebase");
       const db = getFirestoreInstance();
-      
+
       if (db) {
-        const patientsQuery = query(collection(db, 'users'), where('type', '==', 'patient'));
-        const snapshot = await getDocs(patientsQuery);
-        
-        const patientsData = snapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data()
-        })) as Patient[];
-        
+        // 1. Récupérer tous les utilisateurs de type "patient"
+        const usersQuery = query(
+          collection(db, "users"),
+          where("type", "==", "patient")
+        );
+        const usersSnapshot = await getDocs(usersQuery);
+
+        // 2. Récupérer les profils détaillés de la collection "patients"
+        const patientsData = await Promise.all(
+          usersSnapshot.docs.map(async (userDoc) => {
+            const userData = userDoc.data();
+
+            // Essayer de récupérer le profil détaillé du patient
+            let patientProfile = null;
+            try {
+              const patientDocRef = doc(db, "patients", userDoc.id);
+              const patientDoc = await getDoc(patientDocRef);
+              if (patientDoc.exists()) {
+                patientProfile = patientDoc.data();
+              }
+            } catch (profileError) {
+              console.warn(
+                `⚠️ Erreur lors de la récupération du profil pour ${userDoc.id}:`,
+                profileError
+              );
+            }
+
+            // Fusionner les données : user + profile détaillé
+            return {
+              id: userDoc.id,
+              name: userData.name || patientProfile?.name || "Nom inconnu",
+              email: userData.email || patientProfile?.email || "",
+              phone: userData.phoneNumber || patientProfile?.phone || "",
+              dateOfBirth: patientProfile?.dateOfBirth || null,
+              gender: patientProfile?.gender || userData.gender || null,
+              createdAt:
+                userData.createdAt || patientProfile?.createdAt || null,
+            } as Patient;
+          })
+        );
+
         setPatients(patientsData);
       } else {
         setPatients([]);
       }
     } catch (err) {
-      console.error('Error fetching patients:', err);
-      setError('Erreur lors du chargement des patients');
+      console.error("Error fetching patients:", err);
+      setError("Erreur lors du chargement des patients");
       setPatients([]);
     } finally {
       setLoading(false);
@@ -87,9 +122,9 @@ const AdminPatients: React.FC = () => {
       label: "Genre",
       options: [
         { value: "all", label: "Tous les genres" },
-        { value: "male", label: "Homme" },
-        { value: "female", label: "Femme" },
-        { value: "other", label: "Autre" },
+        { value: "M", label: "Homme" },
+        { value: "F", label: "Femme" },
+        { value: "O", label: "Autre" },
       ],
     },
   ];
@@ -109,30 +144,43 @@ const AdminPatients: React.FC = () => {
             <div className="text-sm font-medium text-gray-900">
               {patient.name}
             </div>
-            <div className="text-sm text-gray-500">
-              {patient.email}
-            </div>
-            {patient.phone && (
-              <div className="text-sm text-gray-400 flex items-center">
-                <Phone className="h-4 w-4 mr-1" />
-                {patient.phone}
+            {patient.dateOfBirth && (
+              <div className="text-sm text-gray-500 flex items-center">
+                <Calendar className="h-4 w-4 mr-1" />
+                {formatDateOfBirth(patient.dateOfBirth)}
               </div>
             )}
           </div>
         </div>
       </td>
       <td className="px-6 py-4 whitespace-nowrap">
-        <div className="text-sm text-gray-900">
-          {patient.gender === 'male' ? 'Homme' : 
-           patient.gender === 'female' ? 'Femme' : 
-           patient.gender === 'other' ? 'Autre' : 'Non défini'}
-        </div>
-        {patient.dateOfBirth && (
+        <div className="space-y-2">
+          {/* Email */}
+          {patient.email && (
+            <div className="text-sm text-gray-900 flex items-center">
+              <Mail className="h-4 w-4 mr-2 text-gray-400" />
+              {patient.email}
+            </div>
+          )}
+          {/* Téléphone */}
+          {patient.phone ? (
+            <div className="text-sm text-gray-900 flex items-center">
+              <Phone className="h-4 w-4 mr-2 text-green-500" />
+              {patient.phone}
+            </div>
+          ) : null}
+          {/* Genre */}
           <div className="text-sm text-gray-500 flex items-center">
-            <Calendar className="h-4 w-4 mr-1" />
-            {formatDate(patient.dateOfBirth)}
+            <User className="h-4 w-4 mr-2 text-gray-400" />
+            {patient.gender === "M"
+              ? "Homme"
+              : patient.gender === "F"
+              ? "Femme"
+              : patient.gender === "O"
+              ? "Autre"
+              : "Non défini"}
           </div>
-        )}
+        </div>
       </td>
       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
         {formatDate(patient.createdAt)}
@@ -140,7 +188,7 @@ const AdminPatients: React.FC = () => {
       <td className="px-6 py-4 whitespace-nowrap">
         <div className="flex space-x-2">
           <button
-            onClick={() => window.open(`mailto:${patient.email}`, '_blank')}
+            onClick={() => window.open(`mailto:${patient.email}`, "_blank")}
             className="px-3 py-1 bg-blue-100 text-blue-700 hover:bg-blue-200 rounded text-xs font-medium"
           >
             <Mail className="h-3 w-3 mr-1 inline" />
@@ -166,7 +214,7 @@ const AdminPatients: React.FC = () => {
 };
 
 // Fonction utilitaire pour formater les dates
-const formatDate = (date: any) => {
+const formatDate = (date: { toDate(): Date } | null | undefined) => {
   if (!date || typeof date.toDate !== "function") {
     return "Non disponible";
   }
@@ -175,6 +223,38 @@ const formatDate = (date: any) => {
   } catch {
     return "Non disponible";
   }
+};
+
+// Fonction pour formater la date de naissance (peut être string ou Timestamp)
+const formatDateOfBirth = (
+  date: string | { toDate(): Date } | null | undefined
+) => {
+  if (!date) {
+    return "Non disponible";
+  }
+
+  // Si c'est une chaîne (format ISO)
+  if (typeof date === "string") {
+    try {
+      const parsedDate = new Date(date);
+      if (!isNaN(parsedDate.getTime())) {
+        return parsedDate.toLocaleDateString("fr-FR");
+      }
+    } catch {
+      // Ignore l'erreur et continue
+    }
+  }
+
+  // Si c'est un Timestamp Firestore
+  if (date && typeof date === "object" && typeof date.toDate === "function") {
+    try {
+      return date.toDate().toLocaleDateString("fr-FR");
+    } catch {
+      // Ignore l'erreur et continue
+    }
+  }
+
+  return "Non disponible";
 };
 
 export default AdminPatients;

@@ -17,11 +17,17 @@ interface Appointment {
   professionalId: string;
   patientName?: string;
   professionalName?: string;
-  date: any;
+  date: string;
   time: string;
-  status: "pending" | "confirmed" | "completed" | "cancelled";
+  status:
+    | "en_attente"
+    | "confirmé"
+    | "confirmed"
+    | "terminé"
+    | "completed"
+    | "annulé";
   amount?: number;
-  createdAt?: any;
+  createdAt?: { toDate(): Date } | null;
 }
 
 const AdminAppointments: React.FC = () => {
@@ -48,51 +54,30 @@ const AdminAppointments: React.FC = () => {
       const db = getFirestoreInstance();
 
       if (db) {
-        const appointmentsQuery = query(
-          collection(db, "appointments"),
-          orderBy("date", "desc")
+        // ✅ CORRECTION : Utiliser la collection "bookings" au lieu de "appointments"
+        const bookingsQuery = query(
+          collection(db, "bookings"),
+          orderBy("createdAt", "desc")
         );
-        const snapshot = await getDocs(appointmentsQuery);
+        const snapshot = await getDocs(bookingsQuery);
 
-        const appointmentsData = snapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        })) as Appointment[];
+        const appointmentsData = snapshot.docs.map((doc) => {
+          const data = doc.data();
+          return {
+            id: doc.id,
+            patientId: data.patientId,
+            professionalId: data.professionalId,
+            patientName: data.patientName || "Patient inconnu",
+            professionalName: data.professionalName || "Professionnel inconnu",
+            date: data.date,
+            time: data.startTime, // Utiliser startTime au lieu de time
+            status: data.status,
+            amount: data.price, // Utiliser price au lieu de amount
+            createdAt: data.createdAt,
+          };
+        }) as Appointment[];
 
-        // Enrichir avec les noms des utilisateurs
-        const enrichedAppointments = await Promise.all(
-          appointmentsData.map(async (appointment) => {
-            try {
-              const [patientDoc, professionalDoc] = await Promise.all([
-                getDocs(
-                  query(
-                    collection(db, "users"),
-                    where("id", "==", appointment.patientId)
-                  )
-                ),
-                getDocs(
-                  query(
-                    collection(db, "users"),
-                    where("id", "==", appointment.professionalId)
-                  )
-                ),
-              ]);
-
-              return {
-                ...appointment,
-                patientName:
-                  patientDoc.docs[0]?.data()?.name || "Patient inconnu",
-                professionalName:
-                  professionalDoc.docs[0]?.data()?.name ||
-                  "Professionnel inconnu",
-              };
-            } catch {
-              return appointment;
-            }
-          })
-        );
-
-        setAppointments(enrichedAppointments);
+        setAppointments(appointmentsData);
       } else {
         setAppointments([]);
       }
@@ -105,20 +90,17 @@ const AdminAppointments: React.FC = () => {
     }
   }, []);
 
-  // Filtrer les consultations de manière simple et directe
+  // Filtrer et trier les consultations
   const getFilteredAppointments = useCallback(() => {
     let filtered = [...appointments];
 
-    // Filtre par recherche
+    // Filtre par recherche (nom du patient ou du professionnel)
     if (searchTerm.trim()) {
+      const searchLower = searchTerm.toLowerCase();
       filtered = filtered.filter(
         (appointment) =>
-          appointment.patientName
-            ?.toLowerCase()
-            .includes(searchTerm.toLowerCase()) ||
-          appointment.professionalName
-            ?.toLowerCase()
-            .includes(searchTerm.toLowerCase())
+          appointment.patientName?.toLowerCase().includes(searchLower) ||
+          appointment.professionalName?.toLowerCase().includes(searchLower)
       );
     }
 
@@ -128,6 +110,28 @@ const AdminAppointments: React.FC = () => {
         (appointment) => appointment.status === selectedStatus
       );
     }
+
+    // ✅ TRIAGE : Trier par date de création (plus récent en premier)
+    filtered.sort((a, b) => {
+      if (!a.createdAt || !b.createdAt) return 0;
+
+      // Si c'est un Timestamp Firestore
+      if (
+        typeof a.createdAt.toDate === "function" &&
+        typeof b.createdAt.toDate === "function"
+      ) {
+        return b.createdAt.toDate().getTime() - a.createdAt.toDate().getTime();
+      }
+
+      // Si c'est une date string
+      if (typeof a.createdAt === "string" && typeof b.createdAt === "string") {
+        return (
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        );
+      }
+
+      return 0;
+    });
 
     return filtered;
   }, [appointments, searchTerm, selectedStatus]);
@@ -148,9 +152,7 @@ const AdminAppointments: React.FC = () => {
         ...filtered.map((appointment) => [
           appointment.patientName || "Patient inconnu",
           appointment.professionalName || "Professionnel inconnu",
-          appointment.date && typeof appointment.date.toDate === "function"
-            ? appointment.date.toDate().toLocaleDateString("fr-FR")
-            : "Non disponible",
+          appointment.date || "Non disponible",
           appointment.time || "",
           getStatusLabel(appointment.status),
           appointment.amount ? `${appointment.amount} FCFA` : "Non spécifié",
@@ -178,31 +180,46 @@ const AdminAppointments: React.FC = () => {
     }
   }, [getFilteredAppointments]);
 
-  const resetFilters = useCallback(() => {
-    setSearchTerm("");
-    setSelectedStatus("all");
-  }, []);
+  const formatDate = (date: string | { toDate(): Date } | null | undefined) => {
+    if (!date) {
+      return "Non disponible";
+    }
 
-  const formatDate = (date: any) => {
-    if (!date || typeof date.toDate !== "function") {
-      return "Non disponible";
+    // Si c'est une chaîne (format ISO ou date simple)
+    if (typeof date === "string") {
+      try {
+        const parsedDate = new Date(date);
+        if (!isNaN(parsedDate.getTime())) {
+          return parsedDate.toLocaleDateString("fr-FR");
+        }
+      } catch {
+        // Ignore l'erreur et continue
+      }
     }
-    try {
-      return date.toDate().toLocaleDateString("fr-FR");
-    } catch {
-      return "Non disponible";
+
+    // Si c'est un Timestamp Firestore
+    if (date && typeof date === "object" && typeof date.toDate === "function") {
+      try {
+        return date.toDate().toLocaleDateString("fr-FR");
+      } catch {
+        // Ignore l'erreur et continue
+      }
     }
+
+    return "Non disponible";
   };
 
   const getStatusLabel = (status: string) => {
     switch (status) {
-      case "pending":
+      case "en_attente":
         return "En attente";
+      case "confirmé":
       case "confirmed":
         return "Confirmée";
+      case "terminé":
       case "completed":
         return "Terminée";
-      case "cancelled":
+      case "annulé":
         return "Annulée";
       default:
         return status;
@@ -211,13 +228,15 @@ const AdminAppointments: React.FC = () => {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case "pending":
+      case "en_attente":
         return "bg-yellow-100 text-yellow-800";
+      case "confirmé":
       case "confirmed":
         return "bg-blue-100 text-blue-800";
+      case "terminé":
       case "completed":
         return "bg-green-100 text-green-800";
-      case "cancelled":
+      case "annulé":
         return "bg-red-100 text-red-800";
       default:
         return "bg-gray-100 text-gray-800";
@@ -301,17 +320,11 @@ const AdminAppointments: React.FC = () => {
                 className="border border-gray-300 rounded-md p-2"
               >
                 <option value="all">Tous les statuts</option>
-                <option value="pending">En attente</option>
-                <option value="confirmed">Confirmées</option>
-                <option value="completed">Terminées</option>
-                <option value="cancelled">Annulées</option>
+                <option value="en_attente">En attente</option>
+                <option value="confirmé">Confirmées</option>
+                <option value="terminé">Terminées</option>
+                <option value="annulé">Annulées</option>
               </select>
-              <button
-                onClick={resetFilters}
-                className="px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600"
-              >
-                Réinitialiser
-              </button>
             </div>
           </div>
         </div>
@@ -410,14 +423,6 @@ const AdminAppointments: React.FC = () => {
                   ? "Essayez de modifier vos critères de recherche ou de filtrage."
                   : "Aucune consultation n'a encore été programmée."}
               </p>
-              {(searchTerm || selectedStatus !== "all") && (
-                <button
-                  onClick={resetFilters}
-                  className="mt-4 px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors"
-                >
-                  Réinitialiser les filtres
-                </button>
-              )}
             </div>
           )}
         </div>
