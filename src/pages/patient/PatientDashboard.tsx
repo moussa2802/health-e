@@ -27,9 +27,16 @@ import { useBookings } from "../../hooks/useBookings";
 import { formatLocalDate } from "../../utils/dateUtils";
 import { cancelBooking } from "../../services/bookingService";
 import MessagingCenter from "../../components/messaging/MessagingCenter";
-import jsPDF from "jspdf";
-import autoTable from "jspdf-autotable";
-import QRCode from "qrcode";
+import {
+  getFirestore,
+  collection,
+  query,
+  where,
+  orderBy,
+  limit,
+  onSnapshot,
+  getDocs,
+} from "firebase/firestore";
 import {
   getPatientMedicalRecords,
   MedicalRecord,
@@ -95,45 +102,42 @@ const PatientDashboard: React.FC = () => {
   const [showPrescriptionModal, setShowPrescriptionModal] = useState(false);
   const [currentPrescription, setCurrentPrescription] =
     useState<MedicalRecord | null>(null);
+  const [showRecommendationsModal, setShowRecommendationsModal] =
+    useState(false);
+  const [currentRecommendations, setCurrentRecommendations] =
+    useState<MedicalRecord | null>(null);
 
-  // Fetch medical records
+  // Fetch medical records - Optimisé avec cache + temps réel
   useEffect(() => {
-    console.log(
-      "🔍 [DASHBOARD DEBUG] useEffect triggered, currentUser:",
-      currentUser?.id
+    if (!currentUser?.id) return;
+
+    setLoadingRecords(true);
+    setRecordError(null);
+
+    const db = getFirestore();
+    // Utiliser la sous-collection correcte : patients/{patientId}/medicalRecords
+    const q = query(
+      collection(db, "patients", currentUser.id, "medicalRecords"),
+      orderBy("consultationDate", "desc"),
+      limit(3)
     );
 
-    const fetchMedicalRecords = async () => {
-      if (!currentUser?.id) {
-        console.log("🔍 [DASHBOARD DEBUG] No currentUser.id, skipping fetch");
-        return;
-      }
-
-      console.log(
-        "🔍 [DASHBOARD DEBUG] Starting fetch for user:",
-        currentUser.id
-      );
-      setLoadingRecords(true);
-      setRecordError(null);
-
-      try {
-        const records = await getPatientMedicalRecords(currentUser.id);
-        console.log(
-          "🔍 [DASHBOARD DEBUG] Fetch completed, records:",
-          records.length
-        );
-        setMedicalRecords(records);
-      } catch (error) {
-        console.error("Error fetching medical records:", error);
-        setRecordError(
-          "Impossible de charger vos dossiers médicaux. Vérifiez vos permissions."
-        );
-      } finally {
+    const unsub = onSnapshot(
+      q,
+      { includeMetadataChanges: true },
+      (snap) => {
+        const list = snap.docs.map((d) => ({ id: d.id, ...(d.data() as any) }));
+        setMedicalRecords(list as MedicalRecord[]);
+        setLoadingRecords(false);
+      },
+      (err) => {
+        console.error(err);
+        setRecordError("Impossible de charger vos dossiers médicaux.");
         setLoadingRecords(false);
       }
-    };
+    );
 
-    fetchMedicalRecords();
+    return () => unsub();
   }, [currentUser?.id]);
 
   // Check if ethics reminder should be shown
@@ -159,6 +163,44 @@ const PatientDashboard: React.FC = () => {
     setCurrentPrescription(record);
     setShowPrescriptionModal(true);
   };
+
+  const showRecommendations = (record: MedicalRecord) => {
+    if (!record.recommendations || record.recommendations.trim() === "") {
+      alert("Ce dossier ne contient pas de recommandations.");
+      return;
+    }
+    setCurrentRecommendations(record);
+    setShowRecommendationsModal(true);
+  };
+
+  // Fonction pour charger tous les dossiers à la demande
+  async function loadAllRecords() {
+    if (!currentUser?.id) return;
+    setLoadingRecords(true);
+    setRecordError(null);
+    try {
+      const db = getFirestore();
+      // Utiliser la sous-collection correcte : patients/{patientId}/medicalRecords
+      const q = query(
+        collection(db, "patients", currentUser.id, "medicalRecords"),
+        orderBy("consultationDate", "desc"),
+        limit(50)
+      );
+      const snap = await getDocs(q);
+      const all = snap.docs.map((d) => ({
+        id: d.id,
+        ...(d.data() as any),
+      })) as MedicalRecord[];
+      setMedicalRecords(all);
+      setShowMedicalRecordModal(true);
+      setSelectedRecord(null);
+    } catch (e) {
+      console.error(e);
+      setRecordError("Erreur lors du chargement de tous les dossiers.");
+    } finally {
+      setLoadingRecords(false);
+    }
+  }
 
   // Fonction pour créer le logo Health-e avec le design réel
   const createHealthELogo = () => {
@@ -246,6 +288,15 @@ const PatientDashboard: React.FC = () => {
     }
 
     try {
+      // Imports dynamiques pour optimiser le bundle initial
+      const [{ default: jsPDF }, autoTableMod, { default: QRCode }] =
+        await Promise.all([
+          import("jspdf"),
+          import("jspdf-autotable"),
+          import("qrcode"),
+        ]);
+      const autoTable = (autoTableMod as any).default ?? autoTableMod;
+
       // A4 mm
       const doc = new jsPDF({ unit: "mm", format: "a4" });
       await ensureFontsLoaded(doc);
@@ -293,7 +344,7 @@ const PatientDashboard: React.FC = () => {
       const proName = record.professionalName || "Professionnel";
       const proLines = [`Dr. ${proName}`, `Professionnel de santé`];
       proLines.forEach((t, i) =>
-        doc.text(t, page.w - page.margin - 40, y + 2 + i * 5)
+        doc.text(t, page.w - page.margin - 40, y + 8 + i * 5)
       );
 
       // trait
@@ -314,53 +365,8 @@ const PatientDashboard: React.FC = () => {
         : new Date();
       const dateFr = fmt.format(cDate);
 
-      // âge et date de naissance - récupérer depuis le profil patient
-      let ageTxt = "";
-      let birthDateTxt = "";
-
-      // Essayer différentes sources pour la date de naissance
-      const patientBirthDate =
-        patientProfile?.dateOfBirth ||
-        currentUser?.dateOfBirth ||
-        (currentUser as any)?.profile?.dateOfBirth ||
-        record.patientDateOfBirth;
-
-      console.log("🔍 [PDF DEBUG] Recherche date de naissance:", {
-        patientProfileDateOfBirth: patientProfile?.dateOfBirth,
-        currentUserDateOfBirth: currentUser?.dateOfBirth,
-        profileDateOfBirth: (currentUser as any)?.profile?.dateOfBirth,
-        recordPatientDateOfBirth: record.patientDateOfBirth,
-        finalDate: patientBirthDate,
-      });
-
-      if (patientBirthDate) {
-        try {
-          const bd = new Date(patientBirthDate);
-          if (!isNaN(bd.getTime())) {
-            // Vérifier que la date est valide
-            const today = new Date();
-            let age = today.getFullYear() - bd.getFullYear();
-            const md = today.getMonth() - bd.getMonth();
-            if (md < 0 || (md === 0 && today.getDate() < bd.getDate())) age--;
-            ageTxt = ` (${age} ans)`;
-            birthDateTxt = ` • Né(e) le ${bd.toLocaleDateString("fr-FR")}`;
-          }
-        } catch (e) {
-          console.warn("⚠️ [PDF DEBUG] Erreur calcul âge:", e);
-        }
-      }
-
-      // Préparer les lignes d'information patient
-      const row1 = `Nom : ${currentUser?.name || "Patient"}${ageTxt}`;
-      const row2 = `Type de consultation : ${
-        record.consultationType || "Vidéo"
-      } • Consultation du ${dateFr}`;
-      const row3 = birthDateTxt
-        ? `Date de naissance : ${birthDateTxt.replace(" • ", "")}`
-        : "";
-
-      // cadre patient - agrandi pour inclure la date de naissance
-      const patientBoxHeight = row3 ? 30 : 24; // Plus haut si on a la date de naissance
+      // cadre patient
+      const patientBoxHeight = 24;
       doc.setFillColor(248, 250, 252);
       doc.setDrawColor(216, 222, 233);
       doc.setLineWidth(0.5);
@@ -375,12 +381,18 @@ const PatientDashboard: React.FC = () => {
       doc.setFont("helvetica", "normal");
       doc.setFontSize(10);
 
-      doc.text(row1, page.margin + 5, y + 14);
-      doc.text(row2, page.margin + 5, y + 20);
-      if (row3) {
-        doc.text(row3, page.margin + 5, y + 26);
-        y += 6; // Ajuster la hauteur si on ajoute une ligne
-      }
+      doc.text(
+        `Nom : ${currentUser?.name || "Patient"}`,
+        page.margin + 5,
+        y + 14
+      );
+      doc.text(
+        `Type de consultation : ${
+          record.consultationType || "Vidéo"
+        } • Consultation du ${dateFr}`,
+        page.margin + 5,
+        y + 20
+      );
 
       y += 30;
 
@@ -571,55 +583,322 @@ const PatientDashboard: React.FC = () => {
     }
   };
 
-  const generateRecommendations = (record: MedicalRecord) => {
-    const doc = new jsPDF();
-
-    // Add header
-    doc.setFontSize(20);
-    doc.text("Recommandations", 105, 20, { align: "center" });
-
-    // Add professional info
-    doc.setFontSize(12);
-    doc.text(`Dr. ${record.professionalName}`, 20, 40);
-    doc.text(`Professionnel de santé`, 20, 47);
-
-    // Add patient info
-    doc.text("Patient:", 20, 70);
-    doc.text(currentUser?.name || "", 50, 70);
-
-    // Format date
-    const consultationDate = new Date(record.consultationDate);
-    const formattedDate = consultationDate.toLocaleDateString();
-    doc.text(`Date: ${formattedDate}`, 20, 85);
-
-    // Add recommendations
-    doc.setFontSize(14);
-    doc.text("Recommandations de suivi", 20, 100);
-
-    doc.setFontSize(12);
-
-    // Split recommendations into lines
-    const recommendationsLines = doc.splitTextToSize(
-      record.recommendations || "Aucune recommandation spécifique",
-      170
-    );
-    doc.text(recommendationsLines, 20, 120);
-
-    let yPos = 130 + recommendationsLines.length * 7;
-
-    // Add next appointment if available
-    if (record.nextAppointmentDate) {
-      doc.setFontSize(14);
-      doc.text("Prochain rendez-vous", 20, yPos);
-      doc.setFontSize(12);
-      doc.text(record.nextAppointmentDate, 20, yPos + 10);
+  const generateRecommendations = async (record: MedicalRecord) => {
+    if (!record?.recommendations || record.recommendations.trim() === "") {
+      alert("Ce dossier ne contient pas de recommandations.");
+      return;
     }
 
-    doc.save(
-      `recommandations-${currentUser?.name.replace(" ", "_")}-${
-        consultationDate.toISOString().split("T")[0]
-      }.pdf`
-    );
+    try {
+      // Imports dynamiques pour optimiser le bundle initial
+      const [{ default: jsPDF }, autoTableMod, { default: QRCode }] =
+        await Promise.all([
+          import("jspdf"),
+          import("jspdf-autotable"),
+          import("qrcode"),
+        ]);
+      const autoTable = (autoTableMod as any).default ?? autoTableMod;
+
+      // A4 mm
+      const doc = new jsPDF({ unit: "mm", format: "a4" });
+      await ensureFontsLoaded(doc);
+
+      // Utiliser helvetica par défaut pour éviter les erreurs
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(0, 0, 0);
+
+      const page = { w: 210, h: 297, margin: 20 };
+      let y = page.margin;
+
+      // --- Header ---
+      try {
+        const logoBase64 = createHealthELogo();
+        doc.addImage(logoBase64, "SVG", page.margin, y - 5, 40, 20);
+      } catch {}
+
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(16);
+      doc.setTextColor(59, 130, 246);
+      doc.text("RECOMMANDATIONS MÉDICALES", page.w / 2, y + 5, {
+        align: "center",
+      });
+
+      // Infos pro (droite)
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(10);
+      doc.setTextColor(60, 60, 60);
+      const proName = record.professionalName || "Professionnel";
+      const proLines = [`Dr. ${proName}`, `Professionnel de santé`];
+      proLines.forEach((t, i) =>
+        doc.text(t, page.w - page.margin - 40, y + 8 + i * 5)
+      );
+
+      // trait
+      doc.setDrawColor(59, 130, 246);
+      doc.setLineWidth(0.8);
+      y += 18;
+      doc.line(page.margin, y, page.w - page.margin, y);
+      y += 6;
+
+      // --- Bloc patient ---
+      const fmt = new Intl.DateTimeFormat("fr-FR", {
+        day: "numeric",
+        month: "long",
+        year: "numeric",
+      });
+      const cDate = record.consultationDate
+        ? new Date(record.consultationDate)
+        : new Date();
+      const dateFr = fmt.format(cDate);
+
+      // Récupérer la date de naissance du patient
+      let patientProfile = null;
+      try {
+        const { getPatientProfile } = await import(
+          "../../services/profileService"
+        );
+        patientProfile = await getPatientProfile(currentUser?.id || "");
+      } catch (e) {
+        console.warn(
+          "⚠️ [PDF DEBUG] Impossible de récupérer le profil patient:",
+          e
+        );
+      }
+
+      // Calculer l'âge et préparer les lignes d'information patient
+      let ageTxt = "";
+      let birthDateTxt = "";
+      const patientBirthDate =
+        patientProfile?.dateOfBirth ||
+        currentUser?.dateOfBirth ||
+        (currentUser as any)?.profile?.dateOfBirth ||
+        record.patientDateOfBirth;
+
+      if (patientBirthDate) {
+        try {
+          const bd = new Date(patientBirthDate);
+          if (!isNaN(bd.getTime())) {
+            const today = new Date();
+            let age = today.getFullYear() - bd.getFullYear();
+            const md = today.getMonth() - bd.getMonth();
+            if (md < 0 || (md === 0 && today.getDate() < bd.getDate())) age--;
+            ageTxt = ` (${age} ans)`;
+            birthDateTxt = `Date de naissance : ${bd.toLocaleDateString(
+              "fr-FR"
+            )}`;
+          }
+        } catch (e) {
+          console.warn("⚠️ [PDF DEBUG] Erreur calcul âge:", e);
+        }
+      }
+
+      // Préparer les lignes d'information patient
+      const row1 = `Nom : ${currentUser?.name || "Patient"}${ageTxt}`;
+      const row2 = `Type de consultation : ${
+        record.consultationType || "Vidéo"
+      } • Consultation du ${dateFr}`;
+      const row3 = birthDateTxt;
+
+      // cadre patient - agrandi pour inclure la date de naissance
+      const patientBoxHeight = row3 ? 30 : 24;
+      doc.setFillColor(248, 250, 252);
+      doc.setDrawColor(216, 222, 233);
+      doc.setLineWidth(0.5);
+      doc.rect(page.margin, y, page.w - page.margin * 2, patientBoxHeight, "F");
+      doc.rect(page.margin, y, page.w - page.margin * 2, patientBoxHeight);
+
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(11);
+      doc.setTextColor(0, 0, 0);
+      doc.text("INFORMATIONS PATIENT", page.margin + 5, y + 7);
+
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(10);
+
+      doc.text(row1, page.margin + 5, y + 14);
+      doc.text(row2, page.margin + 5, y + 20);
+      if (row3) {
+        doc.text(row3, page.margin + 5, y + 26);
+        y += 6; // Ajuster la hauteur si on ajoute une ligne
+      }
+
+      y += 30;
+
+      // --- Recommandations ---
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(12);
+      doc.setTextColor(34, 197, 94);
+      doc.text("RECOMMANDATIONS MÉDICALES", page.margin - 10, y);
+      doc.setTextColor(59, 130, 246);
+      doc.text("💡", page.margin - 25, y);
+
+      y += 4;
+      doc.setDrawColor(34, 197, 94);
+      doc.setLineWidth(0.5);
+      doc.line(page.margin, y, page.w - page.margin, y);
+      y += 6;
+
+      // Texte des recommandations
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(11);
+      doc.setTextColor(0, 0, 0);
+
+      const maxWidth = page.w - page.margin * 2 - 5;
+      const lines = doc.splitTextToSize(record.recommendations, maxWidth);
+
+      // gestion pagination simple
+      for (const line of lines) {
+        if (y > page.h - 30) {
+          doc.addPage();
+          await ensureFontsLoaded(doc);
+          doc.setFont("helvetica", "normal");
+          y = page.margin;
+        }
+        doc.text(line, page.margin + 5, y);
+        y += 6;
+      }
+      y += 4;
+
+      // Espace après les recommandations
+      y += 10;
+
+      // --- Signature & cachet (en bas de chaque page) ---
+      const pageCount = doc.getNumberOfPages();
+      for (let i = 1; i <= pageCount; i++) {
+        doc.setPage(i);
+
+        // Position de la signature (60mm du bas)
+        const signatureY = page.h - 60;
+
+        // --- Prochain rendez-vous (si disponible) - juste au-dessus de la signature ---
+        if (record.nextAppointmentDate) {
+          const appointmentY = signatureY - 25;
+
+          doc.setFont("helvetica", "bold");
+          doc.setFontSize(12);
+          doc.setTextColor(168, 85, 247);
+          doc.text("PROCHAIN RENDEZ-VOUS", page.margin, appointmentY);
+          doc.setTextColor(59, 130, 246);
+          doc.text("📅", page.margin - 25, appointmentY);
+
+          const lineY = appointmentY + 4;
+          doc.setDrawColor(168, 85, 247);
+          doc.setLineWidth(0.5);
+          doc.line(page.margin, lineY, page.w - page.margin, lineY);
+
+          doc.setFont("helvetica", "normal");
+          doc.setFontSize(11);
+          doc.setTextColor(0, 0, 0);
+          doc.text(
+            record.nextAppointmentDate,
+            page.margin + 5,
+            appointmentY + 10
+          );
+        }
+
+        // Titre de la section signature
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(11);
+        doc.setTextColor(0, 0, 0);
+        doc.text("SIGNATURE ET CACHET", page.margin, signatureY);
+
+        // Cadre pour la signature
+        doc.setDrawColor(216, 222, 233);
+        doc.setLineWidth(0.5);
+        doc.rect(page.margin, signatureY + 4, page.w - page.margin * 2, 42);
+
+        // cachet / signature à droite
+        try {
+          if (
+            record.useElectronicSignature &&
+            (record.stampUrl || record.signatureUrl)
+          ) {
+            if (record.stampUrl) {
+              const b64 = await toDataURL(record.stampUrl);
+              doc.addImage(
+                b64,
+                "PNG",
+                page.w - page.margin - 50,
+                signatureY + 7,
+                34,
+                34
+              );
+            }
+            if (record.signatureUrl) {
+              const b64s = await toDataURL(record.signatureUrl);
+              doc.addImage(
+                b64s,
+                "PNG",
+                page.w - page.margin - 50,
+                signatureY + 32,
+                40,
+                15
+              );
+            }
+            doc.setFontSize(9);
+            doc.setTextColor(100, 100, 100);
+            doc.text(
+              "Document signé électroniquement conformément à la réglementation en vigueur.",
+              page.margin + 2,
+              signatureY + 44
+            );
+          } else {
+            doc.setFontSize(9);
+            doc.setTextColor(150, 150, 150);
+            doc.text(
+              "Signature électronique non disponible",
+              page.margin + 2,
+              signatureY + 16
+            );
+          }
+        } catch (e) {
+          doc.setFontSize(9);
+          doc.setTextColor(150, 150, 150);
+          doc.text(
+            "Signature électronique non disponible",
+            page.margin + 2,
+            signatureY + 16
+          );
+        }
+
+        // QR code (vérification)
+        try {
+          const verifyUrl = `${window.location.origin}/verify/recommendations/${record.id}`;
+          const qrDataUrl = await QRCode.toDataURL(verifyUrl, {
+            margin: 0,
+            width: 72,
+          });
+          doc.addImage(
+            qrDataUrl,
+            "PNG",
+            page.margin + 2,
+            signatureY + 7,
+            22,
+            22
+          );
+          doc.setFontSize(8);
+          doc.setTextColor(100, 100, 100);
+          doc.text("Vérifier l'authenticité", page.margin + 2, signatureY + 33);
+        } catch {}
+
+        // Footer en bas de page
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(9);
+        doc.setTextColor(120, 120, 120);
+        const footerText = `Document signé électroniquement via Health-e | www.health-e.sn | Page ${i} / ${pageCount}`;
+        doc.text(footerText, page.w / 2, page.h - 10, { align: "center" });
+      }
+
+      // --- Save ---
+      const dateStr = new Date().toISOString().split("T")[0];
+      const safeName = slugify(currentUser?.name || "patient");
+      doc.save(`recommandations-${safeName}-${dateStr}.pdf`);
+    } catch (error) {
+      console.error("❌ [PDF DEBUG] Error generating recommendations:", error);
+      alert(
+        "Erreur lors de la génération des recommandations. Veuillez réessayer."
+      );
+    }
   };
 
   const handleCancelBooking = async () => {
@@ -1061,11 +1340,7 @@ const PatientDashboard: React.FC = () => {
                 {medicalRecords.length > 3 && (
                   <div className="p-6 bg-gray-50 border-t border-gray-100 text-center">
                     <button
-                      onClick={() => {
-                        // Show all records in modal
-                        setShowMedicalRecordModal(true);
-                        setSelectedRecord(null);
-                      }}
+                      onClick={loadAllRecords}
                       className="text-blue-500 hover:text-blue-600 text-sm font-semibold flex items-center justify-center mx-auto"
                     >
                       <Plus className="h-4 w-4 mr-1" />
@@ -1344,7 +1619,7 @@ const PatientDashboard: React.FC = () => {
                         </button>
                       )}
                       <button
-                        onClick={() => generateRecommendations(selectedRecord)}
+                        onClick={() => showRecommendations(selectedRecord)}
                         className="flex items-center text-blue-600 hover:text-blue-700 bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded text-sm"
                       >
                         <FileText className="h-4 w-4 mr-1" />
@@ -1396,7 +1671,28 @@ const PatientDashboard: React.FC = () => {
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {medicalRecords.length > 0 ? (
+                  {loadingRecords ? (
+                    // Skeleton loader pendant le chargement
+                    <div className="space-y-4">
+                      {[1, 2, 3].map((i) => (
+                        <div
+                          key={i}
+                          className="bg-gray-50 rounded-lg p-4 animate-pulse"
+                        >
+                          <div className="flex justify-between items-center mb-2">
+                            <div className="flex items-center space-x-2">
+                              <div className="h-4 w-4 bg-gray-300 rounded"></div>
+                              <div className="h-4 w-20 bg-gray-300 rounded"></div>
+                              <div className="h-4 w-16 bg-gray-300 rounded-full"></div>
+                            </div>
+                            <div className="h-5 w-5 bg-gray-300 rounded"></div>
+                          </div>
+                          <div className="h-4 w-32 bg-gray-300 rounded mb-2"></div>
+                          <div className="h-4 w-48 bg-gray-300 rounded"></div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : medicalRecords.length > 0 ? (
                     medicalRecords.map((record) => (
                       <div
                         key={record.id}
@@ -1426,13 +1722,47 @@ const PatientDashboard: React.FC = () => {
                     ))
                   ) : (
                     <div className="text-center py-8">
-                      <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                      <h3 className="text-lg font-medium text-gray-900 mb-2">
-                        Aucun dossier médical
-                      </h3>
-                      <p className="text-gray-500">
-                        Vous n'avez pas encore de dossier médical enregistré.
-                      </p>
+                      {recordError ? (
+                        <div>
+                          <AlertCircle className="h-12 w-12 text-red-400 mx-auto mb-4" />
+                          <h3 className="text-lg font-medium text-gray-900 mb-2">
+                            Erreur de chargement
+                          </h3>
+                          <p className="text-gray-500 mb-4">{recordError}</p>
+                          <button
+                            onClick={() => {
+                              setRecordError(null);
+                              // Retry the fetch
+                              if (currentUser?.id) {
+                                setLoadingRecords(true);
+                                getPatientMedicalRecords(currentUser.id)
+                                  .then(setMedicalRecords)
+                                  .catch((error) => {
+                                    console.error("Retry failed:", error);
+                                    setRecordError(
+                                      "Échec de la nouvelle tentative. Vérifiez votre connexion."
+                                    );
+                                  })
+                                  .finally(() => setLoadingRecords(false));
+                              }
+                            }}
+                            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+                          >
+                            Réessayer
+                          </button>
+                        </div>
+                      ) : (
+                        <>
+                          <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                          <h3 className="text-lg font-medium text-gray-900 mb-2">
+                            Aucun dossier médical
+                          </h3>
+                          <p className="text-gray-500">
+                            Vous n'avez pas encore de dossier médical
+                            enregistré.
+                          </p>
+                        </>
+                      )}
                     </div>
                   )}
                 </div>
@@ -1530,6 +1860,108 @@ const PatientDashboard: React.FC = () => {
                   >
                     <Download className="h-5 w-5 mr-2" />
                     Télécharger l'ordonnance en PDF
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Recommendations Modal */}
+      {showRecommendationsModal && currentRecommendations && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col">
+            <div className="p-6 border-b border-gray-200 flex justify-between items-center flex-shrink-0">
+              <h2 className="text-xl font-semibold flex items-center">
+                <FileText className="h-6 w-6 mr-2 text-blue-600" />
+                Recommandations médicales
+              </h2>
+              <button
+                onClick={() => setShowRecommendationsModal(false)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X className="h-6 w-6" />
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto p-6">
+              <div className="space-y-6">
+                {/* Header */}
+                <div className="text-center border-b border-gray-200 pb-4">
+                  <h3 className="text-2xl font-bold text-blue-600 mb-2">
+                    RECOMMANDATIONS MÉDICALES
+                  </h3>
+                  <div className="flex justify-between items-center text-sm text-gray-600">
+                    <span>Dr. {currentRecommendations.professionalName}</span>
+                    <span>
+                      Date:{" "}
+                      {formatDate(currentRecommendations.consultationDate)}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Patient Info */}
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <h4 className="font-semibold text-gray-900 mb-2">
+                    Informations patient
+                  </h4>
+                  <p className="text-gray-700">Nom: {currentUser?.name}</p>
+                  <p className="text-gray-700">
+                    Type de consultation:{" "}
+                    {currentRecommendations.consultationType || "Vidéo"}
+                  </p>
+                </div>
+
+                {/* Diagnosis */}
+                {currentRecommendations.diagnosis && (
+                  <div>
+                    <h4 className="font-semibold text-gray-900 mb-2">
+                      Diagnostic
+                    </h4>
+                    <p className="text-gray-700 bg-yellow-50 p-3 rounded-lg border-l-4 border-yellow-400">
+                      {currentRecommendations.diagnosis}
+                    </p>
+                  </div>
+                )}
+
+                {/* Recommendations */}
+                <div>
+                  <h4 className="font-semibold text-gray-900 mb-2 flex items-center">
+                    <FileText className="h-5 w-5 mr-2 text-blue-600" />
+                    Recommandations de suivi
+                  </h4>
+                  <div className="bg-blue-50 p-4 rounded-lg border-l-4 border-blue-400">
+                    <p className="text-gray-800 whitespace-pre-wrap">
+                      {currentRecommendations.recommendations}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Next Appointment */}
+                {currentRecommendations.nextAppointmentDate && (
+                  <div>
+                    <h4 className="font-semibold text-gray-900 mb-2 flex items-center">
+                      <Calendar className="h-5 w-5 mr-2 text-purple-600" />
+                      Prochain rendez-vous
+                    </h4>
+                    <div className="bg-purple-50 p-4 rounded-lg border-l-4 border-purple-400">
+                      <p className="text-gray-800">
+                        {currentRecommendations.nextAppointmentDate}
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Download Button */}
+                <div className="text-center pt-4 border-t border-gray-200">
+                  <button
+                    onClick={() =>
+                      generateRecommendations(currentRecommendations)
+                    }
+                    className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-semibold flex items-center mx-auto transition-colors"
+                  >
+                    <Download className="h-5 w-5 mr-2" />
+                    Télécharger les recommandations en PDF
                   </button>
                 </div>
               </div>

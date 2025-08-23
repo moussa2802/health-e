@@ -1220,21 +1220,6 @@ const BookAppointment: React.FC = () => {
                       {selectedTimeSlot.time || "Heure non disponible"}
                     </span>
                   </div>
-
-                  {/* Debug info en mode développement */}
-                  {process.env.NODE_ENV === "development" && (
-                    <div className="mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded text-xs">
-                      <p>
-                        <strong>Debug:</strong>
-                      </p>
-                      <p>
-                        selectedTimeSlot: {selectedTimeSlot ? "Oui" : "Non"}
-                      </p>
-                      <p>selectedTime: {selectedTime || "Vide"}</p>
-                      <p>consultationType: {consultationType}</p>
-                      <p>isSlotAvailable: {isSlotAvailable ? "Oui" : "Non"}</p>
-                    </div>
-                  )}
                 </section>
               )}
 
