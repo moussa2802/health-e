@@ -27,7 +27,16 @@ import {
   cleanAllFirebaseStorage,
   resetFirestoreConnection,
 } from "../utils/firebase";
-import { doc, getDoc, setDoc, serverTimestamp, collection, query, where, getDocs } from "firebase/firestore";
+import {
+  doc,
+  getDoc,
+  setDoc,
+  serverTimestamp,
+  collection,
+  query,
+  where,
+  getDocs,
+} from "firebase/firestore";
 import { app } from "../utils/firebase";
 import { useNavigate } from "react-router-dom";
 
@@ -395,47 +404,51 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
           authError
         );
 
-        // Check if this is a Firebase Auth error with specific error codes
-        if (authError && typeof authError === 'object' && 'code' in authError) {
+                // Check if this is a Firebase Auth error with specific error codes
+        if (
+          authError &&
+          typeof authError === "object" &&
+          "code" in (authError as any)
+        ) {
           const errorCode = (authError as any).code;
-          
+ 
           switch (errorCode) {
-            case 'auth/user-not-found':
-              throw new Error("Aucun compte trouvé avec cet email. Vérifiez votre adresse email ou créez un compte.");
-            case 'auth/wrong-password':
-              throw new Error("Mot de passe incorrect. Vérifiez votre mot de passe.");
-            case 'auth/user-disabled':
-              throw new Error("Ce compte a été désactivé. Contactez le support.");
-            case 'auth/too-many-requests':
-              throw new Error("Trop de tentatives de connexion. Réessayez plus tard.");
-            case 'auth/invalid-email':
-              throw new Error("Format d'email invalide. Vérifiez votre adresse email.");
-            case 'auth/invalid-credential':
-              // Pour être plus précis, vérifions d'abord si l'email existe
-              try {
-                await ensureFirestoreReady();
-                const db = getFirestoreInstance();
-                if (db) {
-                  // Chercher l'utilisateur par email
-                  const usersRef = collection(db, "users");
-                  const q = query(usersRef, where("email", "==", email));
-                  const querySnapshot = await getDocs(q);
-                  
-                  if (querySnapshot.empty) {
-                    // L'email n'existe pas
-                    throw new Error("Aucun compte trouvé avec cet email. Vérifiez votre adresse email ou créez un compte.");
-                  } else {
-                    // L'email existe, donc c'est le mot de passe qui est incorrect
-                    throw new Error("Mot de passe incorrect. Vérifiez votre mot de passe.");
-                  }
-                } else {
-                  // Fallback si Firestore n'est pas disponible
-                  throw new Error("Email ou mot de passe incorrect. Vérifiez vos identifiants.");
-                }
-              } catch (firestoreError) {
-                // En cas d'erreur Firestore, on reste sur le message générique
-                throw new Error("Email ou mot de passe incorrect. Vérifiez vos identifiants.");
+            case "auth/user-not-found":
+              throw new Error(
+                "Aucun compte trouvé avec cet email. Vérifiez votre adresse email ou créez un compte."
+              );
+            case "auth/wrong-password":
+              throw new Error(
+                "Mot de passe incorrect. Vérifiez votre mot de passe."
+              );
+            case "auth/user-disabled":
+              throw new Error(
+                "Ce compte a été désactivé. Contactez le support."
+              );
+            case "auth/too-many-requests":
+              throw new Error(
+                "Trop de tentatives de connexion. Réessayez plus tard."
+              );
+            case "auth/invalid-email":
+              throw new Error(
+                "Format d'email invalide. Vérifiez votre adresse email."
+              );
+                        case "auth/invalid-credential":
+              // Approche intelligente sans dépendre de Firestore
+              // Vérification simple du format d'email
+              const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+              if (!emailRegex.test(email)) {
+                throw new Error(
+                  "Format d'email invalide. Vérifiez votre adresse email."
+                );
               }
+ 
+              // Si l'email a un format valide mais l'authentification échoue,
+              // c'est probablement que l'email n'existe pas ou le mot de passe est incorrect
+              // On donne un message plus utile
+              throw new Error(
+                "Email ou mot de passe incorrect. Vérifiez vos identifiants ou créez un compte si vous n'en avez pas."
+              );
             default:
               // Fall back to demo accounts if in development mode
               const demoUser = demoAccounts[email];
@@ -493,7 +506,9 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
                           demoUser.serviceType as "mental" | "sexual"
                         );
                       } else if (demoUser.type === "admin") {
-                        console.log("✅ Admin user - no additional profile needed");
+                        console.log(
+                          "✅ Admin user - no additional profile needed"
+                        );
                       }
                     }
                   }
