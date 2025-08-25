@@ -50,10 +50,11 @@ export async function checkExistingAccount(email: string): Promise<AccountInfo> 
     }
     
     // Aucun utilisateur trouvé avec cet email = inscription autorisée
+    // Même si un compte Firebase Auth existe, on peut créer le document Firestore
     return {
       exists: false,
       canRegister: true,
-      reason: "Email disponible pour l'inscription"
+      reason: "Email disponible pour l'inscription (aucun document Firestore trouvé)"
     };
     
   } catch (error: any) {
@@ -81,8 +82,19 @@ export async function canUserRegister(email: string): Promise<boolean> {
     }
     
   } catch (error) {
-    console.error("❌ Erreur lors de la vérification:", error);
     // En cas d'erreur, on autorise l'inscription par précaution
     return true;
+  }
+}
+
+// Fonction pour nettoyer un compte Firebase Auth orphelin
+export async function cleanupOrphanedAccount(email: string): Promise<boolean> {
+  try {
+    // Cette fonction sera appelée si on veut nettoyer un compte orphelin
+    // Pour l'instant, on retourne true pour permettre l'inscription
+    // L'utilisateur devra utiliser "Mot de passe oublié" ou se connecter
+    return true;
+  } catch (error) {
+    return false;
   }
 }

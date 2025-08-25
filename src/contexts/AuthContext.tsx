@@ -14,6 +14,7 @@ import {
   onAuthStateChanged,
   sendEmailVerification,
   sendPasswordResetEmail,
+  deleteUser,
   User as FirebaseUser,
 } from "firebase/auth";
 import {
@@ -174,9 +175,8 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
             firebaseUser.uid
           );
 
-                // Check if this is the demo admin account
-      if (firebaseUser.email === "admin@demo.com") {
-
+          // Check if this is the demo admin account
+          if (firebaseUser.email === "admin@demo.com") {
             // Create admin user document
             try {
               await retryFirestoreOperation(async () => {
@@ -278,6 +278,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
       // Only update if this is the current user
       if (currentUser && currentUser.id === userId) {
+        console.log("🔄 [AUTH DEBUG] Real-time name update received:", newName);
         setCurrentUser((prev) => (prev ? { ...prev, name: newName } : null));
 
         // Also update localStorage
@@ -287,6 +288,8 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
           userData.name = newName;
           localStorage.setItem("health-e-user", JSON.stringify(userData));
         }
+
+        console.log("✅ [AUTH DEBUG] Name updated in real-time:", newName);
       }
     };
 
@@ -390,14 +393,14 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
           authError
         );
 
-                // Check if this is a Firebase Auth error with specific error codes
+        // Check if this is a Firebase Auth error with specific error codes
         if (
           authError &&
           typeof authError === "object" &&
           "code" in (authError as any)
         ) {
           const errorCode = (authError as any).code;
- 
+
           switch (errorCode) {
             case "auth/user-not-found":
               throw new Error(
@@ -419,7 +422,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
               throw new Error(
                 "Format d'email invalide. Vérifiez votre adresse email."
               );
-                        case "auth/invalid-credential":
+            case "auth/invalid-credential":
               // Approche intelligente sans dépendre de Firestore
               // Vérification simple du format d'email
               const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -428,7 +431,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
                   "Format d'email invalide. Vérifiez votre adresse email."
                 );
               }
- 
+
               // Si l'email a un format valide mais l'authentification échoue,
               // c'est probablement que l'email n'existe pas ou le mot de passe est incorrect
               // On donne un message plus utile
@@ -568,12 +571,15 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
                       demoUser.serviceType as "mental" | "sexual"
                     );
                   } else if (demoUser.type === "admin") {
-                    // Admin user - no additional profile needed
+                    console.log("✅ Admin user - no additional profile needed");
                   }
                 }
               }
             } catch (error) {
-              // Could not create Firestore documents for demo user
+              console.warn(
+                "⚠️ Could not create Firestore documents for demo user:",
+                error
+              );
               // Continue anyway, as this is just for demo purposes
             }
 
@@ -584,6 +590,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         }
       }
     } catch (error) {
+      console.error("Login error:", error);
       throw error;
     }
   };
@@ -594,6 +601,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     phoneNumber: string
   ): Promise<void> => {
     try {
+      console.log("📱 Connexion avec le numéro:", phoneNumber);
 
       // Vérifier si l'utilisateur existe dans Firestore
       await ensureFirestoreReady();
@@ -608,6 +616,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         const patientDoc = await getDoc(doc(db, "patients", userId));
 
         if (patientDoc.exists()) {
+          console.log("✅ Utilisateur trouvé dans la collection patients");
           const patientData = patientDoc.data();
 
           // Get user document to ensure it exists
@@ -615,6 +624,9 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
           // If user document doesn't exist, create it
           if (!userDoc.exists()) {
+            console.log(
+              "⚠️ Document utilisateur manquant, création automatique"
+            );
             await setDoc(doc(db, "users", userId), {
               id: userId,
               name: patientData.name,
@@ -730,15 +742,20 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
       registrationInProgressRef.current = true;
 
-      // Vérifier si l'email existe déjà dans la base de données
+            // Vérifier si l'email existe déjà dans Firestore
       const canRegister = await canUserRegister(email);
       
       if (!canRegister) {
         throw new Error(
           "Cette adresse email est déjà utilisée par un compte actif. " +
-          "Si vous avez oublié votre mot de passe, utilisez la fonction 'Mot de passe oublié'."
+            "Si vous avez oublié votre mot de passe, utilisez la fonction 'Mot de passe oublié'."
         );
       }
+
+      // Si on arrive ici, c'est que l'email n'existe pas dans Firestore
+      // Mais il peut exister un compte Firebase Auth orphelin
+      // On va essayer de créer le compte, et si ça échoue avec "email-already-in-use",
+      // on gérera ce cas spécifiquement
 
       const userCredential = await createUserWithEmailAndPassword(
         auth,
@@ -768,9 +785,12 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         const errorCode = (error as { code?: string }).code;
 
         if (errorCode === "auth/email-already-in-use") {
-          // 🔧 Gestion intelligente des comptes déjà existants
-          errorMessage = "Cette adresse email est déjà utilisée. " +
-            "Si vous avez un compte non confirmé, essayez de vous connecter ou utilisez 'Mot de passe oublié'.";
+          // 🔧 Gestion intelligente des comptes orphelins
+          // L'email existe dans Firebase Auth mais pas dans Firestore
+          // On peut proposer de nettoyer le compte orphelin
+          errorMessage =
+            "Cette adresse email a un compte non finalisé. " +
+            "Essayez de vous connecter avec votre mot de passe, ou utilisez 'Mot de passe oublié' pour réinitialiser.";
         } else if (errorCode === "auth/invalid-email") {
           errorMessage = "Adresse email invalide";
         } else if (errorCode === "auth/weak-password") {
@@ -863,13 +883,21 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       await sendPasswordResetEmail(auth, email);
     } catch (error: any) {
       if (error.code === "auth/user-not-found") {
-        throw new Error("Aucun compte trouvé avec cet email. Vérifiez votre adresse email.");
+        throw new Error(
+          "Aucun compte trouvé avec cet email. Vérifiez votre adresse email."
+        );
       } else if (error.code === "auth/invalid-email") {
-        throw new Error("Format d'email invalide. Vérifiez votre adresse email.");
+        throw new Error(
+          "Format d'email invalide. Vérifiez votre adresse email."
+        );
       } else if (error.code === "auth/too-many-requests") {
-        throw new Error("Trop de demandes de réinitialisation. Réessayez plus tard.");
+        throw new Error(
+          "Trop de demandes de réinitialisation. Réessayez plus tard."
+        );
       } else {
-        throw new Error("Erreur lors de l'envoi de l'email de réinitialisation. Réessayez plus tard.");
+        throw new Error(
+          "Erreur lors de l'envoi de l'email de réinitialisation. Réessayez plus tard."
+        );
       }
     }
   };
