@@ -1059,6 +1059,73 @@ const PatientDashboard: React.FC = () => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Main content */}
         <div className="lg:col-span-2">
+          {/* Actions rapides - déplacées au-dessus des consultations */}
+          <div className="mb-8">
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+              <h3 className="font-bold text-xl text-gray-900 mb-6 flex items-center">
+                <Activity className="h-6 w-6 mr-3 text-purple-600" />
+                Actions rapides
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <Link
+                  to="/professionals/mental"
+                  className="block p-4 border border-gray-200 rounded-xl hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 transition-all duration-200 hover:shadow-md group"
+                >
+                  <div className="flex items-center text-gray-800">
+                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center mr-4 shadow-md group-hover:shadow-lg transition-shadow">
+                      <Brain className="h-6 w-6 text-white" />
+                    </div>
+                    <div>
+                      <span className="font-semibold text-gray-900">
+                        Consulter en santé mentale
+                      </span>
+                      <p className="text-sm text-gray-600 mt-1">
+                        Psychologues et psychiatres
+                      </p>
+                    </div>
+                  </div>
+                </Link>
+                <Link
+                  to="/professionals/sexual"
+                  className="block p-4 border border-gray-200 rounded-xl hover:bg-gradient-to-r hover:from-teal-50 hover:to-cyan-50 transition-all duration-200 hover:shadow-md group"
+                >
+                  <div className="flex items-center text-gray-800">
+                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-teal-500 to-teal-600 flex items-center justify-center mr-4 shadow-md group-hover:shadow-lg transition-shadow">
+                      <Heart className="h-6 w-6 text-white" />
+                    </div>
+                    <div>
+                      <span className="font-semibold text-gray-900">
+                        Consulter en santé sexuelle
+                      </span>
+                      <p className="text-sm text-gray-600 mt-1">
+                        Gynécologues et sexologues
+                      </p>
+                    </div>
+                  </div>
+                </Link>
+
+                <button
+                  onClick={() => setShowSupport(true)}
+                  className="block w-full p-4 border border-gray-200 rounded-xl hover:bg-gradient-to-r hover:from-orange-50 hover:to-red-50 transition-all duration-200 hover:shadow-md group"
+                >
+                  <div className="flex items-center text-gray-800">
+                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-orange-500 to-red-600 flex items-center justify-center mr-4 shadow-md group-hover:shadow-lg transition-shadow">
+                      <MessageSquare className="h-6 w-6 text-white" />
+                    </div>
+                    <div>
+                      <span className="font-semibold text-gray-900">
+                        Support et assistance
+                      </span>
+                      <p className="text-sm text-gray-600 mt-1">
+                        Besoin d'aide ? Contactez-nous
+                      </p>
+                    </div>
+                  </div>
+                </button>
+              </div>
+            </div>
+          </div>
+
           {/* Upcoming Appointments Section */}
           <div className="mb-8">
             <div className="flex items-center justify-between mb-6">
@@ -1352,19 +1419,7 @@ const PatientDashboard: React.FC = () => {
                   </div>
                 )}
               </div>
-            ) : (
-              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 text-center">
-                <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <FileText className="h-8 w-8 text-gray-400" />
-                </div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                  Aucun dossier médical
-                </h3>
-                <p className="text-gray-500">
-                  Vous n'avez pas encore de dossier médical enregistré.
-                </p>
-              </div>
-            )}
+            ) : null}
           </div>
 
           {/* Messaging Center */}
@@ -1438,71 +1493,6 @@ const PatientDashboard: React.FC = () => {
 
         {/* Sidebar */}
         <div>
-          {/* Quick actions modernisées */}
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-            <h3 className="font-bold text-xl text-gray-900 mb-6 flex items-center">
-              <Activity className="h-6 w-6 mr-3 text-purple-600" />
-              Actions rapides
-            </h3>
-            <div className="space-y-4">
-              <Link
-                to="/professionals/mental"
-                className="block p-4 border border-gray-200 rounded-xl hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 transition-all duration-200 hover:shadow-md group"
-              >
-                <div className="flex items-center text-gray-800">
-                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center mr-4 shadow-md group-hover:shadow-lg transition-shadow">
-                    <Brain className="h-6 w-6 text-white" />
-                  </div>
-                  <div>
-                    <span className="font-semibold text-gray-900">
-                      Consulter en santé mentale
-                    </span>
-                    <p className="text-sm text-gray-600 mt-1">
-                      Psychologues et psychiatres
-                    </p>
-                  </div>
-                </div>
-              </Link>
-              <Link
-                to="/professionals/sexual"
-                className="block p-4 border border-gray-200 rounded-xl hover:bg-gradient-to-r hover:from-teal-50 hover:to-cyan-50 transition-all duration-200 hover:shadow-md group"
-              >
-                <div className="flex items-center text-gray-800">
-                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-teal-500 to-teal-600 flex items-center justify-center mr-4 shadow-md group-hover:shadow-lg transition-shadow">
-                    <Heart className="h-6 w-6 text-white" />
-                  </div>
-                  <div>
-                    <span className="font-semibold text-gray-900">
-                      Consulter en santé sexuelle
-                    </span>
-                    <p className="text-sm text-gray-600 mt-1">
-                      Gynécologues et sexologues
-                    </p>
-                  </div>
-                </div>
-              </Link>
-
-              <button
-                onClick={() => setShowSupport(true)}
-                className="block w-full p-4 border border-gray-200 rounded-xl hover:bg-gradient-to-r hover:from-orange-50 hover:to-red-50 transition-all duration-200 hover:shadow-md group"
-              >
-                <div className="flex items-center text-gray-800">
-                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-orange-500 to-red-600 flex items-center justify-center mr-4 shadow-md group-hover:shadow-lg transition-shadow">
-                    <MessageSquare className="h-6 w-6 text-white" />
-                  </div>
-                  <div>
-                    <span className="font-semibold text-gray-900">
-                      Support et assistance
-                    </span>
-                    <p className="text-sm text-gray-600 mt-1">
-                      Besoin d'aide ? Contactez-nous
-                    </p>
-                  </div>
-                </div>
-              </button>
-            </div>
-          </div>
-
           {/* User profile card modernisée */}
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mt-6">
             <div className="flex items-center mb-4">

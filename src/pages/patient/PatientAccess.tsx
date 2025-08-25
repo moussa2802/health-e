@@ -53,8 +53,8 @@ const PatientAccess: React.FC = () => {
     sendVerificationCodeForRegister,
     verifyLoginCode,
     verifyRegisterCode,
-    cooldownTime,
-    isInCooldown,
+    cooldownTime: phoneLoginCooldownTime,
+    isInCooldown: phoneLoginIsInCooldown,
     loading: phoneAuthLoading,
   } = usePhoneAuth();
 
@@ -65,6 +65,38 @@ const PatientAccess: React.FC = () => {
     cooldownTime: emailCooldownTime,
     isInCooldown: emailIsInCooldown,
   } = useEmailVerification();
+
+  // Variables de cooldown séparées pour l'inscription par téléphone
+  const [phoneRegisterCooldownTime, setPhoneRegisterCooldownTime] = useState(0);
+  const [phoneRegisterIsInCooldown, setPhoneRegisterIsInCooldown] =
+    useState(false);
+
+  // Gérer le cooldown de l'inscription par téléphone
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+
+    if (phoneRegisterIsInCooldown && phoneRegisterCooldownTime > 0) {
+      interval = setInterval(() => {
+        setPhoneRegisterCooldownTime((prev) => {
+          if (prev <= 1) {
+            setPhoneRegisterIsInCooldown(false);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    }
+
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [phoneRegisterIsInCooldown, phoneRegisterCooldownTime]);
+
+  // Fonction pour démarrer le cooldown de l'inscription
+  const startPhoneRegisterCooldown = (duration: number = 60) => {
+    setPhoneRegisterCooldownTime(duration);
+    setPhoneRegisterIsInCooldown(true);
+  };
 
   useEffect(() => {
     if (isAuthenticated && currentUser?.type === "patient") {
@@ -507,48 +539,54 @@ const PatientAccess: React.FC = () => {
                           <button
                             type="submit"
                             disabled={
-                              isLoggingIn || !loginPhone || isInCooldown
+                              isLoggingIn ||
+                              !loginPhone ||
+                              phoneLoginIsInCooldown
                             }
                             className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-3 rounded-xl shadow transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                           >
                             {isLoggingIn
                               ? "Envoi en cours..."
-                              : isInCooldown
-                              ? `Attendre ${cooldownTime}s`
+                              : phoneLoginIsInCooldown
+                              ? `Attendre ${phoneLoginCooldownTime}s`
                               : "Recevoir un code"}
                           </button>
                         )}
 
                         <CooldownMessage
-                          cooldownTime={cooldownTime}
-                          isInCooldown={isInCooldown}
+                          cooldownTime={phoneLoginCooldownTime}
+                          isInCooldown={phoneLoginIsInCooldown}
                           showInContext={true}
                         />
 
-                        {!isInCooldown && emailVerificationSent && (
+                        {!phoneLoginIsInCooldown && emailVerificationSent && (
                           <button
                             type="button"
+                            disabled={isLoggingIn}
                             onClick={async () => {
+                              setIsLoggingIn(true);
                               try {
-                                await sendVerificationCodeForRegister(
-                                  registerPhone
-                                );
+                                await sendVerificationCodeForLogin(loginPhone);
                               } catch (err) {
                                 console.error(
                                   "❌ Erreur lors du renvoi du code:",
                                   err
                                 );
+                              } finally {
+                                setIsLoggingIn(false);
                               }
                             }}
-                            className="w-full text-blue-500 py-2 px-4 rounded-md hover:bg-blue-50 transition-colors font-medium mt-2"
+                            className="w-full text-blue-500 py-2 px-4 rounded-md hover:bg-blue-50 transition-colors font-medium mt-2 disabled:opacity-50 disabled:cursor-not-allowed"
                           >
-                            Renvoyer le code
+                            {isLoggingIn
+                              ? "Envoi en cours..."
+                              : "Renvoyer le code"}
                           </button>
                         )}
 
                         {/* Cooldown messages moved to specific sections */}
 
-                        {!isInCooldown && emailVerificationSent && (
+                        {!phoneLoginIsInCooldown && emailVerificationSent && (
                           <button
                             type="button"
                             onClick={() =>
@@ -616,66 +654,70 @@ const PatientAccess: React.FC = () => {
                           </button>
 
                           <CooldownMessage
-                            cooldownTime={cooldownTime}
-                            isInCooldown={isInCooldown}
+                            cooldownTime={phoneLoginCooldownTime}
+                            isInCooldown={phoneLoginIsInCooldown}
                             showInContext={true}
                           />
                         </form>
                       ) : (
                         <form
-                          onSubmit={(e) => {
+                          onSubmit={async (e) => {
                             e.preventDefault();
-                            sendVerificationCodeForLogin(loginPhone)
-                              .then((result) => {
-                                if (result.success) {
-                                  console.log(
-                                    "✅ Affichage du formulaire de vérification pour login"
-                                  );
-                                  setShowLoginVerificationInput(true);
-                                } else {
-                                  console.log(
-                                    "❌ Échec de l'envoi du code - pas de redirection"
-                                  );
-                                  if (result.error) {
-                                    setLoginError(result.error);
-                                  }
-                                }
-                              })
-                              .catch((err) => {
-                                console.error(
-                                  "❌ Erreur lors de l'envoi du code:",
-                                  err
+                            setIsLoggingIn(true);
+                            try {
+                              const result = await sendVerificationCodeForLogin(
+                                loginPhone
+                              );
+                              if (result.success) {
+                                console.log(
+                                  "✅ Affichage du formulaire de vérification pour login"
                                 );
+                                setShowLoginVerificationInput(true);
+                              } else {
+                                console.log(
+                                  "❌ Échec de l'envoi du code - pas de redirection"
+                                );
+                                if (result.error) {
+                                  setLoginError(result.error);
+                                }
+                              }
+                            } catch (err) {
+                              console.error(
+                                "❌ Erreur lors de l'envoi du code:",
+                                err
+                              );
 
-                                // Gestion spécifique des erreurs
-                                if (err instanceof Error) {
-                                  const errorMessage = err.message;
-                                  if (
-                                    errorMessage.includes("Trop de tentatives")
-                                  ) {
-                                    setLoginError(
-                                      "Trop de tentatives pour ce numéro. Veuillez attendre 5 minutes avant de réessayer."
-                                    );
-                                    console.log(
-                                      "⏱️ Cooldown activé - pas de redirection"
-                                    );
-                                  } else {
-                                    setLoginError(
-                                      "Erreur lors de l'envoi du code. Veuillez réessayer."
-                                    );
-                                    console.log(
-                                      "❌ Erreur générale - pas de redirection"
-                                    );
-                                  }
+                              // Gestion spécifique des erreurs
+                              if (err instanceof Error) {
+                                const errorMessage = err.message;
+                                if (
+                                  errorMessage.includes("Trop de tentatives")
+                                ) {
+                                  setLoginError(
+                                    "Trop de tentatives pour ce numéro. Veuillez attendre 5 minutes avant de réessayer."
+                                  );
+                                  console.log(
+                                    "⏱️ Cooldown activé - pas de redirection"
+                                  );
                                 } else {
                                   setLoginError(
                                     "Erreur lors de l'envoi du code. Veuillez réessayer."
                                   );
                                   console.log(
-                                    "❌ Erreur inconnue - pas de redirection"
+                                    "❌ Erreur générale - pas de redirection"
                                   );
                                 }
-                              });
+                              } else {
+                                setLoginError(
+                                  "Erreur lors de l'envoi du code. Veuillez réessayer."
+                                );
+                                console.log(
+                                  "❌ Erreur inconnue - pas de redirection"
+                                );
+                              }
+                            } finally {
+                              setIsLoggingIn(false);
+                            }
                           }}
                           className="space-y-4"
                         >
@@ -710,8 +752,8 @@ const PatientAccess: React.FC = () => {
                           </button>
 
                           <CooldownMessage
-                            cooldownTime={cooldownTime}
-                            isInCooldown={isInCooldown}
+                            cooldownTime={phoneLoginCooldownTime}
+                            isInCooldown={phoneLoginIsInCooldown}
                             showInContext={true}
                           />
                         </form>
@@ -1040,7 +1082,9 @@ const PatientAccess: React.FC = () => {
                         <button
                           type="button"
                           disabled={
-                            isRegistering || !registerPhone || isInCooldown
+                            isRegistering ||
+                            !registerPhone ||
+                            phoneRegisterIsInCooldown
                           }
                           onClick={async () => {
                             // Vérifier si c'est un numéro de test
@@ -1076,6 +1120,8 @@ const PatientAccess: React.FC = () => {
                                   "✅ Code envoyé avec succès, affichage du formulaire de vérification"
                                 );
                                 setShowRegisterVerificationInput(true);
+                                // Démarrer le cooldown de 60 secondes
+                                startPhoneRegisterCooldown(60);
                               } else {
                                 if (result.error) {
                                   setRegisterError(result.error);
@@ -1103,14 +1149,14 @@ const PatientAccess: React.FC = () => {
                         >
                           {isRegistering
                             ? "Envoi en cours..."
-                            : isInCooldown
-                            ? `Attendre ${cooldownTime}s`
+                            : phoneRegisterIsInCooldown
+                            ? `Attendre ${phoneRegisterCooldownTime}s`
                             : "Recevoir un code"}
                         </button>
 
                         <CooldownMessage
-                          cooldownTime={cooldownTime}
-                          isInCooldown={isInCooldown}
+                          cooldownTime={phoneRegisterCooldownTime}
+                          isInCooldown={phoneRegisterIsInCooldown}
                         />
                       </form>
                     )}
