@@ -32,6 +32,8 @@ const ProfessionalDashboard = lazy(
   () => import("./pages/professional/ProfessionalDashboard")
 );
 const PatientAccess = lazy(() => import("./pages/patient/PatientAccess"));
+const ForgotPassword = lazy(() => import("./components/auth/ForgotPassword"));
+const ForgotPasswordProfessional = lazy(() => import("./components/auth/ForgotPasswordProfessional"));
 const ProfessionalAccess = lazy(
   () => import("./pages/professional/ProfessionalAccess")
 );
@@ -233,22 +235,12 @@ function App() {
 
         // Try to reset Firestore connection - this already handles IndexedDB cleanup
         try {
-          console.log(
-            "🔄 Attempting to reset Firestore connection due to global error"
-          );
           await resetFirestoreConnection();
-          console.log(
-            "✅ Firestore connection reset successful after global error"
-          );
 
           // Ensure Firestore is ready after reset
           await ensureFirestoreReady();
-          console.log("✅ Firestore ready after reset");
         } catch (resetError) {
-          console.error(
-            "❌ Failed to reset Firestore connection after global error:",
-            resetError
-          );
+          // Failed to reset Firestore connection after global error
         }
       }
     };
@@ -276,10 +268,13 @@ function App() {
                       <Route path="/" element={<HomePage />} />
 
                       <Route path="/patient" element={<PatientAccess />} />
+                      <Route path="/patient/access" element={<PatientAccess />} />
+                      <Route path="/patient/forgot-password" element={<ForgotPassword />} />
                       <Route
                         path="/professional/access"
                         element={<ProfessionalAccess />}
                       />
+                      <Route path="/professional/forgot-password" element={<ForgotPasswordProfessional />} />
                       <Route path="/admin/login" element={<AdminLogin />} />
                       <Route path="/login" element={<Navigate to="/" />} />
                       <Route path="/faq" element={<FAQ />} />

@@ -13,6 +13,7 @@ import {
   signOut,
   onAuthStateChanged,
   sendEmailVerification,
+  sendPasswordResetEmail,
   User as FirebaseUser,
 } from "firebase/auth";
 import {
@@ -72,6 +73,7 @@ type AuthContextType = {
     serviceType?: "mental" | "sexual"
   ) => Promise<void>;
   createUserWithPhone: (name: string, phoneNumber: string) => Promise<void>;
+  resetPassword: (email: string) => Promise<void>;
   logout: () => void;
   refreshUser: () => Promise<void>;
 };
@@ -172,9 +174,8 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
             firebaseUser.uid
           );
 
-          // Check if this is the demo admin account
-          if (firebaseUser.email === "admin@demo.com") {
-            console.log("🔧 Creating admin user document for demo account");
+                // Check if this is the demo admin account
+      if (firebaseUser.email === "admin@demo.com") {
 
             // Create admin user document
             try {
@@ -198,9 +199,8 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
                 type: "admin",
               });
 
-              console.log("✅ Admin user document created successfully");
+              // Admin user document created successfully
             } catch (error) {
-              console.error("❌ Failed to create admin user document:", error);
               setCurrentUser(null);
             }
           } else {
@@ -209,8 +209,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         }
       }
     } catch (firestoreError) {
-      console.error("Error fetching user data from Firestore:", firestoreError);
-
       // Check if this is a Firestore internal error and we haven't already retried
       if (!isRetry && isFirestoreInternalError(firestoreError)) {
         const now = Date.now();
@@ -218,26 +216,17 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
         // Only attempt reset if enough time has passed since last reset
         if (timeSinceLastReset > RESET_COOLDOWN_MS) {
-          console.log(
-            "🔄 Attempting to reset Firestore connection due to internal error..."
-          );
           resetAttemptedRef.current = now;
 
           try {
             await resetFirestoreConnection();
 
             // Retry the operation once after reset
-            console.log("🔄 Retrying user data fetch after Firestore reset...");
             await fetchUserDataWithRetry(firebaseUser, true);
             return;
           } catch (resetError) {
-            console.error(
-              "❌ Failed to reset Firestore connection:",
-              resetError
-            );
+            // Handle reset error silently
           }
-        } else {
-          console.log("⏳ Skipping Firestore reset due to cooldown period");
         }
       }
 
@@ -263,7 +252,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
             // User is signed in, get their data from Firestore with retry mechanism
             await fetchUserDataWithRetry(firebaseUser);
           } catch (error) {
-            console.error("Error in auth state change handler:", error);
             setCurrentUser(null);
           }
         } else {
@@ -754,9 +742,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
       registrationInProgressRef.current = true;
 
-      // 🔧 VÉRIFICATION SIMPLE DANS FIRESTORE
       // Vérifier si l'email existe déjà dans la base de données
-      console.log("🔍 Vérification de l'email pour l'inscription:", email);
       const canRegister = await canUserRegister(email);
       
       if (!canRegister) {
@@ -766,8 +752,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         );
       }
 
-      console.log("✅ Email disponible pour l'inscription, création en cours...");
-
       const userCredential = await createUserWithEmailAndPassword(
         auth,
         email,
@@ -776,7 +760,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       const firebaseUser = userCredential.user;
 
       await sendEmailVerification(firebaseUser);
-      console.log("✅ Email de vérification envoyé");
 
       // Stocker les données temporairement en local
       localStorage.setItem("pending-user-id", userCredential.user.uid);
@@ -877,10 +860,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
       // Create patient profile
       await createDefaultPatientProfile(userId, name, "", phoneNumber);
-
-      console.log("✅ Profil utilisateur créé avec succès");
     } catch (error) {
-      console.error("Error creating user with phone:", error);
       throw error;
     } finally {
       // Reset registration flag
@@ -888,25 +868,37 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     }
   };
 
+  // Réinitialisation de mot de passe
+  const resetPassword = async (email: string): Promise<void> => {
+    try {
+      const auth = getAuth();
+      await sendPasswordResetEmail(auth, email);
+    } catch (error: any) {
+      if (error.code === "auth/user-not-found") {
+        throw new Error("Aucun compte trouvé avec cet email. Vérifiez votre adresse email.");
+      } else if (error.code === "auth/invalid-email") {
+        throw new Error("Format d'email invalide. Vérifiez votre adresse email.");
+      } else if (error.code === "auth/too-many-requests") {
+        throw new Error("Trop de demandes de réinitialisation. Réessayez plus tard.");
+      } else {
+        throw new Error("Erreur lors de l'envoi de l'email de réinitialisation. Réessayez plus tard.");
+      }
+    }
+  };
+
   const refreshUser = async (): Promise<void> => {
-    console.log("🔄 [AUTH DEBUG] Refreshing user data...");
     const firebaseUser = auth.currentUser;
 
     if (firebaseUser) {
       try {
         await fetchUserDataWithRetry(firebaseUser);
-        console.log("✅ [AUTH DEBUG] User data refreshed successfully");
       } catch (error) {
-        console.error("❌ [AUTH DEBUG] Error refreshing user data:", error);
+        // Error refreshing user data
       }
-    } else {
-      console.warn("⚠️ [AUTH DEBUG] No Firebase user to refresh");
     }
   };
 
   const logout = () => {
-    console.log("🔄 [AUTH DEBUG] Starting logout process");
-
     // Clean up all Firestore listeners BEFORE signing out
     try {
       // Import cleanup functions dynamically to avoid circular dependencies
@@ -916,7 +908,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
           cleanupAllProfessionalsListeners();
         })
         .catch(() => {
-          console.warn("Could not cleanup professionals listeners");
+          // Could not cleanup professionals listeners
         });
 
       import("../hooks/useBookings")
@@ -924,7 +916,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
           cleanupAllBookingListeners();
         })
         .catch(() => {
-          console.warn("Could not cleanup booking listeners");
+          // Could not cleanup booking listeners
         });
 
       import("../services/messageService")
@@ -933,7 +925,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
           clearMessageCaches();
         })
         .catch(() => {
-          console.warn("Could not cleanup message listeners");
+          // Could not cleanup message listeners
         });
 
       import("../services/notificationService")
@@ -941,15 +933,10 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
           cleanupAllNotificationListeners();
         })
         .catch(() => {
-          console.warn("Could not cleanup notification listeners");
+          // Could not cleanup notification listeners
         });
-
-      console.log("🧹 [AUTH DEBUG] Cleaning up all listeners before logout");
     } catch (error) {
-      console.warn(
-        "⚠️ [AUTH DEBUG] Error cleaning up listeners during logout:",
-        error
-      );
+      // Error cleaning up listeners during logout
     }
 
     // Clear current user state BEFORE Firebase signOut
@@ -958,13 +945,11 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
     // Sign out from Firebase Auth
     signOut(auth).catch((error: unknown) => {
-      console.error("❌ [AUTH DEBUG] Error signing out from Firebase:", error);
+      // Error signing out from Firebase
     });
 
     // Clean browser storage only on logout, not on initialization
     cleanAllFirebaseStorage();
-
-    console.log("✅ [AUTH DEBUG] Logout process completed");
   };
 
   return (
@@ -979,6 +964,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         loginWithPhone,
         register,
         createUserWithPhone,
+        resetPassword,
         logout,
         refreshUser,
       }}

@@ -482,12 +482,12 @@ const PatientAccess: React.FC = () => {
                           </div>
 
                           <div className="text-sm">
-                            <a
-                              href="#"
+                            <Link
+                              to="/patient/forgot-password"
                               className="font-medium text-blue-500 hover:text-blue-400"
                             >
                               Mot de passe oublié ?
-                            </a>
+                            </Link>
                           </div>
                         </div>
 

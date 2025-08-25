@@ -430,12 +430,12 @@ const ProfessionalAccess: React.FC = () => {
                     </div>
 
                     <div className="text-sm">
-                      <a
-                        href="#"
+                      <Link
+                        to="/professional/forgot-password"
                         className="font-medium text-teal-500 hover:text-teal-400"
                       >
                         Mot de passe oublié ?
-                      </a>
+                      </Link>
                     </div>
                   </div>
 

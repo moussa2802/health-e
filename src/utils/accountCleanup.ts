@@ -28,7 +28,6 @@ export async function checkExistingAccount(email: string): Promise<AccountInfo> 
     const db = getFirestoreInstance();
     
     if (!db) {
-      console.warn("⚠️ Firestore non disponible, autorisation de l'inscription par précaution");
       return {
         exists: false,
         canRegister: true,
@@ -58,8 +57,6 @@ export async function checkExistingAccount(email: string): Promise<AccountInfo> 
     };
     
   } catch (error: any) {
-    console.warn("⚠️ Erreur lors de la vérification Firestore:", error);
-    
     // En cas d'erreur (permissions, réseau, etc.), on autorise l'inscription par précaution
     return {
       exists: false,
@@ -75,15 +72,11 @@ export async function checkExistingAccount(email: string): Promise<AccountInfo> 
  */
 export async function canUserRegister(email: string): Promise<boolean> {
   try {
-    console.log("🔍 Vérification de l'email pour l'inscription:", email);
-    
     const accountInfo = await checkExistingAccount(email);
     
     if (accountInfo.canRegister) {
-      console.log("✅ Inscription autorisée:", accountInfo.reason);
       return true;
     } else {
-      console.log("❌ Inscription bloquée:", accountInfo.reason);
       return false;
     }
     
