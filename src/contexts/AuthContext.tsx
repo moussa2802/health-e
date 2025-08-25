@@ -27,7 +27,7 @@ import {
   cleanAllFirebaseStorage,
   resetFirestoreConnection,
 } from "../utils/firebase";
-import { handleOrphanedAccount } from "../utils/accountCleanup";
+import { canUserRegister } from "../utils/accountCleanup";
 import {
   doc,
   getDoc,
@@ -754,10 +754,10 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
       registrationInProgressRef.current = true;
 
-      // 🔧 GESTION DES COMPTES ORPHELINS
-      // Vérifier et nettoyer les comptes orphelins avant l'inscription
-      console.log("🔍 Vérification des comptes orphelins pour:", email);
-      const canRegister = await handleOrphanedAccount(email, password);
+      // 🔧 VÉRIFICATION SIMPLE DANS FIRESTORE
+      // Vérifier si l'email existe déjà dans la base de données
+      console.log("🔍 Vérification de l'email pour l'inscription:", email);
+      const canRegister = await canUserRegister(email);
       
       if (!canRegister) {
         throw new Error(
@@ -766,7 +766,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         );
       }
 
-      console.log("✅ Compte disponible pour l'inscription, création en cours...");
+      console.log("✅ Email disponible pour l'inscription, création en cours...");
 
       const userCredential = await createUserWithEmailAndPassword(
         auth,
