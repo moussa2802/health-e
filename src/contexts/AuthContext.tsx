@@ -278,7 +278,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
       // Only update if this is the current user
       if (currentUser && currentUser.id === userId) {
-        console.log("🔄 [AUTH DEBUG] Real-time name update received:", newName);
         setCurrentUser((prev) => (prev ? { ...prev, name: newName } : null));
 
         // Also update localStorage
@@ -288,8 +287,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
           userData.name = newName;
           localStorage.setItem("health-e-user", JSON.stringify(userData));
         }
-
-        console.log("✅ [AUTH DEBUG] Name updated in real-time:", newName);
       }
     };
 
@@ -571,15 +568,12 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
                       demoUser.serviceType as "mental" | "sexual"
                     );
                   } else if (demoUser.type === "admin") {
-                    console.log("✅ Admin user - no additional profile needed");
+                    // Admin user - no additional profile needed
                   }
                 }
               }
             } catch (error) {
-              console.warn(
-                "⚠️ Could not create Firestore documents for demo user:",
-                error
-              );
+              // Could not create Firestore documents for demo user
               // Continue anyway, as this is just for demo purposes
             }
 
@@ -590,7 +584,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         }
       }
     } catch (error) {
-      console.error("Login error:", error);
       throw error;
     }
   };
@@ -601,7 +594,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     phoneNumber: string
   ): Promise<void> => {
     try {
-      console.log("📱 Connexion avec le numéro:", phoneNumber);
 
       // Vérifier si l'utilisateur existe dans Firestore
       await ensureFirestoreReady();
@@ -616,7 +608,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         const patientDoc = await getDoc(doc(db, "patients", userId));
 
         if (patientDoc.exists()) {
-          console.log("✅ Utilisateur trouvé dans la collection patients");
           const patientData = patientDoc.data();
 
           // Get user document to ensure it exists
@@ -624,9 +615,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
           // If user document doesn't exist, create it
           if (!userDoc.exists()) {
-            console.log(
-              "⚠️ Document utilisateur manquant, création automatique"
-            );
             await setDoc(doc(db, "users", userId), {
               id: userId,
               name: patientData.name,

@@ -108,11 +108,9 @@ function App() {
     const initializeApp = async () => {
       // CRITICAL: Reset Firestore connection on app initialization
       try {
-        console.log("🔄 Performing initial Firestore reset on app load");
         await resetFirestoreConnection();
-        console.log("✅ Initial Firestore reset completed");
       } catch (error) {
-        console.warn("⚠️ Initial Firestore reset failed:", error);
+        // Handle initial reset error silently
       }
     };
     initializeApp();
@@ -120,7 +118,7 @@ function App() {
     return () => {
       isMountedRef.current = false;
 
-      console.log("🧹 App unmounting, cleaning up all Firestore listeners");
+      // App unmounting, cleaning up all Firestore listeners
 
       // Clean up all Firestore listeners to prevent "Target ID already exists" errors
       cleanupAllProfessionalsListeners();
@@ -140,21 +138,17 @@ function App() {
   useEffect(() => {
     const handleVisibilityChange = async () => {
       if (document.visibilityState === "hidden") {
-        console.log("📱 App going to background, cleaning up listeners");
+        // App going to background, cleaning up listeners
         cleanupAllProfessionalsListeners();
         cleanupAllBookingListeners();
         cleanupAllMessageListeners();
         clearMessageCaches();
       } else if (document.visibilityState === "visible") {
         // Ensure Firestore is ready when app becomes visible again
-        console.log("📱 App coming to foreground, ensuring Firestore is ready");
         try {
           await ensureFirestoreReady();
         } catch (error) {
-          console.warn(
-            "⚠️ Failed to ensure Firestore ready on visibility change:",
-            error
-          );
+          // Failed to ensure Firestore ready on visibility change
         }
       }
     };
@@ -169,29 +163,20 @@ function App() {
   // CRITICAL: Ensure Firestore is ready when the app mounts
   useEffect(() => {
     const initializeFirestore = async () => {
-      console.log("🔄 App mounted, ensuring Firestore is ready");
       try {
         await ensureFirestoreReady();
-        console.log("✅ Firestore ready on app mount");
 
         // Only ensure required collections exist if Firestore is actually ready
         try {
           // Add a small delay to ensure Firestore is fully initialized
           await new Promise((resolve) => setTimeout(resolve, 100));
           await ensureRequiredCollectionsExist();
-          console.log("✅ Required collections verified");
         } catch (collectionsError) {
-          console.warn(
-            "⚠️ Failed to ensure required collections exist:",
-            collectionsError
-          );
+          // Failed to ensure required collections exist
           // Don't throw here - the app can still function without this check
         }
       } catch (error) {
-        console.warn(
-          "⚠️ Failed to ensure Firestore ready on app mount:",
-          error
-        );
+        // Failed to ensure Firestore ready on app mount
       }
     };
 
