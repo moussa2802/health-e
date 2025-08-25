@@ -395,77 +395,170 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
           authError
         );
 
-        // Fall back to demo accounts if in development mode
-        const demoUser = demoAccounts[email];
-        if (
-          demoUser &&
-          demoPasswords[email] === password &&
-          demoUser.type === userType
-        ) {
-          setCurrentUser(demoUser);
-          localStorage.setItem("health-e-user", JSON.stringify(demoUser));
+        // Check if this is a Firebase Auth error with specific error codes
+        if (authError && typeof authError === 'object' && 'code' in authError) {
+          const errorCode = (authError as any).code;
+          
+          switch (errorCode) {
+            case 'auth/user-not-found':
+              throw new Error("Aucun compte trouvé avec cet email. Vérifiez votre adresse email ou créez un compte.");
+            case 'auth/wrong-password':
+              throw new Error("Mot de passe incorrect. Vérifiez votre mot de passe.");
+            case 'auth/user-disabled':
+              throw new Error("Ce compte a été désactivé. Contactez le support.");
+            case 'auth/too-many-requests':
+              throw new Error("Trop de tentatives de connexion. Réessayez plus tard.");
+            case 'auth/invalid-email':
+              throw new Error("Format d'email invalide. Vérifiez votre adresse email.");
+            case 'auth/invalid-credential':
+              throw new Error("Email ou mot de passe incorrect. Vérifiez vos identifiants.");
+            default:
+              // Fall back to demo accounts if in development mode
+              const demoUser = demoAccounts[email];
+              if (
+                demoUser &&
+                demoPasswords[email] === password &&
+                demoUser.type === userType
+              ) {
+                setCurrentUser(demoUser);
+                localStorage.setItem("health-e-user", JSON.stringify(demoUser));
 
-          // Create Firestore documents for demo users if they don't exist
-          try {
-            await ensureFirestoreReady();
-            await ensureRequiredCollectionsExist();
+                // Create Firestore documents for demo users if they don't exist
+                try {
+                  await ensureFirestoreReady();
+                  await ensureRequiredCollectionsExist();
 
-            const db = getFirestoreInstance();
+                  const db = getFirestoreInstance();
 
-            if (db) {
-              // Check if user document exists
-              const userRef = doc(db, "users", demoUser.id);
-              const userDoc = await getDoc(userRef);
+                  if (db) {
+                    // Check if user document exists
+                    const userRef = doc(db, "users", demoUser.id);
+                    const userDoc = await getDoc(userRef);
 
-              if (!userDoc.exists()) {
-                // Create user document with retry mechanism
-                await retryFirestoreOperation(async () => {
-                  await setDoc(userRef, {
-                    id: demoUser.id,
-                    name: demoUser.name,
-                    email: demoUser.email,
-                    type: demoUser.type,
-                    isActive: true,
-                    createdAt: serverTimestamp(),
-                    updatedAt: serverTimestamp(),
+                    if (!userDoc.exists()) {
+                      // Create user document with retry mechanism
+                      await retryFirestoreOperation(async () => {
+                        await setDoc(userRef, {
+                          id: demoUser.id,
+                          name: demoUser.name,
+                          email: demoUser.email,
+                          type: demoUser.type,
+                          isActive: true,
+                          createdAt: serverTimestamp(),
+                          updatedAt: serverTimestamp(),
+                        });
+                      });
+
+                      console.log(
+                        "✅ Created user document for demo user:",
+                        demoUser.id
+                      );
+
+                      // Create profile document based on user type (skip for admin)
+                      if (demoUser.type === "patient") {
+                        await createDefaultPatientProfile(
+                          demoUser.id,
+                          demoUser.name,
+                          demoUser.email
+                        );
+                      } else if (demoUser.type === "professional") {
+                        await createDefaultProfessionalProfile(
+                          demoUser.id,
+                          demoUser.name,
+                          demoUser.email || "",
+                          demoUser.serviceType as "mental" | "sexual"
+                        );
+                      } else if (demoUser.type === "admin") {
+                        console.log("✅ Admin user - no additional profile needed");
+                      }
+                    }
+                  }
+                } catch (error) {
+                  console.warn(
+                    "⚠️ Could not create Firestore documents for demo user:",
+                    error
+                  );
+                  // Continue anyway, as this is just for demo purposes
+                }
+
+                return;
+              } else {
+                throw new Error("Identifiants incorrects");
+              }
+          }
+        } else {
+          // Fall back to demo accounts if in development mode
+          const demoUser = demoAccounts[email];
+          if (
+            demoUser &&
+            demoPasswords[email] === password &&
+            demoUser.type === userType
+          ) {
+            setCurrentUser(demoUser);
+            localStorage.setItem("health-e-user", JSON.stringify(demoUser));
+
+            // Create Firestore documents for demo users if they don't exist
+            try {
+              await ensureFirestoreReady();
+              await ensureRequiredCollectionsExist();
+
+              const db = getFirestoreInstance();
+
+              if (db) {
+                // Check if user document exists
+                const userRef = doc(db, "users", demoUser.id);
+                const userDoc = await getDoc(userRef);
+
+                if (!userDoc.exists()) {
+                  // Create user document with retry mechanism
+                  await retryFirestoreOperation(async () => {
+                    await setDoc(userRef, {
+                      id: demoUser.id,
+                      name: demoUser.name,
+                      email: demoUser.email,
+                      type: demoUser.type,
+                      isActive: true,
+                      createdAt: serverTimestamp(),
+                      updatedAt: serverTimestamp(),
+                    });
                   });
-                });
 
-                console.log(
-                  "✅ Created user document for demo user:",
-                  demoUser.id
-                );
+                  console.log(
+                    "✅ Created user document for demo user:",
+                    demoUser.id
+                  );
 
-                // Create profile document based on user type (skip for admin)
-                if (demoUser.type === "patient") {
-                  await createDefaultPatientProfile(
-                    demoUser.id,
-                    demoUser.name,
-                    demoUser.email
-                  );
-                } else if (demoUser.type === "professional") {
-                  await createDefaultProfessionalProfile(
-                    demoUser.id,
-                    demoUser.name,
-                    demoUser.email || "",
-                    demoUser.serviceType as "mental" | "sexual"
-                  );
-                } else if (demoUser.type === "admin") {
-                  console.log("✅ Admin user - no additional profile needed");
+                  // Create profile document based on user type (skip for admin)
+                  if (demoUser.type === "patient") {
+                    await createDefaultPatientProfile(
+                      demoUser.id,
+                      demoUser.name,
+                      demoUser.email
+                    );
+                  } else if (demoUser.type === "professional") {
+                    await createDefaultProfessionalProfile(
+                      demoUser.id,
+                      demoUser.name,
+                      demoUser.email || "",
+                      demoUser.serviceType as "mental" | "sexual"
+                    );
+                  } else if (demoUser.type === "admin") {
+                    console.log("✅ Admin user - no additional profile needed");
+                  }
                 }
               }
+            } catch (error) {
+              console.warn(
+                "⚠️ Could not create Firestore documents for demo user:",
+                error
+              );
+              // Continue anyway, as this is just for demo purposes
             }
-          } catch (error) {
-            console.warn(
-              "⚠️ Could not create Firestore documents for demo user:",
-              error
-            );
-            // Continue anyway, as this is just for demo purposes
-          }
 
-          return;
-        } else {
-          throw new Error("Identifiants incorrects");
+            return;
+          } else {
+            throw new Error("Identifiants incorrects");
+          }
         }
       }
     } catch (error) {
