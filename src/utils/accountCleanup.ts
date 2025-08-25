@@ -1,5 +1,6 @@
 import { getAuth, deleteUser, signInWithEmailAndPassword } from "firebase/auth";
 import { getFirestoreInstance, ensureFirestoreReady } from "./firebase";
+import { collection, doc, getDoc } from "firebase/firestore";
 
 /**
  * 🔧 Utilitaire de nettoyage des comptes orphelins
@@ -49,9 +50,10 @@ export async function checkOrphanedAccount(
     }
     
     // Vérifier dans la collection users
-    const userDoc = await db.collection("users").doc(firebaseUser.uid).get();
+    const userDocRef = doc(db, "users", firebaseUser.uid);
+    const userDoc = await getDoc(userDocRef);
     
-    if (userDoc.exists) {
+    if (userDoc.exists()) {
       // Le compte existe dans Firestore, pas orphelin
       return {
         exists: true,
