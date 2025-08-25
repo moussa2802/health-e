@@ -1,4 +1,4 @@
-import { getAuth } from 'firebase/auth';
+import { getAuth } from "firebase/auth";
 
 // Interface pour les données de paiement
 interface PaymentData {
@@ -30,22 +30,28 @@ class PayTechService {
    */
   async initiatePayment(paymentData: PaymentData): Promise<PaymentResponse> {
     try {
-      console.log('🔔 [PAYTECH] Initiating payment for booking:', paymentData.bookingId);
+      console.log(
+        "🔔 [PAYTECH] Initiating payment for booking:",
+        paymentData.bookingId
+      );
 
       // Vérifier que l'utilisateur est authentifié
       const currentUser = this.auth.currentUser;
       if (!currentUser) {
-        throw new Error('Utilisateur non authentifié');
+        throw new Error("Utilisateur non authentifié");
       }
 
       // Appeler la fonction Netlify
-      const response = await fetch('/.netlify/functions/paytech-initiate-payment', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(paymentData),
-      });
+      const response = await fetch(
+        "/.netlify/functions/paytech-initiate-payment",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(paymentData),
+        }
+      );
 
       if (!response.ok) {
         throw new Error(`Erreur HTTP: ${response.status}`);
@@ -54,15 +60,14 @@ class PayTechService {
       const result = await response.json();
 
       if (result.success !== 1) {
-        throw new Error('Échec de l\'initialisation du paiement');
+        throw new Error("Échec de l'initialisation du paiement");
       }
 
-      console.log('✅ [PAYTECH] Payment initiated successfully:', result);
+      console.log("✅ [PAYTECH] Payment initiated successfully:", result);
       return result;
-
     } catch (error) {
-      console.error('❌ [PAYTECH] Error initiating payment:', error);
-      throw new Error('Erreur lors de l\'initialisation du paiement');
+      console.error("❌ [PAYTECH] Error initiating payment:", error);
+      throw new Error("Erreur lors de l'initialisation du paiement");
     }
   }
 
@@ -71,11 +76,11 @@ class PayTechService {
    */
   redirectToPayment(redirectUrl: string): void {
     try {
-      console.log('🔔 [PAYTECH] Redirecting to payment URL:', redirectUrl);
+      console.log("🔔 [PAYTECH] Redirecting to payment URL:", redirectUrl);
       window.location.href = redirectUrl;
     } catch (error) {
-      console.error('❌ [PAYTECH] Error redirecting to payment:', error);
-      throw new Error('Erreur lors de la redirection vers le paiement');
+      console.error("❌ [PAYTECH] Error redirecting to payment:", error);
+      throw new Error("Erreur lors de la redirection vers le paiement");
     }
   }
 
@@ -84,16 +89,13 @@ class PayTechService {
    */
   async checkPaymentStatus(token: string): Promise<any> {
     try {
-      console.log('🔔 [PAYTECH] Checking payment status for token:', token);
-
       // Cette fonction pourrait être implémentée si PayTech fournit une API pour vérifier le statut
       // Pour l'instant, on se base sur les webhooks IPN
-      
-      // TODO: Implémenter la vérification du statut si l'API PayTech le permet
-      throw new Error('Vérification du statut non implémentée - utilisez les webhooks IPN');
-
+      throw new Error(
+        "Vérification du statut non implémentée - utilisez les webhooks IPN"
+      );
     } catch (error) {
-      console.error('❌ [PAYTECH] Error checking payment status:', error);
+      console.error("❌ [PAYTECH] Error checking payment status:", error);
       throw error;
     }
   }
@@ -110,8 +112,14 @@ class PayTechService {
    * Valider les données de paiement
    */
   validatePaymentData(data: PaymentData): boolean {
-    const requiredFields = ['amount', 'bookingId', 'customerEmail', 'customerName', 'professionalId'];
-    
+    const requiredFields = [
+      "amount",
+      "bookingId",
+      "customerEmail",
+      "customerName",
+      "professionalId",
+    ];
+
     for (const field of requiredFields) {
       if (!data[field as keyof PaymentData]) {
         console.error(`❌ [PAYTECH] Missing required field: ${field}`);
@@ -121,12 +129,12 @@ class PayTechService {
 
     // Le numéro de téléphone est optionnel, utiliser une valeur par défaut si manquant
     if (!data.customerPhone) {
-      console.log('⚠️ [PAYTECH] No phone number provided, using default');
-      data.customerPhone = '770000000'; // Numéro par défaut pour PayTech
+      console.log("⚠️ [PAYTECH] No phone number provided, using default");
+      data.customerPhone = "770000000"; // Numéro par défaut pour PayTech
     }
 
     if (data.amount <= 0) {
-      console.error('❌ [PAYTECH] Invalid amount:', data.amount);
+      console.error("❌ [PAYTECH] Invalid amount:", data.amount);
       return false;
     }
 

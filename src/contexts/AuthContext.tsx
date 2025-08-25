@@ -273,6 +273,42 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     return () => unsubscribe();
   }, []);
 
+  // ✅ SYNC: Listen for real-time name updates from profile changes
+  useEffect(() => {
+    const handleNameUpdate = (event: CustomEvent) => {
+      const { userId, newName } = event.detail;
+
+      // Only update if this is the current user
+      if (currentUser && currentUser.id === userId) {
+        console.log("🔄 [AUTH DEBUG] Real-time name update received:", newName);
+        setCurrentUser((prev) => (prev ? { ...prev, name: newName } : null));
+
+        // Also update localStorage
+        const savedUser = localStorage.getItem("health-e-user");
+        if (savedUser) {
+          const userData = JSON.parse(savedUser);
+          userData.name = newName;
+          localStorage.setItem("health-e-user", JSON.stringify(userData));
+        }
+
+        console.log("✅ [AUTH DEBUG] Name updated in real-time:", newName);
+      }
+    };
+
+    // Add event listener for real-time name updates
+    window.addEventListener(
+      "user-name-updated",
+      handleNameUpdate as EventListener
+    );
+
+    return () => {
+      window.removeEventListener(
+        "user-name-updated",
+        handleNameUpdate as EventListener
+      );
+    };
+  }, [currentUser]);
+
   const login = async (
     email: string,
     password: string,

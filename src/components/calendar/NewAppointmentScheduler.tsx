@@ -168,40 +168,17 @@ const NewAppointmentScheduler: React.FC<NewAppointmentSchedulerProps> = ({
   useEffect(() => {
     const fetchReservedSlots = async () => {
       if (!professionalId) {
-        console.log(
-          "🔍 [RESERVED DEBUG] No professionalId provided, skipping reserved slots fetch"
-        );
         return;
       }
 
       // Skip if user is not authenticated (for public view)
       if (!currentUser && !isProfessional) {
-        console.log(
-          "🔍 [RESERVED DEBUG] User not authenticated, skipping reserved slots fetch"
-        );
         return;
       }
 
       try {
-        console.log(
-          "🔍 [RESERVED DEBUG] Loading reserved slots for professional:",
-          professionalId
-        );
-        console.log("🔍 [RESERVED DEBUG] Current user:", currentUser?.id);
-
         // Get all bookings for this professional
         const bookings = await getUserBookings(professionalId, "professional");
-        console.log("🔍 [RESERVED DEBUG] Fetched bookings:", bookings.length);
-
-        if (bookings.length > 0) {
-          console.log("🔍 [RESERVED DEBUG] Sample booking:", {
-            id: bookings[0].id,
-            date: bookings[0].date,
-            startTime: bookings[0].startTime,
-            status: bookings[0].status,
-            patientName: bookings[0].patientName,
-          });
-        }
 
         // Filter active bookings (already filtered by professional in getUserBookings)
         const reserved = bookings.filter(
@@ -210,18 +187,6 @@ const NewAppointmentScheduler: React.FC<NewAppointmentSchedulerProps> = ({
             b.status === "confirmé" ||
             b.status === "confirmed"
         );
-
-        console.log(
-          `✅ [RESERVED DEBUG] Found ${reserved.length} active reservations out of ${bookings.length} total`
-        );
-
-        if (reserved.length > 0) {
-          console.log("🔍 [RESERVED DEBUG] Sample reserved booking:", {
-            date: reserved[0].date,
-            startTime: reserved[0].startTime,
-            status: reserved[0].status,
-          });
-        }
 
         // Créer des clés au format YYYY-MM-DD-HH:MM pour chaque réservation
         const reservedKeys = reserved.map((b) =>

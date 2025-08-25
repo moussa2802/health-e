@@ -51,32 +51,70 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
   const getPageTitle = () => {
     const path = window.location.pathname;
     const titles: { [key: string]: string } = {
-      '/admin/dashboard': language === 'fr' ? 'Tableau de bord' : 'Dashboard',
-      '/admin/users': language === 'fr' ? 'Gestion des utilisateurs' : 'User Management',
-      '/admin/patients': language === 'fr' ? 'Gestion des patients' : 'Patient Management',
-      '/admin/appointments': language === 'fr' ? 'Gestion des consultations' : 'Appointment Management',
-      '/admin/statistics': language === 'fr' ? 'Statistiques' : 'Statistics',
-      '/admin/content': language === 'fr' ? 'Gestion du contenu' : 'Content Management',
-      '/admin/messages': language === 'fr' ? 'Messagerie' : 'Messaging',
-      '/admin/support': language === 'fr' ? 'Support et modération' : 'Support & Moderation',
+      "/admin/dashboard": language === "fr" ? "Tableau de bord" : "Dashboard",
+      "/admin/users":
+        language === "fr" ? "Gestion des utilisateurs" : "User Management",
+      "/admin/patients":
+        language === "fr" ? "Gestion des patients" : "Patient Management",
+      "/admin/appointments":
+        language === "fr"
+          ? "Gestion des consultations"
+          : "Appointment Management",
+      "/admin/statistics": language === "fr" ? "Statistiques" : "Statistics",
+      "/admin/content":
+        language === "fr" ? "Gestion du contenu" : "Content Management",
+      "/admin/messages": language === "fr" ? "Messagerie" : "Messaging",
+      "/admin/support":
+        language === "fr" ? "Support et modération" : "Support & Moderation",
     };
-    return titles[path] || (language === 'fr' ? 'Administration' : 'Administration');
+    return (
+      titles[path] || (language === "fr" ? "Administration" : "Administration")
+    );
   };
 
   // Fonction pour obtenir la description de la page
   const getPageDescription = () => {
     const path = window.location.pathname;
     const descriptions: { [key: string]: string } = {
-      '/admin/dashboard': language === 'fr' ? 'Vue d\'ensemble de la plateforme Health-e' : 'Overview of the Health-e platform',
-      '/admin/users': language === 'fr' ? 'Gérez les comptes utilisateurs et leurs permissions' : 'Manage user accounts and their permissions',
-      '/admin/patients': language === 'fr' ? 'Suivez et gérez les dossiers patients' : 'Track and manage patient records',
-      '/admin/appointments': language === 'fr' ? 'Surveillez et gérez les consultations' : 'Monitor and manage consultations',
-      '/admin/statistics': language === 'fr' ? 'Analysez les données et performances de la plateforme' : 'Analyze platform data and performance',
-      '/admin/content': language === 'fr' ? 'Modérez et gérez le contenu de la plateforme' : 'Moderate and manage platform content',
-      '/admin/messages': language === 'fr' ? 'Communiquez avec les utilisateurs et professionnels' : 'Communicate with users and professionals',
-      '/admin/support': language === 'fr' ? 'Assistez les utilisateurs et gérez les signalements' : 'Assist users and manage reports',
+      "/admin/dashboard":
+        language === "fr"
+          ? "Vue d'ensemble de la plateforme Health-e"
+          : "Overview of the Health-e platform",
+      "/admin/users":
+        language === "fr"
+          ? "Gérez les comptes utilisateurs et leurs permissions"
+          : "Manage user accounts and their permissions",
+      "/admin/patients":
+        language === "fr"
+          ? "Suivez et gérez les dossiers patients"
+          : "Track and manage patient records",
+      "/admin/appointments":
+        language === "fr"
+          ? "Surveillez et gérez les consultations"
+          : "Monitor and manage consultations",
+      "/admin/statistics":
+        language === "fr"
+          ? "Analysez les données et performances de la plateforme"
+          : "Analyze platform data and performance",
+      "/admin/content":
+        language === "fr"
+          ? "Modérez et gérez le contenu de la plateforme"
+          : "Moderate and manage platform content",
+      "/admin/messages":
+        language === "fr"
+          ? "Communiquez avec les utilisateurs et professionnels"
+          : "Communicate with users and professionals",
+      "/admin/support":
+        language === "fr"
+          ? "Assistez les utilisateurs et gérez les signalements"
+          : "Assist users and manage reports",
     };
-    return descriptions[path] || (language === 'fr' ? 'Interface d\'administration de Health-e' : 'Health-e administration interface');
+    return (
+      descriptions[path] ||
+      (language === "fr"
+        ? "Interface d'administration de Health-e"
+        : "Health-e administration interface")
+    );
   };
 
   const handleLogout = () => {
@@ -84,7 +122,6 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
 
     // Nettoyer les listeners de notifications avant la déconnexion
     if (unsubscribeRef.current) {
-      console.log("🧹 [ADMIN DEBUG] Cleaning up notification subscription");
       unsubscribeRef.current();
       unsubscribeRef.current = null;
     }
@@ -118,19 +155,8 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
   useEffect(() => {
     if (!currentUser?.id) return;
 
-    console.log(
-      "🔔 [ADMIN DEBUG] Starting notification fetch for user:",
-      currentUser.id
-    );
-    console.log("🔔 [ADMIN DEBUG] User type:", currentUser.type);
-    console.log("🔔 [ADMIN DEBUG] User object:", currentUser);
-
     const fetchNotif = async () => {
-      console.log("👤 Admin UID pour notifications :", currentUser.id);
-      console.log("🔍 Type d'utilisateur :", currentUser.type);
-
       try {
-        console.log("🔔 [ADMIN DEBUG] About to call getAdminNotifications");
         // Utiliser le service de notifications standard au lieu de getAdminNotifications
         const allNotif: Notification[] = [];
 
@@ -211,62 +237,62 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
 
             {notifDropdownOpen && (
               <div
-                  className="absolute right-0 mt-2 w-80 bg-white shadow-xl rounded-lg z-50 max-h-96 overflow-y-auto border"
-                  onClick={(e) => e.stopPropagation()} // 👈 éviter que ça se ferme quand tu cliques dedans
-                >
-                  {allNotifications.length > 0 ? (
-                    allNotifications.map((notif, index) => (
-                      <button
-                        key={index}
-                        onClick={async () => {
-                          await markNotificationAsRead(notif.id);
-                          setUnreadNotifications((prev) =>
-                            prev.filter((n) => n.id !== notif.id)
-                          );
+                className="absolute right-0 mt-2 w-80 bg-white shadow-xl rounded-lg z-50 max-h-96 overflow-y-auto border"
+                onClick={(e) => e.stopPropagation()} // 👈 éviter que ça se ferme quand tu cliques dedans
+              >
+                {allNotifications.length > 0 ? (
+                  allNotifications.map((notif, index) => (
+                    <button
+                      key={index}
+                      onClick={async () => {
+                        await markNotificationAsRead(notif.id);
+                        setUnreadNotifications((prev) =>
+                          prev.filter((n) => n.id !== notif.id)
+                        );
 
-                          if (notif.type === "message") {
-                            navigate("/admin/messages");
-                          } else if (notif.type === "nouveau_professionnel") {
-                            navigate("/admin/utilisateurs");
+                        if (notif.type === "message") {
+                          navigate("/admin/messages");
+                        } else if (notif.type === "nouveau_professionnel") {
+                          navigate("/admin/utilisateurs");
+                        }
+
+                        setNotifDropdownOpen(false);
+                      }}
+                      className={`w-full text-left px-4 py-2 border-b hover:bg-gray-100 ${
+                        notif.read
+                          ? "bg-gray-100 text-gray-500"
+                          : "bg-white font-medium"
+                      }`}
+                    >
+                      <div className="text-sm">{notif.title}</div>
+                      <div className="text-xs">{notif.content}</div>
+                      <div className="text-xs text-gray-400">
+                        {(() => {
+                          const createdAt = notif.createdAt;
+                          if (!createdAt) return "Date inconnue";
+                          if (
+                            typeof createdAt === "object" &&
+                            "seconds" in createdAt &&
+                            typeof createdAt.seconds === "number"
+                          ) {
+                            // Firestore Timestamp ou objet similaire
+                            return new Date(
+                              createdAt.seconds * 1000
+                            ).toLocaleString();
+                          } else if (createdAt instanceof Date) {
+                            return createdAt.toLocaleString();
                           }
-
-                          setNotifDropdownOpen(false);
-                        }}
-                        className={`w-full text-left px-4 py-2 border-b hover:bg-gray-100 ${
-                          notif.read
-                            ? "bg-gray-100 text-gray-500"
-                            : "bg-white font-medium"
-                        }`}
-                      >
-                        <div className="text-sm">{notif.title}</div>
-                        <div className="text-xs">{notif.content}</div>
-                        <div className="text-xs text-gray-400">
-                          {(() => {
-                            const createdAt = notif.createdAt;
-                            if (!createdAt) return "Date inconnue";
-                            if (
-                              typeof createdAt === "object" &&
-                              "seconds" in createdAt &&
-                              typeof createdAt.seconds === "number"
-                            ) {
-                              // Firestore Timestamp ou objet similaire
-                              return new Date(
-                                createdAt.seconds * 1000
-                              ).toLocaleString();
-                            } else if (createdAt instanceof Date) {
-                              return createdAt.toLocaleString();
-                            }
-                            return "Date inconnue";
-                          })()}
-                        </div>
-                      </button>
-                    ))
-                  ) : (
-                    <div className="p-4 text-sm text-gray-500">
-                      Aucune notification
-                    </div>
-                  )}
-                </div>
+                          return "Date inconnue";
+                        })()}
+                      </div>
+                    </button>
+                  ))
+                ) : (
+                  <div className="p-4 text-sm text-gray-500">
+                    Aucune notification
+                  </div>
+                )}
+              </div>
             )}
           </div>
 
@@ -335,11 +361,9 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
               </div>
             </div>
           </div>
-          
+
           {/* Page Content */}
-          <div className="p-6">
-            {children}
-          </div>
+          <div className="p-6">{children}</div>
         </main>
       </div>
 

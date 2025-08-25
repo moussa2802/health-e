@@ -68,7 +68,9 @@ const FinancialDetails = lazy(
 const ProtectedRoute = lazy(() => import("./components/auth/ProtectedRoute"));
 const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard"));
 const AdminUsers = lazy(() => import("./pages/admin/AdminUsers"));
-const AdminProfessionals = lazy(() => import("./pages/admin/AdminProfessionals"));
+const AdminProfessionals = lazy(
+  () => import("./pages/admin/AdminProfessionals")
+);
 const AdminPatients = lazy(() => import("./pages/admin/AdminPatients"));
 const AdminAppointments = lazy(() => import("./pages/admin/AdminAppointments"));
 const AdminStatistics = lazy(() => import("./pages/admin/AdminStatistics"));
@@ -206,14 +208,8 @@ function App() {
           event.error.message.includes("client has already been terminated") ||
           event.error.message.includes("Unexpected state"))
       ) {
-        console.error(
-          "🚨 Global Firestore internal error detected:",
-          event.error
-        );
-
         // Prevent multiple reset attempts in quick succession
         if (resetAttemptedRef.current) {
-          console.log("⚠️ Reset already attempted recently, skipping");
           return;
         }
 

@@ -631,6 +631,25 @@ export async function updatePatientProfile(
       });
     });
 
+    // ✅ SYNC: Also update the user document to keep authentication context in sync
+    if (updates.name) {
+      const userRef = doc(db, "users", patientId);
+      await updateDoc(userRef, {
+        name: updates.name,
+        updatedAt: serverTimestamp(),
+      });
+      console.log("✅ User document name synchronized:", updates.name);
+
+      // ✅ FORCE SYNC: Trigger a custom event to notify the auth context
+      if (typeof window !== "undefined") {
+        const syncEvent = new CustomEvent("user-name-updated", {
+          detail: { userId: patientId, newName: updates.name },
+        });
+        window.dispatchEvent(syncEvent);
+        console.log("✅ Custom event dispatched for immediate sync");
+      }
+    }
+
     console.log("✅ Patient profile updated successfully");
   } catch (error) {
     console.error("❌ Error updating patient profile:", error);

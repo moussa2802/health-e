@@ -109,32 +109,16 @@ const PatientsList: React.FC = () => {
         });
 
         // Fetch bookings to enrich patient data
-        console.log(
-          "👥 [PATIENTS LIST DEBUG] Fetching bookings for enrichment..."
-        );
         const bookings = await getBookings();
-        console.log(
-          "👥 [PATIENTS LIST DEBUG] Bookings fetched for enrichment:",
-          bookings.length
-        );
 
         // Note: Booking enrichment logic removed as nextAppointment is not available in Booking type
 
         const patientsList = Array.from(patientMap.values());
-        console.log(
-          "👥 [PATIENTS LIST DEBUG] Final patient list:",
-          patientsList.length,
-          "patients with medical records"
-        );
 
         // Verify patients with medical records
         const verifiedPatients = patientsList.filter(
           (patient) =>
             patient.medicalRecords && patient.medicalRecords.length > 0
-        );
-        console.log(
-          "👥 [PATIENTS LIST DEBUG] Verified patients with medical records:",
-          verifiedPatients.length
         );
 
         setPatients(verifiedPatients);

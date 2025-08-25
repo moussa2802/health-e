@@ -200,26 +200,12 @@ const ConsultationRoom: React.FC = () => {
 
   // Initialize Jitsi Meet when script is loaded
   useEffect(() => {
-    console.log("🧪 DEBUG : jitsiLoaded =", jitsiLoaded);
-    console.log("🧪 DEBUG : roomId =", roomId);
-    console.log("🧪 DEBUG : currentUser =", currentUser);
-    console.log(
-      "🧪 DEBUG : jitsiContainerRef.current =",
-      jitsiContainerRef.current
-    );
-    console.log("🧪 DEBUG : jitsiApiInitialized =", jitsiApiInitialized);
-
     if (!jitsiLoaded || !roomId || !currentUser || !jitsiContainerRef.current)
       return;
 
     try {
-      console.log("🚀 Initializing Jitsi Meet API");
-
       // Generate a unique room name based on the consultation ID
-      console.log("🔁 Consultation Room ID utilisé pour Jitsi:", roomId);
       const roomName = `health-e-${roomId}`;
-      console.log("📺 Room ID depuis l'URL :", roomId);
-      console.log("📺 Nom final de la salle Jitsi:", roomName);
 
       // Initialize Jitsi Meet API
       const domain = "meet.health-e.sn";

@@ -57,7 +57,7 @@ const WelcomeBanner: React.FC<{ name: string }> = ({ name }) => {
       <div className="absolute inset-0 bg-black/10"></div>
       <div className="relative z-10">
         <h1 className="text-3xl font-bold mb-2">
-          {greeting}, {displayName.split(" ")[0]} 👋
+          {greeting}, {displayName} 👋
         </h1>
         <p className="text-blue-50 text-lg opacity-90">
           Voici votre tableau de bord professionnel
@@ -1023,9 +1023,7 @@ const ProfessionalDashboard: React.FC = () => {
         )}
 
         {/* Welcome Banner */}
-        <WelcomeBanner
-          name={currentUser?.name?.split(" ")[0] || "Professionnel"}
-        />
+        <WelcomeBanner name={currentUser?.name || "Professionnel"} />
 
         {/* Connection Status Banner */}
         {(connectionError || error) && (

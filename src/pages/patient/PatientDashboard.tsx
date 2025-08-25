@@ -1245,13 +1245,16 @@ const PatientDashboard: React.FC = () => {
                 <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
                   <FileText className="h-8 w-8 text-gray-400" />
                 </div>
-                <p className="text-gray-500 font-medium">
+                <p className="text-gray-500 font-medium mb-4">
                   Vous n'avez pas encore de dossiers médicaux.
                 </p>
-                <p className="text-gray-400 text-sm mt-2">
-                  Vos dossiers médicaux apparaîtront ici après vos
-                  consultations.
-                </p>
+                <button
+                  onClick={() => setShowMedicalRecordModal(true)}
+                  className="bg-gradient-to-r from-green-500 to-green-600 text-white px-6 py-2.5 rounded-xl font-semibold hover:from-green-600 hover:to-green-700 transition-all duration-200 shadow-md hover:shadow-lg flex items-center mx-auto"
+                >
+                  <FileText className="h-4 w-4 mr-2" />
+                  Voir tous les dossiers
+                </button>
               </div>
             ) : null}
 

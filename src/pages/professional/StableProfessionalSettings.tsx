@@ -1,11 +1,19 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
-import { Wifi, WifiOff, Globe, AlertCircle, X, CheckCircle } from "lucide-react";
+import {
+  Wifi,
+  WifiOff,
+  Globe,
+  AlertCircle,
+  X,
+  CheckCircle,
+} from "lucide-react";
 import {
   getProfessionalProfile,
   updateProfessionalProfile,
   subscribeToProfessionalProfile,
+  type ProfessionalProfile as ServiceProfessionalProfile,
 } from "../../services/profileService";
 import {
   getFirestoreConnectionStatus,
@@ -15,27 +23,21 @@ import {
 import LoadingSpinner from "../../components/ui/LoadingSpinner";
 import StableProfileForm from "../../components/professional/StableProfileForm";
 
-interface ProfessionalProfile {
-  name: string;
-  email: string;
+// Interface locale étendue pour le formulaire
+interface LocalProfessionalProfile
+  extends Omit<ServiceProfessionalProfile, "education"> {
   phone?: string;
-  specialty: string;
-  experience: string;
-  education: string;
   bio: string;
   consultationFee: number;
-  isApproved?: boolean;
-  isActive?: boolean;
-  type?: string;
-  signatureUrl?: string;
-  stampUrl?: string;
-  useElectronicSignature?: boolean;
+  education: string; // string au lieu de string[]
 }
 
 const StableProfessionalSettings: React.FC = () => {
   const { currentUser } = useAuth();
   const navigate = useNavigate();
-  const [profileData, setProfileData] = useState<ProfessionalProfile>({
+  const [profileData, setProfileData] = useState<LocalProfessionalProfile>({
+    id: "",
+    userId: "",
     name: "",
     email: "",
     phone: "",
@@ -52,6 +54,16 @@ const StableProfessionalSettings: React.FC = () => {
     useElectronicSignature: false,
     languages: ["fr"],
     profileImage: "",
+    description: "",
+    price: null,
+    currency: "FCFA",
+    offersFreeConsultations: false,
+    availability: [],
+    isAvailableNow: false,
+    rating: 0,
+    reviews: 0,
+    createdAt: {} as any,
+    updatedAt: {} as any,
   });
   const [loading, setLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -97,14 +109,18 @@ const StableProfessionalSettings: React.FC = () => {
         const profile = await getProfessionalProfile(currentUser.id);
         if (profile) {
           setProfileData({
+            id: profile.id || "",
+            userId: profile.userId || "",
             name: profile.name || "",
             email: profile.email || "",
-            phone: profile.phone || "",
+            phone: "", // Pas de phone dans le service
             specialty: profile.specialty || "Psychologue",
             experience: profile.experience || "",
-            education: Array.isArray(profile.education) ? profile.education.join(", ") : "",
-            bio: profile.bio || "",
-            consultationFee: profile.consultationFee || 0,
+            education: Array.isArray(profile.education)
+              ? profile.education.join(", ")
+              : "",
+            bio: profile.description || "",
+            consultationFee: profile.price || 0,
             isApproved: profile.isApproved || false,
             isActive: profile.isActive || false,
             type: profile.type || "mental",
@@ -113,6 +129,16 @@ const StableProfessionalSettings: React.FC = () => {
             useElectronicSignature: profile.useElectronicSignature || false,
             languages: profile.languages || ["fr"],
             profileImage: profile.profileImage || "",
+            description: profile.description || "",
+            price: profile.price || null,
+            currency: profile.currency || "FCFA",
+            offersFreeConsultations: profile.offersFreeConsultations || false,
+            availability: profile.availability || [],
+            isAvailableNow: profile.isAvailableNow || false,
+            rating: profile.rating || 0,
+            reviews: profile.reviews || 0,
+            createdAt: profile.createdAt || ({} as any),
+            updatedAt: profile.updatedAt || ({} as any),
           });
         }
 
@@ -120,26 +146,43 @@ const StableProfessionalSettings: React.FC = () => {
         const unsubscribe = subscribeToProfessionalProfile(
           currentUser.id,
           (updatedProfile) => {
-                         if (updatedProfile) {
-               setProfileData({
-                 name: updatedProfile.name || "",
-                 email: updatedProfile.email || "",
-                 phone: updatedProfile.phone || "",
-                 specialty: updatedProfile.specialty || "Psychologue",
-                 experience: updatedProfile.experience || "",
-                 education: Array.isArray(updatedProfile.education) ? updatedProfile.education.join(", ") : "",
-                 bio: updatedProfile.bio || "",
-                 consultationFee: updatedProfile.consultationFee || 0,
-                 isApproved: updatedProfile.isApproved || false,
-                 isActive: updatedProfile.isActive || false,
-                 type: updatedProfile.type || "mental",
-                 signatureUrl: updatedProfile.signatureUrl || "",
-                 stampUrl: updatedProfile.stampUrl || "",
-                 useElectronicSignature: updatedProfile.useElectronicSignature || false,
-                 languages: updatedProfile.languages || ["fr"],
-                 profileImage: updatedProfile.profileImage || "",
-               });
-             }
+            if (updatedProfile) {
+              setProfileData((prev) => ({
+                ...prev,
+                id: updatedProfile.id || "",
+                userId: updatedProfile.userId || "",
+                name: updatedProfile.name || "",
+                email: updatedProfile.email || "",
+                phone: "", // Pas de phone dans le service
+                specialty: updatedProfile.specialty || "Psychologue",
+                experience: updatedProfile.experience || "",
+                education: Array.isArray(updatedProfile.education)
+                  ? updatedProfile.education.join(", ")
+                  : "",
+                bio: updatedProfile.description || "",
+                consultationFee: updatedProfile.price || 0,
+                isApproved: updatedProfile.isApproved || false,
+                isActive: updatedProfile.isActive || false,
+                type: updatedProfile.type || "mental",
+                signatureUrl: updatedProfile.signatureUrl || "",
+                stampUrl: updatedProfile.stampUrl || "",
+                useElectronicSignature:
+                  updatedProfile.useElectronicSignature || false,
+                languages: updatedProfile.languages || ["fr"],
+                profileImage: updatedProfile.profileImage || "",
+                description: updatedProfile.description || "",
+                price: updatedProfile.price || null,
+                currency: updatedProfile.currency || "FCFA",
+                offersFreeConsultations:
+                  updatedProfile.offersFreeConsultations || false,
+                availability: updatedProfile.availability || [],
+                isAvailableNow: updatedProfile.isAvailableNow || false,
+                rating: updatedProfile.rating || 0,
+                reviews: updatedProfile.reviews || 0,
+                createdAt: updatedProfile.createdAt || ({} as any),
+                updatedAt: updatedProfile.updatedAt || ({} as any),
+              }));
+            }
           }
         );
 
@@ -168,27 +211,38 @@ const StableProfessionalSettings: React.FC = () => {
   };
 
   // Fonction de sauvegarde
-  const handleSaveProfile = async (updatedProfile: ProfessionalProfile) => {
+  const handleSaveProfile = async (
+    updatedProfile: LocalProfessionalProfile
+  ) => {
     if (!currentUser?.id) return;
 
     try {
       setIsSaving(true);
       setErrorMessage("");
 
+      // Vérifier que l'image de profil respecte les limites Firestore
+      if (
+        updatedProfile.profileImage &&
+        updatedProfile.profileImage.length > 900000
+      ) {
+        throw new Error(
+          "L'image de profil est trop grande. Veuillez la compresser ou en choisir une plus petite."
+        );
+      }
+
       await updateProfessionalProfile(currentUser.id, {
         name: updatedProfile.name,
-        phone: updatedProfile.phone,
         specialty: updatedProfile.specialty,
         experience: updatedProfile.experience,
         education: updatedProfile.education.split(", ").filter(Boolean),
-        bio: updatedProfile.bio,
-        consultationFee: updatedProfile.consultationFee,
-        signatureUrl: updatedProfile.signatureUrl,
-        stampUrl: updatedProfile.stampUrl,
-        useElectronicSignature: updatedProfile.useElectronicSignature,
+        description: updatedProfile.bio, // mapper bio vers description
         languages: updatedProfile.languages,
         profileImage: updatedProfile.profileImage,
         type: updatedProfile.type,
+        price: updatedProfile.consultationFee, // ✅ SYNC: Ajouter le tarif des consultations
+        signatureUrl: updatedProfile.signatureUrl,
+        stampUrl: updatedProfile.stampUrl,
+        useElectronicSignature: updatedProfile.useElectronicSignature,
       });
 
       setSaveSuccess(true);
@@ -355,8 +409,13 @@ const StableProfessionalSettings: React.FC = () => {
                           isActive: !prev.isActive,
                         }));
                       } catch (error) {
-                        console.error("Erreur lors de la mise à jour du statut:", error);
-                        setErrorMessage("Erreur lors de la mise à jour du statut");
+                        console.error(
+                          "Erreur lors de la mise à jour du statut:",
+                          error
+                        );
+                        setErrorMessage(
+                          "Erreur lors de la mise à jour du statut"
+                        );
                       }
                     }
                   }}

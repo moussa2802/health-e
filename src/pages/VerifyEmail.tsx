@@ -31,53 +31,22 @@ const VerifyEmail: React.FC = () => {
   } = useEmailVerification();
 
   // Debug function to check localStorage
-  const debugLocalStorage = () => {
-    console.log("🔍 [VERIFY DEBUG] All localStorage keys:");
-    for (let i = 0; i < localStorage.length; i++) {
-      const key = localStorage.key(i);
-      if (key) {
-        console.log(`🔍 [VERIFY DEBUG] ${key}: ${localStorage.getItem(key)}`);
-      }
-    }
-  };
 
   // Check verification status periodically
   useEffect(() => {
-    console.log("🔄 [VERIFY DEBUG] useEffect started");
-    console.log("🔄 [VERIFY DEBUG] auth.currentUser:", auth.currentUser?.uid);
-    console.log(
-      "🔄 [VERIFY DEBUG] auth.currentUser.emailVerified:",
-      auth.currentUser?.emailVerified
-    );
-
     if (!auth.currentUser) return;
 
     const interval = setInterval(async () => {
-      console.log("🔄 [VERIFY DEBUG] Checking verification status...");
       try {
         await auth.currentUser?.reload();
-        console.log(
-          "🔄 [VERIFY DEBUG] User reloaded, emailVerified:",
-          auth.currentUser?.emailVerified
-        );
 
         if (auth.currentUser?.emailVerified) {
-          console.log(
-            "✅ [VERIFY DEBUG] Email verified! Starting account setup..."
-          );
-
           // Éviter de traiter plusieurs fois la même vérification
           if (checkingVerification) {
-            console.log(
-              "⏭️ [VERIFY DEBUG] Already processing verification, skipping..."
-            );
             return;
           }
 
           setCheckingVerification(true);
-
-          // Debug localStorage before processing
-          debugLocalStorage();
 
           const uid = localStorage.getItem("pending-user-id");
           const email = localStorage.getItem("pending-user-email");
@@ -87,13 +56,6 @@ const VerifyEmail: React.FC = () => {
             | "professional";
           const serviceType =
             localStorage.getItem("pending-service-type") || "mental";
-
-          console.log("📋 [VERIFY DEBUG] Retrieved from localStorage:");
-          console.log("📋 [VERIFY DEBUG] uid:", uid);
-          console.log("📋 [VERIFY DEBUG] email:", email);
-          console.log("📋 [VERIFY DEBUG] name:", name);
-          console.log("📋 [VERIFY DEBUG] userType:", userType);
-          console.log("📋 [VERIFY DEBUG] serviceType:", serviceType);
 
           if (uid && email && name && userType) {
             console.log(
@@ -116,75 +78,38 @@ const VerifyEmail: React.FC = () => {
                 createdAt: serverTimestamp(),
                 updatedAt: serverTimestamp(),
               });
-              console.log(
-                "✅ [VERIFY DEBUG] User document created successfully"
-              );
-
               if (userType === "patient") {
-                console.log("👤 [VERIFY DEBUG] Creating patient profile...");
                 await createDefaultPatientProfile(uid, name, email);
-                console.log("✅ [VERIFY DEBUG] Patient profile created");
               } else {
-                console.log(
-                  "👨‍⚕️ [VERIFY DEBUG] Creating professional profile..."
-                );
                 await createDefaultProfessionalProfile(
                   uid,
                   name,
                   email,
                   serviceType as "mental" | "sexual"
                 );
-                console.log("✅ [VERIFY DEBUG] Professional profile created");
               }
-
-              console.log("✅ Firestore documents created");
             } catch (error) {
               console.error("❌ Firestore creation error:", error);
-              console.error(
-                "❌ [VERIFY DEBUG] Firestore error details:",
-                error
-              );
             }
           } else {
-            console.error(
-              "❌ [VERIFY DEBUG] Missing required data for account setup:"
-            );
-            console.error("❌ [VERIFY DEBUG] uid:", uid);
-            console.error("❌ [VERIFY DEBUG] email:", email);
-            console.error("❌ [VERIFY DEBUG] name:", name);
-            console.error("❌ [VERIFY DEBUG] userType:", userType);
+            console.error("❌ Missing required data for account setup");
           }
 
           // Force reload the current user to update the auth context
-          console.log(
-            "🔄 [VERIFY DEBUG] Forcing user reload to update auth context..."
-          );
           try {
             await auth.currentUser?.reload();
-            console.log("✅ [VERIFY DEBUG] User reloaded successfully");
           } catch (reloadError) {
-            console.warn(
-              "⚠️ [VERIFY DEBUG] Could not reload user:",
-              reloadError
-            );
+            console.warn("⚠️ Could not reload user:", reloadError);
           }
 
           // Force refresh the auth context
-          console.log("🔄 [VERIFY DEBUG] Refreshing auth context...");
           try {
             await refreshUser();
-            console.log(
-              "✅ [VERIFY DEBUG] Auth context refreshed successfully"
-            );
           } catch (refreshError) {
-            console.warn(
-              "⚠️ [VERIFY DEBUG] Could not refresh auth context:",
-              refreshError
-            );
+            console.warn("⚠️ Could not refresh auth context:", refreshError);
           }
 
           // Wait a bit for currentUser to update
-          console.log("⏳ [VERIFY DEBUG] Waiting for currentUser to update...");
           await new Promise((resolve) => setTimeout(resolve, 3000));
 
           // Determine user type for redirection
@@ -193,27 +118,13 @@ const VerifyEmail: React.FC = () => {
           // 1. Tenter depuis currentUser (contexte)
           if (currentUser?.type) {
             finalUserType = currentUser.type;
-            console.log(
-              "✅ [VERIFY DEBUG] Using currentUser.type:",
-              finalUserType
-            );
           } else if (userType) {
             // 2. Sinon, utiliser userType fourni (via localStorage plus haut)
             finalUserType = userType;
-            console.log(
-              "✅ [VERIFY DEBUG] Using userType from localStorage:",
-              finalUserType
-            );
           } else {
             // 3. En dernier recours, lire à nouveau depuis localStorage
             finalUserType = localStorage.getItem("pending-user-type");
-            console.log(
-              "✅ [VERIFY DEBUG] Using userType from localStorage (fallback):",
-              finalUserType
-            );
           }
-
-          console.log("🎯 [VERIFY DEBUG] Determining redirect:");
           console.log(
             "🎯 [VERIFY DEBUG] currentUser?.type:",
             currentUser?.type
