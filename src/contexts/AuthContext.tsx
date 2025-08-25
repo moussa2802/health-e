@@ -27,7 +27,7 @@ import {
   cleanAllFirebaseStorage,
   resetFirestoreConnection,
 } from "../utils/firebase";
-import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
+import { doc, getDoc, setDoc, serverTimestamp, collection, query, where, getDocs } from "firebase/firestore";
 import { app } from "../utils/firebase";
 import { useNavigate } from "react-router-dom";
 
@@ -411,7 +411,31 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
             case 'auth/invalid-email':
               throw new Error("Format d'email invalide. Vérifiez votre adresse email.");
             case 'auth/invalid-credential':
-              throw new Error("Email ou mot de passe incorrect. Vérifiez vos identifiants.");
+              // Pour être plus précis, vérifions d'abord si l'email existe
+              try {
+                await ensureFirestoreReady();
+                const db = getFirestoreInstance();
+                if (db) {
+                  // Chercher l'utilisateur par email
+                  const usersRef = collection(db, "users");
+                  const q = query(usersRef, where("email", "==", email));
+                  const querySnapshot = await getDocs(q);
+                  
+                  if (querySnapshot.empty) {
+                    // L'email n'existe pas
+                    throw new Error("Aucun compte trouvé avec cet email. Vérifiez votre adresse email ou créez un compte.");
+                  } else {
+                    // L'email existe, donc c'est le mot de passe qui est incorrect
+                    throw new Error("Mot de passe incorrect. Vérifiez votre mot de passe.");
+                  }
+                } else {
+                  // Fallback si Firestore n'est pas disponible
+                  throw new Error("Email ou mot de passe incorrect. Vérifiez vos identifiants.");
+                }
+              } catch (firestoreError) {
+                // En cas d'erreur Firestore, on reste sur le message générique
+                throw new Error("Email ou mot de passe incorrect. Vérifiez vos identifiants.");
+              }
             default:
               // Fall back to demo accounts if in development mode
               const demoUser = demoAccounts[email];
