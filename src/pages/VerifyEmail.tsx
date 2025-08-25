@@ -115,22 +115,13 @@ const VerifyEmail: React.FC = () => {
           // Determine user type for redirection
           let finalUserType: string | null = null;
 
-          // 1. Tenter depuis currentUser (contexte)
-          if (currentUser?.type) {
-            finalUserType = currentUser.type;
-          } else if (userType) {
-            // 2. Sinon, utiliser userType fourni (via localStorage plus haut)
-            finalUserType = userType;
-          } else {
-            // 3. En dernier recours, lire à nouveau depuis localStorage
-            finalUserType = localStorage.getItem("pending-user-type");
-          }
-          console.log(
-            "🎯 [VERIFY DEBUG] currentUser?.type:",
-            currentUser?.type
-          );
-          console.log("🎯 [VERIFY DEBUG] currentUser?.id:", currentUser?.id);
+          // Utiliser directement le userType du localStorage (plus fiable)
+          finalUserType = userType;
 
+          console.log(
+            "🎯 [VERIFY DEBUG] userType from localStorage:",
+            userType
+          );
           console.log("🎯 [VERIFY DEBUG] finalUserType:", finalUserType);
 
           let dashboardPath = "/";
@@ -220,6 +211,15 @@ const VerifyEmail: React.FC = () => {
               <p className="text-gray-600">
                 Cliquez sur le lien dans l'e-mail pour activer votre compte.
               </p>
+
+              <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                <p className="text-sm text-blue-800">
+                  <strong>💡 Conseil :</strong> Après avoir cliqué sur le lien
+                  de vérification dans votre email, cette page se mettra à jour
+                  automatiquement et vous serez redirigé vers votre tableau de
+                  bord.
+                </p>
+              </div>
             </>
           )}
         </div>

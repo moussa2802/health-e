@@ -230,18 +230,29 @@ const ProfessionalAccess: React.FC = () => {
         setRegisterError("");
         setIsRegistering(true);
 
-        // Stocker les données temporairement en local avant la redirection
-        localStorage.setItem("pending-user-type", "professional");
-        localStorage.setItem("pending-user-name", registerName);
-        localStorage.setItem("pending-user-email", registerEmail);
-        localStorage.setItem("pending-service-type", serviceType);
+        // Préparer les données supplémentaires
+        const additionalData = {
+          name: registerName,
+          phone: "", // À remplir plus tard
+          serviceType: serviceType,
+          specialty: "", // À remplir plus tard
+          profileImage: "",
+          consultationFee: 0,
+          isActive: false,
+          adminApproved: false,
+        };
 
+        console.log(
+          "📝 [PROFESSIONAL ACCESS] Données supplémentaires:",
+          additionalData
+        );
+
+        // ✅ CORRECTION : Appel correct avec le bon ordre des paramètres
         await register(
-          registerName,
           registerEmail,
           registerPassword,
           "professional",
-          serviceType
+          additionalData
         );
 
         // Redirection vers la page de vérification
@@ -318,13 +329,13 @@ const ProfessionalAccess: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <div 
+      <div
         className="bg-gradient-to-r from-teal-500 to-emerald-400 py-6"
         style={{
-          backdropFilter: 'blur(12px)',
-          backgroundColor: 'rgba(255, 255, 255, 0.1)',
-          borderBottomLeftRadius: '12px',
-          borderBottomRightRadius: '12px'
+          backdropFilter: "blur(12px)",
+          backgroundColor: "rgba(255, 255, 255, 0.1)",
+          borderBottomLeftRadius: "12px",
+          borderBottomRightRadius: "12px",
         }}
       >
         <div className="container mx-auto px-4">
@@ -385,10 +396,10 @@ const ProfessionalAccess: React.FC = () => {
                       onChange={(e) => setLoginEmail(e.target.value)}
                       className="w-full border-gray-300 shadow-sm focus:border-teal-500 focus:ring-teal-500"
                       style={{
-                        padding: '12px 16px',
-                        borderRadius: '12px',
-                        border: '1px solid #d1d5db',
-                        transition: 'all 0.2s ease-in-out'
+                        padding: "12px 16px",
+                        borderRadius: "12px",
+                        border: "1px solid #d1d5db",
+                        transition: "all 0.2s ease-in-out",
                       }}
                       placeholder="Votre email"
                       required
@@ -444,21 +455,23 @@ const ProfessionalAccess: React.FC = () => {
                     disabled={isLoggingIn}
                     className="w-full text-white font-semibold px-4 py-3 disabled:opacity-50 disabled:cursor-not-allowed"
                     style={{
-                      backgroundColor: '#0d9488',
-                      borderRadius: '12px',
-                      boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
-                      transition: 'all 0.2s ease-in-out'
+                      backgroundColor: "#0d9488",
+                      borderRadius: "12px",
+                      boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
+                      transition: "all 0.2s ease-in-out",
                     }}
                     onMouseEnter={(e) => {
                       if (!isLoggingIn) {
-                        e.currentTarget.style.backgroundColor = '#0f766e';
-                        e.currentTarget.style.boxShadow = '0 10px 15px -3px rgba(0, 0, 0, 0.1)';
+                        e.currentTarget.style.backgroundColor = "#0f766e";
+                        e.currentTarget.style.boxShadow =
+                          "0 10px 15px -3px rgba(0, 0, 0, 0.1)";
                       }
                     }}
                     onMouseLeave={(e) => {
                       if (!isLoggingIn) {
-                        e.currentTarget.style.backgroundColor = '#0d9488';
-                        e.currentTarget.style.boxShadow = '0 4px 6px -1px rgba(0, 0, 0, 0.1)';
+                        e.currentTarget.style.backgroundColor = "#0d9488";
+                        e.currentTarget.style.boxShadow =
+                          "0 4px 6px -1px rgba(0, 0, 0, 0.1)";
                       }
                     }}
                   >

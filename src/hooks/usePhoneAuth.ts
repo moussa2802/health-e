@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import { FirebaseError } from "firebase/app";
 import {
   RecaptchaVerifier,
   signInWithPhoneNumber,
@@ -177,20 +178,8 @@ export const usePhoneAuth = () => {
         phoneNumber
       );
 
-      // Skip check in web container environment to avoid permission issues
-      if (
-        typeof window !== "undefined" &&
-        (window.location.hostname === "localhost" ||
-          window.location.hostname.includes("webcontainer") ||
-          window.location.hostname.includes("health-e.sn"))
-      ) {
-        console.log("⚠️ Skipping phone check in web container environment");
-        return false;
-      }
-
       // Ensure Firestore is ready
       await ensureFirestoreReady();
-
       const db = getFirestoreInstance();
       if (!db) {
         console.warn(
@@ -227,11 +216,19 @@ export const usePhoneAuth = () => {
         return true;
       }
 
-      console.log("✅ Numéro disponible pour inscription");
+      // Si le numéro n'existe pas dans Firestore, permettre l'inscription
+      // même s'il existe dans Firebase Auth (comme pour l'email)
+      console.log(
+        "✅ Numéro disponible pour inscription (pas de profil Firestore)"
+      );
       return false;
     } catch (error) {
       console.error("❌ Erreur lors de la vérification du numéro:", error);
-      return false; // En cas d'erreur, on continue quand même
+
+      // En cas d'erreur de permissions, on continue quand même
+      // (surtout en mode développement)
+      console.warn("⚠️ Erreur de permissions, on continue l'inscription");
+      return false;
     }
   };
 
@@ -378,7 +375,7 @@ export const usePhoneAuth = () => {
       let errorMessage = "Erreur lors de l'envoi du code";
 
       if (err instanceof Error) {
-        const errorCode = (err as any).code;
+        const errorCode = (err as FirebaseError).code;
 
         // Handle specific reCAPTCHA errors
         if (err.message.includes("reCAPTCHA has already been rendered")) {
@@ -458,7 +455,7 @@ export const usePhoneAuth = () => {
 
       // Gestion spécifique des erreurs pour la connexion
       if (err instanceof Error) {
-        const errorCode = (err as any).code;
+        const errorCode = (err as FirebaseError).code;
         if (errorCode === "auth/too-many-requests") {
           const errorMessage =
             "Trop de tentatives pour ce numéro. Veuillez attendre 5 minutes avant de réessayer.";
@@ -492,10 +489,12 @@ export const usePhoneAuth = () => {
         phoneNumber
       );
 
-      // Vérifier si le numéro est déjà utilisé
+      // Vérifier si le numéro est déjà utilisé dans Firestore seulement
       const isPhoneUsed = await isPhoneNumberAlreadyRegistered(phoneNumber);
       if (isPhoneUsed) {
-        console.warn("⚠️ Ce numéro de téléphone est déjà utilisé");
+        console.warn(
+          "⚠️ Ce numéro de téléphone est déjà utilisé dans Firestore"
+        );
         const errorMessage =
           "Ce numéro de téléphone est déjà associé à un compte existant.";
         setError(errorMessage);
@@ -519,7 +518,7 @@ export const usePhoneAuth = () => {
 
       // Gestion spécifique des erreurs pour l'inscription
       if (err instanceof Error) {
-        const errorCode = (err as any).code;
+        const errorCode = (err as FirebaseError).code;
         if (errorCode === "auth/too-many-requests") {
           const errorMessage =
             "Trop de tentatives pour ce numéro. Veuillez attendre 5 minutes avant de réessayer.";

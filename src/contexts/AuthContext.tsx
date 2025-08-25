@@ -8,15 +8,17 @@ import React, {
 } from "react";
 import {
   getAuth,
-  createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   signOut,
   onAuthStateChanged,
   sendEmailVerification,
+  createUserWithEmailAndPassword,
   sendPasswordResetEmail,
-  deleteUser,
   User as FirebaseUser,
 } from "firebase/auth";
+import { FirebaseError } from "firebase/app";
+import { doc, setDoc, getDoc, serverTimestamp } from "firebase/firestore";
+import { getFirestore } from "firebase/firestore";
 import {
   createDefaultPatientProfile,
   createDefaultProfessionalProfile,
@@ -30,16 +32,6 @@ import {
   resetFirestoreConnection,
 } from "../utils/firebase";
 import { canUserRegister } from "../utils/accountCleanup";
-import {
-  doc,
-  getDoc,
-  setDoc,
-  serverTimestamp,
-  collection,
-  query,
-  where,
-  getDocs,
-} from "firebase/firestore";
 import { app } from "../utils/firebase";
 import { useNavigate } from "react-router-dom";
 
@@ -58,26 +50,26 @@ interface User {
   phoneNumber?: string;
 }
 
-type AuthContextType = {
+interface AuthContextType {
   currentUser: User | null;
-  userType: UserType;
-  isAuthenticated: boolean;
-  isAdmin: boolean;
   loading: boolean;
-  login: (email: string, password: string, userType: UserType) => Promise<void>;
-  loginWithPhone: (userId: string, phoneNumber: string) => Promise<void>;
+  isAuthenticated: boolean;
+  login: (email: string, password: string) => Promise<void>;
+  logout: () => Promise<void>;
   register: (
-    name: string,
     email: string,
     password: string,
-    userType: UserType,
-    serviceType?: "mental" | "sexual"
+    userType: "patient" | "professional",
+    additionalData?: any
   ) => Promise<void>;
-  createUserWithPhone: (name: string, phoneNumber: string) => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
-  logout: () => void;
   refreshUser: () => Promise<void>;
-};
+  createUserWithPhone: (
+    phone: string,
+    userType: "patient" | "professional"
+  ) => Promise<void>;
+  verifyPhoneCode: (verificationId: string, code: string) => Promise<void>;
+}
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -725,82 +717,173 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   };
 
   const register = async (
-    name: string,
-    email: string,
-    password: string,
-    userType: UserType,
-    serviceType?: "mental" | "sexual"
+    email: string, // ✅ Premier paramètre
+    password: string, // ✅ Deuxième paramètre
+    userType: "patient" | "professional", // ✅ Troisième paramètre
+    additionalData?: any // ✅ Quatrième paramètre (optionnel)
   ): Promise<void> => {
+    console.log(
+      "🚀 [REGISTER] Début de l'inscription pour:",
+      email,
+      "Type:",
+      userType
+    );
+
     try {
       // Prevent multiple simultaneous registrations
       if (registrationInProgressRef.current) {
-        console.warn(
-          "⚠️ Registration already in progress, preventing duplicate submission"
+        console.log("❌ [REGISTER] Inscription déjà en cours");
+        throw new Error(
+          "Une inscription est déjà en cours. Veuillez patienter."
         );
-        throw new Error("Inscription déjà en cours. Veuillez patienter.");
       }
 
       registrationInProgressRef.current = true;
 
-            // Vérifier si l'email existe déjà dans Firestore
+      // Vérifier si l'email existe déjà dans Firestore
+      console.log(
+        "🔍 [REGISTER] Vérification de la possibilité d'inscription..."
+      );
       const canRegister = await canUserRegister(email);
-      
+      console.log("🔍 [REGISTER] Résultat de la vérification:", canRegister);
+
       if (!canRegister) {
+        console.log("❌ [REGISTER] Inscription bloquée");
         throw new Error(
-          "Cette adresse email est déjà utilisée par un compte actif. " +
-            "Si vous avez oublié votre mot de passe, utilisez la fonction 'Mot de passe oublié'."
+          "Cette adresse email est déjà utilisée par un compte actif. Si vous avez oublié votre mot de passe, utilisez la fonction 'Mot de passe oublié'."
         );
       }
 
-      // Si on arrive ici, c'est que l'email n'existe pas dans Firestore
-      // Mais il peut exister un compte Firebase Auth orphelin
-      // On va essayer de créer le compte, et si ça échoue avec "email-already-in-use",
-      // on gérera ce cas spécifiquement
-
-      const userCredential = await createUserWithEmailAndPassword(
-        auth,
-        email,
-        password
+      console.log(
+        "✅ [REGISTER] Inscription autorisée, création du compte Firebase Auth..."
       );
-      const firebaseUser = userCredential.user;
 
-      await sendEmailVerification(firebaseUser);
+      let user;
 
-      // Stocker les données temporairement en local
-      localStorage.setItem("pending-user-id", userCredential.user.uid);
-      localStorage.setItem("pending-user-email", email);
-      localStorage.setItem("pending-user-name", name);
-      localStorage.setItem("pending-user-type", userType as string);
-      if (serviceType) {
-        localStorage.setItem("pending-service-type", serviceType);
-      }
+      try {
+        // Essayer de créer un nouveau compte Firebase Auth
+        const userCredential = await createUserWithEmailAndPassword(
+          auth,
+          email,
+          password
+        );
+        user = userCredential.user;
+        console.log(
+          "✅ [REGISTER] Nouveau compte Firebase Auth créé avec UID:",
+          user.uid
+        );
+      } catch (firebaseError) {
+        if (
+          firebaseError instanceof FirebaseError &&
+          firebaseError.code === "auth/email-already-in-use"
+        ) {
+          console.log(
+            "⚠️ [REGISTER] Email existe déjà dans Firebase Auth, tentative de connexion..."
+          );
 
-      // Rediriger vers la page de vérification
-      navigate("/verify-email");
-      return;
-    } catch (error) {
-      let errorMessage = "Erreur lors de l'inscription";
-
-      if (error instanceof Error) {
-        const errorCode = (error as { code?: string }).code;
-
-        if (errorCode === "auth/email-already-in-use") {
-          // 🔧 Gestion intelligente des comptes orphelins
           // L'email existe dans Firebase Auth mais pas dans Firestore
-          // On peut proposer de nettoyer le compte orphelin
-          errorMessage =
-            "Cette adresse email a un compte non finalisé. " +
-            "Essayez de vous connecter avec votre mot de passe, ou utilisez 'Mot de passe oublié' pour réinitialiser.";
-        } else if (errorCode === "auth/invalid-email") {
-          errorMessage = "Adresse email invalide";
-        } else if (errorCode === "auth/weak-password") {
-          errorMessage = "Le mot de passe est trop faible";
+          // On va essayer de se connecter pour récupérer l'utilisateur existant
+          try {
+            const signInResult = await signInWithEmailAndPassword(
+              auth,
+              email,
+              password
+            );
+            user = signInResult.user;
+            console.log(
+              "✅ [REGISTER] Connexion réussie avec l'utilisateur existant, UID:",
+              user.uid
+            );
+          } catch (signInError) {
+            console.log(
+              "❌ [REGISTER] Échec de la connexion avec l'utilisateur existant"
+            );
+            throw new Error(
+              "Cet email est déjà utilisé. Si c'est votre compte, connectez-vous. Si vous avez oublié votre mot de passe, utilisez 'Mot de passe oublié'."
+            );
+          }
         } else {
-          errorMessage = error.message;
+          throw firebaseError;
         }
       }
 
-      throw new Error(errorMessage);
+      // Envoi de l'email de vérification
+      console.log("📧 [REGISTER] Envoi de l'email de vérification...");
+      await sendEmailVerification(user);
+      console.log("✅ [REGISTER] Email de vérification envoyé");
+
+      // Préparation des données utilisateur
+      const userData = {
+        uid: user.uid,
+        email: user.email,
+        userType: userType,
+        createdAt: serverTimestamp(),
+        emailVerified: false,
+        ...additionalData,
+      };
+
+      console.log("📝 [REGISTER] Données utilisateur préparées:", userData);
+
+      // Sauvegarde dans Firestore
+      console.log("💾 [REGISTER] Sauvegarde dans Firestore...");
+      const db = getFirestore();
+      await setDoc(doc(db, "users", user.uid), userData);
+      console.log("✅ [REGISTER] Utilisateur sauvegardé dans Firestore");
+
+      // Sauvegarde dans la collection spécifique
+      const collectionName =
+        userType === "patient" ? "patients" : "professionals";
+      console.log(
+        "💾 [REGISTER] Sauvegarde dans la collection:",
+        collectionName
+      );
+      await setDoc(doc(db, collectionName, user.uid), userData);
+      console.log("✅ [REGISTER] Utilisateur sauvegardé dans", collectionName);
+
+      // Stockage temporaire pour la suite du processus
+      localStorage.setItem("pending-user-id", user.uid);
+      localStorage.setItem("pending-user-email", email);
+      localStorage.setItem("pending-user-name", additionalData?.name || "");
+      localStorage.setItem("pending-user-type", userType);
+      if (additionalData?.serviceType) {
+        localStorage.setItem(
+          "pending-service-type",
+          additionalData.serviceType
+        );
+      }
+
+      console.log("🎉 [REGISTER] Inscription terminée avec succès!");
+    } catch (error) {
+      console.error("🚨 [REGISTER] Erreur lors de l'inscription:", error);
+
+      if (error instanceof FirebaseError) {
+        console.log("🔍 [REGISTER] Code d'erreur Firebase:", error.code);
+
+        switch (error.code) {
+          case "auth/email-already-in-use":
+            console.log("❌ [REGISTER] Email déjà utilisé dans Firebase Auth");
+            throw new Error(
+              'Un compte avec cet email existe déjà. Connectez-vous ou utilisez "Mot de passe oublié" si votre compte n\'est pas finalisé.'
+            );
+
+          case "auth/weak-password":
+            console.log("❌ [REGISTER] Mot de passe trop faible");
+            throw new Error(
+              "Le mot de passe doit contenir au moins 6 caractères."
+            );
+
+          case "auth/invalid-email":
+            console.log("❌ [REGISTER] Format d'email invalide");
+            throw new Error("Format d'email invalide.");
+
+          default:
+            console.log("❌ [REGISTER] Erreur Firebase non gérée:", error.code);
+            throw new Error(`Erreur lors de l'inscription: ${error.message}`);
+        }
+      }
+
+      console.log("❌ [REGISTER] Erreur non-Firebase:", error);
+      throw error;
     } finally {
       registrationInProgressRef.current = false;
     }
@@ -972,17 +1055,20 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     <AuthContext.Provider
       value={{
         currentUser,
-        userType: currentUser?.type || null,
-        isAuthenticated: currentUser !== null,
-        isAdmin: currentUser?.type === "admin",
         loading,
+        isAuthenticated: !!currentUser?.id,
         login,
-        loginWithPhone,
         register,
-        createUserWithPhone,
         resetPassword,
         logout,
         refreshUser,
+        createUserWithPhone,
+        verifyPhoneCode: () => {
+          // This function is not implemented in the original file,
+          // but it's part of the AuthContextType.
+          // For now, we'll return a placeholder.
+          console.warn("verifyPhoneCode not implemented yet.");
+        },
       }}
     >
       {!loading || authInitialized ? (

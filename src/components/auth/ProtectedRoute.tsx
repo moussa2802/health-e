@@ -85,7 +85,26 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
 
   // Si on arrive ici, l'utilisateur n'est pas authentifié
   console.log("🔒 Redirection vers /patient - utilisateur non authentifié");
-  return <Navigate to="/patient" replace />;
+
+  // Vérifier si l'utilisateur a un type dans le localStorage
+  const pendingUserType = localStorage.getItem("pending-user-type");
+
+  if (pendingUserType === "professional") {
+    console.log(
+      "🔒 Redirection vers /professional/access - utilisateur professionnel en attente"
+    );
+    return <Navigate to="/professional/access" replace />;
+  } else if (pendingUserType === "patient") {
+    console.log(
+      "🔒 Redirection vers /patient/access - utilisateur patient en attente"
+    );
+    return <Navigate to="/patient/access" replace />;
+  } else {
+    console.log(
+      "🔒 Redirection vers / - utilisateur non authentifié sans type"
+    );
+    return <Navigate to="/" replace />;
+  }
 
   // Check if email verification is required
   if (auth.currentUser && !auth.currentUser.emailVerified && !currentUser) {
