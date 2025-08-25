@@ -27,6 +27,7 @@ import {
   cleanAllFirebaseStorage,
   resetFirestoreConnection,
 } from "../utils/firebase";
+import { handleOrphanedAccount } from "../utils/accountCleanup";
 import {
   doc,
   getDoc,
@@ -753,6 +754,20 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
       registrationInProgressRef.current = true;
 
+      // 🔧 GESTION DES COMPTES ORPHELINS
+      // Vérifier et nettoyer les comptes orphelins avant l'inscription
+      console.log("🔍 Vérification des comptes orphelins pour:", email);
+      const canRegister = await handleOrphanedAccount(email, password);
+      
+      if (!canRegister) {
+        throw new Error(
+          "Cette adresse email est déjà utilisée par un compte actif. " +
+          "Si vous avez oublié votre mot de passe, utilisez la fonction 'Mot de passe oublié'."
+        );
+      }
+
+      console.log("✅ Compte disponible pour l'inscription, création en cours...");
+
       const userCredential = await createUserWithEmailAndPassword(
         auth,
         email,
@@ -782,7 +797,9 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         const errorCode = (error as { code?: string }).code;
 
         if (errorCode === "auth/email-already-in-use") {
-          errorMessage = "Cette adresse email est déjà utilisée";
+          // 🔧 Gestion intelligente des comptes déjà existants
+          errorMessage = "Cette adresse email est déjà utilisée. " +
+            "Si vous avez un compte non confirmé, essayez de vous connecter ou utilisez 'Mot de passe oublié'.";
         } else if (errorCode === "auth/invalid-email") {
           errorMessage = "Adresse email invalide";
         } else if (errorCode === "auth/weak-password") {
