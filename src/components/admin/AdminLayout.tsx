@@ -1,302 +1,88 @@
-import React, { useState, useEffect, useRef } from "react";
-import { Menu, User, LogOut, Bell } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import React, { useState } from "react";
+import { Menu, User, LogOut } from "lucide-react";
+import { useLocation } from "react-router-dom";
+import AdminSidebar from "./AdminSidebar";
 import { useAuth } from "../../contexts/AuthContext";
 import { useLanguage } from "../../contexts/LanguageContext";
-import AdminSidebar from "./AdminSidebar";
-import { subscribeToNotifications } from "../../services/notificationService";
-import { markNotificationAsRead } from "../../services/notificationService";
-import { Timestamp } from "firebase/firestore";
-
-interface User {
-  uid: string;
-  name?: string;
-  profileImage?: string;
-  // add other properties as needed
-}
-
-interface Notification {
-  id: string;
-  title?: string;
-  content?: string;
-  read?: boolean;
-  type?: string;
-  sourceId?: string;
-  createdAt?:
-    | Timestamp
-    | Date
-    | { seconds: number; nanoseconds: number }
-    | undefined;
-  userId?: string;
-}
+import NotificationCenter from "../notifications/NotificationCenter";
 
 interface AdminLayoutProps {
   children: React.ReactNode;
 }
 
 const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
-  const unsubscribeRef = useRef<(() => void) | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const { currentUser, logout } = useAuth();
   const { language } = useLanguage();
-  const navigate = useNavigate();
-  const [notifDropdownOpen, setNotifDropdownOpen] = useState(false);
-  const [unreadNotifications, setUnreadNotifications] = useState<
-    Notification[]
-  >([]);
-  const [allNotifications, setAllNotifications] = useState<Notification[]>([]);
+  const location = useLocation();
+
+  const handleLogout = () => {
+    logout();
+  };
 
   // Fonction pour obtenir le titre de la page basé sur l'URL
   const getPageTitle = () => {
-    const path = window.location.pathname;
-    const titles: { [key: string]: string } = {
-      "/admin/dashboard": language === "fr" ? "Tableau de bord" : "Dashboard",
-      "/admin/users":
-        language === "fr" ? "Gestion des utilisateurs" : "User Management",
-      "/admin/patients":
-        language === "fr" ? "Gestion des patients" : "Patient Management",
-      "/admin/appointments":
-        language === "fr"
-          ? "Gestion des consultations"
-          : "Appointment Management",
-      "/admin/statistics": language === "fr" ? "Statistiques" : "Statistics",
-      "/admin/content":
-        language === "fr" ? "Gestion du contenu" : "Content Management",
-      "/admin/messages": language === "fr" ? "Messagerie" : "Messaging",
-      "/admin/support":
-        language === "fr" ? "Support et modération" : "Support & Moderation",
-    };
-    return (
-      titles[path] || (language === "fr" ? "Administration" : "Administration")
-    );
-  };
+    const path = location.pathname;
 
-  // Fonction pour obtenir la description de la page
-  const getPageDescription = () => {
-    const path = window.location.pathname;
-    const descriptions: { [key: string]: string } = {
-      "/admin/dashboard":
-        language === "fr"
-          ? "Vue d'ensemble de la plateforme Health-e"
-          : "Overview of the Health-e platform",
-      "/admin/users":
-        language === "fr"
-          ? "Gérez les comptes utilisateurs et leurs permissions"
-          : "Manage user accounts and their permissions",
-      "/admin/patients":
-        language === "fr"
-          ? "Suivez et gérez les dossiers patients"
-          : "Track and manage patient records",
-      "/admin/appointments":
-        language === "fr"
-          ? "Surveillez et gérez les consultations"
-          : "Monitor and manage consultations",
-      "/admin/statistics":
-        language === "fr"
-          ? "Analysez les données et performances de la plateforme"
-          : "Analyze platform data and performance",
-      "/admin/content":
-        language === "fr"
-          ? "Modérez et gérez le contenu de la plateforme"
-          : "Moderate and manage platform content",
-      "/admin/messages":
-        language === "fr"
-          ? "Communiquez avec les utilisateurs et professionnels"
-          : "Communicate with users and professionals",
-      "/admin/support":
-        language === "fr"
-          ? "Assistez les utilisateurs et gérez les signalements"
-          : "Assist users and manage reports",
-    };
-    return (
-      descriptions[path] ||
-      (language === "fr"
-        ? "Interface d'administration de Health-e"
-        : "Health-e administration interface")
-    );
-  };
-
-  const handleLogout = () => {
-    console.log("🔄 [ADMIN DEBUG] Starting admin logout");
-
-    // Nettoyer les listeners de notifications avant la déconnexion
-    if (unsubscribeRef.current) {
-      unsubscribeRef.current();
-      unsubscribeRef.current = null;
-    }
-
-    // Réinitialiser l'état des notifications
-    setAllNotifications([]);
-    setUnreadNotifications([]);
-
-    logout();
-    navigate("/");
-  };
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      const dropdown = document.getElementById("notif-dropdown");
-      if (dropdown && !dropdown.contains(event.target as Node)) {
-        setNotifDropdownOpen(false);
-      }
-    };
-
-    if (notifDropdownOpen) {
-      document.addEventListener("mousedown", handleClickOutside);
+    if (path.includes("/admin/dashboard")) {
+      return language === "fr" ? "Tableau de bord" : "Dashboard";
+    } else if (path.includes("/admin/users")) {
+      return language === "fr" ? "Utilisateurs" : "Users";
+    } else if (path.includes("/admin/professionals")) {
+      return language === "fr" ? "Professionnels" : "Professionals";
+    } else if (path.includes("/admin/patients")) {
+      return language === "fr" ? "Patients" : "Patients";
+    } else if (path.includes("/admin/appointments")) {
+      return language === "fr" ? "Consultations" : "Appointments";
+    } else if (path.includes("/admin/statistics")) {
+      return language === "fr" ? "Statistiques" : "Statistics";
+    } else if (path.includes("/admin/content")) {
+      return language === "fr" ? "Contenu" : "Content";
+    } else if (path.includes("/admin/messages")) {
+      return language === "fr" ? "Messagerie" : "Messages";
+    } else if (path.includes("/admin/support")) {
+      return language === "fr" ? "Support" : "Support";
     } else {
-      document.removeEventListener("mousedown", handleClickOutside);
+      return language === "fr" ? "Administration" : "Administration";
     }
-
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, [notifDropdownOpen]);
-
-  useEffect(() => {
-    if (!currentUser?.id) return;
-
-    const fetchNotif = async () => {
-      try {
-        // Utiliser le service de notifications standard au lieu de getAdminNotifications
-        const allNotif: Notification[] = [];
-
-        // Créer une subscription temporaire pour récupérer les notifications
-        const unsubscribe = subscribeToNotifications(
-          currentUser.id,
-          (notifications) => {
-            console.log(
-              "🔔 [ADMIN DEBUG] Received notifications via subscription:",
-              notifications
-            );
-            setAllNotifications(notifications);
-
-            const unread = notifications.filter(
-              (n) => n.read === false || n.read === undefined
-            );
-            setUnreadNotifications(unread);
-            console.log(
-              "🔔 [ADMIN DEBUG] Admin unread notifications:",
-              unread.length
-            );
-          }
-        );
-
-        // Nettoyer la subscription après 5 secondes (juste pour récupérer les données)
-        setTimeout(() => {
-          unsubscribe();
-        }, 5000);
-
-        console.log(
-          "🔔 [ADMIN DEBUG] getAdminNotifications returned:",
-          allNotif
-        );
-        console.log("🔍 Notifications reçues pour la cloche :", allNotif);
-        console.log("🔍 Nombre de notifications :", allNotif.length);
-      } catch (error) {
-        console.log("🔔 [ADMIN DEBUG] Error in fetchNotif:", error);
-        console.error(
-          "❌ Erreur lors de la récupération des notifications :",
-          error
-        );
-        setAllNotifications([]);
-        setUnreadNotifications([]);
-      }
-    };
-
-    fetchNotif();
-  }, [currentUser]);
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
+      {/* Header Admin harmonisé avec le sidebar */}
       <header className="fixed top-0 left-0 right-0 h-16 bg-white shadow-sm z-40 flex items-center justify-between px-4">
+        {/* Gauche : Menu + Titre */}
         <div className="flex items-center">
           <button
             onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            className="p-2 mr-4 rounded-lg hover:bg-gray-100 transition-colors"
+            aria-label="Ouvrir/fermer le menu"
           >
             <Menu className="h-6 w-6 text-gray-600" />
           </button>
-          <span className="ml-4 text-xl font-semibold text-gray-800">
-            {language === "fr" ? "Health-e Admin" : "Health-e Admin"}
-          </span>
+
+          <div className="flex items-center">
+            <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center mr-3">
+              <span className="text-white font-bold text-sm">H</span>
+            </div>
+            <div>
+              <h1 className="text-xl font-bold text-gray-900">
+                {language === "fr" ? "Health-e Admin" : "Health-e Admin"}
+              </h1>
+              <p className="text-xs text-gray-500">
+                {language === "fr" ? "Administration" : "Administration"}
+              </p>
+            </div>
+          </div>
         </div>
 
+        {/* Droite : Notifications + Profil */}
         <div className="flex items-center space-x-4">
-          {/* Notification Bell */}
-          <div className="relative">
-            <button
-              onClick={() => setNotifDropdownOpen((prev) => !prev)}
-              className="p-2 hover:bg-gray-100 rounded-full transition-colors relative"
-            >
-              <Bell className="h-6 w-6 text-gray-600" />
-              {unreadNotifications.length > 0 && (
-                <span className="absolute top-0 right-0 h-2 w-2 rounded-full bg-red-500 ring-2 ring-white"></span>
-              )}
-            </button>
+          {/* Notifications */}
+          <NotificationCenter />
 
-            {notifDropdownOpen && (
-              <div
-                className="absolute right-0 mt-2 w-80 bg-white shadow-xl rounded-lg z-50 max-h-96 overflow-y-auto border"
-                onClick={(e) => e.stopPropagation()} // 👈 éviter que ça se ferme quand tu cliques dedans
-              >
-                {allNotifications.length > 0 ? (
-                  allNotifications.map((notif, index) => (
-                    <button
-                      key={index}
-                      onClick={async () => {
-                        await markNotificationAsRead(notif.id);
-                        setUnreadNotifications((prev) =>
-                          prev.filter((n) => n.id !== notif.id)
-                        );
-
-                        if (notif.type === "message") {
-                          navigate("/admin/messages");
-                        } else if (notif.type === "nouveau_professionnel") {
-                          navigate("/admin/utilisateurs");
-                        }
-
-                        setNotifDropdownOpen(false);
-                      }}
-                      className={`w-full text-left px-4 py-2 border-b hover:bg-gray-100 ${
-                        notif.read
-                          ? "bg-gray-100 text-gray-500"
-                          : "bg-white font-medium"
-                      }`}
-                    >
-                      <div className="text-sm">{notif.title}</div>
-                      <div className="text-xs">{notif.content}</div>
-                      <div className="text-xs text-gray-400">
-                        {(() => {
-                          const createdAt = notif.createdAt;
-                          if (!createdAt) return "Date inconnue";
-                          if (
-                            typeof createdAt === "object" &&
-                            "seconds" in createdAt &&
-                            typeof createdAt.seconds === "number"
-                          ) {
-                            // Firestore Timestamp ou objet similaire
-                            return new Date(
-                              createdAt.seconds * 1000
-                            ).toLocaleString();
-                          } else if (createdAt instanceof Date) {
-                            return createdAt.toLocaleString();
-                          }
-                          return "Date inconnue";
-                        })()}
-                      </div>
-                    </button>
-                  ))
-                ) : (
-                  <div className="p-4 text-sm text-gray-500">
-                    Aucune notification
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-
-          {/* Profile Menu */}
+          {/* Profil */}
           <div className="relative">
             <button
               onClick={() => setProfileMenuOpen(!profileMenuOpen)}
@@ -309,18 +95,22 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
                   className="w-8 h-8 rounded-full object-cover"
                 />
               ) : (
-                <User className="h-6 w-6 text-gray-600" />
+                <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
+                  <User className="h-5 w-5 text-white" />
+                </div>
               )}
-              <span className="text-gray-700">{currentUser?.name}</span>
+              <span className="text-gray-700 font-medium">
+                {currentUser?.name || "Admin"}
+              </span>
             </button>
 
             {profileMenuOpen && (
-              <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg py-1 z-50">
+              <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg py-1 z-50 border border-gray-200">
                 <button
                   onClick={handleLogout}
-                  className="w-full flex items-center px-4 py-2 text-gray-700 hover:bg-gray-100"
+                  className="w-full flex items-center px-4 py-2 text-gray-700 hover:bg-gray-100 transition-colors"
                 >
-                  <LogOut className="h-5 w-5 mr-2" />
+                  <LogOut className="h-4 w-4 mr-2" />
                   {language === "fr" ? "Se déconnecter" : "Logout"}
                 </button>
               </div>
@@ -331,7 +121,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
 
       {/* Sidebar */}
       <div
-        className={`fixed inset-y-0 left-0 z-30 w-64 bg-white transform transition-transform duration-200 ease-in-out shadow-lg ${
+        className={`fixed top-12 left-0 h-[calc(100vh-3rem)] z-30 w-64 bg-white transform transition-transform duration-200 ease-in-out shadow-lg border-r border-gray-200 ${
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
@@ -345,25 +135,16 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
             sidebarOpen ? "ml-64" : "ml-0"
           }`}
         >
-          {/* Page Header */}
-          <div className="bg-white border-b border-gray-200 px-6 py-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <h1 className="text-2xl font-bold text-gray-900">
-                  {getPageTitle()}
-                </h1>
-                <p className="mt-1 text-sm text-gray-500">
-                  {getPageDescription()}
-                </p>
-              </div>
-              <div className="flex items-center space-x-3">
-                {/* Actions spécifiques à la page peuvent être ajoutées ici */}
-              </div>
-            </div>
-          </div>
-
           {/* Page Content */}
-          <div className="p-6">{children}</div>
+          <div className="p-6">
+            {/* Page Header */}
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-2xl font-bold text-gray-900">
+                {getPageTitle()}
+              </h2>
+            </div>
+            {children}
+          </div>
         </main>
       </div>
 
@@ -374,8 +155,6 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
           onClick={() => setSidebarOpen(false)}
         />
       )}
-
-      {/* Debug component */}
     </div>
   );
 };

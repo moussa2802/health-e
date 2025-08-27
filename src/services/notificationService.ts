@@ -24,14 +24,17 @@ export interface Notification {
     | "message"
     | "appointment_request"
     | "appointment_confirmed"
-    | "appointment_cancelled";
+    | "appointment_cancelled"
+    | "professional_registration"
+    | "support_message";
   title: string;
   content: string;
   sourceId: string; // ID of the message, booking, etc.
-  sourceType: "message" | "booking";
+  sourceType: "message" | "booking" | "professional" | "support";
   read: boolean;
   createdAt: Timestamp;
   timestamp?: Date; // For component compatibility
+  priority?: "low" | "medium" | "high"; // For color coding
 }
 
 // Global registry to prevent duplicate listeners
@@ -45,11 +48,14 @@ export async function createNotification(
     | "message"
     | "appointment_request"
     | "appointment_confirmed"
-    | "appointment_cancelled",
+    | "appointment_cancelled"
+    | "professional_registration"
+    | "support_message",
   title: string,
   content: string,
   sourceId: string,
-  sourceType: "message" | "booking"
+  sourceType: "message" | "booking" | "professional" | "support",
+  priority: "low" | "medium" | "high" = "medium"
 ): Promise<string> {
   try {
     console.log(`📣 Creating ${type} notification for user:`, userId);
@@ -70,6 +76,7 @@ export async function createNotification(
       content,
       sourceId,
       sourceType,
+      priority,
       read: false,
       createdAt: serverTimestamp(),
     };
@@ -158,8 +165,10 @@ export function subscribeToNotifications(
               "notification documents"
             );
 
-            const notifications = snapshot.docs.map(
-              (doc) => {
+            // Use Set to prevent duplicates based on ID
+            const seenIds = new Set<string>();
+            const notifications = snapshot.docs
+              .map((doc) => {
                 const data = doc.data();
                 return {
                   id: doc.id,
@@ -169,15 +178,33 @@ export function subscribeToNotifications(
                   content: data.content,
                   sourceId: data.sourceId,
                   sourceType: data.sourceType,
+                  priority: data.priority || "medium",
                   read: data.read,
                   createdAt: data.createdAt,
                   // Convert createdAt to timestamp for the component
-                  timestamp: data.createdAt?.toDate ? data.createdAt.toDate() : new Date(data.createdAt),
+                  timestamp: data.createdAt?.toDate
+                    ? data.createdAt.toDate()
+                    : new Date(data.createdAt),
                 } as Notification;
-              }
-            );
+              })
+              .filter((notification) => {
+                // Remove duplicates based on ID
+                if (seenIds.has(notification.id)) {
+                  console.log(
+                    "🔔 [DEBUG] Duplicate notification filtered out:",
+                    notification.id
+                  );
+                  return false;
+                }
+                seenIds.add(notification.id);
+                return true;
+              });
 
-            console.log("✅ Received", notifications.length, "notifications");
+            console.log(
+              "✅ Received",
+              notifications.length,
+              "unique notifications"
+            );
             callback(notifications);
           },
           (error) => {

@@ -6,43 +6,24 @@ import {
   MessageSquare,
   Calendar,
   CheckCircle,
-  X,
 } from "lucide-react";
 import { useAuth } from "../../contexts/AuthContext";
-import { subscribeToConversations } from "../../services/messageService";
-import { useBookings } from "../../hooks/useBookings";
 import LoadingSpinner from "../ui/LoadingSpinner";
-import { getFirestoreInstance } from "../utils/firebase";
-import { doc, setDoc, getDoc } from "firebase/firestore";
 import {
   markNotificationAsRead,
   markAllNotificationsAsRead,
+  Notification,
 } from "../../services/notificationService";
 import { subscribeToNotifications } from "../../services/notificationService";
+
 // Sound file for notifications
 const NOTIFICATION_SOUND_URL =
   "https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3";
-
-export interface Notification {
-  id: string;
-  type: "message" | "appointment_request" | "appointment_confirmed";
-  title: string;
-  content: string;
-  timestamp: Date;
-  read: boolean;
-  data?: {
-    conversationId?: string;
-    bookingId?: string;
-    senderId?: string;
-    senderName?: string;
-  };
-}
 
 const NotificationCenter: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [unreadCount, setUnreadCount] = useState(0);
   const [soundEnabled, setSoundEnabled] = useState(true);
 
@@ -54,14 +35,14 @@ const NotificationCenter: React.FC = () => {
   const unsubscribeRef = useRef<(() => void) | null>(null);
 
   // Get bookings for appointment notifications
-  const { bookings } = useBookings(
-    currentUser?.id || "",
-    currentUser?.type === "professional"
-      ? "professional"
-      : currentUser?.type === "admin"
-      ? "admin"
-      : "patient"
-  );
+  // const { bookings: _bookings } = useBookings(
+  //   currentUser?.id || "",
+  //   currentUser?.type === "professional"
+  //     ? "professional"
+  //     : currentUser?.type === "admin"
+  //     ? "admin"
+  //     : "patient"
+  // );
 
   // Initialize audio element
   useEffect(() => {
@@ -164,11 +145,22 @@ const NotificationCenter: React.FC = () => {
           );
         }
 
-        setNotifications(newNotifications);
-        setUnreadCount(newNotifications.filter((n) => !n.read).length);
+        // Déduplication des notifications basée sur l'ID
+        const uniqueNotifications = newNotifications.filter(
+          (notification, index, self) =>
+            index === self.findIndex((n) => n.id === notification.id)
+        );
+
+        console.log(
+          "🔔 [NOTIF DEBUG] Notifications après déduplication:",
+          uniqueNotifications.length
+        );
+
+        setNotifications(uniqueNotifications);
+        setUnreadCount(uniqueNotifications.filter((n) => !n.read).length);
         console.log(
           "🔔 [NOTIF DEBUG] Unread count calculated:",
-          newNotifications.filter((n) => !n.read).length
+          uniqueNotifications.filter((n) => !n.read).length
         );
         setLoading(false);
       }
@@ -340,17 +332,59 @@ const NotificationCenter: React.FC = () => {
     }
   };
 
-  // Get icon for notification type
-  const getNotificationIcon = (type: string) => {
+  // Get icon for notification type with color coding
+  const getNotificationIcon = (type: string, priority: string = "medium") => {
     switch (type) {
       case "message":
-        return <MessageSquare className="h-5 w-5 text-blue-500" />;
+        return <MessageSquare className="h-5 w-5 text-green-500" />; // Vert pour les messages
       case "appointment_request":
         return <Calendar className="h-5 w-5 text-orange-500" />;
       case "appointment_confirmed":
         return <CheckCircle className="h-5 w-5 text-green-500" />;
+      case "professional_registration":
+        return <Bell className="h-5 w-5 text-blue-500" />; // Bleu pour les inscriptions
+      case "support_message":
+        return <MessageSquare className="h-5 w-5 text-red-500" />; // Rouge pour le support
       default:
         return <Bell className="h-5 w-5 text-gray-500" />;
+    }
+  };
+
+  // Get notification background color based on type
+  const getNotificationBackgroundColor = (type: string, read: boolean) => {
+    if (read) return "bg-white";
+
+    switch (type) {
+      case "message":
+        return "bg-green-50"; // Vert pour les messages
+      case "professional_registration":
+        return "bg-blue-50"; // Bleu pour les inscriptions
+      case "support_message":
+        return "bg-red-50"; // Rouge pour le support
+      case "appointment_request":
+        return "bg-orange-50";
+      case "appointment_confirmed":
+        return "bg-green-50";
+      default:
+        return "bg-gray-50";
+    }
+  };
+
+  // Get notification border color based on type
+  const getNotificationBorderColor = (type: string) => {
+    switch (type) {
+      case "message":
+        return "border-l-4 border-l-green-500"; // Vert pour les messages
+      case "professional_registration":
+        return "border-l-4 border-l-blue-500"; // Bleu pour les inscriptions
+      case "support_message":
+        return "border-l-4 border-l-red-500"; // Rouge pour le support
+      case "appointment_request":
+        return "border-l-4 border-l-orange-500";
+      case "appointment_confirmed":
+        return "border-l-4 border-l-green-500";
+      default:
+        return "border-l-4 border-l-gray-500";
     }
   };
 
@@ -362,7 +396,7 @@ const NotificationCenter: React.FC = () => {
         className="relative p-2 text-white hover:text-blue-100 transition focus:outline-none"
         aria-label="Notifications"
       >
-        <Bell className="w-5 h-5" />
+        <Bell className="w-5 h-5 text-blue-700" />
         {unreadCount > 0 && (
           <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center min-w-[20px]">
             {unreadCount > 99 ? "99+" : unreadCount}
@@ -388,16 +422,23 @@ const NotificationCenter: React.FC = () => {
                   <BellOff className="h-4 w-4 text-gray-600" />
                 )}
               </button>
-              {unreadCount > 0 && (
-                <button
-                  onClick={markAllAsRead}
-                  className="text-xs text-blue-500 hover:text-blue-700"
-                >
-                  Tout marquer comme lu
-                </button>
-              )}
             </div>
           </div>
+
+          {/* Mark All as Read Button - More Visible */}
+          {notifications.length > 0 && (
+            <div className="px-4 py-2 border-b border-gray-200">
+              <button
+                onClick={markAllAsRead}
+                className="w-full py-1.5 px-3 bg-gray-100 text-gray-600 text-xs font-medium rounded border border-gray-200 hover:bg-gray-200 transition-colors duration-200 flex items-center justify-center space-x-2"
+              >
+                <span className="text-gray-500">✓</span>
+                <span>
+                  Marquer tout comme lu ({notifications.length} notifications)
+                </span>
+              </button>
+            </div>
+          )}
 
           {/* Notification List */}
           <div className="overflow-y-auto flex-1">
@@ -411,13 +452,17 @@ const NotificationCenter: React.FC = () => {
                   <div
                     key={notification.id}
                     onClick={() => handleNotificationClick(notification)}
-                    className={`px-4 py-3 border-b border-gray-100 hover:bg-gray-50 cursor-pointer ${
-                      !notification.read ? "bg-blue-50" : ""
-                    }`}
+                    className={`px-4 py-3 border-b border-gray-100 hover:bg-gray-50 cursor-pointer ${getNotificationBackgroundColor(
+                      notification.type,
+                      notification.read
+                    )} ${getNotificationBorderColor(notification.type)}`}
                   >
                     <div className="flex items-start">
                       <div className="flex-shrink-0 mt-1">
-                        {getNotificationIcon(notification.type)}
+                        {getNotificationIcon(
+                          notification.type,
+                          notification.priority
+                        )}
                       </div>
                       <div className="ml-3 flex-1">
                         <p className="text-sm font-medium text-gray-900">
@@ -427,7 +472,11 @@ const NotificationCenter: React.FC = () => {
                           {notification.content}
                         </p>
                         <p className="text-xs text-gray-500 mt-1">
-                          {formatTimestamp(notification.timestamp)}
+                          {formatTimestamp(
+                            notification.timestamp ||
+                              notification.createdAt?.toDate?.() ||
+                              new Date()
+                          )}
                         </p>
                       </div>
                       {!notification.read && (
