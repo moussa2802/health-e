@@ -5,12 +5,9 @@ import {
   Wallet,
   Clock,
   TrendingUp,
-  Download,
   Eye,
   EyeOff,
   Plus,
-  Filter,
-  Calendar,
   DollarSign,
   AlertCircle,
   CheckCircle,
@@ -19,39 +16,40 @@ import {
 import { useAuth } from "../../contexts/AuthContext";
 import LoadingSpinner from "../../components/ui/LoadingSpinner";
 import {
-  getProfessionalRevenue,
+  calculateProfessionalRevenue,
   getProfessionalTransactions,
-  createWithdrawalRequest,
-  type ProfessionalRevenue,
-  type RevenueTransaction,
 } from "../../services/revenueService";
+import { createWithdrawalRequest } from "../../services/withdrawalService";
 
 interface Transaction {
   id: string;
   type: "consultation" | "withdrawal";
-  amount: number;
+  amount: number; // montant déjà normalisé
   description: string;
-  date: string;
-  status: "completed" | "pending" | "failed";
+  date: string; // ISO string
+  status: "completed" | "pending" | "failed" | "cancelled";
   patientName?: string;
   consultationType?: string;
+}
+
+interface RevenueStats {
+  totalEarned: number;
+  available: number;
+  pending: number;
+  withdrawn: number;
 }
 
 const FinancialDetails: React.FC = () => {
   const { currentUser } = useAuth();
   const [showBalance, setShowBalance] = useState(true);
   const [loading, setLoading] = useState(true);
-  const [stats, setStats] = useState<ProfessionalRevenue>({
-    totalEarnings: 0,
-    availableBalance: 0,
-    pendingAmount: 0,
-    totalWithdrawn: 0,
-    platformFees: 0,
-    netEarnings: 0,
-    thisMonth: 0,
-    lastMonth: 0,
+  const [stats, setStats] = useState<RevenueStats>({
+    totalEarned: 0,
+    available: 0,
+    pending: 0,
+    withdrawn: 0,
   });
-  const [transactions, setTransactions] = useState<RevenueTransaction[]>([]);
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [filter, setFilter] = useState<"all" | "consultations" | "withdrawals">(
     "all"
   );
@@ -60,10 +58,11 @@ const FinancialDetails: React.FC = () => {
   const [withdrawalMethod, setWithdrawalMethod] = useState<
     "wave" | "orange-money" | "bank-transfer"
   >("wave");
+  const [accountNumber, setAccountNumber] = useState("");
 
   useEffect(() => {
     loadFinancialData();
-  }, []);
+  }, [currentUser?.id]);
 
   const loadFinancialData = async () => {
     try {
@@ -73,14 +72,55 @@ const FinancialDetails: React.FC = () => {
         throw new Error("Utilisateur non connecté");
       }
 
-      // Charger les vraies données depuis Firebase
+      // Charger les vraies données depuis Firestore
       const [revenueData, transactionsData] = await Promise.all([
-        getProfessionalRevenue(currentUser.id),
+        calculateProfessionalRevenue(currentUser.id),
         getProfessionalTransactions(currentUser.id, 50),
       ]);
 
-      setStats(revenueData);
-      setTransactions(transactionsData);
+      setStats({
+        totalEarned: revenueData.totalEarned,
+        available: revenueData.available,
+        pending: revenueData.pending,
+        withdrawn: revenueData.withdrawn,
+      });
+
+      // Convertir les transactions au format attendu
+      const formattedTransactions = transactionsData.map((transaction) => {
+        // Gérer le cas où createdAt peut être undefined
+        let dateString = new Date().toISOString(); // Date par défaut
+        if (
+          transaction.createdAt &&
+          typeof (transaction.createdAt as { toDate: () => Date }).toDate ===
+            "function"
+        ) {
+          try {
+            dateString = (transaction.createdAt as { toDate: () => Date })
+              .toDate()
+              .toISOString();
+          } catch (error) {
+            console.warn("⚠️ [REVENUE] Error converting createdAt:", error);
+            dateString = new Date().toISOString();
+          }
+        }
+
+        return {
+          id: transaction.id || "",
+          type: transaction.type as "consultation" | "withdrawal",
+          amount: transaction.professionalAmount || 0,
+          description: transaction.description || "Transaction",
+          date: dateString,
+          status: (transaction.status === "completed"
+            ? "completed"
+            : transaction.status === "cancelled"
+            ? "cancelled"
+            : "pending") as "completed" | "pending" | "failed" | "cancelled",
+          patientName: transaction.patientName,
+          consultationType: transaction.consultationType,
+        };
+      });
+
+      setTransactions(formattedTransactions);
     } catch (error) {
       console.error(
         "Erreur lors du chargement des données financières:",
@@ -95,7 +135,7 @@ const FinancialDetails: React.FC = () => {
     e.preventDefault();
     const amount = parseFloat(withdrawalAmount);
 
-    if (amount <= 0 || amount > stats.availableBalance) {
+    if (amount <= 0 || amount > stats.available) {
       alert("Montant invalide");
       return;
     }
@@ -110,7 +150,8 @@ const FinancialDetails: React.FC = () => {
       const transactionId = await createWithdrawalRequest(
         currentUser.id,
         amount,
-        withdrawalMethod
+        withdrawalMethod,
+        accountNumber
       );
 
       console.log("Demande de retrait créée:", transactionId);
@@ -134,6 +175,8 @@ const FinancialDetails: React.FC = () => {
         return <Clock className="h-4 w-4 text-yellow-500" />;
       case "failed":
         return <XCircle className="h-4 w-4 text-red-500" />;
+      case "cancelled":
+        return <XCircle className="h-4 w-4 text-gray-500" />;
       default:
         return <AlertCircle className="h-4 w-4 text-gray-500" />;
     }
@@ -147,32 +190,19 @@ const FinancialDetails: React.FC = () => {
         return "bg-yellow-100 text-yellow-800";
       case "failed":
         return "bg-red-100 text-red-800";
+      case "cancelled":
+        return "bg-gray-100 text-gray-800";
       default:
         return "bg-gray-100 text-gray-800";
     }
   };
 
-  const filteredTransactions = transactions
-    .filter((transaction) => {
-      if (filter === "all") return true;
-      if (filter === "consultations")
-        return transaction.type === "consultation";
-      if (filter === "withdrawals") return transaction.type === "withdrawal";
-      return false;
-    })
-    .map((transaction) => ({
-      id: transaction.id,
-      type: transaction.type,
-      amount:
-        transaction.type === "consultation"
-          ? transaction.professionalAmount
-          : transaction.amount,
-      description: transaction.description,
-      date: transaction.createdAt.toDate().toISOString().split("T")[0],
-      status: transaction.status,
-      patientName: transaction.patientName,
-      consultationType: transaction.consultationType,
-    }));
+  const filteredTransactions = transactions.filter((t) => {
+    if (filter === "all") return true;
+    if (filter === "consultations") return t.type === "consultation";
+    if (filter === "withdrawals") return t.type === "withdrawal";
+    return false;
+  });
 
   if (loading) {
     return (
@@ -225,7 +255,7 @@ const FinancialDetails: React.FC = () => {
             </div>
             <p className="text-2xl font-bold text-gray-900">
               {showBalance
-                ? `${stats.availableBalance.toLocaleString()} FCFA`
+                ? `${stats.available.toLocaleString()} FCFA`
                 : "••••••"}
             </p>
           </div>
@@ -237,7 +267,7 @@ const FinancialDetails: React.FC = () => {
             </div>
             <p className="text-2xl font-bold text-gray-900">
               {showBalance
-                ? `${stats.pendingAmount.toLocaleString()} FCFA`
+                ? `${stats.pending.toLocaleString()} FCFA`
                 : "••••••"}
             </p>
           </div>
@@ -251,7 +281,7 @@ const FinancialDetails: React.FC = () => {
             </div>
             <p className="text-2xl font-bold text-gray-900">
               {showBalance
-                ? `${stats.totalWithdrawn.toLocaleString()} FCFA`
+                ? `${stats.withdrawn.toLocaleString()} FCFA`
                 : "••••••"}
             </p>
           </div>
@@ -265,7 +295,7 @@ const FinancialDetails: React.FC = () => {
             </div>
             <p className="text-2xl font-bold text-gray-900">
               {showBalance
-                ? `${stats.netEarnings.toLocaleString()} FCFA`
+                ? `${stats.totalEarned.toLocaleString()} FCFA`
                 : "••••••"}
             </p>
           </div>
@@ -356,7 +386,7 @@ const FinancialDetails: React.FC = () => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className="text-sm font-medium text-gray-900">
-                        {transaction.amount.toLocaleString()} FCFA
+                        {(transaction.amount || 0).toLocaleString()} FCFA
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
@@ -375,6 +405,7 @@ const FinancialDetails: React.FC = () => {
                           {transaction.status === "completed" && "Terminé"}
                           {transaction.status === "pending" && "En attente"}
                           {transaction.status === "failed" && "Échoué"}
+                          {transaction.status === "cancelled" && "Annulé"}
                         </span>
                       </div>
                     </td>
@@ -414,11 +445,10 @@ const FinancialDetails: React.FC = () => {
                   placeholder="Montant à retirer"
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   min="1000"
-                  max={stats.availableBalance}
+                  max={stats.available}
                 />
                 <p className="text-sm text-gray-500 mt-1">
-                  Solde disponible: {stats.availableBalance.toLocaleString()}{" "}
-                  FCFA
+                  Solde disponible: {stats.available.toLocaleString()} FCFA
                 </p>
               </div>
 
@@ -428,13 +458,45 @@ const FinancialDetails: React.FC = () => {
                 </label>
                 <select
                   value={withdrawalMethod}
-                  onChange={(e) => setWithdrawalMethod(e.target.value as any)}
+                  onChange={(e) =>
+                    setWithdrawalMethod(
+                      e.target.value as
+                        | "wave"
+                        | "orange-money"
+                        | "bank-transfer"
+                    )
+                  }
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 >
                   <option value="wave">Wave</option>
                   <option value="orange-money">Orange Money</option>
                   <option value="bank-transfer">Virement bancaire</option>
                 </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Numéro de compte
+                </label>
+                <input
+                  type="text"
+                  value={accountNumber}
+                  onChange={(e) => setAccountNumber(e.target.value)}
+                  placeholder={
+                    withdrawalMethod === "wave" ||
+                    withdrawalMethod === "orange-money"
+                      ? "Numéro de téléphone"
+                      : "RIB / Numéro de compte bancaire"
+                  }
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  required
+                />
+                <p className="text-sm text-gray-500 mt-1">
+                  {withdrawalMethod === "wave" ||
+                  withdrawalMethod === "orange-money"
+                    ? "Entrez votre numéro de téléphone"
+                    : "Entrez votre RIB ou numéro de compte bancaire"}
+                </p>
               </div>
 
               <div className="flex gap-3 pt-4">
@@ -456,6 +518,14 @@ const FinancialDetails: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Notification Test Panel - supprimé */}
+      {/* {showNotificationTest && currentUser?.id && (
+        <NotificationTestPanel
+          professionalId={currentUser.id}
+          onClose={() => setShowNotificationTest(false)}
+        />
+      )} */}
     </div>
   );
 };

@@ -557,7 +557,8 @@ const StableProfileForm: React.FC<StableProfileFormProps> = ({
           </div>
         </div>
 
-        {/* Signatures et cachets */}
+        {/* Signatures et cachets - MASQUÉ TEMPORAIREMENT */}
+        {/* 
         <div className="bg-white p-6 rounded-lg shadow-sm border">
           <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center">
             <FileText className="h-5 w-5 mr-2 text-blue-600" />
@@ -589,7 +590,6 @@ const StableProfileForm: React.FC<StableProfileFormProps> = ({
 
             {formData.useElectronicSignature && (
               <>
-                {/* Signature */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Image de signature
@@ -631,7 +631,6 @@ const StableProfileForm: React.FC<StableProfileFormProps> = ({
                   </div>
                 </div>
 
-                {/* Cachet */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Image du cachet
@@ -676,6 +675,7 @@ const StableProfileForm: React.FC<StableProfileFormProps> = ({
             )}
           </div>
         </div>
+        */}
 
         {/* Bouton de sauvegarde */}
         <div className="flex justify-center">

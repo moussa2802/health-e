@@ -1141,7 +1141,7 @@ const ConsultationRoom: React.FC = () => {
               {/* Controls */}
               <div className="p-6 bg-gray-50 border-t border-gray-200">
                 <div className="flex flex-col sm:flex-row justify-center space-y-3 sm:space-y-0 sm:space-x-4">
-                  {currentUser?.type === "professional" && (
+                  {false && currentUser?.type === "professional" && (
                     <button
                       onClick={() =>
                         setShowMedicalRecordPanel(!showMedicalRecordPanel)

@@ -82,102 +82,44 @@ const NotificationCenter: React.FC = () => {
 
   useEffect(() => {
     if (!currentUser?.id) {
-      console.log("⚠️ Pas d'utilisateur connecté pour les notifications");
-      console.log("🔔 [NOTIF DEBUG] currentUser is null or undefined");
-
-      // Nettoyer les listeners existants si l'utilisateur se déconnecte
-      if (unsubscribeRef.current) {
-        console.log(
-          "🧹 [NOTIF DEBUG] Cleaning up existing subscription due to logout"
-        );
-        unsubscribeRef.current();
-        unsubscribeRef.current = null;
-      }
-
-      // Réinitialiser l'état
-      setNotifications([]);
-      setUnreadCount(0);
-      setLoading(false);
       return;
     }
 
-    console.log(
-      "🔔 [NOTIF DEBUG] Setting up notifications for user:",
-      currentUser.id
-    );
-    console.log("🔔 [NOTIF DEBUG] User type:", currentUser.type);
-    console.log(
-      "🔔 Configuration des notifications pour:",
-      currentUser.id,
-      "type:",
-      currentUser.type
-    );
-
-    // Nettoyer les listeners existants avant d'en créer de nouveaux
-    if (unsubscribeRef.current) {
-      console.log(
-        "🧹 [NOTIF DEBUG] Cleaning up existing subscription before creating new one"
-      );
-      unsubscribeRef.current();
-      unsubscribeRef.current = null;
-    }
-
-    const unsubscribe = subscribeToNotifications(
-      currentUser.id,
-      (newNotifications) => {
-        console.log(
-          "🔔 [NOTIF DEBUG] Callback triggered with notifications:",
-          newNotifications
-        );
-        console.log(
-          "📨 Notifications reçues dans NotificationCenter:",
-          newNotifications.length
-        );
-
-        if (newNotifications.length > 0) {
-          console.log(
-            "🔔 [NOTIF DEBUG] First notification:",
-            newNotifications[0]
-          );
-          console.log(
-            "🔔 [NOTIF DEBUG] First notification read status:",
-            newNotifications[0].read
-          );
-        }
-
-        // Déduplication des notifications basée sur l'ID
-        const uniqueNotifications = newNotifications.filter(
-          (notification, index, self) =>
-            index === self.findIndex((n) => n.id === notification.id)
-        );
-
-        console.log(
-          "🔔 [NOTIF DEBUG] Notifications après déduplication:",
-          uniqueNotifications.length
-        );
-
-        setNotifications(uniqueNotifications);
-        setUnreadCount(uniqueNotifications.filter((n) => !n.read).length);
-        console.log(
-          "🔔 [NOTIF DEBUG] Unread count calculated:",
-          uniqueNotifications.filter((n) => !n.read).length
-        );
-        setLoading(false);
-      }
-    );
-
-    // Stocker la fonction de nettoyage
-    unsubscribeRef.current = unsubscribe;
-
-    console.log("🔔 [NOTIF DEBUG] Subscription setup completed");
-
-    return () => {
-      console.log("🔔 [NOTIF DEBUG] Cleaning up subscription");
+    const cleanup = () => {
       if (unsubscribeRef.current) {
         unsubscribeRef.current();
         unsubscribeRef.current = null;
       }
     };
+
+    const setupNotifications = async () => {
+      try {
+        cleanup();
+
+        const unsubscribe = subscribeToNotifications(
+          currentUser.id,
+          (newNotifications) => {
+            // Déduplication des notifications basée sur l'ID
+            const uniqueNotifications = newNotifications.filter(
+              (notification, index, self) =>
+                index === self.findIndex((n) => n.id === notification.id)
+            );
+
+            setNotifications(uniqueNotifications);
+            setUnreadCount(uniqueNotifications.filter((n) => !n.read).length);
+            setLoading(false);
+          }
+        );
+
+        unsubscribeRef.current = unsubscribe;
+      } catch (error) {
+        console.error("❌ Error setting up notifications:", error);
+      }
+    };
+
+    setupNotifications();
+
+    return cleanup;
   }, [currentUser?.id]);
 
   // Update notifications and play sound if new ones arrive

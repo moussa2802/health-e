@@ -14,6 +14,7 @@ import {
   Phone,
 } from "lucide-react";
 import { useAuth } from "../../contexts/AuthContext";
+import { useTerms } from "../../contexts/TermsContext";
 import "react-phone-number-input/style.css";
 import PhoneInput, { isValidPhoneNumber } from "react-phone-number-input";
 import { usePhoneAuth } from "../../hooks/usePhoneAuth";
@@ -40,14 +41,22 @@ const PatientAccess: React.FC = () => {
   const [registerPassword, setRegisterPassword] = useState("");
   const [registerError, setRegisterError] = useState("");
   const [isRegistering, setIsRegistering] = useState(false);
-  const [termsAccepted, setTermsAccepted] = useState(false);
+
   const [registerMethod, setRegisterMethod] = useState<"email" | "phone">(
     "email"
   );
 
   const { login, register, loginWithPhone, createUserWithPhone } = useAuth();
   const { isAuthenticated, currentUser } = useAuth();
+  const { hasAgreedToTerms, setShowTermsModal } = useTerms();
   const navigate = useNavigate();
+
+  // Vérifier si l'utilisateur doit accepter les conditions lors de la première visite
+  useEffect(() => {
+    if (isAuthenticated && !hasAgreedToTerms) {
+      setShowTermsModal(true);
+    }
+  }, [isAuthenticated, hasAgreedToTerms, setShowTermsModal]);
   const {
     sendVerificationCodeForLogin,
     sendVerificationCodeForRegister,
@@ -287,8 +296,11 @@ const PatientAccess: React.FC = () => {
       return;
     }
 
-    if (!termsAccepted) {
-      setRegisterError("Vous devez accepter les conditions d'utilisation");
+    if (!hasAgreedToTerms) {
+      setShowTermsModal(true);
+      setRegisterError(
+        "Vous devez accepter les conditions d'utilisation et la politique de confidentialité"
+      );
       return;
     }
 
@@ -879,45 +891,31 @@ const PatientAccess: React.FC = () => {
                         />
                       </div>
 
-                      <div className="flex items-center">
-                        <input
-                          id="terms"
-                          name="terms"
-                          type="checkbox"
-                          checked={termsAccepted}
-                          onChange={(e) => setTermsAccepted(e.target.checked)}
-                          className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                          required
-                        />
-                        <label
-                          htmlFor="terms"
-                          className="ml-2 block text-sm text-gray-900"
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center">
+                          <input
+                            id="terms"
+                            name="terms"
+                            type="checkbox"
+                            checked={hasAgreedToTerms}
+                            readOnly
+                            className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                          />
+                          <label
+                            htmlFor="terms"
+                            className="ml-2 block text-sm text-gray-900"
+                          >
+                            J'accepte les conditions d'utilisation et la
+                            politique de confidentialité de Health-e
+                          </label>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setShowTermsModal(true)}
+                          className="text-blue-600 hover:text-blue-500 text-sm underline"
                         >
-                          J'accepte les{" "}
-                          <Link
-                            to="/conditions"
-                            target="_blank"
-                            className="font-medium text-blue-500 hover:text-blue-400"
-                          >
-                            conditions d'utilisation
-                          </Link>
-                          ,{" "}
-                          <Link
-                            to="/confidentialite"
-                            target="_blank"
-                            className="font-medium text-blue-500 hover:text-blue-400"
-                          >
-                            la politique de confidentialité
-                          </Link>{" "}
-                          et les{" "}
-                          <Link
-                            to="/ethique"
-                            target="_blank"
-                            className="font-medium text-blue-500 hover:text-blue-400"
-                          >
-                            règles d'éthique
-                          </Link>
-                        </label>
+                          Lire et accepter
+                        </button>
                       </div>
 
                       <button
@@ -1038,45 +1036,31 @@ const PatientAccess: React.FC = () => {
                           )}
                         </div>
 
-                        <div className="flex items-center">
-                          <input
-                            id="terms-phone-register"
-                            name="terms-phone-register"
-                            type="checkbox"
-                            checked={termsAccepted}
-                            onChange={(e) => setTermsAccepted(e.target.checked)}
-                            className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                            required
-                          />
-                          <label
-                            htmlFor="terms-phone-register"
-                            className="ml-2 block text-sm text-gray-900"
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center">
+                            <input
+                              id="terms-phone-register"
+                              name="terms-phone-register"
+                              type="checkbox"
+                              checked={hasAgreedToTerms}
+                              readOnly
+                              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                            />
+                            <label
+                              htmlFor="terms-phone-register"
+                              className="ml-2 block text-sm text-gray-900"
+                            >
+                              J'accepte les conditions d'utilisation et la
+                              politique de confidentialité de Health-e
+                            </label>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => setShowTermsModal(true)}
+                            className="text-blue-600 hover:text-blue-500 text-sm underline"
                           >
-                            J'accepte les{" "}
-                            <Link
-                              to="/conditions"
-                              target="_blank"
-                              className="font-medium text-blue-500 hover:text-blue-400"
-                            >
-                              conditions d'utilisation
-                            </Link>
-                            ,{" "}
-                            <Link
-                              to="/confidentialite"
-                              target="_blank"
-                              className="font-medium text-blue-500 hover:text-blue-400"
-                            >
-                              la politique de confidentialité
-                            </Link>{" "}
-                            et les{" "}
-                            <Link
-                              to="/ethique"
-                              target="_blank"
-                              className="font-medium text-blue-500 hover:text-blue-400"
-                            >
-                              règles d'éthique
-                            </Link>
-                          </label>
+                            Lire et accepter
+                          </button>
                         </div>
 
                         <button

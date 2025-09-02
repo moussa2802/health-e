@@ -37,7 +37,7 @@ export interface Booking {
   startTime: string;
   endTime: string;
   type: "video" | "audio" | "chat";
-  status: "en_attente" | "confirmé" | "confirmed" | "terminé" | "completed" | "annulé";
+  status: "pending" | "confirmed" | "completed" | "cancelled";
   duration: number;
   price: number;
   notes?: string;
@@ -98,14 +98,14 @@ export async function createBooking(
     // Ensure bookings collection exists
     const bookingsRef = collection(db, "bookings");
     console.log("📁 Using bookings collection:", bookingsRef.path);
-    
+
     // Vérifier si le créneau est déjà réservé
     const conflictingQuery = query(
       bookingsRef,
       where("professionalId", "==", bookingData.professionalId),
       where("date", "==", bookingData.date),
       where("startTime", "==", bookingData.startTime.trim()),
-      where("status", "in", ["confirmé", "confirmed", "en_attente"]) // statuts actifs
+      where("status", "in", ["confirmed", "pending"]) // statuts actifs
     );
 
     console.log("🔍 Checking for conflicting bookings...");
@@ -129,7 +129,7 @@ export async function createBooking(
         date: bookingData.date, // Garder la date telle quelle
         startTime: bookingData.startTime.trim(), // Garder l'heure telle quelle
         endTime: bookingData.endTime.trim(), // Garder l'heure telle quelle
-        status: "en_attente",
+        status: "pending",
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
       };
@@ -140,13 +140,16 @@ export async function createBooking(
       );
       console.log("🔐 User ID for booking:", currentUser.uid);
       console.log("🔐 Patient ID in booking data:", bookingData.patientId);
-      console.log("🔐 User matches patient:", currentUser.uid === bookingData.patientId);
-      
+      console.log(
+        "🔐 User matches patient:",
+        currentUser.uid === bookingData.patientId
+      );
+
       return await addDoc(bookingsRef, bookingWithDefaults);
     });
-    
+
     console.log("✅ Booking document created with ID:", result.id);
-    
+
     await createNotification(
       bookingData.professionalId,
       "appointment_request",
@@ -162,7 +165,7 @@ export async function createBooking(
     console.error("❌ Error details:", {
       code: error.code,
       message: error.message,
-      stack: error.stack
+      stack: error.stack,
     });
     throw new Error("Impossible de créer la réservation. Veuillez réessayer.");
   }
@@ -358,10 +361,10 @@ export function subscribeToBookings(
               console.log(
                 `✅ Received ${sortedBookings.length} bookings via subscription (listener: ${listenerId})`
               );
-              
+
               // Debug: Afficher les détails de chaque booking
               if (sortedBookings.length > 0) {
-                console.log('🔍 [BOOKING DEBUG] Booking details:');
+                console.log("🔍 [BOOKING DEBUG] Booking details:");
                 sortedBookings.forEach((booking, index) => {
                   console.log(`  Booking ${index + 1}:`, {
                     id: booking.id,
@@ -369,11 +372,11 @@ export function subscribeToBookings(
                     patientId: booking.patientId,
                     professionalId: booking.professionalId,
                     date: booking.date,
-                    type: booking.type
+                    type: booking.type,
                   });
                 });
               }
-              
+
               callback(sortedBookings);
             } catch (error) {
               console.error(
@@ -492,7 +495,7 @@ export function subscribeToBookings(
 // Mettre à jour le statut d'une réservation
 export async function updateBookingStatus(
   bookingId: string,
-  status: "en_attente" | "confirmé" | "confirmed" | "terminé" | "completed" | "annulé"
+  status: "pending" | "confirmed" | "completed" | "cancelled"
 ): Promise<void> {
   try {
     console.log(`📝 Updating booking ${bookingId} status to:`, status);
@@ -532,7 +535,7 @@ export async function updateBookingStatus(
 // Annuler une réservation
 export async function cancelBooking(bookingId: string): Promise<void> {
   try {
-    await updateBookingStatus(bookingId, "annulé");
+    await updateBookingStatus(bookingId, "cancelled");
 
     const db = getFirestoreInstance();
     if (!db) throw new Error("Firestore not available");
@@ -555,7 +558,7 @@ export async function cancelBooking(bookingId: string): Promise<void> {
       `booking_status_changes/${bookingData.patientId}/${bookingId}`
     );
     await set(statusChangeRef, {
-      status: "annulé",
+      status: "cancelled",
       timestamp: Date.now(),
       professionalName: bookingData.professionalName,
       date: normalizeDate(bookingData.date) || bookingData.date,
@@ -582,7 +585,7 @@ export async function cancelBooking(bookingId: string): Promise<void> {
 // Confirmer une réservation
 export async function confirmBooking(bookingId: string): Promise<void> {
   try {
-    await updateBookingStatus(bookingId, "confirmé");
+    await updateBookingStatus(bookingId, "confirmed");
 
     const db = getFirestoreInstance();
     if (!db) throw new Error("Firestore not available");
@@ -604,7 +607,7 @@ export async function confirmBooking(bookingId: string): Promise<void> {
       `booking_status_changes/${bookingData.patientId}/${bookingId}`
     );
     await set(statusChangeRef, {
-      status: "confirmé",
+      status: "confirmed",
       timestamp: Date.now(),
       professionalName: bookingData.professionalName,
       date: normalizeDate(bookingData.date) || bookingData.date,
@@ -656,11 +659,11 @@ export async function completeBooking(
 
     await retryFirestoreOperation(async () => {
       const updateData: {
-        status: "terminé";
+        status: "completed";
         updatedAt: FieldValue;
         notes?: string;
       } = {
-        status: "terminé",
+        status: "completed",
         updatedAt: serverTimestamp(),
       };
 
@@ -752,7 +755,7 @@ export async function checkAvailability(
       bookingsRef,
       where("professionalId", "==", professionalId),
       where("date", "==", date), // Date normalisée
-      where("status", "in", ["en_attente", "confirmé"])
+      where("status", "in", ["pending", "confirmed"])
     );
 
     const snapshot = await retryFirestoreOperation(async () => {
@@ -808,10 +811,10 @@ export async function getBookingStatistics() {
     const bookings = snapshot.docs.map((doc) => doc.data() as Booking);
 
     const total = bookings.length;
-    const enAttente = bookings.filter((b) => b.status === "en_attente").length;
-    const confirmées = bookings.filter((b) => b.status === "confirmé").length;
-    const terminées = bookings.filter((b) => b.status === "terminé").length;
-    const annulées = bookings.filter((b) => b.status === "annulé").length;
+    const enAttente = bookings.filter((b) => b.status === "pending").length;
+    const confirmées = bookings.filter((b) => b.status === "confirmed").length;
+    const terminées = bookings.filter((b) => b.status === "completed").length;
+    const annulées = bookings.filter((b) => b.status === "cancelled").length;
 
     const tauxAnnulation = total > 0 ? Math.round((annulées / total) * 100) : 0;
     const tauxCompletion =
@@ -819,7 +822,7 @@ export async function getBookingStatistics() {
 
     // Revenus totaux
     const revenuTotal = bookings
-      .filter((b) => b.status === "terminé")
+      .filter((b) => b.status === "completed")
       .reduce((sum, b) => sum + b.price, 0);
 
     const stats = {

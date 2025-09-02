@@ -19,15 +19,31 @@ import {
   orderBy,
   limit,
   getDocs,
+  Timestamp,
 } from "firebase/firestore";
 import { getFirestoreInstance } from "../../utils/firebase";
-import LoadingSpinner from "../../components/ui/LoadingSpinner";
+
+interface BookingData {
+  id?: string;
+  patientId: string;
+  professionalId: string;
+  patientName: string;
+  professionalName: string;
+  date: string;
+  startTime: string;
+  endTime: string;
+  type: string;
+  status: string;
+  paymentStatus?: string;
+  price?: number;
+  createdAt?: Timestamp;
+}
 
 const AppointmentSuccess: React.FC = () => {
   const { bookingId } = useParams<{ bookingId: string }>();
   const [searchParams] = useSearchParams();
   const { currentUser } = useAuth();
-  const [bookingData, setBookingData] = useState<any>(null);
+  const [bookingData, setBookingData] = useState<BookingData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [paymentStatus, setPaymentStatus] = useState<string>("pending");
@@ -76,7 +92,7 @@ const AppointmentSuccess: React.FC = () => {
 
         if (snapshot.exists()) {
           console.log("✅ Booking data found:", snapshot.data());
-          const data = snapshot.data();
+          const data = snapshot.data() as BookingData;
           setBookingData(data);
 
           // Vérifier le statut de paiement
@@ -108,9 +124,57 @@ const AppointmentSuccess: React.FC = () => {
 
           // Essayer de chercher dans les réservations récentes
           try {
+            // Vérifier si c'est un ID temporaire (commence par 'temp_')
+            if (bookingId && bookingId.startsWith("temp_")) {
+              console.log(
+                "🔄 [APPOINTMENT SUCCESS] Temporary ID detected, searching for recent bookings..."
+              );
+
+              // Chercher la réservation la plus récente pour ce patient
+              const recentBookingsQuery = query(
+                collection(db, "bookings"),
+                where("patientId", "==", currentUser?.id),
+                orderBy("createdAt", "desc"),
+                limit(5)
+              );
+
+              const recentSnapshot = await getDocs(recentBookingsQuery);
+              if (!recentSnapshot.empty) {
+                const recentBooking = recentSnapshot.docs[0];
+                console.log(
+                  "🔍 [APPOINTMENT SUCCESS] Found recent booking:",
+                  recentBooking.id,
+                  recentBooking.data()
+                );
+
+                // Vérifier si cette réservation correspond aux paramètres PayTech
+                const paytechRef = searchParams.get("ref_command");
+                if (
+                  paytechRef &&
+                  recentBooking.data().paymentRef === paytechRef
+                ) {
+                  console.log(
+                    "✅ [APPOINTMENT SUCCESS] Found matching booking by payment reference"
+                  );
+                  setBookingData(recentBooking.data() as BookingData);
+                  setLoading(false);
+                  return;
+                }
+
+                // Si pas de correspondance par référence, utiliser la plus récente
+                console.log(
+                  "🔄 [APPOINTMENT SUCCESS] Using most recent booking as fallback"
+                );
+                setBookingData(recentBooking.data() as BookingData);
+                setLoading(false);
+                return;
+              }
+            }
+
+            // Fallback: chercher la réservation la plus récente
             const recentBookingsQuery = query(
               collection(db, "bookings"),
-              where("patientId", "==", currentUser?.uid),
+              where("patientId", "==", currentUser?.id),
               orderBy("createdAt", "desc"),
               limit(1)
             );
@@ -136,12 +200,53 @@ const AppointmentSuccess: React.FC = () => {
         console.error("❌ Error fetching booking:", err);
 
         // Si c'est une erreur de connexion, réessayer après un délai
-        if (err.code === "unavailable" || err.message.includes("offline")) {
+        if (
+          err instanceof Error &&
+          (err.message.includes("offline") ||
+            err.message.includes("unavailable"))
+        ) {
           console.log("🔄 Connection error, retrying in 2 seconds...");
           setTimeout(() => {
             fetchBooking();
           }, 2000);
           return;
+        }
+
+        // Si c'est une erreur de requête invalide, essayer de récupérer les réservations récentes
+        if (
+          err instanceof Error &&
+          (err.message.includes("invalid data") ||
+            err.message.includes("undefined"))
+        ) {
+          console.log(
+            "🔄 [APPOINTMENT SUCCESS] Invalid query error, trying to fetch recent bookings..."
+          );
+          try {
+            const db = getFirestoreInstance();
+            if (db && currentUser?.id) {
+              const recentBookingsQuery = query(
+                collection(db, "bookings"),
+                where("patientId", "==", currentUser.id),
+                orderBy("createdAt", "desc"),
+                limit(1)
+              );
+              const recentSnapshot = await getDocs(recentBookingsQuery);
+              if (!recentSnapshot.empty) {
+                const recentBooking = recentSnapshot.docs[0];
+                console.log(
+                  "✅ [APPOINTMENT SUCCESS] Successfully recovered recent booking"
+                );
+                setBookingData(recentBooking.data() as BookingData);
+                setLoading(false);
+                return;
+              }
+            }
+          } catch (fallbackErr) {
+            console.error(
+              "❌ [APPOINTMENT SUCCESS] Fallback query also failed:",
+              fallbackErr
+            );
+          }
         }
 
         setError("Erreur lors du chargement des détails de la réservation");
@@ -209,6 +314,18 @@ const AppointmentSuccess: React.FC = () => {
       console.log(
         "🔧 [MANUAL UPDATE] Attempting to manually update booking status"
       );
+
+      // Récupérer l'instance Firestore
+      const db = getFirestoreInstance();
+      if (!db) {
+        alert("Base de données non disponible");
+        return;
+      }
+
+      if (!bookingId) {
+        alert("ID de réservation manquant");
+        return;
+      }
 
       // Mettre à jour le statut de la réservation
       const bookingRef = doc(db, "bookings", bookingId);
@@ -320,15 +437,15 @@ const AppointmentSuccess: React.FC = () => {
     <div className="container mx-auto px-4 py-16">
       <div className="max-w-md mx-auto bg-white rounded-lg shadow-md overflow-hidden">
         <div
-          className={`p-6 text-white text-center ${
-            paymentStatus === "completed"
+          className={`text-center p-8 rounded-2xl shadow-lg mb-6 ${
+            paymentStatus === "confirmed" || paymentStatus === "paid"
               ? "bg-gradient-to-r from-green-500 to-green-600"
               : paymentStatus === "pending"
               ? "bg-gradient-to-r from-yellow-500 to-yellow-600"
               : "bg-gradient-to-r from-red-500 to-red-600"
           }`}
         >
-          {paymentStatus === "completed" ? (
+          {paymentStatus === "confirmed" || paymentStatus === "paid" ? (
             <CheckCircle className="h-16 w-16 mx-auto mb-4" />
           ) : paymentStatus === "pending" ? (
             <AlertCircle className="h-16 w-16 mx-auto mb-4" />
@@ -336,14 +453,14 @@ const AppointmentSuccess: React.FC = () => {
             <AlertCircle className="h-16 w-16 mx-auto mb-4" />
           )}
           <h1 className="text-2xl font-bold mb-2">
-            {paymentStatus === "completed"
+            {paymentStatus === "confirmed" || paymentStatus === "paid"
               ? "Paiement confirmé !"
               : paymentStatus === "pending"
               ? "Paiement en attente"
               : "Paiement échoué"}
           </h1>
           <p>
-            {paymentStatus === "completed"
+            {paymentStatus === "confirmed" || paymentStatus === "paid"
               ? "Votre consultation a été réservée et payée avec succès."
               : paymentStatus === "pending"
               ? "Votre réservation est en attente de confirmation de paiement."
@@ -430,7 +547,7 @@ const AppointmentSuccess: React.FC = () => {
           </div>
 
           <div className="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-3">
-            {paymentStatus !== "completed" && (
+            {paymentStatus !== "confirmed" && paymentStatus !== "paid" && (
               <Link
                 to={`/book-appointment/${bookingData?.professionalId}`}
                 className="flex-1 bg-green-500 text-white py-3 px-4 rounded-md text-center font-medium hover:bg-green-600 transition-colors"

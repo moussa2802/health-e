@@ -1081,12 +1081,15 @@ const BookAppointment: React.FC = () => {
                     "Samedi",
                   ];
                   const dayName = dayNames[dateObj.getDay()];
-                  setSelectedDay(dayName);
+                  // Stocker la vraie date au lieu du nom du jour
+                  const realDate = format(dateObj, "yyyy-MM-dd");
+                  setSelectedDay(realDate);
                   setSelectedTime(slot.time || "");
 
                   console.log("🎯 Slot selected and state updated:", {
                     slot,
                     dayName,
+                    realDate,
                     time: slot.time,
                     selectedTimeSlot: slot,
                     selectedTime: slot.time,

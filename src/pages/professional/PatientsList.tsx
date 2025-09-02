@@ -26,6 +26,11 @@ import {
 import { getFirestore } from "firebase/firestore";
 import LoadingSpinner from "../../components/ui/LoadingSpinner";
 import { getBookings } from "../../services/bookingService";
+import {
+  sendMessage,
+  getOrCreateConversation,
+} from "../../services/messageService";
+import { createNotification } from "../../services/notificationService";
 
 type TabType = "active" | "archived";
 
@@ -796,8 +801,15 @@ const PatientsList: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* Patient Info */}
+                  {/* Patient Info - Simplifié : Nom, Âge, Dates de RDV */}
                   <div className="space-y-2 mb-4">
+                    {/* Nom du patient */}
+                    <div className="flex items-center text-sm text-gray-600">
+                      <User className="h-4 w-4 mr-2" />
+                      <span>{patient.name}</span>
+                    </div>
+
+                    {/* Dernière consultation */}
                     {patient.lastConsultation && (
                       <div className="flex items-center text-sm text-gray-600">
                         <Calendar className="h-4 w-4 mr-2" />
@@ -807,6 +819,8 @@ const PatientsList: React.FC = () => {
                         </span>
                       </div>
                     )}
+
+                    {/* Prochain rendez-vous */}
                     {patient.nextAppointment && !patient.isArchived && (
                       <div className="flex items-center text-sm text-green-600">
                         <Clock className="h-4 w-4 mr-2" />
@@ -815,6 +829,8 @@ const PatientsList: React.FC = () => {
                         </span>
                       </div>
                     )}
+
+                    {/* Date d'archivage si archivé */}
                     {patient.isArchived && patient.archivedAt && (
                       <div className="flex items-center text-sm text-gray-500">
                         <Archive className="h-4 w-4 mr-2" />
@@ -931,38 +947,23 @@ const PatientsList: React.FC = () => {
                             Type: {record.consultationType}
                           </p>
                         </div>
-                        <button
-                          onClick={() => showPrescription(record)}
-                          className="px-4 py-2 bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition-colors text-sm font-medium"
-                        >
-                          <Pill className="h-4 w-4 inline mr-2" />
-                          Ordonnance
-                        </button>
                       </div>
 
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                           <h4 className="font-medium text-gray-900 mb-2">
-                            Diagnostic
+                            Type de consultation
                           </h4>
                           <p className="text-gray-700">
-                            {record.diagnosis || "Non spécifié"}
+                            {record.consultationType || "Non spécifié"}
                           </p>
                         </div>
                         <div>
                           <h4 className="font-medium text-gray-900 mb-2">
-                            Traitement
+                            Date de consultation
                           </h4>
                           <p className="text-gray-700">
-                            {record.treatment || "Non spécifié"}
-                          </p>
-                        </div>
-                        <div className="md:col-span-2">
-                          <h4 className="font-medium text-gray-900 mb-2">
-                            Recommandations
-                          </h4>
-                          <p className="text-gray-700">
-                            {record.recommendations || "Aucune recommandation"}
+                            {formatDate(record.consultationDate)}
                           </p>
                         </div>
                       </div>
@@ -1038,18 +1039,35 @@ const PatientsList: React.FC = () => {
                   />
                 ) : (
                   <div className="space-y-3">
-                    <input
-                      type="date"
-                      value={reminderDate}
-                      onChange={(e) => setReminderDate(e.target.value)}
-                      className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                    <input
-                      type="time"
-                      value={reminderTime}
-                      onChange={(e) => setReminderTime(e.target.value)}
-                      className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Date du rappel
+                      </label>
+                      <input
+                        type="date"
+                        value={reminderDate}
+                        onChange={(e) => setReminderDate(e.target.value)}
+                        min={new Date().toISOString().split("T")[0]}
+                        className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Heure du rappel
+                      </label>
+                      <input
+                        type="time"
+                        value={reminderTime}
+                        onChange={(e) => setReminderTime(e.target.value)}
+                        className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                      <p className="text-sm text-blue-700">
+                        <strong>💡 Conseil :</strong> Le patient recevra une
+                        notification de rappel à la date et heure spécifiées.
+                      </p>
+                    </div>
                   </div>
                 )}
               </div>
@@ -1062,10 +1080,102 @@ const PatientsList: React.FC = () => {
                   Annuler
                 </button>
                 <button
-                  onClick={() => {
-                    // Send message logic here
-                    console.log("Send message to patient:", selectedPatient.id);
-                    setShowMessageModal(false);
+                  onClick={async () => {
+                    try {
+                      if (!selectedPatient || !currentUser?.id) {
+                        throw new Error("Informations manquantes");
+                      }
+
+                      if (messageType === "text") {
+                        if (!newMessage.trim()) {
+                          throw new Error("Veuillez saisir un message");
+                        }
+
+                        // Créer ou récupérer la conversation
+                        const conversationId = await getOrCreateConversation(
+                          currentUser.id,
+                          currentUser.name || "Professionnel",
+                          "professional",
+                          selectedPatient.id,
+                          selectedPatient.name,
+                          "patient"
+                        );
+
+                        // Envoyer le message
+                        await sendMessage(
+                          conversationId,
+                          currentUser.id,
+                          currentUser.name || "Professionnel",
+                          "professional",
+                          newMessage.trim()
+                        );
+
+                        // ✅ La notification est créée automatiquement par sendMessage
+                        // Pas besoin de createNotification manuel ici
+
+                        setToastMessage("Message envoyé avec succès !");
+                        setToastType("success");
+                      } else {
+                        // Envoi de rappel
+                        if (!reminderDate || !reminderTime) {
+                          throw new Error(
+                            "Veuillez sélectionner une date et une heure"
+                          );
+                        }
+
+                        const reminderDateTime = new Date(
+                          `${reminderDate}T${reminderTime}`
+                        );
+                        const now = new Date();
+
+                        if (reminderDateTime <= now) {
+                          throw new Error(
+                            "La date de rappel doit être dans le futur"
+                          );
+                        }
+
+                        // Créer une notification de rappel
+                        await createNotification(
+                          selectedPatient.id,
+                          "appointment_request",
+                          "Rappel de rendez-vous",
+                          `Rappel de votre professionnel : ${
+                            currentUser.name || "Professionnel"
+                          } vous envoie un rappel pour le ${reminderDateTime.toLocaleDateString(
+                            "fr-FR"
+                          )} à ${reminderDateTime.toLocaleTimeString("fr-FR", {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}`,
+                          `reminder_${Date.now()}`,
+                          "booking",
+                          "high"
+                        );
+
+                        setToastMessage("Rappel programmé avec succès !");
+                        setToastType("success");
+                      }
+
+                      // Réinitialiser le formulaire
+                      setNewMessage("");
+                      setReminderDate("");
+                      setReminderTime("");
+                      setShowMessageModal(false);
+                      setShowToast(true);
+
+                      // Masquer le toast après 3 secondes
+                      setTimeout(() => setShowToast(false), 3000);
+                    } catch (error) {
+                      console.error("❌ Erreur lors de l'envoi:", error);
+                      setToastMessage(
+                        error instanceof Error
+                          ? error.message
+                          : "Erreur lors de l'envoi"
+                      );
+                      setToastType("error");
+                      setShowToast(true);
+                      setTimeout(() => setShowToast(false), 3000);
+                    }
                   }}
                   className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
                 >

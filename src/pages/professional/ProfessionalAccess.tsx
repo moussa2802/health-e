@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
   Stethoscope,
@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "../../contexts/AuthContext";
 import { useLanguage } from "../../contexts/LanguageContext";
+import { useTerms } from "../../contexts/TermsContext";
 import { getAuth } from "firebase/auth";
 import { useEmailVerification } from "../../hooks/useEmailVerification";
 import { usePhoneAuth } from "../../hooks/usePhoneAuth";
@@ -39,7 +40,7 @@ const ProfessionalAccess: React.FC = () => {
   const [registerPassword, setRegisterPassword] = useState("");
   const [registerError, setRegisterError] = useState("");
   const [isRegistering, setIsRegistering] = useState(false);
-  const [termsAccepted, setTermsAccepted] = useState(false);
+
   const [serviceType, setServiceType] = useState<"mental" | "sexual">("mental");
   const [registerMethod, setRegisterMethod] = useState<"email" | "phone">(
     "email"
@@ -48,7 +49,15 @@ const ProfessionalAccess: React.FC = () => {
   const { login, register, loginWithPhone, createUserWithPhone } = useAuth();
   const { language } = useLanguage();
   const { isAuthenticated, currentUser } = useAuth();
+  const { hasAgreedToTerms, setShowTermsModal } = useTerms();
   const navigate = useNavigate();
+
+  // Vérifier si l'utilisateur doit accepter les conditions lors de la première visite
+  useEffect(() => {
+    if (isAuthenticated && !hasAgreedToTerms) {
+      setShowTermsModal(true);
+    }
+  }, [isAuthenticated, hasAgreedToTerms, setShowTermsModal]);
   const {
     sendVerificationEmail,
     loading: emailVerificationLoading,
@@ -221,8 +230,11 @@ const ProfessionalAccess: React.FC = () => {
         return;
       }
 
-      if (!termsAccepted) {
-        setRegisterError("Vous devez accepter les conditions d'utilisation");
+      if (!hasAgreedToTerms) {
+        setShowTermsModal(true);
+        setRegisterError(
+          "Vous devez accepter les conditions d'utilisation et la politique de confidentialité"
+        );
         return;
       }
 
@@ -279,8 +291,11 @@ const ProfessionalAccess: React.FC = () => {
         return;
       }
 
-      if (!termsAccepted) {
-        setRegisterError("Vous devez accepter les conditions d'utilisation");
+      if (!hasAgreedToTerms) {
+        setShowTermsModal(true);
+        setRegisterError(
+          "Vous devez accepter les conditions d'utilisation et la politique de confidentialité"
+        );
         return;
       }
 
@@ -605,45 +620,31 @@ const ProfessionalAccess: React.FC = () => {
                     </div>
                   </div>
 
-                  <div className="flex items-center">
-                    <input
-                      id="terms"
-                      name="terms"
-                      type="checkbox"
-                      checked={termsAccepted}
-                      onChange={(e) => setTermsAccepted(e.target.checked)}
-                      className="h-4 w-4 text-teal-600 focus:ring-teal-500 border-gray-300 rounded"
-                      required
-                    />
-                    <label
-                      htmlFor="terms"
-                      className="ml-2 block text-sm text-gray-900"
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center">
+                      <input
+                        id="terms"
+                        name="terms"
+                        type="checkbox"
+                        checked={hasAgreedToTerms}
+                        readOnly
+                        className="h-4 w-4 text-teal-600 focus:ring-teal-500 border-gray-300 rounded"
+                      />
+                      <label
+                        htmlFor="terms"
+                        className="ml-2 block text-sm text-gray-900"
+                      >
+                        J'accepte les conditions d'utilisation et la politique
+                        de confidentialité de Health-e
+                      </label>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setShowTermsModal(true)}
+                      className="text-teal-600 hover:text-teal-500 text-sm underline"
                     >
-                      J'accepte les{" "}
-                      <Link
-                        to="/conditions"
-                        target="_blank"
-                        className="font-medium text-teal-500 hover:text-teal-400"
-                      >
-                        conditions d'utilisation
-                      </Link>
-                      ,{" "}
-                      <Link
-                        to="/confidentialite"
-                        target="_blank"
-                        className="font-medium text-teal-500 hover:text-teal-400"
-                      >
-                        la politique de confidentialité
-                      </Link>{" "}
-                      et les{" "}
-                      <Link
-                        to="/ethique"
-                        target="_blank"
-                        className="font-medium text-teal-500 hover:text-teal-400"
-                      >
-                        règles d'éthique
-                      </Link>
-                    </label>
+                      Lire et accepter
+                    </button>
                   </div>
 
                   <button

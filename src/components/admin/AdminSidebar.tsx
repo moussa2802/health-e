@@ -10,6 +10,8 @@ import {
   MessageSquare,
   Users2,
   ShieldCheck,
+  DollarSign,
+  Bell,
 } from "lucide-react";
 import { useLanguage } from "../../contexts/LanguageContext";
 
@@ -22,6 +24,12 @@ const AdminSidebar = () => {
       path: "/admin/dashboard",
       icon: LayoutDashboard,
       label: language === "fr" ? "Tableau de bord" : "Dashboard",
+    },
+    {
+      path: "/admin/notifications",
+      icon: Bell,
+      label:
+        language === "fr" ? "Centre de notifications" : "Notification Center",
     },
     {
       path: "/admin/users",
@@ -63,6 +71,11 @@ const AdminSidebar = () => {
       icon: MessageSquare,
       label: language === "fr" ? "Support" : "Support",
     },
+    {
+      path: "/admin/withdrawals",
+      icon: DollarSign,
+      label: language === "fr" ? "Retraits" : "Withdrawals",
+    },
     // Item externe pour Health-eShare intégré dans le menu principal
     {
       path: "https://health-eshare.netlify.app/",
@@ -74,9 +87,9 @@ const AdminSidebar = () => {
   ];
 
   return (
-    <aside className="h-full pt-8">
-      <nav className="mt-4">
-        <ul className="space-y-2 px-4">
+    <aside className="h-full pt-8 flex flex-col">
+      <nav className="mt-4 flex-1 overflow-y-auto">
+        <ul className="space-y-2 px-4 pb-4">
           {menuItems.map(({ path, icon: Icon, label, external, highlight }) => {
             // Vérifier si c'est un lien externe
             const isExternal = external && path.startsWith("http");

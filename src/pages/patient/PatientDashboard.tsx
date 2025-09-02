@@ -24,8 +24,13 @@ import {
 } from "lucide-react";
 import { useAuth } from "../../contexts/AuthContext";
 import { useBookings } from "../../hooks/useBookings";
-import { formatLocalDate } from "../../utils/dateUtils";
 import { cancelBooking } from "../../services/bookingService";
+import {
+  formatDateTime,
+  formatDateTimeWithTimezone,
+  isDatePassed,
+  getTimeWarning,
+} from "../../utils/dateTimeUtils";
 import MessagingCenter from "../../components/messaging/MessagingCenter";
 import {
   getFirestore,
@@ -968,13 +973,57 @@ const PatientDashboard: React.FC = () => {
     if (!dateString) return "Non disponible";
 
     try {
-      const date = new Date(dateString);
+      // Si c'est déjà un nom de jour (ex: "Jeudi"), le retourner tel quel
+      if (
+        [
+          "Lundi",
+          "Mardi",
+          "Mercredi",
+          "Jeudi",
+          "Vendredi",
+          "Samedi",
+          "Dimanche",
+        ].includes(dateString)
+      ) {
+        return dateString;
+      }
+
+      // Créer la date en spécifiant explicitement le fuseau horaire local
+      let date: Date;
+
+      if (dateString.includes("-")) {
+        // Format YYYY-MM-DD : créer la date en heure locale
+        const [year, month, day] = dateString.split("-").map(Number);
+        // Créer la date à midi dans le fuseau local pour éviter les problèmes de minuit
+        date = new Date(year, month - 1, day, 12, 0, 0);
+      } else {
+        // Autre format : utiliser le parser standard
+        date = new Date(dateString);
+      }
+
+      if (isNaN(date.getTime())) {
+        // Si ce n'est pas une date valide, retourner la chaîne originale
+        console.warn("⚠️ [FORMAT DATE] Invalid date:", dateString);
+        return dateString;
+      }
+
+      // Debug du formatage
+      console.log("🔍 [FORMAT DATE] Formatting date:", {
+        original: dateString,
+        parsed: date.toISOString(),
+        local: date.toLocaleDateString("fr-FR"),
+        year: date.getFullYear(),
+        month: date.getMonth() + 1,
+        day: date.getDate(),
+      });
+
       return date.toLocaleDateString("fr-FR", {
         year: "numeric",
         month: "long",
         day: "numeric",
       });
     } catch (error) {
+      console.warn("⚠️ Erreur formatage date:", error, dateString);
       return dateString;
     }
   };
@@ -994,22 +1043,84 @@ const PatientDashboard: React.FC = () => {
 
   // Fonction pour comparer les dates en tenant compte seulement du jour (pas de l'heure)
   const isDatePassed = (dateString: string) => {
-    const bookingDate = new Date(dateString);
-    const today = new Date();
+    try {
+      console.log("🔍 [DATE DEBUG] Checking if date passed:", dateString);
 
-    // Réinitialiser l'heure à minuit pour la comparaison
-    const bookingDay = new Date(
-      bookingDate.getFullYear(),
-      bookingDate.getMonth(),
-      bookingDate.getDate()
-    );
-    const todayDay = new Date(
-      today.getFullYear(),
-      today.getMonth(),
-      today.getDate()
-    );
+      // Si c'est un nom de jour (ex: "Jeudi"), retourner false (pas encore passé)
+      if (
+        [
+          "Lundi",
+          "Mardi",
+          "Mercredi",
+          "Jeudi",
+          "Vendredi",
+          "Samedi",
+          "Dimanche",
+        ].includes(dateString)
+      ) {
+        console.log(
+          "🔍 [DATE DEBUG] Day name detected, treating as not passed"
+        );
+        return false;
+      }
 
-    return bookingDay < todayDay;
+      // Créer la date en spécifiant explicitement le fuseau horaire local
+      let bookingDate: Date;
+
+      if (dateString.includes("-")) {
+        // Format YYYY-MM-DD : créer la date en heure locale
+        const [year, month, day] = dateString.split("-").map(Number);
+        // Créer la date à midi dans le fuseau local pour éviter les problèmes de minuit
+        bookingDate = new Date(year, month - 1, day, 12, 0, 0);
+      } else {
+        // Autre format : utiliser le parser standard
+        bookingDate = new Date(dateString);
+      }
+
+      const today = new Date();
+
+      // Debug des dates
+      console.log("🔍 [DATE DEBUG] Parsed dates:", {
+        original: dateString,
+        parsed: bookingDate.toISOString(),
+        today: today.toISOString(),
+        parsedLocal: bookingDate.toLocaleDateString("fr-FR"),
+        todayLocal: today.toLocaleDateString("fr-FR"),
+        parsedYear: bookingDate.getFullYear(),
+        parsedMonth: bookingDate.getMonth() + 1,
+        parsedDay: bookingDate.getDate(),
+      });
+
+      // Vérifier si la date est valide
+      if (isNaN(bookingDate.getTime())) {
+        console.warn("⚠️ [DATE DEBUG] Invalid date, treating as not passed");
+        return false;
+      }
+
+      // Comparer directement les composants de date (année, mois, jour)
+      const isPassed =
+        bookingDate.getFullYear() < today.getFullYear() ||
+        (bookingDate.getFullYear() === today.getFullYear() &&
+          bookingDate.getMonth() < today.getMonth()) ||
+        (bookingDate.getFullYear() === today.getFullYear() &&
+          bookingDate.getMonth() === today.getMonth() &&
+          bookingDate.getDate() < today.getDate());
+
+      console.log("🔍 [DATE DEBUG] Date comparison result:", {
+        bookingYear: bookingDate.getFullYear(),
+        bookingMonth: bookingDate.getMonth() + 1,
+        bookingDay: bookingDate.getDate(),
+        todayYear: today.getFullYear(),
+        todayMonth: today.getMonth() + 1,
+        todayDay: today.getDate(),
+        isPassed,
+      });
+
+      return isPassed;
+    } catch (error) {
+      console.error("❌ [DATE DEBUG] Error in isDatePassed:", error);
+      return false; // En cas d'erreur, traiter comme non passée
+    }
   };
 
   const upcomingBookings = bookings.filter(
@@ -1202,7 +1313,10 @@ const PatientDashboard: React.FC = () => {
                         <div className="flex items-center text-gray-600 bg-gray-50 rounded-lg p-3">
                           <Calendar className="h-4 w-4 mr-2 text-blue-500" />
                           <span className="text-sm font-medium">
-                            {booking.date} à {booking.startTime}
+                            {formatDateTimeWithTimezone(
+                              booking.date,
+                              booking.startTime
+                            )}
                           </span>
                         </div>
                         <div className="flex items-center text-gray-600 bg-gray-50 rounded-lg p-3">
@@ -1281,146 +1395,148 @@ const PatientDashboard: React.FC = () => {
             )}
           </div>
 
-          {/* Medical Records Section */}
-          <div className="mt-8">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-bold text-gray-900 flex items-center">
-                <FileText className="h-6 w-6 mr-3 text-green-600" />
-                Mes dossiers médicaux
-              </h2>
-            </div>
-
-            {loadingRecords ? (
-              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 flex justify-center">
-                <LoadingSpinner size="lg" />
+          {/* Medical Records Section - MASQUÉE TEMPORAIREMENT */}
+          {false && (
+            <div className="mt-8">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-2xl font-bold text-gray-900 flex items-center">
+                  <FileText className="h-6 w-6 mr-3 text-green-600" />
+                  Mes dossiers médicaux
+                </h2>
               </div>
-            ) : recordError ? (
-              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-                <div className="flex items-center text-red-500 mb-4">
-                  <AlertCircle className="h-5 w-5 mr-2" />
-                  <p>{recordError}</p>
-                </div>
-                <button
-                  onClick={() => window.location.reload()}
-                  className="text-blue-500 hover:text-blue-600 font-medium"
-                >
-                  Réessayer
-                </button>
-              </div>
-            ) : medicalRecords.length === 0 ? (
-              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 text-center">
-                <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <FileText className="h-8 w-8 text-gray-400" />
-                </div>
-                <p className="text-gray-500 font-medium mb-4">
-                  Vous n'avez pas encore de dossiers médicaux.
-                </p>
-                <button
-                  onClick={() => setShowMedicalRecordModal(true)}
-                  className="bg-gradient-to-r from-green-500 to-green-600 text-white px-6 py-2.5 rounded-xl font-semibold hover:from-green-600 hover:to-green-700 transition-all duration-200 shadow-md hover:shadow-lg flex items-center mx-auto"
-                >
-                  <FileText className="h-4 w-4 mr-2" />
-                  Voir tous les dossiers
-                </button>
-              </div>
-            ) : null}
 
-            {medicalRecords.length > 0 ? (
-              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-                <div className="divide-y divide-gray-100">
-                  {medicalRecords.slice(0, 3).map((record) => (
-                    <div
-                      key={record.id}
-                      className="p-6 hover:bg-gray-50 transition-colors"
-                    >
-                      <div className="flex justify-between items-start mb-4">
-                        <div className="flex items-center">
-                          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-green-500 to-green-600 flex items-center justify-center mr-4 shadow-md">
-                            <Stethoscope className="h-5 w-5 text-white" />
-                          </div>
-                          <div>
-                            <div className="flex items-center mb-1">
-                              <Calendar className="h-4 w-4 text-gray-500 mr-2" />
-                              <span className="text-sm font-semibold text-gray-900">
-                                {formatLocalDate(
-                                  record.consultationDate
-                                    ? new Date(record.consultationDate)
-                                    : record.createdAt?.toDate
-                                    ? record.createdAt.toDate()
-                                    : new Date()
-                                )}
-                              </span>
-                              <span className="ml-3 px-2 py-0.5 bg-blue-100 text-blue-800 text-xs rounded-full font-medium">
-                                {record.consultationType || "Vidéo"}
-                              </span>
-                            </div>
-                            <p className="text-sm text-gray-600">
-                              Dr. {record.professionalName}
-                            </p>
-                          </div>
-                        </div>
-                        <div className="flex space-x-2">
-                          {record.treatment && (
-                            <button
-                              onClick={() => showPrescription(record)}
-                              className="text-green-600 hover:text-green-700 text-sm flex items-center font-medium bg-green-50 hover:bg-green-100 px-3 py-1.5 rounded-lg transition-colors"
-                            >
-                              <Pill className="h-4 w-4 mr-1" />
-                              <span className="hidden sm:inline">
-                                Ordonnance
-                              </span>
-                            </button>
-                          )}
-                          <button
-                            onClick={() => {
-                              setSelectedRecord(record);
-                              setShowMedicalRecordModal(true);
-                            }}
-                            className="text-blue-600 hover:text-blue-700 text-sm flex items-center font-medium bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-lg transition-colors"
-                          >
-                            <Eye className="h-4 w-4 mr-1" />
-                            <span className="hidden sm:inline">Détails</span>
-                          </button>
-                        </div>
-                      </div>
-                      <div className="space-y-2">
-                        <p className="text-gray-700 text-sm">
-                          <span className="font-semibold">Diagnostic:</span>{" "}
-                          {record.diagnosis || "Non spécifié"}
-                        </p>
-                        {record.treatment && (
-                          <p className="text-gray-700 text-sm">
-                            <span className="font-semibold">Traitement:</span>{" "}
-                            {record.treatment}
-                          </p>
-                        )}
-                        {record.recommendations && (
-                          <p className="text-gray-700 text-sm">
-                            <span className="font-semibold">
-                              Recommandations:
-                            </span>{" "}
-                            {record.recommendations}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                  ))}
+              {loadingRecords ? (
+                <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 flex justify-center">
+                  <LoadingSpinner size="lg" />
                 </div>
-
-                {medicalRecords.length > 3 && (
-                  <div className="p-6 bg-gray-50 border-t border-gray-100 text-center">
-                    <button
-                      onClick={loadAllRecords}
-                      className="text-blue-500 hover:text-blue-600 text-sm font-semibold flex items-center justify-center mx-auto"
-                    >
-                      <Plus className="h-4 w-4 mr-1" />
-                      Voir tous les dossiers ({medicalRecords.length})
-                    </button>
+              ) : recordError ? (
+                <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+                  <div className="flex items-center text-red-500 mb-4">
+                    <AlertCircle className="h-5 w-5 mr-2" />
+                    <p>{recordError}</p>
                   </div>
-                )}
-              </div>
-            ) : null}
-          </div>
+                  <button
+                    onClick={() => window.location.reload()}
+                    className="text-blue-500 hover:text-blue-600 font-medium"
+                  >
+                    Réessayer
+                  </button>
+                </div>
+              ) : medicalRecords.length === 0 ? (
+                <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 text-center">
+                  <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <FileText className="h-8 w-8 text-gray-400" />
+                  </div>
+                  <p className="text-gray-500 font-medium mb-4">
+                    Vous n'avez pas encore de dossiers médicaux.
+                  </p>
+                  <button
+                    onClick={() => setShowMedicalRecordModal(true)}
+                    className="bg-gradient-to-r from-green-500 to-green-600 text-white px-6 py-2.5 rounded-xl font-semibold hover:from-green-600 hover:to-green-700 transition-all duration-200 shadow-md hover:shadow-lg flex items-center mx-auto"
+                  >
+                    <FileText className="h-4 w-4 mr-2" />
+                    Voir tous les dossiers
+                  </button>
+                </div>
+              ) : null}
+
+              {medicalRecords.length > 0 ? (
+                <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                  <div className="divide-y divide-gray-100">
+                    {medicalRecords.slice(0, 3).map((record) => (
+                      <div
+                        key={record.id}
+                        className="p-6 hover:bg-gray-50 transition-colors"
+                      >
+                        <div className="flex justify-between items-start mb-4">
+                          <div className="flex items-center">
+                            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-green-500 to-green-600 flex items-center justify-center mr-4 shadow-md">
+                              <Stethoscope className="h-5 w-5 text-white" />
+                            </div>
+                            <div>
+                              <div className="flex items-center mb-1">
+                                <Calendar className="h-4 w-4 text-gray-500 mr-2" />
+                                <span className="text-sm font-semibold text-gray-900">
+                                  {formatLocalDate(
+                                    record.consultationDate
+                                      ? new Date(record.consultationDate)
+                                      : record.createdAt?.toDate
+                                      ? record.createdAt.toDate()
+                                      : new Date()
+                                  )}
+                                </span>
+                                <span className="ml-3 px-2 py-0.5 bg-blue-100 text-blue-800 text-xs rounded-full font-medium">
+                                  {record.consultationType || "Vidéo"}
+                                </span>
+                              </div>
+                              <p className="text-sm text-gray-600">
+                                Dr. {record.professionalName}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex space-x-2">
+                            {record.treatment && (
+                              <button
+                                onClick={() => showPrescription(record)}
+                                className="text-green-600 hover:text-green-700 text-sm flex items-center font-medium bg-green-50 hover:bg-green-100 px-3 py-1.5 rounded-lg transition-colors"
+                              >
+                                <Pill className="h-4 w-4 mr-1" />
+                                <span className="hidden sm:inline">
+                                  Ordonnance
+                                </span>
+                              </button>
+                            )}
+                            <button
+                              onClick={() => {
+                                setSelectedRecord(record);
+                                setShowMedicalRecordModal(true);
+                              }}
+                              className="text-blue-600 hover:text-blue-700 text-sm flex items-center font-medium bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-lg transition-colors"
+                            >
+                              <Eye className="h-4 w-4 mr-1" />
+                              <span className="hidden sm:inline">Détails</span>
+                            </button>
+                          </div>
+                        </div>
+                        <div className="space-y-2">
+                          <p className="text-gray-700 text-sm">
+                            <span className="font-semibold">Diagnostic:</span>{" "}
+                            {record.diagnosis || "Non spécifié"}
+                          </p>
+                          {record.treatment && (
+                            <p className="text-gray-700 text-sm">
+                              <span className="font-semibold">Traitement:</span>{" "}
+                              {record.treatment}
+                            </p>
+                          )}
+                          {record.recommendations && (
+                            <p className="text-gray-700 text-sm">
+                              <span className="font-semibold">
+                                Recommandations:
+                              </span>{" "}
+                              {record.recommendations}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {medicalRecords.length > 3 && (
+                    <div className="p-6 bg-gray-50 border-t border-gray-100 text-center">
+                      <button
+                        onClick={loadAllRecords}
+                        className="text-blue-500 hover:text-blue-600 text-sm font-semibold flex items-center justify-center mx-auto"
+                      >
+                        <Plus className="h-4 w-4 mr-1" />
+                        Voir tous les dossiers ({medicalRecords.length})
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ) : null}
+            </div>
+          )}
 
           {/* Messaging Center */}
           <div className="mt-8 mb-8">

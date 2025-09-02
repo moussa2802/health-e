@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
-import { ArrowRight, X, Play, Pause } from "lucide-react";
+import { ArrowRight, X, Play } from "lucide-react";
 import LazyImage from "../ui/LazyImage";
 import { ContentItem } from "../../services/contentService";
 import { useLanguage } from "../../contexts/LanguageContext";
@@ -15,9 +15,7 @@ const ContentCard: React.FC<ContentCardProps> = ({
 }) => {
   const [expanded, setExpanded] = useState(false);
   const [showModal, setShowModal] = useState(false);
-  const [isPlaying, setIsPlaying] = useState(false);
   const { language } = useLanguage();
-  const videoRef = useRef<HTMLVideoElement>(null);
   const modalVideoRef = useRef<HTMLVideoElement>(null);
 
   const MAX_CHARS = 150;
@@ -26,20 +24,11 @@ const ContentCard: React.FC<ContentCardProps> = ({
     ? `${content.description.substring(0, MAX_CHARS)}...`
     : content.description;
 
-  // Handle video play/pause in card
+  // Handle video play - always open modal
   const handleVideoPlay = (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (videoRef.current) {
-      if (isPlaying) {
-        videoRef.current.pause();
-      } else {
-        videoRef.current.play();
-      }
-      setIsPlaying(!isPlaying);
-    } else {
-      // If video isn't loaded yet, open modal
-      setShowModal(true);
-    }
+    // Always open modal when play button is clicked
+    setShowModal(true);
   };
 
   // Cleanup video when modal closes
@@ -56,16 +45,10 @@ const ContentCard: React.FC<ContentCardProps> = ({
           {content.videoUrl ? (
             <div className="relative">
               <div className="w-full h-32 sm:h-40 md:h-48 lg:h-52">
-                <video
-                  ref={videoRef}
-                  src={content.videoUrl}
+                <LazyImage
+                  src={content.imageUrl}
+                  alt={content.title}
                   className="w-full h-full object-cover rounded-t-xl"
-                  poster={content.imageUrl}
-                  onPlay={() => setIsPlaying(true)}
-                  onPause={() => setIsPlaying(false)}
-                  onClick={(e) => e.stopPropagation()}
-                  muted
-                  playsInline
                 />
               </div>
               <div
@@ -73,11 +56,7 @@ const ContentCard: React.FC<ContentCardProps> = ({
                 onClick={handleVideoPlay}
               >
                 <div className="w-10 h-10 sm:w-12 sm:h-12 bg-white rounded-full flex items-center justify-center">
-                  {isPlaying ? (
-                    <Pause className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600" />
-                  ) : (
-                    <Play className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600" />
-                  )}
+                  <Play className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600" />
                 </div>
               </div>
             </div>

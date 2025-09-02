@@ -33,7 +33,9 @@ const ProfessionalDashboard = lazy(
 );
 const PatientAccess = lazy(() => import("./pages/patient/PatientAccess"));
 const ForgotPassword = lazy(() => import("./components/auth/ForgotPassword"));
-const ForgotPasswordProfessional = lazy(() => import("./components/auth/ForgotPasswordProfessional"));
+const ForgotPasswordProfessional = lazy(
+  () => import("./components/auth/ForgotPasswordProfessional")
+);
 const ProfessionalAccess = lazy(
   () => import("./pages/professional/ProfessionalAccess")
 );
@@ -79,6 +81,10 @@ const AdminStatistics = lazy(() => import("./pages/admin/AdminStatistics"));
 const AdminContent = lazy(() => import("./pages/admin/AdminContent"));
 const AdminSupport = lazy(() => import("./pages/admin/AdminSupport"));
 const AdminMessages = lazy(() => import("./pages/admin/AdminMessages"));
+const AdminWithdrawals = lazy(() => import("./pages/admin/WithdrawalsPage"));
+const AdminNotifications = lazy(
+  () => import("./pages/admin/AdminNotificationsPage")
+);
 const FAQ = lazy(() => import("./pages/FAQ"));
 const Contact = lazy(() => import("./pages/Contact"));
 const Privacy = lazy(() => import("./pages/Privacy"));
@@ -237,6 +243,31 @@ function App() {
     };
   }, []);
 
+  // Auto-reload si les chunks lazy échouent (nouveau build déployé)
+  useEffect(() => {
+    const handler = (e: any) => {
+      const msg = String(e?.message || e?.reason?.message || e?.reason || "");
+
+      // Vite/webpack: quand un nouvel artefact est déployé, l'ancien onglet
+      // n'arrive plus à charger les chunks -> on recharge proprement.
+      if (
+        /ChunkLoadError|Loading chunk \d+ failed|CSS_CHUNK_LOAD_FAILED/i.test(
+          msg
+        )
+      ) {
+        console.warn("🆕 Nouveau build détecté. Recharge de la page…");
+        window.location.reload();
+      }
+    };
+
+    window.addEventListener("error", handler);
+    window.addEventListener("unhandledrejection", handler);
+    return () => {
+      window.removeEventListener("error", handler);
+      window.removeEventListener("unhandledrejection", handler);
+    };
+  }, []);
+
   return (
     <ErrorBoundary>
       <Router>
@@ -253,19 +284,29 @@ function App() {
                       <Route path="/" element={<HomePage />} />
 
                       <Route path="/patient" element={<PatientAccess />} />
-                      <Route path="/patient/access" element={<PatientAccess />} />
-                      <Route path="/patient/forgot-password" element={<ForgotPassword />} />
+                      <Route
+                        path="/patient/access"
+                        element={<PatientAccess />}
+                      />
+                      <Route
+                        path="/patient/forgot-password"
+                        element={<ForgotPassword />}
+                      />
                       <Route
                         path="/professional/access"
                         element={<ProfessionalAccess />}
                       />
-                      <Route path="/professional/forgot-password" element={<ForgotPasswordProfessional />} />
+                      <Route
+                        path="/professional/forgot-password"
+                        element={<ForgotPasswordProfessional />}
+                      />
                       <Route path="/admin/login" element={<AdminLogin />} />
                       <Route path="/login" element={<Navigate to="/" />} />
                       <Route path="/faq" element={<FAQ />} />
                       <Route path="/contact" element={<Contact />} />
                       <Route path="/confidentialite" element={<Privacy />} />
                       <Route path="/conditions" element={<Terms />} />
+                      <Route path="/cgu" element={<Terms />} />
                       <Route path="/ethique" element={<Ethics />} />
                       <Route path="/verify-email" element={<VerifyEmail />} />
 
@@ -434,6 +475,22 @@ function App() {
                           </ProtectedRoute>
                         }
                       />
+                      <Route
+                        path="/admin/withdrawals"
+                        element={
+                          <ProtectedRoute userType="admin">
+                            <AdminWithdrawals />
+                          </ProtectedRoute>
+                        }
+                      />
+                      <Route
+                        path="/admin/notifications"
+                        element={
+                          <ProtectedRoute userType="admin">
+                            <AdminNotifications />
+                          </ProtectedRoute>
+                        }
+                      />
 
                       {/* Consultation Room */}
                       <Route
@@ -444,6 +501,9 @@ function App() {
                           </ProtectedRoute>
                         }
                       />
+
+                      {/* Fallback route - évite les 404 "profonds" */}
+                      <Route path="*" element={<Navigate to="/" replace />} />
                     </Routes>
                   </Suspense>
                 </main>

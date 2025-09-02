@@ -1,53 +1,88 @@
-import { getFirestoreInstance } from "../utils/firebase";
 import {
+  getFirestore,
   collection,
   addDoc,
-  getDocs,
-  query,
-  where,
-  orderBy,
-  limit,
-  serverTimestamp,
-  Timestamp,
   updateDoc,
   doc,
+  query,
+  where,
+  getDocs,
+  orderBy,
+  serverTimestamp,
+  Timestamp,
 } from "firebase/firestore";
 import { retryFirestoreOperation } from "../utils/firebase";
+import { getAuth } from "firebase/auth";
+import {
+  getProfessionalWithdrawalRequests,
+  calculateWithdrawalStats,
+} from "./withdrawalService";
+
+// ============================================================================
+// TYPES ET INTERFACES
+// ============================================================================
 
 export interface RevenueTransaction {
-  id: string;
+  id?: string;
   professionalId: string;
-  patientId: string;
-  bookingId: string;
+  patientId?: string;
+  bookingId?: string;
   type: "consultation" | "withdrawal";
-  amount: number; // Montant total de la consultation
-  platformFee: number; // Commission de la plateforme (15%)
-  professionalAmount: number; // Montant pour le professionnel (85%)
-  status: "pending" | "completed" | "failed";
+  amount: number; // Montant total
+  platformFee: number; // Commission plateforme (15%)
+  professionalAmount: number; // Montant professionnel (85%)
+  status: "pending" | "completed" | "failed" | "cancelled";
   description: string;
   patientName?: string;
   professionalName?: string;
   consultationType?: string;
   withdrawalMethod?: "wave" | "orange-money" | "bank-transfer";
+  accountNumber?: string;
   createdAt: Timestamp;
   updatedAt: Timestamp;
+  completedAt?: Timestamp;
+  notes?: string;
 }
 
-export interface ProfessionalRevenue {
-  totalEarnings: number;
-  availableBalance: number;
-  pendingAmount: number;
-  totalWithdrawn: number;
-  platformFees: number;
-  netEarnings: number;
-  thisMonth: number;
-  lastMonth: number;
+export interface WithdrawalRequest {
+  id?: string;
+  professionalId: string;
+  amount: number;
+  method: "wave" | "orange-money" | "bank-transfer";
+  accountNumber: string;
+  status: "pending" | "approved" | "rejected" | "completed";
+  requestedAt: Timestamp;
+  processedAt?: Timestamp;
+  notes?: string;
+  transactionId?: string; // Référence vers revenue_transactions
 }
+
+export interface RevenueCalculation {
+  totalEarned: number; // Total gagné (85% des consultations)
+  available: number; // Disponible pour retrait
+  pending: number; // Retraits en attente
+  withdrawn: number; // Retraits effectués
+  platformFees: number; // Total des commissions
+  thisMonth: number; // Revenus du mois en cours
+  lastMonth: number; // Revenus du mois précédent
+}
+
+// ============================================================================
+// FONCTIONS PRINCIPALES
+// ============================================================================
 
 /**
- * Créer une transaction de revenu pour une consultation
+ * Crée une transaction de revenu pour une consultation PayTech
+ * @param professionalId ID du professionnel
+ * @param patientId ID du patient
+ * @param bookingId ID du rendez-vous
+ * @param amount Montant total de la consultation
+ * @param patientName Nom du patient
+ * @param professionalName Nom du professionnel
+ * @param consultationType Type de consultation
+ * @returns ID de la transaction créée
  */
-export async function createConsultationRevenue(
+export const createConsultationRevenue = async (
   professionalId: string,
   patientId: string,
   bookingId: string,
@@ -55,7 +90,7 @@ export async function createConsultationRevenue(
   patientName: string,
   professionalName: string,
   consultationType: string
-): Promise<string> {
+): Promise<string> => {
   try {
     console.log("💰 [REVENUE] Creating consultation revenue:", {
       professionalId,
@@ -63,10 +98,11 @@ export async function createConsultationRevenue(
       amount,
     });
 
+    // Calcul des montants
     const platformFee = Math.round(amount * 0.15); // 15% de commission
     const professionalAmount = amount - platformFee; // 85% pour le professionnel
 
-    const transaction: Omit<RevenueTransaction, "id" | "createdAt" | "updatedAt"> = {
+    const transaction: Omit<RevenueTransaction, "id"> = {
       professionalId,
       patientId,
       bookingId,
@@ -74,21 +110,22 @@ export async function createConsultationRevenue(
       amount,
       platformFee,
       professionalAmount,
-      status: "completed",
+      status: "completed", // PayTech = paiement immédiat
       description: `Consultation ${consultationType} - ${patientName}`,
       patientName,
       professionalName,
       consultationType,
-      createdAt: serverTimestamp() as any,
-      updatedAt: serverTimestamp() as any,
+      createdAt: serverTimestamp() as Timestamp,
+      updatedAt: serverTimestamp() as Timestamp,
+      completedAt: serverTimestamp() as Timestamp,
     };
 
-    const db = getFirestoreInstance();
-    if (!db) throw new Error("Firestore not available");
+    const db = getFirestore();
+    const transactionsRef = collection(db, "revenue_transactions");
 
-    const docRef = await retryFirestoreOperation(async () => {
-      return await addDoc(collection(db, "revenue_transactions"), transaction);
-    });
+    const docRef = await retryFirestoreOperation(() =>
+      addDoc(transactionsRef, transaction)
+    );
 
     console.log("✅ [REVENUE] Consultation revenue created:", docRef.id);
     return docRef.id;
@@ -96,115 +133,132 @@ export async function createConsultationRevenue(
     console.error("❌ [REVENUE] Error creating consultation revenue:", error);
     throw new Error("Erreur lors de la création de la transaction de revenu");
   }
-}
+};
 
 /**
- * Créer une demande de retrait
+ * Crée une demande de retrait
+ * @param withdrawalData Données du retrait
+ * @returns ID du retrait créé
  */
-export async function createWithdrawalRequest(
-  professionalId: string,
-  amount: number,
-  method: "wave" | "orange-money" | "bank-transfer"
-): Promise<string> {
+export const createWithdrawalRequest = async (
+  withdrawalData: Omit<WithdrawalRequest, "id" | "status" | "requestedAt">
+): Promise<string> => {
   try {
-    console.log("💰 [REVENUE] Creating withdrawal request:", {
-      professionalId,
-      amount,
-      method,
+    console.log("💰 [REVENUE] Creating withdrawal request:", withdrawalData);
+
+    // Récupérer le token Firebase
+    const auth = getAuth();
+    const currentUser = auth.currentUser;
+
+    if (!currentUser) {
+      throw new Error("Utilisateur non connecté");
+    }
+
+    const token = await currentUser.getIdToken();
+
+    // Appeler la fonction Netlify pour créer le retrait
+    const response = await fetch("/.netlify/functions/create-withdrawal", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(withdrawalData),
     });
 
-    const transaction: Omit<RevenueTransaction, "id" | "createdAt" | "updatedAt"> = {
-      professionalId,
-      patientId: "", // Pas de patient pour un retrait
-      bookingId: "", // Pas de booking pour un retrait
-      type: "withdrawal",
-      amount,
-      platformFee: 0, // Pas de commission sur les retraits
-      professionalAmount: amount,
-      status: "pending",
-      description: `Demande de retrait vers ${method}`,
-      withdrawalMethod: method,
-      createdAt: serverTimestamp() as any,
-      updatedAt: serverTimestamp() as any,
-    };
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error("❌ [REVENUE] HTTP error:", response.status, errorText);
 
-    const db = getFirestoreInstance();
-    if (!db) throw new Error("Firestore not available");
+      if (response.status === 401) {
+        throw new Error("Token d'authentification invalide");
+      } else if (response.status === 403) {
+        throw new Error("Vous n'êtes pas autorisé à effectuer cette action");
+      } else if (response.status === 400) {
+        throw new Error("Données de retrait invalides");
+      } else {
+        throw new Error(`Erreur serveur: ${response.status}`);
+      }
+    }
 
-    const docRef = await retryFirestoreOperation(async () => {
-      return await addDoc(collection(db, "revenue_transactions"), transaction);
-    });
+    const result = await response.json();
 
-    console.log("✅ [REVENUE] Withdrawal request created:", docRef.id);
-    return docRef.id;
+    if (result.error) {
+      throw new Error(result.error);
+    }
+
+    console.log("✅ [REVENUE] Withdrawal request created:", result.id);
+    return result.id;
   } catch (error) {
     console.error("❌ [REVENUE] Error creating withdrawal request:", error);
     throw new Error("Erreur lors de la création de la demande de retrait");
   }
-}
+};
 
 /**
- * Obtenir les statistiques de revenus d'un professionnel
+ * Calcule les revenus d'un professionnel
+ * @param professionalId ID du professionnel
+ * @returns Calcul complet des revenus
  */
-export async function getProfessionalRevenue(
+export const calculateProfessionalRevenue = async (
   professionalId: string
-): Promise<ProfessionalRevenue> {
+): Promise<RevenueCalculation> => {
   try {
-    console.log("💰 [REVENUE] Getting professional revenue for:", professionalId);
+    console.log(
+      "💰 [REVENUE] Calculating revenue for professional:",
+      professionalId
+    );
 
-    const db = getFirestoreInstance();
-    if (!db) throw new Error("Firestore not available");
+    const db = getFirestore();
 
-    // Récupérer toutes les transactions du professionnel
-    const q = query(
-      collection(db, "revenue_transactions"),
+    // 1. Récupérer toutes les transactions de consultation
+    const transactionsRef = collection(db, "revenue_transactions");
+    const transactionsQuery = query(
+      transactionsRef,
       where("professionalId", "==", professionalId),
+      where("type", "==", "consultation"),
+      where("status", "==", "completed"),
       orderBy("createdAt", "desc")
     );
 
-    const snapshot = await retryFirestoreOperation(async () => {
-      return await getDocs(q);
+    const transactionsSnapshot = await retryFirestoreOperation(() =>
+      getDocs(transactionsQuery)
+    );
+
+    const transactions: RevenueTransaction[] = [];
+    transactionsSnapshot.forEach((doc) => {
+      transactions.push({
+        id: doc.id,
+        ...doc.data(),
+      } as RevenueTransaction);
     });
 
-    const transactions = snapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-    })) as RevenueTransaction[];
+    // 2. Récupérer les demandes de retrait (nouvelle collection)
+    const withdrawalStats = await calculateWithdrawalStats(professionalId);
 
-    // Calculer les statistiques
-    const totalEarnings = transactions
-      .filter((t) => t.type === "consultation" && t.status === "completed")
-      .reduce((sum, t) => sum + t.professionalAmount, 0);
+    // 3. Calculs
+    const totalEarned = transactions.reduce(
+      (sum, t) => sum + t.professionalAmount,
+      0
+    );
 
-    const availableBalance = transactions
-      .filter((t) => t.type === "consultation" && t.status === "completed")
-      .reduce((sum, t) => sum + t.professionalAmount, 0) -
-      transactions
-        .filter((t) => t.type === "withdrawal" && t.status === "completed")
-        .reduce((sum, t) => sum + t.amount, 0);
+    const platformFees = transactions.reduce(
+      (sum, t) => sum + t.platformFee,
+      0
+    );
 
-    const pendingAmount = transactions
-      .filter((t) => t.type === "withdrawal" && t.status === "pending")
-      .reduce((sum, t) => sum + t.amount, 0);
+    // Utiliser les nouvelles stats de retrait
+    const pending = withdrawalStats.pending + withdrawalStats.approved;
+    const withdrawn = withdrawalStats.paid;
+    const available = totalEarned - withdrawn; // Ne pas déduire le pending
 
-    const totalWithdrawn = transactions
-      .filter((t) => t.type === "withdrawal" && t.status === "completed")
-      .reduce((sum, t) => sum + t.amount, 0);
-
-    const platformFees = transactions
-      .filter((t) => t.type === "consultation" && t.status === "completed")
-      .reduce((sum, t) => sum + t.platformFee, 0);
-
-    const netEarnings = totalEarnings;
-
-    // Calculer les revenus du mois en cours et du mois précédent
+    // 4. Calculs par mois
     const now = new Date();
     const currentMonth = now.getMonth();
     const currentYear = now.getFullYear();
 
     const thisMonth = transactions
       .filter((t) => {
-        if (t.type !== "consultation" || t.status !== "completed") return false;
         const transactionDate = t.createdAt.toDate();
         return (
           transactionDate.getMonth() === currentMonth &&
@@ -215,7 +269,6 @@ export async function getProfessionalRevenue(
 
     const lastMonth = transactions
       .filter((t) => {
-        if (t.type !== "consultation" || t.status !== "completed") return false;
         const transactionDate = t.createdAt.toDate();
         const lastMonthDate = new Date(currentYear, currentMonth - 1);
         return (
@@ -225,109 +278,197 @@ export async function getProfessionalRevenue(
       })
       .reduce((sum, t) => sum + t.professionalAmount, 0);
 
-    const revenue: ProfessionalRevenue = {
-      totalEarnings,
-      availableBalance,
-      pendingAmount,
-      totalWithdrawn,
+    const revenue: RevenueCalculation = {
+      totalEarned,
+      available: Math.max(0, available),
+      pending,
+      withdrawn,
       platformFees,
-      netEarnings,
       thisMonth,
       lastMonth,
     };
 
-    console.log("✅ [REVENUE] Professional revenue calculated:", revenue);
     return revenue;
-  } catch (error) {
-    console.error("❌ [REVENUE] Error getting professional revenue:", error);
-    throw new Error("Erreur lors de la récupération des revenus");
+  } catch (error: any) {
+    // Si c'est une erreur de permissions, les collections n'existent pas encore
+    if (
+      error?.code === "permission-denied" ||
+      error?.message?.includes("permissions")
+    ) {
+      console.log(
+        "ℹ️ [REVENUE] Collections not accessible yet, returning default values"
+      );
+      return {
+        totalEarned: 0,
+        available: 0,
+        pending: 0,
+        withdrawn: 0,
+        platformFees: 0,
+        thisMonth: 0,
+        lastMonth: 0,
+      };
+    }
+
+    console.error("❌ [REVENUE] Error calculating revenue:", error);
+    return {
+      totalEarned: 0,
+      available: 0,
+      pending: 0,
+      withdrawn: 0,
+      platformFees: 0,
+      thisMonth: 0,
+      lastMonth: 0,
+    };
   }
-}
+};
 
 /**
- * Obtenir l'historique des transactions d'un professionnel
+ * Récupère l'historique des transactions d'un professionnel
+ * @param professionalId ID du professionnel
+ * @param limit Nombre maximum de transactions
+ * @returns Liste des transactions
  */
-export async function getProfessionalTransactions(
+export const getProfessionalTransactions = async (
   professionalId: string,
-  limitCount: number = 50
-): Promise<RevenueTransaction[]> {
+  limit: number = 50
+): Promise<RevenueTransaction[]> => {
   try {
-    console.log("💰 [REVENUE] Getting professional transactions for:", professionalId);
+    const db = getFirestore();
 
-    const db = getFirestoreInstance();
-    if (!db) throw new Error("Firestore not available");
-
-    const q = query(
-      collection(db, "revenue_transactions"),
+    // Récupérer les transactions de revenus
+    const transactionsRef = collection(db, "revenue_transactions");
+    const transactionsQuery = query(
+      transactionsRef,
       where("professionalId", "==", professionalId),
-      orderBy("createdAt", "desc"),
-      limit(limitCount)
+      orderBy("createdAt", "desc")
     );
 
-    const snapshot = await retryFirestoreOperation(async () => {
-      return await getDocs(q);
+    // Récupérer les demandes de retrait (nouvelle collection)
+    const withdrawalRequests = await getProfessionalWithdrawalRequests(
+      professionalId,
+      limit
+    );
+
+    // Exécuter la requête des transactions
+    const transactionsSnapshot = await retryFirestoreOperation(() =>
+      getDocs(transactionsQuery)
+    );
+
+    const transactions: RevenueTransaction[] = [];
+
+    // Ajouter les transactions de revenus
+    transactionsSnapshot.forEach((doc) => {
+      transactions.push({
+        id: doc.id,
+        ...doc.data(),
+      } as RevenueTransaction);
     });
 
-    const transactions = snapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-    })) as RevenueTransaction[];
+    // Ajouter les demandes de retrait (convertis au format RevenueTransaction)
+    withdrawalRequests.forEach((request) => {
+      transactions.push({
+        id: request.id,
+        professionalId: request.professionalId,
+        patientId: "", // Pas de patient pour un retrait
+        bookingId: "", // Pas de booking pour un retrait
+        type: "withdrawal",
+        amount: request.amount,
+        platformFee: 0, // Pas de commission sur les retraits
+        professionalAmount: request.amount,
+        status: request.status === "paid" ? "completed" : request.status,
+        description: `Demande de retrait vers ${request.method}`,
+        patientName: "", // Pas de patient pour un retrait
+        professionalName: "", // Sera rempli si nécessaire
+        consultationType: "", // Pas de consultation pour un retrait
+        createdAt: request.createdAt,
+        updatedAt: request.processedAt || request.createdAt,
+        completedAt: request.processedAt || null,
+        withdrawalMethod: request.method,
+        accountNumber: request.accountNumber,
+      } as RevenueTransaction);
+    });
 
-    console.log("✅ [REVENUE] Professional transactions retrieved:", transactions.length);
-    return transactions;
+    // Trier par date (plus récent en premier) et limiter
+    const sortedTransactions = transactions.sort((a, b) => {
+      const dateA = a.createdAt?.toDate?.() || new Date(0);
+      const dateB = b.createdAt?.toDate?.() || new Date(0);
+      return dateB.getTime() - dateA.getTime();
+    });
+
+    return sortedTransactions.slice(0, limit);
   } catch (error) {
-    console.error("❌ [REVENUE] Error getting professional transactions:", error);
-    throw new Error("Erreur lors de la récupération des transactions");
+    console.error("❌ [REVENUE] Error getting transactions:", error);
+    return [];
   }
-}
+};
 
 /**
- * Approuver une demande de retrait
+ * Met à jour le statut d'un retrait
+ * @param withdrawalId ID du retrait
+ * @param status Nouveau statut
+ * @param notes Notes optionnelles
  */
-export async function approveWithdrawal(transactionId: string): Promise<void> {
+export const updateWithdrawalStatus = async (
+  withdrawalId: string,
+  status: WithdrawalRequest["status"],
+  notes?: string
+): Promise<void> => {
   try {
-    console.log("💰 [REVENUE] Approving withdrawal:", transactionId);
+    const db = getFirestore();
+    const withdrawalRef = doc(db, "withdrawals", withdrawalId);
 
-    const db = getFirestoreInstance();
-    if (!db) throw new Error("Firestore not available");
+    const updateData: Partial<WithdrawalRequest> & { processedAt?: any } = {
+      status,
+    };
+    if (status === "completed") {
+      updateData.processedAt = serverTimestamp();
+    }
+    if (notes) {
+      updateData.notes = notes;
+    }
 
-    await retryFirestoreOperation(async () => {
-      const docRef = doc(db, "revenue_transactions", transactionId);
-      await updateDoc(docRef, {
-        status: "completed",
-        updatedAt: serverTimestamp(),
-      });
-    });
-
-    console.log("✅ [REVENUE] Withdrawal approved:", transactionId);
+    await retryFirestoreOperation(() => updateDoc(withdrawalRef, updateData));
+    console.log(
+      "💰 [REVENUE] Withdrawal status updated:",
+      withdrawalId,
+      status
+    );
   } catch (error) {
-    console.error("❌ [REVENUE] Error approving withdrawal:", error);
-    throw new Error("Erreur lors de l'approbation du retrait");
+    console.error("❌ [REVENUE] Error updating withdrawal status:", error);
+    throw error;
   }
-}
+};
 
 /**
- * Rejeter une demande de retrait
+ * Approuve un retrait (admin)
+ * @param withdrawalId ID du retrait
  */
-export async function rejectWithdrawal(transactionId: string, reason: string): Promise<void> {
-  try {
-    console.log("💰 [REVENUE] Rejecting withdrawal:", transactionId);
+export const approveWithdrawal = async (
+  withdrawalId: string
+): Promise<void> => {
+  await updateWithdrawalStatus(withdrawalId, "approved");
+};
 
-    const db = getFirestoreInstance();
-    if (!db) throw new Error("Firestore not available");
+/**
+ * Rejette un retrait (admin)
+ * @param withdrawalId ID du retrait
+ * @param reason Raison du rejet
+ */
+export const rejectWithdrawal = async (
+  withdrawalId: string,
+  reason: string
+): Promise<void> => {
+  await updateWithdrawalStatus(withdrawalId, "rejected", reason);
+};
 
-    await retryFirestoreOperation(async () => {
-      const docRef = doc(db, "revenue_transactions", transactionId);
-      await updateDoc(docRef, {
-        status: "failed",
-        description: `Retrait rejeté: ${reason}`,
-        updatedAt: serverTimestamp(),
-      });
-    });
-
-    console.log("✅ [REVENUE] Withdrawal rejected:", transactionId);
-  } catch (error) {
-    console.error("❌ [REVENUE] Error rejecting withdrawal:", error);
-    throw new Error("Erreur lors du rejet du retrait");
-  }
-}
+/**
+ * Marque un retrait comme complété (admin)
+ * @param withdrawalId ID du retrait
+ * @param notes Notes de traitement
+ */
+export const completeWithdrawal = async (
+  withdrawalId: string,
+  notes?: string
+): Promise<void> => {
+  await updateWithdrawalStatus(withdrawalId, "completed", notes);
+};

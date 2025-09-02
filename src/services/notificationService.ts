@@ -473,3 +473,253 @@ export async function createAdminNotificationForNewProfessional(
     throw new Error("Failed to create admin notification");
   }
 }
+
+// Créer une notification de demande de retrait pour un professionnel
+export const createWithdrawalRequestNotification = async (
+  professionalId: string,
+  amount: number,
+  method: string,
+  status: "pending" | "approved" | "rejected" | "paid" | "cancelled"
+): Promise<string> => {
+  try {
+    const db = getFirestoreInstance();
+    if (!db) throw new Error("Firestore not available");
+
+    let title = "";
+    let message = "";
+
+    switch (status) {
+      case "pending":
+        title = "Demande de retrait en attente";
+        message = `Votre demande de retrait de ${amount.toLocaleString()} FCFA via ${method} est en cours de traitement.`;
+        break;
+      case "approved":
+        title = "Demande de retrait approuvée";
+        message = `Votre demande de retrait de ${amount.toLocaleString()} FCFA via ${method} a été approuvée. Le paiement sera effectué prochainement.`;
+        break;
+      case "rejected":
+        title = "Demande de retrait rejetée";
+        message = `Votre demande de retrait de ${amount.toLocaleString()} FCFA via ${method} a été rejetée. Contactez l'administrateur pour plus d'informations.`;
+        break;
+      case "paid":
+        title = "Retrait effectué";
+        message = `Votre retrait de ${amount.toLocaleString()} FCFA via ${method} a été effectué avec succès.`;
+        break;
+      case "cancelled":
+        title = "Demande de retrait annulée";
+        message = `Votre demande de retrait de ${amount.toLocaleString()} FCFA via ${method} a été annulée.`;
+        break;
+    }
+
+    const notification = {
+      userId: professionalId,
+      type: "withdrawal_request",
+      title,
+      message,
+      read: false,
+      createdAt: serverTimestamp(),
+      data: {
+        amount,
+        method,
+        status,
+        type: "withdrawal",
+      },
+    };
+
+    const docRef = await addDoc(collection(db, "notifications"), notification);
+    console.log("✅ [NOTIF] Notification de retrait créée:", docRef.id);
+    return docRef.id;
+  } catch (error) {
+    console.error("❌ [NOTIF] Erreur création notification retrait:", error);
+    throw error;
+  }
+};
+
+// Créer une notification de mise à jour de statut de retrait
+export const createWithdrawalStatusUpdateNotification = async (
+  professionalId: string,
+  amount: number,
+  method: string,
+  oldStatus: string,
+  newStatus: string,
+  adminNote?: string
+): Promise<string> => {
+  try {
+    const db = getFirestoreInstance();
+    if (!db) throw new Error("Firestore not available");
+
+    let title = "";
+    let message = "";
+
+    switch (newStatus) {
+      case "approved":
+        title = "Retrait approuvé";
+        message = `Votre demande de retrait de ${amount.toLocaleString()} FCFA via ${method} a été approuvée.`;
+        break;
+      case "rejected":
+        title = "Retrait rejeté";
+        message = `Votre demande de retrait de ${amount.toLocaleString()} FCFA via ${method} a été rejetée.`;
+        if (adminNote) {
+          message += ` Raison: ${adminNote}`;
+        }
+        break;
+      case "paid":
+        title = "Retrait payé";
+        message = `Votre retrait de ${amount.toLocaleString()} FCFA via ${method} a été effectué avec succès.`;
+        break;
+      case "cancelled":
+        title = "Retrait annulé";
+        message = `Votre demande de retrait de ${amount.toLocaleString()} FCFA via ${method} a été annulée.`;
+        if (adminNote) {
+          message += ` Raison: ${adminNote}`;
+        }
+        break;
+      default:
+        title = "Mise à jour du statut de retrait";
+        message = `Le statut de votre demande de retrait de ${amount.toLocaleString()} FCFA via ${method} est passé de "${oldStatus}" à "${newStatus}".`;
+    }
+
+    const notification = {
+      userId: professionalId,
+      type: "withdrawal_status_update",
+      title,
+      message,
+      read: false,
+      createdAt: serverTimestamp(),
+      data: {
+        amount,
+        method,
+        oldStatus,
+        newStatus,
+        adminNote,
+        type: "withdrawal",
+      },
+    };
+
+    const docRef = await addDoc(collection(db, "notifications"), notification);
+    console.log(
+      "✅ [NOTIF] Notification de mise à jour de statut créée:",
+      docRef.id
+    );
+    return docRef.id;
+  } catch (error) {
+    console.error(
+      "❌ [NOTIF] Erreur création notification mise à jour:",
+      error
+    );
+    throw error;
+  }
+};
+
+// Créer une notification de transaction (consultation ou retrait)
+export const createTransactionNotification = async (
+  professionalId: string,
+  transactionType: "consultation" | "withdrawal",
+  amount: number,
+  status: "pending" | "completed" | "failed" | "cancelled",
+  details: {
+    patientName?: string;
+    consultationType?: string;
+    method?: string;
+    accountNumber?: string;
+    reason?: string;
+  } = {}
+): Promise<string> => {
+  try {
+    const db = getFirestoreInstance();
+    if (!db) throw new Error("Firestore not available");
+
+    let title = "";
+    let message = "";
+
+    if (transactionType === "consultation") {
+      switch (status) {
+        case "pending":
+          title = "Consultation en attente de paiement";
+          message = `Consultation ${details.consultationType || ""} avec ${
+            details.patientName || "le patient"
+          } - Montant: ${amount.toLocaleString()} FCFA`;
+          break;
+        case "completed":
+          title = "Consultation payée";
+          message = `Consultation ${details.consultationType || ""} avec ${
+            details.patientName || "le patient"
+          } - Paiement reçu: ${amount.toLocaleString()} FCFA`;
+          break;
+        case "failed":
+          title = "Échec du paiement de consultation";
+          message = `Le paiement de la consultation ${
+            details.consultationType || ""
+          } avec ${details.patientName || "le patient"} a échoué.`;
+          break;
+        case "cancelled":
+          title = "Consultation annulée";
+          message = `La consultation ${details.consultationType || ""} avec ${
+            details.patientName || "le patient"
+          } a été annulée.`;
+          break;
+      }
+    } else if (transactionType === "withdrawal") {
+      switch (status) {
+        case "pending":
+          title = "Demande de retrait en attente";
+          message = `Votre demande de retrait de ${amount.toLocaleString()} FCFA via ${
+            details.method || ""
+          } est en cours de traitement.`;
+          break;
+        case "completed":
+          title = "Retrait effectué";
+          message = `Votre retrait de ${amount.toLocaleString()} FCFA via ${
+            details.method || ""
+          } a été effectué avec succès.`;
+          break;
+        case "failed":
+          title = "Échec du retrait";
+          message = `Votre retrait de ${amount.toLocaleString()} FCFA via ${
+            details.method || ""
+          } a échoué.`;
+          break;
+        case "cancelled":
+          title = "Retrait annulé";
+          message = `Votre demande de retrait de ${amount.toLocaleString()} FCFA via ${
+            details.method || ""
+          } a été annulée.`;
+          if (details.reason) {
+            message += ` Raison: ${details.reason}`;
+          }
+          break;
+      }
+    }
+
+    // Filtrer les champs undefined pour éviter les erreurs Firestore
+    const cleanDetails = Object.fromEntries(
+      Object.entries(details).filter(([, value]) => value !== undefined)
+    );
+
+    const notification = {
+      userId: professionalId,
+      type: "transaction_update",
+      title,
+      message,
+      read: false,
+      createdAt: serverTimestamp(),
+      data: {
+        transactionType,
+        amount,
+        status,
+        ...cleanDetails,
+        type: "transaction",
+      },
+    };
+
+    const docRef = await addDoc(collection(db, "notifications"), notification);
+    console.log("✅ [NOTIF] Notification de transaction créée:", docRef.id);
+    return docRef.id;
+  } catch (error) {
+    console.error(
+      "❌ [NOTIF] Erreur création notification transaction:",
+      error
+    );
+    throw error;
+  }
+};

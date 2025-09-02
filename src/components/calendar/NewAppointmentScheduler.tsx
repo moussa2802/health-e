@@ -323,6 +323,19 @@ const NewAppointmentScheduler: React.FC<NewAppointmentSchedulerProps> = ({
         } slots marked as booked`
       );
 
+      // Debug: Afficher les créneaux réservés
+      const bookedSlots = updatedSlots.filter((s) => s.isBooked);
+      if (bookedSlots.length > 0) {
+        console.log(
+          "🔴 [RESERVED DEBUG] Créneaux réservés:",
+          bookedSlots.map((s) => ({
+            date: format(s.date, "yyyy-MM-dd"),
+            time: s.time,
+            isBooked: s.isBooked,
+          }))
+        );
+      }
+
       setAvailableSlots(updatedSlots);
 
       console.log(`✅ Successfully loaded ${slots.length} slots`);
@@ -1019,25 +1032,28 @@ const NewAppointmentScheduler: React.FC<NewAppointmentSchedulerProps> = ({
                       "yyyy-MM-dd"
                     )}-${slot.time}`
                   }
-                  className={`relative p-3 rounded-lg border ${
+                  className={`relative p-3 rounded-lg border transition-all duration-200 ${
                     slot.isBooked
-                      ? "bg-gray-100 border-gray-300 cursor-not-allowed"
+                      ? "bg-gray-200 border-gray-400 cursor-not-allowed opacity-75"
                       : isProfessional
-                      ? "bg-blue-50 border-blue-200 shadow-sm"
+                      ? "bg-blue-50 border-blue-200 shadow-sm hover:shadow-md"
                       : selectedTimeSlot &&
                         selectedTimeSlot.time === slot.time &&
                         areDatesEqual(selectedTimeSlot.date, slot.date)
                       ? "bg-blue-600 text-white border-blue-700 shadow-md transform scale-105"
-                      : "bg-blue-50 border-blue-200 hover:bg-blue-100 cursor-pointer hover:shadow-md transition-all duration-200"
+                      : "bg-blue-50 border-blue-200 hover:bg-blue-100 cursor-pointer hover:shadow-md"
                   }`}
                   onClick={() => {
-                    if (slot.isBooked) return;
+                    if (slot.isBooked) {
+                      console.log("🚫 Créneau réservé, clic ignoré:", slot);
+                      return;
+                    }
                     handleSlotClick(slot);
                   }}
                 >
                   {slot.isBooked && (
-                    <div className="absolute top-1 right-1 text-xs text-red-500 font-semibold">
-                      Réservé
+                    <div className="absolute top-1 right-1 text-xs text-red-600 font-bold bg-white px-2 py-1 rounded-full border border-red-300 shadow-sm">
+                      RÉSERVÉ
                     </div>
                   )}
                   <div className="flex items-center justify-between">

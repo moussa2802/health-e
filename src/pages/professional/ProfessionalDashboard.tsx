@@ -23,23 +23,28 @@ import {
   Users2,
   MessageCircle,
   CalendarCheck,
+  Stethoscope,
+  XCircle,
 } from "lucide-react";
 import ConsultationRequests from "../../components/professional/ConsultationRequests";
 import { useConsultationStore } from "../../store/consultationStore";
+
 import { useBookings } from "../../hooks/useBookings";
+import { cancelBooking, completeBooking } from "../../services/bookingService";
 import {
-  confirmBooking,
-  cancelBooking,
-  completeBooking,
-} from "../../services/bookingService";
+  calculateProfessionalRevenue,
+  getProfessionalTransactions,
+} from "../../services/revenueService";
 import {
   getFirestoreConnectionStatus,
   ensureFirestoreReady,
   resetFirestoreConnection,
 } from "../../utils/firebase";
+import { formatDateTimeWithTimezone } from "../../utils/dateTimeUtils";
 import EthicsReminder from "../../components/dashboard/EthicsReminder";
 import LoadingSpinner from "../../components/ui/LoadingSpinner";
 import UserSupportTickets from "../../components/support/UserSupportTickets";
+import ProfessionalNotificationCenter from "../../components/professional/ProfessionalNotificationCenter";
 
 // Welcome banner component with improved design
 const WelcomeBanner: React.FC<{ name: string }> = ({ name }) => {
@@ -242,7 +247,7 @@ const QuickActions: React.FC = () => {
           return (
             <Link
               key={index}
-              to={action.link}
+              to={action.link || "#"}
               className={`${action.bgColor} rounded-xl p-4 text-center hover:scale-105 transition-all duration-200 group`}
             >
               <div
@@ -262,7 +267,17 @@ const QuickActions: React.FC = () => {
 };
 
 // Today's Agenda
-const TodaysAgenda: React.FC<{ bookings: any[] }> = ({ bookings }) => {
+const TodaysAgenda: React.FC<{
+  bookings: Array<{
+    id: string;
+    date: string;
+    type: string;
+    patientName: string;
+    startTime: string;
+    duration: number;
+    status: string;
+  }>;
+}> = ({ bookings }) => {
   const today = new Date().toDateString();
   const todaysBookings = bookings.filter(
     (booking) => new Date(booking.date).toDateString() === today
@@ -333,10 +348,10 @@ const TodaysAgenda: React.FC<{ bookings: any[] }> = ({ bookings }) => {
                     {booking.patientName}
                   </p>
                   <p className="text-sm text-gray-500">
-                    {new Date(booking.date).toLocaleTimeString("fr-FR", {
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}
+                    {formatDateTimeWithTimezone(
+                      booking.date,
+                      booking.startTime
+                    )}
                   </p>
                 </div>
               </div>
@@ -352,203 +367,302 @@ const TodaysAgenda: React.FC<{ bookings: any[] }> = ({ bookings }) => {
   );
 };
 
-// Consultations Section with Tabs
+// Consultations Section with Tabs - Design identique au dashboard patient
 const ConsultationsSection: React.FC<{
-  bookings: any[];
-  onConfirm: (bookingId: string) => void;
-  onCancel: (bookingId: string) => void;
+  bookings: Array<{
+    id: string;
+    date: string;
+    type: string;
+    patientName: string;
+    startTime: string;
+    duration: number;
+    status: string;
+  }>;
+  onCancel?: (bookingId: string) => void;
   onComplete: (bookingId: string, notes?: string) => void;
-}> = ({ bookings, onConfirm, onCancel, onComplete }) => {
+}> = ({ bookings, onCancel, onComplete }) => {
   const [activeTab, setActiveTab] = useState<"upcoming" | "past">("upcoming");
 
   // Fonction pour comparer les dates en tenant compte seulement du jour (pas de l'heure)
   const isDatePassed = (dateString: string) => {
-    const bookingDate = new Date(dateString);
-    const today = new Date();
+    try {
+      // Si c'est déjà un nom de jour (ex: "Jeudi"), retourner false (pas encore passé)
+      if (
+        [
+          "Lundi",
+          "Mardi",
+          "Mercredi",
+          "Jeudi",
+          "Vendredi",
+          "Samedi",
+          "Dimanche",
+        ].includes(dateString)
+      ) {
+        return false;
+      }
 
-    // Réinitialiser l'heure à minuit pour la comparaison
-    const bookingDay = new Date(
-      bookingDate.getFullYear(),
-      bookingDate.getMonth(),
-      bookingDate.getDate()
-    );
-    const todayDay = new Date(
-      today.getFullYear(),
-      today.getMonth(),
-      today.getDate()
-    );
+      // Créer la date en spécifiant explicitement le fuseau horaire local
+      let bookingDate: Date;
 
-    return bookingDay < todayDay;
+      if (dateString.includes("-")) {
+        // Format YYYY-MM-DD : créer la date en heure locale
+        const [year, month, day] = dateString.split("-").map(Number);
+        // Créer la date à midi dans le fuseau local pour éviter les problèmes de minuit
+        bookingDate = new Date(year, month - 1, day, 12, 0, 0);
+      } else {
+        // Autre format : utiliser le parser standard
+        bookingDate = new Date(dateString);
+      }
+
+      const today = new Date();
+
+      // Vérifier si la date est valide
+      if (isNaN(bookingDate.getTime())) {
+        return false;
+      }
+
+      // Comparer directement les composants de date (année, mois, jour)
+      const isPassed =
+        bookingDate.getFullYear() < today.getFullYear() ||
+        (bookingDate.getFullYear() === today.getFullYear() &&
+          bookingDate.getMonth() < today.getMonth()) ||
+        (bookingDate.getFullYear() === today.getFullYear() &&
+          bookingDate.getMonth() === today.getMonth() &&
+          bookingDate.getDate() < today.getDate());
+
+      return isPassed;
+    } catch {
+      return false; // En cas d'erreur, traiter comme non passée
+    }
   };
 
   const upcomingBookings = bookings.filter(
-    (booking) => booking.status === "confirmed" && !isDatePassed(booking.date)
+    (booking) =>
+      (booking.status === "confirmed" ||
+        booking.status === "confirmé" ||
+        booking.status === "en_attente") &&
+      !isDatePassed(booking.date)
   );
 
   const pastBookings = bookings.filter(
-    (booking) => booking.status === "completed" || isDatePassed(booking.date)
+    (booking) =>
+      booking.status === "completed" ||
+      booking.status === "cancelled" ||
+      isDatePassed(booking.date)
   );
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("fr-FR", {
-      day: "numeric",
-      month: "long",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  };
-
-  const getStatusBadge = (status: string) => {
+  const getStatusColor = (status: string) => {
     const statusConfig = {
-      confirmed: { label: "Confirmé", color: "bg-green-100 text-green-700" },
-      pending: { label: "En attente", color: "bg-yellow-100 text-yellow-700" },
-      completed: { label: "Terminé", color: "bg-blue-100 text-blue-700" },
-      cancelled: { label: "Annulé", color: "bg-red-100 text-red-700" },
+      confirmed: "bg-green-100 text-green-700",
+      pending: "bg-yellow-100 text-yellow-700",
+      completed: "bg-blue-100 text-blue-700",
+      cancelled: "bg-red-100 text-red-700",
+      en_attente: "bg-yellow-100 text-yellow-700",
+      confirmé: "bg-green-100 text-green-700",
     };
 
-    const config =
-      statusConfig[status as keyof typeof statusConfig] || statusConfig.pending;
     return (
-      <span
-        className={`px-2 py-1 rounded-full text-xs font-medium ${config.color}`}
-      >
-        {config.label}
-      </span>
+      statusConfig[status as keyof typeof statusConfig] || statusConfig.pending
     );
   };
 
-  return (
-    <div className="bg-white rounded-2xl shadow-lg p-6 mb-8">
-      <h2 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
-        <Calendar className="h-6 w-6 text-blue-600" />
-        Consultations
-      </h2>
+  const getStatusLabel = (status: string) => {
+    const statusConfig = {
+      confirmed: "Confirmé",
+      pending: "En attente",
+      completed: "Terminé",
+      cancelled: "Annulé",
+      en_attente: "En attente",
+      confirmé: "Confirmé",
+    };
 
-      {/* Tabs */}
-      <div className="flex space-x-1 bg-gray-100 p-1 rounded-xl mb-6">
+    return (
+      statusConfig[status as keyof typeof statusConfig] || statusConfig.pending
+    );
+  };
+
+  const getConsultationIcon = (type: string) => {
+    switch (type) {
+      case "video":
+        return <Video className="h-4 w-4 text-blue-500" />;
+      case "audio":
+        return <Phone className="h-4 w-4 text-green-500" />;
+      default:
+        return <FileText className="h-4 w-4 text-gray-500" />;
+    }
+  };
+
+  const displayedBookings =
+    activeTab === "upcoming" ? upcomingBookings : pastBookings;
+
+  return (
+    <div className="mb-8">
+      <div className="flex items-center justify-between mb-6">
+        <h2 className="text-2xl font-bold text-gray-900 flex items-center">
+          <Calendar className="h-6 w-6 mr-3 text-blue-600" />
+          Consultations
+        </h2>
+      </div>
+
+      {/* Tabs modernisés */}
+      <div className="flex bg-gray-100 rounded-xl p-1 mb-6">
         <button
           onClick={() => setActiveTab("upcoming")}
-          className={`flex-1 py-3 px-4 rounded-lg font-medium transition-all duration-200 ${
+          className={`flex-1 py-3 px-4 rounded-lg text-sm font-medium transition-all duration-200 ${
             activeTab === "upcoming"
               ? "bg-white text-blue-600 shadow-sm"
-              : "text-gray-600 hover:text-gray-900"
+              : "text-gray-600 hover:text-gray-800"
           }`}
         >
-          À venir ({upcomingBookings.length})
+          <div className="flex items-center justify-center">
+            <Play className="h-4 w-4 mr-2" />À venir ({upcomingBookings.length})
+          </div>
         </button>
         <button
           onClick={() => setActiveTab("past")}
-          className={`flex-1 py-3 px-4 rounded-lg font-medium transition-all duration-200 ${
+          className={`flex-1 py-3 px-4 rounded-lg text-sm font-medium transition-all duration-200 ${
             activeTab === "past"
               ? "bg-white text-blue-600 shadow-sm"
-              : "text-gray-600 hover:text-gray-900"
+              : "text-gray-600 hover:text-gray-800"
           }`}
         >
-          Historique ({pastBookings.length})
+          <div className="flex items-center justify-center">
+            <FileText className="h-4 w-4 mr-2" />
+            Historique ({pastBookings.length})
+          </div>
         </button>
       </div>
 
-      {/* Content */}
-      <div className="space-y-4">
-        {(activeTab === "upcoming" ? upcomingBookings : pastBookings).map(
-          (booking) => (
+      {/* Bookings list modernisée */}
+      {displayedBookings.length > 0 ? (
+        <div className="space-y-4">
+          {displayedBookings.map((booking) => (
             <div
               key={booking.id}
-              className="border border-gray-200 rounded-xl p-4 hover:shadow-md transition-shadow"
+              className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-lg transition-all duration-300 hover:scale-[1.02]"
             >
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                    <User className="h-5 w-5 text-blue-600" />
+              <div className="p-6">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4">
+                  <div className="flex items-center mb-4 sm:mb-0">
+                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center mr-4 shadow-md">
+                      <User className="h-6 w-6 text-white" />
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-lg text-gray-900">
+                        {booking.patientName}
+                      </h3>
+                      <p className="text-gray-600 flex items-center">
+                        <Stethoscope className="h-4 w-4 mr-1" />
+                        Consultation {booking.type}
+                      </p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="font-medium text-gray-900">
-                      {booking.patientName}
-                    </p>
-                    <p className="text-sm text-gray-500">
-                      {formatDate(booking.date)}
-                    </p>
+
+                  <div className="flex items-center">
+                    {getConsultationIcon(booking.type)}
+                    <span className="ml-2 text-sm text-gray-600 capitalize font-medium">
+                      {booking.type}
+                    </span>
                   </div>
                 </div>
-                {getStatusBadge(
-                  // Si c'est dans l'historique et que la date est passée, afficher comme "completed"
-                  activeTab === "past" &&
-                    isDatePassed(booking.date) &&
-                    booking.status === "confirmed"
-                    ? "completed"
-                    : booking.status
-                )}
-              </div>
 
-              <div className="flex items-center gap-2">
-                <span
-                  className={`px-2 py-1 rounded-full text-xs font-medium ${
-                    booking.type === "video"
-                      ? "bg-blue-100 text-blue-700"
-                      : booking.type === "audio"
-                      ? "bg-green-100 text-green-700"
-                      : "bg-gray-100 text-gray-700"
-                  }`}
-                >
-                  {booking.type === "video" ? (
-                    <Video className="h-3 w-3 inline mr-1" />
-                  ) : booking.type === "audio" ? (
-                    <Phone className="h-3 w-3 inline mr-1" />
-                  ) : (
-                    <FileText className="h-3 w-3 inline mr-1" />
-                  )}
-                  {booking.type}
-                </span>
-              </div>
-
-              {activeTab === "upcoming" && booking.status === "confirmed" && (
-                <div className="flex gap-2 mt-4">
-                  <button
-                    onClick={() => onConfirm(booking.id)}
-                    className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium flex items-center justify-center gap-2"
-                  >
-                    <Play className="h-4 w-4" />
-                    Rejoindre
-                  </button>
-                  <button
-                    onClick={() => onCancel(booking.id)}
-                    className="px-4 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors text-sm font-medium"
-                  >
-                    Annuler
-                  </button>
-                </div>
-              )}
-
-              {/* Pour les consultations dans l'historique qui ne sont pas encore terminées */}
-              {activeTab === "past" &&
-                booking.status === "confirmed" &&
-                !isDatePassed(booking.date) && (
-                  <div className="flex gap-2 mt-4">
-                    <button
-                      onClick={() => onComplete(booking.id)}
-                      className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium flex items-center justify-center gap-2"
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+                  <div className="flex items-center text-gray-600 bg-gray-50 rounded-lg p-3">
+                    <Calendar className="h-4 w-4 mr-2 text-blue-500" />
+                    <span className="text-sm font-medium">
+                      {formatDateTimeWithTimezone(
+                        booking.date,
+                        booking.startTime
+                      )}
+                    </span>
+                  </div>
+                  <div className="flex items-center text-gray-600 bg-gray-50 rounded-lg p-3">
+                    <Clock className="h-4 w-4 mr-2 text-green-500" />
+                    <span className="text-sm font-medium">
+                      Durée: {booking.duration} min
+                    </span>
+                  </div>
+                  <div className="flex items-center">
+                    <span
+                      className={`text-xs font-bold px-3 py-1.5 rounded-full ${getStatusColor(
+                        // Si c'est dans l'historique et que la date est passée, afficher comme "completed"
+                        activeTab === "past" &&
+                          isDatePassed(booking.date) &&
+                          (booking.status === "en_attente" ||
+                            booking.status === "confirmé" ||
+                            booking.status === "confirmed")
+                          ? "completed"
+                          : booking.status
+                      )}`}
                     >
-                      <CheckCircle className="h-4 w-4" />
-                      Terminer
-                    </button>
+                      {getStatusLabel(
+                        // Si c'est dans l'historique et que la date est passée, afficher comme "completed"
+                        activeTab === "past" &&
+                          isDatePassed(booking.date) &&
+                          (booking.status === "en_attente" ||
+                            booking.status === "confirmé" ||
+                            booking.status === "confirmed")
+                          ? "completed"
+                          : booking.status
+                      )}
+                    </span>
                   </div>
-                )}
-            </div>
-          )
-        )}
+                </div>
 
-        {(activeTab === "upcoming" ? upcomingBookings : pastBookings).length ===
-          0 && (
-          <div className="text-center py-8">
-            <Calendar className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-            <p className="text-gray-500">
-              {activeTab === "upcoming"
-                ? "Aucune consultation à venir"
-                : "Aucune consultation passée"}
-            </p>
+                {/* Afficher les boutons seulement pour les consultations à venir */}
+                {activeTab === "upcoming" &&
+                (booking.status === "en_attente" ||
+                  booking.status === "confirmé" ||
+                  booking.status === "confirmed") ? (
+                  <div className="flex justify-between items-center">
+                    <button
+                      onClick={() => onCancel?.(booking.id)}
+                      className="flex items-center text-red-500 text-sm font-medium hover:text-red-600 transition-colors"
+                    >
+                      <XCircle className="h-4 w-4 mr-1" />
+                      Annuler
+                    </button>
+                    <Link
+                      to={`/consultation/${booking.id}`}
+                      className="bg-gradient-to-r from-blue-500 to-blue-600 text-white px-6 py-2.5 rounded-xl text-sm font-semibold hover:from-blue-600 hover:to-blue-700 transition-all duration-200 shadow-md hover:shadow-lg flex items-center"
+                    >
+                      <Play className="h-4 w-4 mr-2" />
+                      Rejoindre
+                    </Link>
+                  </div>
+                ) : null}
+
+                {/* Pour les consultations dans l'historique qui ne sont pas encore terminées */}
+                {activeTab === "past" &&
+                  booking.status === "confirmed" &&
+                  !isDatePassed(booking.date) && (
+                    <div className="flex justify-between items-center">
+                      <div></div> {/* Espaceur */}
+                      <button
+                        onClick={() => onComplete(booking.id)}
+                        className="bg-gradient-to-r from-blue-500 to-blue-600 text-white px-6 py-2.5 rounded-xl text-sm font-semibold hover:from-blue-600 hover:to-blue-700 transition-all duration-200 shadow-md hover:shadow-lg flex items-center"
+                      >
+                        <CheckCircle className="h-4 w-4 mr-2" />
+                        Terminer
+                      </button>
+                    </div>
+                  )}
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 text-center">
+          <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <Calendar className="h-8 w-8 text-gray-400" />
           </div>
-        )}
-      </div>
+          <p className="text-gray-500 font-medium">
+            {activeTab === "upcoming"
+              ? "Vous n'avez pas de rendez-vous à venir."
+              : "Vous n'avez pas encore eu de consultations."}
+          </p>
+        </div>
+      )}
     </div>
   );
 };
@@ -586,6 +700,7 @@ const ProfessionalDashboard: React.FC = () => {
     withdrawn: 0,
     history: [],
   });
+
   const [withdrawalData, setWithdrawalData] = useState<WithdrawalFormData>({
     amount: 0,
     method: "wave",
@@ -597,8 +712,11 @@ const ProfessionalDashboard: React.FC = () => {
   const isMountedRef = useRef(true);
   const [showEthicsReminder, setShowEthicsReminder] = useState(true);
   const [showSupport, setShowSupport] = useState(false);
-  const [showFinancialStats, setShowFinancialStats] = useState(true);
+  const [showFinancialStats] = useState(true);
   const [showBalance, setShowBalance] = useState(true);
+  const [showCancelModal, setShowCancelModal] = useState(false);
+  const [bookingToCancel, setBookingToCancel] = useState<string | null>(null);
+  const [isCancelling, setIsCancelling] = useState(false);
 
   // Only fetch bookings if user is authenticated
   const { bookings, loading, error, refreshBookings } = useBookings(
@@ -716,152 +834,83 @@ const ProfessionalDashboard: React.FC = () => {
     };
   }, []);
 
-  // Calculate revenue from bookings data (real data from Firestore)
+  // Calculate revenue from Firestore revenue transactions
   useEffect(() => {
-    const calculateRevenue = async () => {
-      if (!currentUser?.id) {
-        console.log("⚠️ No current user, skipping revenue calculation");
-        return;
-      }
+    if (!currentUser?.id) return; // attendre l'ID
 
-      if (!bookings || bookings.length === 0) {
-        console.log("ℹ️ No bookings data available for revenue calculation");
-        return;
-      }
+    let cancelled = false;
 
+    const fetchRevenue = async () => {
       try {
-        // Ensure Firestore is ready before any calculations that might need it
         await ensureFirestoreReady();
 
-        console.log("💰 Calculating revenue from bookings...");
+        const [r, tx] = await Promise.all([
+          calculateProfessionalRevenue(currentUser.id),
+          getProfessionalTransactions(currentUser.id, 20),
+        ]);
 
-        // Calculate revenue from completed bookings
-        const completedBookings = bookings.filter(
-          (booking) => booking.status === "terminé"
-        );
-        const totalRevenue = completedBookings.reduce(
-          (sum, booking) => sum + (booking.price || 0),
-          0
-        );
+        if (cancelled) return;
 
-        // Revenue distribution (realistic calculation)
-        const available = Math.floor(totalRevenue * 0.7); // 70% available
-        const pending = Math.floor(totalRevenue * 0.2); // 20% pending
-        const withdrawn = Math.floor(totalRevenue * 0.1); // 10% already withdrawn
-
-        const history = completedBookings.map((booking) => ({
-          id: booking.id,
-          type: "consultation" as const,
-          amount: booking.price || 0,
-          description: `Consultation avec ${booking.patientName || "Patient"}`,
-          date: booking.date || "Date inconnue",
-          status: "Terminée",
-        }));
-
-        if (isMountedRef.current) {
-          setRevenue({
-            available,
-            pending,
-            withdrawn,
-            history,
-          });
-        }
-
-        console.log("✅ Revenue calculated successfully:", {
-          available,
-          pending,
-          withdrawn,
-          historyCount: history.length,
+        setRevenue({
+          available: Number(r?.available ?? 0),
+          pending: Number(r?.pending ?? 0),
+          withdrawn: Number(r?.withdrawn ?? 0),
+          history: (tx ?? []).map((t) => ({
+            id: t.id ?? "",
+            type: t.type,
+            amount: Number(t.professionalAmount ?? 0),
+            description: t.description ?? "Transaction",
+            date: (t.createdAt?.toDate?.()
+              ? t.createdAt.toDate()
+              : new Date()
+            ).toLocaleDateString("fr-FR"),
+            status: t.status === "completed" ? "Terminée" : t.status,
+          })),
         });
-      } catch (error) {
-        console.error("❌ Error calculating revenue:", error);
-        // Keep default values if calculation fails
+      } catch (e) {
+        console.error("⚠️ fetchRevenue error:", e);
       }
     };
 
-    calculateRevenue();
-  }, [bookings, currentUser?.id]);
+    fetchRevenue(); // 1er chargement
+    const interval = setInterval(fetchRevenue, 15000); // refresh régulier
 
-  const handleConfirmBooking = async (bookingId: string) => {
-    if (!currentUser?.id) {
-      console.warn("⚠️ No current user, cannot confirm booking");
-      return;
-    }
-
-    try {
-      // Ensure Firestore is ready before operation
-      await ensureFirestoreReady();
-
-      console.log("✅ Confirming booking:", bookingId);
-      await confirmBooking(bookingId);
-    } catch (error) {
-      console.error("❌ Error confirming booking:", error);
-      alert("Erreur lors de la confirmation. Veuillez réessayer.");
-
-      // Reset Firestore connection on critical errors
-      if (error instanceof Error) {
-        if (
-          error.message &&
-          (error.message.includes("permission-denied") ||
-            error.message.includes("client terminated") ||
-            error.message.includes("unexpected state"))
-        ) {
-          try {
-            await resetFirestoreConnection();
-            console.log("✅ Firestore connection reset after error");
-          } catch (resetError) {
-            console.error(
-              "❌ Failed to reset Firestore connection:",
-              resetError
-            );
-          }
-        }
-      } else {
-        // Gestion d'autres types d'erreur si besoin
-        console.error("Erreur inconnue :", error);
-      }
-    }
-  };
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+    };
+  }, [currentUser?.id]);
 
   const handleCancelBooking = async (bookingId: string) => {
     if (!currentUser?.id) {
-      console.warn("⚠️ No current user, cannot cancel booking");
+      console.warn("⚠️ User not authenticated, cannot cancel booking");
       return;
     }
 
     try {
-      // Ensure Firestore is ready before operation
-      await ensureFirestoreReady();
-
-      console.log("❌ Cancelling booking:", bookingId);
+      setIsCancelling(true);
       await cancelBooking(bookingId);
+
+      // Rafraîchir les données
+      if (isMountedRef.current) {
+        // Recharger les bookings
+        window.location.reload(); // Solution simple pour rafraîchir
+      }
+
+      console.log("✅ Booking cancelled successfully");
     } catch (error) {
       console.error("❌ Error cancelling booking:", error);
-      alert("Erreur lors de l'annulation. Veuillez réessayer.");
-
-      // Reset Firestore connection on critical errors
-      if (error instanceof Error) {
-        if (
-          error.message &&
-          (error.message.includes("permission-denied") ||
-            error.message.includes("client terminated") ||
-            error.message.includes("unexpected state"))
-        ) {
-          try {
-            await resetFirestoreConnection();
-            console.log("✅ Firestore connection reset after error");
-          } catch (resetError) {
-            console.error(
-              "❌ Failed to reset Firestore connection:",
-              resetError
-            );
-          }
-        }
-      } else {
-        // Gestion d'autres types d'erreur si besoin
-        console.error("Erreur inconnue :", error);
-      }
+      alert("Erreur lors de l'annulation du rendez-vous. Veuillez réessayer.");
+    } finally {
+      setIsCancelling(false);
+      setShowCancelModal(false);
+      setBookingToCancel(null);
     }
+  };
+
+  const confirmCancel = (bookingId: string) => {
+    setBookingToCancel(bookingId);
+    setShowCancelModal(true);
   };
 
   const handleCompleteBooking = async (bookingId: string, notes?: string) => {
@@ -1106,8 +1155,7 @@ const ProfessionalDashboard: React.FC = () => {
         {/* Consultations Section */}
         <ConsultationsSection
           bookings={bookings}
-          onConfirm={handleConfirmBooking}
-          onCancel={handleCancelBooking}
+          onCancel={confirmCancel}
           onComplete={handleCompleteBooking}
         />
 
@@ -1154,7 +1202,10 @@ const ProfessionalDashboard: React.FC = () => {
                     onChange={(e) =>
                       setWithdrawalData({
                         ...withdrawalData,
-                        method: e.target.value as any,
+                        method: e.target.value as
+                          | "wave"
+                          | "orange-money"
+                          | "bank-transfer",
                       })
                     }
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
@@ -1227,6 +1278,56 @@ const ProfessionalDashboard: React.FC = () => {
               </div>
               <div className="flex-1 overflow-y-auto">
                 <UserSupportTickets />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Modal de confirmation d'annulation */}
+        {showCancelModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-xl p-6 w-full max-w-md mx-4">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-lg font-semibold text-gray-900">
+                  Confirmer l'annulation
+                </h3>
+                <button
+                  onClick={() => setShowCancelModal(false)}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+
+              <div className="mb-6">
+                <p className="text-gray-600">
+                  Êtes-vous sûr de vouloir annuler cette consultation ? Cette
+                  action ne peut pas être annulée.
+                </p>
+              </div>
+
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => setShowCancelModal(false)}
+                  className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  Annuler
+                </button>
+                <button
+                  onClick={() => handleCancelBooking(bookingToCancel!)}
+                  disabled={isCancelling}
+                  className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50"
+                >
+                  {isCancelling ? (
+                    <div className="flex items-center justify-center">
+                      <LoadingSpinner size="sm" />
+                      <span className="ml-2">Annulation...</span>
+                    </div>
+                  ) : (
+                    "Confirmer l'annulation"
+                  )}
+                </button>
               </div>
             </div>
           </div>

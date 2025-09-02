@@ -2,10 +2,10 @@ const fetch = require("node-fetch");
 
 // Configuration PayTech selon les instructions officielles
 const PAYTECH_CONFIG = {
-  apiUrl: "https://paytech.sn/api/payment/request-payment",
+  apiUrl: "https://paytech.sn/api/payment/request-payment", // URL de production
   apiKey: process.env.PAYTECH_API_KEY,
   apiSecret: process.env.PAYTECH_API_SECRET,
-  env: process.env.PAYTECH_ENV || "test",
+  env: process.env.PAYTECH_ENV || "prod", // Mode production par défaut (prod, pas production)
   successUrl:
     process.env.PAYTECH_SUCCESS_URL ||
     "https://health-e.sn/appointment-success",
@@ -105,6 +105,7 @@ exports.handler = async (event, context) => {
         }`,
         currency: "XOF",
         env: PAYTECH_CONFIG.env,
+        // Configuration de l'URL de succès avec l'ID de réservation
         success_url: `${PAYTECH_CONFIG.successUrl}/${bookingId}`,
         cancel_url: `${PAYTECH_CONFIG.cancelUrl}/${professionalId}`,
         ipn_url: PAYTECH_CONFIG.ipnUrl,

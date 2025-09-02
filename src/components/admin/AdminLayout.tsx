@@ -4,7 +4,7 @@ import { useLocation } from "react-router-dom";
 import AdminSidebar from "./AdminSidebar";
 import { useAuth } from "../../contexts/AuthContext";
 import { useLanguage } from "../../contexts/LanguageContext";
-import NotificationCenter from "../notifications/NotificationCenter";
+import AdminNotificationCenter from "./AdminNotificationCenter";
 
 interface AdminLayoutProps {
   children: React.ReactNode;
@@ -80,7 +80,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
         {/* Droite : Notifications + Profil */}
         <div className="flex items-center space-x-4">
           {/* Notifications */}
-          <NotificationCenter />
+          <AdminNotificationCenter />
 
           {/* Profil */}
           <div className="relative">

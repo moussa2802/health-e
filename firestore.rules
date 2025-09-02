@@ -73,6 +73,45 @@ service cloud.firestore {
         resource.data.userId == request.auth.uid;
     }
     
+    // Règles pour les transactions de revenus
+    match /revenue_transactions/{transactionId} {
+      // Un professionnel peut lire et écrire ses propres transactions
+      allow read, write: if request.auth != null && 
+        resource.data.professionalId == request.auth.uid;
+    }
+    
+    // Règles pour les retraits des professionnels
+    match /withdrawals/{withdrawalId} {
+      // Un professionnel peut lire et écrire ses propres retraits
+      allow read, write: if request.auth != null && 
+        resource.data.professionalId == request.auth.uid;
+    }
+    
+    // Règles pour les demandes de retrait
+    match /withdrawalRequests/{requestId} {
+      // Un professionnel peut créer une demande où professionalId == auth.uid et status == "pending"
+      allow create: if request.auth != null && 
+        request.resource.data.professionalId == request.auth.uid && 
+        request.resource.data.status == "pending";
+      
+      // Un professionnel peut lire uniquement ses propres demandes
+      allow read: if request.auth != null && 
+        resource.data.professionalId == request.auth.uid;
+      
+      // Un professionnel peut mettre à jour uniquement ses propres demandes (limité)
+      allow update: if request.auth != null && 
+        resource.data.professionalId == request.auth.uid &&
+        // Ne peut pas modifier amount, method, professionalId après création
+        request.resource.data.amount == resource.data.amount &&
+        request.resource.data.method == resource.data.method &&
+        request.resource.data.professionalId == resource.data.professionalId;
+      
+      // Les admins peuvent lire toutes les demandes et les traiter
+      allow read, write: if request.auth != null && 
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "admin";
+    }
+    
     // Règles pour les tickets de support
     match /supportTickets/{ticketId} {
       // Les utilisateurs peuvent lire et écrire leurs propres tickets
