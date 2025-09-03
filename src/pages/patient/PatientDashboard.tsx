@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import {
   Calendar,
   Clock,
@@ -21,6 +21,7 @@ import {
   Eye,
   Plus,
   Download,
+  Edit,
 } from "lucide-react";
 import { useAuth } from "../../contexts/AuthContext";
 import { useBookings } from "../../hooks/useBookings";
@@ -89,6 +90,7 @@ const WelcomeBanner: React.FC<{ name: string }> = ({ name }) => (
 
 const PatientDashboard: React.FC = () => {
   const { currentUser } = useAuth();
+  const location = useLocation();
   const { bookings, loading } = useBookings(currentUser?.id || "", "patient");
   const [activeTab, setActiveTab] = useState<"upcoming" | "past">("upcoming");
   const [showMessaging, setShowMessaging] = useState(true);
@@ -104,6 +106,7 @@ const PatientDashboard: React.FC = () => {
   );
   const [showEthicsReminder, setShowEthicsReminder] = useState(true);
   const [showSupport, setShowSupport] = useState(false);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [showPrescriptionModal, setShowPrescriptionModal] = useState(false);
   const [currentPrescription, setCurrentPrescription] =
     useState<MedicalRecord | null>(null);
@@ -154,6 +157,23 @@ const PatientDashboard: React.FC = () => {
       setShowEthicsReminder(false);
     }
   }, []);
+
+  // Gérer les messages de succès depuis l'URL
+  useEffect(() => {
+    const searchParams = new URLSearchParams(location.search);
+    const message = searchParams.get("message");
+
+    if (message === "appointment_updated") {
+      setSuccessMessage("Rendez-vous modifié avec succès !");
+      // Nettoyer l'URL
+      window.history.replaceState({}, document.title, window.location.pathname);
+
+      // Masquer le message après 5 secondes
+      setTimeout(() => {
+        setSuccessMessage(null);
+      }, 5000);
+    }
+  }, [location.search]);
 
   const dismissEthicsReminder = () => {
     localStorage.setItem("health-e-ethics-reminder-dismissed", "true");
@@ -1028,24 +1048,93 @@ const PatientDashboard: React.FC = () => {
     }
   };
 
-  // Debug: Afficher tous les bookings reçus
-  console.log("🔍 [DASHBOARD DEBUG] All bookings received:", bookings.length);
-  bookings.forEach((booking, index) => {
-    console.log(`  Dashboard Booking ${index + 1}:`, {
-      id: booking.id,
-      status: booking.status,
-      patientId: booking.patientId,
-      professionalId: booking.professionalId,
-      date: booking.date,
-      type: booking.type,
-    });
-  });
+  // Fonction pour vérifier si c'est le jour de la consultation
+  const isConsultationDay = (dateString: string) => {
+    try {
+      if (
+        [
+          "Lundi",
+          "Mardi",
+          "Mercredi",
+          "Jeudi",
+          "Vendredi",
+          "Samedi",
+          "Dimanche",
+        ].includes(dateString)
+      ) {
+        return false; // Les noms de jours ne sont pas des dates précises
+      }
+
+      let bookingDate: Date;
+      if (dateString.includes("-")) {
+        const [year, month, day] = dateString.split("-").map(Number);
+        bookingDate = new Date(year, month - 1, day, 12, 0, 0);
+      } else {
+        bookingDate = new Date(dateString);
+      }
+
+      if (isNaN(bookingDate.getTime())) {
+        return false;
+      }
+
+      const today = new Date();
+
+      // Comparer seulement le jour, mois et année (pas l'heure)
+      return (
+        bookingDate.getDate() === today.getDate() &&
+        bookingDate.getMonth() === today.getMonth() &&
+        bookingDate.getFullYear() === today.getFullYear()
+      );
+    } catch (error) {
+      console.error("❌ Error in isConsultationDay:", error);
+      return false;
+    }
+  };
+
+  // Fonction pour vérifier si une date est dans les 2 prochains jours
+  const isWithinTwoDays = (dateString: string) => {
+    try {
+      if (
+        [
+          "Lundi",
+          "Mardi",
+          "Mercredi",
+          "Jeudi",
+          "Vendredi",
+          "Samedi",
+          "Dimanche",
+        ].includes(dateString)
+      ) {
+        return false; // Les noms de jours ne sont pas dans les 2 jours
+      }
+
+      let bookingDate: Date;
+      if (dateString.includes("-")) {
+        const [year, month, day] = dateString.split("-").map(Number);
+        bookingDate = new Date(year, month - 1, day, 12, 0, 0);
+      } else {
+        bookingDate = new Date(dateString);
+      }
+
+      if (isNaN(bookingDate.getTime())) {
+        return false;
+      }
+
+      const today = new Date();
+      const twoDaysFromNow = new Date(today);
+      twoDaysFromNow.setDate(today.getDate() + 2);
+
+      // Vérifier si la date est dans les 2 prochains jours
+      return bookingDate <= twoDaysFromNow && bookingDate >= today;
+    } catch (error) {
+      console.error("❌ Error in isWithinTwoDays:", error);
+      return false;
+    }
+  };
 
   // Fonction pour comparer les dates en tenant compte seulement du jour (pas de l'heure)
   const isDatePassed = (dateString: string) => {
     try {
-      console.log("🔍 [DATE DEBUG] Checking if date passed:", dateString);
-
       // Si c'est un nom de jour (ex: "Jeudi"), retourner false (pas encore passé)
       if (
         [
@@ -1058,9 +1147,6 @@ const PatientDashboard: React.FC = () => {
           "Dimanche",
         ].includes(dateString)
       ) {
-        console.log(
-          "🔍 [DATE DEBUG] Day name detected, treating as not passed"
-        );
         return false;
       }
 
@@ -1079,21 +1165,8 @@ const PatientDashboard: React.FC = () => {
 
       const today = new Date();
 
-      // Debug des dates
-      console.log("🔍 [DATE DEBUG] Parsed dates:", {
-        original: dateString,
-        parsed: bookingDate.toISOString(),
-        today: today.toISOString(),
-        parsedLocal: bookingDate.toLocaleDateString("fr-FR"),
-        todayLocal: today.toLocaleDateString("fr-FR"),
-        parsedYear: bookingDate.getFullYear(),
-        parsedMonth: bookingDate.getMonth() + 1,
-        parsedDay: bookingDate.getDate(),
-      });
-
       // Vérifier si la date est valide
       if (isNaN(bookingDate.getTime())) {
-        console.warn("⚠️ [DATE DEBUG] Invalid date, treating as not passed");
         return false;
       }
 
@@ -1106,19 +1179,9 @@ const PatientDashboard: React.FC = () => {
           bookingDate.getMonth() === today.getMonth() &&
           bookingDate.getDate() < today.getDate());
 
-      console.log("🔍 [DATE DEBUG] Date comparison result:", {
-        bookingYear: bookingDate.getFullYear(),
-        bookingMonth: bookingDate.getMonth() + 1,
-        bookingDay: bookingDate.getDate(),
-        todayYear: today.getFullYear(),
-        todayMonth: today.getMonth() + 1,
-        todayDay: today.getDate(),
-        isPassed,
-      });
-
       return isPassed;
     } catch (error) {
-      console.error("❌ [DATE DEBUG] Error in isDatePassed:", error);
+      console.error("❌ Error in isDatePassed:", error);
       return false; // En cas d'erreur, traiter comme non passée
     }
   };
@@ -1139,12 +1202,6 @@ const PatientDashboard: React.FC = () => {
       isDatePassed(booking.date)
   );
 
-  console.log("🔍 [DASHBOARD DEBUG] Filtered bookings:", {
-    upcoming: upcomingBookings.length,
-    past: pastBookings.length,
-    activeTab,
-  });
-
   const displayedBookings =
     activeTab === "upcoming" ? upcomingBookings : pastBookings;
 
@@ -1162,6 +1219,36 @@ const PatientDashboard: React.FC = () => {
     <div className="container mx-auto px-4 py-8">
       {showEthicsReminder && (
         <EthicsReminder userType="patient" onDismiss={dismissEthicsReminder} />
+      )}
+
+      {/* Message de succès */}
+      {successMessage && (
+        <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg flex items-center">
+          <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center mr-3">
+            <svg
+              className="w-5 h-5 text-white"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M5 13l4 4L19 7"
+              />
+            </svg>
+          </div>
+          <div className="flex-1">
+            <p className="text-green-800 font-medium">{successMessage}</p>
+          </div>
+          <button
+            onClick={() => setSuccessMessage(null)}
+            className="text-green-600 hover:text-green-800 ml-4"
+          >
+            <X className="h-5 w-5" />
+          </button>
+        </div>
       )}
 
       {/* Welcome Banner */}
@@ -1358,23 +1445,60 @@ const PatientDashboard: React.FC = () => {
                         booking.status === "confirmé" ||
                         booking.status === "confirmed") ? (
                         <div className="flex justify-between items-center">
-                          <button
-                            onClick={() => {
-                              setBookingToCancel(booking);
-                              setShowCancelModal(true);
-                            }}
-                            className="flex items-center text-red-500 text-sm font-medium hover:text-red-600 transition-colors"
-                          >
-                            <XCircle className="h-4 w-4 mr-1" />
-                            Annuler
-                          </button>
-                          <Link
-                            to={`/consultation/${booking.id}`}
-                            className="bg-gradient-to-r from-blue-500 to-blue-600 text-white px-6 py-2.5 rounded-xl text-sm font-semibold hover:from-blue-600 hover:to-blue-700 transition-all duration-200 shadow-md hover:shadow-lg flex items-center"
-                          >
-                            <Play className="h-4 w-4 mr-2" />
-                            Rejoindre
-                          </Link>
+                          <div className="flex items-center space-x-4">
+                            <button
+                              onClick={() => {
+                                setBookingToCancel(booking);
+                                setShowCancelModal(true);
+                              }}
+                              className="flex items-center text-red-500 text-sm font-medium hover:text-red-600 transition-colors"
+                            >
+                              <XCircle className="h-4 w-4 mr-1" />
+                              Annuler
+                            </button>
+                            {/* Bouton Modifier - seulement pour les rendez-vous confirmés et pas dans les 2 jours */}
+                            {(booking.status === "confirmé" ||
+                              booking.status === "confirmed") && (
+                              <div className="flex flex-col">
+                                {isWithinTwoDays(booking.date) ? (
+                                  <div className="flex items-center text-gray-400 text-sm font-medium cursor-not-allowed">
+                                    <Edit className="h-4 w-4 mr-1" />
+                                    Modifier
+                                  </div>
+                                ) : (
+                                  <Link
+                                    to={`/book/${booking.professionalId}?modify=${booking.id}`}
+                                    className="flex items-center text-blue-500 text-sm font-medium hover:text-blue-600 transition-colors"
+                                  >
+                                    <Edit className="h-4 w-4 mr-1" />
+                                    Modifier
+                                  </Link>
+                                )}
+                                {isWithinTwoDays(booking.date) && (
+                                  <span className="text-xs text-gray-500 mt-1">
+                                    Modifications fermées 2 jours avant
+                                  </span>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                          {isConsultationDay(booking.date) ? (
+                            <Link
+                              to={`/consultation/${booking.id}`}
+                              className="bg-gradient-to-r from-blue-500 to-blue-600 text-white px-6 py-2.5 rounded-xl text-sm font-semibold hover:from-blue-600 hover:to-blue-700 transition-all duration-200 shadow-md hover:shadow-lg flex items-center"
+                            >
+                              <Play className="h-4 w-4 mr-2" />
+                              Rejoindre
+                            </Link>
+                          ) : (
+                            <div className="bg-gray-300 text-gray-500 px-6 py-2.5 rounded-xl text-sm font-semibold flex items-center cursor-not-allowed">
+                              <Play className="h-4 w-4 mr-2" />
+                              Rejoindre
+                              <span className="text-xs ml-2">
+                                (Disponible le jour J)
+                              </span>
+                            </div>
+                          )}
                         </div>
                       ) : null}
                     </div>

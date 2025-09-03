@@ -45,7 +45,6 @@ export interface Patient {
   lastConsultation?: string;
   consultationsCount: number;
   nextAppointment?: string;
-  medicalRecords?: MedicalRecord[];
   isArchived?: boolean;
   archivedAt?: string;
   createdAt?: Timestamp;
@@ -76,9 +75,13 @@ export async function updatePatientMedicalRecord(
         patientId
       );
 
-      // Create new patient document
+      // Create new patient document with better naming
+      const patientName = patientId.startsWith("temp_patient_")
+        ? `Patient Consultation ${new Date().toLocaleDateString("fr-FR")}`
+        : `Patient ${patientId.substring(0, 8)}`;
+
       await setDoc(patientRef, {
-        name: `Patient ${patientId.substring(0, 8)}`,
+        name: patientName,
         email: `patient-${patientId}@health-e.sn`,
         phone: "",
         dateOfBirth: "",
@@ -135,6 +138,14 @@ export async function updatePatientMedicalRecord(
         updatedAt: serverTimestamp(),
       },
       medicalRecordIds: arrayUnion(recordRef.id),
+      // Add this patient to the professional's patient list
+      consultations: arrayUnion({
+        professionalId: recordData.professionalId,
+        professionalName: recordData.professionalName,
+        consultationDate: recordData.consultationDate,
+        consultationType: recordData.consultationType || "video",
+        medicalRecordId: recordRef.id,
+      }),
       updatedAt: serverTimestamp(),
     });
 

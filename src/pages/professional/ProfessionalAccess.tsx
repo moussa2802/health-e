@@ -12,6 +12,14 @@ import {
 import { useAuth } from "../../contexts/AuthContext";
 import { useLanguage } from "../../contexts/LanguageContext";
 import { useTerms } from "../../contexts/TermsContext";
+import {
+  CATEGORIES,
+  SPECIALTIES,
+  getSpecialtiesByCategory,
+  getCategoryLabel,
+  getSpecialtyLabel,
+  type Category,
+} from "../../constants/specialties";
 import { getAuth } from "firebase/auth";
 import { useEmailVerification } from "../../hooks/useEmailVerification";
 import { usePhoneAuth } from "../../hooks/usePhoneAuth";
@@ -41,7 +49,9 @@ const ProfessionalAccess: React.FC = () => {
   const [registerError, setRegisterError] = useState("");
   const [isRegistering, setIsRegistering] = useState(false);
 
-  const [serviceType, setServiceType] = useState<"mental" | "sexual">("mental");
+  const [selectedCategory, setSelectedCategory] =
+    useState<Category>("mental-health");
+  const [selectedSpecialties, setSelectedSpecialties] = useState<string[]>([]);
   const [registerMethod, setRegisterMethod] = useState<"email" | "phone">(
     "email"
   );
@@ -246,8 +256,16 @@ const ProfessionalAccess: React.FC = () => {
         const additionalData = {
           name: registerName,
           phone: "", // À remplir plus tard
-          serviceType: serviceType,
-          specialty: "", // À remplir plus tard
+          // Legacy fields for backward compatibility
+          serviceType:
+            selectedCategory === "mental-health" ? "mental" : "sexual",
+          specialty:
+            selectedSpecialties.length > 0 ? selectedSpecialties[0] : "",
+          // New fields
+          category: selectedCategory,
+          primarySpecialty:
+            selectedSpecialties.length > 0 ? selectedSpecialties[0] : "",
+          specialties: selectedSpecialties,
           profileImage: "",
           consultationFee: 0,
           isActive: false,
@@ -308,7 +326,10 @@ const ProfessionalAccess: React.FC = () => {
           "💾 [PROFESSIONAL REGISTER DEBUG] Storing userType in localStorage BEFORE register call"
         );
         localStorage.setItem("pending-user-type", "professional");
-        localStorage.setItem("pending-service-type", serviceType);
+        localStorage.setItem(
+          "pending-service-type",
+          selectedCategory === "mental-health" ? "mental" : "sexual"
+        );
         console.log(
           "💾 [PROFESSIONAL REGISTER DEBUG] Stored userType:",
           localStorage.getItem("pending-user-type")
@@ -585,40 +606,87 @@ const ProfessionalAccess: React.FC = () => {
 
                   <div>
                     <label
-                      htmlFor="service-type"
+                      htmlFor="category"
                       className="block text-sm font-medium text-gray-700 mb-1"
                     >
-                      Type de service
+                      Catégorie de service
                     </label>
                     <div className="flex flex-wrap gap-4">
-                      <label className="inline-flex items-center">
-                        <input
-                          type="radio"
-                          className="form-radio h-5 w-5 text-teal-600"
-                          name="serviceType"
-                          value="mental"
-                          checked={serviceType === "mental"}
-                          onChange={() => setServiceType("mental")}
-                        />
-                        <span className="ml-2 text-gray-700">
-                          Santé mentale
-                        </span>
-                      </label>
-                      <label className="inline-flex items-center">
-                        <input
-                          type="radio"
-                          className="form-radio h-5 w-5 text-teal-600"
-                          name="serviceType"
-                          value="sexual"
-                          checked={serviceType === "sexual"}
-                          onChange={() => setServiceType("sexual")}
-                        />
-                        <span className="ml-2 text-gray-700">
-                          Santé sexuelle
-                        </span>
-                      </label>
+                      {CATEGORIES.map((category) => (
+                        <label
+                          key={category}
+                          className="inline-flex items-center"
+                        >
+                          <input
+                            type="radio"
+                            className="form-radio h-5 w-5 text-teal-600"
+                            name="category"
+                            value={category}
+                            checked={selectedCategory === category}
+                            onChange={() => {
+                              setSelectedCategory(category);
+                              setSelectedSpecialties([]); // Reset specialties when category changes
+                            }}
+                          />
+                          <span className="ml-2 text-gray-700">
+                            {getCategoryLabel(category, language)}
+                          </span>
+                        </label>
+                      ))}
                     </div>
                   </div>
+
+                  {selectedCategory && (
+                    <div>
+                      <label
+                        htmlFor="specialties"
+                        className="block text-sm font-medium text-gray-700 mb-1"
+                      >
+                        Spécialités (vous pouvez en sélectionner plusieurs)
+                      </label>
+                      <div className="max-h-48 overflow-y-auto border border-gray-300 rounded-md p-2 space-y-2">
+                        {getSpecialtiesByCategory(selectedCategory).map(
+                          (specialty) => (
+                            <label
+                              key={specialty.key}
+                              className="flex items-center space-x-2 cursor-pointer hover:bg-gray-50 p-2 rounded"
+                            >
+                              <input
+                                type="checkbox"
+                                value={specialty.key}
+                                checked={selectedSpecialties.includes(
+                                  specialty.key
+                                )}
+                                onChange={(e) => {
+                                  if (e.target.checked) {
+                                    setSelectedSpecialties([
+                                      ...selectedSpecialties,
+                                      specialty.key,
+                                    ]);
+                                  } else {
+                                    setSelectedSpecialties(
+                                      selectedSpecialties.filter(
+                                        (s) => s !== specialty.key
+                                      )
+                                    );
+                                  }
+                                }}
+                                className="form-checkbox h-4 w-4 text-teal-600 focus:ring-teal-500"
+                              />
+                              <span className="text-sm text-gray-700">
+                                {specialty.labels[language]}
+                              </span>
+                            </label>
+                          )
+                        )}
+                      </div>
+                      {selectedSpecialties.length === 0 && (
+                        <p className="text-red-500 text-sm mt-1">
+                          Veuillez sélectionner au moins une spécialité
+                        </p>
+                      )}
+                    </div>
+                  )}
 
                   <div className="flex items-center justify-between">
                     <div className="flex items-center">

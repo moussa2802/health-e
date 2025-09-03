@@ -355,10 +355,18 @@ const TodaysAgenda: React.FC<{
                   </p>
                 </div>
               </div>
-              <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium flex items-center gap-2">
-                <Play className="h-4 w-4" />
-                Rejoindre
-              </button>
+              {isConsultationDay(booking.date) ? (
+                <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium flex items-center gap-2">
+                  <Play className="h-4 w-4" />
+                  Rejoindre
+                </button>
+              ) : (
+                <div className="px-4 py-2 bg-gray-300 text-gray-500 rounded-lg text-sm font-medium flex items-center gap-2 cursor-not-allowed">
+                  <Play className="h-4 w-4" />
+                  Rejoindre
+                  <span className="text-xs">(Disponible le jour J)</span>
+                </div>
+              )}
             </div>
           ))}
         </div>
@@ -433,6 +441,49 @@ const ConsultationsSection: React.FC<{
       return isPassed;
     } catch {
       return false; // En cas d'erreur, traiter comme non passée
+    }
+  };
+
+  // Fonction pour vérifier si c'est le jour de la consultation
+  const isConsultationDay = (dateString: string) => {
+    try {
+      if (
+        [
+          "Lundi",
+          "Mardi",
+          "Mercredi",
+          "Jeudi",
+          "Vendredi",
+          "Samedi",
+          "Dimanche",
+        ].includes(dateString)
+      ) {
+        return false; // Les noms de jours ne sont pas des dates précises
+      }
+
+      let bookingDate: Date;
+      if (dateString.includes("-")) {
+        const [year, month, day] = dateString.split("-").map(Number);
+        bookingDate = new Date(year, month - 1, day, 12, 0, 0);
+      } else {
+        bookingDate = new Date(dateString);
+      }
+
+      if (isNaN(bookingDate.getTime())) {
+        return false;
+      }
+
+      const today = new Date();
+
+      // Comparer seulement le jour, mois et année (pas l'heure)
+      return (
+        bookingDate.getDate() === today.getDate() &&
+        bookingDate.getMonth() === today.getMonth() &&
+        bookingDate.getFullYear() === today.getFullYear()
+      );
+    } catch (error) {
+      console.error("❌ Error in isConsultationDay:", error);
+      return false;
     }
   };
 
@@ -622,13 +673,23 @@ const ConsultationsSection: React.FC<{
                       <XCircle className="h-4 w-4 mr-1" />
                       Annuler
                     </button>
-                    <Link
-                      to={`/consultation/${booking.id}`}
-                      className="bg-gradient-to-r from-blue-500 to-blue-600 text-white px-6 py-2.5 rounded-xl text-sm font-semibold hover:from-blue-600 hover:to-blue-700 transition-all duration-200 shadow-md hover:shadow-lg flex items-center"
-                    >
-                      <Play className="h-4 w-4 mr-2" />
-                      Rejoindre
-                    </Link>
+                    {isConsultationDay(booking.date) ? (
+                      <Link
+                        to={`/consultation/${booking.id}?patientId=${booking.patientId}`}
+                        className="bg-gradient-to-r from-blue-500 to-blue-600 text-white px-6 py-2.5 rounded-xl text-sm font-semibold hover:from-blue-600 hover:to-blue-700 transition-all duration-200 shadow-md hover:shadow-lg flex items-center"
+                      >
+                        <Play className="h-4 w-4 mr-2" />
+                        Rejoindre
+                      </Link>
+                    ) : (
+                      <div className="bg-gray-300 text-gray-500 px-6 py-2.5 rounded-xl text-sm font-semibold flex items-center cursor-not-allowed">
+                        <Play className="h-4 w-4 mr-2" />
+                        Rejoindre
+                        <span className="text-xs ml-2">
+                          (Disponible le jour J)
+                        </span>
+                      </div>
+                    )}
                   </div>
                 ) : null}
 

@@ -22,6 +22,15 @@ import {
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { storage } from "../utils/firebase";
 import { createAdminNotificationForNewProfessional } from "./notificationService";
+import {
+  getSpecialtyByKey,
+  getSpecialtyLabel,
+  getCategoryLabel,
+  mapLegacySpecialty,
+  isValidSpecialty,
+  isValidCategory,
+  type Category,
+} from "../constants/specialties";
 
 // Types for patient profile
 export interface PatientProfile {
@@ -52,8 +61,12 @@ export interface ProfessionalProfile {
   userId: string;
   name: string;
   email: string;
-  specialty: string;
-  type: "mental" | "sexual";
+  specialty: string; // Legacy field - keep for backward compatibility
+  type: "mental" | "sexual"; // Legacy field - keep for backward compatibility
+  // New fields for extended specialties
+  category?: "mental-health" | "sexual-health";
+  primarySpecialty?: string; // Key from SPECIALTIES constant (legacy, kept for compatibility)
+  specialties?: string[]; // Array of specialty keys from SPECIALTIES constant
   languages: string[];
   description: string;
   education: string[];
@@ -92,6 +105,122 @@ interface TimeSlot {
   startTime: string;
   endTime: string;
 }
+
+// Helper functions for specialty compatibility
+export const getProfessionalCategory = (
+  profile: ProfessionalProfile
+): Category | null => {
+  if (profile.category && isValidCategory(profile.category)) {
+    return profile.category as Category;
+  }
+  // Fallback to legacy type field
+  if (profile.type === "mental") return "mental-health";
+  if (profile.type === "sexual") return "sexual-health";
+  return null;
+};
+
+export const getProfessionalPrimarySpecialty = (
+  profile: ProfessionalProfile
+): string | null => {
+  // First check if we have multiple specialties and return the first one as primary
+  if (profile.specialties && profile.specialties.length > 0) {
+    return profile.specialties[0];
+  }
+
+  if (profile.primarySpecialty && isValidSpecialty(profile.primarySpecialty)) {
+    return profile.primarySpecialty;
+  }
+  // Fallback to legacy specialty field
+  if (profile.specialty) {
+    const mapped = mapLegacySpecialty(profile.specialty);
+    if (mapped) return mapped;
+  }
+  return null;
+};
+
+export const getProfessionalSpecialties = (
+  profile: ProfessionalProfile
+): string[] => {
+  // Return the new specialties array if available
+  if (profile.specialties && profile.specialties.length > 0) {
+    const validSpecialties = profile.specialties.filter((specialty) =>
+      isValidSpecialty(specialty)
+    );
+    if (validSpecialties.length > 0) {
+      return validSpecialties;
+    }
+  }
+
+  // Fallback to primary specialty
+  const primarySpecialty = getProfessionalPrimarySpecialty(profile);
+  if (primarySpecialty) {
+    return [primarySpecialty];
+  }
+
+  // Fallback to legacy specialty mapping
+  if (profile.specialty) {
+    const mapped = mapLegacySpecialty(profile.specialty);
+    if (mapped) {
+      return [mapped];
+    }
+  }
+
+  // Last resort: try to extract from description or other fields
+  if (profile.description) {
+    const desc = profile.description.toLowerCase();
+    if (desc.includes("psychiatre")) return ["psychiatre"];
+    if (desc.includes("psychologue")) return ["psychologue-clinicien"];
+    if (desc.includes("sexologue")) return ["sexologue-clinique"];
+    if (desc.includes("gynécologue") || desc.includes("gynecologue"))
+      return ["gynecologue"];
+    if (desc.includes("urologue")) return ["urologue"];
+  }
+
+  return [];
+};
+
+export const getProfessionalSpecialtyLabel = (
+  profile: ProfessionalProfile,
+  language: "fr" | "en" = "fr"
+): string => {
+  const specialties = getProfessionalSpecialties(profile);
+  if (specialties.length > 0) {
+    if (specialties.length === 1) {
+      return getSpecialtyLabel(specialties[0], language);
+    } else {
+      // Return multiple specialties separated by commas
+      return specialties
+        .map((specialty) => getSpecialtyLabel(specialty, language))
+        .join(", ");
+    }
+  }
+  // Fallback to legacy specialty field
+  return profile.specialty || "Non renseigné";
+};
+
+export const getProfessionalSpecialtyLabels = (
+  profile: ProfessionalProfile,
+  language: "fr" | "en" = "fr"
+): string[] => {
+  const specialties = getProfessionalSpecialties(profile);
+  return specialties.map((specialty) => getSpecialtyLabel(specialty, language));
+};
+
+export const getProfessionalCategoryLabel = (
+  profile: ProfessionalProfile,
+  language: "fr" | "en" = "fr"
+): string => {
+  const category = getProfessionalCategory(profile);
+  if (category) {
+    return getCategoryLabel(category, language);
+  }
+  // Fallback to legacy type field
+  if (profile.type === "mental")
+    return language === "fr" ? "Santé mentale" : "Mental Health";
+  if (profile.type === "sexual")
+    return language === "fr" ? "Santé sexuelle" : "Sexual Health";
+  return "Non renseigné";
+};
 
 // Check if email already exists in users collection
 export async function isEmailAlreadyRegistered(
@@ -458,15 +587,7 @@ export async function createDefaultProfessionalProfile(
 
       // Check if name already exists
       nameExists = await isNameAlreadyRegistered(name, "professional");
-      // Check if phone already exists
-      if (phoneNumber) {
-        phoneExists = await isPhoneAlreadyRegistered(phoneNumber);
-        if (phoneExists) {
-          throw new Error(
-            "Ce numéro de téléphone est déjà utilisé par un autre compte"
-          );
-        }
-      }
+      // Note: phoneNumber is not a parameter in this function
 
       if (nameExists) {
         throw new Error("Ce nom est déjà utilisé par un autre professionnel");
@@ -479,12 +600,21 @@ export async function createDefaultProfessionalProfile(
     // Default availability - empty array (no default slots)
     const defaultAvailability: AvailabilitySlot[] = [];
 
+    const defaultCategory =
+      type === "mental" ? "mental-health" : "sexual-health";
+    const defaultPrimary =
+      type === "mental" ? "psychologue-clinicien" : "sexologue-clinique";
+
     const professionalData: Omit<ProfessionalProfile, "id"> = {
       userId,
       name,
       email,
-      specialty: type === "mental" ? "Psychologue" : "Sexologue",
+      specialty: type === "mental" ? "Psychologue" : "Sexologue", // legacy
       type,
+      // 🔽 nouveaux champs cohérents
+      category: defaultCategory,
+      primarySpecialty: defaultPrimary,
+      specialties: [defaultPrimary],
       languages: ["fr"],
       description: "Professionnel de santé",
       education: [],
@@ -1074,12 +1204,26 @@ export async function getProfessionalProfile(
       return null;
     }
 
-    const professionalData = professionalSnap.data() as ProfessionalProfile;
+    const raw = professionalSnap.data() as ProfessionalProfile;
 
-    console.log("✅ Professional profile retrieved successfully");
+    // ✅ Normalisation
+    const normalizedCategory = getProfessionalCategory(raw) || undefined;
+    const primary = getProfessionalPrimarySpecialty(raw) || undefined;
+
+    const specialties = (
+      Array.isArray(raw.specialties) && raw.specialties.length > 0
+        ? raw.specialties
+        : primary
+        ? [primary]
+        : []
+    ).filter(isValidSpecialty);
+
     return {
       id: professionalSnap.id,
-      ...professionalData,
+      ...raw,
+      category: normalizedCategory,
+      primarySpecialty: primary,
+      specialties,
     };
   } catch (error) {
     console.error("❌ Error getting professional profile:", error);
@@ -1188,6 +1332,57 @@ export async function updateProfessionalProfile(
   try {
     console.log("🔧 Updating professional profile:", professionalId, updates);
 
+    // Validate specialty fields if provided
+    if (updates.category && !isValidCategory(updates.category)) {
+      throw new Error(`Invalid category: ${updates.category}`);
+    }
+
+    if (
+      updates.primarySpecialty &&
+      !isValidSpecialty(updates.primarySpecialty)
+    ) {
+      throw new Error(
+        `Invalid primarySpecialty: ${updates.primarySpecialty}. Must be a valid specialty key.`
+      );
+    }
+
+    // Validate specialties array if provided
+    if (updates.specialties) {
+      if (!Array.isArray(updates.specialties)) {
+        throw new Error("Specialties must be an array");
+      }
+
+      for (const specialty of updates.specialties) {
+        if (!isValidSpecialty(specialty)) {
+          throw new Error(
+            `Invalid specialty: ${specialty}. Must be a valid specialty key.`
+          );
+        }
+      }
+    }
+
+    // Ensure category and specialties are consistent
+    if (updates.category && updates.specialties) {
+      for (const specialtyKey of updates.specialties) {
+        const specialty = getSpecialtyByKey(specialtyKey);
+        if (specialty && specialty.category !== updates.category) {
+          throw new Error(
+            `Specialty ${specialtyKey} does not belong to category ${updates.category}`
+          );
+        }
+      }
+    }
+
+    // Ensure category and primarySpecialty are consistent (legacy)
+    if (updates.category && updates.primarySpecialty) {
+      const specialty = getSpecialtyByKey(updates.primarySpecialty);
+      if (specialty && specialty.category !== updates.category) {
+        throw new Error(
+          `Specialty ${updates.primarySpecialty} does not belong to category ${updates.category}`
+        );
+      }
+    }
+
     await ensureFirestoreReady();
     const db = getFirestoreInstance();
     if (!db) throw new Error("Firestore not available");
@@ -1196,58 +1391,64 @@ export async function updateProfessionalProfile(
     const professionalRef = doc(db, "professionals", professionalId);
 
     await retryFirestoreOperation(async () => {
-      // Ensure availability data is properly formatted if it's being updated
-      if (updates.availability) {
-        console.log(
-          "🔧 Formatting availability data before update:",
-          updates.availability.length,
-          "days"
-        );
+      // 🔧 Normalisation en entrée
+      const patch: any = { ...updates };
 
-        // Make sure each availability slot has the required fields
-        updates.availability = updates.availability.map((slot) => {
-          if (
-            !slot.slots ||
-            !Array.isArray(slot.slots) ||
-            slot.slots.length === 0
-          ) {
-            console.log(
-              "🔧 Generating slots for day:",
-              slot.day,
-              "from",
-              slot.startTime,
-              "to",
-              slot.endTime
-            );
-            // Generate slots if they don't exist
-            return {
-              ...slot,
-              slots: generateTimeSlots(
-                slot.startTime || "08:00",
-                slot.endTime || "17:00"
-              ),
-            };
-          }
-          return slot;
-        });
-
-        console.log(
-          "✅ Availability data formatted correctly:",
-          updates.availability
+      // Dédupe et nettoie specialties si fourni
+      if (Array.isArray(patch.specialties)) {
+        patch.specialties = Array.from(
+          new Set(
+            patch.specialties.filter(
+              (s: any) => typeof s === "string" && isValidSpecialty(s)
+            )
+          )
         );
       }
 
-      // ✅ Ensure all fields are properly updated
+      // Si primarySpecialty pas fourni mais specialties existe => prendre le 1er
+      if (
+        !patch.primarySpecialty &&
+        Array.isArray(patch.specialties) &&
+        patch.specialties.length > 0
+      ) {
+        patch.primarySpecialty = patch.specialties[0];
+      }
+
+      // Si primarySpecialty fourni mais pas specialties => créer un tableau cohérent
+      if (patch.primarySpecialty && !Array.isArray(patch.specialties)) {
+        patch.specialties = [patch.primarySpecialty];
+      }
+
+      // Cohérence category ↔ specialties (si category fourni)
+      if (patch.category && Array.isArray(patch.specialties)) {
+        for (const s of patch.specialties) {
+          const spec = getSpecialtyByKey(s);
+          if (spec && spec.category !== patch.category) {
+            throw new Error(
+              `La spécialité "${s}" n'appartient pas à la catégorie "${patch.category}"`
+            );
+          }
+        }
+      }
+
+      // Cohérence category ↔ primarySpecialty
+      if (patch.category && patch.primarySpecialty) {
+        const spec = getSpecialtyByKey(patch.primarySpecialty);
+        if (spec && spec.category !== patch.category) {
+          throw new Error(
+            `La spécialité "${patch.primarySpecialty}" n'appartient pas à la catégorie "${patch.category}"`
+          );
+        }
+      }
+
       const updateData = {
-        ...updates,
+        ...patch,
         updatedAt: serverTimestamp(),
       };
 
       console.log("📝 Updating professional document with data:", updateData);
-
       await updateDoc(professionalRef, updateData);
 
-      // ✅ Verify the update was successful
       const updatedDoc = await getDoc(professionalRef);
       if (updatedDoc.exists()) {
         console.log("✅ Document updated successfully:", updatedDoc.data());
@@ -1304,18 +1505,28 @@ export function validateProfessionalProfile(
     errors.push("Email invalide");
   }
 
-  if (!profile.specialty || profile.specialty.trim().length < 2) {
-    errors.push("La spécialité est requise");
+  const hasNew =
+    Array.isArray(profile.specialties) &&
+    profile.specialties.length > 0 &&
+    !!profile.category;
+
+  const hasLegacy = !!profile.specialty && !!profile.type;
+
+  if (!hasNew && !hasLegacy) {
+    errors.push("Choisissez une catégorie et au moins une spécialité.");
   }
 
-  if (!profile.type || !["mental", "sexual"].includes(profile.type)) {
-    errors.push("Le type de service est requis (mental ou sexual)");
+  if (hasNew) {
+    if (!isValidCategory(profile.category as any)) {
+      errors.push("Catégorie invalide");
+    }
+    (profile.specialties || []).forEach((s) => {
+      if (!isValidSpecialty(s)) errors.push(`Spécialité invalide: ${s}`);
+    });
   }
 
   if (!profile.description || profile.description.trim().length < 10) {
-    errors.push(
-      "La description est requise et doit contenir au moins 10 caractères"
-    );
+    errors.push("La description doit contenir au moins 10 caractères");
   }
 
   if (

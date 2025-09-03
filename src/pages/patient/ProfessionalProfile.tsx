@@ -23,6 +23,13 @@ import { useAuth } from "../../contexts/AuthContext";
 import LoadingSpinner from "../../components/ui/LoadingSpinner";
 import { format, addDays } from "date-fns";
 import { fr } from "date-fns/locale";
+import {
+  getProfessionalSpecialties,
+  getProfessionalSpecialtyLabels,
+  getProfessionalCategoryLabel,
+  getProfessionalPrimarySpecialty,
+} from "../../services/profileService";
+import SpecialtyTags from "../../components/ui/SpecialtyTags";
 
 const ProfessionalProfile: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -34,7 +41,6 @@ const ProfessionalProfile: React.FC = () => {
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [availabilityData, setAvailabilityData] = useState<any[]>([]);
   const [loadingFromCache, setLoadingFromCache] = useState(false);
-  const [debugInfo, setDebugInfo] = useState<any>(null);
   const [availableDays, setAvailableDays] = useState<Date[]>([]);
 
   const { professionals, loading, error, refreshProfessionals } =
@@ -132,18 +138,6 @@ const ProfessionalProfile: React.FC = () => {
         const parsedData = JSON.parse(cachedData);
         setProfessional(parsedData);
 
-        // Debug info
-        setDebugInfo({
-          source: "cache",
-          availabilityCount: parsedData?.availability?.length || 0,
-          hasSlots: parsedData?.availability?.some(
-            (avail: any) =>
-              avail?.slots &&
-              Array.isArray(avail.slots) &&
-              avail.slots.length > 0
-          ),
-        });
-
         // Initialize selected day if available
         if (
           parsedData?.availability &&
@@ -178,18 +172,6 @@ const ProfessionalProfile: React.FC = () => {
         setProfessional(found);
         setNotFound(false);
         setLoadingFromCache(false);
-
-        // Debug info
-        setDebugInfo({
-          source: "firestore",
-          availabilityCount: found?.availability?.length || 0,
-          hasSlots: found?.availability?.some(
-            (avail) =>
-              avail?.slots &&
-              Array.isArray(avail.slots) &&
-              avail.slots.length > 0
-          ),
-        });
 
         // Update cache
         try {
@@ -384,10 +366,17 @@ const ProfessionalProfile: React.FC = () => {
 
   // Safety checks for professional data
   const professionalName = safeValue(professional.name, "Nom non disponible");
-  const professionalSpecialty = safeValue(
-    professional.specialty,
-    "Spécialité non précisée"
+  const professionalSpecialties = getProfessionalSpecialties(professional);
+  const professionalSpecialtyLabels = getProfessionalSpecialtyLabels(
+    professional,
+    "fr"
   );
+  const professionalCategoryLabel = getProfessionalCategoryLabel(
+    professional,
+    "fr"
+  );
+  const primarySpecialtyLabel =
+    professionalSpecialtyLabels[0] ?? "Spécialité non renseignée";
   const professionalDescription = safeValue(
     professional.description,
     "Description non disponible"
@@ -398,7 +387,9 @@ const ProfessionalProfile: React.FC = () => {
   );
   const professionalRating = safeValue(professional.rating, 0);
   const professionalReviews = safeValue(professional.reviews, 0);
-  const professionalPrice = professional.price;
+  // Prix robuste avec fallback
+  const professionalPrice =
+    professional.price ?? professional.consultationFee ?? 0;
   const professionalCurrency = safeValue(professional.currency, "XOF");
   const professionalLanguages = safeArray(professional.languages).map(
     getLanguageName
@@ -469,7 +460,7 @@ const ProfessionalProfile: React.FC = () => {
                     {professionalName}
                   </h1>
                   <p className="text-xl opacity-90 mb-2">
-                    {professionalSpecialty}
+                    {primarySpecialtyLabel}
                   </p>
 
                   <div className="flex items-center mb-4">
@@ -498,13 +489,15 @@ const ProfessionalProfile: React.FC = () => {
 
                 <div className="mt-6 md:mt-0">
                   <div className="text-2xl font-bold mb-2">
-                    {professionalPrice === null ? (
-                      <span>Consultation gratuite</span>
+                    {professionalPrice === 0 || professionalPrice === null ? (
+                      <span>Tarif sur demande</span>
                     ) : (
-                      `${professionalPrice.toLocaleString()} ${professionalCurrency}`
+                      `${professionalPrice.toLocaleString(
+                        "fr-FR"
+                      )} ${professionalCurrency}`
                     )}
                   </div>
-                  {professionalPrice !== null && (
+                  {professionalPrice !== 0 && professionalPrice !== null && (
                     <p className="opacity-80">par consultation</p>
                   )}
 
@@ -560,6 +553,24 @@ const ProfessionalProfile: React.FC = () => {
               <section className="mb-8">
                 <h2 className="text-2xl font-bold mb-4">À propos</h2>
                 <p className="text-gray-700 mb-4">{professionalDescription}</p>
+              </section>
+
+              <section className="mb-8">
+                <h2 className="text-2xl font-bold mb-4">Spécialités</h2>
+                {professionalSpecialtyLabels.length > 0 ? (
+                  <div className="flex flex-wrap gap-2">
+                    {professionalSpecialtyLabels.map((label) => (
+                      <span
+                        key={label}
+                        className="px-3 py-1 rounded-full bg-blue-100 text-blue-800 text-sm font-medium"
+                      >
+                        {label}
+                      </span>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-gray-500">Spécialité non renseignée</p>
+                )}
               </section>
 
               {professionalEducation.length > 0 && (
@@ -695,6 +706,34 @@ const ProfessionalProfile: React.FC = () => {
                 </section>
               )}
 
+              <section className="bg-gray-50 rounded-lg p-6 mb-6">
+                <h2 className="text-xl font-bold mb-4">Informations</h2>
+                <div className="space-y-3">
+                  <div>
+                    <span className="text-gray-500 text-sm">Catégorie :</span>
+                    <p className="font-medium">{professionalCategoryLabel}</p>
+                  </div>
+                  {Array.isArray(professional.languages) &&
+                    professional.languages.length > 0 && (
+                      <div>
+                        <span className="text-gray-500 text-sm">Langues :</span>
+                        <div className="flex flex-wrap gap-1 mt-1">
+                          {professional.languages.map(
+                            (lang: string, index: number) => (
+                              <span
+                                key={index}
+                                className="bg-gray-100 text-gray-700 px-2 py-1 rounded-full text-xs"
+                              >
+                                {lang}
+                              </span>
+                            )
+                          )}
+                        </div>
+                      </div>
+                    )}
+                </div>
+              </section>
+
               <section className="bg-gray-50 rounded-lg p-6">
                 <h2 className="text-xl font-bold mb-4">
                   Types de consultation
@@ -711,19 +750,6 @@ const ProfessionalProfile: React.FC = () => {
                   </div>
                 </div>
               </section>
-
-              {/* Debug info for development */}
-              {process.env.NODE_ENV === "development" && debugInfo && (
-                <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded text-xs">
-                  <p>
-                    <strong>Debug Info:</strong>
-                  </p>
-                  <p>Data source: {debugInfo.source}</p>
-                  <p>Availability count: {debugInfo.availabilityCount}</p>
-                  <p>Has slots: {debugInfo.hasSlots ? "Yes" : "No"}</p>
-                  <p>Selected day: {selectedDay || "None"}</p>
-                </div>
-              )}
             </div>
           </div>
         </div>

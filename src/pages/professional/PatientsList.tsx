@@ -1,12 +1,10 @@
 import React, { useState, useEffect } from "react";
 import {
   Search,
-  FileText,
   MessageCircle,
   Calendar,
   X,
   User,
-  Pill,
   RefreshCw,
   CheckCircle,
   Archive,
@@ -14,16 +12,21 @@ import {
   Users,
   Archive as ArchiveIcon,
   Clock,
-  Download,
+  Eye,
 } from "lucide-react";
 import { useAuth } from "../../contexts/AuthContext";
+import { archivePatient, Patient } from "../../services/patientService";
 import {
-  getMedicalRecordsByProfessional,
-  archivePatient,
-  Patient,
-  MedicalRecord,
-} from "../../services/patientService";
-import { getFirestore } from "firebase/firestore";
+  getFirestore,
+  collection,
+  query,
+  where,
+  getDocs,
+  getDoc,
+  doc,
+  orderBy,
+  limit,
+} from "firebase/firestore";
 import LoadingSpinner from "../../components/ui/LoadingSpinner";
 import { getBookings } from "../../services/bookingService";
 import {
@@ -38,7 +41,6 @@ const PatientsList: React.FC = () => {
   const { currentUser } = useAuth();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
-  const [showMedicalHistory, setShowMedicalHistory] = useState(false);
   const [showMessageModal, setShowMessageModal] = useState(false);
   const [newMessage, setNewMessage] = useState("");
   const [messageType, setMessageType] = useState<"text" | "reminder">("text");
@@ -51,11 +53,9 @@ const PatientsList: React.FC = () => {
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
   const [toastType, setToastType] = useState<"success" | "error">("success");
-  const [showPrescriptionModal, setShowPrescriptionModal] = useState(false);
-  const [currentPrescription, setCurrentPrescription] =
-    useState<MedicalRecord | null>(null);
+  const [showPatientDetails, setShowPatientDetails] = useState(false);
 
-  // Fetch patients data and medical records
+  // Fetch patients data directly from patients collection
   useEffect(() => {
     const fetchData = async () => {
       if (!currentUser?.id) return;
@@ -67,66 +67,72 @@ const PatientsList: React.FC = () => {
           currentUser.id
         );
 
-        // Fetch medical records by professional
-        const medicalRecords = await getMedicalRecordsByProfessional(
-          currentUser.id
+        const db = getFirestore();
+
+        // Query professional_patients collection for this professional
+        const professionalPatientsQuery = query(
+          collection(db, "professional_patients"),
+          where("professionalId", "==", currentUser.id),
+          orderBy("lastConsultationAt", "desc")
+        );
+
+        const professionalPatientsSnapshot = await getDocs(
+          professionalPatientsQuery
         );
         console.log(
-          "👥 [PATIENTS LIST DEBUG] Medical records fetched successfully:",
-          medicalRecords.length
+          "👥 [PATIENTS LIST DEBUG] Professional patients fetched successfully:",
+          professionalPatientsSnapshot.size
         );
 
-        // Process medical records to create patient list
-        const patientMap = new Map<string, Patient>();
+        const patientsList: Patient[] = [];
 
-        medicalRecords.forEach((record) => {
-          console.log(
-            "👥 [PATIENTS LIST DEBUG] Processing medical record for patient:",
-            record.patientId
-          );
+        for (const docSnapshot of professionalPatientsSnapshot.docs) {
+          const professionalPatientData = docSnapshot.data();
+          const patientId = professionalPatientData.patientId;
 
-          if (!patientMap.has(record.patientId)) {
-            console.log(
-              "👥 [PATIENTS LIST DEBUG] Created new patient entry for:",
-              record.patientId
-            );
-            patientMap.set(record.patientId, {
-              id: record.patientId,
-              name: record.patientName || "Patient",
-              profileImage: undefined,
-              lastConsultation: record.consultationDate,
-              consultationsCount: 1,
-              medicalRecords: [record],
-              isArchived: false,
+          // Get the actual patient data
+          const patientDoc = await getDoc(doc(db, "patients", patientId));
+
+          if (patientDoc.exists()) {
+            const patientData = patientDoc.data();
+
+            // Use data from professional_patients for consultation info
+            const lastConsultation = professionalPatientData.lastConsultationAt
+              ?.toDate?.()
+              ?.toISOString();
+            const consultationsCount = 1; // For now, we'll count each professional_patients entry as 1 consultation
+
+            patientsList.push({
+              id: patientId,
+              name:
+                professionalPatientData.patientName ||
+                patientData.name ||
+                "Patient",
+              profileImage: patientData.profileImage,
+              lastConsultation,
+              consultationsCount,
+              isArchived: patientData.isArchived || false,
+              archivedAt: patientData.archivedAt,
             });
           } else {
-            const existingPatient = patientMap.get(record.patientId)!;
-            existingPatient.consultationsCount++;
-            existingPatient.medicalRecords?.push(record);
+            // If patient document doesn't exist, create a basic entry from professional_patients data
+            const lastConsultation = professionalPatientData.lastConsultationAt
+              ?.toDate?.()
+              ?.toISOString();
 
-            // Update last consultation if this one is more recent
-            if (
-              record.consultationDate > (existingPatient.lastConsultation || "")
-            ) {
-              existingPatient.lastConsultation = record.consultationDate;
-            }
+            patientsList.push({
+              id: patientId,
+              name: professionalPatientData.patientName || "Patient",
+              profileImage: null,
+              lastConsultation,
+              consultationsCount: 1,
+              isArchived: false,
+              archivedAt: null,
+            });
           }
-        });
+        }
 
-        // Fetch bookings to enrich patient data
-        const bookings = await getBookings();
-
-        // Note: Booking enrichment logic removed as nextAppointment is not available in Booking type
-
-        const patientsList = Array.from(patientMap.values());
-
-        // Verify patients with medical records
-        const verifiedPatients = patientsList.filter(
-          (patient) =>
-            patient.medicalRecords && patient.medicalRecords.length > 0
-        );
-
-        setPatients(verifiedPatients);
+        setPatients(patientsList);
         setError(null);
       } catch (error) {
         console.error("❌ Error fetching patients:", error);
@@ -215,419 +221,6 @@ const PatientsList: React.FC = () => {
       });
     } catch {
       return dateString;
-    }
-  };
-
-  const showPrescription = (record: MedicalRecord) => {
-    if (!record.treatment || record.treatment.trim() === "") {
-      alert("Ce dossier ne contient pas de traitement à prescrire.");
-      return;
-    }
-    setCurrentPrescription(record);
-    setShowPrescriptionModal(true);
-  };
-
-  // Fonction pour créer le logo Health-e avec le design réel
-  const createHealthELogo = () => {
-    const svg = `
-      <svg width="80" height="40" viewBox="0 0 80 40" xmlns="http://www.w3.org/2000/svg">
-        <defs>
-          <linearGradient id="logoGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" style="stop-color:#3B82F6;stop-opacity:1" />
-            <stop offset="100%" style="stop-color:#14B8A6;stop-opacity:1" />
-          </linearGradient>
-        </defs>
-        <!-- Icône carrée arrondie avec gradient -->
-        <rect x="2" y="2" width="36" height="36" rx="8" fill="url(#logoGradient)"/>
-        <!-- Cœur blanc au centre -->
-        <path d="M20 12c-1.5-1.5-3.5-2-5.5-2s-4 0.5-5.5 2c-3 3-3 8 0 11l10.5 10.5L20 23c3-3 3-8 0-11z" fill="white" stroke="white" stroke-width="0.5"/>
-        <!-- Texte Health-e -->
-        <text x="45" y="25" font-family="Arial, sans-serif" font-size="16" font-weight="bold" fill="#1E40AF">Health-e</text>
-      </svg>
-    `;
-    return "data:image/svg+xml;base64," + btoa(svg);
-  };
-
-  // --- Helpers fonts / slug / images ---
-  let _fontsLoaded = false;
-  async function ensureFontsLoaded(doc: any) {
-    if (_fontsLoaded) return;
-    async function loadTtf(path: string) {
-      const res = await fetch(path);
-      if (!res.ok) {
-        throw new Error(`Failed to load font: ${res.status} ${res.statusText}`);
-      }
-      const buf = await res.arrayBuffer();
-      // Convert ArrayBuffer -> base64
-      let binary = "";
-      const bytes = new Uint8Array(buf);
-      const len = bytes.byteLength;
-      for (let i = 0; i < len; i++) binary += String.fromCharCode(bytes[i]);
-      return btoa(binary);
-    }
-    try {
-      console.log("🔍 [FONT DEBUG] Loading Inter fonts...");
-      const regularB64 = await loadTtf("/fonts/Inter-Regular.ttf");
-      const boldB64 = await loadTtf("/fonts/Inter-Bold.ttf");
-
-      doc.addFileToVFS("Inter-Regular.ttf", regularB64);
-      doc.addFileToVFS("Inter-Bold.ttf", boldB64);
-      doc.addFont("Inter-Regular.ttf", "Inter", "normal");
-      doc.addFont("Inter-Bold.ttf", "Inter", "bold");
-
-      _fontsLoaded = true;
-      console.log("✅ [FONT DEBUG] Inter fonts loaded successfully");
-    } catch (e) {
-      console.warn(
-        "⚠️ [FONT DEBUG] Failed to load Inter fonts, using helvetica fallback:",
-        e
-      );
-      _fontsLoaded = false;
-    }
-  }
-
-  function slugify(input: string) {
-    return (input || "patient")
-      .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "") // remove accents
-      .replace(/[^a-zA-Z0-9]+/g, "_") // non alphanum -> _
-      .replace(/^_+|_+$/g, "")
-      .toLowerCase();
-  }
-
-  async function toDataURL(url: string): Promise<string> {
-    const res = await fetch(url);
-    const blob = await res.blob();
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onloadend = () => resolve(reader.result as string);
-      reader.onerror = reject;
-      reader.readAsDataURL(blob);
-    });
-  }
-
-  const generatePrescription = async (record: MedicalRecord) => {
-    if (!record?.treatment || record.treatment.trim() === "") {
-      alert("Ce dossier ne contient pas de traitement à prescrire.");
-      return;
-    }
-
-    try {
-      // Imports dynamiques pour optimiser le bundle initial
-      const [{ default: jsPDF }, autoTableMod, { default: QRCode }] =
-        await Promise.all([
-          import("jspdf"),
-          import("jspdf-autotable"),
-          import("qrcode"),
-        ]);
-      const autoTable = (autoTableMod as any).default ?? autoTableMod;
-
-      // A4 mm
-      const doc = new jsPDF({ unit: "mm", format: "a4" });
-      await ensureFontsLoaded(doc);
-
-      // Vérifier les polices disponibles
-      console.log("🔍 [FONT DEBUG] Available fonts:", doc.getFontList());
-
-      // Essayer de récupérer le profil patient complet pour avoir la date de naissance
-      let patientProfile = null;
-      try {
-        const { getPatientProfile } = await import(
-          "../../services/profileService"
-        );
-        patientProfile = await getPatientProfile(record.patientId || "");
-        console.log("🔍 [PDF DEBUG] Profil patient récupéré:", patientProfile);
-      } catch (e) {
-        console.warn(
-          "⚠️ [PDF DEBUG] Impossible de récupérer le profil patient:",
-          e
-        );
-      }
-
-      // Utiliser helvetica par défaut pour éviter les erreurs
-      doc.setFont("helvetica", "normal");
-      doc.setTextColor(0, 0, 0);
-
-      const page = { w: 210, h: 297, margin: 20 };
-      let y = page.margin;
-
-      // --- Header ---
-      try {
-        const logoBase64 = createHealthELogo();
-        doc.addImage(logoBase64, "SVG", page.margin, y - 5, 40, 20);
-      } catch {}
-
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(16);
-      doc.setTextColor(59, 130, 246);
-      doc.text("ORDONNANCE MÉDICALE", page.w / 2, y + 5, { align: "center" });
-
-      // Infos pro (droite)
-      doc.setFont("helvetica", "normal");
-      doc.setFontSize(10);
-      doc.setTextColor(60, 60, 60);
-      const proName = record.professionalName || "Professionnel";
-      const proLines = [`Dr. ${proName}`, `Professionnel de santé`];
-      proLines.forEach((t, i) =>
-        doc.text(t, page.w - page.margin - 40, y + 8 + i * 5)
-      );
-
-      // trait
-      doc.setDrawColor(59, 130, 246);
-      doc.setLineWidth(0.8);
-      y += 18;
-      doc.line(page.margin, y, page.w - page.margin, y);
-      y += 6;
-
-      // --- Bloc patient ---
-      const fmt = new Intl.DateTimeFormat("fr-FR", {
-        day: "numeric",
-        month: "long",
-        year: "numeric",
-      });
-      const cDate = record.consultationDate
-        ? new Date(record.consultationDate)
-        : new Date();
-      const dateFr = fmt.format(cDate);
-
-      // Calculer l'âge et préparer les lignes d'information patient
-      let ageTxt = "";
-      let birthDateTxt = "";
-      const patientBirthDate =
-        patientProfile?.dateOfBirth || (record as any).patientDateOfBirth;
-
-      if (patientBirthDate) {
-        try {
-          const bd = new Date(patientBirthDate);
-          if (!isNaN(bd.getTime())) {
-            const today = new Date();
-            let age = today.getFullYear() - bd.getFullYear();
-            const md = today.getMonth() - bd.getMonth();
-            if (md < 0 || (md === 0 && today.getDate() < bd.getDate())) age--;
-            ageTxt = ` (${age} ans)`;
-            birthDateTxt = `Date de naissance : ${bd.toLocaleDateString(
-              "fr-FR"
-            )}`;
-          }
-        } catch (e) {
-          console.warn("⚠️ [PDF DEBUG] Erreur calcul âge:", e);
-        }
-      }
-
-      const row1 = `Nom : ${record.patientName || "Patient"}${ageTxt}`;
-      const row2 = `Type de consultation : ${
-        record.consultationType || "Vidéo"
-      } • Consultation du ${dateFr}`;
-      const row3 = birthDateTxt;
-
-      // cadre patient avec hauteur dynamique
-      const patientBoxHeight = row3 ? 30 : 24;
-      doc.setFillColor(248, 250, 252);
-      doc.setDrawColor(216, 222, 233);
-      doc.setLineWidth(0.5);
-      doc.rect(page.margin, y, page.w - page.margin * 2, patientBoxHeight, "F");
-      doc.rect(page.margin, y, page.w - page.margin * 2, patientBoxHeight);
-
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(11);
-      doc.setTextColor(0, 0, 0);
-      doc.text("INFORMATIONS PATIENT", page.margin + 5, y + 7);
-
-      doc.setFont("helvetica", "normal");
-      doc.setFontSize(10);
-
-      doc.text(row1, page.margin + 5, y + 14);
-      doc.text(row2, page.margin + 5, y + 20);
-      if (row3) {
-        doc.text(row3, page.margin + 5, y + 26);
-      }
-
-      y += patientBoxHeight + 6;
-
-      // --- Prescription ---
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(12);
-      doc.setTextColor(34, 197, 94);
-      // ℞ n'est pas garanti par toutes les polices → "Rx"
-      doc.text("PRESCRIPTION MÉDICALE", page.margin + 7, y);
-      doc.setTextColor(59, 130, 246);
-      doc.text("Rx", page.margin, y);
-
-      y += 4;
-      doc.setDrawColor(34, 197, 94);
-      doc.setLineWidth(0.5);
-      doc.line(page.margin, y, page.w - page.margin, y);
-      y += 6;
-
-      // Si tu as un tableau de médicaments (optionnel)
-      // record.medications?: Array<{ drug, dosage, posology, duration, instructions }>
-      if (
-        Array.isArray((record as any).medications) &&
-        (record as any).medications.length
-      ) {
-        const rows = (record as any).medications.map((m: any) => [
-          m.drug || "",
-          m.dosage || "",
-          m.posology || "",
-          m.duration || "",
-          m.instructions || "",
-        ]);
-        autoTable(doc, {
-          head: [
-            ["Médicament", "Dosage", "Posologie", "Durée", "Instructions"],
-          ],
-          body: rows,
-          startY: y,
-          styles: {
-            font: "helvetica",
-            fontSize: 9,
-            cellPadding: 2,
-          },
-          headStyles: { fillColor: [240, 253, 244], textColor: [0, 0, 0] },
-          alternateRowStyles: { fillColor: [250, 250, 250] },
-          theme: "grid",
-          margin: { left: page.margin, right: page.margin },
-          tableWidth: page.w - page.margin * 2,
-        });
-        // positionner y sous la table
-        // @ts-ignore
-        y = (doc as any).lastAutoTable.finalY + 10;
-      } else {
-        // Texte libre: record.treatment
-        doc.setFont("helvetica", "normal");
-        doc.setFontSize(11);
-        doc.setTextColor(0, 0, 0);
-
-        const maxWidth = page.w - page.margin * 2 - 5;
-        const lines = doc.splitTextToSize(record.treatment, maxWidth);
-
-        // gestion pagination simple
-        for (const line of lines) {
-          if (y > page.h - 30) {
-            doc.addPage();
-            await ensureFontsLoaded(doc);
-            doc.setFont("helvetica", "normal");
-            y = page.margin;
-          }
-          doc.text(line, page.margin + 5, y);
-          y += 6;
-        }
-        y += 4;
-      }
-
-      // Espace après la prescription
-      y += 10;
-
-      // --- Signature & cachet (en bas de chaque page) ---
-      const pageCount = doc.getNumberOfPages();
-      for (let i = 1; i <= pageCount; i++) {
-        doc.setPage(i);
-
-        // Position de la signature (60mm du bas)
-        const signatureY = page.h - 60;
-
-        // Titre de la section signature
-        doc.setFont("helvetica", "bold");
-        doc.setFontSize(11);
-        doc.setTextColor(0, 0, 0);
-        doc.text("SIGNATURE ET CACHET", page.margin, signatureY);
-
-        // Cadre pour la signature
-        doc.setDrawColor(216, 222, 233);
-        doc.setLineWidth(0.5);
-        doc.rect(page.margin, signatureY + 4, page.w - page.margin * 2, 42);
-
-        // cachet / signature à droite
-        try {
-          if (
-            record.useElectronicSignature &&
-            (record.stampUrl || record.signatureUrl)
-          ) {
-            if (record.stampUrl) {
-              const b64 = await toDataURL(record.stampUrl);
-              doc.addImage(
-                b64,
-                "PNG",
-                page.w - page.margin - 50,
-                signatureY + 7,
-                34,
-                34
-              );
-            }
-            if (record.signatureUrl) {
-              const b64s = await toDataURL(record.signatureUrl);
-              doc.addImage(
-                b64s,
-                "PNG",
-                page.w - page.margin - 50,
-                signatureY + 32,
-                40,
-                15
-              );
-            }
-            doc.setFontSize(9);
-            doc.setTextColor(100, 100, 100);
-            doc.text(
-              "Document signé électroniquement conformément à la réglementation en vigueur.",
-              page.margin + 2,
-              signatureY + 44
-            );
-          } else {
-            doc.setFontSize(9);
-            doc.setTextColor(150, 150, 150);
-            doc.text(
-              "Signature électronique non disponible",
-              page.margin + 2,
-              signatureY + 16
-            );
-          }
-        } catch (e) {
-          doc.setFontSize(9);
-          doc.setTextColor(150, 150, 150);
-          doc.text(
-            "Signature électronique non disponible",
-            page.margin + 2,
-            signatureY + 16
-          );
-        }
-
-        // QR code (vérification)
-        try {
-          const verifyUrl = `${window.location.origin}/verify/prescription/${record.id}`;
-          const qrDataUrl = await QRCode.toDataURL(verifyUrl, {
-            margin: 0,
-            width: 72,
-          });
-          doc.addImage(
-            qrDataUrl,
-            "PNG",
-            page.margin + 2,
-            signatureY + 7,
-            22,
-            22
-          );
-          doc.setFontSize(8);
-          doc.setTextColor(100, 100, 100);
-          doc.text("Vérifier l'authenticité", page.margin + 2, signatureY + 33);
-        } catch {}
-
-        // Footer en bas de page
-        doc.setFont("helvetica", "normal");
-        doc.setFontSize(9);
-        doc.setTextColor(120, 120, 120);
-        const footerText = `Document signé électroniquement via Health-e | www.health-e.sn | Page ${i} / ${pageCount}`;
-        doc.text(footerText, page.w / 2, page.h - 10, { align: "center" });
-      }
-
-      // --- Save ---
-      const dateStr = new Date().toISOString().split("T")[0];
-      const safeName = slugify(record.patientName || "patient");
-      doc.save(`ordonnance-${safeName}-${dateStr}.pdf`);
-    } catch (error) {
-      console.error("❌ [PDF DEBUG] Error generating prescription:", error);
-      alert(
-        "Erreur lors de la génération de l'ordonnance. Veuillez réessayer."
-      );
     }
   };
 
@@ -846,12 +439,12 @@ const PatientsList: React.FC = () => {
                     <button
                       onClick={() => {
                         setSelectedPatient(patient);
-                        setShowMedicalHistory(true);
+                        setShowPatientDetails(true);
                       }}
                       className="flex items-center gap-2 px-3 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors text-sm font-medium"
                     >
-                      <FileText className="h-4 w-4" />
-                      Dossier
+                      <Eye className="h-4 w-4" />
+                      Détails
                     </button>
 
                     {!patient.isArchived && (
@@ -909,79 +502,6 @@ const PatientsList: React.FC = () => {
           >
             <CheckCircle className="h-5 w-5" />
             <span className="font-medium">{toastMessage}</span>
-          </div>
-        </div>
-      )}
-
-      {/* Medical History Modal */}
-      {showMedicalHistory && selectedPatient && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
-            <div className="p-6 border-b border-gray-200">
-              <div className="flex justify-between items-center">
-                <h2 className="text-2xl font-bold">
-                  Dossier médical - {selectedPatient.name}
-                </h2>
-                <button
-                  onClick={() => setShowMedicalHistory(false)}
-                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                >
-                  <X className="h-6 w-6" />
-                </button>
-              </div>
-            </div>
-
-            <div className="p-6 overflow-y-auto max-h-[calc(90vh-120px)]">
-              {selectedPatient.medicalRecords &&
-              selectedPatient.medicalRecords.length > 0 ? (
-                <div className="space-y-6">
-                  {selectedPatient.medicalRecords.map((record) => (
-                    <div key={record.id} className="bg-gray-50 rounded-xl p-4">
-                      <div className="flex justify-between items-start mb-4">
-                        <div>
-                          <h3 className="font-semibold text-lg">
-                            Consultation du{" "}
-                            {formatDate(record.consultationDate)}
-                          </h3>
-                          <p className="text-gray-600">
-                            Type: {record.consultationType}
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                          <h4 className="font-medium text-gray-900 mb-2">
-                            Type de consultation
-                          </h4>
-                          <p className="text-gray-700">
-                            {record.consultationType || "Non spécifié"}
-                          </p>
-                        </div>
-                        <div>
-                          <h4 className="font-medium text-gray-900 mb-2">
-                            Date de consultation
-                          </h4>
-                          <p className="text-gray-700">
-                            {formatDate(record.consultationDate)}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-8">
-                  <FileText className="mx-auto h-12 w-12 text-gray-400" />
-                  <h3 className="mt-2 text-lg font-medium text-gray-900">
-                    Aucun dossier médical
-                  </h3>
-                  <p className="mt-1 text-gray-500">
-                    Aucune consultation enregistrée pour ce patient.
-                  </p>
-                </div>
-              )}
-            </div>
           </div>
         </div>
       )}
@@ -1187,99 +707,138 @@ const PatientsList: React.FC = () => {
         </div>
       )}
 
-      {/* Prescription Modal */}
-      {showPrescriptionModal && currentPrescription && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col">
-            <div className="p-6 border-b border-gray-200 flex justify-between items-center flex-shrink-0">
-              <h2 className="text-xl font-semibold flex items-center">
-                <Pill className="h-6 w-6 mr-2 text-green-600" />
-                Ordonnance médicale
-              </h2>
-              <button
-                onClick={() => setShowPrescriptionModal(false)}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-              >
-                <X className="h-6 w-6" />
-              </button>
-            </div>
-
-            <div className="flex-1 overflow-y-auto p-6">
-              <div className="bg-gray-50 rounded-lg p-6 space-y-4">
-                <div>
-                  <h4 className="font-medium mb-2">Patient</h4>
-                  <p className="text-gray-600">
-                    {currentPrescription.patientName || "Patient"}
-                  </p>
-                </div>
-
-                <div>
-                  <h4 className="font-medium mb-2">Date de consultation</h4>
-                  <p className="text-gray-600">
-                    {formatDate(currentPrescription.consultationDate)}
-                  </p>
-                </div>
-
-                <div>
-                  <h4 className="font-medium mb-2">Type de consultation</h4>
-                  <p className="text-gray-600">
-                    {currentPrescription.consultationType || "Vidéo"}
-                  </p>
-                </div>
-
-                <div>
-                  <h4 className="font-medium mb-2">Diagnostic</h4>
-                  <p className="text-gray-600">
-                    {currentPrescription.diagnosis || "Non spécifié"}
-                  </p>
-                </div>
-
-                <div>
-                  <h4 className="font-medium mb-2 flex items-center">
-                    <Pill className="h-4 w-4 mr-1" />
-                    Traitement prescrit
-                  </h4>
-                  <div className="bg-white p-4 rounded border">
-                    <p className="text-gray-800 whitespace-pre-wrap">
-                      {currentPrescription.treatment}
-                    </p>
-                  </div>
-                </div>
-
-                {currentPrescription.recommendations && (
-                  <div>
-                    <h4 className="font-medium mb-2">Recommandations</h4>
-                    <p className="text-gray-600">
-                      {currentPrescription.recommendations}
-                    </p>
-                  </div>
-                )}
-
-                {currentPrescription.nextAppointmentDate && (
-                  <div>
-                    <h4 className="font-medium mb-2">Prochain rendez-vous</h4>
-                    <p className="text-gray-600">
-                      {currentPrescription.nextAppointmentDate}
-                    </p>
-                  </div>
-                )}
+      {/* Patient Details Modal */}
+      {showPatientDetails && selectedPatient && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-2xl font-bold text-gray-900">
+                  Détails du patient
+                </h2>
+                <button
+                  onClick={() => {
+                    setShowPatientDetails(false);
+                    setSelectedPatient(null);
+                  }}
+                  className="text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  <X className="h-6 w-6" />
+                </button>
               </div>
-            </div>
 
-            <div className="p-6 border-t border-gray-200 flex justify-end space-x-3 flex-shrink-0">
-              <button
-                onClick={() => setShowPrescriptionModal(false)}
-                className="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors"
-              >
-                Fermer
-              </button>
-              <button
-                onClick={() => generatePrescription(currentPrescription)}
-                className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium flex items-center"
-              >
-                <Download className="h-4 w-4 mr-2" />
-                Télécharger l'ordonnance
-              </button>
+              <div className="space-y-6">
+                {/* Patient Info */}
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                    Informations personnelles
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-sm font-medium text-gray-500">
+                        Nom complet
+                      </label>
+                      <p className="text-gray-900 font-medium">
+                        {selectedPatient.name}
+                      </p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-gray-500">
+                        ID Patient
+                      </label>
+                      <p className="text-gray-900 font-mono text-sm">
+                        {selectedPatient.id}
+                      </p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-gray-500">
+                        Dernière consultation
+                      </label>
+                      <p className="text-gray-900">
+                        {selectedPatient.lastConsultation
+                          ? new Date(
+                              selectedPatient.lastConsultation
+                            ).toLocaleDateString("fr-FR", {
+                              year: "numeric",
+                              month: "long",
+                              day: "numeric",
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })
+                          : "Non disponible"}
+                      </p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-gray-500">
+                        Nombre de consultations
+                      </label>
+                      <p className="text-gray-900 font-medium">
+                        {selectedPatient.consultationsCount}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Status */}
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                    Statut
+                  </h3>
+                  <div className="flex items-center gap-3">
+                    {selectedPatient.isArchived ? (
+                      <>
+                        <ArchiveIcon className="h-5 w-5 text-orange-500" />
+                        <span className="text-orange-600 font-medium">
+                          Patient archivé
+                        </span>
+                        {selectedPatient.archivedAt && (
+                          <span className="text-gray-500 text-sm">
+                            (Archivé le{" "}
+                            {new Date(
+                              selectedPatient.archivedAt
+                            ).toLocaleDateString("fr-FR")}
+                            )
+                          </span>
+                        )}
+                      </>
+                    ) : (
+                      <>
+                        <CheckCircle className="h-5 w-5 text-green-500" />
+                        <span className="text-green-600 font-medium">
+                          Patient actif
+                        </span>
+                      </>
+                    )}
+                  </div>
+                </div>
+
+                {/* Actions */}
+                <div className="flex flex-wrap gap-3 pt-4 border-t border-gray-200">
+                  {!selectedPatient.isArchived && (
+                    <button
+                      onClick={() => {
+                        setShowPatientDetails(false);
+                        setSelectedPatient(selectedPatient);
+                        setShowMessageModal(true);
+                      }}
+                      className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+                    >
+                      <MessageCircle className="h-4 w-4" />
+                      Envoyer un message
+                    </button>
+                  )}
+
+                  <button
+                    onClick={() => {
+                      setShowPatientDetails(false);
+                      setSelectedPatient(null);
+                    }}
+                    className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors font-medium"
+                  >
+                    Fermer
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         </div>

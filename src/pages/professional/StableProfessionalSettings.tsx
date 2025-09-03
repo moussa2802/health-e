@@ -49,6 +49,10 @@ const StableProfessionalSettings: React.FC = () => {
     isApproved: false,
     isActive: false,
     type: "mental",
+    // Nouveaux champs pour le système de spécialités étendu
+    category: "mental-health",
+    primarySpecialty: "psychologue-clinicien",
+    specialties: ["psychologue-clinicien"],
     signatureUrl: "",
     stampUrl: "",
     useElectronicSignature: false,
@@ -124,6 +128,11 @@ const StableProfessionalSettings: React.FC = () => {
             isApproved: profile.isApproved || false,
             isActive: profile.isActive || false,
             type: profile.type || "mental",
+            // Nouveaux champs pour le système de spécialités étendu
+            category: profile.category || "mental-health",
+            primarySpecialty:
+              profile.primarySpecialty || "psychologue-clinicien",
+            specialties: profile.specialties || ["psychologue-clinicien"],
             signatureUrl: profile.signatureUrl || "",
             stampUrl: profile.stampUrl || "",
             useElectronicSignature: profile.useElectronicSignature || false,
@@ -164,6 +173,13 @@ const StableProfessionalSettings: React.FC = () => {
                 isApproved: updatedProfile.isApproved || false,
                 isActive: updatedProfile.isActive || false,
                 type: updatedProfile.type || "mental",
+                // Nouveaux champs pour le système de spécialités étendu
+                category: updatedProfile.category || "mental-health",
+                primarySpecialty:
+                  updatedProfile.primarySpecialty || "psychologue-clinicien",
+                specialties: updatedProfile.specialties || [
+                  "psychologue-clinicien",
+                ],
                 signatureUrl: updatedProfile.signatureUrl || "",
                 stampUrl: updatedProfile.stampUrl || "",
                 useElectronicSignature:
@@ -239,6 +255,10 @@ const StableProfessionalSettings: React.FC = () => {
         languages: updatedProfile.languages,
         profileImage: updatedProfile.profileImage,
         type: updatedProfile.type,
+        // Nouvelles propriétés pour le système étendu de spécialités
+        category: updatedProfile.category,
+        primarySpecialty: updatedProfile.primarySpecialty,
+        specialties: updatedProfile.specialties,
         price: updatedProfile.consultationFee, // ✅ SYNC: Ajouter le tarif des consultations
         signatureUrl: updatedProfile.signatureUrl,
         stampUrl: updatedProfile.stampUrl,

@@ -1,12 +1,23 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
-import { useLanguage } from "../../contexts/LanguageContext";
 import { useProfessionals } from "../../hooks/useProfessionals";
+import {
+  CATEGORIES,
+  getSpecialtiesByCategory,
+  getCategoryLabel,
+  type Category,
+} from "../../constants/specialties";
+import {
+  getProfessionalCategory,
+  getProfessionalSpecialtyLabel,
+  getProfessionalCategoryLabel,
+  getProfessionalSpecialties,
+  getProfessionalSpecialtyLabels,
+} from "../../services/profileService";
 import {
   Star,
   Search,
   Filter,
-  Languages,
   Clock,
   Calendar,
   CheckCircle,
@@ -16,9 +27,9 @@ import {
   Wifi,
   WifiOff,
   Globe,
-  Award,
 } from "lucide-react";
 import LoadingSpinner from "../../components/ui/LoadingSpinner";
+import SpecialtyTags from "../../components/ui/SpecialtyTags";
 
 // Styles pour l'animation d'apparition
 const fadeInUpStyles = `
@@ -39,10 +50,14 @@ const fadeInUpStyles = `
 `;
 
 const ProfessionalsList = () => {
-  const { specialty } = useParams<{ specialty: "mental" | "sexual" }>();
+  const { specialty } = useParams<{ specialty: string }>();
   const [searchTerm, setSearchTerm] = useState("");
   const [filteredProfessionals, setFilteredProfessionals] = useState<any[]>([]);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
+  const [selectedCategory, setSelectedCategory] = useState<Category | null>(
+    null
+  );
+  const [selectedSpecialty, setSelectedSpecialty] = useState<string>("");
   const [realAvailabilities, setRealAvailabilities] = useState<
     Map<string, any>
   >(new Map());
@@ -70,16 +85,44 @@ const ProfessionalsList = () => {
       .filter(
         (professional) => professional.isActive && professional.isApproved
       )
-      .filter(
-        (professional) =>
-          searchTerm === "" ||
-          professional.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          professional.specialty
+      .filter((professional) => {
+        // Filter by category if selected
+        if (selectedCategory) {
+          const professionalCategory = getProfessionalCategory(professional);
+          if (professionalCategory !== selectedCategory) return false;
+        }
+
+        // Filter by specialty if selected
+        if (selectedSpecialty) {
+          const professionalSpecialties =
+            getProfessionalSpecialties(professional);
+          if (!professionalSpecialties.includes(selectedSpecialty))
+            return false;
+        }
+
+        // Filter by search term
+        if (searchTerm) {
+          const searchLower = searchTerm.toLowerCase();
+          const nameMatch = professional.name
             .toLowerCase()
-            .includes(searchTerm.toLowerCase())
-      );
+            .includes(searchLower);
+          const specialtyMatch = getProfessionalSpecialtyLabel(
+            professional,
+            "fr"
+          )
+            .toLowerCase()
+            .includes(searchLower);
+          const categoryMatch = getProfessionalCategoryLabel(professional, "fr")
+            .toLowerCase()
+            .includes(searchLower);
+
+          if (!nameMatch && !specialtyMatch && !categoryMatch) return false;
+        }
+
+        return true;
+      });
     setFilteredProfessionals(filtered);
-  }, [searchTerm, professionals]);
+  }, [searchTerm, professionals, selectedCategory, selectedSpecialty]);
 
   // Charger les vraies disponibilités pour chaque professionnel
   useEffect(() => {
@@ -132,13 +175,35 @@ const ProfessionalsList = () => {
     loadRealAvailabilities();
   }, [filteredProfessionals]);
 
-  const getServiceColors = () => {
-    return specialty === "mental"
-      ? { primary: "blue", accent: "teal" }
-      : { primary: "rose", accent: "pink" };
-  };
+  // Système de thème mappé pour éviter la purge Tailwind
+  const categoryFromParam =
+    selectedCategory ||
+    (specialty === "mental" || specialty === "mental-health"
+      ? "mental-health"
+      : "sexual-health");
 
-  const colors = getServiceColors();
+  const theme =
+    categoryFromParam === "mental-health"
+      ? {
+          h1: "text-blue-600",
+          text: "text-blue-500",
+          textStrong: "text-blue-700",
+          border: "border-blue-500",
+          ring: "focus:ring-blue-500",
+          chipIcon: "text-blue-500",
+          btnPrimary: "bg-blue-600 hover:bg-blue-700",
+          btnOutlineHover: "hover:bg-blue-50",
+        }
+      : {
+          h1: "text-rose-600",
+          text: "text-rose-500",
+          textStrong: "text-rose-700",
+          border: "border-rose-500",
+          ring: "focus:ring-rose-500",
+          chipIcon: "text-rose-500",
+          btnPrimary: "bg-rose-600 hover:bg-rose-700",
+          btnOutlineHover: "hover:bg-rose-50",
+        };
 
   // Utility function to check if a value exists
   const safeValue = (value: any, defaultValue: any = "") => {
@@ -309,8 +374,10 @@ const ProfessionalsList = () => {
     <div className="container mx-auto px-4 py-8">
       <style>{fadeInUpStyles}</style>
       <div className="mb-8">
-        <h1 className={`text-3xl font-bold mb-4 text-${colors.primary}-600`}>
-          {specialty === "mental" ? "Santé mentale" : "Santé sexuelle"}
+        <h1 className={`text-3xl font-bold mb-4 ${theme.h1}`}>
+          {categoryFromParam === "mental-health"
+            ? "Santé mentale"
+            : "Santé sexuelle"}
         </h1>
         <p className="text-gray-600 mb-4">
           {filteredProfessionals.length} professionnel
@@ -326,9 +393,56 @@ const ProfessionalsList = () => {
             placeholder="Rechercher un professionnel..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className={`w-full px-4 py-3 pl-12 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-${colors.primary}-500 focus:border-transparent`}
+            className={`w-full px-4 py-3 pl-12 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 ${theme.ring} focus:border-transparent`}
           />
           <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
+        </div>
+
+        {/* Filtres de catégorie et spécialité */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              <Filter className="inline h-4 w-4 mr-1" />
+              Catégorie
+            </label>
+            <select
+              value={selectedCategory || ""}
+              onChange={(e) => {
+                const category = e.target.value as Category;
+                setSelectedCategory(category || null);
+                setSelectedSpecialty(""); // Reset specialty when category changes
+              }}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            >
+              <option value="">Toutes les catégories</option>
+              {CATEGORIES.map((category) => (
+                <option key={category} value={category}>
+                  {getCategoryLabel(category, "fr")}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              <Filter className="inline h-4 w-4 mr-1" />
+              Spécialité
+            </label>
+            <select
+              value={selectedSpecialty}
+              onChange={(e) => setSelectedSpecialty(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              disabled={!selectedCategory}
+            >
+              <option value="">Toutes les spécialités</option>
+              {selectedCategory &&
+                getSpecialtiesByCategory(selectedCategory).map((specialty) => (
+                  <option key={specialty.key} value={specialty.key}>
+                    {specialty.labels.fr}
+                  </option>
+                ))}
+            </select>
+          </div>
         </div>
       </div>
 
@@ -358,25 +472,27 @@ const ProfessionalsList = () => {
               professional.name,
               "Nom non disponible"
             );
-            const professionalSpecialty = safeValue(
-              professional.specialty,
-              "Spécialité non précisée"
+            const professionalSpecialties =
+              getProfessionalSpecialties(professional);
+            const professionalSpecialtyLabels = getProfessionalSpecialtyLabels(
+              professional,
+              "fr"
             );
-            const professionalDescription = safeValue(
-              professional.description,
-              "Description non disponible"
+            const professionalCategoryLabel = getProfessionalCategoryLabel(
+              professional,
+              "fr"
             );
             const professionalRating = safeValue(professional.rating, 0);
             const professionalReviews = safeValue(professional.reviews, 0);
-            const professionalPrice = professional.price;
+            // Prix robuste avec fallback
+            const professionalPrice =
+              professional.price ?? professional.consultationFee ?? 0;
             const professionalCurrency = safeValue(
               professional.currency,
               "XOF"
             );
             const professionalLanguages = safeArray(professional.languages);
-            const professionalAvailability = safeArray(
-              professional.availability
-            );
+
             const isAvailableNow = false; // Désactivé temporairement
 
             // Utiliser les vraies disponibilités si disponibles, sinon fallback
@@ -400,7 +516,7 @@ const ProfessionalsList = () => {
             return (
               <div
                 key={professional.id}
-                className={`bg-white rounded-xl shadow-md hover:shadow-lg border border-gray-100 overflow-hidden transition-all duration-300 ease-in-out hover:scale-105 group animate-fade-in-up`}
+                className={`bg-white rounded-xl shadow-md hover:shadow-lg border border-gray-100 transition-all duration-300 ease-in-out hover:scale-105 group animate-fade-in-up`}
                 style={{ animationDelay: `${index * 100}ms` }}
               >
                 <div className="flex flex-col md:flex-row">
@@ -442,7 +558,7 @@ const ProfessionalsList = () => {
                     )}
                   </div>
 
-                  <div className="p-6 md:w-3/4 flex flex-col">
+                  <div className="p-6 md:w-3/4 flex flex-col min-h-[400px]">
                     <div className="flex flex-col md:flex-row md:justify-between md:items-start mb-4">
                       <div className="flex items-center gap-2">
                         <h2 className="text-xl font-semibold text-gray-800">
@@ -462,20 +578,26 @@ const ProfessionalsList = () => {
                       </div>
                     </div>
 
-                    <p
-                      className={`text-lg font-medium text-${colors.primary}-600 mb-2`}
-                    >
-                      {professionalSpecialty}
-                    </p>
-                    <p className="text-gray-600 mb-4 line-clamp-2">
-                      {professionalDescription}
-                    </p>
+                    <div className="mb-2">
+                      <SpecialtyTags
+                        specialties={professionalSpecialties}
+                        language="fr"
+                        maxDisplay={2}
+                        className="mb-1"
+                      />
+                      <p className="text-sm text-gray-500">
+                        {professionalSpecialtyLabels.length > 0
+                          ? `${professionalSpecialtyLabels.length} spécialités`
+                          : "Spécialité non renseignée"}
+                      </p>
+                      <p className="text-sm text-gray-600 mt-1">
+                        {professionalCategoryLabel}
+                      </p>
+                    </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                       <div className="flex items-center">
-                        <Globe
-                          className={`h-5 w-5 text-${colors.primary}-500 mr-2`}
-                        />
+                        <Globe className={`h-5 w-5 ${theme.chipIcon} mr-2`} />
                         <span className="text-sm text-gray-600">
                           {professionalLanguages.length > 0 ? (
                             <span className="flex flex-wrap gap-1">
@@ -497,9 +619,7 @@ const ProfessionalsList = () => {
                       </div>
 
                       <div className="flex items-center">
-                        <Clock
-                          className={`h-5 w-5 text-${colors.primary}-500 mr-2`}
-                        />
+                        <Clock className={`h-5 w-5 ${theme.chipIcon} mr-2`} />
                         <span className="text-sm text-gray-600">
                           {availabilityInfo.nextAvailableDay
                             ? availabilityInfo.nextAvailableDay
@@ -509,7 +629,7 @@ const ProfessionalsList = () => {
 
                       <div className="flex items-center">
                         <Calendar
-                          className={`h-5 w-5 text-${colors.primary}-500 mr-2`}
+                          className={`h-5 w-5 ${theme.chipIcon} mr-2`}
                         />
                         <span className="text-sm text-gray-600">
                           {availabilityInfo.totalDays} jour
@@ -527,17 +647,19 @@ const ProfessionalsList = () => {
 
                     <div className="flex flex-col sm:flex-row justify-between items-center mt-auto">
                       <div
-                        className={`text-lg font-bold text-${colors.primary}-700 mb-4 sm:mb-0`}
+                        className={`text-lg font-bold ${theme.textStrong} mb-4 sm:mb-0`}
                       >
-                        {professionalPrice === null
+                        {professionalPrice === 0 || professionalPrice === null
                           ? "Tarif sur demande"
-                          : `${professionalPrice.toLocaleString()} ${professionalCurrency} / consultation`}
+                          : `${professionalPrice.toLocaleString(
+                              "fr-FR"
+                            )} ${professionalCurrency} / consultation`}
                       </div>
 
                       <div className="flex space-x-4">
                         <Link
                           to={`/professional/${professional.id}`}
-                          className={`px-4 py-2 border border-${colors.primary}-500 text-${colors.primary}-500 rounded-md hover:bg-${colors.primary}-50 transition-colors font-medium`}
+                          className={`px-4 py-2 border ${theme.border} ${theme.text} rounded-md ${theme.btnOutlineHover} transition-colors font-medium`}
                           onClick={() => {
                             // Preload professional data in sessionStorage
                             try {
@@ -560,7 +682,7 @@ const ProfessionalsList = () => {
                           className={`px-4 py-2 ${
                             isAvailableNow
                               ? `bg-green-500 hover:bg-green-600`
-                              : `bg-${colors.primary}-600 hover:bg-${colors.primary}-700`
+                              : theme.btnPrimary
                           } text-white rounded-md transition-colors font-medium`}
                           onClick={() => {
                             // Preload professional data in sessionStorage

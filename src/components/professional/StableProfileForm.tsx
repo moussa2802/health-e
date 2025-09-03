@@ -20,6 +20,19 @@ import {
   getDataUrlSize,
   isValidForFirestore,
 } from "../../utils/imageCompression";
+import {
+  CATEGORIES,
+  SPECIALTIES,
+  getSpecialtiesByCategory,
+  getCategoryLabel,
+  getSpecialtyLabel,
+  type Category,
+} from "../../constants/specialties";
+import {
+  getProfessionalCategory,
+  getProfessionalPrimarySpecialty,
+  getProfessionalSpecialties,
+} from "../../services/profileService";
 
 interface ProfessionalProfile {
   id: string;
@@ -27,7 +40,7 @@ interface ProfessionalProfile {
   name: string;
   email: string;
   phone?: string;
-  specialty: string;
+  specialty: string; // Legacy field
   experience: string;
   education: string;
   bio: string;
@@ -37,7 +50,10 @@ interface ProfessionalProfile {
   useElectronicSignature?: boolean;
   languages: string[];
   profileImage?: string;
-  type: string;
+  type: string; // Legacy field
+  // New fields for extended specialties
+  category?: Category;
+  primarySpecialty?: string;
   description: string;
   price: number | null;
   currency: string;
@@ -65,6 +81,14 @@ const StableProfileForm: React.FC<StableProfileFormProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [isCompressing, setIsCompressing] = useState(false);
+
+  // New states for specialty selection
+  const [selectedCategory, setSelectedCategory] = useState<Category | null>(
+    getProfessionalCategory(profile) || null
+  );
+  const [selectedSpecialties, setSelectedSpecialties] = useState<string[]>(
+    getProfessionalSpecialties(profile)
+  );
   const [compressionInfo, setCompressionInfo] = useState<{
     originalSize: number;
     compressedSize: number;
@@ -161,7 +185,28 @@ const StableProfileForm: React.FC<StableProfileFormProps> = ({
     setSuccess(false);
 
     try {
-      await onSave(formData);
+      // Prepare data with new specialty fields
+      const dataToSave = {
+        ...formData,
+        // Legacy fields for backward compatibility
+        specialty:
+          selectedSpecialties.length > 0
+            ? getSpecialtyLabel(selectedSpecialties[0], "fr")
+            : formData.specialty,
+        type:
+          selectedCategory === "mental-health"
+            ? "mental"
+            : selectedCategory === "sexual-health"
+            ? "sexual"
+            : formData.type,
+        // New fields
+        category: selectedCategory,
+        primarySpecialty:
+          selectedSpecialties.length > 0 ? selectedSpecialties[0] : "",
+        specialties: selectedSpecialties,
+      };
+
+      await onSave(dataToSave);
       setSuccess(true);
     } catch (err) {
       setError("Erreur lors de la sauvegarde du profil");
@@ -169,33 +214,26 @@ const StableProfileForm: React.FC<StableProfileFormProps> = ({
     }
   };
 
-  const getSpecialtiesByType = (type: string) => {
-    switch (type) {
-      case "mental":
-        return ["Psychologue", "Psychiatre"];
-      case "sexual":
-        return ["Sexologue", "Gynécologue", "Urologue"];
-      default:
-        return [
-          "Psychologue",
-          "Psychiatre",
-          "Sexologue",
-          "Gynécologue",
-          "Urologue",
-        ];
-    }
-  };
+  // Get available specialties based on selected category
+  const availableSpecialties = selectedCategory
+    ? getSpecialtiesByCategory(selectedCategory)
+    : [];
 
-  const specialties = getSpecialtiesByType(formData.type);
-
-  // Réinitialiser la spécialité quand le type change
+  // Reset specialties when category changes
   useEffect(() => {
-    const currentSpecialties = getSpecialtiesByType(formData.type);
-    if (!currentSpecialties.includes(formData.specialty)) {
-      // Si la spécialité actuelle n'est pas dans le nouveau type, on prend la première disponible
-      handleInputChange("specialty", currentSpecialties[0]);
+    if (selectedCategory) {
+      // Keep only specialties that belong to the selected category
+      const validSpecialties = selectedSpecialties.filter((specialty) => {
+        const specialtyObj = availableSpecialties.find(
+          (s) => s.key === specialty
+        );
+        return specialtyObj && specialtyObj.category === selectedCategory;
+      });
+      if (validSpecialties.length !== selectedSpecialties.length) {
+        setSelectedSpecialties(validSpecialties);
+      }
     }
-  }, [formData.type]);
+  }, [selectedCategory, selectedSpecialties, availableSpecialties]);
 
   return (
     <div className="space-y-6">
@@ -263,71 +301,92 @@ const StableProfileForm: React.FC<StableProfileFormProps> = ({
                 className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
             </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Spécialité
-              </label>
-              <select
-                value={formData.specialty}
-                onChange={(e) => handleInputChange("specialty", e.target.value)}
-                className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                required
-              >
-                {specialties.map((specialty) => (
-                  <option key={specialty} value={specialty}>
-                    {specialty}
-                  </option>
-                ))}
-              </select>
-            </div>
           </div>
         </div>
 
-        {/* Type de service */}
+        {/* Catégorie de service */}
         <div className="bg-white p-6 rounded-lg shadow-sm border">
           <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center">
             <Briefcase className="h-5 w-5 mr-2 text-blue-600" />
-            Type de service
+            Catégorie de service
           </h3>
 
           <div className="space-y-4">
             <div className="flex space-x-4">
-              <label className="inline-flex items-center">
-                <input
-                  type="radio"
-                  className="form-radio h-5 w-5 text-blue-600"
-                  name="serviceType"
-                  value="mental"
-                  checked={formData.type === "mental"}
-                  onChange={(e) =>
-                    handleInputChange(
-                      "type",
-                      e.target.value as "mental" | "sexual"
-                    )
-                  }
-                />
-                <span className="ml-2 text-gray-700">Santé mentale</span>
-              </label>
-              <label className="inline-flex items-center">
-                <input
-                  type="radio"
-                  className="form-radio h-5 w-5 text-blue-600"
-                  name="serviceType"
-                  value="sexual"
-                  checked={formData.type === "sexual"}
-                  onChange={(e) =>
-                    handleInputChange(
-                      "type",
-                      e.target.value as "mental" | "sexual"
-                    )
-                  }
-                />
-                <span className="ml-2 text-gray-700">Santé sexuelle</span>
-              </label>
+              {CATEGORIES.map((category) => (
+                <label key={category} className="inline-flex items-center">
+                  <input
+                    type="radio"
+                    className="form-radio h-5 w-5 text-blue-600"
+                    name="category"
+                    value={category}
+                    checked={selectedCategory === category}
+                    onChange={() => {
+                      setSelectedCategory(category);
+                      setSelectedSpecialties([]); // Reset specialties when category changes
+                    }}
+                  />
+                  <span className="ml-2 text-gray-700">
+                    {getCategoryLabel(category, "fr")}
+                  </span>
+                </label>
+              ))}
             </div>
           </div>
         </div>
+
+        {/* Spécialités */}
+        {selectedCategory && (
+          <div className="bg-white p-6 rounded-lg shadow-sm border">
+            <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center">
+              <GraduationCap className="h-5 w-5 mr-2 text-blue-600" />
+              Spécialités
+            </h3>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Spécialités (vous pouvez en sélectionner plusieurs)
+              </label>
+              <div className="max-h-48 overflow-y-auto border border-gray-300 rounded-md p-2 space-y-2">
+                {availableSpecialties.map((specialty) => (
+                  <label
+                    key={specialty.key}
+                    className="flex items-center space-x-2 cursor-pointer hover:bg-gray-50 p-2 rounded"
+                  >
+                    <input
+                      type="checkbox"
+                      value={specialty.key}
+                      checked={selectedSpecialties.includes(specialty.key)}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setSelectedSpecialties([
+                            ...selectedSpecialties,
+                            specialty.key,
+                          ]);
+                        } else {
+                          setSelectedSpecialties(
+                            selectedSpecialties.filter(
+                              (s) => s !== specialty.key
+                            )
+                          );
+                        }
+                      }}
+                      className="form-checkbox h-4 w-4 text-blue-600 focus:ring-blue-500"
+                    />
+                    <span className="text-sm text-gray-700">
+                      {specialty.labels.fr}
+                    </span>
+                  </label>
+                ))}
+              </div>
+              {selectedSpecialties.length === 0 && (
+                <p className="text-red-500 text-sm mt-1">
+                  Veuillez sélectionner au moins une spécialité
+                </p>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Langues */}
         <div className="bg-white p-6 rounded-lg shadow-sm border">

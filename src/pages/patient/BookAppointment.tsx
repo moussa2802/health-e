@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import {
   Calendar,
   Clock,
@@ -11,6 +11,7 @@ import {
   AlertCircle,
   User,
   Info,
+  Edit,
 } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -27,6 +28,7 @@ import {
 import {
   createBooking,
   checkAvailability,
+  updateBooking,
 } from "../../services/bookingService";
 import { formatLocalTime } from "../../utils/dateUtils";
 import LoadingSpinner from "../../components/ui/LoadingSpinner";
@@ -47,6 +49,7 @@ interface PaymentMethod {
 
 const BookAppointment: React.FC = () => {
   const { professionalId } = useParams<{ professionalId: string }>();
+  const location = useLocation();
   const [professional, setProfessional] = useState<any | null>(null);
   const [selectedDay, setSelectedDay] = useState<string>("");
   const [selectedTime, setSelectedTime] = useState<string>("");
@@ -74,6 +77,11 @@ const BookAppointment: React.FC = () => {
   const [availableDays, setAvailableDays] = useState<Date[]>([]);
   const [isTesting, setIsTesting] = useState(true);
 
+  // États pour la modification d'un rendez-vous
+  const [isModifying, setIsModifying] = useState(false);
+  const [bookingToModify, setBookingToModify] = useState<any | null>(null);
+  const [localError, setLocalError] = useState<string | null>(null);
+
   const getValidDate = (input: any): Date | null => {
     if (input instanceof Date) return input;
     if (input?.toDate) return input.toDate();
@@ -98,6 +106,83 @@ const BookAppointment: React.FC = () => {
       return;
     }
   }, [isAuthenticated, navigate]);
+
+  // Gérer la modification d'un rendez-vous
+  useEffect(() => {
+    const searchParams = new URLSearchParams(location.search);
+    const modifyBookingId = searchParams.get("modify");
+
+    if (modifyBookingId) {
+      setIsModifying(true);
+      // Charger les données du rendez-vous à modifier
+      loadBookingToModify(modifyBookingId);
+    }
+  }, [location.search]);
+
+  const loadBookingToModify = async (bookingId: string) => {
+    try {
+      console.log(
+        "🔄 Mode modification activé pour le rendez-vous:",
+        bookingId
+      );
+
+      // Charger les données du rendez-vous depuis Firestore
+      const { getFirestoreInstance, ensureFirestoreReady } = await import(
+        "../../utils/firebase"
+      );
+      const { doc, getDoc } = await import("firebase/firestore");
+
+      await ensureFirestoreReady();
+      const db = getFirestoreInstance();
+
+      if (!db) {
+        throw new Error("Firestore not available");
+      }
+
+      const bookingRef = doc(db, "bookings", bookingId);
+      const bookingSnap = await getDoc(bookingRef);
+
+      if (bookingSnap.exists()) {
+        const bookingData = bookingSnap.data();
+        setBookingToModify({
+          id: bookingId,
+          ...bookingData,
+        });
+
+        // Pré-remplir les champs avec les données existantes
+        if (bookingData.date) {
+          setSelectedDay(bookingData.date);
+        }
+        if (bookingData.startTime) {
+          setSelectedTime(bookingData.startTime);
+        }
+        if (bookingData.type) {
+          setConsultationType(bookingData.type);
+        }
+
+        // Créer un selectedTimeSlot pour la modification
+        if (bookingData.date && bookingData.startTime) {
+          setSelectedTimeSlot({
+            date: bookingData.date,
+            time: bookingData.startTime,
+            available: true,
+          });
+        }
+
+        console.log("✅ Données du rendez-vous chargées:", bookingData);
+      } else {
+        throw new Error("Rendez-vous introuvable");
+      }
+    } catch (error) {
+      console.error(
+        "❌ Erreur lors du chargement du rendez-vous à modifier:",
+        error
+      );
+      setLocalError(
+        "Impossible de charger les données du rendez-vous à modifier"
+      );
+    }
+  };
 
   const paymentMethods: PaymentMethod[] = [
     {
@@ -553,7 +638,7 @@ const BookAppointment: React.FC = () => {
         endTime
       );
 
-      // Créer la réservation
+      // Créer ou modifier la réservation
       const bookingData = {
         patientId: currentUser.id,
         professionalId: professional.id,
@@ -572,6 +657,21 @@ const BookAppointment: React.FC = () => {
         currentUser.id
       );
       console.log("🩺 Professional ID:", professional.id);
+
+      // Gérer la modification d'un rendez-vous existant
+      if (isModifying && bookingToModify?.id) {
+        console.log(
+          "🔄 Mode modification - Mise à jour du rendez-vous:",
+          bookingToModify.id
+        );
+
+        // Mettre à jour le rendez-vous existant
+        await updateBooking(bookingToModify.id, bookingData);
+
+        // Rediriger vers le tableau de bord avec un message de succès
+        navigate("/patient/dashboard?message=appointment_updated");
+        return;
+      }
 
       // Générer un ID temporaire pour le paiement (pas de création en base)
       const tempBookingId = `temp_${Date.now()}_${Math.random()
@@ -695,7 +795,7 @@ const BookAppointment: React.FC = () => {
       return;
     }
 
-    console.log("✅ All validations passed, proceeding to payment");
+    console.log("✅ All validations passed");
 
     if (!isSlotAvailable && !selectedTimeSlot?.isBooked) {
       console.log("❌ Slot not available");
@@ -703,8 +803,96 @@ const BookAppointment: React.FC = () => {
       return;
     }
 
+    // En mode modification, traiter directement la modification
+    if (isModifying && bookingToModify?.id) {
+      console.log(
+        "🔄 Mode modification - Traitement direct de la modification"
+      );
+      await handleModification();
+      return;
+    }
+
     console.log("🔄 Opening payment step");
     setShowPaymentStep(true);
+  };
+
+  // Fonction pour gérer la modification directe d'un rendez-vous
+  const handleModification = async () => {
+    if (!currentUser || !professional || !bookingToModify?.id) {
+      setLocalError("Informations manquantes pour la modification");
+      return;
+    }
+
+    setIsSubmitting(true);
+    setLocalError("");
+
+    try {
+      // Utiliser l'heure du créneau sélectionné
+      const timeToUse = selectedTimeSlot?.time || selectedTime;
+
+      if (!timeToUse) {
+        setLocalError("Aucun créneau horaire sélectionné");
+        return;
+      }
+
+      // Calculer l'heure de fin
+      const [hours, minutes] = timeToUse.split(":").map(Number);
+      const endTime = `${String(hours + 1).padStart(2, "0")}:${String(
+        minutes
+      ).padStart(2, "0")}`;
+
+      // Utiliser directement la date du créneau sélectionné
+      let dateString;
+      if (selectedTimeSlot && selectedTimeSlot.date) {
+        let dateObj: Date;
+
+        if (selectedTimeSlot.date instanceof Date) {
+          dateObj = selectedTimeSlot.date;
+        } else if (typeof selectedTimeSlot.date === "string") {
+          dateObj = new Date(selectedTimeSlot.date);
+        } else {
+          try {
+            dateObj = new Date(selectedTimeSlot.date as any);
+          } catch (error) {
+            console.warn("Failed to parse date, using current date:", error);
+            dateObj = new Date();
+          }
+        }
+
+        dateString = format(dateObj, "yyyy-MM-dd");
+      } else {
+        dateString = selectedDay;
+      }
+
+      // Préparer les données de mise à jour
+      const bookingData = {
+        date: dateString,
+        startTime: timeToUse,
+        endTime: endTime,
+        type: consultationType,
+        duration: 60,
+        price: professional.price || 0,
+      };
+
+      console.log(
+        "🔄 Mise à jour du rendez-vous:",
+        bookingToModify.id,
+        bookingData
+      );
+
+      // Mettre à jour le rendez-vous
+      await updateBooking(bookingToModify.id, bookingData);
+
+      // Rediriger vers le tableau de bord avec un message de succès
+      navigate("/patient/dashboard?message=appointment_updated");
+    } catch (error) {
+      console.error("❌ Erreur lors de la modification:", error);
+      setLocalError(
+        "Une erreur est survenue lors de la modification. Veuillez réessayer."
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   // Ne pas afficher le composant si l'utilisateur n'est pas connecté
@@ -732,12 +920,12 @@ const BookAppointment: React.FC = () => {
     );
   }
 
-  if (error) {
+  if (error || localError) {
     return (
       <div className="container mx-auto px-4 py-8 text-center">
         <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative">
           <strong className="font-bold">Erreur : </strong>
-          <span className="block sm:inline">{error}</span>
+          <span className="block sm:inline">{error || localError}</span>
         </div>
       </div>
     );
@@ -996,7 +1184,9 @@ const BookAppointment: React.FC = () => {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold mb-8">Prendre rendez-vous</h1>
+      <h1 className="text-3xl font-bold mb-8">
+        {isModifying ? "Modifier le rendez-vous" : "Prendre rendez-vous"}
+      </h1>
 
       <div className="bg-white rounded-lg shadow-md overflow-hidden">
         {/* Professional info */}
@@ -1188,7 +1378,9 @@ const BookAppointment: React.FC = () => {
               {selectedTimeSlot && (
                 <section className="bg-blue-50 p-4 rounded-lg">
                   <h3 className="text-md font-semibold mb-2 text-blue-700">
-                    Créneau sélectionné
+                    {isModifying
+                      ? "Nouveau créneau sélectionné"
+                      : "Créneau sélectionné"}
                   </h3>
                   <div className="flex items-center text-blue-600 mb-1">
                     <Calendar className="h-4 w-4 mr-2" />
@@ -1226,63 +1418,76 @@ const BookAppointment: React.FC = () => {
                 </section>
               )}
 
-              {/* Payment summary */}
-              <section className="bg-gray-50 rounded-lg p-6">
-                <h3 className="text-lg font-semibold mb-4">Résumé</h3>
+              {/* Payment summary - masqué en mode modification */}
+              {!isModifying && (
+                <section className="bg-gray-50 rounded-lg p-6">
+                  <h3 className="text-lg font-semibold mb-4">Résumé</h3>
 
-                <div className="space-y-3">
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Consultation</span>
-                    <span className="font-medium">
-                      {professionalPrice === null
-                        ? "Gratuit"
-                        : `${professionalPrice.toLocaleString()} ${professionalCurrency}`}
-                    </span>
-                  </div>
-                  <div className="pt-3 border-t">
+                  <div className="space-y-3">
                     <div className="flex justify-between">
-                      <span className="font-semibold">Total</span>
-                      <span className="font-semibold">
-                        {professionalPrice === null || professionalPrice === 0
+                      <span className="text-gray-600">Consultation</span>
+                      <span className="font-medium">
+                        {professionalPrice === null
                           ? "Gratuit"
                           : `${professionalPrice.toLocaleString()} ${professionalCurrency}`}
                       </span>
                     </div>
+                    <div className="pt-3 border-t">
+                      <div className="flex justify-between">
+                        <span className="font-semibold">Total</span>
+                        <span className="font-semibold">
+                          {professionalPrice === null || professionalPrice === 0
+                            ? "Gratuit"
+                            : `${professionalPrice.toLocaleString()} ${professionalCurrency}`}
+                        </span>
+                      </div>
+                    </div>
                   </div>
-                </div>
+                </section>
+              )}
 
-                <button
-                  type="submit"
-                  disabled={
-                    !isTesting &&
-                    (!selectedTimeSlot ||
-                      !consultationType ||
-                      isSubmitting ||
-                      !isSlotAvailable)
-                  }
-                  className={`w-full py-3 rounded-md font-semibold mt-4 transition-all duration-200 flex items-center justify-center shadow-md hover:shadow-lg ${
-                    !isTesting &&
-                    (!selectedTimeSlot ||
-                      !consultationType ||
-                      isSubmitting ||
-                      !isSlotAvailable)
-                      ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-                      : "bg-green-600 text-white hover:bg-green-700 transform hover:-translate-y-0.5"
-                  }`}
-                >
-                  {isSubmitting ? (
-                    <>
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                      Création de la facture...
-                    </>
-                  ) : (
-                    <>
-                      <CreditCard className="h-5 w-5 mr-2" />
-                      Payer avec PayTech
-                    </>
-                  )}
-                </button>
-              </section>
+              <button
+                type="submit"
+                disabled={
+                  !isTesting &&
+                  (!selectedTimeSlot ||
+                    !consultationType ||
+                    isSubmitting ||
+                    !isSlotAvailable)
+                }
+                className={`w-full py-3 rounded-md font-semibold mt-4 transition-all duration-200 flex items-center justify-center shadow-md hover:shadow-lg ${
+                  !isTesting &&
+                  (!selectedTimeSlot ||
+                    !consultationType ||
+                    isSubmitting ||
+                    !isSlotAvailable)
+                    ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                    : "bg-green-600 text-white hover:bg-green-700 transform hover:-translate-y-0.5"
+                }`}
+              >
+                {isSubmitting ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    {isModifying
+                      ? "Modification en cours..."
+                      : "Création de la facture..."}
+                  </>
+                ) : (
+                  <>
+                    {isModifying ? (
+                      <>
+                        <Edit className="h-5 w-5 mr-2" />
+                        Modifier le rendez-vous
+                      </>
+                    ) : (
+                      <>
+                        <CreditCard className="h-5 w-5 mr-2" />
+                        Payer avec PayTech
+                      </>
+                    )}
+                  </>
+                )}
+              </button>
             </div>
           </form>
         </div>

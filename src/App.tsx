@@ -315,6 +315,53 @@ function App() {
                         path="/professionals/:specialty"
                         element={<ProfessionalsList />}
                       />
+
+                      {/* Legacy redirects for old specialty URLs */}
+                      <Route
+                        path="/professionals/psychologie"
+                        element={
+                          <Navigate
+                            to="/professionals/psychologue-clinicien"
+                            replace
+                          />
+                        }
+                      />
+                      <Route
+                        path="/professionals/psychiatrie"
+                        element={
+                          <Navigate to="/professionals/psychiatre" replace />
+                        }
+                      />
+                      <Route
+                        path="/professionals/psychologue"
+                        element={
+                          <Navigate
+                            to="/professionals/psychologue-clinicien"
+                            replace
+                          />
+                        }
+                      />
+                      <Route
+                        path="/professionals/sexologue"
+                        element={
+                          <Navigate
+                            to="/professionals/sexologue-clinicien"
+                            replace
+                          />
+                        }
+                      />
+                      <Route
+                        path="/professionals/gynecologie"
+                        element={
+                          <Navigate to="/professionals/gynecologue" replace />
+                        }
+                      />
+                      <Route
+                        path="/professionals/urologie"
+                        element={
+                          <Navigate to="/professionals/urologue" replace />
+                        }
+                      />
                       <Route
                         path="/professional/:id"
                         element={<ProfessionalProfile />}
@@ -475,6 +522,7 @@ function App() {
                           </ProtectedRoute>
                         }
                       />
+
                       <Route
                         path="/admin/withdrawals"
                         element={

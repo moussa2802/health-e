@@ -24,6 +24,9 @@ import {
 import LoadingSpinner from "../../components/ui/LoadingSpinner";
 import { updatePatientMedicalRecord } from "../../services/patientService";
 import { getProfessionalProfile } from "../../services/profileService";
+import { registerPatientForProfessional } from "../../services/professionalPatientsService";
+import { getFirestoreInstance } from "../../utils/firebase";
+import { doc, getDoc } from "firebase/firestore";
 
 // Types pour Jitsi
 interface JitsiMeetInstance {
@@ -85,6 +88,15 @@ const ConsultationRoom: React.FC = () => {
   } | null>(null);
   const [isPrescriptionSigned, setIsPrescriptionSigned] = useState(false);
   const [isSigningPrescription, setIsSigningPrescription] = useState(false);
+  const [resolvedPatientId, setResolvedPatientId] = useState<string | null>(
+    null
+  );
+  const [resolvedPatientName, setResolvedPatientName] = useState<string | null>(
+    null
+  );
+
+  // Patient display name for UI (can be used in future UI updates)
+  // const patientDisplayName = resolvedPatientName || remoteUserName || "Patient";
 
   const jitsiContainerRef = useRef<HTMLDivElement>(null);
   const jitsiApiRef = useRef<JitsiMeetInstance | null>(null);
@@ -197,6 +209,70 @@ const ConsultationRoom: React.FC = () => {
       }
     };
   }, [roomId, currentUser]);
+
+  // Resolve and memorize patient ID early
+  useEffect(() => {
+    (async () => {
+      if (!roomId || !currentUser) return;
+
+      // 1) URL param
+      const urlPid = new URLSearchParams(window.location.search).get(
+        "patientId"
+      );
+      if (urlPid) {
+        setResolvedPatientId(urlPid);
+        sessionStorage.setItem(`consultation_${roomId}_patientId`, urlPid);
+        return;
+      }
+
+      // 2) Cache session (si refresh)
+      const cachedPid = sessionStorage.getItem(
+        `consultation_${roomId}_patientId`
+      );
+      if (cachedPid) {
+        setResolvedPatientId(cachedPid);
+        return;
+      }
+
+      // 3) Si l'id de room est celui d'un booking Firestore, on lit le doc
+      const bookingData = await fetchBookingData(roomId);
+      if (bookingData?.patientId) {
+        setResolvedPatientId(bookingData.patientId);
+        setResolvedPatientName(bookingData.patientName || null);
+        sessionStorage.setItem(
+          `consultation_${roomId}_patientId`,
+          bookingData.patientId
+        );
+        return;
+      }
+
+      // 4) Fallback: participants (Realtime DB)
+      if (participants.length) {
+        const p =
+          participants.find(
+            (p) => p.type === "patient" && p.id !== currentUser.id
+          ) || participants.find((p) => p.id !== currentUser.id);
+        if (p?.id) {
+          setResolvedPatientId(p.id);
+          setResolvedPatientName(p.name || null);
+          sessionStorage.setItem(`consultation_${roomId}_patientId`, p.id);
+          return;
+        }
+      }
+
+      // 5) Ultime fallback: si l'utilisateur courant EST le patient
+      if (currentUser.type === "patient") {
+        setResolvedPatientId(currentUser.id);
+        sessionStorage.setItem(
+          `consultation_${roomId}_patientId`,
+          currentUser.id
+        );
+        return;
+      }
+
+      console.warn("⚠️ Patient ID not resolved yet.");
+    })();
+  }, [roomId, currentUser, participants]);
 
   // Initialize Jitsi Meet when script is loaded
   useEffect(() => {
@@ -463,6 +539,45 @@ const ConsultationRoom: React.FC = () => {
         await endConsultation(roomId, currentUser.id);
       }
 
+      // If user is a professional, enregistrer le patient dans sa liste (light)
+      if (currentUser?.type === "professional") {
+        try {
+          // on re-tente une résolution si besoin
+          let pid = resolvedPatientId;
+          if (!pid) {
+            const cached = sessionStorage.getItem(
+              `consultation_${roomId}_patientId`
+            );
+            if (cached) pid = cached;
+            else {
+              const bookingData = await fetchBookingData(roomId);
+              pid = bookingData?.patientId || pid || null;
+            }
+          }
+
+          if (pid) {
+            await registerPatientForProfessional({
+              professionalId: currentUser.id,
+              patientId: pid,
+              bookingId: roomId,
+              patientName: resolvedPatientName || remoteUserName || null,
+              consultationType: "video",
+            });
+            console.log(
+              "✅ Patient enregistré dans la liste du professionnel:",
+              pid
+            );
+          } else {
+            console.warn(
+              "⚠️ Patient ID introuvable — enregistrement de la liste patients sauté."
+            );
+          }
+        } catch (e) {
+          console.error("❌ Erreur d'enregistrement dans la liste du pro:", e);
+          // on ne bloque pas la fin d'appel
+        }
+      }
+
       // Dispose Jitsi API
       if (jitsiApiRef.current) {
         jitsiApiRef.current.dispose();
@@ -494,28 +609,22 @@ const ConsultationRoom: React.FC = () => {
     bookingId: string
   ): Promise<{ patientId?: string; patientName?: string } | null> => {
     try {
-      console.log(
-        "🔍 [CONSULTATION DEBUG] Fetching booking data for:",
-        bookingId
-      );
-
-      // Import booking service
-      const { getBookings } = await import("../../services/bookingService");
-
-      const bookings = await getBookings();
-      const booking = bookings.find((b) => b.id === bookingId);
-
-      if (booking) {
-        console.log("✅ Found booking data:", booking);
+      const db = getFirestoreInstance();
+      if (!db) return null;
+      const snap = await getDoc(doc(db, "bookings", bookingId));
+      if (snap.exists()) {
+        const data = snap.data() as {
+          patientId?: string;
+          patientName?: string;
+        };
         return {
-          patientId: booking.patientId,
-          patientName: booking.patientName,
+          patientId: data.patientId,
+          patientName: data.patientName || undefined,
         };
       }
-
       return null;
-    } catch (error) {
-      console.warn("⚠️ Could not fetch booking data:", error);
+    } catch (e) {
+      console.warn("⚠️ Could not fetch booking data:", e);
       return null;
     }
   };
@@ -609,6 +718,54 @@ const ConsultationRoom: React.FC = () => {
       }
     }
 
+    // For temp consultations, try to get patient ID from URL parameters
+    if (roomId && roomId.startsWith("temp_")) {
+      console.log("🔍 [CONSULTATION DEBUG] Handling temp consultation room ID");
+
+      // Try to get patient ID from URL parameters
+      const urlParams = new URLSearchParams(window.location.search);
+      const patientIdFromUrl = urlParams.get("patientId");
+      if (patientIdFromUrl) {
+        console.log(
+          "✅ Found patient ID from URL for temp consultation:",
+          patientIdFromUrl
+        );
+        return patientIdFromUrl;
+      }
+
+      // Try to get patient ID from session storage (if stored during consultation start)
+      const storedPatientId = sessionStorage.getItem(
+        `consultation_${roomId}_patientId`
+      );
+      if (storedPatientId) {
+        console.log(
+          "✅ Found patient ID from session storage:",
+          storedPatientId
+        );
+        return storedPatientId;
+      }
+
+      // Try to get patient ID from localStorage (if stored during consultation start)
+      const localPatientId = localStorage.getItem(
+        `consultation_${roomId}_patientId`
+      );
+      if (localPatientId) {
+        console.log("✅ Found patient ID from localStorage:", localPatientId);
+        return localPatientId;
+      }
+    }
+
+    // Try to get patient ID from URL parameters as fallback
+    const urlParams = new URLSearchParams(window.location.search);
+    const patientIdFromUrl = urlParams.get("patientId");
+    if (patientIdFromUrl) {
+      console.log(
+        "✅ Found patient ID from URL as fallback:",
+        patientIdFromUrl
+      );
+      return patientIdFromUrl;
+    }
+
     console.warn("⚠️ Could not determine patient ID");
     console.warn("⚠️ [CONSULTATION DEBUG] All identification methods failed");
     console.warn(
@@ -616,6 +773,11 @@ const ConsultationRoom: React.FC = () => {
       participants
     );
     console.warn("⚠️ [CONSULTATION DEBUG] Current user:", currentUser);
+    console.warn("⚠️ [CONSULTATION DEBUG] Room ID:", roomId);
+    console.warn(
+      "⚠️ [CONSULTATION DEBUG] URL search params:",
+      window.location.search
+    );
     return null;
   };
 
@@ -624,8 +786,17 @@ const ConsultationRoom: React.FC = () => {
     const patientId = await findPatientId();
 
     if (!patientId) {
-      console.error("❌ Could not determine patient ID");
-      return null;
+      console.warn(
+        "⚠️ Could not determine patient ID, creating temporary patient"
+      );
+
+      // Create a temporary patient ID based on the room ID and timestamp
+      const tempPatientId = `temp_patient_${roomId}_${Date.now()}`;
+      console.log(
+        "🔍 [CONSULTATION DEBUG] Created temporary patient ID:",
+        tempPatientId
+      );
+      return tempPatientId;
     }
 
     console.log("🔍 [CONSULTATION DEBUG] Found patient ID:", patientId);
@@ -719,19 +890,20 @@ const ConsultationRoom: React.FC = () => {
       console.log("✅ Medical record updated successfully");
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 3000);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("❌ Error saving medical record:", error);
       console.error("❌ Error details:", {
-        code: error.code,
-        message: error.message,
+        code: (error as any)?.code,
+        message: (error as any)?.message,
         patientId,
         professionalId: currentUser.id,
       });
 
       // Check if it's just a patient update error but medical record was created
+      const errorMessage = (error as any)?.message;
       if (
-        error.message &&
-        error.message.includes("patient reference update failed")
+        errorMessage &&
+        errorMessage.includes("patient reference update failed")
       ) {
         console.log(
           "✅ Medical record created successfully despite patient update error"
@@ -745,7 +917,7 @@ const ConsultationRoom: React.FC = () => {
         );
         setSaveError(
           `Erreur lors de l'enregistrement: ${
-            error.message || "Erreur inconnue"
+            errorMessage || "Erreur inconnue"
           }`
         );
       }
@@ -1104,7 +1276,7 @@ const ConsultationRoom: React.FC = () => {
                 {!jitsiLoaded ? (
                   <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-t-2xl overflow-hidden aspect-video w-full flex items-center justify-center">
                     <div className="text-center text-white">
-                      <LoadingSpinner size="lg" color="white" />
+                      <LoadingSpinner size="lg" />
                       <p className="mt-4 text-lg font-medium">
                         Chargement de la vidéoconférence...
                       </p>
@@ -1141,7 +1313,7 @@ const ConsultationRoom: React.FC = () => {
               {/* Controls */}
               <div className="p-6 bg-gray-50 border-t border-gray-200">
                 <div className="flex flex-col sm:flex-row justify-center space-y-3 sm:space-y-0 sm:space-x-4">
-                  {false && currentUser?.type === "professional" && (
+                  {currentUser?.type === "professional" && (
                     <button
                       onClick={() =>
                         setShowMedicalRecordPanel(!showMedicalRecordPanel)
@@ -1332,8 +1504,10 @@ const ConsultationRoom: React.FC = () => {
                           !medicalRecordData.treatment ||
                           (!isPrescriptionSigned &&
                             professionalProfile?.useElectronicSignature &&
-                            (professionalProfile?.signatureUrl ||
-                              professionalProfile?.stampUrl))
+                            !!(
+                              professionalProfile?.signatureUrl ||
+                              professionalProfile?.stampUrl
+                            ))
                         }
                         className={`px-4 py-2 rounded-lg transition-colors flex items-center text-sm font-medium ${
                           !medicalRecordData.treatment ||

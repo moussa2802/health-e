@@ -57,16 +57,6 @@ export const formatDateTime = (
       return `${dateString} à ${timeString}`;
     }
 
-    // Debug du formatage
-    console.log("🔍 [DATE UTILS] Formatting date:", {
-      original: dateString,
-      parsed: date.toISOString(),
-      local: date.toLocaleDateString("fr-FR"),
-      year: date.getFullYear(),
-      month: date.getMonth() + 1,
-      day: date.getDate(),
-    });
-
     const formattedDate = date.toLocaleDateString("fr-FR", {
       day: "numeric",
       month: "long",
@@ -203,8 +193,6 @@ export const formatDateOnly = (dateString: string): string => {
  */
 export const isDatePassed = (dateString: string): boolean => {
   try {
-    console.log("🔍 [DATE UTILS] Checking if date passed:", dateString);
-
     // Si c'est déjà un nom de jour (ex: "Jeudi"), retourner false (pas encore passé)
     if (
       [
@@ -217,7 +205,6 @@ export const isDatePassed = (dateString: string): boolean => {
         "Dimanche",
       ].includes(dateString)
     ) {
-      console.log("🔍 [DATE UTILS] Day name detected, treating as not passed");
       return false;
     }
 
@@ -236,21 +223,8 @@ export const isDatePassed = (dateString: string): boolean => {
 
     const today = new Date();
 
-    // Debug des dates
-    console.log("🔍 [DATE UTILS] Parsed dates:", {
-      original: dateString,
-      parsed: bookingDate.toISOString(),
-      today: today.toISOString(),
-      parsedLocal: bookingDate.toLocaleDateString("fr-FR"),
-      todayLocal: today.toLocaleDateString("fr-FR"),
-      parsedYear: bookingDate.getFullYear(),
-      parsedMonth: bookingDate.getMonth() + 1,
-      parsedDay: bookingDate.getDate(),
-    });
-
     // Vérifier si la date est valide
     if (isNaN(bookingDate.getTime())) {
-      console.warn("⚠️ [DATE UTILS] Invalid date, treating as not passed");
       return false;
     }
 
@@ -263,19 +237,9 @@ export const isDatePassed = (dateString: string): boolean => {
         bookingDate.getMonth() === today.getMonth() &&
         bookingDate.getDate() < today.getDate());
 
-    console.log("🔍 [DATE UTILS] Date comparison result:", {
-      bookingYear: bookingDate.getFullYear(),
-      bookingMonth: bookingDate.getMonth() + 1,
-      bookingDay: bookingDate.getDate(),
-      todayYear: today.getFullYear(),
-      todayMonth: today.getMonth() + 1,
-      todayDay: today.getDate(),
-      isPassed,
-    });
-
     return isPassed;
   } catch (error) {
-    console.error("❌ [DATE UTILS] Error in isDatePassed:", error);
+    console.error("❌ Error in isDatePassed:", error);
     return false; // En cas d'erreur, traiter comme non passée
   }
 };
