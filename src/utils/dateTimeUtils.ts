@@ -245,6 +245,59 @@ export const isDatePassed = (dateString: string): boolean => {
 };
 
 /**
+ * Vérifie si une date est dans moins de 2 jours (pour désactiver la modification)
+ * @param dateString - La date à vérifier
+ * @returns true si la date est dans moins de 2 jours, false sinon
+ */
+export const isWithinTwoDays = (dateString: string): boolean => {
+  try {
+    // Si c'est déjà un nom de jour (ex: "Jeudi"), retourner false (pas dans les 2 jours)
+    if (
+      [
+        "Lundi",
+        "Mardi",
+        "Mercredi",
+        "Jeudi",
+        "Vendredi",
+        "Samedi",
+        "Dimanche",
+      ].includes(dateString)
+    ) {
+      return false;
+    }
+
+    // Créer la date en spécifiant explicitement le fuseau horaire local
+    let bookingDate: Date;
+
+    if (dateString.includes("-")) {
+      // Format YYYY-MM-DD : créer la date en heure locale
+      const [year, month, day] = dateString.split("-").map(Number);
+      // Créer la date à midi dans le fuseau local pour éviter les problèmes de minuit
+      bookingDate = new Date(year, month - 1, day, 12, 0, 0);
+    } else {
+      // Autre format : utiliser le parser standard
+      bookingDate = new Date(dateString);
+    }
+
+    const today = new Date();
+    const twoDaysFromNow = new Date(today);
+    twoDaysFromNow.setDate(today.getDate() + 2);
+
+    // Vérifier si la date est valide
+    if (isNaN(bookingDate.getTime())) {
+      return false;
+    }
+
+    // Vérifier si la date de consultation est dans moins de 2 jours
+    // Si la consultation est dans moins de 2 jours, on ne peut plus modifier
+    return bookingDate <= twoDaysFromNow && bookingDate >= today;
+  } catch (error) {
+    console.error("❌ Error in isWithinTwoDays:", error);
+    return false;
+  }
+};
+
+/**
  * Formate une heure seule (sans date)
  * @param timeString - L'heure (format: "13:00")
  * @returns Format: "13:00"

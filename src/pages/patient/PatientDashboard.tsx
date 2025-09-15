@@ -30,6 +30,7 @@ import {
   formatDateTime,
   formatDateTimeWithTimezone,
   isDatePassed,
+  isWithinTwoDays,
   getTimeWarning,
 } from "../../utils/dateTimeUtils";
 import MessagingCenter from "../../components/messaging/MessagingCenter";
@@ -1091,46 +1092,6 @@ const PatientDashboard: React.FC = () => {
     }
   };
 
-  // Fonction pour vérifier si une date est dans les 2 prochains jours
-  const isWithinTwoDays = (dateString: string) => {
-    try {
-      if (
-        [
-          "Lundi",
-          "Mardi",
-          "Mercredi",
-          "Jeudi",
-          "Vendredi",
-          "Samedi",
-          "Dimanche",
-        ].includes(dateString)
-      ) {
-        return false; // Les noms de jours ne sont pas dans les 2 jours
-      }
-
-      let bookingDate: Date;
-      if (dateString.includes("-")) {
-        const [year, month, day] = dateString.split("-").map(Number);
-        bookingDate = new Date(year, month - 1, day, 12, 0, 0);
-      } else {
-        bookingDate = new Date(dateString);
-      }
-
-      if (isNaN(bookingDate.getTime())) {
-        return false;
-      }
-
-      const today = new Date();
-      const twoDaysFromNow = new Date(today);
-      twoDaysFromNow.setDate(today.getDate() + 2);
-
-      // Vérifier si la date est dans les 2 prochains jours
-      return bookingDate <= twoDaysFromNow && bookingDate >= today;
-    } catch (error) {
-      console.error("❌ Error in isWithinTwoDays:", error);
-      return false;
-    }
-  };
 
   // Fonction pour comparer les dates en tenant compte seulement du jour (pas de l'heure)
   const isDatePassed = (dateString: string) => {
