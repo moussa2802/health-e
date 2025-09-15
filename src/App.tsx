@@ -130,6 +130,10 @@ const AppChrome: React.FC = () => {
               path="/professional/forgot-password"
               element={<ForgotPasswordProfessional />}
             />
+            <Route
+              path="/admin"
+              element={<Navigate to="/admin/login" replace />}
+            />
             <Route path="/admin/login" element={<AdminLogin />} />
             <Route path="/login" element={<Navigate to="/" />} />
             <Route path="/faq" element={<FAQ />} />
@@ -522,14 +526,15 @@ function App() {
 
       // Vite/webpack: quand un nouvel artefact est déployé, l'ancien onglet
       // n'arrive plus à charger les chunks -> on recharge proprement.
-      if (
-        /ChunkLoadError|Loading chunk \d+ failed|CSS_CHUNK_LOAD_FAILED/i.test(
-          msg
-        )
-      ) {
-        console.warn("🆕 Nouveau build détecté. Recharge de la page…");
-        window.location.reload();
-      }
+      // TEMPORAIREMENT COMMENTÉ POUR ÉVITER LES BOUCLES DE RELOAD
+      // if (
+      //   /ChunkLoadError|Loading chunk \d+ failed|CSS_CHUNK_LOAD_FAILED/i.test(
+      //     msg
+      //   )
+      // ) {
+      //   console.warn("🆕 Nouveau build détecté. Recharge de la page…");
+      //   window.location.reload();
+      // }
     };
 
     window.addEventListener("error", handler);

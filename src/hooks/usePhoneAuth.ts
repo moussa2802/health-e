@@ -1,6 +1,8 @@
 import { useState, useRef, useEffect } from "react";
 import { FirebaseError } from "firebase/app";
 import {
+  getAuth,
+  signInAnonymously,
   RecaptchaVerifier,
   signInWithPhoneNumber,
   ConfirmationResult,
@@ -27,6 +29,14 @@ export const usePhoneAuth = () => {
   const cooldownTimerRef = useRef<NodeJS.Timeout | null>(null);
   const containerIdRef = useRef<string>("recaptcha-container");
   const isInitializingRef = useRef<boolean>(false);
+
+  // Helper pour s'authentifier anonymement avant de lire Firestore
+  async function ensureAuthedForLookup() {
+    const auth = getAuth();
+    if (!auth.currentUser) {
+      await signInAnonymously(auth);
+    }
+  }
 
   // Initialize reCAPTCHA once when component mounts
   useEffect(() => {
@@ -178,6 +188,9 @@ export const usePhoneAuth = () => {
         phoneNumber
       );
 
+      // S'authentifier anonymement avant de lire Firestore
+      await ensureAuthedForLookup();
+
       // Ensure Firestore is ready
       await ensureFirestoreReady();
       const db = getFirestoreInstance();
@@ -188,10 +201,11 @@ export const usePhoneAuth = () => {
         return false; // En cas d'erreur, on continue quand même
       }
 
-      // Vérifier dans la collection users
+      // Vérifier dans la collection users (patients uniquement)
       const usersQuery = query(
         collection(db, "users"),
         where("phoneNumber", "==", phoneNumber),
+        where("type", "==", "patient"),
         limit(1)
       );
 
@@ -410,6 +424,10 @@ export const usePhoneAuth = () => {
               errorMessage =
                 "Erreur de connexion. Vérifiez votre connexion internet.";
               break;
+            case "auth/invalid-app-credential":
+              errorMessage =
+                "Configuration Firebase manquante. L'authentification par téléphone n'est pas configurée. Veuillez contacter l'administrateur.";
+              break;
             default:
               // Gestion spécifique des timeouts
               if (err.message.includes("Timeout")) {
@@ -581,5 +599,6 @@ export const usePhoneAuth = () => {
     cooldownTime,
     isInCooldown,
     resetRecaptcha,
+    isPhoneNumberAlreadyRegistered, // <-- expose this
   };
 };

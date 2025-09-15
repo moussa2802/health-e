@@ -251,48 +251,54 @@ export const isDatePassed = (dateString: string): boolean => {
  */
 export const isWithinTwoDays = (dateString: string): boolean => {
   try {
-    // Si c'est déjà un nom de jour (ex: "Jeudi"), retourner false (pas dans les 2 jours)
-    if (
-      [
-        "Lundi",
-        "Mardi",
-        "Mercredi",
-        "Jeudi",
-        "Vendredi",
-        "Samedi",
-        "Dimanche",
-      ].includes(dateString)
-    ) {
-      return false;
-    }
+    const dayNames = [
+      "Lundi",
+      "Mardi",
+      "Mercredi",
+      "Jeudi",
+      "Vendredi",
+      "Samedi",
+      "Dimanche",
+    ];
+    if (!dateString || dayNames.includes(dateString)) return false;
 
-    // Créer la date en spécifiant explicitement le fuseau horaire local
-    let bookingDate: Date;
-
+    // Normalise la date du RDV à 12:00 locale (évite les bascules à minuit)
+    let booking: Date;
     if (dateString.includes("-")) {
-      // Format YYYY-MM-DD : créer la date en heure locale
-      const [year, month, day] = dateString.split("-").map(Number);
-      // Créer la date à midi dans le fuseau local pour éviter les problèmes de minuit
-      bookingDate = new Date(year, month - 1, day, 12, 0, 0);
+      const [y, m, d] = dateString.split("-").map(Number);
+      booking = new Date(y, (m ?? 1) - 1, d ?? 1, 12, 0, 0, 0);
     } else {
-      // Autre format : utiliser le parser standard
-      bookingDate = new Date(dateString);
+      const tmp = new Date(dateString);
+      if (isNaN(tmp.getTime())) return false;
+      booking = new Date(
+        tmp.getFullYear(),
+        tmp.getMonth(),
+        tmp.getDate(),
+        12,
+        0,
+        0,
+        0
+      );
     }
 
-    const today = new Date();
-    const twoDaysFromNow = new Date(today);
-    twoDaysFromNow.setDate(today.getDate() + 2);
+    // Normalise "aujourd'hui" à 12:00 locale aussi
+    const now = new Date();
+    const todayNoon = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      now.getDate(),
+      12,
+      0,
+      0,
+      0
+    );
 
-    // Vérifier si la date est valide
-    if (isNaN(bookingDate.getTime())) {
-      return false;
-    }
-
-    // Vérifier si la date de consultation est dans moins de 2 jours
-    // Si la consultation est dans moins de 2 jours, on ne peut plus modifier
-    return bookingDate <= twoDaysFromNow && bookingDate >= today;
-  } catch (error) {
-    console.error("❌ Error in isWithinTwoDays:", error);
+    const diffDays = Math.floor(
+      (booking.getTime() - todayNoon.getTime()) / (1000 * 60 * 60 * 24)
+    );
+    // Bloqué pour J (0), J+1 (1), J+2 (2)
+    return diffDays >= 0 && diffDays <= 2;
+  } catch {
     return false;
   }
 };

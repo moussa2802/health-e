@@ -26,17 +26,13 @@ export const TIME_OFFSETS = {
  * Détecte le fuseau horaire de l'utilisateur
  * @returns Le fuseau horaire détecté ou null si non détectable
  */
-export const detectUserTimezone = (): string | null => {
+export function detectUserTimezone(): string | null {
   try {
-    return Intl.DateTimeFormat().resolvedOptions().timeZone;
-  } catch (error) {
-    console.warn(
-      "⚠️ [TIMEZONE] Impossible de détecter le fuseau horaire:",
-      error
-    );
+    return Intl.DateTimeFormat().resolvedOptions().timeZone || null;
+  } catch {
     return null;
   }
-};
+}
 
 /**
  * Vérifie si l'utilisateur est au Canada
@@ -59,52 +55,37 @@ export const isSenegaleseTimezone = (timezone: string): boolean => {
 /**
  * Convertit une heure du fuseau sénégalais vers le fuseau local du patient
  * @param senegalTime Heure sénégalaise (format: "19:00")
- * @param toTimezone Fuseau horaire de destination (ex: "America/Toronto")
+ * @param targetTz Fuseau horaire de destination (ex: "America/Toronto")
  * @returns Heure convertie au format local (format: "15:00")
  */
-export const convertFromSenegalTime = (
+export function convertFromSenegalTime(
   senegalTime: string,
-  toTimezone: string
-): string => {
-  try {
-    if (!senegalTime || !toTimezone) {
-      console.warn("⚠️ [TIMEZONE] Paramètres manquants:", {
-        senegalTime,
-        toTimezone,
-      });
-      return senegalTime;
-    }
+  targetTz: string
+): string {
+  const [H, M] = senegalTime.split(":").map(Number);
+  if (isNaN(H) || isNaN(M)) return senegalTime;
 
-    // Si c'est déjà le fuseau sénégalais, pas de conversion
-    if (isSenegaleseTimezone(toTimezone)) {
-      return senegalTime;
-    }
+  // Dakar = UTC+0 : on crée un instant UTC à HH:MM du jour courant
+  const now = new Date();
+  const dakarUTC = new Date(
+    Date.UTC(
+      now.getUTCFullYear(),
+      now.getUTCMonth(),
+      now.getUTCDate(),
+      H,
+      M,
+      0,
+      0
+    )
+  );
 
-    // Créer une date avec l'heure sénégalaise
-    const [hours, minutes] = senegalTime.split(":").map(Number);
-    const today = new Date();
-    const senegalDate = new Date(
-      today.getFullYear(),
-      today.getMonth(),
-      today.getDay(),
-      hours,
-      minutes
-    );
-
-    // Convertir vers le fuseau local
-    const localTime = senegalDate.toLocaleTimeString("fr-FR", {
-      timeZone: toTimezone,
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: false,
-    });
-
-    return localTime;
-  } catch (error) {
-    console.error("❌ [TIMEZONE] Erreur de conversion inverse:", error);
-    return senegalTime;
-  }
-};
+  return new Intl.DateTimeFormat("fr-FR", {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+    timeZone: targetTz,
+  }).format(dakarUTC);
+}
 
 /**
  * Convertit une heure du fuseau local vers le fuseau sénégalais

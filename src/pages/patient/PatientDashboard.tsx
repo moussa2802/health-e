@@ -17,7 +17,6 @@ import {
   Activity,
   Stethoscope,
   Play,
-  XCircle,
   Eye,
   Plus,
   Download,
@@ -25,20 +24,16 @@ import {
 } from "lucide-react";
 import { useAuth } from "../../contexts/AuthContext";
 import { useBookings } from "../../hooks/useBookings";
-import { cancelBooking } from "../../services/bookingService";
 import {
-  formatDateTime,
   formatDateTimeWithTimezone,
   isDatePassed,
   isWithinTwoDays,
-  getTimeWarning,
 } from "../../utils/dateTimeUtils";
 import MessagingCenter from "../../components/messaging/MessagingCenter";
 import {
   getFirestore,
   collection,
   query,
-  where,
   orderBy,
   limit,
   onSnapshot,
@@ -95,9 +90,6 @@ const PatientDashboard: React.FC = () => {
   const { bookings, loading } = useBookings(currentUser?.id || "", "patient");
   const [activeTab, setActiveTab] = useState<"upcoming" | "past">("upcoming");
   const [showMessaging, setShowMessaging] = useState(true);
-  const [showCancelModal, setShowCancelModal] = useState(false);
-  const [bookingToCancel, setBookingToCancel] = useState<any | null>(null);
-  const [isCancelling, setIsCancelling] = useState(false);
   const [medicalRecords, setMedicalRecords] = useState<MedicalRecord[]>([]);
   const [loadingRecords, setLoadingRecords] = useState(false);
   const [recordError, setRecordError] = useState<string | null>(null);
@@ -927,22 +919,6 @@ const PatientDashboard: React.FC = () => {
     }
   };
 
-  const handleCancelBooking = async () => {
-    if (!bookingToCancel) return;
-
-    setIsCancelling(true);
-    try {
-      await cancelBooking(bookingToCancel.id);
-      setShowCancelModal(false);
-      setBookingToCancel(null);
-    } catch (error) {
-      console.error("Error cancelling booking:", error);
-      alert("Erreur lors de l'annulation de la réservation");
-    } finally {
-      setIsCancelling(false);
-    }
-  };
-
   const getConsultationIcon = (type: string) => {
     switch (type) {
       case "video":
@@ -1089,61 +1065,6 @@ const PatientDashboard: React.FC = () => {
     } catch (error) {
       console.error("❌ Error in isConsultationDay:", error);
       return false;
-    }
-  };
-
-
-  // Fonction pour comparer les dates en tenant compte seulement du jour (pas de l'heure)
-  const isDatePassed = (dateString: string) => {
-    try {
-      // Si c'est un nom de jour (ex: "Jeudi"), retourner false (pas encore passé)
-      if (
-        [
-          "Lundi",
-          "Mardi",
-          "Mercredi",
-          "Jeudi",
-          "Vendredi",
-          "Samedi",
-          "Dimanche",
-        ].includes(dateString)
-      ) {
-        return false;
-      }
-
-      // Créer la date en spécifiant explicitement le fuseau horaire local
-      let bookingDate: Date;
-
-      if (dateString.includes("-")) {
-        // Format YYYY-MM-DD : créer la date en heure locale
-        const [year, month, day] = dateString.split("-").map(Number);
-        // Créer la date à midi dans le fuseau local pour éviter les problèmes de minuit
-        bookingDate = new Date(year, month - 1, day, 12, 0, 0);
-      } else {
-        // Autre format : utiliser le parser standard
-        bookingDate = new Date(dateString);
-      }
-
-      const today = new Date();
-
-      // Vérifier si la date est valide
-      if (isNaN(bookingDate.getTime())) {
-        return false;
-      }
-
-      // Comparer directement les composants de date (année, mois, jour)
-      const isPassed =
-        bookingDate.getFullYear() < today.getFullYear() ||
-        (bookingDate.getFullYear() === today.getFullYear() &&
-          bookingDate.getMonth() < today.getMonth()) ||
-        (bookingDate.getFullYear() === today.getFullYear() &&
-          bookingDate.getMonth() === today.getMonth() &&
-          bookingDate.getDate() < today.getDate());
-
-      return isPassed;
-    } catch (error) {
-      console.error("❌ Error in isDatePassed:", error);
-      return false; // En cas d'erreur, traiter comme non passée
     }
   };
 
@@ -1407,41 +1328,33 @@ const PatientDashboard: React.FC = () => {
                         booking.status === "confirmed") ? (
                         <div className="flex justify-between items-center">
                           <div className="flex items-center space-x-4">
-                            <button
-                              onClick={() => {
-                                setBookingToCancel(booking);
-                                setShowCancelModal(true);
-                              }}
-                              className="flex items-center text-red-500 text-sm font-medium hover:text-red-600 transition-colors"
-                            >
-                              <XCircle className="h-4 w-4 mr-1" />
-                              Annuler
-                            </button>
                             {/* Bouton Modifier - seulement pour les rendez-vous confirmés et pas dans les 2 jours */}
-                            {(booking.status === "confirmé" ||
-                              booking.status === "confirmed") && (
-                              <div className="flex flex-col">
-                                {isWithinTwoDays(booking.date) ? (
-                                  <div className="flex items-center text-gray-400 text-sm font-medium cursor-not-allowed">
-                                    <Edit className="h-4 w-4 mr-1" />
-                                    Modifier
-                                  </div>
-                                ) : (
-                                  <Link
-                                    to={`/book/${booking.professionalId}?modify=${booking.id}`}
-                                    className="flex items-center text-blue-500 text-sm font-medium hover:text-blue-600 transition-colors"
-                                  >
-                                    <Edit className="h-4 w-4 mr-1" />
-                                    Modifier
-                                  </Link>
-                                )}
-                                {isWithinTwoDays(booking.date) && (
-                                  <span className="text-xs text-gray-500 mt-1">
-                                    Modifications fermées 2 jours avant
-                                  </span>
-                                )}
-                              </div>
-                            )}
+                            {(() => {
+                              const canModify =
+                                (booking.status === "confirmé" ||
+                                  booking.status === "confirmed") &&
+                                !isWithinTwoDays(booking.date) &&
+                                !isDatePassed(booking.date);
+
+                              return canModify ? (
+                                <Link
+                                  to={`/book/${booking.professionalId}?modify=${booking.id}`}
+                                  className="flex items-center text-blue-500 text-sm font-medium hover:text-blue-600 transition-colors"
+                                >
+                                  <Edit className="h-4 w-4 mr-1" />
+                                  Modifier
+                                </Link>
+                              ) : (
+                                <span
+                                  className="flex items-center text-gray-400 text-sm font-medium cursor-not-allowed"
+                                  aria-disabled="true"
+                                  title="La modification n'est plus possible à moins de 2 jours"
+                                >
+                                  <Edit className="h-4 w-4 mr-1" />
+                                  Modifier
+                                </span>
+                              );
+                            })()}
                           </div>
                           {isConsultationDay(booking.date) ? (
                             <Link
@@ -1728,40 +1641,6 @@ const PatientDashboard: React.FC = () => {
           </div>
         </div>
       </div>
-
-      {/* Cancel Booking Modal */}
-      {showCancelModal && bookingToCancel && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
-            <h3 className="text-xl font-semibold mb-4">
-              Annuler le rendez-vous
-            </h3>
-            <p className="text-gray-600 mb-6">
-              Êtes-vous sûr de vouloir annuler votre rendez-vous avec{" "}
-              {bookingToCancel.professionalName} le {bookingToCancel.date} à{" "}
-              {bookingToCancel.startTime} ?
-            </p>
-            <div className="flex justify-end space-x-4">
-              <button
-                onClick={() => {
-                  setShowCancelModal(false);
-                  setBookingToCancel(null);
-                }}
-                className="px-4 py-2 text-gray-600 hover:text-gray-800"
-              >
-                Non, garder
-              </button>
-              <button
-                onClick={handleCancelBooking}
-                disabled={isCancelling}
-                className="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {isCancelling ? "Annulation..." : "Oui, annuler"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Medical Record Modal */}
       {showMedicalRecordModal && (

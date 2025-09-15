@@ -65,9 +65,11 @@ interface AuthContextType {
   resetPassword: (email: string) => Promise<void>;
   refreshUser: () => Promise<void>;
   createUserWithPhone: (
-    phone: string,
-    userType: "patient" | "professional"
+    name: string,
+    phoneNumber: string,
+    additionalData?: any
   ) => Promise<void>;
+  loginWithPhone: (userId: string, phoneNumber: string) => Promise<void>;
   verifyPhoneCode: (verificationId: string, code: string) => Promise<void>;
 }
 
@@ -913,7 +915,8 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   // Create user with phone number
   const createUserWithPhone = async (
     name: string,
-    phoneNumber: string
+    phoneNumber: string,
+    additionalData?: any
   ): Promise<void> => {
     try {
       // Prevent multiple simultaneous registrations
@@ -967,11 +970,18 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
           isActive: true,
           createdAt: serverTimestamp(),
           updatedAt: serverTimestamp(),
+          ...additionalData, // Include additional data like gender
         });
       });
 
       // Create patient profile
-      await createDefaultPatientProfile(userId, name, "", phoneNumber);
+      await createDefaultPatientProfile(
+        userId,
+        name,
+        "",
+        phoneNumber,
+        additionalData
+      );
     } catch (error) {
       throw error;
     } finally {
@@ -1084,6 +1094,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         logout,
         refreshUser,
         createUserWithPhone,
+        loginWithPhone,
         verifyPhoneCode: () => {
           // This function is not implemented in the original file,
           // but it's part of the AuthContextType.
