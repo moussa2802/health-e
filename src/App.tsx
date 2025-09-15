@@ -4,6 +4,7 @@ import {
   Routes,
   Route,
   Navigate,
+  useLocation,
 } from "react-router-dom";
 import { LanguageProvider } from "./contexts/LanguageContext";
 import { AuthProvider } from "./contexts/AuthContext";
@@ -102,6 +103,272 @@ const PageLoader = () => (
   </div>
 );
 
+// Wrapper component that decides whether to show header/footer based on route
+const AppChrome: React.FC = () => {
+  const { pathname } = useLocation();
+  const isAdminRoute = pathname.startsWith("/admin");
+
+  return (
+    <>
+      {!isAdminRoute && <OptimizedHeader />}
+      <main className="flex-1">
+        <Suspense fallback={<PageLoader />}>
+          <Routes>
+            <Route path="/" element={<HomePage />} />
+
+            <Route path="/patient" element={<PatientAccess />} />
+            <Route path="/patient/access" element={<PatientAccess />} />
+            <Route
+              path="/patient/forgot-password"
+              element={<ForgotPassword />}
+            />
+            <Route
+              path="/professional/access"
+              element={<ProfessionalAccess />}
+            />
+            <Route
+              path="/professional/forgot-password"
+              element={<ForgotPasswordProfessional />}
+            />
+            <Route path="/admin/login" element={<AdminLogin />} />
+            <Route path="/login" element={<Navigate to="/" />} />
+            <Route path="/faq" element={<FAQ />} />
+            <Route path="/contact" element={<Contact />} />
+            <Route path="/confidentialite" element={<Privacy />} />
+            <Route path="/conditions" element={<Terms />} />
+            <Route path="/cgu" element={<Terms />} />
+            <Route path="/ethique" element={<Ethics />} />
+            <Route path="/verify-email" element={<VerifyEmail />} />
+
+            {/* Patient Routes */}
+            <Route
+              path="/professionals/:specialty"
+              element={<ProfessionalsList />}
+            />
+
+            {/* Legacy redirects for old specialty URLs */}
+            <Route
+              path="/professionals/psychologie"
+              element={
+                <Navigate to="/professionals/psychologue-clinicien" replace />
+              }
+            />
+            <Route
+              path="/professionals/psychiatrie"
+              element={<Navigate to="/professionals/psychiatre" replace />}
+            />
+            <Route
+              path="/professionals/psychologue"
+              element={
+                <Navigate to="/professionals/psychologue-clinicien" replace />
+              }
+            />
+            <Route
+              path="/professionals/sexologue"
+              element={
+                <Navigate to="/professionals/sexologue-clinicien" replace />
+              }
+            />
+            <Route
+              path="/professionals/gynecologie"
+              element={<Navigate to="/professionals/gynecologue" replace />}
+            />
+            <Route
+              path="/professionals/urologie"
+              element={<Navigate to="/professionals/urologue" replace />}
+            />
+            <Route path="/professional/:id" element={<ProfessionalProfile />} />
+            <Route path="/book/:professionalId" element={<BookAppointment />} />
+            <Route
+              path="/appointment-success/:bookingId"
+              element={<AppointmentSuccess />}
+            />
+            <Route
+              path="/patient/dashboard"
+              element={
+                <ProtectedRoute userType="patient">
+                  <PatientDashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/patient/profile"
+              element={
+                <ProtectedRoute userType="patient">
+                  <PatientProfile />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/patient/messages"
+              element={
+                <ProtectedRoute userType="patient">
+                  <PatientMessages />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* Professional Routes */}
+            <Route
+              path="/professional/dashboard"
+              element={
+                <ProtectedRoute userType="professional">
+                  <ProfessionalDashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/professional/settings"
+              element={
+                <ProtectedRoute userType="professional">
+                  <ProfessionalSettings />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/professional/availability"
+              element={
+                <ProtectedRoute userType="professional">
+                  <AvailabilityManagement />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/professional/patients"
+              element={
+                <ProtectedRoute userType="professional">
+                  <PatientsList />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/professional/messages"
+              element={
+                <ProtectedRoute userType="professional">
+                  <ProfessionalMessages />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/professional/financial-details"
+              element={
+                <ProtectedRoute userType="professional">
+                  <FinancialDetails />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* Admin Routes */}
+            <Route
+              path="/admin/dashboard"
+              element={
+                <ProtectedRoute userType="admin">
+                  <AdminDashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/users"
+              element={
+                <ProtectedRoute userType="admin">
+                  <AdminUsers />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/professionals"
+              element={
+                <ProtectedRoute userType="admin">
+                  <AdminProfessionals />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/patients"
+              element={
+                <ProtectedRoute userType="admin">
+                  <AdminPatients />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/appointments"
+              element={
+                <ProtectedRoute userType="admin">
+                  <AdminAppointments />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/statistics"
+              element={
+                <ProtectedRoute userType="admin">
+                  <AdminStatistics />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/content"
+              element={
+                <ProtectedRoute userType="admin">
+                  <AdminContent />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/messages"
+              element={
+                <ProtectedRoute userType="admin">
+                  <AdminMessages />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/support"
+              element={
+                <ProtectedRoute userType="admin">
+                  <AdminSupport />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/admin/withdrawals"
+              element={
+                <ProtectedRoute userType="admin">
+                  <AdminWithdrawals />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/notifications"
+              element={
+                <ProtectedRoute userType="admin">
+                  <AdminNotifications />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* Consultation Room */}
+            <Route
+              path="/consultation/:id"
+              element={
+                <ProtectedRoute>
+                  <ConsultationRoom />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* Fallback route - évite les 404 "profonds" */}
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </Suspense>
+      </main>
+      {!isAdminRoute && <Footer />}
+    </>
+  );
+};
+
 function App() {
   // Track if component is mounted
   const isMountedRef = useRef(true);
@@ -115,7 +382,7 @@ function App() {
       // CRITICAL: Reset Firestore connection on app initialization
       try {
         await resetFirestoreConnection();
-      } catch (error) {
+      } catch {
         // Handle initial reset error silently
       }
     };
@@ -153,7 +420,7 @@ function App() {
         // Ensure Firestore is ready when app becomes visible again
         try {
           await ensureFirestoreReady();
-        } catch (error) {
+        } catch {
           // Failed to ensure Firestore ready on visibility change
         }
       }
@@ -177,11 +444,11 @@ function App() {
           // Add a small delay to ensure Firestore is fully initialized
           await new Promise((resolve) => setTimeout(resolve, 100));
           await ensureRequiredCollectionsExist();
-        } catch (collectionsError) {
+        } catch {
           // Failed to ensure required collections exist
           // Don't throw here - the app can still function without this check
         }
-      } catch (error) {
+      } catch {
         // Failed to ensure Firestore ready on app mount
       }
     };
@@ -230,7 +497,7 @@ function App() {
 
           // Ensure Firestore is ready after reset
           await ensureFirestoreReady();
-        } catch (resetError) {
+        } catch {
           // Failed to reset Firestore connection after global error
         }
       }
@@ -245,8 +512,13 @@ function App() {
 
   // Auto-reload si les chunks lazy échouent (nouveau build déployé)
   useEffect(() => {
-    const handler = (e: any) => {
-      const msg = String(e?.message || e?.reason?.message || e?.reason || "");
+    const handler = (e: ErrorEvent | PromiseRejectionEvent) => {
+      const msg = String(
+        (e as ErrorEvent)?.message ||
+          (e as PromiseRejectionEvent)?.reason?.message ||
+          (e as PromiseRejectionEvent)?.reason ||
+          ""
+      );
 
       // Vite/webpack: quand un nouvel artefact est déployé, l'ancien onglet
       // n'arrive plus à charger les chunks -> on recharge proprement.
@@ -277,285 +549,7 @@ function App() {
               <ScrollToTop />
               <div id="recaptcha-container" style={{ display: "none" }} />
               <div className="min-h-screen flex flex-col bg-gray-50">
-                <OptimizedHeader />
-                <main className="flex-1">
-                  <Suspense fallback={<PageLoader />}>
-                    <Routes>
-                      <Route path="/" element={<HomePage />} />
-
-                      <Route path="/patient" element={<PatientAccess />} />
-                      <Route
-                        path="/patient/access"
-                        element={<PatientAccess />}
-                      />
-                      <Route
-                        path="/patient/forgot-password"
-                        element={<ForgotPassword />}
-                      />
-                      <Route
-                        path="/professional/access"
-                        element={<ProfessionalAccess />}
-                      />
-                      <Route
-                        path="/professional/forgot-password"
-                        element={<ForgotPasswordProfessional />}
-                      />
-                      <Route path="/admin/login" element={<AdminLogin />} />
-                      <Route path="/login" element={<Navigate to="/" />} />
-                      <Route path="/faq" element={<FAQ />} />
-                      <Route path="/contact" element={<Contact />} />
-                      <Route path="/confidentialite" element={<Privacy />} />
-                      <Route path="/conditions" element={<Terms />} />
-                      <Route path="/cgu" element={<Terms />} />
-                      <Route path="/ethique" element={<Ethics />} />
-                      <Route path="/verify-email" element={<VerifyEmail />} />
-
-                      {/* Patient Routes */}
-                      <Route
-                        path="/professionals/:specialty"
-                        element={<ProfessionalsList />}
-                      />
-
-                      {/* Legacy redirects for old specialty URLs */}
-                      <Route
-                        path="/professionals/psychologie"
-                        element={
-                          <Navigate
-                            to="/professionals/psychologue-clinicien"
-                            replace
-                          />
-                        }
-                      />
-                      <Route
-                        path="/professionals/psychiatrie"
-                        element={
-                          <Navigate to="/professionals/psychiatre" replace />
-                        }
-                      />
-                      <Route
-                        path="/professionals/psychologue"
-                        element={
-                          <Navigate
-                            to="/professionals/psychologue-clinicien"
-                            replace
-                          />
-                        }
-                      />
-                      <Route
-                        path="/professionals/sexologue"
-                        element={
-                          <Navigate
-                            to="/professionals/sexologue-clinicien"
-                            replace
-                          />
-                        }
-                      />
-                      <Route
-                        path="/professionals/gynecologie"
-                        element={
-                          <Navigate to="/professionals/gynecologue" replace />
-                        }
-                      />
-                      <Route
-                        path="/professionals/urologie"
-                        element={
-                          <Navigate to="/professionals/urologue" replace />
-                        }
-                      />
-                      <Route
-                        path="/professional/:id"
-                        element={<ProfessionalProfile />}
-                      />
-                      <Route
-                        path="/book/:professionalId"
-                        element={<BookAppointment />}
-                      />
-                      <Route
-                        path="/appointment-success/:bookingId"
-                        element={<AppointmentSuccess />}
-                      />
-                      <Route
-                        path="/patient/dashboard"
-                        element={
-                          <ProtectedRoute userType="patient">
-                            <PatientDashboard />
-                          </ProtectedRoute>
-                        }
-                      />
-                      <Route
-                        path="/patient/profile"
-                        element={
-                          <ProtectedRoute userType="patient">
-                            <PatientProfile />
-                          </ProtectedRoute>
-                        }
-                      />
-                      <Route
-                        path="/patient/messages"
-                        element={
-                          <ProtectedRoute userType="patient">
-                            <PatientMessages />
-                          </ProtectedRoute>
-                        }
-                      />
-
-                      {/* Professional Routes */}
-                      <Route
-                        path="/professional/dashboard"
-                        element={
-                          <ProtectedRoute userType="professional">
-                            <ProfessionalDashboard />
-                          </ProtectedRoute>
-                        }
-                      />
-                      <Route
-                        path="/professional/settings"
-                        element={
-                          <ProtectedRoute userType="professional">
-                            <ProfessionalSettings />
-                          </ProtectedRoute>
-                        }
-                      />
-                      <Route
-                        path="/professional/availability"
-                        element={
-                          <ProtectedRoute userType="professional">
-                            <AvailabilityManagement />
-                          </ProtectedRoute>
-                        }
-                      />
-                      <Route
-                        path="/professional/patients"
-                        element={
-                          <ProtectedRoute userType="professional">
-                            <PatientsList />
-                          </ProtectedRoute>
-                        }
-                      />
-                      <Route
-                        path="/professional/messages"
-                        element={
-                          <ProtectedRoute userType="professional">
-                            <ProfessionalMessages />
-                          </ProtectedRoute>
-                        }
-                      />
-                      <Route
-                        path="/professional/financial-details"
-                        element={
-                          <ProtectedRoute userType="professional">
-                            <FinancialDetails />
-                          </ProtectedRoute>
-                        }
-                      />
-
-                      {/* Admin Routes */}
-                      <Route
-                        path="/admin/dashboard"
-                        element={
-                          <ProtectedRoute userType="admin">
-                            <AdminDashboard />
-                          </ProtectedRoute>
-                        }
-                      />
-                      <Route
-                        path="/admin/users"
-                        element={
-                          <ProtectedRoute userType="admin">
-                            <AdminUsers />
-                          </ProtectedRoute>
-                        }
-                      />
-                      <Route
-                        path="/admin/professionals"
-                        element={
-                          <ProtectedRoute userType="admin">
-                            <AdminProfessionals />
-                          </ProtectedRoute>
-                        }
-                      />
-                      <Route
-                        path="/admin/patients"
-                        element={
-                          <ProtectedRoute userType="admin">
-                            <AdminPatients />
-                          </ProtectedRoute>
-                        }
-                      />
-                      <Route
-                        path="/admin/appointments"
-                        element={
-                          <ProtectedRoute userType="admin">
-                            <AdminAppointments />
-                          </ProtectedRoute>
-                        }
-                      />
-                      <Route
-                        path="/admin/statistics"
-                        element={
-                          <ProtectedRoute userType="admin">
-                            <AdminStatistics />
-                          </ProtectedRoute>
-                        }
-                      />
-                      <Route
-                        path="/admin/content"
-                        element={
-                          <ProtectedRoute userType="admin">
-                            <AdminContent />
-                          </ProtectedRoute>
-                        }
-                      />
-                      <Route
-                        path="/admin/messages"
-                        element={
-                          <ProtectedRoute userType="admin">
-                            <AdminMessages />
-                          </ProtectedRoute>
-                        }
-                      />
-                      <Route
-                        path="/admin/support"
-                        element={
-                          <ProtectedRoute userType="admin">
-                            <AdminSupport />
-                          </ProtectedRoute>
-                        }
-                      />
-
-                      <Route
-                        path="/admin/withdrawals"
-                        element={
-                          <ProtectedRoute userType="admin">
-                            <AdminWithdrawals />
-                          </ProtectedRoute>
-                        }
-                      />
-                      <Route
-                        path="/admin/notifications"
-                        element={
-                          <ProtectedRoute userType="admin">
-                            <AdminNotifications />
-                          </ProtectedRoute>
-                        }
-                      />
-
-                      {/* Consultation Room */}
-                      <Route
-                        path="/consultation/:id"
-                        element={
-                          <ProtectedRoute>
-                            <ConsultationRoom />
-                          </ProtectedRoute>
-                        }
-                      />
-
-                      {/* Fallback route - évite les 404 "profonds" */}
-                      <Route path="*" element={<Navigate to="/" replace />} />
-                    </Routes>
-                  </Suspense>
-                </main>
-                <Footer />
+                <AppChrome />
               </div>
             </TermsProvider>
           </LanguageProvider>

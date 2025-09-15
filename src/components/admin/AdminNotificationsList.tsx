@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   CheckCircle,
   Info,
@@ -15,14 +15,22 @@ import { useNavigate } from "react-router-dom";
 import LoadingSpinner from "../ui/LoadingSpinner";
 import {
   getAdminNotifications,
-  markNotificationAsRead,
-  markAllNotificationsAsRead,
+  markAdminNotificationAsRead,
+  markAllAdminNotificationsAsRead,
   deleteAdminNotification,
 } from "../../services/adminNotificationService";
 
 interface AdminNotification {
   id: string;
-  type: "withdrawal" | "user" | "appointment" | "system" | "message";
+  type:
+    | "withdrawal"
+    | "user"
+    | "new_professional_registration"
+    | "appointment"
+    | "system"
+    | "message"
+    | "support"
+    | "support_message";
   title: string;
   message: string;
   status: "unread" | "read";
@@ -37,14 +45,18 @@ const AdminNotificationsList: React.FC = () => {
   const [notifications, setNotifications] = useState<AdminNotification[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<
-    "all" | "unread" | "withdrawal" | "user" | "appointment"
+    | "all"
+    | "unread"
+    | "withdrawal"
+    | "user"
+    | "new_professional_registration"
+    | "appointment"
+    | "support"
+    | "support_message"
+    | "message"
   >("all");
 
-  useEffect(() => {
-    loadNotifications();
-  }, [filter, currentUser]);
-
-  const loadNotifications = async () => {
+  const loadNotifications = useCallback(async () => {
     try {
       setLoading(true);
       console.log("🔍 [ADMIN LIST] Début chargement notifications...");
@@ -58,6 +70,7 @@ const AdminNotificationsList: React.FC = () => {
       }
 
       const realNotifications = await getAdminNotifications(
+        currentUser.id,
         filter === "unread" ? "unread" : undefined,
         filter === "all" || filter === "unread"
           ? undefined
@@ -84,12 +97,16 @@ const AdminNotificationsList: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [filter, currentUser]);
+
+  useEffect(() => {
+    loadNotifications();
+  }, [loadNotifications]);
 
   const handleMarkAsRead = async (notificationId: string) => {
     if (!currentUser?.id) return;
     try {
-      await markNotificationAsRead(notificationId, currentUser.id);
+      await markAdminNotificationAsRead(notificationId, currentUser.id);
       setNotifications((prev) =>
         prev.map((n) =>
           n.id === notificationId ? { ...n, status: "read" as const } : n
@@ -103,7 +120,7 @@ const AdminNotificationsList: React.FC = () => {
   const handleMarkAllAsRead = async () => {
     if (!currentUser?.id) return;
     try {
-      await markAllNotificationsAsRead(currentUser.id);
+      await markAllAdminNotificationsAsRead(currentUser.id);
       setNotifications((prev) =>
         prev.map((n) => ({ ...n, status: "read" as const }))
       );
@@ -136,7 +153,7 @@ const AdminNotificationsList: React.FC = () => {
     switch (type) {
       case "new_professional_registration":
       case "user":
-        return "/admin/professionals"; // ← CORRIGÉ : vers professionnels
+        return "/admin/professionals";
       case "withdrawal_request":
       case "withdrawal":
         return "/admin/withdrawals";
@@ -144,9 +161,10 @@ const AdminNotificationsList: React.FC = () => {
       case "appointment":
         return "/admin/appointments";
       case "support":
+      case "support_message":
         return "/admin/support";
       case "message":
-        return "/admin/messages"; // ← CORRIGÉ : vers messages
+        return "/admin/messages";
       default:
         return "/admin/dashboard";
     }
@@ -157,11 +175,15 @@ const AdminNotificationsList: React.FC = () => {
       case "withdrawal":
         return <DollarSign className="h-5 w-5 text-green-500" />;
       case "user":
+      case "new_professional_registration":
         return <User className="h-5 w-5 text-blue-500" />;
       case "appointment":
         return <Calendar className="h-5 w-5 text-purple-500" />;
       case "message":
         return <MessageSquare className="h-5 w-5 text-orange-500" />;
+      case "support":
+      case "support_message":
+        return <Info className="h-5 w-5 text-red-500" />;
       case "system":
         return <Info className="h-5 w-5 text-gray-500" />;
       default:
@@ -181,7 +203,8 @@ const AdminNotificationsList: React.FC = () => {
       case "appointment":
         return "border-l-4 border-l-purple-500 bg-purple-50";
       case "support":
-        return "border-l-4 border-l-orange-500 bg-orange-50";
+      case "support_message":
+        return "border-l-4 border-l-red-500 bg-red-50";
       case "message":
         return "border-l-4 border-l-indigo-500 bg-indigo-50";
       default:
@@ -194,11 +217,15 @@ const AdminNotificationsList: React.FC = () => {
       case "withdrawal":
         return "Retrait";
       case "user":
+      case "new_professional_registration":
         return "Utilisateur";
       case "appointment":
         return "Consultation";
       case "message":
         return "Message";
+      case "support":
+      case "support_message":
+        return "Support";
       case "system":
         return "Système";
       default:
@@ -277,14 +304,20 @@ const AdminNotificationsList: React.FC = () => {
         </span>
         <select
           value={filter}
-          onChange={(e) => setFilter(e.target.value as any)}
+          onChange={(e) => setFilter(e.target.value as typeof filter)}
           className="px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
         >
           <option value="all">Toutes ({notifications.length})</option>
           <option value="unread">Non lues ({unreadCount})</option>
           <option value="withdrawal">Retraits</option>
           <option value="user">Utilisateurs</option>
+          <option value="new_professional_registration">
+            Nouveaux professionnels
+          </option>
           <option value="appointment">Consultations</option>
+          <option value="support">Support</option>
+          <option value="support_message">Messages support</option>
+          <option value="message">Messages</option>
         </select>
       </div>
 

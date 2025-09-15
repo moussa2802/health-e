@@ -44,7 +44,61 @@ import { formatDateTimeWithTimezone } from "../../utils/dateTimeUtils";
 import EthicsReminder from "../../components/dashboard/EthicsReminder";
 import LoadingSpinner from "../../components/ui/LoadingSpinner";
 import UserSupportTickets from "../../components/support/UserSupportTickets";
-import ProfessionalNotificationCenter from "../../components/professional/ProfessionalNotificationCenter";
+
+// Helpers pour la gestion des dates
+const WEEKDAYS_FR = [
+  "Lundi",
+  "Mardi",
+  "Mercredi",
+  "Jeudi",
+  "Vendredi",
+  "Samedi",
+  "Dimanche",
+];
+
+function parseBookingDate(dateString: string): Date | null {
+  try {
+    // Ex: "Lundi" -> pas une date
+    if (WEEKDAYS_FR.includes(dateString)) return null;
+
+    // Ex: "2025-09-02"
+    if (dateString.includes("-")) {
+      const [y, m, d] = dateString.split("-").map(Number);
+      const dt = new Date(y, (m ?? 1) - 1, d ?? 1, 12, 0, 0); // midi local
+      return isNaN(dt.getTime()) ? null : dt;
+    }
+
+    // Ex: "Tue Sep 02 2025" ou ISO
+    const dt = new Date(dateString);
+    return isNaN(dt.getTime()) ? null : dt;
+  } catch {
+    return null;
+  }
+}
+
+function isSameDay(a: Date, b: Date) {
+  return (
+    a.getFullYear() === b.getFullYear() &&
+    a.getMonth() === b.getMonth() &&
+    a.getDate() === b.getDate()
+  );
+}
+
+// 👉 A utiliser partout
+export function isConsultationDay(dateString: string): boolean {
+  const d = parseBookingDate(dateString);
+  if (!d) return false;
+  return isSameDay(d, new Date());
+}
+
+export function isDatePassed(dateString: string): boolean {
+  const d = parseBookingDate(dateString);
+  if (!d) return false;
+  const today = new Date();
+  const d0 = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  const t0 = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  return d0.getTime() < t0.getTime();
+}
 
 // Welcome banner component with improved design
 const WelcomeBanner: React.FC<{ name: string }> = ({ name }) => {
@@ -266,7 +320,7 @@ const QuickActions: React.FC = () => {
   );
 };
 
-// Today's Agenda
+// Today's Agenda (sans bouton "Rejoindre")
 const TodaysAgenda: React.FC<{
   bookings: Array<{
     id: string;
@@ -276,12 +330,10 @@ const TodaysAgenda: React.FC<{
     startTime: string;
     duration: number;
     status: string;
+    patientId?: string;
   }>;
 }> = ({ bookings }) => {
-  const today = new Date().toDateString();
-  const todaysBookings = bookings.filter(
-    (booking) => new Date(booking.date).toDateString() === today
-  );
+  const todaysBookings = bookings.filter((b) => isConsultationDay(b.date));
 
   const getConsultationTypeIcon = (type: string) => {
     switch (type) {
@@ -355,18 +407,8 @@ const TodaysAgenda: React.FC<{
                   </p>
                 </div>
               </div>
-              {isConsultationDay(booking.date) ? (
-                <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium flex items-center gap-2">
-                  <Play className="h-4 w-4" />
-                  Rejoindre
-                </button>
-              ) : (
-                <div className="px-4 py-2 bg-gray-300 text-gray-500 rounded-lg text-sm font-medium flex items-center gap-2 cursor-not-allowed">
-                  <Play className="h-4 w-4" />
-                  Rejoindre
-                  <span className="text-xs">(Disponible le jour J)</span>
-                </div>
-              )}
+
+              {/* Bouton "Rejoindre" supprimé intentionnellement dans l'Agenda du jour */}
             </div>
           ))}
         </div>
@@ -385,107 +427,12 @@ const ConsultationsSection: React.FC<{
     startTime: string;
     duration: number;
     status: string;
+    patientId?: string;
   }>;
   onCancel?: (bookingId: string) => void;
   onComplete: (bookingId: string, notes?: string) => void;
 }> = ({ bookings, onCancel, onComplete }) => {
   const [activeTab, setActiveTab] = useState<"upcoming" | "past">("upcoming");
-
-  // Fonction pour comparer les dates en tenant compte seulement du jour (pas de l'heure)
-  const isDatePassed = (dateString: string) => {
-    try {
-      // Si c'est déjà un nom de jour (ex: "Jeudi"), retourner false (pas encore passé)
-      if (
-        [
-          "Lundi",
-          "Mardi",
-          "Mercredi",
-          "Jeudi",
-          "Vendredi",
-          "Samedi",
-          "Dimanche",
-        ].includes(dateString)
-      ) {
-        return false;
-      }
-
-      // Créer la date en spécifiant explicitement le fuseau horaire local
-      let bookingDate: Date;
-
-      if (dateString.includes("-")) {
-        // Format YYYY-MM-DD : créer la date en heure locale
-        const [year, month, day] = dateString.split("-").map(Number);
-        // Créer la date à midi dans le fuseau local pour éviter les problèmes de minuit
-        bookingDate = new Date(year, month - 1, day, 12, 0, 0);
-      } else {
-        // Autre format : utiliser le parser standard
-        bookingDate = new Date(dateString);
-      }
-
-      const today = new Date();
-
-      // Vérifier si la date est valide
-      if (isNaN(bookingDate.getTime())) {
-        return false;
-      }
-
-      // Comparer directement les composants de date (année, mois, jour)
-      const isPassed =
-        bookingDate.getFullYear() < today.getFullYear() ||
-        (bookingDate.getFullYear() === today.getFullYear() &&
-          bookingDate.getMonth() < today.getMonth()) ||
-        (bookingDate.getFullYear() === today.getFullYear() &&
-          bookingDate.getMonth() === today.getMonth() &&
-          bookingDate.getDate() < today.getDate());
-
-      return isPassed;
-    } catch {
-      return false; // En cas d'erreur, traiter comme non passée
-    }
-  };
-
-  // Fonction pour vérifier si c'est le jour de la consultation
-  const isConsultationDay = (dateString: string) => {
-    try {
-      if (
-        [
-          "Lundi",
-          "Mardi",
-          "Mercredi",
-          "Jeudi",
-          "Vendredi",
-          "Samedi",
-          "Dimanche",
-        ].includes(dateString)
-      ) {
-        return false; // Les noms de jours ne sont pas des dates précises
-      }
-
-      let bookingDate: Date;
-      if (dateString.includes("-")) {
-        const [year, month, day] = dateString.split("-").map(Number);
-        bookingDate = new Date(year, month - 1, day, 12, 0, 0);
-      } else {
-        bookingDate = new Date(dateString);
-      }
-
-      if (isNaN(bookingDate.getTime())) {
-        return false;
-      }
-
-      const today = new Date();
-
-      // Comparer seulement le jour, mois et année (pas l'heure)
-      return (
-        bookingDate.getDate() === today.getDate() &&
-        bookingDate.getMonth() === today.getMonth() &&
-        bookingDate.getFullYear() === today.getFullYear()
-      );
-    } catch (error) {
-      console.error("❌ Error in isConsultationDay:", error);
-      return false;
-    }
-  };
 
   const upcomingBookings = bookings.filter(
     (booking) =>
@@ -675,19 +622,27 @@ const ConsultationsSection: React.FC<{
                     </button>
                     {isConsultationDay(booking.date) ? (
                       <Link
-                        to={`/consultation/${booking.id}?patientId=${booking.patientId}`}
-                        className="bg-gradient-to-r from-blue-500 to-blue-600 text-white px-6 py-2.5 rounded-xl text-sm font-semibold hover:from-blue-600 hover:to-blue-700 transition-all duration-200 shadow-md hover:shadow-lg flex items-center"
+                        to={`/consultation/${booking.id}${
+                          booking.patientId
+                            ? `?patientId=${booking.patientId}`
+                            : ""
+                        }`}
+                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium flex items-center gap-2"
+                        onClick={() => {
+                          console.log("[AGENDA] Rejoindre", {
+                            bookingId: booking.id,
+                            patientId: booking.patientId,
+                          });
+                        }}
                       >
-                        <Play className="h-4 w-4 mr-2" />
+                        <Play className="h-4 w-4" />
                         Rejoindre
                       </Link>
                     ) : (
-                      <div className="bg-gray-300 text-gray-500 px-6 py-2.5 rounded-xl text-sm font-semibold flex items-center cursor-not-allowed">
-                        <Play className="h-4 w-4 mr-2" />
+                      <div className="px-4 py-2 bg-gray-300 text-gray-500 rounded-lg text-sm font-medium flex items-center gap-2 cursor-not-allowed">
+                        <Play className="h-4 w-4" />
                         Rejoindre
-                        <span className="text-xs ml-2">
-                          (Disponible le jour J)
-                        </span>
+                        <span className="text-xs">(Disponible le jour J)</span>
                       </div>
                     )}
                   </div>

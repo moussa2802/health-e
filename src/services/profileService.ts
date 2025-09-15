@@ -3,6 +3,7 @@ import {
   retryFirestoreOperation,
   ensureFirestoreReady,
 } from "../utils/firebase";
+import { updateParticipantNameInConversations } from "./messageService";
 import {
   doc,
   getDoc,
@@ -31,6 +32,19 @@ import {
   isValidCategory,
   type Category,
 } from "../constants/specialties";
+
+// Types for email preferences
+export interface EmailPreferences {
+  enabled: boolean;
+}
+
+export interface NotificationPreferences {
+  email: EmailPreferences;
+}
+
+export interface ProfessionalSettings {
+  notifications: NotificationPreferences;
+}
 
 // Types for patient profile
 export interface PatientProfile {
@@ -87,6 +101,8 @@ export interface ProfessionalProfile {
   signatureUrl?: string;
   stampUrl?: string;
   useElectronicSignature?: boolean;
+  // Email preferences
+  settings?: ProfessionalSettings;
   createdAt: Timestamp;
   updatedAt: Timestamp;
 }
@@ -549,7 +565,9 @@ export async function createDefaultProfessionalProfile(
   userId: string,
   name: string,
   email: string,
-  type: "mental" | "sexual" = "mental"
+  type: "mental" | "sexual" = "mental",
+  customSpecialty?: string,
+  customCategory?: "mental-health" | "sexual-health"
 ): Promise<ProfessionalProfile> {
   try {
     console.log("🔧 Creating default professional profile for user:", userId);
@@ -601,9 +619,10 @@ export async function createDefaultProfessionalProfile(
     const defaultAvailability: AvailabilitySlot[] = [];
 
     const defaultCategory =
-      type === "mental" ? "mental-health" : "sexual-health";
+      customCategory || (type === "mental" ? "mental-health" : "sexual-health");
     const defaultPrimary =
-      type === "mental" ? "psychologue-clinicien" : "sexologue-clinique";
+      customSpecialty ||
+      (type === "mental" ? "psychologue-clinicien" : "sexologue-clinique");
 
     const professionalData: Omit<ProfessionalProfile, "id"> = {
       userId,
@@ -769,6 +788,19 @@ export async function updatePatientProfile(
         updatedAt: serverTimestamp(),
       });
       console.log("✅ User document name synchronized:", updates.name);
+
+      // ✅ UPDATE CONVERSATIONS: Update participant name in all conversations
+      try {
+        await updateParticipantNameInConversations(
+          patientId,
+          updates.name,
+          "patient"
+        );
+        console.log("✅ Participant name updated in all conversations");
+      } catch (conversationError) {
+        console.warn("⚠️ Failed to update conversations:", conversationError);
+        // Continue anyway, this is not critical
+      }
 
       // ✅ FORCE SYNC: Trigger a custom event to notify the auth context
       if (typeof window !== "undefined") {
@@ -1268,12 +1300,27 @@ export async function getOrCreateProfessionalProfile(
 
     const userData = userSnap.data();
 
-    // Create default profile
+    // Create profile using existing user data instead of defaults
+    const professionalRef = doc(db, "professionals", userId);
+    const professionalSnap = await getDoc(professionalRef);
+
+    if (professionalSnap.exists()) {
+      // Use existing professional data
+      const professionalData = professionalSnap.data();
+      return {
+        id: userId,
+        ...professionalData,
+      } as ProfessionalProfile;
+    }
+
+    // Fallback to default profile only if no professional data exists
     return await createDefaultProfessionalProfile(
       userId,
       userData.name || "Professionnel",
       userData.email || "",
-      userData.serviceType || "mental"
+      userData.serviceType || "mental",
+      userData.primarySpecialty, // Use the specialty from user data
+      userData.category // Use the category from user data
     );
   } catch (error) {
     console.error("❌ Error getting or creating professional profile:", error);
@@ -1456,6 +1503,38 @@ export async function updateProfessionalProfile(
         console.error("❌ Document not found after update");
       }
     });
+
+    // ✅ SYNC: Also update the user document to keep authentication context in sync
+    if (updates.name) {
+      const userRef = doc(db, "users", professionalId);
+      await updateDoc(userRef, {
+        name: updates.name,
+        updatedAt: serverTimestamp(),
+      });
+      console.log("✅ User document name synchronized:", updates.name);
+
+      // ✅ UPDATE CONVERSATIONS: Update participant name in all conversations
+      try {
+        await updateParticipantNameInConversations(
+          professionalId,
+          updates.name,
+          "professional"
+        );
+        console.log("✅ Participant name updated in all conversations");
+      } catch (conversationError) {
+        console.warn("⚠️ Failed to update conversations:", conversationError);
+        // Continue anyway, this is not critical
+      }
+
+      // ✅ FORCE SYNC: Trigger a custom event to notify the auth context
+      if (typeof window !== "undefined") {
+        const syncEvent = new CustomEvent("user-name-updated", {
+          detail: { userId: professionalId, newName: updates.name },
+        });
+        window.dispatchEvent(syncEvent);
+        console.log("✅ Custom event dispatched for immediate sync");
+      }
+    }
 
     console.log("✅ Professional profile updated successfully");
   } catch (error) {
@@ -1664,4 +1743,34 @@ export async function migrateAllProfessionalsAvailability(): Promise<number> {
     console.error("❌ Error during bulk migration:", error);
     throw new Error("Erreur lors de la migration des données de disponibilité");
   }
+}
+
+// Function to update email preferences
+export async function updateProfessionalEmailPreferences(
+  professionalId: string,
+  emailEnabled: boolean
+): Promise<void> {
+  const db = getFirestoreInstance();
+  const professionalRef = doc(db, "professionals", professionalId);
+
+  await updateDoc(professionalRef, {
+    "settings.notifications.email.enabled": emailEnabled,
+    updatedAt: serverTimestamp(),
+  });
+}
+
+// Function to get email preferences (with default true if not set)
+export async function getProfessionalEmailPreferences(
+  professionalId: string
+): Promise<boolean> {
+  const db = getFirestoreInstance();
+  const professionalRef = doc(db, "professionals", professionalId);
+  const professionalSnap = await getDoc(professionalRef);
+
+  if (!professionalSnap.exists()) {
+    return true; // Default to enabled
+  }
+
+  const data = professionalSnap.data();
+  return data?.settings?.notifications?.email?.enabled ?? true;
 }

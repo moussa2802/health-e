@@ -23,10 +23,11 @@ type Notification = {
   message: string;
   read: boolean;
   createdAt: Timestamp;
-  }
+};
 
-
-export async function getAdminNotifications(adminId: string): Promise<Notification[]> {
+export async function getAdminNotifications(
+  adminId: string
+): Promise<Notification[]> {
   console.log("🔍 getAdminNotifications appelée avec adminId:", adminId);
 
   try {
@@ -48,7 +49,7 @@ export async function getAdminNotifications(adminId: string): Promise<Notificati
     const snapshot = await getDocs(q);
 
     const notifications: Notification[] = snapshot.docs.map((doc) => {
-      const data = doc.data() as Omit<Notification, 'id'>;
+      const data = doc.data() as Omit<Notification, "id">;
       return { id: doc.id, ...data };
     });
 
@@ -197,18 +198,30 @@ export async function getAppointments(): Promise<FirebaseAppointment[]> {
       const db = getFirestoreInstance();
       if (!db) throw new Error("Firestore not available");
 
-      const q = query(
-        collection(db, "appointments"),
-        orderBy("createdAt", "desc")
-      );
+      const q = query(collection(db, "bookings"), orderBy("createdAt", "desc"));
       const snapshot = await getDocs(q);
-      return snapshot.docs.map(
-        (doc) =>
-          ({
-            id: doc.id,
-            ...doc.data(),
-          } as FirebaseAppointment)
-      );
+      return snapshot.docs.map((doc) => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          ...data,
+          // Normaliser les statuts pour correspondre à l'interface
+          status:
+            data.status === "confirmé"
+              ? "completed"
+              : data.status === "confirmed"
+              ? "completed"
+              : data.status === "en_attente"
+              ? "upcoming"
+              : data.status === "pending"
+              ? "upcoming"
+              : data.status === "annulé"
+              ? "cancelled"
+              : data.status === "cancelled"
+              ? "cancelled"
+              : data.status,
+        } as FirebaseAppointment;
+      });
     });
   } catch (error) {
     console.error("Error fetching appointments:", error);
@@ -216,26 +229,79 @@ export async function getAppointments(): Promise<FirebaseAppointment[]> {
   }
 }
 
-// Service pour récupérer les revenus
+// Service pour récupérer les revenus (depuis revenue_transactions)
 export async function getRevenues(): Promise<FirebaseRevenue[]> {
   try {
     return await retryFirestoreOperation(async () => {
       const db = getFirestoreInstance();
       if (!db) throw new Error("Firestore not available");
 
-      const q = query(collection(db, "revenues"), orderBy("createdAt", "desc"));
-      const snapshot = await getDocs(q);
-      return snapshot.docs.map(
-        (doc) =>
-          ({
-            id: doc.id,
-            ...doc.data(),
-          } as FirebaseRevenue)
+      // Récupérer toutes les transactions de revenus
+      const q = query(
+        collection(db, "revenue_transactions"),
+        where("type", "==", "consultation"),
+        where("status", "==", "completed"),
+        orderBy("createdAt", "desc")
       );
+      const snapshot = await getDocs(q);
+
+      return snapshot.docs.map((doc) => {
+        const data = doc.data();
+        const amount = data.amount || 0;
+        const platformFee = data.platformFee || 0;
+        const netAmount = data.professionalAmount || 0;
+
+        return {
+          id: doc.id,
+          amount,
+          platformFee,
+          netAmount,
+          professionalId: data.professionalId,
+          patientId: data.patientId,
+          status: "available",
+          createdAt: data.createdAt || new Date(),
+          type: data.consultationType || "mental",
+        } as FirebaseRevenue;
+      });
     });
   } catch (error) {
     console.error("Error fetching revenues:", error);
-    throw new Error("Erreur lors de la récupération des revenus");
+    // Fallback vers les bookings si revenue_transactions n'existe pas encore
+    try {
+      return await retryFirestoreOperation(async () => {
+        const db = getFirestoreInstance();
+        if (!db) throw new Error("Firestore not available");
+
+        const q = query(
+          collection(db, "bookings"),
+          where("status", "in", ["confirmed", "confirmé", "completed"]),
+          orderBy("createdAt", "desc")
+        );
+        const snapshot = await getDocs(q);
+
+        return snapshot.docs.map((doc) => {
+          const data = doc.data();
+          const amount = data.price || 0;
+          const platformFee = Math.round(amount * 0.15); // 15% de commission
+          const netAmount = amount - platformFee;
+
+          return {
+            id: doc.id,
+            amount,
+            platformFee,
+            netAmount,
+            professionalId: data.professionalId,
+            patientId: data.patientId,
+            status: "available",
+            createdAt: data.createdAt || new Date(),
+            type: data.type || "mental",
+          } as FirebaseRevenue;
+        });
+      });
+    } catch (fallbackError) {
+      console.error("Error in fallback revenue calculation:", fallbackError);
+      throw new Error("Erreur lors de la récupération des revenus");
+    }
   }
 }
 
@@ -302,10 +368,10 @@ export async function getStatistics() {
 
     // Répartition par type de service
     const mentalHealthProfessionals = professionals.filter(
-      (p) => p.type === "mental"
+      (p) => p.category === "mental-health"
     ).length;
     const sexualHealthProfessionals = professionals.filter(
-      (p) => p.type === "sexual"
+      (p) => p.category === "sexual-health"
     ).length;
 
     const mentalHealthRevenue = revenues
@@ -313,7 +379,7 @@ export async function getStatistics() {
         const professional = professionals.find(
           (p) => p.id === rev.professionalId
         );
-        return professional?.type === "mental";
+        return professional?.category === "mental-health";
       })
       .reduce((sum, rev) => sum + rev.amount, 0);
 
@@ -322,7 +388,7 @@ export async function getStatistics() {
         const professional = professionals.find(
           (p) => p.id === rev.professionalId
         );
-        return professional?.type === "sexual";
+        return professional?.category === "sexual-health";
       })
       .reduce((sum, rev) => sum + rev.amount, 0);
 
@@ -373,42 +439,98 @@ export async function getRecentTransactions(limitCount: number = 10) {
       const db = getFirestoreInstance();
       if (!db) throw new Error("Firestore not available");
 
-      const q = query(
-        collection(db, "revenues"),
-        orderBy("createdAt", "desc"),
-        limit(limitCount)
-      );
-      const snapshot = await getDocs(q);
-
-      const revenues = snapshot.docs.map(
-        (doc) =>
-          ({
-            id: doc.id,
-            ...doc.data(),
-          } as FirebaseRevenue)
-      );
-
-      // Enrichir avec les informations des professionnels
-      const professionals = await getProfessionals();
-      const users = await getUsers();
-
-      return revenues.map((revenue) => {
-        const professional = professionals.find(
-          (p) => p.id === revenue.professionalId
+      // Essayer d'abord revenue_transactions
+      try {
+        const q = query(
+          collection(db, "revenue_transactions"),
+          where("type", "==", "consultation"),
+          where("status", "==", "completed"),
+          orderBy("createdAt", "desc"),
+          limit(limitCount)
         );
-        const patient = users.find((u) => u.type === "patient"); // Simulation - il faudrait lier via appointmentId
+        const snapshot = await getDocs(q);
 
-        return {
-          id: revenue.id,
-          patient: patient?.name || "Patient inconnu",
-          professional: professional?.name || "Professionnel inconnu",
-          amount: revenue.amount,
-          platformFee: revenue.platformFee,
-          type: professional?.type || "mental",
-          date: revenue.createdAt.toDate().toLocaleDateString("fr-FR"),
-          status: revenue.status,
-        };
-      });
+        return snapshot.docs.map((doc) => {
+          const data = doc.data();
+          // Déterminer le type basé sur consultationType
+          let type = "mental";
+          if (
+            data.consultationType === "sexual" ||
+            data.consultationType === "sexual-health"
+          ) {
+            type = "sexual";
+          } else if (
+            data.consultationType === "mental" ||
+            data.consultationType === "mental-health"
+          ) {
+            type = "mental";
+          }
+
+          return {
+            id: doc.id,
+            patient: data.patientName || "Patient inconnu",
+            professional: data.professionalName || "Professionnel inconnu",
+            amount: data.amount || 0,
+            platformFee: data.platformFee || 0,
+            type: type,
+            date:
+              data.createdAt?.toDate?.()?.toLocaleDateString("fr-FR") ||
+              new Date().toLocaleDateString("fr-FR"),
+            status: data.status || "completed",
+          };
+        });
+      } catch (revenueError) {
+        // Fallback vers les bookings
+        const q = query(
+          collection(db, "bookings"),
+          where("status", "in", ["confirmed", "confirmé", "completed"]),
+          orderBy("createdAt", "desc"),
+          limit(limitCount)
+        );
+        const snapshot = await getDocs(q);
+
+        const bookings = snapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
+
+        // Enrichir avec les informations des professionnels et patients
+        const professionals = await getProfessionals();
+        const users = await getUsers();
+
+        return bookings.map((booking) => {
+          const professional = professionals.find(
+            (p) => p.id === booking.professionalId
+          );
+          const patient = users.find((u) => u.id === booking.patientId);
+
+          const amount = booking.price || 0;
+          const platformFee = Math.round(amount * 0.15); // 15% de commission
+
+          return {
+            id: booking.id,
+            patient:
+              patient?.name ||
+              patient?.firstName + " " + patient?.lastName ||
+              "Patient inconnu",
+            professional:
+              professional?.name ||
+              professional?.firstName + " " + professional?.lastName ||
+              "Professionnel inconnu",
+            amount,
+            platformFee,
+            type:
+              professional?.category === "mental-health" ? "mental" : "sexual",
+            date: booking.createdAt?.toDate?.()
+              ? booking.createdAt.toDate().toLocaleDateString("fr-FR")
+              : new Date().toLocaleDateString("fr-FR"),
+            status:
+              booking.status === "confirmed" || booking.status === "confirmé"
+                ? "completed"
+                : booking.status,
+          };
+        });
+      }
     });
   } catch (error) {
     console.error("Error fetching recent transactions:", error);
@@ -459,6 +581,19 @@ export const updateProfessionalApproval = async (
   if (!db) throw new Error("Firestore not available");
   const docRef = doc(db, "professionals", userId);
   await updateDoc(docRef, { isApproved });
+
+  // Créer une notification pour le professionnel
+  const { createNotification } = await import("./notificationService");
+  await createNotification(
+    userId,
+    "professional_approval",
+    isApproved ? "Compte approuvé" : "Compte rejeté",
+    isApproved
+      ? "Félicitations ! Votre compte professionnel a été approuvé. Vous pouvez maintenant commencer à recevoir des patients."
+      : "Votre compte professionnel a été rejeté. Veuillez contacter le support pour plus d'informations.",
+    userId,
+    "professional_approval"
+  );
 };
 
 export async function createNotification(
@@ -483,4 +618,40 @@ export async function createNotification(
     read: false,
     createdAt: serverTimestamp(),
   });
+}
+
+// Service pour s'abonner aux statistiques en temps réel
+export function subscribeToAdminStatistics(
+  callback: (statistics: any) => void
+): () => void {
+  const db = getFirestoreInstance();
+  if (!db) {
+    return () => {};
+  }
+
+  let isActive = true;
+
+  const fetchStatistics = async () => {
+    if (!isActive) return;
+
+    try {
+      const stats = await getStatistics();
+      if (isActive) {
+        callback(stats);
+      }
+    } catch (error) {
+      console.error("Error fetching statistics in subscription:", error);
+    }
+  };
+
+  // Récupérer les données immédiatement
+  fetchStatistics();
+
+  // Puis toutes les 30 secondes
+  const interval = setInterval(fetchStatistics, 30000);
+
+  return () => {
+    isActive = false;
+    clearInterval(interval);
+  };
 }

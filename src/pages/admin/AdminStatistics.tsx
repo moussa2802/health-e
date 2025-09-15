@@ -1,8 +1,20 @@
-import React, { useState, useEffect } from 'react';
-import { Calendar, Users, Clock, Activity, Download, TrendingUp, TrendingDown } from 'lucide-react';
-import AdminLayout from '../../components/admin/AdminLayout';
-import { getStatistics, getRecentTransactions } from '../../services/firebaseService';
-import LoadingSpinner from '../../components/ui/LoadingSpinner';
+import React, { useState, useEffect } from "react";
+import {
+  Calendar,
+  Users,
+  Clock,
+  Activity,
+  Download,
+  TrendingUp,
+  TrendingDown,
+} from "lucide-react";
+import AdminLayout from "../../components/admin/AdminLayout";
+import {
+  getStatistics,
+  getRecentTransactions,
+  subscribeToAdminStatistics,
+} from "../../services/firebaseService";
+import LoadingSpinner from "../../components/ui/LoadingSpinner";
 
 interface StatisticsFilters {
   dateRange: string;
@@ -39,8 +51,8 @@ interface RealStatistics {
 
 const AdminStatistics: React.FC = () => {
   const [filters, setFilters] = useState<StatisticsFilters>({
-    dateRange: 'month',
-    type: 'all',
+    dateRange: "month",
+    type: "all",
   });
   const [statistics, setStatistics] = useState<RealStatistics | null>(null);
   const [recentTransactions, setRecentTransactions] = useState<any[]>([]);
@@ -53,28 +65,41 @@ const AdminStatistics: React.FC = () => {
       try {
         setLoading(true);
         setError(null);
-        
+
         const [statsData, transactionsData] = await Promise.all([
           getStatistics(),
-          getRecentTransactions(10)
+          getRecentTransactions(10),
         ]);
-        
+
         setStatistics(statsData);
         setRecentTransactions(transactionsData);
       } catch (err) {
-        console.error('Erreur lors du chargement des statistiques:', err);
-        setError(err instanceof Error ? err.message : 'Erreur lors du chargement des données');
+        console.error("Erreur lors du chargement des statistiques:", err);
+        setError(
+          err instanceof Error
+            ? err.message
+            : "Erreur lors du chargement des données"
+        );
       } finally {
         setLoading(false);
       }
     };
 
     loadStatistics();
+
+    // S'abonner aux mises à jour en temps réel
+    const unsubscribe = subscribeToAdminStatistics((stats) => {
+      setStatistics(stats);
+    });
+
+    return () => {
+      unsubscribe();
+    };
   }, []);
 
   const handleExport = () => {
     // Implementation for exporting statistics
-    console.log('Exporting statistics...');
+    console.log("Exporting statistics...");
   };
 
   // Afficher le loader pendant le chargement
@@ -118,7 +143,9 @@ const AdminStatistics: React.FC = () => {
           <div className="flex gap-4">
             <select
               value={filters.dateRange}
-              onChange={(e) => setFilters({ ...filters, dateRange: e.target.value })}
+              onChange={(e) =>
+                setFilters({ ...filters, dateRange: e.target.value })
+              }
               className="border border-gray-300 rounded-md p-2"
             >
               <option value="week">Cette semaine</option>
@@ -140,42 +167,58 @@ const AdminStatistics: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <div className="bg-white rounded-lg shadow p-6">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-700">Utilisateurs</h3>
+              <h3 className="text-lg font-semibold text-gray-700">
+                Utilisateurs
+              </h3>
               <Users className="h-6 w-6 text-blue-500" />
             </div>
             <div className="space-y-2">
               <div className="flex justify-between items-center">
                 <span className="text-gray-600">Total</span>
-                <span className="text-2xl font-bold">{statistics.users.total}</span>
+                <span className="text-2xl font-bold">
+                  {statistics.users.total}
+                </span>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-gray-600">Patients</span>
-                <span className="text-2xl font-bold">{statistics.users.patients}</span>
+                <span className="text-2xl font-bold">
+                  {statistics.users.patients}
+                </span>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-gray-600">Professionnels</span>
-                <span className="text-2xl font-bold">{statistics.users.professionals}</span>
+                <span className="text-2xl font-bold">
+                  {statistics.users.professionals}
+                </span>
               </div>
             </div>
           </div>
 
           <div className="bg-white rounded-lg shadow p-6">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-700">Consultations</h3>
+              <h3 className="text-lg font-semibold text-gray-700">
+                Consultations
+              </h3>
               <Calendar className="h-6 w-6 text-blue-500" />
             </div>
             <div className="space-y-2">
               <div className="flex justify-between items-center">
                 <span className="text-gray-600">Total</span>
-                <span className="text-2xl font-bold">{statistics.appointments.total}</span>
+                <span className="text-2xl font-bold">
+                  {statistics.appointments.total}
+                </span>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-gray-600">Complétées</span>
-                <span className="text-2xl font-bold">{statistics.appointments.completed}</span>
+                <span className="text-2xl font-bold">
+                  {statistics.appointments.completed}
+                </span>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-gray-600">Taux de réussite</span>
-                <span className="text-2xl font-bold">{statistics.appointments.completionRate}%</span>
+                <span className="text-2xl font-bold">
+                  {statistics.appointments.completionRate}%
+                </span>
               </div>
             </div>
           </div>
@@ -188,16 +231,30 @@ const AdminStatistics: React.FC = () => {
             <div className="space-y-2">
               <div className="flex justify-between items-center">
                 <span className="text-gray-600">Total</span>
-                <span className="text-2xl font-bold">{statistics.revenue.total.toLocaleString()} XOF</span>
+                <span className="text-2xl font-bold">
+                  {statistics.revenue.total.toLocaleString()} XOF
+                </span>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-gray-600">Commissions</span>
-                <span className="text-2xl font-bold">{statistics.revenue.platformFees.toLocaleString()} XOF</span>
+                <span className="text-2xl font-bold">
+                  {statistics.revenue.platformFees.toLocaleString()} XOF
+                </span>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-gray-600">Croissance</span>
-                <span className={`text-2xl font-bold flex items-center ${statistics.growth.monthly >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                  {statistics.growth.monthly >= 0 ? <TrendingUp className="h-4 w-4 mr-1" /> : <TrendingDown className="h-4 w-4 mr-1" />}
+                <span
+                  className={`text-2xl font-bold flex items-center ${
+                    statistics.growth.monthly >= 0
+                      ? "text-green-600"
+                      : "text-red-600"
+                  }`}
+                >
+                  {statistics.growth.monthly >= 0 ? (
+                    <TrendingUp className="h-4 w-4 mr-1" />
+                  ) : (
+                    <TrendingDown className="h-4 w-4 mr-1" />
+                  )}
                   {Math.abs(statistics.growth.monthly)}%
                 </span>
               </div>
@@ -206,17 +263,23 @@ const AdminStatistics: React.FC = () => {
 
           <div className="bg-white rounded-lg shadow p-6">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-700">Satisfaction</h3>
+              <h3 className="text-lg font-semibold text-gray-700">
+                Satisfaction
+              </h3>
               <Activity className="h-6 w-6 text-purple-500" />
             </div>
             <div className="space-y-2">
               <div className="flex justify-between items-center">
                 <span className="text-gray-600">Note moyenne</span>
-                <span className="text-2xl font-bold">{statistics.growth.averageRating}/5</span>
+                <span className="text-2xl font-bold">
+                  {statistics.growth.averageRating}/5
+                </span>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-gray-600">Taux de satisfaction</span>
-                <span className="text-2xl font-bold">{statistics.growth.satisfactionRate}%</span>
+                <span className="text-2xl font-bold">
+                  {statistics.growth.satisfactionRate}%
+                </span>
               </div>
             </div>
           </div>
@@ -225,40 +288,58 @@ const AdminStatistics: React.FC = () => {
         {/* Répartition par type de service */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
           <div className="bg-white rounded-lg shadow p-6">
-            <h3 className="text-lg font-semibold text-gray-700 mb-4">Répartition des revenus</h3>
+            <h3 className="text-lg font-semibold text-gray-700 mb-4">
+              Répartition des revenus
+            </h3>
             <div className="space-y-4">
               <div className="flex justify-between items-center">
                 <span className="text-gray-600">Santé mentale</span>
-                <span className="font-semibold">{statistics.revenue.mentalHealth.toLocaleString()} XOF</span>
+                <span className="font-semibold">
+                  {statistics.revenue.mentalHealth.toLocaleString()} XOF
+                </span>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-gray-600">Santé sexuelle</span>
-                <span className="font-semibold">{statistics.revenue.sexualHealth.toLocaleString()} XOF</span>
+                <span className="font-semibold">
+                  {statistics.revenue.sexualHealth.toLocaleString()} XOF
+                </span>
               </div>
               <div className="pt-2 border-t">
                 <div className="flex justify-between items-center">
                   <span className="font-semibold text-gray-800">Total</span>
-                  <span className="font-bold text-lg">{statistics.revenue.total.toLocaleString()} XOF</span>
+                  <span className="font-bold text-lg">
+                    {statistics.revenue.total.toLocaleString()} XOF
+                  </span>
                 </div>
               </div>
             </div>
           </div>
 
           <div className="bg-white rounded-lg shadow p-6">
-            <h3 className="text-lg font-semibold text-gray-700 mb-4">Statut des consultations</h3>
+            <h3 className="text-lg font-semibold text-gray-700 mb-4">
+              Statut des consultations
+            </h3>
             <div className="space-y-4">
               <div className="flex justify-between items-center">
                 <span className="text-gray-600">À venir</span>
-                <span className="font-semibold">{statistics.appointments.upcoming}</span>
+                <span className="font-semibold">
+                  {statistics.appointments.upcoming}
+                </span>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-gray-600">Annulées</span>
-                <span className="font-semibold">{statistics.appointments.cancelled}</span>
+                <span className="font-semibold">
+                  {statistics.appointments.cancelled}
+                </span>
               </div>
               <div className="pt-2 border-t">
                 <div className="flex justify-between items-center">
-                  <span className="font-semibold text-gray-800">Taux de réussite</span>
-                  <span className="font-bold text-lg text-green-600">{statistics.appointments.completionRate}%</span>
+                  <span className="font-semibold text-gray-800">
+                    Taux de réussite
+                  </span>
+                  <span className="font-bold text-lg text-green-600">
+                    {statistics.appointments.completionRate}%
+                  </span>
                 </div>
               </div>
             </div>
@@ -267,7 +348,9 @@ const AdminStatistics: React.FC = () => {
 
         {/* Transactions récentes */}
         <div className="bg-white rounded-lg shadow p-6">
-          <h3 className="text-lg font-semibold text-gray-700 mb-4">Transactions récentes</h3>
+          <h3 className="text-lg font-semibold text-gray-700 mb-4">
+            Transactions récentes
+          </h3>
           {recentTransactions.length > 0 ? (
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200">
@@ -309,10 +392,16 @@ const AdminStatistics: React.FC = () => {
                         {transaction.platformFee.toLocaleString()} XOF
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                          transaction.type === 'mental' ? 'bg-blue-100 text-blue-800' : 'bg-purple-100 text-purple-800'
-                        }`}>
-                          {transaction.type === 'mental' ? 'Santé mentale' : 'Santé sexuelle'}
+                        <span
+                          className={`px-2 py-1 text-xs font-medium rounded-full ${
+                            transaction.type === "mental"
+                              ? "bg-blue-100 text-blue-800"
+                              : "bg-purple-100 text-purple-800"
+                          }`}
+                        >
+                          {transaction.type === "mental"
+                            ? "Santé mentale"
+                            : "Santé sexuelle"}
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">

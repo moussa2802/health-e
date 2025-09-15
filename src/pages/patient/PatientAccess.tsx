@@ -12,6 +12,8 @@ import {
   AlertCircle,
   Mail,
   Phone,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import { useAuth } from "../../contexts/AuthContext";
 import { useTerms } from "../../contexts/TermsContext";
@@ -39,6 +41,10 @@ const PatientAccess: React.FC = () => {
   const [registerEmail, setRegisterEmail] = useState("");
   const [registerPhone, setRegisterPhone] = useState("");
   const [registerPassword, setRegisterPassword] = useState("");
+  const [registerPasswordConfirm, setRegisterPasswordConfirm] = useState("");
+  const [showRegisterPassword, setShowRegisterPassword] = useState(false);
+  const [showRegisterPasswordConfirm, setShowRegisterPasswordConfirm] =
+    useState(false);
   const [registerError, setRegisterError] = useState("");
   const [isRegistering, setIsRegistering] = useState(false);
 
@@ -278,9 +284,20 @@ const PatientAccess: React.FC = () => {
 
     if (
       registerMethod === "email" &&
-      (!registerName || !registerEmail || !registerPassword)
+      (!registerName ||
+        !registerEmail ||
+        !registerPassword ||
+        !registerPasswordConfirm)
     ) {
       setRegisterError("Veuillez remplir tous les champs");
+      return;
+    }
+
+    if (
+      registerMethod === "email" &&
+      registerPassword !== registerPasswordConfirm
+    ) {
+      setRegisterError("Les mots de passe ne correspondent pas");
       return;
     }
 
@@ -880,15 +897,77 @@ const PatientAccess: React.FC = () => {
                         >
                           Mot de passe
                         </label>
-                        <input
-                          id="register-password"
-                          type="password"
-                          value={registerPassword}
-                          onChange={(e) => setRegisterPassword(e.target.value)}
-                          className="w-full px-4 py-3 rounded-xl border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 transition-colors"
-                          placeholder="Créez un mot de passe"
-                          required
-                        />
+                        <div className="relative">
+                          <input
+                            id="register-password"
+                            type={showRegisterPassword ? "text" : "password"}
+                            value={registerPassword}
+                            onChange={(e) =>
+                              setRegisterPassword(e.target.value)
+                            }
+                            className="w-full px-4 py-3 pr-12 rounded-xl border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 transition-colors"
+                            placeholder="Créez un mot de passe"
+                            required
+                          />
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setShowRegisterPassword(!showRegisterPassword)
+                            }
+                            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700 focus:outline-none"
+                          >
+                            {showRegisterPassword ? (
+                              <EyeOff className="h-5 w-5" />
+                            ) : (
+                              <Eye className="h-5 w-5" />
+                            )}
+                          </button>
+                        </div>
+                      </div>
+
+                      <div>
+                        <label
+                          htmlFor="register-password-confirm"
+                          className="block text-sm font-medium text-gray-700 mb-1"
+                        >
+                          Confirmer le mot de passe
+                        </label>
+                        <div className="relative">
+                          <input
+                            id="register-password-confirm"
+                            type={
+                              showRegisterPasswordConfirm ? "text" : "password"
+                            }
+                            value={registerPasswordConfirm}
+                            onChange={(e) =>
+                              setRegisterPasswordConfirm(e.target.value)
+                            }
+                            className="w-full px-4 py-3 pr-12 rounded-xl border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 transition-colors"
+                            placeholder="Confirmez votre mot de passe"
+                            required
+                          />
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setShowRegisterPasswordConfirm(
+                                !showRegisterPasswordConfirm
+                              )
+                            }
+                            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700 focus:outline-none"
+                          >
+                            {showRegisterPasswordConfirm ? (
+                              <EyeOff className="h-5 w-5" />
+                            ) : (
+                              <Eye className="h-5 w-5" />
+                            )}
+                          </button>
+                        </div>
+                        {registerPasswordConfirm &&
+                          registerPassword !== registerPasswordConfirm && (
+                            <p className="text-red-500 text-sm mt-1">
+                              Les mots de passe ne correspondent pas
+                            </p>
+                          )}
                       </div>
 
                       <div className="flex items-center justify-between">

@@ -3,6 +3,7 @@ import {
   addDoc,
   getDocs,
   updateDoc,
+  deleteDoc,
   doc,
   query,
   where,
@@ -10,6 +11,7 @@ import {
   limit,
   serverTimestamp,
   onSnapshot,
+  writeBatch,
   type Unsubscribe,
 } from "firebase/firestore";
 import { getFirestore } from "firebase/firestore";
@@ -18,7 +20,15 @@ import { retryFirestoreOperation } from "../utils/firebase";
 // Types pour les notifications admin
 export interface AdminNotification {
   id: string;
-  type: "withdrawal" | "user" | "appointment" | "system" | "message" | "support";
+  type:
+    | "withdrawal"
+    | "user"
+    | "new_professional_registration"
+    | "appointment"
+    | "system"
+    | "message"
+    | "support"
+    | "support_message";
   title: string;
   message: string;
   status: "unread" | "read";
@@ -37,259 +47,170 @@ export interface CreateAdminNotificationData {
   actionUrl?: string;
 }
 
-// Créer une nouvelle notification admin
-export const createAdminNotification = async (
-  notificationData: CreateAdminNotificationData
-): Promise<string> => {
-  try {
-    const db = getFirestore();
-
-    const notification = {
-      ...notificationData,
-      status: "unread" as const,
-      createdAt: serverTimestamp(),
-    };
-
-    const docRef = await retryFirestoreOperation(() =>
-      addDoc(collection(db, "adminNotifications"), notification)
-    );
-
-    console.log("✅ [ADMIN] Notification créée:", docRef.id);
-    return docRef.id;
-  } catch (error) {
-    console.error("❌ [ADMIN] Erreur création notification:", error);
-    throw error;
-  }
-};
-
-// Créer une notification de demande de retrait
-export const createWithdrawalNotification = async (
-  professionalId: string,
-  professionalName: string,
-  amount: number,
-  method: string
-): Promise<string> => {
-  return createAdminNotification({
-    type: "withdrawal",
-    title: "Nouvelle demande de retrait",
-    message: `${professionalName} a demandé un retrait de ${amount.toLocaleString()} FCFA via ${method}`,
-    data: {
-      professionalId,
-      professionalName,
-      amount,
-      method,
-    },
-    actionUrl: "/admin/withdrawals",
-  });
-};
-
-// Créer une notification de nouveau professionnel
-export const createNewProfessionalNotification = async (
-  professionalId: string,
-  professionalName: string,
-  specialty: string
-): Promise<string> => {
-  return createAdminNotification({
-    type: "user",
-    title: "Nouveau professionnel inscrit",
-    message: `${professionalName} (${specialty}) s'est inscrit et attend validation`,
-    data: {
-      professionalId,
-      professionalName,
-      specialty,
-    },
-    actionUrl: "/admin/professionals",
-  });
-};
-
-// Créer une notification de consultation annulée
-export const createCancelledAppointmentNotification = async (
-  appointmentId: string,
-  patientName: string,
-  appointmentDate: string
-): Promise<string> => {
-  return createAdminNotification({
-    type: "appointment",
-    title: "Consultation annulée",
-    message: `Consultation du ${appointmentDate} annulée par ${patientName}`,
-    data: {
-      appointmentId,
-      patientName,
-      appointmentDate,
-    },
-    actionUrl: "/admin/appointments",
-  });
-};
-
-// Récupérer toutes les notifications admin
-export const getAdminNotifications = async (
+// Récupérer les notifications admin
+export async function getAdminNotifications(
+  adminId: string,
   status?: "unread" | "read",
   type?: AdminNotification["type"],
   limitCount: number = 100
-): Promise<AdminNotification[]> => {
+): Promise<AdminNotification[]> {
   try {
     const db = getFirestore();
 
-    // Utiliser la collection "notifications" au lieu de "adminNotifications"
     const notificationsRef = collection(db, "notifications");
+    const filters = [where("userId", "==", adminId)];
 
-    // Filtrer par userId pour l'admin connecté
-    // TODO: Récupérer l'adminId depuis le contexte d'authentification
-    const adminId = "FYostm61DLbrax729IYT6OBHSuA3"; // ID admin connu
+    if (status) {
+      filters.push(where("read", "==", status === "read"));
+    }
+    if (type) {
+      filters.push(where("type", "==", type));
+    }
 
-    let q = query(
+    const q = query(
       notificationsRef,
-      where("userId", "==", adminId),
+      ...filters,
       orderBy("createdAt", "desc"),
       limit(limitCount)
     );
 
-    // Ajouter les filtres si spécifiés
-    if (status && type) {
-      q = query(
-        notificationsRef,
-        where("userId", "==", adminId),
-        where("read", "==", status === "read"),
-        where("type", "==", type),
-        orderBy("createdAt", "desc"),
-        limit(limitCount)
-      );
-    } else if (status) {
-      q = query(
-        notificationsRef,
-        where("userId", "==", adminId),
-        where("read", "==", status === "read"),
-        orderBy("createdAt", "desc"),
-        limit(limitCount)
-      );
-    } else if (type) {
-      q = query(
-        notificationsRef,
-        where("userId", "==", adminId),
-        where("type", "==", type),
-        orderBy("createdAt", "desc"),
-        limit(limitCount)
-      );
-    }
-
-    const snapshot = await retryFirestoreOperation(() => getDocs(q));
-
+    const snapshot = await getDocs(q);
     const notifications: AdminNotification[] = [];
+
     snapshot.forEach((doc) => {
       const data = doc.data();
+      const message = data.message ?? data.content ?? "Aucun message";
+      const statusStr: "read" | "unread" = data.read ? "read" : "unread";
 
-      // Adapter la structure des données réelles au format AdminNotification
-      const notification: AdminNotification = {
+      notifications.push({
         id: doc.id,
-        type: mapNotificationType(data.type),
+        type: (data.type as AdminNotification["type"]) || "system",
         title: data.title || "Notification",
-        message: data.content || "Aucun message", // content → message
-        status: data.read ? "read" : "unread", // read → status
+        message,
+        status: statusStr,
         createdAt: data.createdAt,
-        data: {
-          sourceId: data.sourceId,
-          sourceType: data.sourceType,
-          redirectPath: data.redirectPath,
-        },
-        actionUrl: data.redirectPath || "", // redirectPath → actionUrl
-      };
-
-      notifications.push(notification);
+        data: data.data || {},
+        actionUrl: data.actionUrl || "",
+      });
     });
 
+    console.log(`✅ ${notifications.length} notifications admin récupérées`);
     return notifications;
   } catch (error) {
-    console.error("❌ [ADMIN] Erreur récupération notifications:", error);
+    console.error("❌ Erreur récupération notifications admin:", error);
     return [];
   }
-};
+}
 
-// Fonction helper pour mapper les types de notifications
-const mapNotificationType = (
-  firestoreType: string
-): AdminNotification["type"] => {
-  switch (firestoreType) {
-    case "new_professional_registration":
-      return "user";
-    case "withdrawal_request":
-      return "withdrawal";
-    case "appointment_cancelled":
-      return "appointment";
-    case "new_message":
-      return "message";
-    case "support_request":
-      return "support";
-    case "system_maintenance":
-      return "system";
-    default:
-      return "system";
-  }
-};
-
-// Marquer une notification comme lue
-export const markNotificationAsRead = async (
-  notificationId: string,
-  adminId: string
-): Promise<void> => {
+// Subscription en temps réel pour les notifications admin
+export function subscribeToAdminNotificationsRealtime(
+  adminId: string,
+  callback: (notifications: AdminNotification[]) => void
+): Unsubscribe {
   try {
     const db = getFirestore();
 
-    const docRef = doc(db, "adminNotifications", notificationId);
+    const notificationsRef = collection(db, "notifications");
+    const q = query(
+      notificationsRef,
+      where("userId", "==", adminId),
+      orderBy("createdAt", "desc"),
+      limit(100)
+    );
+
+    return onSnapshot(q, (snapshot) => {
+      const notifications: AdminNotification[] = [];
+      snapshot.forEach((doc) => {
+        const data = doc.data();
+        const message = data.message ?? data.content ?? "Aucun message";
+        const statusStr: "read" | "unread" = data.read ? "read" : "unread";
+
+        notifications.push({
+          id: doc.id,
+          type: (data.type as AdminNotification["type"]) || "system",
+          title: data.title || "Notification",
+          message,
+          status: statusStr,
+          createdAt: data.createdAt,
+          data: data.data || {},
+          actionUrl: data.actionUrl || "",
+        });
+      });
+      callback(notifications);
+    });
+  } catch (error) {
+    console.error("❌ [ADMIN] Erreur subscription notifications:", error);
+    return () => {};
+  }
+}
+
+// Marquer une notification comme lue
+export async function markAdminNotificationAsRead(
+  notificationId: string,
+  adminId: string
+): Promise<void> {
+  try {
+    const db = getFirestore();
+
     await retryFirestoreOperation(() =>
-      updateDoc(docRef, {
-        status: "read",
+      updateDoc(doc(db, "notifications", notificationId), {
+        read: true,
+        readAt: serverTimestamp(),
         adminId,
       })
     );
 
     console.log("✅ [ADMIN] Notification marquée comme lue:", notificationId);
   } catch (error) {
-    console.error("❌ [ADMIN] Erreur marquage lu:", error);
+    console.error("❌ [ADMIN] Erreur marquage notification:", error);
     throw error;
   }
-};
+}
 
 // Marquer toutes les notifications comme lues
-export const markAllNotificationsAsRead = async (
+export async function markAllAdminNotificationsAsRead(
   adminId: string
-): Promise<void> => {
+): Promise<void> {
   try {
     const db = getFirestore();
 
-    const unreadNotifications = await getAdminNotifications("unread");
+    const notificationsRef = collection(db, "notifications");
+    const q = query(
+      notificationsRef,
+      where("userId", "==", adminId),
+      where("read", "==", false)
+    );
 
-    const updatePromises = unreadNotifications.map((notification) => {
-      const docRef = doc(db, "adminNotifications", notification.id);
-      return retryFirestoreOperation(() =>
-        updateDoc(docRef, {
-          status: "read",
-          adminId,
-        })
-      );
+    const snapshot = await getDocs(q);
+    const batch = writeBatch(db);
+
+    snapshot.forEach((docSnapshot) => {
+      batch.update(docSnapshot.ref, {
+        read: true,
+        readAt: serverTimestamp(),
+        adminId,
+      });
     });
 
-    await Promise.all(updatePromises);
-
-    console.log("✅ [ADMIN] Toutes les notifications marquées comme lues");
+    await batch.commit();
+    console.log(
+      `✅ [ADMIN] ${snapshot.size} notifications marquées comme lues`
+    );
   } catch (error) {
-    console.error("❌ [ADMIN] Erreur marquage toutes lues:", error);
+    console.error("❌ [ADMIN] Erreur marquage toutes notifications:", error);
     throw error;
   }
-};
+}
 
 // Supprimer une notification
-export const deleteAdminNotification = async (
+export async function deleteAdminNotification(
   notificationId: string
-): Promise<void> => {
+): Promise<void> {
   try {
     const db = getFirestore();
 
-    const docRef = doc(db, "adminNotifications", notificationId);
     await retryFirestoreOperation(() =>
-      updateDoc(docRef, {
-        status: "deleted",
-        deletedAt: serverTimestamp(),
-      })
+      deleteDoc(doc(db, "notifications", notificationId))
     );
 
     console.log("✅ [ADMIN] Notification supprimée:", notificationId);
@@ -297,70 +218,50 @@ export const deleteAdminNotification = async (
     console.error("❌ [ADMIN] Erreur suppression notification:", error);
     throw error;
   }
-};
+}
 
-// S'abonner aux notifications en temps réel
-export const subscribeToAdminNotifications = (
-  callback: (notifications: AdminNotification[]) => void,
-  status?: "unread" | "read",
-  type?: AdminNotification["type"]
-): Unsubscribe => {
+// Créer une notification de demande de retrait
+export const createAdminWithdrawalRequestNotification = async (
+  professionalId: string,
+  professionalName: string,
+  amount: number,
+  method: string,
+  withdrawalId: string
+): Promise<string> => {
   try {
     const db = getFirestore();
 
-    const notificationsRef = collection(db, "adminNotifications");
-    let q = query(notificationsRef, orderBy("createdAt", "desc"), limit(100));
+    const adminId = "FYostm61DLbrax729IYT6OBHSuA3"; // ID admin connu
 
-    // Ajouter les filtres si spécifiés
-    if (status && type) {
-      q = query(
-        notificationsRef,
-        where("status", "==", status),
-        where("type", "==", type),
-        orderBy("createdAt", "desc"),
-        limit(100)
-      );
-    } else if (status) {
-      q = query(
-        notificationsRef,
-        where("status", "==", status),
-        orderBy("createdAt", "desc"),
-        limit(100)
-      );
-    } else if (type) {
-      q = query(
-        notificationsRef,
-        where("type", "==", type),
-        orderBy("createdAt", "desc"),
-        limit(100)
-      );
-    }
+    const notification = {
+      userId: adminId,
+      type: "withdrawal",
+      title: "Nouvelle demande de retrait",
+      message: `${professionalName} a demandé un retrait de ${amount.toLocaleString()} FCFA via ${method}`,
+      read: false,
+      createdAt: serverTimestamp(),
+      data: {
+        professionalId,
+        professionalName,
+        amount,
+        method,
+        withdrawalId,
+        type: "withdrawal",
+      },
+      actionUrl: "/admin/withdrawals",
+    };
 
-    return onSnapshot(q, (snapshot) => {
-      const notifications: AdminNotification[] = [];
-      snapshot.forEach((doc) => {
-        notifications.push({
-          id: doc.id,
-          ...doc.data(),
-        } as AdminNotification);
-      });
-
-      callback(notifications);
-    });
+    const docRef = await addDoc(collection(db, "notifications"), notification);
+    console.log(
+      "✅ [ADMIN NOTIF] Notification de retrait admin créée:",
+      docRef.id
+    );
+    return docRef.id;
   } catch (error) {
-    console.error("❌ [ADMIN] Erreur abonnement notifications:", error);
-    // Retourner une fonction no-op en cas d'erreur
-    return () => {};
-  }
-};
-
-// Obtenir le nombre de notifications non lues
-export const getUnreadNotificationsCount = async (): Promise<number> => {
-  try {
-    const unreadNotifications = await getAdminNotifications("unread");
-    return unreadNotifications.length;
-  } catch (error) {
-    console.error("❌ [ADMIN] Erreur comptage notifications non lues:", error);
-    return 0;
+    console.error(
+      "❌ [ADMIN NOTIF] Erreur création notification retrait admin:",
+      error
+    );
+    throw error;
   }
 };

@@ -123,8 +123,21 @@ class PayTechService {
     for (const field of requiredFields) {
       if (!data[field as keyof PaymentData]) {
         console.error(`❌ [PAYTECH] Missing required field: ${field}`);
+        console.error(`❌ [PAYTECH] Current data:`, {
+          amount: data.amount,
+          bookingId: data.bookingId,
+          customerEmail: data.customerEmail,
+          customerName: data.customerName,
+          professionalId: data.professionalId,
+        });
         return false;
       }
+    }
+
+    // Validation spécifique pour l'email
+    if (data.customerEmail && !this.isValidEmail(data.customerEmail)) {
+      console.error("❌ [PAYTECH] Invalid email format:", data.customerEmail);
+      return false;
     }
 
     // Le numéro de téléphone est optionnel, utiliser une valeur par défaut si manquant
@@ -139,6 +152,14 @@ class PayTechService {
     }
 
     return true;
+  }
+
+  /**
+   * Valider le format de l'email
+   */
+  private isValidEmail(email: string): boolean {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
   }
 }
 

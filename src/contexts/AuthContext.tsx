@@ -148,10 +148,22 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
           const userData = userDoc.data();
           // Ne récupérer serviceType et specialty que pour les professionnels
           const userType = userData.type || null;
+          const userEmail = userData.email || firebaseUser.email || "";
+
+          console.log("✅ [AUTH] User data retrieved from Firestore:", {
+            id: firebaseUser.uid,
+            name: userData.name || "",
+            email: userEmail,
+            type: userType,
+            hasEmail: !!userEmail,
+            emailFromFirestore: userData.email,
+            emailFromFirebase: firebaseUser.email,
+          });
+
           setCurrentUser({
             id: firebaseUser.uid,
             name: userData.name || "",
-            email: userData.email || firebaseUser.email || "",
+            email: userEmail,
             type: userType,
             profileImage: userData.profileImage,
             // Seuls les professionnels ont besoin de serviceType et specialty
@@ -223,12 +235,21 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       }
 
       // Fallback to basic user info from Firebase Auth
-      setCurrentUser({
+      const fallbackUser = {
         id: firebaseUser.uid,
         name: firebaseUser.displayName || "",
         email: firebaseUser.email || "",
         type: null,
+      };
+
+      console.log("⚠️ [AUTH] Using fallback user data:", {
+        id: fallbackUser.id,
+        name: fallbackUser.name,
+        email: fallbackUser.email,
+        hasEmail: !!fallbackUser.email,
       });
+
+      setCurrentUser(fallbackUser);
     }
   };
 

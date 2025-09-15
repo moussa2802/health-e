@@ -1,0 +1,2 @@
+export { onNotificationCreated } from "./notificationEmailBridge";
+

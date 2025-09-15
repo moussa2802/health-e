@@ -45,6 +45,7 @@ export interface Conversation {
     timestamp: Timestamp;
     senderId: string;
   };
+  unreadCount?: { [userId: string]: number }; // Nombre de messages non lus par utilisateur
   createdAt: Timestamp;
   updatedAt: Timestamp;
 }
@@ -268,6 +269,79 @@ export async function sendMessage(
   } catch (error) {
     console.error("❌ Error sending message:", error);
     throw new Error("Erreur lors de l'envoi du message");
+  }
+}
+
+// Mettre à jour le nom d'un participant dans toutes ses conversations
+export async function updateParticipantNameInConversations(
+  userId: string,
+  newName: string,
+  userType: "patient" | "professional" | "admin"
+): Promise<void> {
+  try {
+    console.log(
+      "🔄 Updating participant name in conversations:",
+      userId,
+      "->",
+      newName
+    );
+
+    await ensureFirestoreReady();
+    const db = getFirestoreInstance();
+    if (!db) throw new Error("Firestore not available");
+
+    // Récupérer toutes les conversations où l'utilisateur participe
+    const conversationsRef = collection(db, "conversations");
+    const conversationsQuery = query(
+      conversationsRef,
+      where("participants", "array-contains", userId)
+    );
+
+    const conversationsSnap = await getDocs(conversationsQuery);
+
+    if (conversationsSnap.empty) {
+      console.log("ℹ️ No conversations found for user:", userId);
+      return;
+    }
+
+    console.log(`📝 Found ${conversationsSnap.size} conversations to update`);
+
+    // Mettre à jour chaque conversation
+    const updatePromises = conversationsSnap.docs.map(
+      async (conversationDoc) => {
+        const conversationData = conversationDoc.data() as Conversation;
+        const conversationId = conversationDoc.id;
+
+        // Mettre à jour le nom du participant
+        const updatedParticipantNames = {
+          ...conversationData.participantNames,
+          [userId]: newName,
+        };
+
+        // Mettre à jour le document de conversation
+        await updateDoc(conversationDoc.ref, {
+          participantNames: updatedParticipantNames,
+          updatedAt: serverTimestamp(),
+        });
+
+        console.log(
+          `✅ Updated conversation ${conversationId} with new name: ${newName}`
+        );
+      }
+    );
+
+    await Promise.all(updatePromises);
+
+    // Invalider le cache
+    conversationsCache.clear();
+
+    console.log("✅ All conversations updated successfully");
+  } catch (error) {
+    console.error(
+      "❌ Error updating participant name in conversations:",
+      error
+    );
+    throw new Error("Erreur lors de la mise à jour des conversations");
   }
 }
 
@@ -560,7 +634,7 @@ export function subscribeToConversations(
 
         const unsubscribe = onSnapshot(
           q,
-          (snapshot) => {
+          async (snapshot) => {
             try {
               let conversations: Conversation[] = snapshot.docs.map(
                 (doc) =>
@@ -570,25 +644,42 @@ export function subscribeToConversations(
                   } as Conversation)
               );
 
+              // Enrichir les conversations avec le nombre de messages non lus
+              const enrichedConversations = await Promise.all(
+                conversations.map(async (conversation) => {
+                  const unreadCount = await getUnreadCountForConversation(
+                    conversation.id,
+                    userId
+                  );
+                  return {
+                    ...conversation,
+                    unreadCount: {
+                      ...conversation.unreadCount,
+                      [userId]: unreadCount,
+                    },
+                  };
+                })
+              );
+
               // Sort by updatedAt on client side to avoid index requirement
-              conversations = conversations.sort((a, b) => {
+              const sortedConversations = enrichedConversations.sort((a, b) => {
                 const aTime = a.updatedAt?.toDate?.() || new Date(0);
                 const bTime = b.updatedAt?.toDate?.() || new Date(0);
                 return bTime.getTime() - aTime.getTime();
               });
 
               console.log(
-                `✅ Received ${conversations.length} conversations via subscription (listener: ${listenerId})`
+                `✅ Received ${sortedConversations.length} conversations via subscription (listener: ${listenerId})`
               );
 
               // Mettre en cache
-              conversationsCache.set(cacheKey, conversations);
+              conversationsCache.set(cacheKey, sortedConversations);
               setTimeout(
                 () => conversationsCache.delete(cacheKey),
                 CACHE_DURATION
               );
 
-              callback(conversations);
+              callback(sortedConversations);
 
               // Clear error if we successfully receive data
               if (conversations.length > 0) {
@@ -806,6 +897,10 @@ export async function markMessagesAsRead(
       }
 
       console.log(`✅ Marked ${snapshot.docs.length} messages as read`);
+
+      // Invalider le cache des messages non lus pour cette conversation
+      const cacheKey = `unread_${conversationId}_${userId}`;
+      unreadCountCache.delete(cacheKey);
     }
   } catch (error) {
     console.error("❌ Error marking messages as read:", error);
@@ -818,6 +913,53 @@ const unreadCountCache = new Map<
   string,
   { count: number; timestamp: number }
 >();
+
+// Obtenir le nombre de messages non lus pour une conversation spécifique
+export async function getUnreadCountForConversation(
+  conversationId: string,
+  userId: string
+): Promise<number> {
+  try {
+    if (!userId || !conversationId) {
+      return 0;
+    }
+
+    // Vérifier le cache
+    const cacheKey = `unread_${conversationId}_${userId}`;
+    const cached = unreadCountCache.get(cacheKey);
+    if (cached && Date.now() - cached.timestamp < 30000) {
+      return cached.count;
+    }
+
+    await ensureFirestoreReady();
+    const db = getFirestoreInstance();
+    if (!db) throw new Error("Firestore not available");
+
+    const messagesRef = collection(
+      db,
+      `conversations/${conversationId}/messages`
+    );
+    const q = query(
+      messagesRef,
+      where("senderId", "!=", userId),
+      where("read", "==", false)
+    );
+
+    const snapshot = await getDocs(q);
+    const count = snapshot.docs.length;
+
+    // Mettre en cache
+    unreadCountCache.set(cacheKey, {
+      count,
+      timestamp: Date.now(),
+    });
+
+    return count;
+  } catch (error) {
+    console.error("❌ Error getting unread count for conversation:", error);
+    return 0;
+  }
+}
 
 export async function getUnreadCount(userId: string): Promise<number> {
   try {

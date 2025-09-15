@@ -489,6 +489,16 @@ export async function updateBooking(
 
     const bookingRef = doc(db, "bookings", bookingId);
 
+    // Récupérer les données existantes pour la notification
+    const bookingSnap = await getDoc(bookingRef);
+    if (!bookingSnap.exists()) {
+      throw new Error("Réservation non trouvée");
+    }
+
+    const existingBooking = bookingSnap.data();
+    const professionalId = existingBooking.professionalId;
+    const patientName = existingBooking.patientName;
+
     // Préparer les données à mettre à jour
     const updateData = {
       ...bookingData,
@@ -497,6 +507,20 @@ export async function updateBooking(
 
     await updateDoc(bookingRef, updateData);
     console.log("✅ Booking updated successfully:", bookingId);
+
+    // Créer une notification pour le professionnel
+    await createNotification(
+      professionalId,
+      "appointment_modified",
+      "Rendez-vous modifié",
+      `Le patient ${patientName} a modifié son rendez-vous pour le ${
+        bookingData.date || existingBooking.date
+      } à ${bookingData.startTime || existingBooking.startTime}`,
+      bookingId,
+      "booking"
+    );
+
+    console.log("✅ Notification de modification envoyée au professionnel");
   } catch (error) {
     console.error("❌ Error updating booking:", error);
     throw error;

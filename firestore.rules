@@ -1,79 +1,188 @@
 rules_version = '2';
+
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Règles pour les patients
-    match /patients/{patientId} {
-      // Un patient peut lire et modifier son propre profil
-      allow read, write: if request.auth != null && request.auth.uid == patientId;
+    // Règles pour les utilisateurs - TEMPORAIREMENT PLUS PERMISSIVES POUR LA RECHERCHE
+    match /users/{userId} {
+      // Lecture : par tous les utilisateurs authentifiés (pour la recherche)
+      allow read: if request.auth != null;
       
-      // Règles pour les dossiers médicaux des patients
-      match /medicalRecords/{recordId} {
-        // Un patient peut lire et écrire ses propres dossiers médicaux
-        allow read, write: if request.auth != null && request.auth.uid == patientId;
-      }
+      // Écriture : par l'utilisateur propriétaire OU admin
+      allow write: if request.auth != null && 
+        (request.auth.uid == userId ||
+         (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.type == 'admin'));
     }
+    
+
     
     // Règles pour les professionnels
     match /professionals/{professionalId} {
-      // Un professionnel peut lire et modifier son propre profil
-      allow read, write: if request.auth != null && request.auth.uid == professionalId;
-      
-      // Les patients peuvent lire les profils des professionnels
+      allow read; // Permettre la lecture publique des profils professionnels
+      allow write: if request.auth != null && 
+        (request.auth.uid == professionalId ||
+         (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.type == 'admin'));
+    }
+    
+    // Règles pour les patients - ACCÈS ÉLARGI POUR LES PROFESSIONNELS ET RECHERCHE
+    match /patients/{patientId} {
+      // Lecture : par tous les utilisateurs authentifiés (pour la recherche)
       allow read: if request.auth != null;
+      
+      // Écriture : par le patient propriétaire uniquement
+      allow write: if request.auth != null && request.auth.uid == patientId;
+      
+      // Mise à jour spécifique : permettre aux professionnels de mettre à jour les références de dossiers médicaux ET l'archivage
+      allow update: if request.auth != null && 
+        (request.auth.uid == patientId || 
+         (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.type == 'professional' &&
+          // Vérifier que seuls les champs autorisés sont modifiés
+          (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['latestMedicalRecord', 'medicalRecordIds', 'updatedAt', 'isArchived', 'archivedAt']))));
     }
     
-    // Règles pour les utilisateurs
-    match /users/{userId} {
-      // Un utilisateur peut lire et modifier son propre profil
-      allow read, write: if request.auth != null && request.auth.uid == userId;
+    // Règles pour les dossiers médicaux (sous-collection)
+    match /patients/{patientId}/medicalRecords/{recordId} {
+      // Lecture : par le patient propriétaire OU le professionnel qui a créé le dossier
+      allow read: if request.auth != null && 
+        (request.auth.uid == patientId || 
+         request.auth.uid == resource.data.professionalId);
+      
+      // Création : par les professionnels de santé authentifiés
+      allow create: if request.auth != null && 
+        request.resource.data.professionalId == request.auth.uid;
+      
+      // Mise à jour : par le professionnel qui a créé le dossier
+      allow update: if request.auth != null && 
+        request.auth.uid == resource.data.professionalId;
     }
     
-    // Règles pour les rendez-vous
+    // Règles pour les requêtes collectionGroup sur les dossiers médicaux
+    match /{path=**}/medicalRecords/{recordId} {
+      // Permettre aux professionnels de lire tous les dossiers médicaux
+      allow read: if request.auth != null && 
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.type == 'professional');
+    }
+    
+    // Règles pour les réservations - TEMPORAIREMENT PLUS PERMISSIVES POUR LES TESTS
     match /bookings/{bookingId} {
-      // Les utilisateurs authentifiés peuvent lire et écrire leurs propres rendez-vous
-      allow read, write: if request.auth != null && 
-        (resource.data.patientId == request.auth.uid || 
-         resource.data.professionalId == request.auth.uid);
+      // Lecture : par tous les utilisateurs authentifiés
+      allow read: if request.auth != null;
+      
+      // Création : par tous les utilisateurs authentifiés
+      allow create: if request.auth != null;
+      
+      // Mise à jour : par tous les utilisateurs authentifiés
+      allow update: if request.auth != null;
+      
+      // Suppression : par tous les utilisateurs authentifiés
+      allow delete: if request.auth != null;
     }
     
-    // Règles pour les événements du calendrier
-    match /calendar_events/{eventId} {
-      // Les professionnels peuvent gérer leurs événements
-      allow read, write: if request.auth != null && 
-        resource.data.professionalId == request.auth.uid;
+    // Règles pour les paiements - TEMPORAIREMENT PLUS PERMISSIVES POUR LES TESTS
+    match /payments/{paymentId} {
+      // Lecture : par tous les utilisateurs authentifiés
+      allow read: if request.auth != null;
+      
+      // Création : par tous les utilisateurs authentifiés
+      allow create: if request.auth != null;
+      
+      // Mise à jour : par tous les utilisateurs authentifiés
+      allow update: if request.auth != null;
     }
     
-    // Règles pour les conversations
+    // Règles pour les conversations - TEMPORAIREMENT PLUS PERMISSIVES POUR LES TESTS
     match /conversations/{conversationId} {
-      // Les participants peuvent lire et écrire dans leurs conversations
-      allow read, write: if request.auth != null && 
-        (resource.data.patientId == request.auth.uid || 
-         resource.data.professionalId == request.auth.uid);
+      // Lecture et écriture : par tous les utilisateurs authentifiés (temporaire)
+      allow read, write: if request.auth != null;
+      
+      // Création : par tous les utilisateurs authentifiés (temporaire)
+      allow create: if request.auth != null;
     }
     
-    // Règles pour les messages
+    // Règles pour les messages dans les conversations - TEMPORAIREMENT PLUS PERMISSIVES
     match /conversations/{conversationId}/messages/{messageId} {
-      // Les participants peuvent lire et écrire des messages
-      allow read, write: if request.auth != null && 
-        (get(/databases/$(database)/documents/conversations/$(conversationId)).data.patientId == request.auth.uid || 
-         get(/databases/$(database)/documents/conversations/$(conversationId)).data.professionalId == request.auth.uid);
+      allow read, write: if request.auth != null;
+    }
+    
+    // Règles pour le contenu (articles, conseils, etc.) - ACCÈS PUBLIC COMPLET
+    match /content/{contentId} {
+      // Permettre la lecture publique complète sans authentification
+      allow read: if true;
+      // Permettre l'écriture seulement aux utilisateurs connectés
+      allow write: if request.auth != null;
+    }
+    
+    // Règles pour les événements de calendrier
+    match /calendar_events/{eventId} {
+      // Lecture : autorisée pour tous les utilisateurs authentifiés (patients et professionnels)
+      allow read: if request.auth != null;
+      
+      // Création : autorisée seulement si l'utilisateur authentifié est le propriétaire du créneau
+      allow create: if request.auth != null && 
+        request.resource.data.professionalId == request.auth.uid;
+      
+      // Mise à jour et suppression : autorisées seulement pour le propriétaire du créneau
+      allow update, delete: if request.auth != null && 
+        resource.data.professionalId == request.auth.uid;
     }
     
     // Règles pour les notifications
     match /notifications/{notificationId} {
-      // Les utilisateurs peuvent lire et écrire leurs propres notifications
-      allow read, write: if request.auth != null && 
-        resource.data.userId == request.auth.uid;
-    }
-    
-    // Règles pour les paiements
-    match /payments/{paymentId} {
-      // Les utilisateurs peuvent lire leurs propres paiements
+      // Lecture : par l'utilisateur destinataire OU admin
       allow read: if request.auth != null && 
-        resource.data.userId == request.auth.uid;
+        (request.auth.uid == resource.data.userId ||
+         (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.type == 'admin'));
+      
+      // Création : par tous les utilisateurs authentifiés (pour envoyer des notifications)
+      allow create: if request.auth != null;
+      
+      // Mise à jour : par l'utilisateur destinataire OU admin
+      allow update: if request.auth != null && 
+        (request.auth.uid == resource.data.userId ||
+         (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.type == 'admin'));
     }
     
-    // Règles pour les transactions de revenus
+    // Règles pour les tickets de support
+    match /supportTickets/{ticketId} {
+      // Lecture : par l'utilisateur qui a créé le ticket OU admin
+      allow read: if request.auth != null && 
+        (resource.data.userId == request.auth.uid ||
+         (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.type == 'admin'));
+      
+      // Création : par tous les utilisateurs authentifiés
+      allow create: if request.auth != null;
+      
+      // Mise à jour : par l'utilisateur qui a créé le ticket OU admin
+      allow update: if request.auth != null && 
+        (resource.data.userId == request.auth.uid ||
+         (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.type == 'admin'));
+    }
+    
+    // Règles pour les messages de support
+    match /supportMessages/{messageId} {
+      // Lecture : par l'utilisateur qui a créé le ticket associé OU admin
+      allow read: if request.auth != null && 
+        (exists(/databases/$(database)/documents/supportTickets/$(resource.data.ticketId)) &&
+         (get(/databases/$(database)/documents/supportTickets/$(resource.data.ticketId)).data.userId == request.auth.uid ||
+          (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+           get(/databases/$(database)/documents/users/$(request.auth.uid)).data.type == 'admin')));
+      
+      // Création : par l'utilisateur qui a créé le ticket associé OU admin
+      allow create: if request.auth != null && 
+        (exists(/databases/$(database)/documents/supportTickets/$(resource.data.ticketId)) &&
+         (get(/databases/$(database)/documents/supportTickets/$(resource.data.ticketId)).data.userId == request.auth.uid ||
+          (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+           get(/databases/$(database)/documents/users/$(request.auth.uid)).data.type == 'admin')));
+    }
+    
+     // Règles pour les transactions de revenus
     match /revenue_transactions/{transactionId} {
       // Un professionnel peut lire et écrire ses propres transactions
       allow read, write: if request.auth != null && 
@@ -87,7 +196,7 @@ service cloud.firestore {
         resource.data.professionalId == request.auth.uid;
     }
     
-    // Règles pour les demandes de retrait
+    // Règles pour les demandes de retrait (NOUVELLE COLLECTION)
     match /withdrawalRequests/{requestId} {
       // Un professionnel peut créer une demande où professionalId == auth.uid et status == "pending"
       allow create: if request.auth != null && 
@@ -112,11 +221,35 @@ service cloud.firestore {
         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "admin";
     }
     
-    // Règles pour les tickets de support
-    match /supportTickets/{ticketId} {
-      // Les utilisateurs peuvent lire et écrire leurs propres tickets
-      allow read, write: if request.auth != null && 
-        resource.data.userId == request.auth.uid;
+    
+    match /professional_patients/{document} {
+  // Lecture pour tous les professionnels authentifiés
+  allow read: if request.auth != null;
+  
+  // Écriture seulement sur ses propres documents
+  allow write: if request.auth != null 
+    && request.auth.uid == resource.data.professionalId;
+  
+  // Création avec validation
+  allow create: if request.auth != null 
+    && request.auth.uid == request.resource.data.professionalId
+    && request.resource.data.patientId is string
+    && request.resource.data.professionalId is string;
+}
+    
+    // Règles pour l'extension Trigger Email
+    match /mail/{mailId} {
+      // Permettre l'écriture pour l'extension Trigger Email
+      allow write: if true;
+      // Permettre la lecture pour les utilisateurs authentifiés
+      allow read: if request.auth != null;
+    }
+    
+    // 🛡️ ADMIN — accès basé sur le type dans Firestore (PLACÉ À LA FIN)
+    match /{document=**} {
+      allow read, write: if request.auth != null &&
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.type == 'admin');
     }
   }
 }

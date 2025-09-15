@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
   Bell,
   X,
@@ -12,18 +12,26 @@ import {
 } from "lucide-react";
 
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../../contexts/AuthContext";
 import LoadingSpinner from "../ui/LoadingSpinner";
-import { getAdminNotifications } from "../../services/adminNotificationService";
+import {
+  subscribeToAdminNotificationsRealtime,
+  markAdminNotificationAsRead,
+  markAllAdminNotificationsAsRead,
+  deleteAdminNotification,
+} from "../../services/adminNotificationService";
 
 interface AdminNotification {
   id: string;
   type:
     | "withdrawal"
     | "user"
+    | "new_professional_registration"
     | "appointment"
     | "system"
     | "message"
-    | "support";
+    | "support"
+    | "support_message";
   title: string;
   message: string;
   status: "unread" | "read";
@@ -34,116 +42,57 @@ interface AdminNotification {
 
 const AdminNotificationCenter: React.FC = () => {
   const navigate = useNavigate();
+  const { currentUser } = useAuth();
+  const adminId = currentUser?.id;
+
   const [notifications, setNotifications] = useState<AdminNotification[]>([]);
   const [loading, setLoading] = useState(true);
   const [showNotifications, setShowNotifications] = useState(false);
-  const [unreadCount, setUnreadCount] = useState(0);
   const [filter, setFilter] = useState<
     | "all"
     | "unread"
     | "withdrawal"
     | "user"
+    | "new_professional_registration"
     | "appointment"
     | "support"
+    | "support_message"
     | "message"
   >("all");
 
+  // Calculer le compteur de notifications non lues
+  const unreadCount = useMemo(
+    () =>
+      notifications.reduce((n, x) => n + (x.status === "unread" ? 1 : 0), 0),
+    [notifications]
+  );
+
+  // Subscription en temps réel pour les notifications
   useEffect(() => {
-    if (showNotifications) {
-      loadNotifications();
-    }
-  }, [showNotifications, filter]);
+    if (!adminId) return;
 
-  const loadNotifications = async () => {
-    try {
-      setLoading(true);
-      console.log("🔍 [ADMIN] Début chargement notifications...");
-
-      // Récupérer les vraies notifications depuis Firestore
-      const realNotifications = await getAdminNotifications();
-      console.log("📊 [ADMIN] Notifications reçues:", realNotifications);
-      console.log(
-        "📊 [ADMIN] Nombre de notifications:",
-        realNotifications?.length || 0
-      );
-
-      if (realNotifications && realNotifications.length > 0) {
-        // Convertir les notifications Firestore au format AdminNotification
-        const formattedNotifications: AdminNotification[] =
-          realNotifications.map((notif: any) => {
-            const type = (notif.type as string) || "system";
-            const validType = [
-              "withdrawal",
-              "user",
-              "appointment",
-              "system",
-              "message",
-              "support",
-            ].includes(type)
-              ? (type as AdminNotification["type"])
-              : "system";
-
-            const notification: AdminNotification = {
-              id: notif.id as string,
-              type: validType,
-              title: (notif.title as string) || "Notification",
-              message: (notif.message as string) || "Aucun message",
-              status: ((notif.status as string) === "read"
-                ? "read"
-                : "unread") as "unread" | "read",
-              createdAt: notif.createdAt,
-              data: (notif.data as Record<string, unknown>) || {},
-              actionUrl: (notif.actionUrl as string) || "",
-            };
-
-            return notification;
-          });
-
-        console.log(
-          "✅ [ADMIN] Notifications formatées:",
-          formattedNotifications
-        );
-        setNotifications(formattedNotifications);
-        setUnreadCount(
-          formattedNotifications.filter((n) => n.status === "unread").length
-        );
-      } else {
-        // Aucune notification trouvée
-        console.log("⚠️ [ADMIN] Aucune notification trouvée dans Firestore");
-        setNotifications([]);
-        setUnreadCount(0);
+    const unsubscribe = subscribeToAdminNotificationsRealtime(
+      adminId,
+      (notifications) => {
+        setNotifications(notifications);
+        setLoading(false);
       }
-    } catch (error) {
-      console.error("❌ [ADMIN] Erreur chargement notifications:", error);
-      // En cas d'erreur, afficher un message d'erreur
-      setNotifications([]);
-      setUnreadCount(0);
-    } finally {
-      setLoading(false);
-    }
-  };
+    );
 
-  const markAsRead = async (notificationId: string) => {
-    try {
-      // TODO: Appel Firestore pour marquer comme lu
-      setNotifications((prev) =>
-        prev.map((n) =>
-          n.id === notificationId ? { ...n, status: "read" as const } : n
-        )
-      );
-      setUnreadCount((prev) => Math.max(0, prev - 1));
-    } catch (error) {
-      console.error("❌ [ADMIN] Erreur marquage lu:", error);
-    }
-  };
+    return () => unsubscribe();
+  }, [adminId]);
 
   const markAllAsRead = async () => {
+    if (!adminId) return;
+
     try {
-      // TODO: Appel Firestore pour marquer toutes comme lues
+      // Mise à jour optimiste
       setNotifications((prev) =>
         prev.map((n) => ({ ...n, status: "read" as const }))
       );
-      setUnreadCount(0);
+
+      // Mise à jour Firestore
+      await markAllAdminNotificationsAsRead(adminId);
     } catch (error) {
       console.error("❌ [ADMIN] Erreur marquage toutes lues:", error);
     }
@@ -151,12 +100,11 @@ const AdminNotificationCenter: React.FC = () => {
 
   const deleteNotification = async (notificationId: string) => {
     try {
-      // TODO: Appel Firestore pour supprimer
+      // Mise à jour optimiste
       setNotifications((prev) => prev.filter((n) => n.id !== notificationId));
-      const notification = notifications.find((n) => n.id === notificationId);
-      if (notification?.status === "unread") {
-        setUnreadCount((prev) => Math.max(0, prev - 1));
-      }
+
+      // Mise à jour Firestore
+      await deleteAdminNotification(notificationId);
     } catch (error) {
       console.error("❌ [ADMIN] Erreur suppression:", error);
     }
@@ -165,24 +113,43 @@ const AdminNotificationCenter: React.FC = () => {
   const getRedirectPath = (type: string): string => {
     switch (type) {
       case "user":
-        return "/admin/professionals"; // ← CORRIGÉ : vers professionnels
+      case "new_professional_registration":
+        return "/admin/professionals";
       case "withdrawal":
         return "/admin/withdrawals";
       case "appointment":
         return "/admin/appointments";
       case "support":
+      case "support_message":
         return "/admin/support";
       case "message":
-        return "/admin/messages"; // ← CORRIGÉ : vers messages
+        return "/admin/messages";
       default:
         return "/admin/dashboard";
     }
   };
 
   const handleNotificationClick = (notification: AdminNotification) => {
-    markAsRead(notification.id);
+    console.log(
+      "🔔 [ADMIN] Clic sur notification:",
+      notification.type,
+      notification.title
+    );
+
+    // Marquer comme lu si non lue
+    if (notification.status === "unread" && adminId) {
+      setNotifications((prev) =>
+        prev.map((x) =>
+          x.id === notification.id ? { ...x, status: "read" } : x
+        )
+      );
+      markAdminNotificationAsRead(notification.id, adminId).catch(
+        console.error
+      );
+    }
 
     const redirectPath = getRedirectPath(notification.type);
+    console.log("🔔 [ADMIN] Redirection vers:", redirectPath);
     if (redirectPath) {
       navigate(redirectPath);
       setShowNotifications(false); // Fermer le panneau après navigation
@@ -194,11 +161,15 @@ const AdminNotificationCenter: React.FC = () => {
       case "withdrawal":
         return <DollarSign className="h-5 w-5 text-green-500" />; // Vert pour les retraits
       case "user":
+      case "new_professional_registration":
         return <User className="h-5 w-5 text-blue-500" />; // Bleu pour les utilisateurs
       case "appointment":
         return <Calendar className="h-5 w-5 text-purple-500" />; // Violet pour les consultations
       case "message":
         return <MessageSquare className="h-5 w-5 text-orange-500" />; // Orange pour les messages
+      case "support":
+      case "support_message":
+        return <Info className="h-5 w-5 text-red-500" />; // Rouge pour le support
       case "system":
         return <Info className="h-5 w-5 text-gray-500" />; // Gris pour le système
       default:
@@ -218,7 +189,8 @@ const AdminNotificationCenter: React.FC = () => {
       case "appointment":
         return "border-l-4 border-l-purple-500 bg-purple-50";
       case "support":
-        return "border-l-4 border-l-orange-500 bg-orange-50";
+      case "support_message":
+        return "border-l-4 border-l-red-500 bg-red-50";
       case "message":
         return "border-l-4 border-l-indigo-500 bg-indigo-50";
       default:
@@ -231,15 +203,17 @@ const AdminNotificationCenter: React.FC = () => {
       case "withdrawal":
         return "Retrait";
       case "user":
+      case "new_professional_registration":
         return "Utilisateur";
       case "appointment":
         return "Consultation";
       case "message":
         return "Message";
+      case "support":
+      case "support_message":
+        return "Support";
       case "system":
         return "Système";
-      case "support":
-        return "Support";
       default:
         return type;
     }
@@ -315,11 +289,22 @@ const AdminNotificationCenter: React.FC = () => {
     );
   }
 
+  // Ne pas afficher si pas d'adminId
+  if (!adminId) {
+    return null;
+  }
+
   return (
     <div className="relative">
       {/* Bouton de notification avec badge */}
       <button
-        onClick={() => setShowNotifications(!showNotifications)}
+        onClick={async () => {
+          const opening = !showNotifications;
+          setShowNotifications(opening);
+          if (opening && adminId && unreadCount > 0) {
+            await markAllAdminNotificationsAsRead(adminId);
+          }
+        }}
         className="relative p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
       >
         <Bell className="h-6 w-6" />
@@ -361,8 +346,10 @@ const AdminNotificationCenter: React.FC = () => {
                       | "unread"
                       | "withdrawal"
                       | "user"
+                      | "new_professional_registration"
                       | "appointment"
                       | "support"
+                      | "support_message"
                       | "message"
                   )
                 }
@@ -372,8 +359,12 @@ const AdminNotificationCenter: React.FC = () => {
                 <option value="unread">Non lues</option>
                 <option value="withdrawal">Retraits</option>
                 <option value="user">Utilisateurs</option>
+                <option value="new_professional_registration">
+                  Nouveaux professionnels
+                </option>
                 <option value="appointment">Consultations</option>
                 <option value="support">Support</option>
+                <option value="support_message">Messages support</option>
                 <option value="message">Messages</option>
               </select>
             </div>

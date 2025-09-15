@@ -635,6 +635,17 @@ const PatientsList: React.FC = () => {
 
                         setToastMessage("Message envoyé avec succès !");
                         setToastType("success");
+
+                        // Forcer le rafraîchissement des conversations dans le centre de messagerie
+                        // en déclenchant un événement personnalisé
+                        window.dispatchEvent(
+                          new CustomEvent("messageSent", {
+                            detail: {
+                              conversationId,
+                              patientId: selectedPatient.id,
+                            },
+                          })
+                        );
                       } else {
                         // Envoi de rappel
                         if (!reminderDate || !reminderTime) {

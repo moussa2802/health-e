@@ -693,10 +693,18 @@ const BookAppointment: React.FC = () => {
             ? `+221${phoneNumber}`
             : currentUser.phoneNumber || "";
 
+        // Vérifier que l'email est disponible
+        const customerEmail = currentUser.email;
+        if (!customerEmail) {
+          throw new Error(
+            "Email utilisateur manquant. Veuillez vous reconnecter ou mettre à jour votre profil."
+          );
+        }
+
         const paymentData = {
           amount: professionalPrice || 0,
           bookingId: tempBookingId,
-          customerEmail: currentUser.email || "",
+          customerEmail: customerEmail,
           customerPhone,
           customerName: currentUser.name || "Patient",
           professionalId: professional.id,

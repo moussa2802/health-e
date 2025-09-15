@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Mail, CheckCircle, RefreshCw, ArrowLeft } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
+import { useTerms } from "../contexts/TermsContext";
 import { getAuth } from "firebase/auth";
 import { useEmailVerification } from "../hooks/useEmailVerification";
 import {
@@ -19,6 +20,7 @@ import {
 const VerifyEmail: React.FC = () => {
   const [checkingVerification, setCheckingVerification] = useState(false);
   const { currentUser, refreshUser } = useAuth();
+  const { hasAgreedToTerms, setShowTermsModal } = useTerms();
   const navigate = useNavigate();
   const auth = getAuth();
   const {
@@ -143,7 +145,19 @@ const VerifyEmail: React.FC = () => {
 
           console.log("🔄 [VERIFY DEBUG] Final redirect path:", dashboardPath);
 
-          // Navigate immediately
+          // Déclencher le modal de consentement si l'utilisateur n'a pas encore accepté les conditions
+          if (!hasAgreedToTerms) {
+            console.log(
+              "📋 [VERIFY DEBUG] User hasn't agreed to terms, showing modal..."
+            );
+            try {
+              setShowTermsModal(true);
+            } catch (modalError) {
+              console.error("❌ Error showing terms modal:", modalError);
+            }
+          }
+
+          // Navigate after handling terms modal
           console.log("🚀 [VERIFY DEBUG] Navigating to dashboard...");
           navigate(dashboardPath);
 
@@ -168,7 +182,15 @@ const VerifyEmail: React.FC = () => {
       console.log("🧹 [VERIFY DEBUG] Cleaning up interval");
       clearInterval(interval);
     };
-  }, [currentUser, navigate, auth.currentUser]);
+  }, [
+    currentUser,
+    navigate,
+    auth.currentUser,
+    checkingVerification,
+    hasAgreedToTerms,
+    setShowTermsModal,
+    refreshUser,
+  ]);
 
   const handleResendEmail = async () => {
     if (!auth.currentUser) {

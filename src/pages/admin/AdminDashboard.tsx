@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import {
   Users,
   Calendar,
@@ -12,7 +12,7 @@ import AdminLayout from "../../components/admin/AdminLayout";
 import {
   getStatistics,
   getRecentTransactions,
-  getAdminNotifications,
+  subscribeToAdminStatistics,
 } from "../../services/firebaseService";
 import { useAuth } from "../../contexts/AuthContext";
 
@@ -67,9 +67,6 @@ const AdminDashboard = () => {
   );
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [notifications, setNotifications] = useState<
-    Array<{ id: string; message: string; timestamp: any }>
-  >([]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -77,18 +74,13 @@ const AdminDashboard = () => {
         setLoading(true);
         setError(null);
 
-        const [statsData, transactionsData, adminNotifications] =
-          await Promise.all([
-            getStatistics(),
-            getRecentTransactions(5),
-            getAdminNotifications(
-              currentUser?.id || "FYostm61DLbrax729IYT6OBHSuA"
-            ), // Utilise l'ID de l'admin connecté
-          ]);
+        const [statsData, transactionsData] = await Promise.all([
+          getStatistics(),
+          getRecentTransactions(5),
+        ]);
 
         setStatistics(statsData);
-        setRecentTransactions(transactionsData);
-        setNotifications(adminNotifications as any);
+        setRecentTransactions(transactionsData as Transaction[]);
       } catch (err) {
         console.error("Error fetching dashboard data:", err);
         setError(
@@ -102,6 +94,15 @@ const AdminDashboard = () => {
     };
 
     fetchData();
+
+    // S'abonner aux mises à jour en temps réel
+    const unsubscribe = subscribeToAdminStatistics((stats) => {
+      setStatistics(stats);
+    });
+
+    return () => {
+      unsubscribe();
+    };
   }, [currentUser?.id]);
 
   if (loading) {
@@ -153,7 +154,7 @@ const AdminDashboard = () => {
   return (
     <AdminLayout>
       <div>
-        <div className="flex justify-end mb-6">
+        <div className="mb-6">
           <div className="text-sm text-gray-500">
             Données en temps réel depuis Firebase
           </div>

@@ -17,6 +17,7 @@ import {
   createWithdrawalStatusUpdateNotification,
   createWithdrawalRequestNotification,
 } from "./notificationService";
+import { createAdminWithdrawalRequestNotification } from "./adminNotificationService";
 
 // Types pour les demandes de retrait
 export interface WithdrawalRequest {
@@ -54,7 +55,8 @@ export const createWithdrawalRequest = async (
   professionalId: string,
   amount: number,
   method: "wave" | "orange-money" | "bank-transfer",
-  accountNumber: string
+  accountNumber: string,
+  professionalName?: string
 ): Promise<string> => {
   try {
     const db = getFirestore();
@@ -79,6 +81,25 @@ export const createWithdrawalRequest = async (
       method,
       "pending"
     );
+
+    // Créer une notification admin si le nom du professionnel est fourni
+    if (professionalName) {
+      try {
+        await createAdminWithdrawalRequestNotification(
+          professionalId,
+          professionalName,
+          amount,
+          method,
+          docRef.id
+        );
+      } catch (adminNotifError) {
+        console.error(
+          "❌ [WITHDRAWAL] Erreur notification admin:",
+          adminNotifError
+        );
+        // Ne pas faire échouer la création de la demande si la notification admin échoue
+      }
+    }
 
     console.log("✅ [WITHDRAWAL] Demande de retrait créée:", docRef.id);
     return docRef.id;

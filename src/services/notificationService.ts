@@ -8,6 +8,7 @@ import {
   onSnapshot,
   updateDoc,
   doc,
+  getDoc,
   serverTimestamp,
   Timestamp,
   getDocs,
@@ -15,6 +16,14 @@ import {
   writeBatch,
 } from "firebase/firestore";
 import { getDatabase, ref, onValue, off } from "firebase/database";
+import {
+  sendEmail,
+  sendAppointmentConfirmationEmail,
+  sendAppointmentReminderEmail,
+  sendNewMessageEmail,
+  sendProfessionalRegistrationEmail,
+  sendSupportTicketEmail,
+} from "./emailService";
 
 // Types for notifications
 export interface Notification {
@@ -25,12 +34,22 @@ export interface Notification {
     | "appointment_request"
     | "appointment_confirmed"
     | "appointment_cancelled"
+    | "appointment_modified"
     | "professional_registration"
+    | "professional_approval"
+    | "withdrawal_request"
+    | "withdrawal_status_update"
     | "support_message";
   title: string;
   content: string;
   sourceId: string; // ID of the message, booking, etc.
-  sourceType: "message" | "booking" | "professional" | "support";
+  sourceType:
+    | "message"
+    | "booking"
+    | "professional"
+    | "professional_approval"
+    | "withdrawal"
+    | "support";
   read: boolean;
   createdAt: Timestamp;
   timestamp?: Date; // For component compatibility
@@ -55,7 +74,12 @@ export async function createNotification(
   content: string,
   sourceId: string,
   sourceType: "message" | "booking" | "professional" | "support",
-  priority: "low" | "medium" | "high" = "medium"
+  priority: "low" | "medium" | "high" = "medium",
+  emailData?: {
+    userEmail: string;
+    userName: string;
+    additionalData?: Record<string, any>;
+  }
 ): Promise<string> {
   try {
     console.log(`📣 Creating ${type} notification for user:`, userId);
@@ -84,10 +108,136 @@ export async function createNotification(
     const docRef = await addDoc(notificationsRef, notificationData);
     console.log("✅ Notification created successfully:", docRef.id);
 
+    // Envoyer un email si les données email sont fournies
+    if (emailData) {
+      try {
+        await sendNotificationEmail(type, emailData);
+        console.log("✅ Email notification sent successfully");
+      } catch (emailError) {
+        console.warn("⚠️ Failed to send email notification:", emailError);
+        // Ne pas faire échouer la création de notification si l'email échoue
+      }
+    }
+
     return docRef.id;
   } catch (error) {
     console.error("❌ Error creating notification:", error);
     throw new Error("Failed to create notification");
+  }
+}
+
+// Fonction pour envoyer des emails de notification
+async function sendNotificationEmail(
+  type: string,
+  emailData: {
+    userEmail: string;
+    userName: string;
+    additionalData?: Record<string, any>;
+  }
+): Promise<void> {
+  const { userEmail, userName } = emailData;
+  const data = emailData.additionalData || {};
+
+  switch (type) {
+    case "appointment_confirmed":
+      if (
+        data.professionalName &&
+        data.appointmentDate &&
+        data.appointmentTime
+      ) {
+        await sendAppointmentConfirmationEmail(
+          userEmail,
+          userName,
+          data.professionalName,
+          data.appointmentDate,
+          data.appointmentTime,
+          data.appointmentType || "Consultation",
+          data.appointmentPrice || 0
+        );
+      }
+      break;
+
+    case "appointment_request":
+      if (
+        data.professionalName &&
+        data.appointmentDate &&
+        data.appointmentTime
+      ) {
+        await sendAppointmentReminderEmail(
+          userEmail,
+          userName,
+          data.professionalName,
+          data.appointmentDate,
+          data.appointmentTime,
+          data.appointmentType || "Consultation"
+        );
+      }
+      break;
+
+    case "message":
+      if (data.senderName && data.messagePreview) {
+        await sendNewMessageEmail(
+          userEmail,
+          userName,
+          data.senderName,
+          data.messagePreview
+        );
+      }
+      break;
+
+    case "professional_registration":
+      if (data.specialty && data.category) {
+        await sendProfessionalRegistrationEmail(
+          userEmail,
+          userName,
+          data.specialty,
+          data.category
+        );
+      }
+      break;
+
+    case "support_message":
+      if (data.ticketId && data.ticketSubject) {
+        await sendSupportTicketEmail(
+          userEmail,
+          userName,
+          data.ticketId,
+          data.ticketSubject,
+          data.ticketPriority || "medium",
+          data.ticketCategory || "general"
+        );
+      }
+      break;
+
+    default:
+      // Pour les autres types, envoyer un email générique
+      await sendEmail({
+        to: userEmail,
+        toName: userName,
+        message: {
+          subject: "Nouvelle notification - Health-e",
+          html: `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+              <h2 style="color: #0d9488;">Nouvelle notification</h2>
+              <p>Bonjour ${userName},</p>
+              <p>Vous avez reçu une nouvelle notification sur Health-e.</p>
+              <div style="background-color: #f0f9ff; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                <p><strong>Type :</strong> ${type}</p>
+                <p><strong>Contenu :</strong> ${
+                  data.content || "Notification"
+                }</p>
+              </div>
+              <p><a href="https://health-e.sn/notifications" style="background-color: #0d9488; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Voir la notification</a></p>
+              <p>Merci,<br>L'équipe Health-e</p>
+            </div>
+          `,
+          text: `Nouvelle notification : ${
+            data.content ||
+            "Vous avez reçu une nouvelle notification sur Health-e."
+          }`,
+        },
+      });
+      break;
   }
 }
 
@@ -129,7 +279,7 @@ export function subscribeToNotifications(
 
   // Ensure Firestore is ready
   ensureFirestoreReady()
-    .then((isReady) => {
+    .then(async (isReady) => {
       if (!isReady) {
         console.warn("⚠️ Firestore not ready for notifications subscription");
         callback([]);
@@ -148,12 +298,24 @@ export function subscribeToNotifications(
       try {
         // Query notifications for this user
         const notificationsRef = collection(db, "notifications");
-        const q = query(
-          notificationsRef,
-          where("userId", "==", userId),
-          orderBy("createdAt", "desc"),
-          limit(20)
-        );
+
+        // Vérifier si l'utilisateur est admin pour ajuster la requête
+        const userDoc = await getDoc(doc(db, "users", userId));
+        const isAdmin = userDoc.exists() && userDoc.data()?.type === "admin";
+
+        let q;
+        if (isAdmin) {
+          // Les admins peuvent voir toutes les notifications
+          q = query(notificationsRef, orderBy("createdAt", "desc"), limit(50));
+        } else {
+          // Les utilisateurs normaux voient seulement leurs notifications
+          q = query(
+            notificationsRef,
+            where("userId", "==", userId),
+            orderBy("createdAt", "desc"),
+            limit(20)
+          );
+        }
 
         const unsubscribe = onSnapshot(
           q,

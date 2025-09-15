@@ -109,6 +109,14 @@ export const SPECIALTIES: Record<string, Specialty> = {
     },
     category: "mental-health",
   },
+  "medecin-generaliste-mental": {
+    key: "medecin-generaliste-mental",
+    labels: {
+      fr: "Médecin généraliste",
+      en: "General Practitioner",
+    },
+    category: "mental-health",
+  },
 
   // Sexual Health Specialties
   gynecologue: {
@@ -170,8 +178,8 @@ export const SPECIALTIES: Record<string, Specialty> = {
   "medecin-generaliste-sexuelle": {
     key: "medecin-generaliste-sexuelle",
     labels: {
-      fr: "Médecin généraliste en santé sexuelle",
-      en: "General Practitioner in Sexual Health",
+      fr: "Médecin généraliste",
+      en: "General Practitioner",
     },
     category: "sexual-health",
   },
@@ -280,6 +288,11 @@ export const LEGACY_SPECIALTY_MAPPING: Record<string, string> = {
   addictologue: "addictologue",
   pédopsychiatre: "pedopsychiatre",
   gérontopsychiatre: "gerontopsychiatre",
+  "médecin généraliste": "medecin-generaliste-mental",
+  "medecin generaliste": "medecin-generaliste-mental",
+  "médecin généraliste santé mentale": "medecin-generaliste-mental",
+  "medecin generaliste mental": "medecin-generaliste-mental",
+  "médecin généraliste mental": "medecin-generaliste-mental",
 
   // Autres spécialités sexuelles
   "sage-femme": "sage-femme",

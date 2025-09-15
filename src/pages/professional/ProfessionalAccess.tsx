@@ -8,6 +8,8 @@ import {
   ShieldCheck,
   AlertCircle,
   Mail,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import { useAuth } from "../../contexts/AuthContext";
 import { useLanguage } from "../../contexts/LanguageContext";
@@ -46,12 +48,17 @@ const ProfessionalAccess: React.FC = () => {
   const [registerEmail, setRegisterEmail] = useState("");
   const [registerPhone, setRegisterPhone] = useState("");
   const [registerPassword, setRegisterPassword] = useState("");
+  const [registerPasswordConfirm, setRegisterPasswordConfirm] = useState("");
+  const [showRegisterPassword, setShowRegisterPassword] = useState(false);
+  const [showRegisterPasswordConfirm, setShowRegisterPasswordConfirm] =
+    useState(false);
   const [registerError, setRegisterError] = useState("");
   const [isRegistering, setIsRegistering] = useState(false);
 
   const [selectedCategory, setSelectedCategory] =
     useState<Category>("mental-health");
-  const [selectedSpecialties, setSelectedSpecialties] = useState<string[]>([]);
+  const [selectedPrimarySpecialty, setSelectedPrimarySpecialty] =
+    useState<string>("");
   const [registerMethod, setRegisterMethod] = useState<"email" | "phone">(
     "email"
   );
@@ -235,8 +242,18 @@ const ProfessionalAccess: React.FC = () => {
     e.preventDefault();
 
     if (registerMethod === "email") {
-      if (!registerName || !registerEmail || !registerPassword) {
+      if (
+        !registerName ||
+        !registerEmail ||
+        !registerPassword ||
+        !registerPasswordConfirm
+      ) {
         setRegisterError("Veuillez remplir tous les champs");
+        return;
+      }
+
+      if (registerPassword !== registerPasswordConfirm) {
+        setRegisterError("Les mots de passe ne correspondent pas");
         return;
       }
 
@@ -245,6 +262,11 @@ const ProfessionalAccess: React.FC = () => {
         setRegisterError(
           "Vous devez accepter les conditions d'utilisation et la politique de confidentialité"
         );
+        return;
+      }
+
+      if (!selectedPrimarySpecialty) {
+        setRegisterError("Veuillez sélectionner votre spécialité principale");
         return;
       }
 
@@ -259,13 +281,11 @@ const ProfessionalAccess: React.FC = () => {
           // Legacy fields for backward compatibility
           serviceType:
             selectedCategory === "mental-health" ? "mental" : "sexual",
-          specialty:
-            selectedSpecialties.length > 0 ? selectedSpecialties[0] : "",
+          specialty: selectedPrimarySpecialty,
           // New fields
           category: selectedCategory,
-          primarySpecialty:
-            selectedSpecialties.length > 0 ? selectedSpecialties[0] : "",
-          specialties: selectedSpecialties,
+          primarySpecialty: selectedPrimarySpecialty,
+          specialties: [selectedPrimarySpecialty], // Array with single specialty for now
           profileImage: "",
           consultationFee: 0,
           isActive: false,
@@ -593,15 +613,73 @@ const ProfessionalAccess: React.FC = () => {
                     >
                       Mot de passe
                     </label>
-                    <input
-                      id="register-password"
-                      type="password"
-                      value={registerPassword}
-                      onChange={(e) => setRegisterPassword(e.target.value)}
-                      className="w-full px-4 py-3 rounded-xl border-gray-300 shadow-sm focus:border-teal-500 focus:ring-teal-500 transition-colors"
-                      placeholder="Créez un mot de passe"
-                      required
-                    />
+                    <div className="relative">
+                      <input
+                        id="register-password"
+                        type={showRegisterPassword ? "text" : "password"}
+                        value={registerPassword}
+                        onChange={(e) => setRegisterPassword(e.target.value)}
+                        className="w-full px-4 py-3 pr-12 rounded-xl border-gray-300 shadow-sm focus:border-teal-500 focus:ring-teal-500 transition-colors"
+                        placeholder="Créez un mot de passe"
+                        required
+                      />
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setShowRegisterPassword(!showRegisterPassword)
+                        }
+                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700 focus:outline-none"
+                      >
+                        {showRegisterPassword ? (
+                          <EyeOff className="h-5 w-5" />
+                        ) : (
+                          <Eye className="h-5 w-5" />
+                        )}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label
+                      htmlFor="register-password-confirm"
+                      className="block text-sm font-medium text-gray-700 mb-1"
+                    >
+                      Confirmer le mot de passe
+                    </label>
+                    <div className="relative">
+                      <input
+                        id="register-password-confirm"
+                        type={showRegisterPasswordConfirm ? "text" : "password"}
+                        value={registerPasswordConfirm}
+                        onChange={(e) =>
+                          setRegisterPasswordConfirm(e.target.value)
+                        }
+                        className="w-full px-4 py-3 pr-12 rounded-xl border-gray-300 shadow-sm focus:border-teal-500 focus:ring-teal-500 transition-colors"
+                        placeholder="Confirmez votre mot de passe"
+                        required
+                      />
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setShowRegisterPasswordConfirm(
+                            !showRegisterPasswordConfirm
+                          )
+                        }
+                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700 focus:outline-none"
+                      >
+                        {showRegisterPasswordConfirm ? (
+                          <EyeOff className="h-5 w-5" />
+                        ) : (
+                          <Eye className="h-5 w-5" />
+                        )}
+                      </button>
+                    </div>
+                    {registerPasswordConfirm &&
+                      registerPassword !== registerPasswordConfirm && (
+                        <p className="text-red-500 text-sm mt-1">
+                          Les mots de passe ne correspondent pas
+                        </p>
+                      )}
                   </div>
 
                   <div>
@@ -625,7 +703,7 @@ const ProfessionalAccess: React.FC = () => {
                             checked={selectedCategory === category}
                             onChange={() => {
                               setSelectedCategory(category);
-                              setSelectedSpecialties([]); // Reset specialties when category changes
+                              setSelectedPrimarySpecialty(""); // Reset primary specialty when category changes
                             }}
                           />
                           <span className="ml-2 text-gray-700">
@@ -639,11 +717,18 @@ const ProfessionalAccess: React.FC = () => {
                   {selectedCategory && (
                     <div>
                       <label
-                        htmlFor="specialties"
+                        htmlFor="primarySpecialty"
                         className="block text-sm font-medium text-gray-700 mb-1"
                       >
-                        Spécialités (vous pouvez en sélectionner plusieurs)
+                        Spécialité principale
                       </label>
+                      <div className="bg-blue-50 border-l-4 border-blue-500 p-3 mb-3">
+                        <p className="text-blue-700 text-sm">
+                          <strong>Note :</strong> Vous pourrez ajouter d'autres
+                          spécialités après votre inscription en modifiant votre
+                          profil.
+                        </p>
+                      </div>
                       <div className="max-h-48 overflow-y-auto border border-gray-300 rounded-md p-2 space-y-2">
                         {getSpecialtiesByCategory(selectedCategory).map(
                           (specialty) => (
@@ -652,26 +737,16 @@ const ProfessionalAccess: React.FC = () => {
                               className="flex items-center space-x-2 cursor-pointer hover:bg-gray-50 p-2 rounded"
                             >
                               <input
-                                type="checkbox"
+                                type="radio"
+                                name="primarySpecialty"
                                 value={specialty.key}
-                                checked={selectedSpecialties.includes(
-                                  specialty.key
-                                )}
+                                checked={
+                                  selectedPrimarySpecialty === specialty.key
+                                }
                                 onChange={(e) => {
-                                  if (e.target.checked) {
-                                    setSelectedSpecialties([
-                                      ...selectedSpecialties,
-                                      specialty.key,
-                                    ]);
-                                  } else {
-                                    setSelectedSpecialties(
-                                      selectedSpecialties.filter(
-                                        (s) => s !== specialty.key
-                                      )
-                                    );
-                                  }
+                                  setSelectedPrimarySpecialty(e.target.value);
                                 }}
-                                className="form-checkbox h-4 w-4 text-teal-600 focus:ring-teal-500"
+                                className="form-radio h-4 w-4 text-teal-600 focus:ring-teal-500"
                               />
                               <span className="text-sm text-gray-700">
                                 {specialty.labels[language]}
@@ -680,9 +755,9 @@ const ProfessionalAccess: React.FC = () => {
                           )
                         )}
                       </div>
-                      {selectedSpecialties.length === 0 && (
+                      {!selectedPrimarySpecialty && (
                         <p className="text-red-500 text-sm mt-1">
-                          Veuillez sélectionner au moins une spécialité
+                          Veuillez sélectionner votre spécialité principale
                         </p>
                       )}
                     </div>

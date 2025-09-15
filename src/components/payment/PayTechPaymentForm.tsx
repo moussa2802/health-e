@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../../contexts/AuthContext';
-import paytechService from '../../services/paytechService';
-import LoadingSpinner from '../ui/LoadingSpinner';
-import { CreditCard, AlertCircle, CheckCircle } from 'lucide-react';
+import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "../../contexts/AuthContext";
+import paytechService from "../../services/paytechService";
+import LoadingSpinner from "../ui/LoadingSpinner";
+import { CreditCard, AlertCircle, CheckCircle } from "lucide-react";
 
 interface PayTechPaymentFormProps {
   bookingId: string;
@@ -20,7 +20,7 @@ const PayTechPaymentForm: React.FC<PayTechPaymentFormProps> = ({
   professionalId,
   professionalName,
   onSuccess,
-  onError
+  onError,
 }) => {
   const navigate = useNavigate();
   const { currentUser } = useAuth();
@@ -29,7 +29,7 @@ const PayTechPaymentForm: React.FC<PayTechPaymentFormProps> = ({
 
   const handlePayment = async () => {
     if (!currentUser) {
-      setError('Vous devez être connecté pour effectuer un paiement');
+      setError("Vous devez être connecté pour effectuer un paiement");
       return;
     }
 
@@ -37,29 +37,42 @@ const PayTechPaymentForm: React.FC<PayTechPaymentFormProps> = ({
     setError(null);
 
     try {
-      console.log('🔔 [PAYTECH] Starting payment process for booking:', bookingId);
+      console.log(
+        "🔔 [PAYTECH] Starting payment process for booking:",
+        bookingId
+      );
+
+      // Vérifier que l'email est disponible
+      if (!currentUser.email) {
+        throw new Error(
+          "Email utilisateur manquant. Veuillez vous reconnecter ou mettre à jour votre profil."
+        );
+      }
 
       // Préparer les données de paiement
       const paymentData = {
         amount: paytechService.formatAmount(amount),
         bookingId,
-        customerEmail: currentUser.email || '',
-        customerPhone: currentUser.phoneNumber || '',
-        customerName: currentUser.displayName || 'Patient',
+        customerEmail: currentUser.email,
+        customerPhone: currentUser.phoneNumber || "",
+        customerName: currentUser.displayName || "Patient",
         professionalId,
         professionalName,
-        description: `Consultation avec ${professionalName}`
+        description: `Consultation avec ${professionalName}`,
       };
 
       // Valider les données
       if (!paytechService.validatePaymentData(paymentData)) {
-        throw new Error('Données de paiement invalides');
+        throw new Error("Données de paiement invalides");
       }
 
       // Initier le paiement
       const response = await paytechService.initiatePayment(paymentData);
 
-      console.log('✅ [PAYTECH] Payment initiated, redirecting to:', response.redirect_url);
+      console.log(
+        "✅ [PAYTECH] Payment initiated, redirecting to:",
+        response.redirect_url
+      );
 
       // Rediriger vers la page de paiement PayTech selon les instructions officielles
       paytechService.redirectToPayment(response.redirect_url);
@@ -68,12 +81,12 @@ const PayTechPaymentForm: React.FC<PayTechPaymentFormProps> = ({
       if (onSuccess) {
         onSuccess();
       }
-
     } catch (error) {
-      console.error('❌ [PAYTECH] Payment error:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Erreur lors du paiement';
+      console.error("❌ [PAYTECH] Payment error:", error);
+      const errorMessage =
+        error instanceof Error ? error.message : "Erreur lors du paiement";
       setError(errorMessage);
-      
+
       if (onError) {
         onError(errorMessage);
       }
@@ -86,7 +99,9 @@ const PayTechPaymentForm: React.FC<PayTechPaymentFormProps> = ({
     <div className="bg-white rounded-lg shadow-md p-6">
       <div className="flex items-center mb-4">
         <CreditCard className="h-6 w-6 text-blue-600 mr-2" />
-        <h3 className="text-lg font-semibold text-gray-900">Paiement sécurisé</h3>
+        <h3 className="text-lg font-semibold text-gray-900">
+          Paiement sécurisé
+        </h3>
       </div>
 
       <div className="mb-6">
@@ -98,10 +113,16 @@ const PayTechPaymentForm: React.FC<PayTechPaymentFormProps> = ({
         </div>
 
         <div className="bg-gray-50 rounded-lg p-4 mb-4">
-          <h4 className="font-medium text-gray-900 mb-2">Détails de la consultation</h4>
+          <h4 className="font-medium text-gray-900 mb-2">
+            Détails de la consultation
+          </h4>
           <div className="text-sm text-gray-600">
-            <p><strong>Professionnel :</strong> {professionalName}</p>
-            <p><strong>Référence :</strong> {bookingId}</p>
+            <p>
+              <strong>Professionnel :</strong> {professionalName}
+            </p>
+            <p>
+              <strong>Référence :</strong> {bookingId}
+            </p>
           </div>
         </div>
 
@@ -119,8 +140,10 @@ const PayTechPaymentForm: React.FC<PayTechPaymentFormProps> = ({
             <CheckCircle className="h-5 w-5 text-blue-500 mr-2 mt-0.5" />
             <div className="text-sm text-blue-700">
               <p className="font-medium mb-1">Paiement sécurisé</p>
-              <p>Votre paiement sera traité de manière sécurisée par PayTech. 
-              Vous serez redirigé vers leur plateforme de paiement.</p>
+              <p>
+                Votre paiement sera traité de manière sécurisée par PayTech.
+                Vous serez redirigé vers leur plateforme de paiement.
+              </p>
             </div>
           </div>
         </div>
@@ -132,8 +155,8 @@ const PayTechPaymentForm: React.FC<PayTechPaymentFormProps> = ({
           disabled={isLoading}
           className={`flex-1 flex items-center justify-center px-6 py-3 rounded-lg font-medium transition-colors ${
             isLoading
-              ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-              : 'bg-blue-600 hover:bg-blue-700 text-white'
+              ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+              : "bg-blue-600 hover:bg-blue-700 text-white"
           }`}
         >
           {isLoading ? (
@@ -159,7 +182,8 @@ const PayTechPaymentForm: React.FC<PayTechPaymentFormProps> = ({
       </div>
 
       <div className="mt-4 text-xs text-gray-500 text-center">
-        En cliquant sur "Payer maintenant", vous acceptez les conditions de paiement de PayTech.
+        En cliquant sur "Payer maintenant", vous acceptez les conditions de
+        paiement de PayTech.
       </div>
     </div>
   );

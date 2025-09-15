@@ -13,6 +13,8 @@ import {
   getProfessionalProfile,
   updateProfessionalProfile,
   subscribeToProfessionalProfile,
+  updateProfessionalEmailPreferences,
+  getProfessionalEmailPreferences,
   type ProfessionalProfile as ServiceProfessionalProfile,
 } from "../../services/profileService";
 import {
@@ -78,6 +80,9 @@ const StableProfessionalSettings: React.FC = () => {
     isInitialized: false,
   });
   const [isLocalEnvironment, setIsLocalEnvironment] = useState(false);
+  const [emailNotificationsEnabled, setEmailNotificationsEnabled] =
+    useState(true);
+  const [isUpdatingEmailPrefs, setIsUpdatingEmailPrefs] = useState(false);
 
   // Détection de l'environnement
   useEffect(() => {
@@ -149,6 +154,12 @@ const StableProfessionalSettings: React.FC = () => {
             createdAt: profile.createdAt || ({} as any),
             updatedAt: profile.updatedAt || ({} as any),
           });
+
+          // Charger les préférences email
+          const emailPrefs = await getProfessionalEmailPreferences(
+            currentUser.id
+          );
+          setEmailNotificationsEnabled(emailPrefs);
         }
 
         // Abonnement aux changements du profil
@@ -223,6 +234,29 @@ const StableProfessionalSettings: React.FC = () => {
     } catch (error) {
       console.error("Erreur lors de la reconnexion:", error);
       setErrorMessage("Erreur lors de la reconnexion");
+    }
+  };
+
+  // Fonction pour gérer les préférences email
+  const handleEmailPreferencesChange = async (enabled: boolean) => {
+    if (!currentUser?.id) return;
+
+    try {
+      setIsUpdatingEmailPrefs(true);
+      setErrorMessage("");
+
+      await updateProfessionalEmailPreferences(currentUser.id, enabled);
+      setEmailNotificationsEnabled(enabled);
+      setSaveSuccess(true);
+      setTimeout(() => setSaveSuccess(false), 3000);
+    } catch (error) {
+      console.error(
+        "Erreur lors de la mise à jour des préférences email:",
+        error
+      );
+      setErrorMessage("Erreur lors de la mise à jour des préférences email");
+    } finally {
+      setIsUpdatingEmailPrefs(false);
     }
   };
 
@@ -454,6 +488,66 @@ const StableProfessionalSettings: React.FC = () => {
                 </button>
               </div>
             </div>
+          </div>
+
+          {/* Préférences de notifications email */}
+          <div className="bg-white rounded-2xl shadow-lg p-6">
+            <h2 className="text-xl font-semibold text-gray-900 mb-4">
+              Notifications par e-mail
+            </h2>
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-lg font-medium text-gray-900">
+                  Recevoir les notifications par e-mail
+                </h3>
+                <p className="text-gray-600 mt-1">
+                  Activez cette option pour recevoir des notifications par
+                  e-mail pour les nouveaux rendez-vous, messages et autres
+                  événements importants.
+                </p>
+              </div>
+              <div className="flex items-center">
+                <button
+                  onClick={() =>
+                    handleEmailPreferencesChange(!emailNotificationsEnabled)
+                  }
+                  disabled={isUpdatingEmailPrefs}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 ${
+                    emailNotificationsEnabled ? "bg-teal-600" : "bg-gray-200"
+                  } ${
+                    isUpdatingEmailPrefs
+                      ? "opacity-50 cursor-not-allowed"
+                      : "cursor-pointer"
+                  }`}
+                >
+                  <span
+                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                      emailNotificationsEnabled
+                        ? "translate-x-6"
+                        : "translate-x-1"
+                    }`}
+                  />
+                </button>
+                {isUpdatingEmailPrefs && (
+                  <div className="ml-3">
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-teal-600"></div>
+                  </div>
+                )}
+              </div>
+            </div>
+            {emailNotificationsEnabled && (
+              <div className="mt-4 p-3 bg-teal-50 border border-teal-200 rounded-lg">
+                <p className="text-sm text-teal-700">
+                  ✅ Vous recevrez des notifications par e-mail pour :
+                </p>
+                <ul className="text-sm text-teal-600 mt-2 ml-4 list-disc">
+                  <li>Nouveaux rendez-vous</li>
+                  <li>Messages des patients</li>
+                  <li>Mises à jour de retraits</li>
+                  <li>Autres événements importants</li>
+                </ul>
+              </div>
+            )}
           </div>
 
           {/* Formulaire de profil stable */}

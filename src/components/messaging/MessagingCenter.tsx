@@ -151,6 +151,44 @@ const MessagingCenter: React.FC = () => {
       });
   }, [currentUser?.id]);
 
+  // Écouter les événements de message envoyé depuis d'autres composants
+  useEffect(() => {
+    const handleMessageSent = (event: CustomEvent) => {
+      console.log(
+        "📨 Message sent event received, refreshing conversations..."
+      );
+      // Forcer le rafraîchissement des conversations
+      if (unsubscribeConversations.current) {
+        unsubscribeConversations.current();
+        unsubscribeConversations.current = null;
+      }
+
+      // Réinitialiser l'abonnement aux conversations
+      if (currentUser?.id) {
+        const unsubscribe = subscribeToConversations(
+          currentUser.id,
+          (conversations) => {
+            console.log(
+              "✅ Refreshed conversations after message sent:",
+              conversations.length
+            );
+            setConversations(conversations);
+          }
+        );
+        unsubscribeConversations.current = unsubscribe;
+      }
+    };
+
+    window.addEventListener("messageSent", handleMessageSent as EventListener);
+
+    return () => {
+      window.removeEventListener(
+        "messageSent",
+        handleMessageSent as EventListener
+      );
+    };
+  }, [currentUser?.id]);
+
   // S'abonner aux messages de la conversation sélectionnée
   useEffect(() => {
     if (!selectedConversation?.id || !currentUser?.id) {
@@ -287,6 +325,16 @@ const MessagingCenter: React.FC = () => {
         newMessage.trim()
       );
       setNewMessage("");
+
+      // Marquer les messages comme lus après l'envoi
+      try {
+        await markMessagesAsRead(selectedConversation.id, currentUser.id);
+      } catch (readError) {
+        console.error(
+          "❌ Error marking messages as read after send:",
+          readError
+        );
+      }
     } catch (error) {
       console.error("❌ Error sending message:", error);
       setError("Erreur lors de l'envoi du message");
@@ -529,9 +577,24 @@ const MessagingCenter: React.FC = () => {
                   return (
                     <button
                       key={conversation.id}
-                      onClick={() => {
+                      onClick={async () => {
                         setSelectedConversation(conversation);
                         setShowMobileConversation(true);
+
+                        // Marquer les messages comme lus quand on ouvre la conversation
+                        if (currentUser?.id) {
+                          try {
+                            await markMessagesAsRead(
+                              conversation.id,
+                              currentUser.id
+                            );
+                          } catch (error) {
+                            console.error(
+                              "❌ Error marking messages as read:",
+                              error
+                            );
+                          }
+                        }
                       }}
                       className={`w-full p-4 text-left hover:bg-gray-50 rounded-xl transition-all duration-200 mb-2 ${
                         selectedConversation?.id === conversation.id
@@ -545,9 +608,24 @@ const MessagingCenter: React.FC = () => {
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex justify-between items-start">
-                            <h3 className="font-semibold text-gray-900 truncate">
-                              {otherParticipant.name}
-                            </h3>
+                            <div className="flex items-center space-x-2 flex-1 min-w-0">
+                              <h3 className="font-semibold text-gray-900 truncate">
+                                {otherParticipant.name}
+                              </h3>
+                              {conversation.unreadCount?.[
+                                currentUser?.id || ""
+                              ] > 0 && (
+                                <span className="bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full min-w-[20px] h-5 flex items-center justify-center">
+                                  {conversation.unreadCount[
+                                    currentUser?.id || ""
+                                  ] > 99
+                                    ? "99+"
+                                    : conversation.unreadCount[
+                                        currentUser?.id || ""
+                                      ]}
+                                </span>
+                              )}
+                            </div>
                             {conversation.lastMessage && (
                               <span className="text-xs text-gray-500 flex-shrink-0 ml-2">
                                 {formatConversationTime(
@@ -610,9 +688,24 @@ const MessagingCenter: React.FC = () => {
                         getOtherParticipant(selectedConversation);
                       return otherParticipant ? (
                         <>
-                          <h2 className="font-semibold text-gray-900 text-lg">
-                            {otherParticipant.name}
-                          </h2>
+                          <div className="flex items-center space-x-2">
+                            <h2 className="font-semibold text-gray-900 text-lg">
+                              {otherParticipant.name}
+                            </h2>
+                            {selectedConversation.unreadCount?.[
+                              currentUser?.id || ""
+                            ] > 0 && (
+                              <span className="bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full min-w-[20px] h-5 flex items-center justify-center">
+                                {selectedConversation.unreadCount[
+                                  currentUser?.id || ""
+                                ] > 99
+                                  ? "99+"
+                                  : selectedConversation.unreadCount[
+                                      currentUser?.id || ""
+                                    ]}
+                              </span>
+                            )}
+                          </div>
                           <p className="text-sm text-gray-500 capitalize">
                             {otherParticipant.type === "professional"
                               ? "Professionnel"
