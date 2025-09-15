@@ -1,10 +1,11 @@
-import React, {
+import {
   createContext,
   useState,
   useContext,
   ReactNode,
   useEffect,
   useRef,
+  useMemo,
 } from "react";
 import {
   getAuth,
@@ -33,7 +34,6 @@ import {
 } from "../utils/firebase";
 import { canUserRegister } from "../utils/accountCleanup";
 import { app } from "../utils/firebase";
-import { useNavigate } from "react-router-dom";
 
 export type UserType = "patient" | "professional" | "admin" | null;
 
@@ -53,8 +53,10 @@ interface User {
 interface AuthContextType {
   currentUser: User | null;
   loading: boolean;
+  authReady: boolean; // Firebase prêt ?
+  loadingUserData: boolean; // Firestore profil prêt ?
   isAuthenticated: boolean;
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string, userType: UserType) => Promise<void>;
   logout: () => Promise<void>;
   register: (
     email: string,
@@ -128,11 +130,11 @@ const isFirestoreInternalError = (error: unknown): boolean => {
 export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-  const [authInitialized, setAuthInitialized] = useState(false);
+  const [authReady, setAuthReady] = useState(false);
+  const [loadingUserData, setLoadingUserData] = useState(true);
   const resetAttemptedRef = useRef<number>(0);
   const registrationInProgressRef = useRef<boolean>(false);
   const RESET_COOLDOWN_MS = 5000; // 5 seconds cooldown between resets
-  const navigate = useNavigate();
 
   // Function to fetch user data with retry mechanism
   const fetchUserDataWithRetry = async (
@@ -260,28 +262,29 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     const unsubscribe = onAuthStateChanged(
       auth,
       async (firebaseUser: FirebaseUser | null) => {
-        setAuthInitialized(true);
+        setAuthReady(true);
 
         if (firebaseUser) {
+          setLoadingUserData(true);
           try {
             // User is signed in, get their data from Firestore with retry mechanism
             await fetchUserDataWithRetry(firebaseUser);
           } catch (error) {
             setCurrentUser(null);
+          } finally {
+            setLoadingUserData(false);
           }
         } else {
           // User is signed out
           setCurrentUser(null);
+          setLoadingUserData(false);
         }
         setLoading(false);
       }
     );
 
-    // Check for saved user in localStorage (fallback for demo mode)
-    const savedUser = localStorage.getItem("health-e-user");
-    if (savedUser && !currentUser) {
-      setCurrentUser(JSON.parse(savedUser));
-    }
+    // ⚠️ Supprimé le bloc localStorage pour éviter les conflits avec la garde
+    // La garde doit attendre que Firebase ET Firestore soient prêts
 
     return () => unsubscribe();
   }, []);
@@ -1082,38 +1085,45 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     cleanAllFirebaseStorage();
   };
 
+  // Mémoriser le value pour éviter les re-renders constants
+  const contextValue = useMemo(
+    () => ({
+      currentUser,
+      loading,
+      authReady,
+      loadingUserData,
+      isAuthenticated: !!currentUser?.id,
+      login,
+      register,
+      resetPassword,
+      logout,
+      refreshUser,
+      createUserWithPhone,
+      loginWithPhone,
+      verifyPhoneCode: () => {
+        // This function is not implemented in the original file,
+        // but it's part of the AuthContextType.
+        // For now, we'll return a placeholder.
+        console.warn("verifyPhoneCode not implemented yet.");
+      },
+    }),
+    [
+      currentUser,
+      loading,
+      authReady,
+      loadingUserData,
+      login,
+      register,
+      resetPassword,
+      logout,
+      refreshUser,
+      createUserWithPhone,
+      loginWithPhone,
+    ]
+  );
+
   return (
-    <AuthContext.Provider
-      value={{
-        currentUser,
-        loading,
-        isAuthenticated: !!currentUser?.id,
-        login,
-        register,
-        resetPassword,
-        logout,
-        refreshUser,
-        createUserWithPhone,
-        loginWithPhone,
-        verifyPhoneCode: () => {
-          // This function is not implemented in the original file,
-          // but it's part of the AuthContextType.
-          // For now, we'll return a placeholder.
-          console.warn("verifyPhoneCode not implemented yet.");
-        },
-      }}
-    >
-      {!loading || authInitialized ? (
-        children
-      ) : (
-        <div className="min-h-screen flex items-center justify-center bg-gray-50">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
-            <p className="mt-4 text-lg text-gray-600">Chargement...</p>
-          </div>
-        </div>
-      )}
-    </AuthContext.Provider>
+    <AuthContext.Provider value={contextValue}>{children}</AuthContext.Provider>
   );
 };
 

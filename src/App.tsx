@@ -6,9 +6,20 @@ import {
   Navigate,
   useLocation,
 } from "react-router-dom";
+import { RecaptchaVerifier } from "firebase/auth";
+import { auth } from "./utils/firebase";
 import { LanguageProvider } from "./contexts/LanguageContext";
 import { AuthProvider } from "./contexts/AuthContext";
 import { TermsProvider } from "./contexts/TermsContext";
+
+// Instance globale reCAPTCHA
+declare global {
+  interface Window {
+    __heRecaptchaVerifier?: RecaptchaVerifier | null;
+    __heRecaptchaWidgetId?: number | null;
+    __heRecaptchaInitInProgress?: boolean;
+  }
+}
 import OptimizedHeader from "./components/layout/OptimizedHeader";
 import Footer from "./components/layout/Footer";
 import LoadingSpinner from "./components/ui/LoadingSpinner";
@@ -552,7 +563,17 @@ function App() {
           <LanguageProvider>
             <TermsProvider>
               <ScrollToTop />
-              <div id="recaptcha-container" style={{ display: "none" }} />
+              {/* Mettre ceci UNE SEULE FOIS dans App() (en dehors des pages) */}
+              <div
+                id="recaptcha-container"
+                style={{
+                  position: "fixed",
+                  left: -9999,
+                  top: -9999,
+                  width: 1,
+                  height: 1,
+                }}
+              />
               <div className="min-h-screen flex flex-col bg-gray-50">
                 <AppChrome />
               </div>

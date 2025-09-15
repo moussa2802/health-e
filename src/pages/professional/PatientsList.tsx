@@ -859,3 +859,4 @@ const PatientsList: React.FC = () => {
 };
 
 export default PatientsList;
+

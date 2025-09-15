@@ -3,36 +3,70 @@ import { Link, useNavigate } from "react-router-dom";
 import { ArrowLeft, User, AlertCircle } from "lucide-react";
 import PhoneInput, { isValidPhoneNumber } from "react-phone-number-input";
 import "react-phone-number-input/style.css";
-import { getFirestore, collection, query, where, limit, getDocs } from "firebase/firestore";
+
 import { useAuth } from "../../contexts/AuthContext";
 import { useTerms } from "../../contexts/TermsContext";
 import { usePhoneAuth } from "../../hooks/usePhoneAuth";
+import { functions } from "../../utils/firebase";
 
-type Step = "enterPhone" | "verify" | "collectProfile";
+import {
+  getFirestore,
+  doc,
+  getDoc,
+  collection,
+  query,
+  where,
+  limit,
+  getDocs,
+} from "firebase/firestore";
+import { getAuth } from "firebase/auth";
+import { httpsCallable } from "firebase/functions";
+
+type Step = "enterPhone" | "collectProfile" | "verify";
+type Mode = "login" | "register";
+
+const toE164 = (v: string) => (v?.startsWith("+") ? v : `+${(v || "").trim()}`);
+
+// Fonction pour vérifier l'existence du numéro via Cloud Function
+async function phoneExistsInFirestore(e164: string): Promise<boolean> {
+  try {
+    const checkPhoneIndex = httpsCallable(functions, "checkPhoneIndex");
+    const { data } = await checkPhoneIndex({ phone: e164 });
+    return Boolean((data as any)?.exists);
+  } catch (error) {
+    console.error("❌ Erreur lors de la vérification du numéro:", error);
+    return false; // En cas d'erreur, on considère que le numéro n'existe pas
+  }
+}
 
 const PatientAccess: React.FC = () => {
   const navigate = useNavigate();
+
   const { isAuthenticated, currentUser, createUserWithPhone, loginWithPhone } =
     useAuth();
   const { hasAgreedToTerms, setShowTermsModal } = useTerms();
 
   const {
     sendVerificationCodeForLogin,
+    sendVerificationCodeForRegister,
     verifyLoginCode,
+    verifyRegisterCode,
+    loading: phoneLoading,
+    error: phoneError,
+    isInCooldown,
+    cooldownTime,
   } = usePhoneAuth();
 
-  // --- State machine ---
+  // UI state
   const [step, setStep] = useState<Step>("enterPhone");
+  const [mode, setMode] = useState<Mode>("login"); // défini après pré-check
   const [phone, setPhone] = useState<string>("");
+  const [code, setCode] = useState<string>("");
 
-  // Nouveau profil (inscription)
+  // Profil (si register)
   const [fullName, setFullName] = useState<string>("");
   const [gender, setGender] = useState<"homme" | "femme" | "">("");
 
-  // Vérification
-  const [code, setCode] = useState<string>("");
-
-  // UI
   const [loading, setLoading] = useState<boolean>(false);
   const [err, setErr] = useState<string>("");
 
@@ -43,53 +77,70 @@ const PatientAccess: React.FC = () => {
     }
   }, [isAuthenticated, currentUser, navigate]);
 
-  // --- Fonction de check Firestore (AUCUN signInAnonymously) ---
-  async function patientExistsByPhoneAfterAuth(e164: string): Promise<boolean> {
-    const db = getFirestore();
-
-    // users (type patient)
-    const q1 = query(
-      collection(db, "users"),
-      where("type", "==", "patient"),
-      where("phoneNumber", "==", e164),
-      limit(1)
-    );
-    const s1 = await getDocs(q1);
-    if (!s1.empty) return true;
-
-    // patients
-    const q2 = query(
-      collection(db, "patients"),
-      where("phone", "==", e164),
-      limit(1)
-    );
-    const s2 = await getDocs(q2);
-    return !s2.empty;
-  }
-
-  // --- Step 1: enter phone ---
+  // ---- Étape 1: pré-check Firestore AVANT envoi du code ----
   const onSubmitPhone = async (e: React.FormEvent) => {
     e.preventDefault();
     setErr("");
 
-    if (!phone || !isValidPhoneNumber(phone)) {
-      setErr("Saisissez un numéro valide au format international (ex: +221…)");
+    const e164 = toE164(phone);
+    if (!e164 || !isValidPhoneNumber(e164)) {
+      setErr("Saisissez un numéro valide au format international (ex: +221…).");
       return;
     }
 
     try {
       setLoading(true);
-      const { success, error } = await sendVerificationCodeForLogin(phone);
-      if (!success) throw new Error(error || "Envoi du code échoué");
-      setStep("verify"); // 👈 ICI
-    } catch (e: unknown) {
-      setErr((e as Error)?.message || "Erreur lors de l'envoi du code");
+
+      const exists = await phoneExistsInFirestore(e164);
+
+      if (exists) {
+        // Mode LOGIN → envoie directement le code
+        setMode("login");
+        const { success, error } = await sendVerificationCodeForLogin(e164);
+        if (!success) throw new Error(error || "Envoi du code échoué");
+        setStep("verify");
+      } else {
+        // Mode REGISTER → demande d'abord Nom/Genre (PAS d'envoi de code ici)
+        setMode("register");
+        setStep("collectProfile");
+      }
+    } catch (e: any) {
+      setErr(e?.message || "Erreur lors de la vérification du numéro.");
     } finally {
       setLoading(false);
     }
   };
 
-  // --- Step 2: verify code ---
+  // ---- Étape 2 (register): collecte profil PUIS envoi du code ----
+  const onSubmitProfile = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setErr("");
+
+    if (!fullName.trim())
+      return setErr("Veuillez renseigner votre nom et prénom.");
+    if (!gender) return setErr("Veuillez sélectionner votre genre.");
+    if (!hasAgreedToTerms) {
+      setShowTermsModal(true);
+      return setErr(
+        "Vous devez accepter les conditions d'utilisation et la politique de confidentialité."
+      );
+    }
+
+    try {
+      setLoading(true);
+      const e164 = toE164(phone);
+      // Maintenant qu'on a le profil, on peut envoyer le code en mode REGISTER
+      const { success, error } = await sendVerificationCodeForRegister(e164);
+      if (!success) throw new Error(error || "Envoi du code échoué");
+      setStep("verify");
+    } catch (e: any) {
+      setErr(e?.message || "Erreur lors de l'envoi du code.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ---- Étape 3: vérification du code ----
   const onVerifyCode = async (e: React.FormEvent) => {
     e.preventDefault();
     setErr("");
@@ -102,58 +153,30 @@ const PatientAccess: React.FC = () => {
     try {
       setLoading(true);
 
-      // 1) Vérifie le code (=> user Firebase est connecté)
-      const cred = await verifyLoginCode(code);
+      const cred =
+        mode === "login"
+          ? await verifyLoginCode(code) // utilise loginConfirmation
+          : await verifyRegisterCode(code); // utilise registerConfirmation
       if (!cred?.user) throw new Error("Code invalide ou expiré.");
 
-      // 2) Vérifie l'existence du profil dans Firestore (MAINTENANT on a auth)
-      const exists = await patientExistsByPhoneAfterAuth(phone);
+      const uid = cred.user.uid;
+      const e164 = toE164(cred.user.phoneNumber || phone);
 
-      if (exists) {
-        // 3a) Profil existe → connexion "app" et redirection
-        await loginWithPhone(cred.user.uid, cred.user.phoneNumber || phone);
+      if (mode === "login") {
+        // profil déjà existant → login direct
+        await loginWithPhone(uid, e164);
         navigate("/patient/dashboard");
       } else {
-        // 3b) Pas de profil → on demande nom/genre
-        setStep("collectProfile");
+        // register → créer le profil APRES vérification du code
+        await createUserWithPhone(fullName.trim(), e164, {
+          type: "patient",
+          gender,
+        });
+        await loginWithPhone(uid, e164);
+        navigate("/patient/dashboard");
       }
-    } catch (e: unknown) {
-      setErr((e as Error)?.message || "La vérification a échoué.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // --- Step 3: collect profile for signup ---
-  const onSubmitProfile = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setErr("");
-
-    if (!fullName.trim()) {
-      setErr("Veuillez renseigner votre nom et prénom.");
-      return;
-    }
-    if (!gender) {
-      setErr("Veuillez sélectionner votre genre.");
-      return;
-    }
-    if (!hasAgreedToTerms) {
-      setShowTermsModal(true);
-      setErr(
-        "Vous devez accepter les conditions d'utilisation et la politique de confidentialité."
-      );
-      return;
-    }
-
-    try {
-      setLoading(true);
-      // Le user Firebase est déjà connecté grâce au code → on peut créer le profil Firestore
-      await createUserWithPhone(fullName, phone, { type: "patient", gender });
-      // Optionnel : loginWithPhone si ton backend en a besoin
-      // await loginWithPhone(auth.currentUser!.uid, auth.currentUser!.phoneNumber || phone);
-      navigate("/patient/dashboard");
-    } catch (e: unknown) {
-      setErr((e as Error)?.message || "Erreur lors de la création du compte.");
+    } catch (e: any) {
+      setErr(e?.message || "La vérification a échoué.");
     } finally {
       setLoading(false);
     }
@@ -182,18 +205,19 @@ const PatientAccess: React.FC = () => {
               Accès patient par téléphone
             </h2>
             <p className="text-gray-600 mt-1">
-              Entrez votre numéro. Nous vous enverrons un code par SMS.
+              On vérifie d’abord si vous avez déjà un compte, puis on envoie le
+              code.
             </p>
           </div>
 
-          {err && (
+          {(err || phoneError) && (
             <div className="mb-4 p-3 bg-red-100 border border-red-300 text-red-700 rounded-lg flex items-center">
               <AlertCircle className="h-5 w-5 mr-2" />
-              <span>{err}</span>
+              <span>{err || phoneError}</span>
             </div>
           )}
 
-          {/* STEP 1: phone */}
+          {/* STEP 1: téléphone */}
           {step === "enterPhone" && (
             <form onSubmit={onSubmitPhone} className="space-y-5">
               <div>
@@ -215,54 +239,32 @@ const PatientAccess: React.FC = () => {
 
               <button
                 type="submit"
-                disabled={loading || !phone || !isValidPhoneNumber(phone)}
+                disabled={
+                  loading ||
+                  phoneLoading ||
+                  !phone ||
+                  !isValidPhoneNumber(toE164(phone)) ||
+                  isInCooldown
+                }
                 className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-3 rounded-xl shadow disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {loading ? "Envoi du code..." : "Continuer"}
+                {loading || phoneLoading
+                  ? "Vérification…"
+                  : isInCooldown
+                  ? `Réessayez dans ${cooldownTime}s`
+                  : "Continuer"}
               </button>
             </form>
           )}
 
-          {/* STEP 2: verify code */}
-          {step === "verify" && (
-            <form onSubmit={onVerifyCode} className="space-y-5">
-              <div className="text-sm text-gray-600">
-                Un code a été envoyé au <span className="font-medium">{phone}</span>.
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Code de vérification
-                </label>
-                <input
-                  type="text"
-                  value={code}
-                  onChange={(e) => setCode(e.target.value)}
-                  className="w-full rounded-xl border border-gray-300 px-4 py-3 focus:border-blue-500 focus:ring-blue-500"
-                  placeholder="Ex: 123456"
-                />
-              </div>
-
-              <button
-                type="submit"
-                disabled={loading || !code.trim()}
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-3 rounded-xl shadow disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {loading ? "Vérification..." : "Continuer"}
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setStep("enterPhone")}
-                className="w-full text-gray-600 font-medium"
-              >
-                Changer de numéro
-              </button>
-            </form>
-          )}
-
-          {/* STEP 3: collect name + gender */}
+          {/* STEP 2: profil (pour register) */}
           {step === "collectProfile" && (
             <form onSubmit={onSubmitProfile} className="space-y-5">
+              <div className="text-sm text-gray-600 mb-2">
+                Vous n'avez pas encore de compte. Complétez votre profil, puis
+                nous enverrons le code de vérification.
+              </div>
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Nom et prénom
@@ -330,34 +332,72 @@ const PatientAccess: React.FC = () => {
 
               <button
                 type="submit"
-                disabled={loading || !fullName.trim() || !gender}
+                disabled={
+                  loading || phoneLoading || !fullName.trim() || !gender
+                }
                 className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-3 rounded-xl shadow disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {loading ? "Création du compte..." : "Créer mon compte"}
+                {loading || phoneLoading ? "Préparation…" : "Envoyer le code"}
               </button>
 
               <button
                 type="button"
                 onClick={() => setStep("enterPhone")}
-                className="w-full text-blue-600 font-medium mt-2"
+                className="w-full text-gray-600 font-medium mt-2"
               >
                 Changer de numéro
+              </button>
+            </form>
+          )}
+
+          {/* STEP 3: vérification du code */}
+          {step === "verify" && (
+            <form onSubmit={onVerifyCode} className="space-y-5">
+              <div className="text-sm text-gray-600">
+                Un code a été envoyé au{" "}
+                <span className="font-medium">{toE164(phone)}</span>.
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Code de vérification
+                </label>
+                <input
+                  type="text"
+                  value={code}
+                  onChange={(e) => setCode(e.target.value)}
+                  className="w-full rounded-xl border border-gray-300 px-4 py-3 focus:border-blue-500 focus:ring-blue-500"
+                  placeholder="Ex: 123456"
+                />
+              </div>
+
+              <button
+                type="submit"
+                disabled={loading || phoneLoading || !code.trim()}
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-3 rounded-xl shadow disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {loading || phoneLoading ? "Vérification…" : "Continuer"}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setCode("");
+                  // Si on était en login, retourner à enterPhone ; si register, revenir à collectProfile
+                  setStep(mode === "login" ? "enterPhone" : "collectProfile");
+                  // Optionnel: reset des confirmations pour éviter les conflits
+                  // resetRecaptcha();
+                  // resetConfirmations();
+                }}
+                className="w-full text-gray-600 font-medium mt-2"
+              >
+                Modifier
               </button>
             </form>
           )}
         </div>
       </div>
 
-      {/* reCAPTCHA container - positionné hors écran */}
-      <div
-        id="recaptcha-container"
-        style={{
-          position: "absolute",
-          left: "-9999px",
-          top: "-9999px",
-          opacity: 0,
-        }}
-      />
+      {/* IMPORTANT : conteneur reCAPTCHA doit exister dans le DOM global (App.tsx) */}
     </div>
   );
 };

@@ -1,19 +1,26 @@
+// components/auth/ProtectedRoute.tsx
+import React from "react";
 import { Navigate, useLocation } from "react-router-dom";
-import { ReactNode } from "react";
-import { useAuth } from "../../contexts/AuthContext";
 import LoadingSpinner from "../ui/LoadingSpinner";
+import { useAuth } from "../../contexts/AuthContext";
 
 type Props = {
-  children: JSX.Element;
+  children: React.ReactNode;
   userType?: "admin" | "patient" | "professional";
 };
 
 export default function ProtectedRoute({ children, userType }: Props) {
-  const { authReady, isAuthenticated, currentUser } = useAuth();
+  const {
+    authReady, // ✅ Firebase a fini d'annoncer l'état auth
+    loadingUserData, // ✅ Firestore user en cours de chargement
+    isAuthenticated,
+    currentUser,
+  } = useAuth();
+
   const location = useLocation();
 
-  // 1) Tant que Firebase n'a pas fini de s'initialiser, ne redirige pas
-  if (!authReady) {
+  // 1) Tant que l'auth OU le user Firestore n'est pas stabilisé -> aucun redirect
+  if (!authReady || loadingUserData) {
     return (
       <div className="min-h-[40vh] flex items-center justify-center">
         <LoadingSpinner size="lg" />
@@ -21,23 +28,36 @@ export default function ProtectedRoute({ children, userType }: Props) {
     );
   }
 
-  // 2) Non connecté -> on envoie vers la bonne page de login
+  // 2) Non connecté -> route de login adaptée (et pas de redirect si déjà dessus)
   if (!isAuthenticated) {
     const loginPath =
       userType === "admin"
         ? "/admin/login"
         : userType === "professional"
         ? "/professional/access"
-        : "/patient"; // patient par défaut
+        : "/patient";
 
-    return <Navigate to={loginPath} replace state={{ from: location }} />;
+    if (location.pathname !== loginPath) {
+      return <Navigate to={loginPath} replace state={{ from: location }} />;
+    }
+    // Si par mégarde ce composant entoure déjà la page login, ne pas re-rediriger
+    return <>{children}</>;
   }
 
-  // 3) Connecté mais mauvais rôle -> on retourne à l'accueil
+  // 3) Connecté mais mauvais rôle -> envoie vers le "home" du rôle réel (sans boucle)
   if (userType && currentUser?.type !== userType) {
-    return <Navigate to="/" replace />;
+    const home =
+      currentUser?.type === "admin"
+        ? "/admin/dashboard"
+        : currentUser?.type === "professional"
+        ? "/professional/dashboard"
+        : "/patient/dashboard";
+
+    if (location.pathname !== home) {
+      return <Navigate to={home} replace />;
+    }
   }
 
   // 4) OK
-  return children;
+  return <>{children}</>;
 }

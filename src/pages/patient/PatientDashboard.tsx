@@ -88,6 +88,7 @@ const PatientDashboard: React.FC = () => {
   const { currentUser } = useAuth();
   const location = useLocation();
   const { bookings, loading } = useBookings(currentUser?.id || "", "patient");
+
   const [activeTab, setActiveTab] = useState<"upcoming" | "past">("upcoming");
   const [showMessaging, setShowMessaging] = useState(true);
   const [medicalRecords, setMedicalRecords] = useState<MedicalRecord[]>([]);
@@ -110,8 +111,9 @@ const PatientDashboard: React.FC = () => {
 
   // Fetch medical records - Optimisé avec cache + temps réel
   useEffect(() => {
-    if (!currentUser?.id) return;
-
+    if (!currentUser?.id) {
+      return;
+    }
     setLoadingRecords(true);
     setRecordError(null);
 
@@ -132,13 +134,16 @@ const PatientDashboard: React.FC = () => {
         setLoadingRecords(false);
       },
       (err) => {
-        console.error(err);
+        console.error("❌ [DASHBOARD] Medical records error:", err);
         setRecordError("Impossible de charger vos dossiers médicaux.");
         setLoadingRecords(false);
       }
     );
 
-    return () => unsub();
+    return () => {
+      console.log("🧹 [DASHBOARD] Cleaning up medical records listener");
+      unsub();
+    };
   }, [currentUser?.id]);
 
   // Check if ethics reminder should be shown
