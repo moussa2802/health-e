@@ -1,8 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { FirebaseError } from "firebase/app";
 import {
-  getAuth,
-  signInAnonymously,
   RecaptchaVerifier,
   signInWithPhoneNumber,
   ConfirmationResult,
@@ -30,13 +28,6 @@ export const usePhoneAuth = () => {
   const containerIdRef = useRef<string>("recaptcha-container");
   const isInitializingRef = useRef<boolean>(false);
 
-  // Helper pour s'authentifier anonymement avant de lire Firestore
-  async function ensureAuthedForLookup() {
-    const auth = getAuth();
-    if (!auth.currentUser) {
-      await signInAnonymously(auth);
-    }
-  }
 
   // Initialize reCAPTCHA once when component mounts
   useEffect(() => {
@@ -188,8 +179,6 @@ export const usePhoneAuth = () => {
         phoneNumber
       );
 
-      // S'authentifier anonymement avant de lire Firestore
-      await ensureAuthedForLookup();
 
       // Ensure Firestore is ready
       await ensureFirestoreReady();
