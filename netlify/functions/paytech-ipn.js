@@ -198,11 +198,14 @@ exports.handler = async (event, context) => {
     ];
     if (successTypes.includes(String(paymentData.type_event))) {
       const paymentRef = paymentData.ref_command || paymentData.refCommand || paymentData.reference;
-      let tempId = null;
-      const match = String(paymentRef || "").match(/CMD_(temp_[A-Za-z0-9_]+)/);
-      if (match) tempId = match[1];
-      if (!tempId && customData && typeof customData.booking_id === "string" && customData.booking_id.startsWith("temp_")) {
-        tempId = customData.booking_id;
+      // 1) Source fiable: custom_field.booking_id
+      let tempId = (customData && typeof customData.booking_id === "string" && customData.booking_id.startsWith("temp_"))
+        ? customData.booking_id
+        : null;
+      // 2) Fallback: regex bornée sur ref_command (temp_<timestamp>_<rand>)
+      if (!tempId && paymentRef) {
+        const m = String(paymentRef).match(/CMD_(temp_\d+_[A-Za-z0-9]+)/i);
+        tempId = m ? m[1] : null;
       }
 
       if (!tempId) {
