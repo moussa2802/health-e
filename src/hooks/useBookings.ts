@@ -75,7 +75,13 @@ export const useBookings = (
               return;
             }
 
-            setBookings(bookingsData);
+            // UI: filter to confirmed/completed only or non-temp
+            const filtered = bookingsData.filter(
+              (b) =>
+                (b as any).isTemp === false ||
+                ["confirmed", "completed"].includes((b as any).status)
+            );
+            setBookings(filtered);
             setLoading(false);
             setError(null);
 
