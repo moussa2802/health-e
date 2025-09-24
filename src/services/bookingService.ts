@@ -2,6 +2,7 @@ import { getFirestoreInstance } from "../utils/firebase"; // Use getter function
 import {
   collection,
   addDoc,
+  setDoc,
   getDocs,
   doc,
   updateDoc,
@@ -122,14 +123,21 @@ export async function createBooking(
     }
     console.log("✅ No conflicting bookings found");
 
-    const result = await retryFirestoreOperation(async () => {
+    const tempId = `temp_${Date.now()}_${Math.random()
+      .toString(36)
+      .slice(2, 9)}`;
+    await retryFirestoreOperation(async () => {
       const bookingWithDefaults = {
+        id: tempId,
         ...bookingData,
-        // Assurez-vous que les heures sont correctement formatées
-        date: bookingData.date, // Garder la date telle quelle
-        startTime: bookingData.startTime.trim(), // Garder l'heure telle quelle
-        endTime: bookingData.endTime.trim(), // Garder l'heure telle quelle
-        status: "pending",
+        date: bookingData.date,
+        startTime: bookingData.startTime.trim(),
+        endTime: bookingData.endTime.trim(),
+        status: "pending" as const,
+        isTemp: true,
+        duration: Number(bookingData.duration) || 60,
+        price: Number(bookingData.price) || 0,
+        "notify.sent.initial": true,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
       };
@@ -145,21 +153,22 @@ export async function createBooking(
         currentUser.uid === bookingData.patientId
       );
 
-      return await addDoc(bookingsRef, bookingWithDefaults);
+      const tempRef = doc(bookingsRef, tempId);
+      await setDoc(tempRef, bookingWithDefaults);
     });
 
-    console.log("✅ Booking document created with ID:", result.id);
+    console.log("✅ Booking document created with ID:", tempId);
 
     await createNotification(
       bookingData.professionalId,
       "appointment_request",
       "Nouvelle demande de rendez-vous",
       `Vous avez reçu une demande de rendez-vous de la part de ${bookingData.patientName} pour le ${bookingData.date} à ${bookingData.startTime}`,
-      result.id,
+      tempId,
       "booking"
     );
-    console.log("✅ Booking created successfully:", result.id);
-    return result.id;
+    console.log("✅ Booking created successfully:", tempId);
+    return tempId;
   } catch (error) {
     console.error("❌ Error creating booking:", error);
     console.error("❌ Error details:", {
@@ -240,7 +249,11 @@ export async function getUserBookings(
     const fieldName = userType === "patient" ? "patientId" : "professionalId";
 
     // Check if collection exists
-    const q = query(bookingsRef, where(fieldName, "==", userId));
+    const q = query(
+      bookingsRef,
+      where(fieldName, "==", userId),
+      where("status", "in", ["confirmed", "completed"]) // n'afficher que confirmés/terminés
+    );
 
     const snapshot = await retryFirestoreOperation(async () => {
       return await getDocs(q);
@@ -337,7 +350,11 @@ export function subscribeToBookings(
           // Remove orderBy to avoid composite index requirement
           const fieldName =
             userType === "patient" ? "patientId" : "professionalId";
-          q = query(bookingsRef, where(fieldName, "==", userId));
+          q = query(
+            bookingsRef,
+            where(fieldName, "==", userId),
+            where("status", "in", ["confirmed", "completed"]) // filtrer UI
+          );
         }
 
         const unsubscribe = onSnapshot(
