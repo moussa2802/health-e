@@ -1,7 +1,7 @@
 import * as admin from "firebase-admin";
 import { onDocumentWritten } from "firebase-functions/v2/firestore";
 import { DateTime } from "luxon";
-import { sendSmsFallback } from "./messaging";
+import { sendViaPreferredChannel } from "./messaging";
 import { ensureRoomToken, findPatientPhone } from "./lib/room";
 
 const db = admin.firestore();
@@ -9,7 +9,16 @@ const REGION = "europe-west1";
 const TZ = process.env.TZ || "Africa/Dakar";
 const SITE_URL = process.env.SITE_URL || "http://localhost:5174";
 
-function toStartsEnds(booking: any) {
+function toStartsEnds(
+  booking:
+    | {
+        date?: string;
+        startTime?: string;
+        endTime?: string;
+        duration?: number | string;
+      }
+    | undefined
+) {
   // booking.date = "YYYY-MM-DD", startTime = "HH:mm"
   const date = booking?.date;
   const startTime = booking?.startTime;
@@ -35,12 +44,22 @@ export const onBookingConfirmed = onDocumentWritten(
   { region: REGION, document: "bookings/{bookingId}" },
   async (event) => {
     const bookingId = event.params.bookingId;
-    const before = event.data?.before?.data() as any | undefined;
-    const after = event.data?.after?.data() as any | undefined;
+    const before = event.data?.before?.data() as
+      | FirebaseFirestore.DocumentData
+      | undefined;
+    const after = event.data?.after?.data() as
+      | FirebaseFirestore.DocumentData
+      | undefined;
 
     if (!after) return; // supprimé
-    const wasConfirmed = before?.status === "confirmed";
-    const isConfirmed = after?.status === "confirmed";
+
+    // Guard: déjà confirmé → ne rien faire
+    if (
+      before?.status === "confirmed" ||
+      (after?.status === "confirmed" && before?.status === "confirmed")
+    ) {
+      return null as unknown as void;
+    }
 
     // Ne déclenche que si nouvellement confirmé, ou création déjà confirmée
     if (!isConfirmed || (before && wasConfirmed)) return;
@@ -49,7 +68,7 @@ export const onBookingConfirmed = onDocumentWritten(
     if (after?.notify?.sent?.initial) return;
 
     // Calcule startsAt/endsAt si absents
-    const patch: any = {};
+    const patch: Record<string, unknown> = {};
     const { startsAt, endsAt } = toStartsEnds(after);
     if (startsAt && !after.startsAt) patch.startsAt = startsAt;
     if (endsAt && !after.endsAt) patch.endsAt = endsAt;
@@ -66,24 +85,28 @@ export const onBookingConfirmed = onDocumentWritten(
       after.patientPhone || // si tu décides plus tard d'ajouter ce champ dans booking
       (await findPatientPhone(after.patientId));
 
-    // Message "RDV confirmé"
+    // Message "RDV confirmé" (WhatsApp prioritaire, fallback interne si besoin)
     if (phone) {
-      const whenText = (
-        startsAt ? new Date(startsAt.toMillis()) : new Date()
-      ).toLocaleString("fr-FR", {
-        dateStyle: "full",
-        timeStyle: "short",
-        timeZone: TZ,
-      });
-
       try {
-        // À l'étape 1 on utilise le SMS stub (pas de coût, pas d'intégration externe)
-        await sendSmsFallback(
-          phone,
-          `[Health-e] RDV confirmé avec ${
-            after.professionalName || "votre professionnel"
-          } le ${whenText}. Lien: ${joinLink}`
-        );
+        const professionalName =
+          after.professionalName || "votre professionnel";
+        const when = startsAt || admin.firestore.Timestamp.fromDate(new Date());
+        const date = new Date(when.toMillis());
+        const whenText = date.toLocaleString("fr-FR", {
+          dateStyle: "full",
+          timeStyle: "short",
+          timeZone: TZ,
+        });
+
+        const templateName = process.env.WA_TEMPLATE_INITIAL;
+        const variables = [professionalName, whenText, joinLink];
+        const text = `[Health-e] RDV confirmé avec ${professionalName} le ${whenText}. Lien: ${joinLink}`;
+
+        await sendViaPreferredChannel(phone, {
+          text,
+          templateName,
+          variables,
+        });
       } catch (e) {
         console.error(
           "[onBookingConfirmed] Envoi message échoué",
