@@ -190,10 +190,20 @@ exports.handler = async (event, context) => {
     });
 
     // Si le paiement est réussi, mettre à jour la réservation existante (update-in-place)
-    if (paymentData.type_event === "sale_complete" && paymentData.ref_command) {
-      const paymentRef = paymentData.ref_command;
+    const successTypes = [
+      "sale_complete",
+      "payment_success",
+      "sale_completed",
+      "payment_completed",
+    ];
+    if (successTypes.includes(String(paymentData.type_event))) {
+      const paymentRef = paymentData.ref_command || paymentData.refCommand || paymentData.reference;
+      let tempId = null;
       const match = String(paymentRef || "").match(/CMD_(temp_[A-Za-z0-9_]+)/);
-      const tempId = match ? match[1] : null;
+      if (match) tempId = match[1];
+      if (!tempId && customData && typeof customData.booking_id === "string" && customData.booking_id.startsWith("temp_")) {
+        tempId = customData.booking_id;
+      }
 
       if (!tempId) {
         console.error("IPN: missing tempId in paymentRef", { paymentRef });
@@ -219,7 +229,7 @@ exports.handler = async (event, context) => {
       }
 
       // Idempotence: vérifier si déjà traité
-      const ipnRef = db.collection("ipn_processed").doc(String(paymentRef));
+      const ipnRef = db.collection("ipn_processed").doc(String(paymentRef || tempId || "unknown_ref"));
       const ipnSnap = await ipnRef.get();
       if (ipnSnap.exists) {
         console.log("IPN already processed", { paymentRef });
