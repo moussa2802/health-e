@@ -53,16 +53,11 @@ export const onBookingConfirmed = onDocumentWritten(
 
     if (!after) return; // supprimé
 
-    // Guard: déjà confirmé → ne rien faire
-    if (
-      before?.status === "confirmed" ||
-      (after?.status === "confirmed" && before?.status === "confirmed")
-    ) {
-      return null as unknown as void;
-    }
+    const isConfirmed = after?.status === "confirmed";
+    const wasConfirmed = before?.status === "confirmed";
 
-    // Ne déclenche que si nouvellement confirmé, ou création déjà confirmée
-    if (!isConfirmed || (before && wasConfirmed)) return;
+    // Ne déclenche que si nouvellement confirmé (pas déjà confirmé avant)
+    if (!isConfirmed || wasConfirmed) return;
 
     // Idempotence
     if (after?.notify?.sent?.initial) return;
