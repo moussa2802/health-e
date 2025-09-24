@@ -59,8 +59,8 @@ export const onBookingConfirmed = onDocumentWritten(
     // Ne déclenche que si nouvellement confirmé (pas déjà confirmé avant)
     if (!isConfirmed || wasConfirmed) return;
 
-    // Idempotence
-    if (after?.notify?.sent?.initial) return;
+    // Idempotence: ne pas renvoyer la confirmation si déjà envoyée
+    if (after?.notify?.sent?.confirmation) return;
 
     // Calcule startsAt/endsAt si absents
     const patch: Record<string, unknown> = {};
@@ -122,6 +122,9 @@ export const onBookingConfirmed = onDocumentWritten(
       updatedAt: admin.firestore.FieldValue.serverTimestamp(),
     };
 
-    await db.doc(`bookings/${bookingId}`).set(updates, { merge: true });
+    await db.doc(`bookings/${bookingId}`).set({
+      ...updates,
+      "notify.sent.confirmation": true,
+    }, { merge: true });
   }
 );

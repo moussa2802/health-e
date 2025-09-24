@@ -298,6 +298,10 @@ exports.handler = async (event, context) => {
           paidAt: admin.firestore.FieldValue.serverTimestamp(),
           startsAt,
           endsAt,
+          // stocker des champs utiles au runtime pour WhatsApp/email
+          patientPhone: customData?.customer_phone || null,
+          patientName: b.patientName || customData?.patientName || b.patient?.name || null,
+          professionalName: b.professionalName || customData?.professionalName || null,
           updatedAt: admin.firestore.FieldValue.serverTimestamp(),
         });
         justConfirmed = true;
