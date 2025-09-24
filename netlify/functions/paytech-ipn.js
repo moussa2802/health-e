@@ -189,147 +189,144 @@ exports.handler = async (event, context) => {
       user_id,
     });
 
-    // Si le paiement est réussi, créer le booking
-    if (paymentData.type_event === "sale_complete" && booking_id) {
-      try {
-        // Générer un nouvel ID définitif si c'est un ID temporaire
-        let finalBookingId = booking_id;
-        if (booking_id.startsWith("temp_")) {
-          finalBookingId = `booking_${Date.now()}_${Math.random()
-            .toString(36)
-            .substr(2, 9)}`;
-          console.log(
-            "🔄 [PAYTECH IPN] Converting temporary ID:",
-            booking_id,
-            "to final ID:",
-            finalBookingId
-          );
-        }
+    // Si le paiement est réussi, mettre à jour la réservation existante (update-in-place)
+    if (paymentData.type_event === "sale_complete" && paymentData.ref_command) {
+      const paymentRef = paymentData.ref_command;
+      const match = String(paymentRef || "").match(/CMD_(temp_[A-Za-z0-9_]+)/);
+      const tempId = match ? match[1] : null;
 
-        // Créer le booking avec les données complètes
-        const bookingData = {
-          id: finalBookingId,
-          tempId: booking_id, // Garder une référence à l'ID temporaire
-          patientId,
-          professionalId,
-          patientName,
-          professionalName,
-          date,
-          startTime,
-          endTime,
-          type,
-          duration: 60,
-          price: parseFloat(paymentData.item_price) || price || 0,
-          status: "confirmed",
-          paymentStatus: "paid",
-          paymentRef: paymentData.ref_command,
-          paymentAmount: paymentData.item_price,
-          paymentMethod: paymentData.payment_method,
-          paidAt: admin.firestore.FieldValue.serverTimestamp(),
-          createdAt: admin.firestore.FieldValue.serverTimestamp(),
-        };
-
-        console.log(
-          "✅ [PAYTECH IPN] Creating confirmed booking:",
-          finalBookingId
-        );
-        await db.collection("bookings").doc(finalBookingId).set(bookingData);
-
-        // Si c'était un ID temporaire, créer aussi une entrée avec l'ID temporaire pour la redirection
-        if (booking_id.startsWith("temp_")) {
-          const tempRedirectData = {
-            finalBookingId: finalBookingId,
-            redirectTo: `/appointment-success/${finalBookingId}`,
-            createdAt: admin.firestore.FieldValue.serverTimestamp(),
-          };
-          await db
-            .collection("temp_redirects")
-            .doc(booking_id)
-            .set(tempRedirectData);
-          console.log("🔄 [PAYTECH IPN] Created redirect mapping for temp ID");
-        }
-
-        // Créer l'entrée dans la Realtime Database pour la salle
-        try {
-          const database = admin.database();
-          const roomRef = database.ref(`scheduled_rooms/${finalBookingId}`);
-          await roomRef.set({
-            createdAt: new Date().toISOString(),
-            scheduledFor: `${date}T${startTime}:00`,
-            patientId,
-            patientName,
-            professionalId,
-            professionalName,
-            status: "confirmed",
-            type,
-          });
-          console.log(
-            "✅ [PAYTECH IPN] Room entry created in Realtime Database"
-          );
-        } catch (realtimeError) {
-          console.warn(
-            "⚠️ [PAYTECH IPN] Error creating room entry:",
-            realtimeError
-          );
-          // Continuer même si la création de la salle échoue
-        }
-
-        console.log(
-          "✅ [PAYTECH IPN] Booking created successfully:",
-          finalBookingId
-        );
-
-        // Créer une transaction de revenu pour le professionnel
-        try {
-          const { createConsultationRevenue } = require("./revenueService.js");
-          await createConsultationRevenue(
-            professionalId,
-            patientId,
-            finalBookingId,
-            parseFloat(paymentData.item_price) || price || 0,
-            patientName,
-            professionalName,
-            type
-          );
-          console.log(
-            "✅ [PAYTECH IPN] Revenue transaction created for professional"
-          );
-        } catch (revenueError) {
-          console.error(
-            "❌ [PAYTECH IPN] Error creating revenue transaction:",
-            revenueError
-          );
-        }
-
-        // Envoyer une notification au patient
-        if (user_id) {
-          try {
-            await db.collection("notifications").add({
-              userId: user_id,
-              type: "payment_success",
-              title: "Paiement confirmé",
-              message: `Votre paiement de ${paymentData.item_price} XOF via ${paymentData.payment_method} a été confirmé. Votre consultation est confirmée.`,
-              bookingId: finalBookingId,
-              createdAt: admin.firestore.FieldValue.serverTimestamp(),
-              read: false,
-            });
-          } catch (notificationError) {
-            console.warn(
-              "⚠️ [PAYTECH IPN] Error sending notification:",
-              notificationError
-            );
-          }
-        }
-      } catch (firestoreError) {
-        console.error(
-          "❌ [PAYTECH IPN] Error creating booking:",
-          firestoreError
-        );
+      if (!tempId) {
+        console.error("IPN: missing tempId in paymentRef", { paymentRef });
+        // marquer le log et sortir sans créer quoi que ce soit
+        await db.collection("payment_logs").add({
+          type_event: paymentData.type_event,
+          ref_command: paymentRef,
+          item_price: paymentData.item_price,
+          payment_method: paymentData.payment_method,
+          customData,
+          note: "missing_tempId_in_paymentRef",
+          receivedAt: admin.firestore.FieldValue.serverTimestamp(),
+          source: "paytech_ipn",
+        });
         return {
-          statusCode: 500,
+          statusCode: 200,
           headers,
-          body: JSON.stringify({ error: "Database error" }),
+          body: JSON.stringify({
+            success: true,
+            message: "IPN processed (no tempId)",
+          }),
         };
+      }
+
+      // Idempotence: vérifier si déjà traité
+      const ipnRef = db.collection("ipn_processed").doc(String(paymentRef));
+      const ipnSnap = await ipnRef.get();
+      if (ipnSnap.exists) {
+        console.log("IPN already processed", { paymentRef });
+        return {
+          statusCode: 200,
+          headers,
+          body: JSON.stringify({
+            success: true,
+            message: "IPN already processed",
+          }),
+        };
+      }
+
+      // Transaction: update bookings/{tempId}
+      const bookingRef = db.collection("bookings").doc(tempId);
+      let justConfirmed = false;
+      let confirmedData = null;
+
+      const computeTimestamp = (dateStr, timeStr, tz) => {
+        try {
+          const [year, month, day] = String(dateStr || "")
+            .split("-")
+            .map((x) => parseInt(x, 10));
+          const [hour, minute] = String(timeStr || "00:00")
+            .split(":")
+            .map((x) => parseInt(x, 10));
+          const local = new Date(
+            Date.UTC(year, (month || 1) - 1, day || 1, hour || 0, minute || 0)
+          );
+          // Firestore Timestamp en UTC; l'UI affichera en TZ Africa/Dakar
+          return admin.firestore.Timestamp.fromDate(local);
+        } catch (e) {
+          return null;
+        }
+      };
+
+      await db.runTransaction(async (tx) => {
+        const snap = await tx.get(bookingRef);
+        if (!snap.exists) {
+          console.error("IPN: temp booking not found", { tempId, paymentRef });
+          return;
+        }
+        const b = snap.data() || {};
+        if (b.status === "confirmed") {
+          return; // déjà confirmé → idempotence
+        }
+
+        const tz = process.env.TZ || "Africa/Dakar";
+        const startsAt = computeTimestamp(b.date, b.startTime, tz);
+        const endsAt = b.endTime
+          ? computeTimestamp(b.date, b.endTime, tz)
+          : startsAt;
+
+        const paymentAmountNum = Number(b.price || paymentData.item_price || 0);
+
+        tx.update(bookingRef, {
+          status: "confirmed",
+          isTemp: false,
+          paymentStatus: "paid",
+          paymentRef,
+          paymentMethod: paymentData.payment_method,
+          paymentAmount: paymentAmountNum,
+          paidAt: admin.firestore.FieldValue.serverTimestamp(),
+          startsAt,
+          endsAt,
+          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        });
+        justConfirmed = true;
+        confirmedData = { ...b, startsAt, endsAt };
+      });
+
+      // Marque l’IPN comme traité
+      await ipnRef.set(
+        { at: admin.firestore.FieldValue.serverTimestamp(), tempId },
+        { merge: true }
+      );
+
+      // Notifier le professionnel uniquement si on vient de confirmer dans cette IPN
+      if (justConfirmed && confirmedData) {
+        try {
+          await db.collection("notifications").add({
+            userId: confirmedData.professionalId,
+            userType: "professional",
+            type: "appointment_confirmed",
+            title: `Rendez-vous confirmé – ${
+              confirmedData.patientName || "patient"
+            }`,
+            message: `Rendez-vous confirmé avec ${
+              confirmedData.patientName || "patient"
+            } le ${confirmedData.date || ""} à ${
+              confirmedData.startTime || ""
+            }.`,
+            data: {
+              bookingId: tempId,
+              date: confirmedData.date || "",
+              time: confirmedData.startTime || "",
+              redirectPath: "/professional/dashboard",
+            },
+            channels: ["email"],
+            createdAt: admin.firestore.FieldValue.serverTimestamp(),
+          });
+        } catch (notifErr) {
+          console.warn(
+            "⚠️ [PAYTECH IPN] Error creating pro email notification:",
+            notifErr
+          );
+        }
       }
     }
 
