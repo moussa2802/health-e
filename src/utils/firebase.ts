@@ -1,29 +1,21 @@
-import { initializeApp, getApp } from "firebase/app";
+import { initializeApp } from "firebase/app";
 import { getAnalytics } from "firebase/analytics";
 import { getStorage } from "firebase/storage";
 import { getAuth } from "firebase/auth";
 import { getFunctions } from "firebase/functions";
 import {
-  initializeAppCheck,
-  ReCaptchaEnterpriseProvider,
-} from "firebase/app-check";
-import {
   initializeFirestore,
   enableNetwork,
   disableNetwork,
   terminate,
-  clearIndexedDbPersistence,
   persistentLocalCache,
   persistentMultipleTabManager,
-  connectFirestoreEmulator,
-  getFirestore,
   Firestore,
   collection,
   getDocs,
   limit,
   query,
-  where,
-  orderBy,
+  doc,
   deleteDoc,
 } from "firebase/firestore";
 import { getDatabase } from "firebase/database";
@@ -43,29 +35,6 @@ const firebaseConfig = {
 // Global state tracking
 const app = initializeApp(firebaseConfig);
 
-// Comment this out if not debugging locally
-// @ts-ignore
-// self.FIREBASE_APPCHECK_DEBUG_TOKEN = true;
-
-// Initialize App Check with reCAPTCHA Enterprise
-try {
-  const siteKey = import.meta.env.VITE_RECAPTCHA_ENT_SITE_KEY;
-
-  if (!siteKey) {
-    console.warn(
-      "⚠️ VITE_RECAPTCHA_ENT_SITE_KEY not found, skipping App Check initialization"
-    );
-  } else {
-    initializeAppCheck(app, {
-      provider: new ReCaptchaEnterpriseProvider(siteKey),
-      isTokenAutoRefreshEnabled: true,
-    });
-    console.log("✅ App Check initialized with reCAPTCHA Enterprise");
-  }
-} catch (error) {
-  console.warn("⚠️ App Check initialization failed:", error);
-}
-
 // Initialize and export Firebase Auth
 const auth = getAuth(app);
 // Initialize and export Firebase Functions (europe-west1)
@@ -77,7 +46,7 @@ let storage;
 let rtdb;
 let isFirestoreInitialized = false;
 let isResetting = false;
-let firestoreConnectionStatus = {
+const firestoreConnectionStatus = {
   isOnline: false,
   isInitialized: false,
   lastError: null as Error | null,

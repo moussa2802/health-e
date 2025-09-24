@@ -81,16 +81,46 @@ exports.handler = async (event, context) => {
         customerName,
         professionalId,
         description = "Consultation médicale",
+        method = "mobile", // Nouveau champ
+        successUrl, // Nouveau champ
+        cancelUrl, // Nouveau champ
       } = data;
 
-      // Validation des données
-      if (!amount || !bookingId || !customerEmail || !customerPhone) {
+      console.log("🔍 [DEBUG] Payment method:", method);
+      console.log("🔍 [DEBUG] Success URL:", successUrl);
+      console.log("🔍 [DEBUG] Cancel URL:", cancelUrl);
+
+      // Validation des données (adaptée pour mobile/card)
+      if (!amount || !bookingId || !customerName || !professionalId) {
         return {
           statusCode: 400,
           headers,
           body: JSON.stringify({
             success: 0,
-            error: "Données manquantes",
+            error: "Données de base manquantes",
+          }),
+        };
+      }
+
+      // Validation conditionnelle selon la méthode
+      if (method === "card" && !customerEmail) {
+        return {
+          statusCode: 400,
+          headers,
+          body: JSON.stringify({
+            success: 0,
+            error: "Email requis pour les paiements par carte",
+          }),
+        };
+      }
+
+      if (method === "mobile" && !customerPhone) {
+        return {
+          statusCode: 400,
+          headers,
+          body: JSON.stringify({
+            success: 0,
+            error: "Téléphone requis pour les paiements mobile money",
           }),
         };
       }
@@ -106,8 +136,9 @@ exports.handler = async (event, context) => {
         currency: "XOF",
         env: PAYTECH_CONFIG.env,
         // Configuration de l'URL de succès avec l'ID de réservation
-        success_url: `${PAYTECH_CONFIG.successUrl}/${bookingId}`,
-        cancel_url: `${PAYTECH_CONFIG.cancelUrl}/${professionalId}`,
+        success_url: successUrl || `${PAYTECH_CONFIG.successUrl}/${bookingId}`,
+        cancel_url:
+          cancelUrl || `${PAYTECH_CONFIG.cancelUrl}/${professionalId}`,
         ipn_url: PAYTECH_CONFIG.ipnUrl,
         custom_field: JSON.stringify({
           booking_id: bookingId,
@@ -124,7 +155,10 @@ exports.handler = async (event, context) => {
           type: data.type || "video",
           price: amount,
         }),
-        target_payment: "Orange Money, Wave, Free Money",
+        target_payment:
+          method === "card"
+            ? "Carte Bancaire"
+            : "Orange Money, Wave, Free Money",
       };
 
       console.log("🔔 [PAYTECH] Initiating payment for booking:", bookingId);

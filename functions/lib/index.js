@@ -33,7 +33,7 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.patients_onWrite = exports.users_onWrite = exports.checkPhoneIndex = void 0;
+exports.patients_onWrite = exports.users_onWrite = exports.checkPhoneIndex = exports.onBookingUpdated = exports.joinInfo = exports.remindStartNow = exports.remindTMinus5 = exports.onBookingConfirmed = void 0;
 const crypto = __importStar(require("crypto"));
 const admin = __importStar(require("firebase-admin"));
 const https_1 = require("firebase-functions/v2/https");
@@ -47,11 +47,20 @@ const PHONE_INDEX_SECRET = (0, params_1.defineSecret)("PHONE_INDEX_SECRET");
 // Configuration globale des functions
 (0, options_1.setGlobalOptions)({
     region: "europe-west1",
-    enforceAppCheck: true
+    enforceAppCheck: true,
 });
 if (!admin.apps.length) {
     admin.initializeApp();
 }
+var onBookingConfirmed_1 = require("./onBookingConfirmed");
+Object.defineProperty(exports, "onBookingConfirmed", { enumerable: true, get: function () { return onBookingConfirmed_1.onBookingConfirmed; } });
+var reminders_1 = require("./reminders");
+Object.defineProperty(exports, "remindTMinus5", { enumerable: true, get: function () { return reminders_1.remindTMinus5; } });
+Object.defineProperty(exports, "remindStartNow", { enumerable: true, get: function () { return reminders_1.remindStartNow; } });
+var join_1 = require("./join");
+Object.defineProperty(exports, "joinInfo", { enumerable: true, get: function () { return join_1.joinInfo; } });
+var bookingHooks_1 = require("./bookingHooks");
+Object.defineProperty(exports, "onBookingUpdated", { enumerable: true, get: function () { return bookingHooks_1.onBookingUpdated; } });
 function normalizePhone(input) {
     // conserve + et chiffres, retire espaces, -, ()
     const trimmed = (input || "").trim();
@@ -94,7 +103,26 @@ exports.checkPhoneIndex = (0, https_1.onCall)(async (request) => {
         throw new https_1.HttpsError("invalid-argument", "Numéro invalide");
     }
     const db = (0, firestore_2.getFirestore)();
-    // Vérifier dans la collection users
+    // 1) Vérifier d'abord un index direct non chiffré s'il existe
+    try {
+        const idx = await db.doc(`phone_index/${phone}`).get();
+        if (idx.exists) {
+            const d = idx.data();
+            return {
+                exists: !!d.exists ||
+                    !!d.userId ||
+                    (Array.isArray(d.types)
+                        ? d.types.includes("patient")
+                        : d.type === "patient"),
+                type: d.type ?? (Array.isArray(d.types) ? d.types[0] ?? null : null),
+                userId: d.userId ?? null,
+            };
+        }
+    }
+    catch {
+        // ignore and fallback to full scans
+    }
+    // 2) Vérifier dans la collection users
     const usersSnap = await db
         .collection("users")
         .where("type", "==", "patient")
@@ -104,7 +132,7 @@ exports.checkPhoneIndex = (0, https_1.onCall)(async (request) => {
     if (!usersSnap.empty) {
         return { exists: true };
     }
-    // Vérifier dans la collection patients
+    // 3) Vérifier dans la collection patients
     const patientsSnap = await db
         .collection("patients")
         .where("phone", "==", phone)

@@ -619,31 +619,41 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     phoneNumber: string
   ): Promise<void> => {
     try {
-      console.log("📱 Connexion avec le numéro:", phoneNumber);
+      console.log("🔐 [LOGIN] ===== DÉBUT LOGIN WITH PHONE =====");
+      console.log("🆔 [LOGIN] User ID:", userId);
+      console.log("📱 [LOGIN] Téléphone:", phoneNumber);
 
       // Vérifier si l'utilisateur existe dans Firestore
+      console.log("🔧 [LOGIN] Initialisation Firestore...");
       await ensureFirestoreReady();
       const db = getFirestoreInstance();
 
       if (!db) {
+        console.log("❌ [LOGIN] Firestore non disponible");
         throw new Error("Firestore non disponible");
       }
+      console.log("✅ [LOGIN] Firestore prêt");
 
       try {
         // Vérifier si l'utilisateur existe dans la collection patients
+        console.log("🔍 [LOGIN] Vérification du document patients...");
         const patientDoc = await getDoc(doc(db, "patients", userId));
 
         if (patientDoc.exists()) {
-          console.log("✅ Utilisateur trouvé dans la collection patients");
+          console.log(
+            "✅ [LOGIN] Utilisateur trouvé dans la collection patients"
+          );
           const patientData = patientDoc.data();
+          console.log("📋 [LOGIN] Données patient:", patientData);
 
           // Get user document to ensure it exists
+          console.log("🔍 [LOGIN] Vérification du document users...");
           const userDoc = await getDoc(doc(db, "users", userId));
 
           // If user document doesn't exist, create it
           if (!userDoc.exists()) {
             console.log(
-              "⚠️ Document utilisateur manquant, création automatique"
+              "⚠️ [LOGIN] Document utilisateur manquant, création automatique"
             );
             await setDoc(doc(db, "users", userId), {
               id: userId,
@@ -654,8 +664,12 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
               createdAt: serverTimestamp(),
               updatedAt: serverTimestamp(),
             });
+            console.log("✅ [LOGIN] Document users créé");
+          } else {
+            console.log("✅ [LOGIN] Document users existe déjà");
           }
 
+          console.log("👤 [LOGIN] Mise à jour de currentUser...");
           setCurrentUser({
             id: userId,
             name: patientData.name || "",
@@ -666,6 +680,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
           });
 
           // Save to localStorage as fallback
+          console.log("💾 [LOGIN] Sauvegarde dans localStorage...");
           localStorage.setItem(
             "health-e-user",
             JSON.stringify({
@@ -678,11 +693,15 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
             })
           );
 
+          console.log("🎉 [LOGIN] LOGIN WITH PHONE TERMINÉ AVEC SUCCÈS");
           return;
+        } else {
+          console.log("❌ [LOGIN] Document patients non trouvé");
         }
       } catch (firestoreError) {
+        console.log("❌ [LOGIN] ===== ERREUR FIRESTORE =====");
         console.error(
-          "❌ Erreur lors de la vérification du profil patient:",
+          "❌ [LOGIN] Erreur lors de la vérification du profil patient:",
           firestoreError
         );
 
@@ -692,7 +711,9 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
           (firestoreError.message.includes("not found") ||
             firestoreError.message.includes("does not exist"))
         ) {
-          console.log("🔄 Création automatique d'un profil patient par défaut");
+          console.log(
+            "🔄 [LOGIN] Création automatique d'un profil patient par défaut"
+          );
 
           // Créer un profil patient par défaut
           try {
@@ -703,7 +724,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
               phoneNumber // Numéro de téléphone
             );
 
-            console.log("✅ Profil patient créé avec succès");
+            console.log("✅ [LOGIN] Profil patient créé avec succès");
 
             // Définir l'utilisateur courant
             setCurrentUser({
@@ -922,18 +943,23 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     additionalData?: any
   ): Promise<void> => {
     try {
+      console.log("👤 [AUTH] ===== DÉBUT CREATE USER WITH PHONE =====");
+      console.log("👤 [AUTH] Nom:", name);
+      console.log("📱 [AUTH] Téléphone:", phoneNumber);
+      console.log("📋 [AUTH] Données additionnelles:", additionalData);
+
       // Prevent multiple simultaneous registrations
       if (registrationInProgressRef.current) {
-        console.warn(
-          "⚠️ Registration already in progress, preventing duplicate submission"
-        );
+        console.warn("⚠️ [AUTH] Registration déjà en cours");
         throw new Error("Inscription déjà en cours. Veuillez patienter.");
       }
 
       registrationInProgressRef.current = true;
+      console.log("🔒 [AUTH] Registration lock activé");
 
       // Get the current user from auth (should be authenticated with phone)
       const firebaseUser = auth.currentUser;
+      console.log("👤 [AUTH] Firebase user:", firebaseUser);
 
       // Numéros de test pour développement
       const testPhoneNumbers: string[] = [
@@ -942,8 +968,10 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         "+1 450 516 8884",
       ];
       const isTestNumber = testPhoneNumbers.includes(phoneNumber);
+      console.log("🧪 [AUTH] Numéro de test:", isTestNumber);
 
       if (!firebaseUser && !isTestNumber) {
+        console.log("❌ [AUTH] Utilisateur non authentifié");
         throw new Error("Utilisateur non authentifié");
       }
 
@@ -952,20 +980,25 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       const userId = firebaseUser
         ? firebaseUser.uid
         : `test-user-${Date.now()}`;
+      console.log("🆔 [AUTH] User ID:", userId);
 
       // Create Firestore documents
+      console.log("🔧 [AUTH] Initialisation Firestore...");
       await ensureFirestoreReady();
       await ensureRequiredCollectionsExist();
 
       const db = getFirestoreInstance();
       if (!db) {
+        console.log("❌ [AUTH] Firestore non disponible");
         throw new Error("Firestore non disponible");
       }
+      console.log("✅ [AUTH] Firestore prêt");
 
       // Create user document
+      console.log("📝 [AUTH] Création du document users...");
       const userRef = doc(db, "users", userId);
       await retryFirestoreOperation(async () => {
-        await setDoc(userRef, {
+        const userData = {
           id: userId,
           name: name,
           phoneNumber: phoneNumber,
@@ -974,10 +1007,14 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
           createdAt: serverTimestamp(),
           updatedAt: serverTimestamp(),
           ...additionalData, // Include additional data like gender
-        });
+        };
+        console.log("📝 [AUTH] Données utilisateur:", userData);
+        await setDoc(userRef, userData);
       });
+      console.log("✅ [AUTH] Document users créé");
 
       // Create patient profile
+      console.log("👤 [AUTH] Création du profil patient...");
       await createDefaultPatientProfile(
         userId,
         name,
@@ -985,10 +1022,36 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         phoneNumber,
         additionalData
       );
+      console.log("✅ [AUTH] Profil patient créé");
+
+      // Mettre à jour phone_index pour accélérer les pré-checks
+      console.log("📱 [AUTH] Mise à jour de phone_index...");
+      try {
+        const db2 = getFirestore();
+        await setDoc(
+          doc(db2, "phone_index", phoneNumber),
+          {
+            exists: true,
+            type: "patient",
+            userId: userId,
+            updatedAt: serverTimestamp(),
+          },
+          { merge: true }
+        );
+        console.log("✅ [AUTH] phone_index mis à jour");
+      } catch (indexError) {
+        console.log("⚠️ [AUTH] Erreur phone_index (non-bloquant):", indexError);
+      }
+
+      console.log("🎉 [AUTH] CREATE USER WITH PHONE TERMINÉ AVEC SUCCÈS");
     } catch (error) {
+      console.log("❌ [AUTH] ===== ERREUR CREATE USER WITH PHONE =====");
+      console.error("❌ [AUTH] Erreur complète:", error);
+      console.error("❌ [AUTH] Message:", error?.message);
       throw error;
     } finally {
       // Reset registration flag
+      console.log("🔓 [AUTH] Registration lock désactivé");
       registrationInProgressRef.current = false;
     }
   };

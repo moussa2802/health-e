@@ -103,6 +103,7 @@ const Privacy = lazy(() => import("./pages/Privacy"));
 const Terms = lazy(() => import("./pages/Terms"));
 const Ethics = lazy(() => import("./pages/Ethics"));
 const VerifyEmail = lazy(() => import("./pages/VerifyEmail"));
+const Join = lazy(() => import("./pages/Join"));
 
 // Loading fallback component
 const PageLoader = () => (
@@ -154,6 +155,7 @@ const AppChrome: React.FC = () => {
             <Route path="/cgu" element={<Terms />} />
             <Route path="/ethique" element={<Ethics />} />
             <Route path="/verify-email" element={<VerifyEmail />} />
+            <Route path="/join" element={<Join />} />
 
             {/* Patient Routes */}
             <Route

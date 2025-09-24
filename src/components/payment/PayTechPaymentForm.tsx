@@ -42,18 +42,15 @@ const PayTechPaymentForm: React.FC<PayTechPaymentFormProps> = ({
         bookingId
       );
 
-      // Vérifier que l'email est disponible
-      if (!currentUser.email) {
-        throw new Error(
-          "Email utilisateur manquant. Veuillez vous reconnecter ou mettre à jour votre profil."
-        );
-      }
+      // Générer un email par défaut si manquant (pour l'authentification par téléphone)
+      const customerEmail =
+        currentUser.email || `patient_${currentUser.id}@health-e.sn`;
 
       // Préparer les données de paiement
       const paymentData = {
         amount: paytechService.formatAmount(amount),
         bookingId,
-        customerEmail: currentUser.email,
+        customerEmail: customerEmail,
         customerPhone: currentUser.phoneNumber || "",
         customerName: currentUser.displayName || "Patient",
         professionalId,

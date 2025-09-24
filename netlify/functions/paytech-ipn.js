@@ -192,8 +192,24 @@ exports.handler = async (event, context) => {
     // Si le paiement est réussi, créer le booking
     if (paymentData.type_event === "sale_complete" && booking_id) {
       try {
+        // Générer un nouvel ID définitif si c'est un ID temporaire
+        let finalBookingId = booking_id;
+        if (booking_id.startsWith("temp_")) {
+          finalBookingId = `booking_${Date.now()}_${Math.random()
+            .toString(36)
+            .substr(2, 9)}`;
+          console.log(
+            "🔄 [PAYTECH IPN] Converting temporary ID:",
+            booking_id,
+            "to final ID:",
+            finalBookingId
+          );
+        }
+
         // Créer le booking avec les données complètes
         const bookingData = {
+          id: finalBookingId,
+          tempId: booking_id, // Garder une référence à l'ID temporaire
           patientId,
           professionalId,
           patientName,
@@ -213,13 +229,30 @@ exports.handler = async (event, context) => {
           createdAt: admin.firestore.FieldValue.serverTimestamp(),
         };
 
-        console.log("✅ [PAYTECH IPN] Creating confirmed booking:", booking_id);
-        await db.collection("bookings").doc(booking_id).set(bookingData);
+        console.log(
+          "✅ [PAYTECH IPN] Creating confirmed booking:",
+          finalBookingId
+        );
+        await db.collection("bookings").doc(finalBookingId).set(bookingData);
+
+        // Si c'était un ID temporaire, créer aussi une entrée avec l'ID temporaire pour la redirection
+        if (booking_id.startsWith("temp_")) {
+          const tempRedirectData = {
+            finalBookingId: finalBookingId,
+            redirectTo: `/appointment-success/${finalBookingId}`,
+            createdAt: admin.firestore.FieldValue.serverTimestamp(),
+          };
+          await db
+            .collection("temp_redirects")
+            .doc(booking_id)
+            .set(tempRedirectData);
+          console.log("🔄 [PAYTECH IPN] Created redirect mapping for temp ID");
+        }
 
         // Créer l'entrée dans la Realtime Database pour la salle
         try {
           const database = admin.database();
-          const roomRef = database.ref(`scheduled_rooms/${booking_id}`);
+          const roomRef = database.ref(`scheduled_rooms/${finalBookingId}`);
           await roomRef.set({
             createdAt: new Date().toISOString(),
             scheduledFor: `${date}T${startTime}:00`,
@@ -243,7 +276,7 @@ exports.handler = async (event, context) => {
 
         console.log(
           "✅ [PAYTECH IPN] Booking created successfully:",
-          booking_id
+          finalBookingId
         );
 
         // Créer une transaction de revenu pour le professionnel
@@ -252,8 +285,8 @@ exports.handler = async (event, context) => {
           await createConsultationRevenue(
             professionalId,
             patientId,
-            booking_id,
-            parseFloat(item_price) || price || 0,
+            finalBookingId,
+            parseFloat(paymentData.item_price) || price || 0,
             patientName,
             professionalName,
             type
@@ -276,7 +309,7 @@ exports.handler = async (event, context) => {
               type: "payment_success",
               title: "Paiement confirmé",
               message: `Votre paiement de ${paymentData.item_price} XOF via ${paymentData.payment_method} a été confirmé. Votre consultation est confirmée.`,
-              bookingId: booking_id,
+              bookingId: finalBookingId,
               createdAt: admin.firestore.FieldValue.serverTimestamp(),
               read: false,
             });

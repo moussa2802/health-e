@@ -11,14 +11,19 @@ import { defineSecret } from "firebase-functions/params";
 const PHONE_INDEX_SECRET = defineSecret("PHONE_INDEX_SECRET");
 
 // Configuration globale des functions
-setGlobalOptions({ 
-  region: "europe-west1", 
-  enforceAppCheck: true 
+setGlobalOptions({
+  region: "europe-west1",
+  enforceAppCheck: true,
 });
 
 if (!admin.apps.length) {
   admin.initializeApp();
 }
+
+export { onBookingConfirmed } from "./onBookingConfirmed";
+export { remindTMinus5, remindStartNow } from "./reminders";
+export { joinInfo } from "./join";
+export { onBookingUpdated } from "./bookingHooks";
 
 function normalizePhone(input: string): string {
   // conserve + et chiffres, retire espaces, -, ()
@@ -63,14 +68,34 @@ async function deletePhoneIndex(phone: string, secret: string) {
  */
 export const checkPhoneIndex = onCall(async (request) => {
   const phone: string = (request.data?.phone || "").trim();
-  
+
   if (!phone.startsWith("+") || phone.length < 8) {
     throw new HttpsError("invalid-argument", "Numéro invalide");
   }
 
   const db = getFirestore();
-  
-  // Vérifier dans la collection users
+
+  // 1) Vérifier d'abord un index direct non chiffré s'il existe
+  try {
+    const idx = await db.doc(`phone_index/${phone}`).get();
+    if (idx.exists) {
+      const d = idx.data()!;
+      return {
+        exists:
+          !!d.exists ||
+          !!d.userId ||
+          (Array.isArray(d.types)
+            ? d.types.includes("patient")
+            : d.type === "patient"),
+        type: d.type ?? (Array.isArray(d.types) ? d.types[0] ?? null : null),
+        userId: d.userId ?? null,
+      };
+    }
+  } catch {
+    // ignore and fallback to full scans
+  }
+
+  // 2) Vérifier dans la collection users
   const usersSnap = await db
     .collection("users")
     .where("type", "==", "patient")
@@ -82,7 +107,7 @@ export const checkPhoneIndex = onCall(async (request) => {
     return { exists: true };
   }
 
-  // Vérifier dans la collection patients
+  // 3) Vérifier dans la collection patients
   const patientsSnap = await db
     .collection("patients")
     .where("phone", "==", phone)

@@ -9,17 +9,13 @@ import {
   User,
   Video,
 } from "lucide-react";
+// REPLACE the firebase/firestore import block with:
 import {
   doc,
   getDoc,
   updateDoc,
-  collection,
-  query,
-  where,
-  orderBy,
-  limit,
-  getDocs,
   Timestamp,
+  serverTimestamp,
 } from "firebase/firestore";
 import { getFirestoreInstance } from "../../utils/firebase";
 
@@ -66,10 +62,8 @@ const AppointmentSuccess: React.FC = () => {
           paytechRef,
         });
 
-        // Si PayTech confirme le paiement, mettre à jour le statut
-        if (paytechStatus === "success") {
-          setPaymentStatus("confirmed");
-        } else if (paytechStatus === "cancelled") {
+        // Ne pas définir le statut trop tôt, on le fera après lecture du doc
+        if (paytechStatus === "cancelled") {
           setPaymentStatus("cancelled");
         }
       }
@@ -111,90 +105,99 @@ const AppointmentSuccess: React.FC = () => {
             );
           }
 
+          // Si PayTech renvoie succès et que la réservation est encore en attente, on confirme localement
+          if (
+            paytechStatus === "success" &&
+            (data.status === "pending_payment" ||
+              data.paymentStatus === "pending")
+          ) {
+            try {
+              await updateDoc(bookingRef, {
+                status: "confirmed",
+                paymentStatus: "paid",
+                "payment.status": "paid",
+                "payment.confirmedAt": serverTimestamp(),
+                updatedAt: serverTimestamp(),
+              });
+              setPaymentStatus("confirmed");
+              // Recharger en mémoire
+              const refreshed = await getDoc(bookingRef);
+              if (refreshed.exists())
+                setBookingData(refreshed.data() as BookingData);
+            } catch (e) {
+              console.warn("⚠️ Unable to auto-confirm booking:", e);
+            }
+          }
+
+          // Si PayTech renvoie annulation, mettre à jour le doc
+          if (paytechStatus === "cancelled") {
+            try {
+              await updateDoc(bookingRef, {
+                status: "cancelled",
+                paymentStatus: "cancelled",
+                "payment.status": "cancelled",
+                updatedAt: serverTimestamp(),
+              });
+              setPaymentStatus("cancelled");
+            } catch (e) {
+              console.warn("⚠️ Unable to mark cancelled:", e);
+            }
+          }
+
           // Si le paiement est confirmé, mettre à jour le statut
           if (data.paymentStatus === "paid" || data.status === "confirmed") {
             setPaymentStatus("confirmed");
             console.log("✅ [APPOINTMENT SUCCESS] Payment confirmed");
           }
         } else {
+          // --- START new fallback ---
           console.log("⚠️ No booking found with ID:", bookingId);
-          console.log(
-            "🔍 [APPOINTMENT SUCCESS] Checking if booking exists in other collections..."
-          );
 
-          // Essayer de chercher dans les réservations récentes
-          try {
-            // Vérifier si c'est un ID temporaire (commence par 'temp_')
-            if (bookingId && bookingId.startsWith("temp_")) {
+          // Cas des IDs temporaires : tenter un mapping vers un ID final
+          if (bookingId && bookingId.startsWith("temp_")) {
+            console.log(
+              "🔄 [APPOINTMENT SUCCESS] Temporary ID detected, checking for redirect mapping..."
+            );
+
+            // 1) Chercher un mapping dans temp_redirects
+            const tempRedirectRef = doc(db, "temp_redirects", bookingId);
+            const tempRedirectSnap = await getDoc(tempRedirectRef);
+
+            if (tempRedirectSnap.exists()) {
+              const { finalBookingId } = tempRedirectSnap.data() as {
+                finalBookingId: string;
+              };
               console.log(
-                "🔄 [APPOINTMENT SUCCESS] Temporary ID detected, searching for recent bookings..."
+                "🔄 [APPOINTMENT SUCCESS] Found redirect to:",
+                finalBookingId
               );
 
-              // Chercher la réservation la plus récente pour ce patient
-              const recentBookingsQuery = query(
-                collection(db, "bookings"),
-                where("patientId", "==", currentUser?.id),
-                orderBy("createdAt", "desc"),
-                limit(5)
-              );
-
-              const recentSnapshot = await getDocs(recentBookingsQuery);
-              if (!recentSnapshot.empty) {
-                const recentBooking = recentSnapshot.docs[0];
-                console.log(
-                  "🔍 [APPOINTMENT SUCCESS] Found recent booking:",
-                  recentBooking.id,
-                  recentBooking.data()
-                );
-
-                // Vérifier si cette réservation correspond aux paramètres PayTech
-                const paytechRef = searchParams.get("ref_command");
-                if (
-                  paytechRef &&
-                  recentBooking.data().paymentRef === paytechRef
-                ) {
-                  console.log(
-                    "✅ [APPOINTMENT SUCCESS] Found matching booking by payment reference"
-                  );
-                  setBookingData(recentBooking.data() as BookingData);
-                  setLoading(false);
-                  return;
-                }
-
-                // Si pas de correspondance par référence, utiliser la plus récente
-                console.log(
-                  "🔄 [APPOINTMENT SUCCESS] Using most recent booking as fallback"
-                );
-                setBookingData(recentBooking.data() as BookingData);
+              const finalBookingRef = doc(db, "bookings", finalBookingId);
+              const finalBookingSnap = await getDoc(finalBookingRef);
+              if (finalBookingSnap.exists()) {
+                setBookingData(finalBookingSnap.data() as BookingData);
                 setLoading(false);
                 return;
               }
             }
 
-            // Fallback: chercher la réservation la plus récente
-            const recentBookingsQuery = query(
-              collection(db, "bookings"),
-              where("patientId", "==", currentUser?.id),
-              orderBy("createdAt", "desc"),
-              limit(1)
-            );
-            const recentSnapshot = await getDocs(recentBookingsQuery);
-            if (!recentSnapshot.empty) {
-              const recentBooking = recentSnapshot.docs[0];
-              console.log(
-                "🔍 [APPOINTMENT SUCCESS] Found recent booking:",
-                recentBooking.id,
-                recentBooking.data()
-              );
+            // 2) Polling du doc temp (si l'IPN ou la Function écrit avec un léger délai)
+            const start = Date.now();
+            const timeoutMs = 20000;
+            while (Date.now() - start < timeoutMs) {
+              const retrySnap = await getDoc(doc(db, "bookings", bookingId));
+              if (retrySnap.exists()) {
+                setBookingData(retrySnap.data() as BookingData);
+                setLoading(false);
+                return;
+              }
+              await new Promise((r) => setTimeout(r, 1500));
             }
-          } catch (err) {
-            console.log(
-              "🔍 [APPOINTMENT SUCCESS] Error checking recent bookings:",
-              err
-            );
           }
 
+          // 3) Rien trouvé
           setError("Réservation non trouvée");
+          // --- END new fallback ---
         }
       } catch (err) {
         console.error("❌ Error fetching booking:", err);
@@ -210,43 +213,6 @@ const AppointmentSuccess: React.FC = () => {
             fetchBooking();
           }, 2000);
           return;
-        }
-
-        // Si c'est une erreur de requête invalide, essayer de récupérer les réservations récentes
-        if (
-          err instanceof Error &&
-          (err.message.includes("invalid data") ||
-            err.message.includes("undefined"))
-        ) {
-          console.log(
-            "🔄 [APPOINTMENT SUCCESS] Invalid query error, trying to fetch recent bookings..."
-          );
-          try {
-            const db = getFirestoreInstance();
-            if (db && currentUser?.id) {
-              const recentBookingsQuery = query(
-                collection(db, "bookings"),
-                where("patientId", "==", currentUser.id),
-                orderBy("createdAt", "desc"),
-                limit(1)
-              );
-              const recentSnapshot = await getDocs(recentBookingsQuery);
-              if (!recentSnapshot.empty) {
-                const recentBooking = recentSnapshot.docs[0];
-                console.log(
-                  "✅ [APPOINTMENT SUCCESS] Successfully recovered recent booking"
-                );
-                setBookingData(recentBooking.data() as BookingData);
-                setLoading(false);
-                return;
-              }
-            }
-          } catch (fallbackErr) {
-            console.error(
-              "❌ [APPOINTMENT SUCCESS] Fallback query also failed:",
-              fallbackErr
-            );
-          }
         }
 
         setError("Erreur lors du chargement des détails de la réservation");
@@ -331,8 +297,9 @@ const AppointmentSuccess: React.FC = () => {
       const bookingRef = doc(db, "bookings", bookingId);
       await updateDoc(bookingRef, {
         status: "confirmed",
-        paymentStatus: "completed",
-        updatedAt: new Date(),
+        paymentStatus: "paid",
+        "payment.status": "paid",
+        updatedAt: serverTimestamp(),
       });
 
       console.log("✅ [MANUAL UPDATE] Booking status updated successfully");
@@ -347,7 +314,8 @@ const AppointmentSuccess: React.FC = () => {
   // Si la réservation est en attente, afficher un bouton de test
   if (
     bookingData?.status === "en_attente" ||
-    bookingData?.status === "pending"
+    bookingData?.status === "pending" ||
+    bookingData?.status === "pending_payment"
   ) {
     return (
       <div className="container mx-auto px-4 py-16">

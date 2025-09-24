@@ -6,12 +6,7 @@ import {
   ConfirmationResult,
   UserCredential,
 } from "firebase/auth";
-import {
-  auth,
-  getFirestoreInstance,
-  ensureFirestoreReady,
-} from "../utils/firebase";
-import { collection, query, where, getDocs, limit } from "firebase/firestore";
+import { auth } from "../utils/firebase";
 
 // tout en haut du hook
 declare global {
@@ -25,8 +20,6 @@ declare global {
 export const usePhoneAuth = () => {
   const [loginConfirmation, setLoginConfirmation] =
     useState<ConfirmationResult | null>(null);
-  const [registerConfirmation, setRegisterConfirmation] =
-    useState<ConfirmationResult | null>(null);
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -36,8 +29,25 @@ export const usePhoneAuth = () => {
   const [isInCooldown, setIsInCooldown] = useState(false);
 
   const recaptchaVerifierRef = useRef<RecaptchaVerifier | null>(null);
-  const cooldownTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const cooldownTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const initLockRef = useRef(false);
+
+  useEffect(() => {
+    return () => {
+      if (cooldownTimerRef.current) clearInterval(cooldownTimerRef.current);
+      try {
+        window.__heRecaptchaVerifier?.clear();
+      } catch {}
+      window.__heRecaptchaVerifier = null;
+      if (window.__heRecaptchaWidgetId != null && window.grecaptcha) {
+        try {
+          window.grecaptcha.reset(window.__heRecaptchaWidgetId);
+        } catch {}
+      }
+      const el = document.getElementById("recaptcha-container");
+      if (el) el.innerHTML = "";
+    };
+  }, []);
 
   const startCooldown = (duration = 60) => {
     setIsInCooldown(true);
@@ -66,15 +76,14 @@ export const usePhoneAuth = () => {
   };
 
   const ensureRecaptcha = async () => {
-    // réutilise si existant
     if (window.__heRecaptchaVerifier) {
       recaptchaVerifierRef.current = window.__heRecaptchaVerifier!;
       return;
     }
     if (initLockRef.current) return;
     initLockRef.current = true;
+
     try {
-      // garantir le conteneur
       let container = document.getElementById("recaptcha-container");
       if (!container) {
         container = document.createElement("div");
@@ -84,7 +93,6 @@ export const usePhoneAuth = () => {
         container.style.top = "-9999px";
         document.body.appendChild(container);
       } else {
-        // NE PAS faire display:none
         container.style.position = "fixed";
         container.style.left = "-9999px";
         container.style.top = "-9999px";
@@ -92,20 +100,18 @@ export const usePhoneAuth = () => {
         container.style.height = "1px";
       }
 
-      // crée l'instance et REND le widget (obligatoire)
       const verifier = new RecaptchaVerifier(auth, "recaptcha-container", {
         size: "invisible",
-        callback: () => console.log("✅ reCAPTCHA solved"),
-        "expired-callback": () => console.log("⏰ reCAPTCHA expired"),
+        callback: () => {},
+        "expired-callback": () => {},
       });
 
-      const widgetId = await verifier.render(); // ← évite "already rendered"
+      const widgetId = await verifier.render();
+
       window.__heRecaptchaVerifier = verifier;
       window.__heRecaptchaWidgetId = widgetId;
-
       recaptchaVerifierRef.current = verifier;
     } catch (e: any) {
-      // Si "already rendered", on reset le widget au lieu de recréer
       if (String(e?.message || "").includes("already been rendered")) {
         try {
           if (window.grecaptcha && window.__heRecaptchaWidgetId != null) {
@@ -113,42 +119,14 @@ export const usePhoneAuth = () => {
             recaptchaVerifierRef.current = window.__heRecaptchaVerifier!;
             return;
           }
-        } catch {}
+        } catch (resetErr) {
+          // Silent fail
+        }
       }
-      console.error("❌ [RECAPTCHA] init error:", e);
       cleanupRecaptcha();
       throw new Error("reCAPTCHA indisponible");
     } finally {
       initLockRef.current = false;
-    }
-  };
-
-  // ——— Vérif Firestore existant ———
-  const isPhoneNumberAlreadyRegistered = async (phoneNumber: string) => {
-    try {
-      await ensureFirestoreReady();
-      const db = getFirestoreInstance();
-      if (!db) return false;
-
-      const qUsers = query(
-        collection(db, "users"),
-        where("phoneNumber", "==", phoneNumber),
-        where("type", "==", "patient"),
-        limit(1)
-      );
-      if (!(await getDocs(qUsers)).empty) return true;
-
-      const qPatients = query(
-        collection(db, "patients"),
-        where("phone", "==", phoneNumber),
-        limit(1)
-      );
-      if (!(await getDocs(qPatients)).empty) return true;
-
-      return false;
-    } catch (e) {
-      console.warn("⚠️ Firestore check error (on continue):", e);
-      return false;
     }
   };
 
@@ -157,57 +135,43 @@ export const usePhoneAuth = () => {
     phoneNumber: string
   ): Promise<ConfirmationResult | null> => {
     try {
-      console.log("🚀 [SMS] Début de sendVerificationCode pour:", phoneNumber);
       setLoading(true);
       setError(null);
 
       if (isInCooldown) {
         const m = Math.floor(cooldownTime / 60);
         const s = cooldownTime % 60;
-        console.log("⏰ [SMS] En cooldown:", cooldownTime, "secondes");
         throw new Error(`Veuillez attendre ${m ? `${m}m ` : ""}${s}s`);
       }
 
       if (!phoneNumber || phoneNumber.length < 10) {
-        console.log("❌ [SMS] Numéro invalide:", phoneNumber);
         throw new Error("Entrez un numéro en format international (+221…).");
       }
 
       let formatted = phoneNumber.trim();
       if (!formatted.startsWith("+")) formatted = `+${formatted}`;
-      console.log("📱 [SMS] Numéro formaté:", formatted);
 
-      // Numéros de test Firebase (pour le développement)
+      // Numéros de test Firebase (facultatif)
       const testNumbers = ["+14505168884", "+15551234567"];
       if (testNumbers.includes(formatted)) {
-        console.log("🧪 [SMS] Numéro de test détecté:", formatted);
+        console.log("🧪 Numéro de test détecté:", formatted);
       }
 
-      console.log("🔧 [SMS] Initialisation reCAPTCHA...");
       await ensureRecaptcha();
-      if (!recaptchaVerifierRef.current) {
+      if (!recaptchaVerifierRef.current)
         throw new Error("reCAPTCHA indisponible");
-      }
+
       const confirmation = await signInWithPhoneNumber(
         auth,
         formatted,
         recaptchaVerifierRef.current
       );
-      console.log(
-        "📞 [SMS] signInWithPhoneNumber terminé, confirmation:",
-        !!confirmation
-      );
 
-      console.log(
-        "✅ [SMS] SMS envoyé avec succès, confirmation reçue:",
-        !!confirmation
-      );
       setVerificationSent(true);
+      setLoginConfirmation(confirmation);
       startCooldown(60);
-      console.log("✅ [SMS] Code envoyé et cooldown démarré");
       return confirmation;
     } catch (err: any) {
-      console.error("Erreur envoi code", err);
       let msg = "Erreur lors de l'envoi du code";
       const code = (err as FirebaseError)?.code;
 
@@ -239,7 +203,7 @@ export const usePhoneAuth = () => {
             msg = "Quota SMS dépassé. Réessayez plus tard.";
             break;
           case "auth/invalid-app-credential":
-            msg = "App Check/enforcement ou reCAPTCHA non configuré pour Auth.";
+            msg = "reCAPTCHA non valide.";
             break;
           default:
             msg = err?.message || msg;
@@ -252,72 +216,24 @@ export const usePhoneAuth = () => {
     }
   };
 
-  const sendVerificationCodeForLogin = async (phoneNumber: string) => {
-    try {
-      console.log("🔄 [LOGIN] Début de l'envoi du code pour:", phoneNumber);
-      console.log("🔄 [LOGIN] Appel de sendVerificationCode...");
-
-      const c = await sendVerificationCode(phoneNumber);
-      console.log("🔄 [LOGIN] Résultat de sendVerificationCode:", !!c);
-
-      if (!c) {
-        console.log("❌ [LOGIN] Échec de l'envoi du code");
-        return { success: false, error: "Échec de l'envoi du code" };
-      }
-
-      console.log(
-        "✅ [LOGIN] Code envoyé avec succès, configuration de la confirmation"
-      );
-      setLoginConfirmation(c);
-      // pas de startCooldown ici (déjà fait dans sendVerificationCode)
-      return { success: true };
-    } catch (error) {
-      console.error(
-        "❌ [LOGIN] Erreur dans sendVerificationCodeForLogin:",
-        error
-      );
-      return { success: false, error: (error as Error).message };
-    }
-  };
-
-  const sendVerificationCodeForRegister = async (phoneNumber: string) => {
-    const used = await isPhoneNumberAlreadyRegistered(phoneNumber);
-    if (used) {
-      const msg = "Ce numéro est déjà associé à un compte existant.";
-      setError(msg);
-      return { success: false, error: msg };
-    }
-    const c = await sendVerificationCode(phoneNumber);
-    if (!c) return { success: false, error: "Échec de l'envoi du code" };
-    setRegisterConfirmation(c);
-    return { success: true };
-  };
-
   const verifyLoginCode = async (
     code: string
   ): Promise<UserCredential | null> => {
-    if (!loginConfirmation) throw new Error("Aucun code envoyé.");
-    return loginConfirmation.confirm(code);
-  };
+    if (!loginConfirmation) {
+      throw new Error("Aucun code envoyé.");
+    }
 
-  const verifyRegisterCode = async (
-    code: string
-  ): Promise<UserCredential | null> => {
-    if (!registerConfirmation)
-      throw new Error("Aucun code d'inscription envoyé.");
-    return registerConfirmation.confirm(code);
+    try {
+      const result = await loginConfirmation.confirm(code);
+      return result;
+    } catch (err: any) {
+      throw err;
+    }
   };
 
   return {
-    // exposés
     sendVerificationCode,
-    sendVerificationCodeForLogin,
-    sendVerificationCodeForRegister,
     verifyLoginCode,
-    verifyRegisterCode,
-    isPhoneNumberAlreadyRegistered,
-
-    // state
     verificationSent,
     loading,
     error,

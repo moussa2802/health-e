@@ -7,37 +7,15 @@ import "react-phone-number-input/style.css";
 import { useAuth } from "../../contexts/AuthContext";
 import { useTerms } from "../../contexts/TermsContext";
 import { usePhoneAuth } from "../../hooks/usePhoneAuth";
-import { functions } from "../../utils/firebase";
 
-import {
-  getFirestore,
-  doc,
-  getDoc,
-  collection,
-  query,
-  where,
-  limit,
-  getDocs,
-} from "firebase/firestore";
+import { getFirestore, doc, getDoc } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
-import { httpsCallable } from "firebase/functions";
 
-type Step = "enterPhone" | "collectProfile" | "verify";
-type Mode = "login" | "register";
+type Step = "enterPhone" | "verify" | "completeProfile";
 
 const toE164 = (v: string) => (v?.startsWith("+") ? v : `+${(v || "").trim()}`);
 
-// Fonction pour vérifier l'existence du numéro via Cloud Function
-async function phoneExistsInFirestore(e164: string): Promise<boolean> {
-  try {
-    const checkPhoneIndex = httpsCallable(functions, "checkPhoneIndex");
-    const { data } = await checkPhoneIndex({ phone: e164 });
-    return Boolean((data as any)?.exists);
-  } catch (error) {
-    console.error("❌ Erreur lors de la vérification du numéro:", error);
-    return false; // En cas d'erreur, on considère que le numéro n'existe pas
-  }
-}
+// plus aucune pré-vérification côté client
 
 const PatientAccess: React.FC = () => {
   const navigate = useNavigate();
@@ -47,10 +25,8 @@ const PatientAccess: React.FC = () => {
   const { hasAgreedToTerms, setShowTermsModal } = useTerms();
 
   const {
-    sendVerificationCodeForLogin,
-    sendVerificationCodeForRegister,
+    sendVerificationCode,
     verifyLoginCode,
-    verifyRegisterCode,
     loading: phoneLoading,
     error: phoneError,
     isInCooldown,
@@ -59,11 +35,10 @@ const PatientAccess: React.FC = () => {
 
   // UI state
   const [step, setStep] = useState<Step>("enterPhone");
-  const [mode, setMode] = useState<Mode>("login"); // défini après pré-check
   const [phone, setPhone] = useState<string>("");
   const [code, setCode] = useState<string>("");
 
-  // Profil (si register)
+  // Profil (si nécessaire)
   const [fullName, setFullName] = useState<string>("");
   const [gender, setGender] = useState<"homme" | "femme" | "">("");
 
@@ -77,49 +52,65 @@ const PatientAccess: React.FC = () => {
     }
   }, [isAuthenticated, currentUser, navigate]);
 
-  // ---- Étape 1: pré-check Firestore AVANT envoi du code ----
+  // ---- Étape 1: envoi du SMS ----
   const onSubmitPhone = async (e: React.FormEvent) => {
     e.preventDefault();
     setErr("");
 
+    console.log("📱 [PATIENT] ===== DÉBUT ON SUBMIT PHONE =====");
+    console.log("📱 [PATIENT] Téléphone saisi:", phone);
+
     const e164 = toE164(phone);
+    console.log("📱 [PATIENT] Téléphone E164:", e164);
+    console.log("📱 [PATIENT] Téléphone valide:", isValidPhoneNumber(e164));
+
     if (!e164 || !isValidPhoneNumber(e164)) {
+      console.log("❌ [PATIENT] Numéro invalide");
       setErr("Saisissez un numéro valide au format international (ex: +221…).");
       return;
     }
 
     try {
+      console.log("🔄 [PATIENT] Début de l'envoi du code...");
       setLoading(true);
-
-      const exists = await phoneExistsInFirestore(e164);
-
-      if (exists) {
-        // Mode LOGIN → envoie directement le code
-        setMode("login");
-        const { success, error } = await sendVerificationCodeForLogin(e164);
-        if (!success) throw new Error(error || "Envoi du code échoué");
-        setStep("verify");
-      } else {
-        // Mode REGISTER → demande d'abord Nom/Genre (PAS d'envoi de code ici)
-        setMode("register");
-        setStep("collectProfile");
+      const confirmation = await sendVerificationCode(e164);
+      if (!confirmation) {
+        console.log("❌ [PATIENT] Confirmation null, échec de l'envoi");
+        throw new Error("Envoi du code échoué");
       }
+      console.log("✅ [PATIENT] Code envoyé, passage à l'étape verify");
+      setStep("verify");
     } catch (e: any) {
-      setErr(e?.message || "Erreur lors de la vérification du numéro.");
+      console.log("❌ [PATIENT] ===== ERREUR ON SUBMIT PHONE =====");
+      console.error("❌ [PATIENT] Erreur complète:", e);
+      console.error("❌ [PATIENT] Message:", e?.message);
+      setErr(e?.message || "Erreur lors de l'envoi du code.");
     } finally {
+      console.log("🏁 [PATIENT] Fin de onSubmitPhone, loading = false");
       setLoading(false);
     }
   };
 
-  // ---- Étape 2 (register): collecte profil PUIS envoi du code ----
+  // ---- Étape 3: création du profil (si nécessaire) ----
   const onSubmitProfile = async (e: React.FormEvent) => {
     e.preventDefault();
     setErr("");
 
-    if (!fullName.trim())
+    console.log("📝 [PATIENT] ===== DÉBUT ON SUBMIT PROFILE =====");
+    console.log("👤 [PATIENT] Nom complet:", fullName);
+    console.log("⚧ [PATIENT] Genre:", gender);
+    console.log("📋 [PATIENT] Terms acceptés:", hasAgreedToTerms);
+
+    if (!fullName.trim()) {
+      console.log("❌ [PATIENT] Nom manquant");
       return setErr("Veuillez renseigner votre nom et prénom.");
-    if (!gender) return setErr("Veuillez sélectionner votre genre.");
+    }
+    if (!gender) {
+      console.log("❌ [PATIENT] Genre manquant");
+      return setErr("Veuillez sélectionner votre genre.");
+    }
     if (!hasAgreedToTerms) {
+      console.log("❌ [PATIENT] Terms non acceptés");
       setShowTermsModal(true);
       return setErr(
         "Vous devez accepter les conditions d'utilisation et la politique de confidentialité."
@@ -127,57 +118,106 @@ const PatientAccess: React.FC = () => {
     }
 
     try {
+      console.log("🔄 [PATIENT] Début de la création du profil...");
       setLoading(true);
-      const e164 = toE164(phone);
-      // Maintenant qu'on a le profil, on peut envoyer le code en mode REGISTER
-      const { success, error } = await sendVerificationCodeForRegister(e164);
-      if (!success) throw new Error(error || "Envoi du code échoué");
-      setStep("verify");
+      const uid = getAuth().currentUser?.uid;
+      if (!uid) {
+        console.log("❌ [PATIENT] UID manquant");
+        throw new Error("Utilisateur non authentifié.");
+      }
+      const e164 = toE164(getAuth().currentUser?.phoneNumber || phone);
+      console.log("👤 [PATIENT] UID:", uid);
+      console.log("📱 [PATIENT] E164:", e164);
+
+      console.log(
+        "📝 [PATIENT] Création du profil avec createUserWithPhone..."
+      );
+      await createUserWithPhone(fullName.trim(), e164, {
+        type: "patient",
+        gender,
+      });
+      console.log("✅ [PATIENT] Profil créé, connexion...");
+
+      await loginWithPhone(uid, e164);
+      console.log("🚀 [PATIENT] Redirection vers dashboard");
+      navigate("/patient/dashboard");
     } catch (e: any) {
-      setErr(e?.message || "Erreur lors de l'envoi du code.");
+      console.log("❌ [PATIENT] ===== ERREUR ON SUBMIT PROFILE =====");
+      console.error("❌ [PATIENT] Erreur complète:", e);
+      console.error("❌ [PATIENT] Message:", e?.message);
+      setErr(e?.message || "Erreur lors de la création du profil.");
     } finally {
+      console.log("🏁 [PATIENT] Fin de onSubmitProfile, loading = false");
       setLoading(false);
     }
   };
 
-  // ---- Étape 3: vérification du code ----
+  // ---- Étape 2: vérification du code ----
   const onVerifyCode = async (e: React.FormEvent) => {
     e.preventDefault();
     setErr("");
 
+    console.log("🔐 [PATIENT] ===== DÉBUT ON VERIFY CODE =====");
+    console.log("🔢 [PATIENT] Code saisi:", code);
+
     if (!code.trim()) {
+      console.log("❌ [PATIENT] Code vide");
       setErr("Veuillez saisir le code reçu par SMS.");
       return;
     }
 
     try {
+      console.log("🔄 [PATIENT] Début de la vérification du code...");
       setLoading(true);
-
-      const cred =
-        mode === "login"
-          ? await verifyLoginCode(code) // utilise loginConfirmation
-          : await verifyRegisterCode(code); // utilise registerConfirmation
-      if (!cred?.user) throw new Error("Code invalide ou expiré.");
+      const cred = await verifyLoginCode(code);
+      if (!cred?.user) {
+        console.log("❌ [PATIENT] Credential ou user manquant");
+        throw new Error("Code invalide ou expiré.");
+      }
 
       const uid = cred.user.uid;
       const e164 = toE164(cred.user.phoneNumber || phone);
+      console.log("👤 [PATIENT] UID:", uid);
+      console.log("📱 [PATIENT] E164:", e164);
 
-      if (mode === "login") {
-        // profil déjà existant → login direct
+      console.log("🔍 [PATIENT] Vérification de l'existence du profil...");
+      const db = getFirestore();
+      let profileExists = false;
+      try {
+        const snap = await getDoc(doc(db, "users", uid));
+        profileExists = snap.exists();
+        console.log("📋 [PATIENT] Profil existe:", profileExists);
+      } catch (err: any) {
+        console.log("⚠️ [PATIENT] Erreur lecture Firestore:", err);
+        // Si la lecture est refusée, on bascule en création de profil
+        if (err?.code === "permission-denied") {
+          console.log(
+            "🔒 [PATIENT] Permission refusée, considère profil inexistant"
+          );
+          profileExists = false;
+        } else {
+          throw err;
+        }
+      }
+
+      if (profileExists) {
+        console.log("✅ [PATIENT] Profil existant, connexion...");
         await loginWithPhone(uid, e164);
+        console.log("🚀 [PATIENT] Redirection vers dashboard");
         navigate("/patient/dashboard");
       } else {
-        // register → créer le profil APRES vérification du code
-        await createUserWithPhone(fullName.trim(), e164, {
-          type: "patient",
-          gender,
-        });
-        await loginWithPhone(uid, e164);
-        navigate("/patient/dashboard");
+        console.log(
+          "📝 [PATIENT] Profil inexistant, passage à completeProfile"
+        );
+        setStep("completeProfile");
       }
     } catch (e: any) {
+      console.log("❌ [PATIENT] ===== ERREUR ON VERIFY CODE =====");
+      console.error("❌ [PATIENT] Erreur complète:", e);
+      console.error("❌ [PATIENT] Message:", e?.message);
       setErr(e?.message || "La vérification a échoué.");
     } finally {
+      console.log("🏁 [PATIENT] Fin de onVerifyCode, loading = false");
       setLoading(false);
     }
   };
@@ -205,8 +245,8 @@ const PatientAccess: React.FC = () => {
               Accès patient par téléphone
             </h2>
             <p className="text-gray-600 mt-1">
-              On vérifie d’abord si vous avez déjà un compte, puis on envoie le
-              code.
+              On vous envoie un code par SMS. Après vérification, on détecte si
+              un compte existe déjà.
             </p>
           </div>
 
@@ -257,12 +297,12 @@ const PatientAccess: React.FC = () => {
             </form>
           )}
 
-          {/* STEP 2: profil (pour register) */}
-          {step === "collectProfile" && (
+          {/* STEP 3: profil (si nécessaire) */}
+          {step === "completeProfile" && (
             <form onSubmit={onSubmitProfile} className="space-y-5">
               <div className="text-sm text-gray-600 mb-2">
-                Vous n'avez pas encore de compte. Complétez votre profil, puis
-                nous enverrons le code de vérification.
+                Vous n'avez pas encore de compte. Complétez votre profil pour
+                finaliser votre inscription.
               </div>
 
               <div>
@@ -337,7 +377,7 @@ const PatientAccess: React.FC = () => {
                 }
                 className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-3 rounded-xl shadow disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {loading || phoneLoading ? "Préparation…" : "Envoyer le code"}
+                {loading || phoneLoading ? "Création…" : "Créer mon compte"}
               </button>
 
               <button
@@ -363,6 +403,8 @@ const PatientAccess: React.FC = () => {
                 </label>
                 <input
                   type="text"
+                  inputMode="numeric"
+                  autoComplete="one-time-code"
                   value={code}
                   onChange={(e) => setCode(e.target.value)}
                   className="w-full rounded-xl border border-gray-300 px-4 py-3 focus:border-blue-500 focus:ring-blue-500"
@@ -382,11 +424,7 @@ const PatientAccess: React.FC = () => {
                 type="button"
                 onClick={() => {
                   setCode("");
-                  // Si on était en login, retourner à enterPhone ; si register, revenir à collectProfile
-                  setStep(mode === "login" ? "enterPhone" : "collectProfile");
-                  // Optionnel: reset des confirmations pour éviter les conflits
-                  // resetRecaptcha();
-                  // resetConfirmations();
+                  setStep("enterPhone");
                 }}
                 className="w-full text-gray-600 font-medium mt-2"
               >
@@ -396,8 +434,6 @@ const PatientAccess: React.FC = () => {
           )}
         </div>
       </div>
-
-      {/* IMPORTANT : conteneur reCAPTCHA doit exister dans le DOM global (App.tsx) */}
     </div>
   );
 };

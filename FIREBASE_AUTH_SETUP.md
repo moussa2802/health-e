@@ -40,25 +40,9 @@ Si App Check est activé avec enforcement pour Authentication :
 - **Console Firebase → App Check → Paramètres**
 - Désactiver l'enforcement pour Authentication
 
-**Option B - Mode debug (recommandé pour le développement) :**
+**App Check :**
 
-- Ajouter dans `src/main.tsx` avant `initializeApp` :
-
-```typescript
-// @ts-ignore
-self.FIREBASE_APPCHECK_DEBUG_TOKEN = true; // DEV uniquement
-```
-
-- Puis initialiser App Check :
-
-```typescript
-import { initializeAppCheck, ReCaptchaV3Provider } from "firebase/app-check";
-
-const appCheck = initializeAppCheck(app, {
-  provider: new ReCaptchaV3Provider("VOTRE_SITE_KEY_RECAPTCHA_V3"),
-  isTokenAutoRefreshEnabled: true,
-});
-```
+- App Check a été désactivé pour simplifier l'authentification par téléphone.
 
 ## 🔧 Code déjà configuré
 

@@ -1,6 +1,29 @@
 import { getAuth } from "firebase/auth";
 
-// Interface pour les données de paiement
+// Types (adapter si JS)
+export type PaymentMethod = "mobile" | "card";
+
+export interface PaymentInit {
+  amount: number; // XOF entier
+  bookingId: string;
+  method: PaymentMethod; // 👈 important
+  customerName: string;
+  customerEmail?: string | null; // requis si 'card'
+  customerPhone?: string | null; // requis si 'mobile'
+  professionalId: string;
+  professionalName: string;
+  description?: string;
+  successUrl: string;
+  cancelUrl: string;
+  // champs métier optionnels
+  patientId?: string;
+  date?: string;
+  startTime?: string;
+  endTime?: string;
+  type?: string;
+}
+
+// Interface pour les données de paiement (legacy - pour compatibilité)
 interface PaymentData {
   amount: number;
   bookingId: string;
@@ -28,7 +51,9 @@ class PayTechService {
   /**
    * Initier un paiement PayTech
    */
-  async initiatePayment(paymentData: PaymentData): Promise<PaymentResponse> {
+  async initiatePayment(
+    paymentData: PaymentData | PaymentInit
+  ): Promise<PaymentResponse> {
     try {
       console.log(
         "🔔 [PAYTECH] Initiating payment for booking:",
@@ -109,49 +134,69 @@ class PayTechService {
   }
 
   /**
-   * Valider les données de paiement
+   * Valider les données de paiement (legacy et nouveau format)
    */
-  validatePaymentData(data: PaymentData): boolean {
-    const requiredFields = [
-      "amount",
-      "bookingId",
-      "customerEmail",
-      "customerName",
-      "professionalId",
-    ];
+  validatePaymentData(data: PaymentData | PaymentInit): boolean {
+    try {
+      // Si c'est le nouveau format PaymentInit, utiliser la validation stricte
+      if ("method" in data && "successUrl" in data) {
+        validatePaymentInit(data as PaymentInit);
+        return true;
+      }
 
-    for (const field of requiredFields) {
-      if (!data[field as keyof PaymentData]) {
-        console.error(`❌ [PAYTECH] Missing required field: ${field}`);
-        console.error(`❌ [PAYTECH] Current data:`, {
-          amount: data.amount,
-          bookingId: data.bookingId,
-          customerEmail: data.customerEmail,
-          customerName: data.customerName,
-          professionalId: data.professionalId,
-        });
+      // Sinon, validation legacy simplifiée
+      const legacyData = data as PaymentData;
+      const requiredFields = [
+        "amount",
+        "bookingId",
+        "customerName",
+        "professionalId",
+      ];
+
+      for (const field of requiredFields) {
+        if (!legacyData[field as keyof PaymentData]) {
+          console.error(`❌ [PAYTECH] Missing required field: ${field}`);
+          console.error(`❌ [PAYTECH] Current data:`, {
+            amount: legacyData.amount,
+            bookingId: legacyData.bookingId,
+            customerEmail: legacyData.customerEmail,
+            customerName: legacyData.customerName,
+            professionalId: legacyData.professionalId,
+          });
+          return false;
+        }
+      }
+
+      // customerEmail n'est plus obligatoire pour les paiements mobile
+
+      // Validation spécifique pour l'email (accepter les emails générés automatiquement)
+      if (
+        legacyData.customerEmail &&
+        !this.isValidEmail(legacyData.customerEmail)
+      ) {
+        console.error(
+          "❌ [PAYTECH] Invalid email format:",
+          legacyData.customerEmail
+        );
         return false;
       }
-    }
 
-    // Validation spécifique pour l'email
-    if (data.customerEmail && !this.isValidEmail(data.customerEmail)) {
-      console.error("❌ [PAYTECH] Invalid email format:", data.customerEmail);
+      // Le numéro de téléphone est optionnel, utiliser une valeur par défaut si manquant
+      if (!legacyData.customerPhone) {
+        console.log("⚠️ [PAYTECH] No phone number provided, using default");
+        legacyData.customerPhone = "770000000"; // Numéro par défaut pour PayTech
+      }
+
+      if (legacyData.amount <= 0) {
+        console.error("❌ [PAYTECH] Invalid amount:", legacyData.amount);
+        return false;
+      }
+
+      return true;
+    } catch (error) {
+      console.error("❌ [PAYTECH] Validation error:", error);
       return false;
     }
-
-    // Le numéro de téléphone est optionnel, utiliser une valeur par défaut si manquant
-    if (!data.customerPhone) {
-      console.log("⚠️ [PAYTECH] No phone number provided, using default");
-      data.customerPhone = "770000000"; // Numéro par défaut pour PayTech
-    }
-
-    if (data.amount <= 0) {
-      console.error("❌ [PAYTECH] Invalid amount:", data.amount);
-      return false;
-    }
-
-    return true;
   }
 
   /**
@@ -161,6 +206,49 @@ class PayTechService {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return emailRegex.test(email);
   }
+}
+
+// Remplacer l'ancienne fonction par celle-ci
+export function validatePaymentInit(d: PaymentInit): true {
+  // Champs base
+  const baseRequired = [
+    "amount",
+    "bookingId",
+    "method",
+    "successUrl",
+    "cancelUrl",
+  ] as const;
+  for (const k of baseRequired) {
+    // @ts-ignore
+    if (d[k] === undefined || d[k] === null || d[k] === "") {
+      console.error("❌ [PAYTECH] Missing required field:", k);
+      console.error("❌ [PAYTECH] Current data:", {
+        amount: d.amount,
+        bookingId: d.bookingId,
+        customerEmail: d.customerEmail ?? null,
+        customerPhone: d.customerPhone ?? null,
+        customerName: d.customerName,
+        professionalId: d.professionalId,
+      });
+      throw new Error(`Missing required field: ${k}`);
+    }
+  }
+
+  if (!Number.isFinite(d.amount) || d.amount <= 0) {
+    throw new Error("Invalid amount");
+  }
+
+  if (d.method === "card") {
+    if (!d.customerEmail)
+      throw new Error("customerEmail is required for card payments");
+  } else if (d.method === "mobile") {
+    if (!d.customerPhone)
+      throw new Error("customerPhone is required for mobile payments");
+  } else {
+    throw new Error("Unsupported payment method");
+  }
+
+  return true;
 }
 
 // Instance singleton

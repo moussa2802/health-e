@@ -30,6 +30,9 @@ import {
   checkAvailability,
   updateBooking,
 } from "../../services/bookingService";
+// + ADD
+import { doc, setDoc, serverTimestamp } from "firebase/firestore";
+import { getFirestoreInstance } from "../../utils/firebase";
 import { formatLocalTime } from "../../utils/dateUtils";
 import LoadingSpinner from "../../components/ui/LoadingSpinner";
 import { getDatabase, ref, set } from "firebase/database";
@@ -673,7 +676,7 @@ const BookAppointment: React.FC = () => {
         return;
       }
 
-      // Générer un ID temporaire pour le paiement (pas de création en base)
+      // Générer un ID temporaire pour le paiement
       const tempBookingId = `temp_${Date.now()}_${Math.random()
         .toString(36)
         .substr(2, 9)}`;
@@ -682,7 +685,63 @@ const BookAppointment: React.FC = () => {
         tempBookingId
       );
 
-      // Préparer les données de paiement sans créer le booking
+      // 📝 Écrire la réservation "pending" AVANT d'appeler PayTech
+      const db = getFirestoreInstance();
+      // Calculer les bonnes valeurs de date et heure de fin
+      const timeToUse = selectedTimeSlot?.time || selectedTime;
+      const [tempHours, tempMinutes] = timeToUse.split(":").map(Number);
+      const tempEndTime = `${String(tempHours + 1).padStart(2, "0")}:${String(
+        tempMinutes
+      ).padStart(2, "0")}`;
+
+      let tempDateString;
+      if (selectedTimeSlot && selectedTimeSlot.date) {
+        let dateObj: Date;
+        if (selectedTimeSlot.date instanceof Date) {
+          dateObj = selectedTimeSlot.date;
+        } else if (typeof selectedTimeSlot.date === "string") {
+          dateObj = new Date(selectedTimeSlot.date);
+        } else {
+          try {
+            dateObj = new Date(selectedTimeSlot.date as any);
+          } catch (error) {
+            dateObj = new Date();
+          }
+        }
+        tempDateString = format(dateObj, "yyyy-MM-dd");
+      } else {
+        tempDateString = selectedDay;
+      }
+
+      const method = (selectedPaymentMethod as "mobile" | "card") || "mobile";
+
+      const tempBookingData = {
+        id: tempBookingId,
+        tempId: tempBookingId,
+        patientId: currentUser.id,
+        professionalId: professional.id,
+        patientName: currentUser.name || "Patient",
+        professionalName: professional.name,
+        date: tempDateString, // ← on utilise la date calculée
+        startTime: selectedTimeSlot?.time || selectedTime, // ← inchangé
+        endTime: tempEndTime, // ← on garde l'heure de fin calculée
+        type: consultationType,
+        duration: 60,
+        price: professionalPrice || 0,
+        status: "pending_payment",
+        paymentStatus: "pending",
+        createdAt: serverTimestamp(),
+        payment: {
+          provider: "paytech",
+          method, // 'mobile' | 'card'
+          status: "init",
+        },
+      };
+
+      await setDoc(doc(db, "bookings", tempBookingId), tempBookingData);
+      console.log("📝 [PAYMENT] Temporary booking created in database");
+
+      // Préparer les données de paiement
       console.log("🔔 [PAYMENT] Preparing payment data for:", tempBookingId);
 
       // Initier le paiement PayTech
@@ -693,30 +752,46 @@ const BookAppointment: React.FC = () => {
             ? `+221${phoneNumber}`
             : currentUser.phoneNumber || "";
 
-        // Vérifier que l'email est disponible
-        const customerEmail = currentUser.email;
-        if (!customerEmail) {
-          throw new Error(
-            "Email utilisateur manquant. Veuillez vous reconnecter ou mettre à jour votre profil."
-          );
-        }
+        const successUrl = `${
+          window.location.origin
+        }/appointment-success/${encodeURIComponent(
+          tempBookingId
+        )}?status=success`;
+        const cancelUrl = `${
+          window.location.origin
+        }/appointment-success/${encodeURIComponent(
+          tempBookingId
+        )}?status=cancelled`;
 
         const paymentData = {
-          amount: professionalPrice || 0,
+          amount: Math.round(Number(professionalPrice || 0)),
           bookingId: tempBookingId,
-          customerEmail: customerEmail,
+          customerEmail:
+            method === "card"
+              ? currentUser.email || `patient_${currentUser.id}@health-e.sn`
+              : currentUser.email || null,
           customerPhone,
           customerName: currentUser.name || "Patient",
           professionalId: professional.id,
           professionalName: professional.name,
           description: `Consultation ${consultationType} avec ${professional.name}`,
-          // Données supplémentaires pour l'IPN
           patientId: currentUser.id,
-          date: selectedDay,
+          date: tempDateString,
           startTime: selectedTimeSlot?.time || selectedTime,
-          endTime: "01:00", // Valeur par défaut - 1 heure après
+          endTime: tempEndTime,
           type: consultationType,
+          successUrl,
+          cancelUrl,
+          method,
         };
+
+        if (method === "card" && !paymentData.customerEmail) {
+          setPaymentError(
+            "Pour le paiement par carte, un e-mail est requis. Veuillez ajouter un e-mail dans votre profil."
+          );
+          setIsSubmitting(false);
+          return;
+        }
 
         console.log("🔔 [PAYTECH] Initiating payment with data:", paymentData);
 
@@ -1305,14 +1380,10 @@ const BookAppointment: React.FC = () => {
                   checkSlotAvailability();
                 }
               } catch (error) {
-                console.log("✅ Slot selection processed:", {
-                  date: format(dateObj, "yyyy-MM-dd"),
-                  dayName,
-                  time: slot.time,
-                });
-                console.error("Erreur lors de la sélection du créneau:", error);
-                // Réinitialiser en cas d'erreur
-                console.log("🔄 Slot deselected, resetting values");
+                console.error(
+                  "❌ Erreur lors de la sélection du créneau:",
+                  error
+                );
                 setSelectedDay("");
                 setSelectedTime("");
               }

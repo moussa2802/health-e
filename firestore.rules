@@ -2,16 +2,9 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Règles pour les utilisateurs - TEMPORAIREMENT PLUS PERMISSIVES POUR LA RECHERCHE
+    // Règles pour les utilisateurs - flux verify-then-decide
     match /users/{userId} {
-      // Lecture : par tous les utilisateurs authentifiés (pour la recherche)
-      allow read: if request.auth != null;
-      
-      // Écriture : par l'utilisateur propriétaire OU admin
-      allow write: if request.auth != null && 
-        (request.auth.uid == userId ||
-         (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.type == 'admin'));
+      allow read, write: if request.auth != null && request.auth.uid == userId;
     }
     
 
@@ -25,21 +18,9 @@ service cloud.firestore {
           get(/databases/$(database)/documents/users/$(request.auth.uid)).data.type == 'admin'));
     }
     
-    // Règles pour les patients - ACCÈS ÉLARGI POUR LES PROFESSIONNELS ET RECHERCHE
+    // Règles pour les patients - flux verify-then-decide
     match /patients/{patientId} {
-      // Lecture : par tous les utilisateurs authentifiés (pour la recherche)
-      allow read: if request.auth != null;
-      
-      // Écriture : par le patient propriétaire uniquement
-      allow write: if request.auth != null && request.auth.uid == patientId;
-      
-      // Mise à jour spécifique : permettre aux professionnels de mettre à jour les références de dossiers médicaux ET l'archivage
-      allow update: if request.auth != null && 
-        (request.auth.uid == patientId || 
-         (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.type == 'professional' &&
-          // Vérifier que seuls les champs autorisés sont modifiés
-          (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['latestMedicalRecord', 'medicalRecordIds', 'updatedAt', 'isArchived', 'archivedAt']))));
+      allow read, write: if request.auth != null && request.auth.uid == patientId;
     }
     
     // Règles pour les dossiers médicaux (sous-collection)
@@ -79,6 +60,30 @@ service cloud.firestore {
       
       // Suppression : par tous les utilisateurs authentifiés
       allow delete: if request.auth != null;
+    }
+    
+    // Règles pour les redirections temporaires
+    match /temp_redirects/{tempId} {
+      // Lecture : par tous les utilisateurs authentifiés
+      allow read: if request.auth != null;
+      
+      // Création : par tous les utilisateurs authentifiés (pour l'IPN)
+      allow create: if request.auth != null;
+      
+      // Mise à jour : par tous les utilisateurs authentifiés
+      allow update: if request.auth != null;
+    }
+    
+    // Règles pour les liens de salle de consultation
+    match /roomLinks/{token} {
+      // Lecture : par tous les utilisateurs authentifiés
+      allow read: if request.auth != null;
+      
+      // Création : par tous les utilisateurs authentifiés (pour les Cloud Functions)
+      allow create: if request.auth != null;
+      
+      // Mise à jour : par tous les utilisateurs authentifiés
+      allow update: if request.auth != null;
     }
     
     // Règles pour les paiements - TEMPORAIREMENT PLUS PERMISSIVES POUR LES TESTS
