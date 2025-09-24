@@ -21,7 +21,7 @@ if (!admin.apps.length) {
 }
 
 export { onBookingConfirmed } from "./onBookingConfirmed";
-export { remindTMinus5, remindStartNow } from "./reminders";
+export { remindTMinus5, remindStartNow, remindMinus24h, remindMinus1h } from "./reminders";
 export { joinInfo } from "./join";
 export { onBookingUpdated } from "./bookingHooks";
 
