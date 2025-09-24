@@ -41,7 +41,7 @@ export const remindTMinus5 = onSchedule(
     region: REGION,
     timeZone: TZ,
   },
-  async (event) => {
+  async () => {
     console.log("[T-5] Starting reminder check...");
 
     const now = DateTime.now().setZone(TZ);
@@ -129,7 +129,7 @@ export const remindStartNow = onSchedule(
     region: REGION,
     timeZone: TZ,
   },
-  async (event) => {
+  async () => {
     console.log("[H-0] Starting start reminder check...");
 
     const now = DateTime.now().setZone(TZ);
@@ -204,5 +204,167 @@ export const remindStartNow = onSchedule(
     }
 
     console.log("[H-0] Start reminder check completed");
+  }
+);
+
+// === Nouveaux rappels J-1 (24h) et J-1h ===
+function windowStartEnd(minutesAhead: number) {
+  const now = admin.firestore.Timestamp.now().toMillis();
+  const start = admin.firestore.Timestamp.fromMillis(
+    now + minutesAhead * 60 * 1000
+  );
+  const end = admin.firestore.Timestamp.fromMillis(
+    now + (minutesAhead + 5) * 60 * 1000
+  );
+  return { start, end };
+}
+
+export const remindMinus24h = onSchedule(
+  { schedule: "every 5 minutes", region: REGION, timeZone: TZ },
+  async () => {
+    const { start, end } = windowStartEnd(24 * 60);
+    const qsnap = await db
+      .collection("bookings")
+      .where("status", "==", "confirmed")
+      .where("startsAt", ">=", start)
+      .where("startsAt", "<", end)
+      .get();
+
+    for (const doc of qsnap.docs) {
+      const b = doc.data() as FirebaseFirestore.DocumentData;
+      if (b?.notify?.sent?.reminder24h) continue;
+
+      try {
+        // Email pro via notification bridge
+        await db.collection("notifications").add({
+          userId: b.professionalId,
+          userType: "professional",
+          type: "appointment_reminder_pro",
+          title: `Rappel – RDV ${b.patientName || "patient"}`,
+          message: `Rappel de rendez-vous avec ${b.patientName || "patient"}.`,
+          data: {
+            bookingId: doc.id,
+            date: splitDateTime(b.startsAt).dateStr,
+            time: splitDateTime(b.startsAt).timeStr,
+            redirectPath: "/professional/dashboard",
+          },
+          channels: ["email"],
+          createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        });
+
+        // WhatsApp patient
+        const phone = b.patientPhone || (await findPatientPhone(b.patientId));
+        if (phone) {
+          const token = await ensureRoomToken(doc.id);
+          const joinLink = `${SITE_URL.replace(
+            /\/$/,
+            ""
+          )}/join?t=${encodeURIComponent(token)}`;
+          const startsAt = b.startsAt as admin.firestore.Timestamp;
+          const { dateStr, timeStr } = splitDateTime(startsAt);
+          const whenText = humanize(startsAt);
+          const text = `[Health-e] Rappel J-1: votre consultation avec ${
+            b.professionalName || "votre professionnel"
+          } est prévue ${whenText}. Lien: ${joinLink}`;
+          const templateName = process.env.WA_TEMPLATE_REMINDER;
+          const variables = [
+            b.professionalName || "votre professionnel",
+            dateStr,
+            timeStr,
+            joinLink,
+          ];
+          await sendViaPreferredChannel(phone, {
+            text,
+            templateName,
+            variables,
+          });
+        }
+
+        await doc.ref.set(
+          {
+            "notify.sent.reminder24h": true,
+            updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+          },
+          { merge: true }
+        );
+      } catch (e) {
+        console.error("[J-1] Error handling booking", doc.id, e);
+      }
+    }
+  }
+);
+
+export const remindMinus1h = onSchedule(
+  { schedule: "every 5 minutes", region: REGION, timeZone: TZ },
+  async () => {
+    const { start, end } = windowStartEnd(60);
+    const qsnap = await db
+      .collection("bookings")
+      .where("status", "==", "confirmed")
+      .where("startsAt", ">=", start)
+      .where("startsAt", "<", end)
+      .get();
+
+    for (const doc of qsnap.docs) {
+      const b = doc.data() as FirebaseFirestore.DocumentData;
+      if (b?.notify?.sent?.reminder1h) continue;
+
+      try {
+        // Email pro via notification bridge
+        await db.collection("notifications").add({
+          userId: b.professionalId,
+          userType: "professional",
+          type: "appointment_reminder_pro",
+          title: `Rappel – RDV ${b.patientName || "patient"}`,
+          message: `Rappel de rendez-vous avec ${b.patientName || "patient"}.`,
+          data: {
+            bookingId: doc.id,
+            date: splitDateTime(b.startsAt).dateStr,
+            time: splitDateTime(b.startsAt).timeStr,
+            redirectPath: "/professional/dashboard",
+          },
+          channels: ["email"],
+          createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        });
+
+        // WhatsApp patient
+        const phone = b.patientPhone || (await findPatientPhone(b.patientId));
+        if (phone) {
+          const token = await ensureRoomToken(doc.id);
+          const joinLink = `${SITE_URL.replace(
+            /\/$/,
+            ""
+          )}/join?t=${encodeURIComponent(token)}`;
+          const startsAt = b.startsAt as admin.firestore.Timestamp;
+          const { dateStr, timeStr } = splitDateTime(startsAt);
+          const whenText = humanize(startsAt);
+          const text = `[Health-e] Rappel J-1h: votre consultation avec ${
+            b.professionalName || "votre professionnel"
+          } commence dans 1 heure (${whenText}). Lien: ${joinLink}`;
+          const templateName = process.env.WA_TEMPLATE_REMINDER;
+          const variables = [
+            b.professionalName || "votre professionnel",
+            dateStr,
+            timeStr,
+            joinLink,
+          ];
+          await sendViaPreferredChannel(phone, {
+            text,
+            templateName,
+            variables,
+          });
+        }
+
+        await doc.ref.set(
+          {
+            "notify.sent.reminder1h": true,
+            updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+          },
+          { merge: true }
+        );
+      } catch (e) {
+        console.error("[J-1h] Error handling booking", doc.id, e);
+      }
+    }
   }
 );
