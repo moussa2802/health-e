@@ -1,13 +1,13 @@
 import * as admin from "firebase-admin";
 import { onDocumentWritten } from "firebase-functions/v2/firestore";
 import { DateTime } from "luxon";
-import { sendViaPreferredChannel } from "./messaging";
-import { ensureRoomToken, findPatientPhone } from "./lib/room";
+import { sendWhatsAppTemplate } from "./messaging";
+import { findPatientPhone } from "./lib/room";
 
 const db = admin.firestore();
 const REGION = "europe-west1";
 const TZ = process.env.TZ || "Africa/Dakar";
-const SITE_URL = process.env.SITE_URL || "http://localhost:5174";
+// const SITE_URL = process.env.SITE_URL || "http://localhost:5174"; // Non utilisé pour le template
 
 function toStartsEnds(
   booking:
@@ -68,51 +68,69 @@ export const onBookingConfirmed = onDocumentWritten(
     if (startsAt && !after.startsAt) patch.startsAt = startsAt;
     if (endsAt && !after.endsAt) patch.endsAt = endsAt;
 
-    // Token + lien public
-    const token = await ensureRoomToken(bookingId);
-    const joinLink = `${SITE_URL.replace(
-      /\/$/,
-      ""
-    )}/join?t=${encodeURIComponent(token)}`;
+    // Token + lien public (pour référence future si besoin)
+    // const token = await ensureRoomToken(bookingId); // Non utilisé pour le template
 
-    // Numéro patient
-    const phone =
-      after.patientPhone || // si tu décides plus tard d'ajouter ce champ dans booking
-      (await findPatientPhone(after.patientId));
+    // Numéro patient - récupérer depuis booking ou users/{patientId}
+    let phone = after.patientPhone;
+    if (!phone && after.patientId) {
+      phone = await findPatientPhone(after.patientId);
+      // Persister le numéro dans le booking pour les prochaines fois
+      if (phone) {
+        await db.doc(`bookings/${bookingId}`).update({
+          patientPhone: phone,
+          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        });
+      }
+    }
 
-    // Message "RDV confirmé" (WhatsApp prioritaire, fallback interne si besoin)
+    // WhatsApp confirmation avec template spécifique
     if (phone) {
+      // Idempotence WhatsApp
+      if (after?.notify?.sent?.waConfirmation) {
+        console.log(`[onBookingConfirmed] WhatsApp déjà envoyé pour ${bookingId}`);
+        return;
+      }
+
       try {
-        const professionalName =
-          after.professionalName || "votre professionnel";
+        const professionalName = after.professionalName || "votre professionnel";
+        const patientName = after.patientName || "Patient";
         const when = startsAt || admin.firestore.Timestamp.fromDate(new Date());
+        
+        // Formatage en Africa/Dakar: dd/MM/yyyy HH:mm (Dakar)
         const date = new Date(when.toMillis());
-        const whenText = date.toLocaleString("fr-FR", {
-          dateStyle: "full",
-          timeStyle: "short",
+        const dateTimeDakar = date.toLocaleString("fr-CA", {
+          day: "2-digit",
+          month: "2-digit", 
+          year: "numeric",
+          hour: "2-digit",
+          minute: "2-digit",
           timeZone: TZ,
-        });
+        }) + " (Dakar)";
 
-        const templateName = process.env.WA_TEMPLATE_INITIAL;
-        const variables = [professionalName, whenText, joinLink];
-        const text = `[Health-e] RDV confirmé avec ${professionalName} le ${whenText}. Lien: ${joinLink}`;
-
-        await sendViaPreferredChannel(phone, {
-          text,
-          templateName,
-          variables,
-        });
+        // Template WhatsApp avec 3 paramètres body uniquement
+        const templateName = "rdv_confirmation";
+        const variables = [patientName, professionalName, dateTimeDakar];
+        
+        // Envoi via template WhatsApp
+        const success = await sendWhatsAppTemplate(phone, templateName, variables);
+        
+        if (success) {
+          // Marquer comme envoyé
+          await db.doc(`bookings/${bookingId}`).update({
+            "notify.sent.waConfirmation": true,
+            "notify.last.waConfirmationAt": admin.firestore.FieldValue.serverTimestamp(),
+            updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+          });
+          console.log(`[onBookingConfirmed] WhatsApp template envoyé pour ${bookingId}`);
+        } else {
+          console.warn(`[onBookingConfirmed] Échec envoi WhatsApp template pour ${bookingId}`);
+        }
       } catch (e) {
-        console.error(
-          "[onBookingConfirmed] Envoi message échoué",
-          bookingId,
-          e
-        );
+        console.error("[onBookingConfirmed] Erreur envoi WhatsApp:", bookingId, e);
       }
     } else {
-      console.warn(
-        `[onBookingConfirmed] Aucun numéro patient trouvé pour booking ${bookingId}`
-      );
+      console.warn(`[onBookingConfirmed] Aucun numéro patient trouvé pour booking ${bookingId}`);
     }
 
     // Marque comme notifié + patchs éventuels
