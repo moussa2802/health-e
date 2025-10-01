@@ -160,3 +160,83 @@ export async function sendViaPreferredChannel(
     text || `Template: ${templateName} with variables: ${variables.join(", ")}`;
   await sendSmsFallback(toE164, fallbackText);
 }
+
+/**
+ * Helper générique pour envoyer un template WhatsApp avec composants body et/ou button
+ */
+export async function sendWaTemplate(options: {
+  to: string;
+  name: string;
+  language: string;
+  bodyParams?: string[];
+  button0Param?: string;
+}): Promise<boolean> {
+  const WA_TOKEN = process.env.WA_TOKEN;
+  const WA_PHONE_NUMBER_ID = process.env.WA_PHONE_NUMBER_ID;
+  
+  if (!WA_TOKEN || !WA_PHONE_NUMBER_ID) {
+    console.log("[WA Template] Config missing, skipping");
+    return false;
+  }
+
+  try {
+    const to = digitsFromE164(options.to);
+    const components: any[] = [];
+
+    // Composant body si bodyParams fourni
+    if (options.bodyParams && options.bodyParams.length > 0) {
+      components.push({
+        type: "body",
+        parameters: options.bodyParams.map((v) => ({ type: "text", text: v })),
+      });
+    }
+
+    // Composant button si button0Param fourni
+    if (options.button0Param) {
+      components.push({
+        type: "button",
+        sub_type: "url",
+        index: "0",
+        parameters: [{ type: "text", text: options.button0Param }],
+      });
+    }
+
+    const payload: any = {
+      messaging_product: "whatsapp",
+      to,
+      type: "template",
+      template: {
+        name: options.name,
+        language: { code: options.language },
+      },
+    };
+
+    // N'ajouter components que si on a des composants
+    if (components.length > 0) {
+      payload.template.components = components;
+    }
+
+    const res = await postGraph(
+      `${WA_PHONE_NUMBER_ID}/messages`,
+      payload,
+      WA_TOKEN
+    );
+
+    if (res.ok) {
+      console.log("[WA Template] Sent successfully", {
+        to: options.to,
+        name: options.name,
+        hasBody: !!options.bodyParams,
+        hasButton: !!options.button0Param,
+      });
+      return true;
+    } else {
+      const error = await res.text();
+      console.error("[WA Template] Failed:", res.status, error);
+      return false;
+    }
+  } catch (error) {
+    console.error("[WA Template] Error:", error);
+    return false;
+  }
+}

@@ -1,13 +1,12 @@
 import * as admin from "firebase-admin";
 import { onSchedule } from "firebase-functions/v2/scheduler";
 import { DateTime } from "luxon";
-import { sendViaPreferredChannel } from "./messaging";
-import { ensureRoomToken, findPatientPhone } from "./lib/room";
+import { sendWaTemplate } from "./messaging";
+import { findPatientPhone } from "./lib/room";
 
 const db = admin.firestore();
 const REGION = "europe-west1";
 const TZ = process.env.TZ || "Africa/Dakar";
-const SITE_URL = process.env.SITE_URL || "http://localhost:5174";
 
 // Helper functions
 function ts(millis: number): admin.firestore.Timestamp {
@@ -15,15 +14,6 @@ function ts(millis: number): admin.firestore.Timestamp {
 }
 
 // Helper functions moved to lib/room.ts
-
-function humanize(timestamp: admin.firestore.Timestamp): string {
-  const dt = DateTime.fromMillis(timestamp.toMillis()).setZone(TZ);
-  // Example: "dimanche 21 septembre 2025 à 20:00"
-  return dt.setLocale("fr").toLocaleString({
-    ...DateTime.DATETIME_MED_WITH_WEEKDAY,
-    hour12: false,
-  });
-}
 
 function splitDateTime(timestamp: admin.firestore.Timestamp) {
   const dt = DateTime.fromMillis(timestamp.toMillis())
@@ -77,42 +67,41 @@ export const remindTMinus5 = onSchedule(
           continue;
         }
 
-        // Ensure room token
-        const token = await ensureRoomToken(bookingId);
-        const joinLink = `${SITE_URL.replace(
-          /\/$/,
-          ""
-        )}/join?t=${encodeURIComponent(token)}`;
-
-        // Prepare message
+        // Prepare message - format Dakar
         const startsAt = booking.startsAt as admin.firestore.Timestamp;
-        const professionalName =
-          booking.professionalName || "votre professionnel";
-        const { dateStr, timeStr } = splitDateTime(startsAt);
-        const whenText = humanize(startsAt);
+        const professionalName = booking.professionalName || "votre professionnel";
+        
+        const fmtDakar = (ts: admin.firestore.Timestamp) => {
+          const date = new Date(ts.toMillis());
+          return date.toLocaleString("fr-CA", {
+            day: "2-digit",
+            month: "2-digit",
+            year: "numeric",
+            hour: "2-digit",
+            minute: "2-digit",
+            timeZone: TZ,
+          }) + " (Dakar)";
+        };
 
-        const text = `[Health-e] Rappel: votre consultation avec ${professionalName} commence dans 5 min (${whenText}). Lien: ${joinLink}`;
+        const canFill = !!(professionalName && startsAt);
+        const bodyParams = canFill ? [professionalName, fmtDakar(startsAt)] : undefined;
 
-        // Try template first, then text - 4 variables for template
-        const templateName = process.env.WA_TEMPLATE_REMINDER;
-        const variables = [professionalName, dateStr, timeStr, joinLink];
-
-        await sendViaPreferredChannel(phone, {
-          text,
-          templateName,
-          variables,
+        const success = await sendWaTemplate({
+          to: phone,
+          name: "rdv_rappel",
+          language: "fr_CA",
+          bodyParams,
         });
 
-        // Mark as notified
-        await db.doc(`bookings/${bookingId}`).set(
-          {
+        if (success) {
+          // Mark as notified
+          await db.doc(`bookings/${bookingId}`).update({
             "notify.sent.reminder5m": true,
+            "notify.last.reminder5mAt": admin.firestore.FieldValue.serverTimestamp(),
             updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-          },
-          { merge: true }
-        );
-
-        console.log(`[T-5] Reminder sent for booking ${bookingId}`);
+          });
+          console.log(`[T-5] Reminder sent for booking ${bookingId}`);
+        }
       } catch (error) {
         console.error(`[T-5] Error processing booking ${bookingId}:`, error);
       }
@@ -165,39 +154,27 @@ export const remindStartNow = onSchedule(
           continue;
         }
 
-        // Ensure room token
-        const token = await ensureRoomToken(bookingId);
-        const joinLink = `${SITE_URL.replace(
-          /\/$/,
-          ""
-        )}/join?t=${encodeURIComponent(token)}`;
+        // Construire le suffixe pour le bouton dynamique
+        const joinSuffix = booking.join?.code || booking.room?.joinCode || bookingId;
 
-        // Prepare message
-        const professionalName =
-          booking.professionalName || "votre professionnel";
-
-        const text = `[Health-e] C'est l'heure ! Votre consultation avec ${professionalName} commence. Rejoignez la salle: ${joinLink}`;
-
-        // Try template first, then text - keep 2 variables for start now
-        const templateName = process.env.WA_TEMPLATE_STARTNOW;
-        const variables = [professionalName, joinLink];
-
-        await sendViaPreferredChannel(phone, {
-          text,
-          templateName,
-          variables,
+        // Template rdv_consultation avec bouton dynamique (0 variable body, 1 param button)
+        const success = await sendWaTemplate({
+          to: phone,
+          name: "rdv_consultation",
+          language: "fr_CA",
+          // pas de bodyParams (0 variable body)
+          button0Param: String(joinSuffix), // remplit {{1}} de l'URL dynamique
         });
 
-        // Mark as notified
-        await db.doc(`bookings/${bookingId}`).set(
-          {
+        if (success) {
+          // Mark as notified
+          await db.doc(`bookings/${bookingId}`).update({
             "notify.sent.startNow": true,
+            "notify.last.startNowAt": admin.firestore.FieldValue.serverTimestamp(),
             updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-          },
-          { merge: true }
-        );
-
-        console.log(`[H-0] Start reminder sent for booking ${bookingId}`);
+          });
+          console.log(`[H-0] Start reminder sent for booking ${bookingId}`);
+        }
       } catch (error) {
         console.error(`[H-0] Error processing booking ${bookingId}:`, error);
       }
@@ -255,38 +232,37 @@ export const remindMinus24h = onSchedule(
         // WhatsApp patient
         const phone = b.patientPhone || (await findPatientPhone(b.patientId));
         if (phone) {
-          const token = await ensureRoomToken(doc.id);
-          const joinLink = `${SITE_URL.replace(
-            /\/$/,
-            ""
-          )}/join?t=${encodeURIComponent(token)}`;
           const startsAt = b.startsAt as admin.firestore.Timestamp;
-          const { dateStr, timeStr } = splitDateTime(startsAt);
-          const whenText = humanize(startsAt);
-          const text = `[Health-e] Rappel J-1: votre consultation avec ${
-            b.professionalName || "votre professionnel"
-          } est prévue ${whenText}. Lien: ${joinLink}`;
-          const templateName = process.env.WA_TEMPLATE_REMINDER;
-          const variables = [
-            b.professionalName || "votre professionnel",
-            dateStr,
-            timeStr,
-            joinLink,
-          ];
-          await sendViaPreferredChannel(phone, {
-            text,
-            templateName,
-            variables,
+          const professionalName = b.professionalName || "votre professionnel";
+          
+          const fmtDakar = (ts: admin.firestore.Timestamp) => {
+            const date = new Date(ts.toMillis());
+            return date.toLocaleString("fr-CA", {
+              day: "2-digit",
+              month: "2-digit",
+              year: "numeric",
+              hour: "2-digit",
+              minute: "2-digit",
+              timeZone: TZ,
+            }) + " (Dakar)";
+          };
+
+          const canFill = !!(professionalName && startsAt);
+          const bodyParams = canFill ? [professionalName, fmtDakar(startsAt)] : undefined;
+
+          await sendWaTemplate({
+            to: phone,
+            name: "rdv_rappel",
+            language: "fr_CA",
+            bodyParams,
           });
         }
 
-        await doc.ref.set(
-          {
-            "notify.sent.reminder24h": true,
-            updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-          },
-          { merge: true }
-        );
+        await doc.ref.update({
+          "notify.sent.reminder24h": true,
+          "notify.last.reminder24hAt": admin.firestore.FieldValue.serverTimestamp(),
+          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        });
       } catch (e) {
         console.error("[J-1] Error handling booking", doc.id, e);
       }
@@ -330,38 +306,37 @@ export const remindMinus1h = onSchedule(
         // WhatsApp patient
         const phone = b.patientPhone || (await findPatientPhone(b.patientId));
         if (phone) {
-          const token = await ensureRoomToken(doc.id);
-          const joinLink = `${SITE_URL.replace(
-            /\/$/,
-            ""
-          )}/join?t=${encodeURIComponent(token)}`;
           const startsAt = b.startsAt as admin.firestore.Timestamp;
-          const { dateStr, timeStr } = splitDateTime(startsAt);
-          const whenText = humanize(startsAt);
-          const text = `[Health-e] Rappel J-1h: votre consultation avec ${
-            b.professionalName || "votre professionnel"
-          } commence dans 1 heure (${whenText}). Lien: ${joinLink}`;
-          const templateName = process.env.WA_TEMPLATE_REMINDER;
-          const variables = [
-            b.professionalName || "votre professionnel",
-            dateStr,
-            timeStr,
-            joinLink,
-          ];
-          await sendViaPreferredChannel(phone, {
-            text,
-            templateName,
-            variables,
+          const professionalName = b.professionalName || "votre professionnel";
+          
+          const fmtDakar = (ts: admin.firestore.Timestamp) => {
+            const date = new Date(ts.toMillis());
+            return date.toLocaleString("fr-CA", {
+              day: "2-digit",
+              month: "2-digit",
+              year: "numeric",
+              hour: "2-digit",
+              minute: "2-digit",
+              timeZone: TZ,
+            }) + " (Dakar)";
+          };
+
+          const canFill = !!(professionalName && startsAt);
+          const bodyParams = canFill ? [professionalName, fmtDakar(startsAt)] : undefined;
+
+          await sendWaTemplate({
+            to: phone,
+            name: "rdv_rappel",
+            language: "fr_CA",
+            bodyParams,
           });
         }
 
-        await doc.ref.set(
-          {
-            "notify.sent.reminder1h": true,
-            updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-          },
-          { merge: true }
-        );
+        await doc.ref.update({
+          "notify.sent.reminder1h": true,
+          "notify.last.reminder1hAt": admin.firestore.FieldValue.serverTimestamp(),
+          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        });
       } catch (e) {
         console.error("[J-1h] Error handling booking", doc.id, e);
       }
