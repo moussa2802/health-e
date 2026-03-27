@@ -110,11 +110,12 @@ export interface CompatibilityResult {
 
 export interface UserProfile {
   uid: string;
-  compatibilityId: string;           // ID unique partageable (ex: HE-2024-XXXX)
+  compatibilityId: string | null;    // ID unique partageable (ex: HE-2024-XXXX) — null jusqu'à profil complet
   displayName: string;
   assessmentHistory: string[];       // sessionIds
   lastAssessmentDate?: Date;
   profileSummary?: string;           // généré par Claude
+  scaleResults?: Record<string, ScaleResult>;  // map scaleId → résultat
   createdAt: Date;
   updatedAt: Date;
 }

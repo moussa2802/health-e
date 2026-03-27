@@ -21,9 +21,10 @@ export async function getOrCreateUserProfile(uid: string, displayName: string): 
 
   const profile: UserProfile = {
     uid,
-    compatibilityId: generateCompatibilityId(),
+    compatibilityId: null,
     displayName,
     assessmentHistory: [],
+    scaleResults: {},
     createdAt: new Date(),
     updatedAt: new Date(),
   };
@@ -44,7 +45,7 @@ export async function createSession(
   userId: string,
   selectedScaleIds: string[]
 ): Promise<UserAssessmentSession> {
-  if (selectedScaleIds.length < 2 || selectedScaleIds.length > 10) {
+  if (selectedScaleIds.length < 1 || selectedScaleIds.length > 10) {
     throw new Error('Choisissez entre 2 et 10 évaluations.');
   }
   const invalidIds = selectedScaleIds.filter(id => !ALL_SCALES.find(s => s.id === id));
@@ -163,4 +164,88 @@ export async function getUserSessions(userId: string): Promise<UserAssessmentSes
 
 export async function saveClaudeInterpretation(sessionId: string, text: string): Promise<void> {
   await updateDoc(doc(db, SESSIONS_COL, sessionId), { claudeInterpretation: text });
+}
+
+const ALL_SCALE_IDS = ALL_SCALES.map(s => s.id);
+export const TOTAL_SCALES = ALL_SCALE_IDS.length;
+
+/** Sauvegarde le résultat d'une scale dans le profil utilisateur.
+ *  Si toutes les scales sont complètes, génère l'ID de compatibilité. */
+export async function saveScaleResultToProfile(
+  userId: string,
+  scaleId: string,
+  result: ScaleResult
+): Promise<void> {
+  const ref = doc(db, PROFILES_COL, userId);
+  const snap = await getDoc(ref);
+  if (!snap.exists()) return;
+
+  const existing: Record<string, ScaleResult> = snap.data().scaleResults ?? {};
+  const updated = { ...existing, [scaleId]: result };
+  const completedCount = Object.keys(updated).length;
+
+  const updateData: Record<string, unknown> = {
+    [`scaleResults.${scaleId}`]: {
+      scaleId: result.scaleId,
+      totalScore: result.totalScore,
+      subscaleScores: result.subscaleScores ?? null,
+      interpretation: result.interpretation,
+      completedAt: serverTimestamp(),
+    },
+    updatedAt: serverTimestamp(),
+    lastAssessmentDate: serverTimestamp(),
+  };
+
+  // Générer l'ID de compatibilité si profil 100% complet
+  if (completedCount >= TOTAL_SCALES) {
+    const currentId = snap.data().compatibilityId;
+    if (!currentId) {
+      updateData.compatibilityId = generateCompatibilityId();
+    }
+  }
+
+  await updateDoc(ref, updateData);
+}
+
+/** Retourne la progression du profil utilisateur (scales complétées / total). */
+export async function getProfileProgress(userId: string): Promise<{
+  scaleResults: Record<string, ScaleResult>;
+  completedCount: number;
+  totalCount: number;
+  isComplete: boolean;
+  compatibilityId: string | null;
+  remaining: number;
+}> {
+  const ref = doc(db, PROFILES_COL, userId);
+  const snap = await getDoc(ref);
+  if (!snap.exists()) {
+    return {
+      scaleResults: {},
+      completedCount: 0,
+      totalCount: TOTAL_SCALES,
+      isComplete: false,
+      compatibilityId: null,
+      remaining: TOTAL_SCALES,
+    };
+  }
+  const data = snap.data();
+  const scaleResults: Record<string, ScaleResult> = data.scaleResults ?? {};
+  const completedCount = Object.keys(scaleResults).length;
+  const isComplete = completedCount >= TOTAL_SCALES;
+  return {
+    scaleResults,
+    completedCount,
+    totalCount: TOTAL_SCALES,
+    isComplete,
+    compatibilityId: (data.compatibilityId as string | null) ?? null,
+    remaining: Math.max(0, TOTAL_SCALES - completedCount),
+  };
+}
+
+/** Vérifie si un profil (par son compatibilityId) est complet. */
+export async function isProfileCompleteById(compatibilityId: string): Promise<boolean> {
+  const profile = await getUserProfileByCompatibilityId(compatibilityId);
+  if (!profile) return false;
+  const scaleResults = (profile as Record<string, unknown>).scaleResults as Record<string, unknown> ?? {};
+  return Object.keys(scaleResults).length >= TOTAL_SCALES;
 }

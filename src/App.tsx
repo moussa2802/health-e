@@ -120,6 +120,7 @@ const AssessmentSelectPage = lazy(() => import("./pages/assessment/AssessmentSel
 const AssessmentQuizPage = lazy(() => import("./pages/assessment/AssessmentQuizPage"));
 const AssessmentResultsPage = lazy(() => import("./pages/assessment/AssessmentResultsPage"));
 const CompatibilityPage = lazy(() => import("./pages/assessment/CompatibilityPage"));
+const AssessmentProfilePage = lazy(() => import("./pages/assessment/AssessmentProfilePage"));
 
 // Loading fallback component
 const PageLoader = () => (
@@ -414,6 +415,7 @@ const AppChrome: React.FC = () => {
             <Route path="/assessment/quiz/:sessionId" element={<AssessmentQuizPage />} />
             <Route path="/assessment/results/:sessionId" element={<AssessmentResultsPage />} />
             <Route path="/assessment/compatibility" element={<CompatibilityPage />} />
+            <Route path="/assessment/profile" element={<AssessmentProfilePage />} />
 
             {/* Fallback route - évite les 404 "profonds" */}
             <Route path="*" element={<Navigate to="/" replace />} />

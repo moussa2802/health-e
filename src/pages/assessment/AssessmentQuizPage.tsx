@@ -6,6 +6,7 @@ import {
   saveAnswer,
   computeAndSaveScaleResult,
   finalizeSession,
+  saveScaleResultToProfile,
 } from '../../services/evaluationService';
 import { getScaleById } from '../../data/scales';
 import type { UserAssessmentSession, AssessmentScale } from '../../types/assessment';
@@ -100,12 +101,20 @@ const AssessmentQuizPage: React.FC = () => {
       // Fin de la scale → calculer le résultat
       setSubmitting(true);
       try {
-        await computeAndSaveScaleResult(sessionId, currentScale.id, localAnswers);
+        const scaleResult = await computeAndSaveScaleResult(sessionId, currentScale.id, localAnswers);
 
         const nextScaleIndex = scaleIndex + 1;
         if (nextScaleIndex >= totalScales) {
           // Fin de toutes les scales
           await finalizeSession(sessionId);
+          // Sauvegarde au profil progressif (non bloquant)
+          if (session.userId) {
+            try {
+              await saveScaleResultToProfile(session.userId, currentScale.id, scaleResult);
+            } catch {
+              // silencieux — la session est déjà sauvegardée
+            }
+          }
           navigate(`/assessment/results/${sessionId}`);
         } else {
           // Prochaine scale
@@ -170,7 +179,7 @@ const AssessmentQuizPage: React.FC = () => {
           <h2 className="text-lg font-bold text-gray-900 mb-2">Une erreur est survenue</h2>
           <p className="text-gray-600 mb-6">{error}</p>
           <button
-            onClick={() => navigate('/assessment/select')}
+            onClick={() => navigate('/assessment')}
             className="bg-sky-500 text-white px-6 py-2.5 rounded-full font-medium hover:bg-sky-600 transition-colors"
           >
             Recommencer

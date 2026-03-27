@@ -5,7 +5,7 @@ import {
   Loader2, AlertTriangle, ChevronRight, Sparkles, RefreshCw,
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
-import { getOrCreateUserProfile } from '../../services/evaluationService';
+import { getOrCreateUserProfile, getProfileProgress, isProfileCompleteById, TOTAL_SCALES } from '../../services/evaluationService';
 import {
   createCompatibilityRequest,
   computeCompatibility,
@@ -32,6 +32,8 @@ const CompatibilityPage: React.FC = () => {
 
   // Profile / ID
   const [myCompatibilityId, setMyCompatibilityId] = useState<string | null>(null);
+  const [myIsComplete, setMyIsComplete] = useState(false);
+  const [myRemaining, setMyRemaining] = useState(TOTAL_SCALES);
   const [loadingProfile, setLoadingProfile] = useState(false);
   const [idCopied, setIdCopied] = useState(false);
 
@@ -48,7 +50,12 @@ const CompatibilityPage: React.FC = () => {
     if (isAuthenticated && currentUser) {
       setLoadingProfile(true);
       getOrCreateUserProfile(currentUser.id, currentUser.name)
-        .then((p) => setMyCompatibilityId(p.compatibilityId))
+        .then(() => getProfileProgress(currentUser.id))
+        .then((progress) => {
+          setMyCompatibilityId(progress.compatibilityId);
+          setMyIsComplete(progress.isComplete);
+          setMyRemaining(progress.remaining);
+        })
         .catch(() => {})
         .finally(() => setLoadingProfile(false));
     }
@@ -84,7 +91,27 @@ const CompatibilityPage: React.FC = () => {
       return;
     }
 
+    // Vérification : mon propre profil doit être complet
+    if (!myIsComplete) {
+      setFormError(`Ton profil n'est pas complet. Il te reste ${myRemaining} évaluation(s) à compléter avant de pouvoir utiliser le test de compatibilité.`);
+      return;
+    }
+
+    // Vérification : le profil du partenaire doit aussi être complet
     setCalculating(true);
+    try {
+      const partnerComplete = await isProfileCompleteById(trimmedId);
+      if (!partnerComplete) {
+        setFormError("Le profil associé à cet identifiant n'est pas encore complet. Les deux profils doivent avoir complété toutes les évaluations.");
+        setCalculating(false);
+        return;
+      }
+    } catch {
+      setFormError("Impossible de vérifier cet identifiant. Vérifiez qu'il est correct.");
+      setCalculating(false);
+      return;
+    }
+
     try {
       const req = await createCompatibilityRequest(
         currentUser.id,
@@ -163,6 +190,28 @@ const CompatibilityPage: React.FC = () => {
             <p className="text-sm text-red-500">Impossible de charger votre identifiant.</p>
           )}
         </div>
+
+        {/* ── Bannière profil incomplet ── */}
+        {isAuthenticated && !loadingProfile && !myIsComplete && (
+          <div className="rounded-2xl border p-5 mb-6 flex items-start gap-4"
+            style={{ background: "#FFFBEB", borderColor: "rgba(234,179,8,0.3)" }}>
+            <AlertTriangle size={20} className="text-amber-500 flex-shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <p className="font-semibold text-amber-800 text-sm mb-1">
+                Profil incomplet — test de compatibilité verrouillé
+              </p>
+              <p className="text-amber-700 text-sm">
+                Il te reste <strong>{myRemaining} évaluation{myRemaining > 1 ? "s" : ""}</strong> à compléter pour débloquer le test de compatibilité et obtenir ton numéro de référence.
+              </p>
+              <Link
+                to="/assessment"
+                className="inline-flex items-center gap-1.5 mt-3 text-sm font-semibold text-amber-700 hover:text-amber-900 transition-colors"
+              >
+                Compléter mes évaluations <ChevronRight size={14} />
+              </Link>
+            </div>
+          </div>
+        )}
 
         {/* ── Form ── */}
         {!result && (

@@ -1,192 +1,563 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { Brain, Heart, Shield, ChevronRight, Copy, Check, Activity, Lock } from 'lucide-react';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import { getOrCreateUserProfile } from '../../services/evaluationService';
+import {
+  getOrCreateUserProfile,
+  getProfileProgress,
+  createSession,
+} from '../../services/evaluationService';
+import { MENTAL_HEALTH_SCALES, SEXUAL_HEALTH_SCALES } from '../../data/scales';
+import type { ScaleResult } from '../../types/assessment';
+import type { AssessmentScale } from '../../types/assessment';
 
+// ── Icônes par scale ──────────────────────────────────────────────────────────
+const SCALE_ICONS: Record<string, string> = {
+  gad7: '😰', phq9: '💙', big_five: '🌟', ecr_r: '🫶',
+  rses: '💪', brs: '🌱', pss10: '⚡', ace: '🧩',
+  pcl5: '🌀', pg13: '🕊️', ceca_q: '👶', social_pressure: '🌍',
+  religious_cultural: '✨', economic_stress: '💰',
+  nsss: '❤️', sdi2: '🔥', sis_ses: '⚖️', fsfi: '🌸',
+  iief: '💙', tsi_base: '🧩', pair: '🫂', sise: '🪞',
+  social_pressure_sex: '🤐', griss_base: '💑',
+};
+
+// ── Couleurs de sévérité ──────────────────────────────────────────────────────
+function getSeverityColor(severity: string): string {
+  switch (severity) {
+    case 'positive':
+    case 'none':
+    case 'minimal':
+      return '#16A34A';
+    case 'mild':
+    case 'moderate':
+      return '#D97706';
+    case 'severe':
+    case 'alert':
+      return '#DC2626';
+    default:
+      return '#64748B';
+  }
+}
+
+function getSeverityBg(severity: string): string {
+  switch (severity) {
+    case 'positive':
+    case 'none':
+    case 'minimal':
+      return '#F0FDF4';
+    case 'mild':
+    case 'moderate':
+      return '#FFFBEB';
+    case 'severe':
+    case 'alert':
+      return '#FEF2F2';
+    default:
+      return '#F8FAFF';
+  }
+}
+
+// ── Composant ScaleCard ───────────────────────────────────────────────────────
+interface ScaleCardProps {
+  scale: AssessmentScale;
+  result?: ScaleResult;
+  isAuthenticated: boolean;
+  onStart: (scaleId: string) => void;
+  loading: boolean;
+}
+
+const ScaleCard: React.FC<ScaleCardProps> = ({
+  scale,
+  result,
+  isAuthenticated,
+  onStart,
+  loading,
+}) => {
+  const isCompleted = !!result;
+  const icon = SCALE_ICONS[scale.id] ?? '📋';
+
+  return (
+    <div
+      onClick={() => onStart(scale.id)}
+      style={{
+        background: '#FFFFFF',
+        border: isCompleted
+          ? '1.5px solid rgba(34,197,94,0.35)'
+          : '1.5px solid rgba(59,130,246,0.18)',
+        borderRadius: 14,
+        padding: '14px 16px',
+        cursor: 'pointer',
+        transition: 'all 0.18s ease',
+        display: 'flex',
+        alignItems: 'center',
+        gap: 12,
+        position: 'relative',
+        opacity: loading ? 0.7 : 1,
+      }}
+      onMouseEnter={e => {
+        const el = e.currentTarget as HTMLDivElement;
+        el.style.transform = 'translateY(-2px)';
+        el.style.boxShadow = '0 6px 20px rgba(59,130,246,0.12)';
+      }}
+      onMouseLeave={e => {
+        const el = e.currentTarget as HTMLDivElement;
+        el.style.transform = 'translateY(0)';
+        el.style.boxShadow = 'none';
+      }}
+    >
+      {/* Icône */}
+      <div
+        style={{
+          width: 42,
+          height: 42,
+          borderRadius: 10,
+          background: isCompleted ? '#F0FDF4' : '#EFF6FF',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          fontSize: 20,
+          flexShrink: 0,
+        }}
+      >
+        {icon}
+      </div>
+
+      {/* Contenu principal */}
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 }}>
+          <span style={{ fontSize: 12, fontWeight: 700, color: '#64748B' }}>
+            {scale.shortName}
+          </span>
+          {isCompleted && (
+            <span style={{ fontSize: 12 }}>✅</span>
+          )}
+        </div>
+        <p
+          style={{
+            margin: 0,
+            fontSize: 13,
+            fontWeight: 600,
+            color: '#0A2342',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+          }}
+        >
+          {scale.name}
+        </p>
+
+        {isCompleted && result ? (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 3 }}>
+            <span
+              style={{
+                display: 'inline-block',
+                padding: '1px 8px',
+                borderRadius: 20,
+                fontSize: 11,
+                fontWeight: 600,
+                background: getSeverityBg(result.interpretation.severity),
+                color: getSeverityColor(result.interpretation.severity),
+                border: `1px solid ${getSeverityColor(result.interpretation.severity)}30`,
+              }}
+            >
+              {result.interpretation.label}
+            </span>
+            <span style={{ fontSize: 11, color: '#94A3B8' }}>
+              Score: {result.totalScore}
+            </span>
+          </div>
+        ) : (
+          <span style={{ fontSize: 11, color: '#94A3B8', marginTop: 2, display: 'block' }}>
+            {isAuthenticated ? 'À faire' : 'À faire'} · {scale.timeEstimateMinutes} min
+          </span>
+        )}
+      </div>
+
+      {/* Loading spinner ou flèche */}
+      <div style={{ flexShrink: 0 }}>
+        {loading ? (
+          <div
+            style={{
+              width: 18,
+              height: 18,
+              border: '2px solid #3B82F6',
+              borderTopColor: 'transparent',
+              borderRadius: '50%',
+              animation: 'spin 0.7s linear infinite',
+            }}
+          />
+        ) : (
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke={isCompleted ? '#16A34A' : '#3B82F6'}
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <polyline points="9 18 15 12 9 6" />
+          </svg>
+        )}
+      </div>
+    </div>
+  );
+};
+
+// ── Page principale ───────────────────────────────────────────────────────────
 const AssessmentHomePage: React.FC = () => {
   const navigate = useNavigate();
   const { currentUser, isAuthenticated } = useAuth();
-  const [compatibilityId, setCompatibilityId] = useState<string | null>(null);
-  const [copied, setCopied] = useState(false);
-  const [loadingProfile, setLoadingProfile] = useState(false);
 
+  const [scaleResults, setScaleResults] = useState<Record<string, ScaleResult>>({});
+  const [completedCount, setCompletedCount] = useState(0);
+  const [totalCount, setTotalCount] = useState(0);
+  const [loadingProfile, setLoadingProfile] = useState(false);
+  const [loadingCard, setLoadingCard] = useState<string | null>(null);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  // Chargement du profil si authentifié
   useEffect(() => {
-    if (isAuthenticated && currentUser) {
-      setLoadingProfile(true);
-      getOrCreateUserProfile(currentUser.id, currentUser.name)
-        .then((profile) => setCompatibilityId(profile.compatibilityId))
-        .catch(() => setCompatibilityId(null))
-        .finally(() => setLoadingProfile(false));
-    }
+    if (!isAuthenticated || !currentUser) return;
+    setLoadingProfile(true);
+    setErrorMsg(null);
+
+    getOrCreateUserProfile(currentUser.id, currentUser.name)
+      .then(() => getProfileProgress(currentUser.id))
+      .then(progress => {
+        setScaleResults(progress.scaleResults);
+        setCompletedCount(progress.completedCount);
+        setTotalCount(progress.totalCount);
+      })
+      .catch(() => setErrorMsg('Impossible de charger votre progression.'))
+      .finally(() => setLoadingProfile(false));
   }, [isAuthenticated, currentUser]);
 
-  const handleCopy = async () => {
-    if (!compatibilityId) return;
+  // Démarrer une scale
+  const startScale = async (scaleId: string) => {
+    if (!isAuthenticated || !currentUser) {
+      navigate('/patient/access');
+      return;
+    }
+    setLoadingCard(scaleId);
+    setErrorMsg(null);
     try {
-      await navigator.clipboard.writeText(compatibilityId);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch {
-      // fallback silencieux
+      const session = await createSession(currentUser.id, [scaleId]);
+      navigate(`/assessment/quiz/${session.id}`);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Erreur lors du démarrage.';
+      setErrorMsg(msg);
+    } finally {
+      setLoadingCard(null);
     }
   };
 
+  const progressPct = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
+  const allScalesCount = MENTAL_HEALTH_SCALES.length + SEXUAL_HEALTH_SCALES.length;
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-sky-50 via-white to-violet-50">
-      {/* Hero Section */}
-      <section className="max-w-4xl mx-auto px-4 pt-16 pb-10 text-center">
-        <div className="inline-flex items-center gap-2 bg-sky-100 text-sky-700 rounded-full px-4 py-1.5 text-sm font-medium mb-6">
-          <Activity size={16} />
-          <span>Évaluations scientifiques validées</span>
-        </div>
-        <h1 className="text-4xl sm:text-5xl font-extrabold text-gray-900 mb-4 leading-tight">
-          Évaluez votre{' '}
-          <span className="bg-gradient-to-r from-sky-500 to-violet-500 bg-clip-text text-transparent">
-            bien-être
-          </span>
-        </h1>
-        <p className="text-lg text-gray-600 max-w-2xl mx-auto mb-8">
-          Des outils d'auto-évaluation cliniquement validés pour mieux comprendre votre santé mentale et sexuelle.
-          Vos résultats restent privés et peuvent être partagés avec votre professionnel de santé.
-        </p>
-        <button
-          onClick={() => navigate('/assessment/select')}
-          className="inline-flex items-center gap-2 bg-gradient-to-r from-sky-500 to-violet-500 text-white font-semibold px-8 py-3.5 rounded-full shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200"
+    <div
+      style={{
+        minHeight: '100vh',
+        background: '#F8FAFF',
+        fontFamily: "'Inter', -apple-system, sans-serif",
+      }}
+    >
+      {/* ── Keyframes pour le spinner ─────────────────────────────────── */}
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+
+      {/* ── Header de page ────────────────────────────────────────────── */}
+      <div
+        style={{
+          background: '#FFFFFF',
+          boxShadow: '0 1px 8px rgba(0,0,0,0.06)',
+          padding: '20px 0',
+          marginBottom: 28,
+          position: 'sticky',
+          top: 0,
+          zIndex: 10,
+        }}
+      >
+        <div
+          style={{
+            maxWidth: 760,
+            margin: '0 auto',
+            padding: '0 20px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: 16,
+          }}
         >
-          Commencer une évaluation personnalisée
-          <ChevronRight size={18} />
-        </button>
-      </section>
-
-      {/* 2 Category Cards */}
-      <section className="max-w-3xl mx-auto px-4 pb-12">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-          {/* Santé mentale */}
-          <Link
-            to="/assessment/select"
-            className="group bg-white rounded-2xl border border-gray-200 p-6 shadow-sm hover:shadow-md hover:border-sky-300 transition-all duration-200"
-          >
-            <div className="w-12 h-12 bg-sky-100 rounded-xl flex items-center justify-center mb-4 group-hover:bg-sky-200 transition-colors">
-              <Brain size={24} className="text-sky-600" />
-            </div>
-            <h2 className="text-xl font-bold text-gray-900 mb-1">Santé mentale</h2>
-            <p className="text-sm text-gray-500 mb-3">
-              Anxiété, dépression, stress, personnalité, résilience et bien plus encore.
+          {/* Titre */}
+          <div>
+            <h1 style={{ margin: 0, fontSize: 22, fontWeight: 800, color: '#0A2342' }}>
+              Mes évaluations
+            </h1>
+            <p style={{ margin: '2px 0 0', fontSize: 13, color: '#64748B' }}>
+              {allScalesCount} outils cliniquement validés
             </p>
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-medium text-sky-600 bg-sky-50 px-2.5 py-1 rounded-full">
-                14 évaluations disponibles
-              </span>
-              <ChevronRight size={16} className="text-gray-400 group-hover:text-sky-500 transition-colors" />
-            </div>
-          </Link>
+          </div>
 
-          {/* Santé sexuelle */}
-          <Link
-            to="/assessment/select"
-            className="group bg-white rounded-2xl border border-gray-200 p-6 shadow-sm hover:shadow-md hover:border-violet-300 transition-all duration-200"
-          >
-            <div className="w-12 h-12 bg-violet-100 rounded-xl flex items-center justify-center mb-4 group-hover:bg-violet-200 transition-colors">
-              <Heart size={24} className="text-violet-600" />
-            </div>
-            <h2 className="text-xl font-bold text-gray-900 mb-1">Santé sexuelle</h2>
-            <p className="text-sm text-gray-500 mb-3">
-              Satisfaction, désir, intimité, communication et bien-être relationnel.
-            </p>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-1.5">
-                <span className="text-xs font-medium text-violet-600 bg-violet-50 px-2.5 py-1 rounded-full">
-                  10 évaluations disponibles
-                </span>
-                <span className="inline-flex items-center gap-1 text-xs font-medium text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-full">
-                  <Lock size={10} />
-                  Confidentiel
-                </span>
-              </div>
-              <ChevronRight size={16} className="text-gray-400 group-hover:text-violet-500 transition-colors" />
-            </div>
-          </Link>
-        </div>
-      </section>
-
-      {/* Compatibility ID Section */}
-      <section className="max-w-3xl mx-auto px-4 pb-12">
-        <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
-          <div className="flex items-start gap-4">
-            <div className="w-10 h-10 bg-gradient-to-br from-sky-500 to-violet-500 rounded-xl flex items-center justify-center flex-shrink-0">
-              <Shield size={20} className="text-white" />
-            </div>
-            <div className="flex-1">
-              <h2 className="text-lg font-bold text-gray-900 mb-1">Votre ID de compatibilité</h2>
-              {isAuthenticated ? (
-                loadingProfile ? (
-                  <div className="flex items-center gap-2 text-sm text-gray-500">
-                    <div className="w-4 h-4 border-2 border-sky-400 border-t-transparent rounded-full animate-spin" />
-                    Chargement de votre identifiant...
-                  </div>
-                ) : compatibilityId ? (
-                  <div>
-                    <p className="text-sm text-gray-600 mb-3">
-                      Partagez cet identifiant avec un proche pour découvrir votre compatibilité.
-                    </p>
-                    <div className="flex items-center gap-3">
-                      <code className="flex-1 bg-gray-50 border border-gray-200 rounded-lg px-4 py-2.5 text-base font-mono font-bold text-gray-800 tracking-wider">
-                        {compatibilityId}
-                      </code>
-                      <button
-                        onClick={handleCopy}
-                        className={`flex items-center gap-2 px-4 py-2.5 rounded-lg font-medium text-sm transition-all duration-200 ${
-                          copied
-                            ? 'bg-green-100 text-green-700 border border-green-200'
-                            : 'bg-sky-50 text-sky-700 border border-sky-200 hover:bg-sky-100'
-                        }`}
-                      >
-                        {copied ? <Check size={16} /> : <Copy size={16} />}
-                        {copied ? "Copié !": "Copier"}
-                      </button>
-                    </div>
-                    <Link
-                      to="/assessment/compatibility"
-                      className="inline-flex items-center gap-1.5 mt-3 text-sm text-sky-600 hover:text-sky-700 font-medium"
-                    >
-                      Tester ma compatibilité avec un proche
-                      <ChevronRight size={14} />
-                    </Link>
-                  </div>
-                ) : (
-                  <p className="text-sm text-red-500">Impossible de charger votre identifiant.</p>
-                )
-              ) : (
-                <div>
-                  <p className="text-sm text-gray-600 mb-3">
-                    Créez un compte gratuit pour obtenir votre identifiant unique et partager vos résultats avec vos proches.
-                  </p>
-                  <Link
-                    to="/patient/access"
-                    className="inline-flex items-center gap-2 bg-gradient-to-r from-sky-500 to-violet-500 text-white text-sm font-semibold px-5 py-2.5 rounded-full hover:shadow-md transition-all duration-200"
+          {/* Progression + lien profil (si auth) */}
+          {isAuthenticated && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+              {!loadingProfile && (
+                <div style={{ textAlign: 'right' }}>
+                  <div
+                    style={{
+                      fontSize: 12,
+                      fontWeight: 600,
+                      color: '#3B82F6',
+                      marginBottom: 4,
+                    }}
                   >
-                    Créer un compte
-                    <ChevronRight size={15} />
-                  </Link>
+                    {completedCount}/{totalCount} complétées
+                  </div>
+                  <div
+                    style={{
+                      width: 130,
+                      height: 6,
+                      background: '#E0EAFF',
+                      borderRadius: 99,
+                      overflow: 'hidden',
+                    }}
+                  >
+                    <div
+                      style={{
+                        height: '100%',
+                        width: `${progressPct}%`,
+                        background: 'linear-gradient(90deg, #3B82F6, #2DD4BF)',
+                        borderRadius: 99,
+                        transition: 'width 0.4s ease',
+                      }}
+                    />
+                  </div>
                 </div>
               )}
+              <Link
+                to="/assessment/profile"
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  background: 'linear-gradient(135deg, #3B82F6, #2DD4BF)',
+                  color: '#fff',
+                  fontWeight: 600,
+                  fontSize: 13,
+                  padding: '7px 14px',
+                  borderRadius: 20,
+                  textDecoration: 'none',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                Mon profil
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="9 18 15 12 9 6" />
+                </svg>
+              </Link>
             </div>
+          )}
+        </div>
+      </div>
+
+      {/* ── Bannière non authentifié ──────────────────────────────────── */}
+      {!isAuthenticated && (
+        <div style={{ maxWidth: 760, margin: '0 auto 20px', padding: '0 20px' }}>
+          <div
+            style={{
+              background: 'linear-gradient(135deg, #EFF6FF, #F0FDFA)',
+              border: '1px solid rgba(59,130,246,0.2)',
+              borderRadius: 12,
+              padding: '14px 18px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: 12,
+              flexWrap: 'wrap',
+            }}
+          >
+            <p style={{ margin: 0, fontSize: 13, color: '#1E40AF', fontWeight: 500 }}>
+              Connectez-vous pour sauvegarder vos résultats et suivre votre progression
+            </p>
+            <Link
+              to="/patient/access"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 5,
+                background: 'linear-gradient(135deg, #3B82F6, #2DD4BF)',
+                color: '#fff',
+                fontWeight: 600,
+                fontSize: 12,
+                padding: '6px 14px',
+                borderRadius: 18,
+                textDecoration: 'none',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              Se connecter
+            </Link>
           </div>
         </div>
-      </section>
+      )}
 
-      {/* Disclaimer Footer */}
-      <section className="max-w-3xl mx-auto px-4 pb-16">
-        <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-start gap-3">
-          <Shield size={18} className="text-amber-600 flex-shrink-0 mt-0.5" />
-          <p className="text-sm text-amber-800 leading-relaxed">
-            <strong>Important :</strong> Ces évaluations ne remplacent pas une consultation professionnelle.
-            Elles sont fournies à titre informatif uniquement. En cas de détresse ou d'urgence, consultez
-            un professionnel de santé qualifié.
+      {/* ── Message d'erreur ──────────────────────────────────────────── */}
+      {errorMsg && (
+        <div style={{ maxWidth: 760, margin: '0 auto 16px', padding: '0 20px' }}>
+          <div
+            style={{
+              background: '#FEF2F2',
+              border: '1px solid rgba(220,38,38,0.2)',
+              borderRadius: 10,
+              padding: '10px 16px',
+              fontSize: 13,
+              color: '#DC2626',
+            }}
+          >
+            {errorMsg}
+          </div>
+        </div>
+      )}
+
+      {/* ── Contenu principal ─────────────────────────────────────────── */}
+      <div style={{ maxWidth: 760, margin: '0 auto', padding: '0 20px 48px' }}>
+
+        {/* ── Section Santé Mentale ─────────────────────────────────── */}
+        <section style={{ marginBottom: 36 }}>
+          {/* En-tête de section */}
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 10,
+              marginBottom: 16,
+            }}
+          >
+            <span style={{ fontSize: 22 }}>🧠</span>
+            <h2 style={{ margin: 0, fontSize: 18, fontWeight: 800, color: '#0A2342' }}>
+              Santé Mentale
+            </h2>
+            <span
+              style={{
+                background: '#EFF6FF',
+                color: '#3B82F6',
+                fontSize: 11,
+                fontWeight: 700,
+                padding: '2px 10px',
+                borderRadius: 20,
+                border: '1px solid rgba(59,130,246,0.2)',
+              }}
+            >
+              {MENTAL_HEALTH_SCALES.length} évaluations
+            </span>
+          </div>
+
+          {/* Grille de cards */}
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fill, minmax(310px, 1fr))',
+              gap: 10,
+            }}
+          >
+            {MENTAL_HEALTH_SCALES.map(scale => (
+              <ScaleCard
+                key={scale.id}
+                scale={scale}
+                result={isAuthenticated ? scaleResults[scale.id] : undefined}
+                isAuthenticated={isAuthenticated}
+                onStart={startScale}
+                loading={loadingCard === scale.id}
+              />
+            ))}
+          </div>
+        </section>
+
+        {/* ── Section Santé Sexuelle ────────────────────────────────── */}
+        <section style={{ marginBottom: 36 }}>
+          {/* En-tête de section */}
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 10,
+              marginBottom: 16,
+            }}
+          >
+            <span style={{ fontSize: 22 }}>💋</span>
+            <h2 style={{ margin: 0, fontSize: 18, fontWeight: 800, color: '#0A2342' }}>
+              Santé Sexuelle
+            </h2>
+            <span
+              style={{
+                background: '#FFF0F9',
+                color: '#C026D3',
+                fontSize: 11,
+                fontWeight: 700,
+                padding: '2px 10px',
+                borderRadius: 20,
+                border: '1px solid rgba(192,38,211,0.15)',
+              }}
+            >
+              {SEXUAL_HEALTH_SCALES.length} évaluations
+            </span>
+            <span
+              style={{
+                background: '#F0FDF4',
+                color: '#16A34A',
+                fontSize: 11,
+                fontWeight: 600,
+                padding: '2px 10px',
+                borderRadius: 20,
+                border: '1px solid rgba(22,163,74,0.15)',
+              }}
+            >
+              Confidentiel
+            </span>
+          </div>
+
+          {/* Grille de cards */}
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fill, minmax(310px, 1fr))',
+              gap: 10,
+            }}
+          >
+            {SEXUAL_HEALTH_SCALES.map(scale => (
+              <ScaleCard
+                key={scale.id}
+                scale={scale}
+                result={isAuthenticated ? scaleResults[scale.id] : undefined}
+                isAuthenticated={isAuthenticated}
+                onStart={startScale}
+                loading={loadingCard === scale.id}
+              />
+            ))}
+          </div>
+        </section>
+
+        {/* ── Disclaimer ────────────────────────────────────────────── */}
+        <div
+          style={{
+            background: '#FFFBEB',
+            border: '1px solid rgba(217,119,6,0.25)',
+            borderRadius: 12,
+            padding: '14px 18px',
+            display: 'flex',
+            alignItems: 'flex-start',
+            gap: 10,
+          }}
+        >
+          <span style={{ fontSize: 16, flexShrink: 0, marginTop: 1 }}>⚠️</span>
+          <p style={{ margin: 0, fontSize: 12, color: '#92400E', lineHeight: 1.55 }}>
+            <strong>Important :</strong> Ces évaluations ne remplacent pas une consultation avec un professionnel de
+            santé. Elles sont fournies à titre informatif uniquement. En cas de détresse ou d'urgence,
+            consultez immédiatement un professionnel qualifié.
           </p>
         </div>
-      </section>
+      </div>
     </div>
   );
 };
