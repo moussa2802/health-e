@@ -24,6 +24,7 @@ import {
 } from "../../utils/firebase";
 import LoadingSpinner from "../../components/ui/LoadingSpinner";
 import StableProfileForm from "../../components/professional/StableProfileForm";
+import RecurringAvailabilityManager from "../../components/professional/RecurringAvailabilityManager";
 
 // Interface locale étendue pour le formulaire
 interface LocalProfessionalProfile
@@ -549,6 +550,21 @@ const StableProfessionalSettings: React.FC = () => {
               </div>
             )}
           </div>
+
+          {/* Disponibilités récurrentes */}
+          {currentUser?.id && (
+            <RecurringAvailabilityManager
+              professionalId={currentUser.id}
+              onSuccess={(count) => {
+                setSaveSuccess(true);
+                setErrorMessage("");
+                // Message spécifique affiché via le banner de succès existant
+                setTimeout(() => setSaveSuccess(false), 4000);
+                void count; // utilisé implicitement via le banner
+              }}
+              onError={(err) => setErrorMessage(err.message)}
+            />
+          )}
 
           {/* Formulaire de profil stable */}
           <StableProfileForm

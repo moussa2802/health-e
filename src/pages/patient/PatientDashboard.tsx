@@ -53,6 +53,7 @@ import UserSupportTickets from "../../components/support/UserSupportTickets";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { Users } from "lucide-react";
+import { generateInvoicePDF, type InvoiceData } from "../../services/invoiceService";
 
 async function convertImageUrlToBase64(url: string): Promise<string> {
   const response = await fetch(url);
@@ -1122,6 +1123,32 @@ const PatientDashboard: React.FC = () => {
   const displayedBookings =
     activeTab === "upcoming" ? upcomingBookings : pastBookings;
 
+  /* ── Téléchargement facture ─────────────────────────────────── */
+  const handleDownloadInvoice = (booking: (typeof bookings)[0]) => {
+    const invoiceData: InvoiceData = {
+      invoiceNumber: booking.id.slice(-8).toUpperCase(),
+      bookingId: booking.id,
+      date: booking.date,
+      startTime: booking.startTime || "00:00",
+      endTime: undefined,
+      patientName: currentUser?.name || "Patient",
+      patientEmail: currentUser?.email,
+      professionalName: booking.professionalName,
+      professionalSpecialty: undefined,
+      consultationType: (booking.type as "video" | "audio" | "chat") || "video",
+      amount: booking.amount ?? 0,
+      isPaid: booking.status === "terminé" || booking.status === "completed",
+      paymentMethod: undefined,
+    };
+    const blob = generateInvoicePDF(invoiceData);
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `facture-health-e-${invoiceData.invoiceNumber}.pdf`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   if (loading) {
     return (
       <div className="container mx-auto px-4 py-8">
@@ -1451,6 +1478,19 @@ const PatientDashboard: React.FC = () => {
                           </span>
                         </div>
                       </div>
+
+                      {/* Bouton téléchargement facture — historique uniquement */}
+                      {activeTab === "past" && (
+                        <div className="flex justify-end mt-2">
+                          <button
+                            onClick={() => handleDownloadInvoice(booking)}
+                            className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 border border-blue-200 transition-colors duration-200"
+                          >
+                            <Download className="h-4 w-4" />
+                            Télécharger la facture
+                          </button>
+                        </div>
+                      )}
 
                       {/* Afficher les boutons seulement pour les consultations à venir */}
                       {activeTab === "upcoming" &&
