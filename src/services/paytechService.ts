@@ -21,6 +21,9 @@ export interface PaymentInit {
   startTime?: string;
   endTime?: string;
   type?: string;
+  // Champs spécifiques aux thérapies de groupe
+  sessionId?: string;
+  paymentType?: "group_therapy" | "consultation";
 }
 
 // Interface pour les données de paiement (legacy - pour compatibilité)

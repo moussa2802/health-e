@@ -73,12 +73,6 @@ export async function createBooking(
       "📝 Creating new booking...",
       JSON.stringify(bookingData, null, 2)
     );
-    console.log(
-      "⏰ Vérification des heures - startTime:",
-      bookingData.startTime,
-      "- endTime:",
-      bookingData.endTime
-    );
 
     // CRITICAL: Ensure Firestore is ready before creating booking
     await ensureFirestoreReady();
@@ -89,8 +83,6 @@ export async function createBooking(
     // Vérifier l'authentification
     const auth = getAuth(app);
     const currentUser = auth.currentUser;
-    console.log("🔐 Current user:", currentUser?.uid);
-    console.log("🔐 User authenticated:", !!currentUser);
 
     if (!currentUser) {
       throw new Error("Utilisateur non authentifié");
@@ -98,7 +90,6 @@ export async function createBooking(
 
     // Ensure bookings collection exists
     const bookingsRef = collection(db, "bookings");
-    console.log("📁 Using bookings collection:", bookingsRef.path);
 
     // Vérifier si le créneau est déjà réservé
     const conflictingQuery = query(
@@ -109,19 +100,12 @@ export async function createBooking(
       where("status", "in", ["confirmed", "pending"]) // statuts actifs
     );
 
-    console.log("🔍 Checking for conflicting bookings...");
     const conflictingSnap = await getDocs(conflictingQuery);
     if (!conflictingSnap.empty) {
-      console.warn(
-        "❌ Créneau déjà réservé :",
-        bookingData.date,
-        bookingData.startTime
-      );
       throw new Error(
         "Ce créneau est déjà réservé. Veuillez en choisir un autre."
       );
     }
-    console.log("✅ No conflicting bookings found");
 
     const tempId = `temp_${Date.now()}_${Math.random()
       .toString(36)
@@ -146,18 +130,11 @@ export async function createBooking(
         "📝 Création finale de la réservation avec les données:",
         JSON.stringify(bookingWithDefaults, null, 2)
       );
-      console.log("🔐 User ID for booking:", currentUser.uid);
-      console.log("🔐 Patient ID in booking data:", bookingData.patientId);
-      console.log(
-        "🔐 User matches patient:",
-        currentUser.uid === bookingData.patientId
-      );
 
       const tempRef = doc(bookingsRef, tempId);
       await setDoc(tempRef, bookingWithDefaults);
     });
 
-    console.log("✅ Booking document created with ID:", tempId);
 
     await createNotification(
       bookingData.professionalId,
@@ -167,7 +144,6 @@ export async function createBooking(
       tempId,
       "booking"
     );
-    console.log("✅ Booking created successfully:", tempId);
     return tempId;
   } catch (error) {
     console.error("❌ Error creating booking:", error);
@@ -183,11 +159,9 @@ export async function createBooking(
 // Récupérer toutes les réservations avec gestion d'erreur
 export async function getBookings(): Promise<Booking[]> {
   try {
-    console.log("📖 Fetching all bookings...");
     const auth = getAuth(app);
     const uid = auth.currentUser?.uid;
     if (!uid) {
-      console.warn("⛔️ Utilisateur non authentifié. getBookings() annulé.");
       return [];
     }
     // CRITICAL: Ensure Firestore is ready before fetching
@@ -213,7 +187,6 @@ export async function getBookings(): Promise<Booking[]> {
         } as Booking)
     );
 
-    console.log(`✅ Fetched ${bookings.length} bookings`);
     return bookings;
   } catch (error) {
     console.error("❌ Error fetching bookings:", error);
@@ -227,13 +200,9 @@ export async function getUserBookings(
   userType: "patient" | "professional"
 ): Promise<Booking[]> {
   try {
-    console.log(`📖 Fetching bookings for ${userType}:`, userId);
 
     // CRITICAL: Verify user is authenticated
     if (!userId) {
-      console.warn(
-        "⛔️ Utilisateur non authentifié. Requête Firestore annulée."
-      );
       return [];
     }
 
@@ -272,7 +241,6 @@ export async function getUserBookings(
       (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
     );
 
-    console.log(`✅ Fetched ${sortedBookings.length} bookings for user`);
     return sortedBookings;
   } catch (error) {
     console.error("❌ Error fetching user bookings:", error);
@@ -288,7 +256,6 @@ export function subscribeToBookings(
 ): () => void {
   // CRITICAL: Verify user is authenticated
   if (!userId) {
-    console.warn("⛔️ Utilisateur non authentifié. Requête Firestore annulée.");
     callback([]);
     return () => {};
   }
@@ -296,19 +263,12 @@ export function subscribeToBookings(
   // Generate unique listener ID to prevent conflicts
   const listenerId = `bookings_${userType}_${userId}_${++bookingListenerIdCounter}_${Date.now()}`;
 
-  console.log(
-    `🔔 Setting up booking subscription for ${userType} with ID: ${listenerId}`
-  );
 
   // Clean up any existing listener for this user/type combination
   const existingListenerId = Array.from(activeBookingListeners.keys()).find(
     (id) => id.startsWith(`bookings_${userType}_${userId}_`)
   );
   if (existingListenerId) {
-    console.log(
-      "🧹 Cleaning up existing booking listener:",
-      existingListenerId
-    );
     const cleanup = activeBookingListeners.get(existingListenerId);
     if (cleanup) {
       cleanup();
@@ -320,18 +280,12 @@ export function subscribeToBookings(
   ensureFirestoreReady()
     .then((isReady) => {
       if (!isReady) {
-        console.warn(
-          "⚠️ Firestore not ready for booking subscription, providing empty data"
-        );
         callback([]);
         return;
       }
 
       const db = getFirestoreInstance();
       if (!db) {
-        console.warn(
-          "❌ Firestore not initialized, cannot subscribe to bookings"
-        );
         callback([]);
         return;
       }
@@ -411,17 +365,10 @@ export function subscribeToBookings(
 
               try {
                 await resetFirestoreConnection();
-                console.log(
-                  "✅ Firestore connection reset after internal assertion failure in bookings"
-                );
 
                 // Return empty array for now, the subscription will be retried
                 callback([]);
               } catch (resetError) {
-                console.warn(
-                  "⚠️ Could not reset Firestore after internal assertion failure:",
-                  resetError
-                );
                 callback([]);
               }
               return;
@@ -452,11 +399,7 @@ export function subscribeToBookings(
 
             // Provide specific error handling
             if (error.code === "failed-precondition") {
-              console.warn(
-                "⚠️ Firestore index required, falling back to empty data"
-              );
             } else if (error.code === "unavailable") {
-              console.warn("⚠️ Firestore temporarily unavailable");
             }
 
             // Always provide fallback empty array instead of crashing
@@ -483,7 +426,6 @@ export function subscribeToBookings(
     });
 
   return () => {
-    console.log(`🧹 Cleaning up booking listener: ${listenerId}`);
     if (activeBookingListeners.has(listenerId)) {
       const cleanup = activeBookingListeners.get(listenerId);
       if (cleanup) {
@@ -523,7 +465,6 @@ export async function updateBooking(
     };
 
     await updateDoc(bookingRef, updateData);
-    console.log("✅ Booking updated successfully:", bookingId);
 
     // Créer une notification pour le professionnel
     await createNotification(
@@ -537,7 +478,6 @@ export async function updateBooking(
       "booking"
     );
 
-    console.log("✅ Notification de modification envoyée au professionnel");
   } catch (error) {
     console.error("❌ Error updating booking:", error);
     throw error;
@@ -550,7 +490,6 @@ export async function updateBookingStatus(
   status: "pending" | "confirmed" | "completed" | "cancelled"
 ): Promise<void> {
   try {
-    console.log(`📝 Updating booking ${bookingId} status to:`, status);
 
     // CRITICAL: Ensure Firestore is ready before updating
     await ensureFirestoreReady();
@@ -575,7 +514,6 @@ export async function updateBookingStatus(
       });
     });
 
-    console.log("✅ Booking status updated successfully");
   } catch (error) {
     console.error("❌ Error updating booking status:", error);
     throw new Error(
@@ -627,7 +565,6 @@ export async function cancelBooking(bookingId: string): Promise<void> {
       "booking"
     );
 
-    console.log("✅ Notification de l'annulation envoyée au patient");
   } catch (error) {
     console.error("❌ Error cancelling booking:", error);
     throw new Error("Impossible d'annuler la réservation. Veuillez réessayer.");
@@ -676,7 +613,6 @@ export async function confirmBooking(bookingId: string): Promise<void> {
       "booking"
     );
 
-    console.log("✅ Notification de confirmation envoyée au patient");
   } catch (error) {
     console.error("❌ Error confirming booking:", error);
     throw new Error(
@@ -691,7 +627,6 @@ export async function completeBooking(
   notes?: string
 ): Promise<void> {
   try {
-    console.log(`📝 Completing booking ${bookingId}...`);
 
     // CRITICAL: Ensure Firestore is ready before updating
     await ensureFirestoreReady();
@@ -726,7 +661,6 @@ export async function completeBooking(
       return await updateDoc(bookingRef, updateData);
     });
 
-    console.log("✅ Booking completed successfully");
   } catch (error) {
     console.error("❌ Error completing booking:", error);
     throw new Error(
@@ -738,7 +672,6 @@ export async function completeBooking(
 // Supprimer une réservation (admin uniquement)
 export async function deleteBooking(bookingId: string): Promise<void> {
   try {
-    console.log(`🗑️ Deleting booking ${bookingId}...`);
 
     // CRITICAL: Ensure Firestore is ready before deleting
     await ensureFirestoreReady();
@@ -760,7 +693,6 @@ export async function deleteBooking(bookingId: string): Promise<void> {
       return await deleteDoc(bookingRef);
     });
 
-    console.log("✅ Booking deleted successfully");
   } catch (error) {
     console.error("❌ Error deleting booking:", error);
     throw new Error(
@@ -782,15 +714,9 @@ export async function checkAvailability(
     const startTime = startTimeStr.trim();
     const endTime = endTimeStr.trim();
 
-    console.log(
-      `🔍 Vérification de disponibilité pour ${professionalId} le ${date} de ${startTime} à ${endTime}`
-    );
 
     // CRITICAL: Verify professional ID is provided
     if (!professionalId) {
-      console.warn(
-        "⛔️ Professional ID not provided. Availability check cancelled."
-      );
       return true; // Assume available to avoid blocking UI
     }
 
@@ -826,14 +752,10 @@ export async function checkAvailability(
         (endTime > bookingStart && endTime <= bookingEnd) ||
         (startTime <= bookingStart && endTime >= bookingEnd)
       ) {
-        console.log(
-          `❌ Conflit de créneau détecté: ${startTime}-${endTime} chevauche ${bookingStart}-${bookingEnd}`
-        );
         return false; // Conflit détecté
       }
     }
 
-    console.log("✅ Time slot available");
     return true; // Créneau disponible
   } catch (error) {
     console.error("❌ Error checking availability:", error);
@@ -845,7 +767,6 @@ export async function checkAvailability(
 // Obtenir les statistiques des réservations
 export async function getBookingStatistics() {
   try {
-    console.log("📊 Fetching booking statistics...");
 
     // CRITICAL: Ensure Firestore is ready before fetching
     await ensureFirestoreReady();
@@ -888,7 +809,6 @@ export async function getBookingStatistics() {
       revenuTotal,
     };
 
-    console.log("✅ Booking statistics calculated:", stats);
     return stats;
   } catch (error) {
     console.error("❌ Error fetching booking statistics:", error);
@@ -908,13 +828,115 @@ export async function getBookingStatistics() {
 
 // Utility function to clean up all booking listeners
 export const cleanupAllBookingListeners = () => {
-  console.log(
-    `🧹 Cleaning up all ${activeBookingListeners.size} booking listeners`
-  );
-  activeBookingListeners.forEach((unsubscribe, listenerId) => {
-    console.log("🧹 Cleaning up booking listener:", listenerId);
-    unsubscribe();
-  });
+  activeBookingListeners.forEach((unsubscribe) => unsubscribe());
   activeBookingListeners.clear();
   // CRITICAL: Do not reset bookingListenerIdCounter to prevent ID reuse
 };
+
+// ─── Remboursement ────────────────────────────────────────────────────────────
+
+export type RefundReason =
+  | "professional_cancelled"
+  | "patient_cancelled"
+  | "technical_issue"
+  | "other";
+
+export interface RefundRequest {
+  id?: string;
+  bookingId: string;
+  patientId: string;
+  patientName: string;
+  professionalId: string;
+  professionalName: string;
+  amount: number;
+  date: string;
+  reason: RefundReason;
+  reasonDetail?: string;
+  status: "pending" | "approved" | "rejected" | "processed";
+  createdAt?: FieldValue;
+  processedAt?: FieldValue;
+  adminNote?: string;
+}
+
+/**
+ * Demande d'annulation avec remboursement.
+ * - Met à jour le statut du booking à "cancelled"
+ * - Crée un document refundRequests pour traitement admin
+ * - Notifie le patient et l'admin
+ */
+export async function requestCancellationAndRefund(
+  bookingId: string,
+  reason: RefundReason,
+  reasonDetail?: string
+): Promise<string> {
+  const db = getFirestoreInstance();
+  if (!db) throw new Error("Firestore non disponible");
+
+  const bookingRef = doc(db, "bookings", bookingId);
+  const bookingSnap = await getDoc(bookingRef);
+  if (!bookingSnap.exists()) throw new Error("Réservation introuvable");
+
+  const booking = bookingSnap.data() as any;
+
+  // Vérifier que le RDV peut encore être annulé (pas déjà terminé)
+  if (["completed", "cancelled"].includes(booking.status)) {
+    throw new Error(`Impossible d'annuler un rendez-vous avec le statut: ${booking.status}`);
+  }
+
+  // Vérifier le délai (24h min avant le RDV pour être remboursé)
+  const appointmentDate = new Date(`${booking.date}T${booking.startTime}`);
+  const hoursUntilAppointment = (appointmentDate.getTime() - Date.now()) / 36e5;
+  const isEligibleForRefund = hoursUntilAppointment >= 24 || reason === "professional_cancelled" || reason === "technical_issue";
+
+  // Annuler le booking
+  await cancelBooking(bookingId);
+
+  if (!isEligibleForRefund || !booking.isPaid) {
+    // Pas de remboursement éligible — retourner un message
+    return "cancelled_no_refund";
+  }
+
+  // Créer la demande de remboursement
+  const refundData: RefundRequest = {
+    bookingId,
+    patientId: booking.patientId,
+    patientName: booking.patientName,
+    professionalId: booking.professionalId,
+    professionalName: booking.professionalName,
+    amount: booking.price ?? booking.amount ?? 0,
+    date: booking.date,
+    reason,
+    reasonDetail,
+    status: "pending",
+    createdAt: serverTimestamp(),
+  };
+
+  const refundRef = await addDoc(collection(db, "refundRequests"), refundData);
+
+  // Notifier l'admin
+  await createNotification(
+    "admin",
+    "refund_request",
+    "Demande de remboursement",
+    `${booking.patientName} demande le remboursement de ${booking.price ?? 0} XOF pour le RDV du ${booking.date}.`,
+    refundRef.id,
+    "refund"
+  );
+
+  return refundRef.id;
+}
+
+/**
+ * Récupère les demandes de remboursement d'un patient.
+ */
+export async function getPatientRefundRequests(patientId: string): Promise<RefundRequest[]> {
+  const db = getFirestoreInstance();
+  if (!db) return [];
+
+  const q = query(
+    collection(db, "refundRequests"),
+    where("patientId", "==", patientId)
+  );
+  const snap = await getDocs(q);
+  return snap.docs.map((d) => ({ id: d.id, ...d.data() } as RefundRequest));
+}

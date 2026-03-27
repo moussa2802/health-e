@@ -43,9 +43,16 @@ import {
   getPatientMedicalRecords,
   MedicalRecord,
 } from "../../services/patientService";
+import {
+  getPatientGroupTherapySessions,
+  GroupTherapySession,
+} from "../../services/groupTherapyService";
 import LoadingSpinner from "../../components/ui/LoadingSpinner";
 import EthicsReminder from "../../components/dashboard/EthicsReminder";
 import UserSupportTickets from "../../components/support/UserSupportTickets";
+import { format } from "date-fns";
+import { fr } from "date-fns/locale";
+import { Users } from "lucide-react";
 
 async function convertImageUrlToBase64(url: string): Promise<string> {
   const response = await fetch(url);
@@ -108,6 +115,10 @@ const PatientDashboard: React.FC = () => {
     useState(false);
   const [currentRecommendations, setCurrentRecommendations] =
     useState<MedicalRecord | null>(null);
+  const [groupTherapySessions, setGroupTherapySessions] = useState<
+    GroupTherapySession[]
+  >([]);
+  const [loadingGroupTherapy, setLoadingGroupTherapy] = useState(false);
 
   // Fetch medical records - Optimisé avec cache + temps réel
   useEffect(() => {
@@ -155,6 +166,25 @@ const PatientDashboard: React.FC = () => {
       setShowEthicsReminder(false);
     }
   }, []);
+
+  // Fetch group therapy sessions
+  useEffect(() => {
+    const fetchGroupTherapySessions = async () => {
+      if (!currentUser?.id) return;
+
+      try {
+        setLoadingGroupTherapy(true);
+        const sessions = await getPatientGroupTherapySessions(currentUser.id);
+        setGroupTherapySessions(sessions);
+      } catch (error) {
+        console.error("Error fetching group therapy sessions:", error);
+      } finally {
+        setLoadingGroupTherapy(false);
+      }
+    };
+
+    fetchGroupTherapySessions();
+  }, [currentUser?.id]);
 
   // Gérer les messages de succès depuis l'URL
   useEffect(() => {
@@ -1210,6 +1240,102 @@ const PatientDashboard: React.FC = () => {
               </div>
             </div>
           </div>
+
+          {/* Group Therapy Sessions Section */}
+          {groupTherapySessions.length > 0 && (
+            <div className="mb-8">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-2xl font-bold text-gray-900 flex items-center">
+                  <Users className="h-6 w-6 mr-3 text-purple-600" />
+                  Mes thérapies de groupe
+                </h2>
+              </div>
+              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+                <div className="space-y-4">
+                  {groupTherapySessions.map((session) => {
+                    const formattedDate = session.date
+                      ? format(
+                          new Date(session.date + "T00:00:00"),
+                          "EEEE d MMMM yyyy",
+                          { locale: fr }
+                        )
+                      : "";
+                    const isFree = session.price === 0;
+                    const registrationsCount = session.registrationsCount ?? 0;
+                    const isFull = registrationsCount >= session.capacity;
+
+                    return (
+                      <div
+                        key={session.id}
+                        className="border border-gray-200 rounded-xl p-4 hover:shadow-md transition-shadow"
+                      >
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                              {session.title}
+                            </h3>
+                            <p className="text-sm text-gray-600 mb-3">
+                              {session.description}
+                            </p>
+                            <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600">
+                              {session.date && (
+                                <div className="flex items-center">
+                                  <Calendar className="h-4 w-4 mr-2" />
+                                  <span>{formattedDate}</span>
+                                </div>
+                              )}
+                              {session.time && (
+                                <div className="flex items-center">
+                                  <Clock className="h-4 w-4 mr-2" />
+                                  <span>{session.time}</span>
+                                </div>
+                              )}
+                              <div className="flex items-center">
+                                <Users className="h-4 w-4 mr-2" />
+                                <span>
+                                  {registrationsCount}/{session.capacity} places
+                                </span>
+                              </div>
+                              <div>
+                                {isFree ? (
+                                  <span className="text-green-600 font-medium">
+                                    Gratuit
+                                  </span>
+                                ) : (
+                                  <span className="text-blue-600 font-medium">
+                                    {session.price} FCFA
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                          <div className="ml-4">
+                            {session.meetingLink &&
+                            session.meetingStatus === "open" ? (
+                              <Link
+                                to={`/group-therapy/${session.id}/meeting`}
+                                className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-600 text-white rounded-lg font-medium hover:from-purple-600 hover:to-pink-700 transition-all shadow-sm hover:shadow-md"
+                              >
+                                <Video className="h-4 w-4 mr-2" />
+                                Rejoindre
+                              </Link>
+                            ) : (
+                              <Link
+                                to={`/group-therapy/${session.id}`}
+                                className="inline-flex items-center px-4 py-2 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 transition-all"
+                              >
+                                Voir détails
+                              </Link>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Upcoming Appointments Section */}
           <div className="mb-8">

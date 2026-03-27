@@ -1,33 +1,15 @@
 const fetch = require("node-fetch");
 
-// Configuration PayTech selon les instructions officielles
+// Configuration PayTech
 const PAYTECH_CONFIG = {
-  apiUrl: "https://paytech.sn/api/payment/request-payment", // URL de production
+  apiUrl: "https://paytech.sn/api/payment/request-payment",
   apiKey: process.env.PAYTECH_API_KEY,
   apiSecret: process.env.PAYTECH_API_SECRET,
-  env: process.env.PAYTECH_ENV || "prod", // Mode production par défaut (prod, pas production)
-  successUrl:
-    process.env.PAYTECH_SUCCESS_URL ||
-    "https://health-e.sn/appointment-success",
+  env: process.env.PAYTECH_ENV || "prod",
+  successUrl: process.env.PAYTECH_SUCCESS_URL || "https://health-e.sn/appointment-success",
   cancelUrl: process.env.PAYTECH_CANCEL_URL || "https://health-e.sn/book",
-  ipnUrl:
-    process.env.PAYTECH_IPN_URL ||
-    "https://health-e.sn/.netlify/functions/paytech-ipn",
+  ipnUrl: process.env.PAYTECH_IPN_URL || "https://health-e.sn/.netlify/functions/paytech-ipn",
 };
-
-// Vérification des variables d'environnement
-console.log(
-  "🔍 [DEBUG] PAYTECH_API_KEY:",
-  PAYTECH_CONFIG.apiKey ? "✅ OK" : "❌ MISSING"
-);
-console.log(
-  "🔍 [DEBUG] PAYTECH_API_SECRET:",
-  PAYTECH_CONFIG.apiSecret ? "✅ OK" : "❌ MISSING"
-);
-console.log("🔍 [DEBUG] IPN URL:", PAYTECH_CONFIG.ipnUrl);
-console.log("🔍 [DEBUG] ENV:", PAYTECH_CONFIG.env);
-console.log("🔍 [DEBUG] SUCCESS_URL:", PAYTECH_CONFIG.successUrl);
-console.log("🔍 [DEBUG] CANCEL_URL:", PAYTECH_CONFIG.cancelUrl);
 
 /**
  * Fonction Netlify pour initier un paiement PayTech
@@ -35,13 +17,6 @@ console.log("🔍 [DEBUG] CANCEL_URL:", PAYTECH_CONFIG.cancelUrl);
  */
 exports.handler = async (event, context) => {
   try {
-    console.log("🚀 [DEBUG] Function paytech-initiate-payment called");
-    console.log("🚀 [DEBUG] HTTP Method:", event.httpMethod);
-    console.log(
-      "🚀 [DEBUG] Event body length:",
-      event.body ? event.body.length : 0
-    );
-    console.log("🚀 [DEBUG] Event body:", event.body);
 
     // Gestion CORS pour Netlify
     const headers = {
@@ -52,10 +27,16 @@ exports.handler = async (event, context) => {
 
     // Répondre aux requêtes OPTIONS (preflight)
     if (event.httpMethod === "OPTIONS") {
+      return { statusCode: 200, headers, body: "" };
+    }
+
+    // Vérifier les variables d'environnement critiques
+    if (!PAYTECH_CONFIG.apiKey || !PAYTECH_CONFIG.apiSecret) {
+      console.error("❌ [PAYTECH] Variables d'environnement manquantes: PAYTECH_API_KEY / PAYTECH_API_SECRET");
       return {
-        statusCode: 200,
+        statusCode: 500,
         headers,
-        body: "",
+        body: JSON.stringify({ success: 0, error: "Configuration serveur incorrecte" }),
       };
     }
 
@@ -69,9 +50,7 @@ exports.handler = async (event, context) => {
     }
 
     try {
-      console.log("🔍 [DEBUG] Parsing event body...");
       const data = JSON.parse(event.body);
-      console.log("🔍 [DEBUG] Request body received:", data);
       // Vérification des données requises
       const {
         amount,
@@ -86,9 +65,6 @@ exports.handler = async (event, context) => {
         cancelUrl, // Nouveau champ
       } = data;
 
-      console.log("🔍 [DEBUG] Payment method:", method);
-      console.log("🔍 [DEBUG] Success URL:", successUrl);
-      console.log("🔍 [DEBUG] Cancel URL:", cancelUrl);
 
       // Validation des données (adaptée pour mobile/card)
       if (!amount || !bookingId || !customerName || !professionalId) {
@@ -130,9 +106,11 @@ exports.handler = async (event, context) => {
         item_name: description,
         item_price: amount,
         ref_command: `CMD_${bookingId}_${Date.now()}`,
-        command_name: `Paiement consultation ${
-          data.professionalName || "professionnel"
-        }`,
+        command_name: data.paymentType === "group_therapy"
+          ? `Paiement thérapie de groupe: ${data.description || "thérapie de groupe"}`
+          : `Paiement consultation ${
+              data.professionalName || "professionnel"
+            }`,
         currency: "XOF",
         env: PAYTECH_CONFIG.env,
         // Configuration de l'URL de succès avec l'ID de réservation
@@ -154,6 +132,9 @@ exports.handler = async (event, context) => {
           endTime: data.endTime || "01:00",
           type: data.type || "video",
           price: amount,
+          // Champs spécifiques aux thérapies de groupe
+          sessionId: data.sessionId || null,
+          paymentType: data.paymentType || "consultation",
         }),
         target_payment:
           method === "card"

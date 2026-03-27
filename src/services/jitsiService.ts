@@ -48,16 +48,13 @@ export const joinRoom = async (
   userType: "patient" | "professional" | "admin"
 ): Promise<() => void> => {
   try {
-    console.log("🚪 Joining room:", roomId);
 
     // Create a reference to the room in Firebase
     const roomRef = ref(database, `rooms/${roomId}`);
 
     // Check if room exists
     const roomSnapshot = await get(roomRef);
-    console.log("👀 [DEBUG] Room snapshot exists:", roomSnapshot.exists());
     if (!roomSnapshot.exists()) {
-      console.log("🏗️ Room does not exist, creating it");
       // Create the room if it doesn't exist
       await set(roomRef, {
         id: roomId,
@@ -86,8 +83,6 @@ export const joinRoom = async (
       isConnected: true,
     });
 
-    console.log("✅ Participant written to Firebase:", userId);
-    console.log(`✅ ${userType} ${userName} added to room ${roomId}`);
 
     // Update connection status in the room
     const connectionStatusRef = ref(
@@ -103,11 +98,9 @@ export const joinRoom = async (
       lastUpdated: new Date().toISOString(),
     });
 
-    console.log("✅ Successfully joined room:", roomId);
 
     // Return a cleanup function
     return async () => {
-      console.log(`🧹 Cleaning up participant ${userId}`);
       await remove(participantRef);
       // Cleanup function to manually set disconnected status
       update(userRef, {
@@ -163,20 +156,17 @@ export const getRoomParticipants = async (
   roomId: string
 ): Promise<JitsiParticipant[]> => {
   try {
-    console.log("👥 Getting participants for room:", roomId);
 
     const participantsRef = ref(database, `rooms/${roomId}/participants`);
     const snapshot = await get(participantsRef);
 
     if (!snapshot.exists()) {
-      console.log("⚠️ No participants found for room:", roomId);
       return [];
     }
 
     const participantsData = snapshot.val();
     const participants = Object.values(participantsData) as JitsiParticipant[];
 
-    console.log("✅ Found participants:", participants);
     return participants;
   } catch (error) {
     console.error("❌ Error getting room participants:", error);
@@ -194,7 +184,6 @@ export const endConsultation = async (
   userId: string
 ): Promise<void> => {
   try {
-    console.log("🛑 Ending consultation:", roomId);
 
     // Update the user's connection status
     const userRef = ref(database, `rooms/${roomId}/participants/${userId}`);
@@ -210,7 +199,6 @@ export const endConsultation = async (
       endedBy: userId,
     });
 
-    console.log("✅ Consultation ended successfully");
   } catch (error) {
     console.error("❌ Error ending consultation:", error);
     throw new Error("Failed to end consultation");
@@ -229,7 +217,6 @@ export const createInstantConsultationRequest = async (
   patientName: string
 ): Promise<string> => {
   try {
-    console.log("🔄 Creating instant consultation request");
 
     // Generate a unique ID for the consultation
     const consultationId = `instant-${patientId}-${Date.now()}`;
@@ -267,7 +254,6 @@ export const createInstantConsultationRequest = async (
       status: "pending",
     });
 
-    console.log("✅ Instant consultation request created:", consultationId);
     return consultationId;
   } catch (error) {
     console.error("❌ Error creating instant consultation request:", error);
@@ -289,7 +275,6 @@ export const sendChatMessage = async (
   text: string
 ): Promise<void> => {
   try {
-    console.log("💬 Sending chat message to room:", roomId);
 
     // Create a reference to the chat in Firebase
     const chatRef = ref(database, `rooms/${roomId}/chat/${Date.now()}`);
@@ -302,7 +287,6 @@ export const sendChatMessage = async (
       timestamp: new Date().toISOString(),
     });
 
-    console.log("✅ Chat message sent successfully");
   } catch (error) {
     console.error("❌ Error sending chat message:", error);
     throw new Error("Failed to send chat message");

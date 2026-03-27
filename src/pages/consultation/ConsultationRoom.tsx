@@ -284,7 +284,30 @@ const ConsultationRoom: React.FC = () => {
       const roomName = `health-e-${roomId}`;
 
       // Initialize Jitsi Meet API
-      const domain = "meet.health-e.sn";
+      // Domain configurable via env var (fallback to production server)
+      const domain = import.meta.env.VITE_JITSI_DOMAIN || "meet.health-e.sn";
+
+      // TURN/STUN servers for reliable mobile connectivity (Africa/Senegal)
+      const stunServers: { urls: string; username?: string; credential?: string }[] = [
+        { urls: "stun:stun.l.google.com:19302" },
+        { urls: "stun:stun1.l.google.com:19302" },
+      ];
+      // OVH TURN server — configure via env vars on the Netlify dashboard
+      if (import.meta.env.VITE_TURN_SERVER) {
+        stunServers.push(
+          {
+            urls: `turn:${import.meta.env.VITE_TURN_SERVER}:3478`,
+            username: import.meta.env.VITE_TURN_USERNAME,
+            credential: import.meta.env.VITE_TURN_CREDENTIAL,
+          },
+          {
+            urls: `turns:${import.meta.env.VITE_TURN_SERVER}:5349`,
+            username: import.meta.env.VITE_TURN_USERNAME,
+            credential: import.meta.env.VITE_TURN_CREDENTIAL,
+          }
+        );
+      }
+
       const options = {
         roomName,
         width: "100%",
@@ -296,7 +319,7 @@ const ConsultationRoom: React.FC = () => {
             (currentUser.type === "patient" ? "Patient" : "Professionnel"),
         },
         configOverwrite: {
-          prejoinPageEnabled: false, // Désactive l'écran "Je suis l'hôte"
+          prejoinPageEnabled: false,
           startWithAudioMuted: false,
           startWithVideoMuted: false,
           startAudioOnly: false,
@@ -305,13 +328,19 @@ const ConsultationRoom: React.FC = () => {
           disableInviteFunctions: true,
           requireDisplayName: false,
           startSilent: false,
-          // Configuration pour instance privée
           guestDialOutEnabled: false,
           guestDialInEnabled: false,
           liveStreamingEnabled: false,
           recordingEnabled: false,
           transcribingEnabled: false,
           breakoutRoomsEnabled: false,
+          // P2P avec STUN/TURN pour les connexions mobiles en Afrique
+          p2p: {
+            enabled: true,
+            stunServers,
+            // Forcer le relais TURN si disponible (améliore la fiabilité mobile)
+            iceTransportPolicy: import.meta.env.VITE_TURN_SERVER ? "relay" : "all",
+          },
         },
         interfaceConfigOverwrite: {
           TOOLBAR_BUTTONS: [

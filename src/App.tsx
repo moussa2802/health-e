@@ -58,6 +58,12 @@ const ProfessionalsList = lazy(
 const ProfessionalProfile = lazy(
   () => import("./pages/patient/ProfessionalProfile")
 );
+const GroupTherapyDetails = lazy(
+  () => import("./pages/patient/GroupTherapyDetails")
+);
+const GroupTherapyMeeting = lazy(
+  () => import("./pages/patient/GroupTherapyMeeting")
+);
 const BookAppointment = lazy(() => import("./pages/patient/BookAppointment"));
 const AppointmentSuccess = lazy(
   () => import("./pages/patient/AppointmentSuccess")
@@ -96,6 +102,9 @@ const AdminMessages = lazy(() => import("./pages/admin/AdminMessages"));
 const AdminWithdrawals = lazy(() => import("./pages/admin/WithdrawalsPage"));
 const AdminNotifications = lazy(
   () => import("./pages/admin/AdminNotificationsPage")
+);
+const AdminGroupTherapy = lazy(
+  () => import("./pages/admin/AdminGroupTherapy")
 );
 const FAQ = lazy(() => import("./pages/FAQ"));
 const Contact = lazy(() => import("./pages/Contact"));
@@ -195,6 +204,14 @@ const AppChrome: React.FC = () => {
               element={<Navigate to="/professionals/urologue" replace />}
             />
             <Route path="/professional/:id" element={<ProfessionalProfile />} />
+            <Route
+              path="/group-therapy/:id"
+              element={<GroupTherapyDetails />}
+            />
+            <Route
+              path="/group-therapy/:id/meeting"
+              element={<GroupTherapyMeeting />}
+            />
             <Route path="/book/:professionalId" element={<BookAppointment />} />
             <Route
               path="/appointment-success/:bookingId"
@@ -362,6 +379,14 @@ const AppChrome: React.FC = () => {
               element={
                 <ProtectedRoute userType="admin">
                   <AdminNotifications />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/group-therapy"
+              element={
+                <ProtectedRoute userType="admin">
+                  <AdminGroupTherapy />
                 </ProtectedRoute>
               }
             />

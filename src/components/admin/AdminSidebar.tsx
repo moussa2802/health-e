@@ -12,6 +12,7 @@ import {
   ShieldCheck,
   DollarSign,
   Bell,
+  UsersRound,
 } from "lucide-react";
 import { useLanguage } from "../../contexts/LanguageContext";
 
@@ -75,6 +76,11 @@ const AdminSidebar = () => {
       path: "/admin/withdrawals",
       icon: DollarSign,
       label: language === "fr" ? "Retraits" : "Withdrawals",
+    },
+    {
+      path: "/admin/group-therapy",
+      icon: UsersRound,
+      label: language === "fr" ? "Thérapie de groupe" : "Group Therapy",
     },
     // Item externe pour Health-eShare intégré dans le menu principal
     {

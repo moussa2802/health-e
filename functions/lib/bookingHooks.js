@@ -117,7 +117,11 @@ exports.onBookingUpdated = (0, firestore_1.onDocumentUpdated)({ region: REGION, 
             const message = `[Health-e] Votre consultation avec ${professionalName || "votre professionnel"} a été reprogrammée au ${whenHuman}. Lien: ${joinLink}`;
             // Try template first, then text
             const templateName = process.env.WA_TEMPLATE_RESCHEDULED;
-            const variables = [professionalName || "votre professionnel", whenHuman, joinLink];
+            const variables = [
+                professionalName || "votre professionnel",
+                whenHuman,
+                joinLink,
+            ];
             await (0, messaging_1.sendViaPreferredChannel)(phone, {
                 text: message,
                 templateName,

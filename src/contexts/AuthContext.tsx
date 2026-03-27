@@ -84,37 +84,6 @@ type AuthProviderProps = {
 // Initialize Firebase Auth
 const auth = getAuth(app);
 
-// Demo accounts for development - these will be used as fallbacks if auth fails
-const demoAccounts: Record<string, User> = {
-  "patient@demo.com": {
-    id: "FYostm61DLbrax729IYT6OBHSuA3",
-    name: "Marie Dupont",
-    email: "patient@demo.com",
-    type: "patient",
-  },
-  "professional@demo.com": {
-    id: "demo-professional-1",
-    name: "Dr. Jean Martin",
-    email: "professional@demo.com",
-    type: "professional",
-    serviceType: "mental",
-    specialty: "Psychologue clinicien",
-    offersFreeConsultations: true,
-    isAvailableNow: true,
-  },
-  "admin@demo.com": {
-    id: "FYostm61DLbrax729IYT6OBHSuA3",
-    name: "Admin User",
-    email: "admin@demo.com",
-    type: "admin",
-  },
-};
-
-const demoPasswords: Record<string, string> = {
-  "patient@demo.com": "demo123",
-  "professional@demo.com": "demo123",
-  "admin@demo.com": "admin123",
-};
 
 // Helper function to check if error is a Firestore internal error
 const isFirestoreInternalError = (error: unknown): boolean => {
@@ -154,16 +123,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
           const userType = userData.type || null;
           const userEmail = userData.email || firebaseUser.email || "";
 
-          console.log("✅ [AUTH] User data retrieved from Firestore:", {
-            id: firebaseUser.uid,
-            name: userData.name || "",
-            email: userEmail,
-            type: userType,
-            hasEmail: !!userEmail,
-            emailFromFirestore: userData.email,
-            emailFromFirebase: firebaseUser.email,
-          });
-
+    
           setCurrentUser({
             id: firebaseUser.uid,
             name: userData.name || "",
@@ -177,43 +137,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
             }),
           });
         } else {
-          // User exists in Auth but not in Firestore - check if it's a demo admin
-          console.warn(
-            "User exists in Auth but not in Firestore:",
-            firebaseUser.uid
-          );
-
-          // Check if this is the demo admin account
-          if (firebaseUser.email === "admin@demo.com") {
-            // Create admin user document
-            try {
-              await retryFirestoreOperation(async () => {
-                await setDoc(doc(db, "users", firebaseUser.uid), {
-                  id: firebaseUser.uid,
-                  name: "Admin User",
-                  email: "admin@demo.com",
-                  type: "admin",
-                  isActive: true,
-                  createdAt: serverTimestamp(),
-                  updatedAt: serverTimestamp(),
-                });
-              });
-
-              // Set current user as admin
-              setCurrentUser({
-                id: firebaseUser.uid,
-                name: "Admin User",
-                email: "admin@demo.com",
-                type: "admin",
-              });
-
-              // Admin user document created successfully
-            } catch (error) {
-              setCurrentUser(null);
-            }
-          } else {
-            setCurrentUser(null);
-          }
+          setCurrentUser(null);
         }
       }
     } catch (firestoreError) {
@@ -246,12 +170,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         type: null,
       };
 
-      console.log("⚠️ [AUTH] Using fallback user data:", {
-        id: fallbackUser.id,
-        name: fallbackUser.name,
-        email: fallbackUser.email,
-        hasEmail: !!fallbackUser.email,
-      });
 
       setCurrentUser(fallbackUser);
     }
@@ -296,7 +214,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
       // Only update if this is the current user
       if (currentUser && currentUser.id === userId) {
-        console.log("🔄 [AUTH DEBUG] Real-time name update received:", newName);
         setCurrentUser((prev) => (prev ? { ...prev, name: newName } : null));
 
         // Also update localStorage
@@ -307,7 +224,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
           localStorage.setItem("health-e-user", JSON.stringify(userData));
         }
 
-        console.log("✅ [AUTH DEBUG] Name updated in real-time:", newName);
       }
     };
 
@@ -340,10 +256,9 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         );
         const firebaseUser = userCredential.user;
 
-        // Check if email is verified (skip for admin account and professionals)
+        // Check if email is verified (skip for professionals)
         if (
           !firebaseUser.emailVerified &&
-          firebaseUser.email !== "admin@demo.com" &&
           userType !== "professional"
         ) {
           console.warn("E-mail non vérifié, bloquant la connexion.");
@@ -406,19 +321,12 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
           return;
         }
       } catch (authError) {
-        console.warn(
-          "Firebase Auth login failed, falling back to demo accounts:",
-          authError
-        );
-
-        // Check if this is a Firebase Auth error with specific error codes
         if (
           authError &&
           typeof authError === "object" &&
           "code" in (authError as any)
         ) {
           const errorCode = (authError as any).code;
-
           switch (errorCode) {
             case "auth/user-not-found":
               throw new Error(
@@ -441,170 +349,14 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
                 "Format d'email invalide. Vérifiez votre adresse email."
               );
             case "auth/invalid-credential":
-              // Approche intelligente sans dépendre de Firestore
-              // Vérification simple du format d'email
-              const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-              if (!emailRegex.test(email)) {
-                throw new Error(
-                  "Format d'email invalide. Vérifiez votre adresse email."
-                );
-              }
-
-              // Si l'email a un format valide mais l'authentification échoue,
-              // c'est probablement que l'email n'existe pas ou le mot de passe est incorrect
-              // On donne un message plus utile
               throw new Error(
                 "Email ou mot de passe incorrect. Vérifiez vos identifiants ou créez un compte si vous n'en avez pas."
               );
             default:
-              // Fall back to demo accounts if in development mode
-              const demoUser = demoAccounts[email];
-              if (
-                demoUser &&
-                demoPasswords[email] === password &&
-                demoUser.type === userType
-              ) {
-                setCurrentUser(demoUser);
-                localStorage.setItem("health-e-user", JSON.stringify(demoUser));
-
-                // Create Firestore documents for demo users if they don't exist
-                try {
-                  await ensureFirestoreReady();
-                  await ensureRequiredCollectionsExist();
-
-                  const db = getFirestoreInstance();
-
-                  if (db) {
-                    // Check if user document exists
-                    const userRef = doc(db, "users", demoUser.id);
-                    const userDoc = await getDoc(userRef);
-
-                    if (!userDoc.exists()) {
-                      // Create user document with retry mechanism
-                      await retryFirestoreOperation(async () => {
-                        await setDoc(userRef, {
-                          id: demoUser.id,
-                          name: demoUser.name,
-                          email: demoUser.email,
-                          type: demoUser.type,
-                          isActive: true,
-                          createdAt: serverTimestamp(),
-                          updatedAt: serverTimestamp(),
-                        });
-                      });
-
-                      console.log(
-                        "✅ Created user document for demo user:",
-                        demoUser.id
-                      );
-
-                      // Create profile document based on user type (skip for admin)
-                      if (demoUser.type === "patient") {
-                        await createDefaultPatientProfile(
-                          demoUser.id,
-                          demoUser.name,
-                          demoUser.email
-                        );
-                      } else if (demoUser.type === "professional") {
-                        await createDefaultProfessionalProfile(
-                          demoUser.id,
-                          demoUser.name,
-                          demoUser.email || "",
-                          demoUser.serviceType as "mental" | "sexual"
-                        );
-                      } else if (demoUser.type === "admin") {
-                        console.log(
-                          "✅ Admin user - no additional profile needed"
-                        );
-                      }
-                    }
-                  }
-                } catch (error) {
-                  console.warn(
-                    "⚠️ Could not create Firestore documents for demo user:",
-                    error
-                  );
-                  // Continue anyway, as this is just for demo purposes
-                }
-
-                return;
-              } else {
-                throw new Error("Identifiants incorrects");
-              }
+              throw new Error("Erreur de connexion. Veuillez réessayer.");
           }
         } else {
-          // Fall back to demo accounts if in development mode
-          const demoUser = demoAccounts[email];
-          if (
-            demoUser &&
-            demoPasswords[email] === password &&
-            demoUser.type === userType
-          ) {
-            setCurrentUser(demoUser);
-            localStorage.setItem("health-e-user", JSON.stringify(demoUser));
-
-            // Create Firestore documents for demo users if they don't exist
-            try {
-              await ensureFirestoreReady();
-              await ensureRequiredCollectionsExist();
-
-              const db = getFirestoreInstance();
-
-              if (db) {
-                // Check if user document exists
-                const userRef = doc(db, "users", demoUser.id);
-                const userDoc = await getDoc(userRef);
-
-                if (!userDoc.exists()) {
-                  // Create user document with retry mechanism
-                  await retryFirestoreOperation(async () => {
-                    await setDoc(userRef, {
-                      id: demoUser.id,
-                      name: demoUser.name,
-                      email: demoUser.email,
-                      type: demoUser.type,
-                      isActive: true,
-                      createdAt: serverTimestamp(),
-                      updatedAt: serverTimestamp(),
-                    });
-                  });
-
-                  console.log(
-                    "✅ Created user document for demo user:",
-                    demoUser.id
-                  );
-
-                  // Create profile document based on user type (skip for admin)
-                  if (demoUser.type === "patient") {
-                    await createDefaultPatientProfile(
-                      demoUser.id,
-                      demoUser.name,
-                      demoUser.email
-                    );
-                  } else if (demoUser.type === "professional") {
-                    await createDefaultProfessionalProfile(
-                      demoUser.id,
-                      demoUser.name,
-                      demoUser.email || "",
-                      demoUser.serviceType as "mental" | "sexual"
-                    );
-                  } else if (demoUser.type === "admin") {
-                    console.log("✅ Admin user - no additional profile needed");
-                  }
-                }
-              }
-            } catch (error) {
-              console.warn(
-                "⚠️ Could not create Firestore documents for demo user:",
-                error
-              );
-              // Continue anyway, as this is just for demo purposes
-            }
-
-            return;
-          } else {
-            throw new Error("Identifiants incorrects");
-          }
+          throw authError;
         }
       }
     } catch (error) {
@@ -619,42 +371,19 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     phoneNumber: string
   ): Promise<void> => {
     try {
-      console.log("🔐 [LOGIN] ===== DÉBUT LOGIN WITH PHONE =====");
-      console.log("🆔 [LOGIN] User ID:", userId);
-      console.log("📱 [LOGIN] Téléphone:", phoneNumber);
-
-      // Vérifier si l'utilisateur existe dans Firestore
-      console.log("🔧 [LOGIN] Initialisation Firestore...");
       await ensureFirestoreReady();
       const db = getFirestoreInstance();
 
-      if (!db) {
-        console.log("❌ [LOGIN] Firestore non disponible");
-        throw new Error("Firestore non disponible");
-      }
-      console.log("✅ [LOGIN] Firestore prêt");
+      if (!db) throw new Error("Firestore non disponible");
 
       try {
-        // Vérifier si l'utilisateur existe dans la collection patients
-        console.log("🔍 [LOGIN] Vérification du document patients...");
         const patientDoc = await getDoc(doc(db, "patients", userId));
 
         if (patientDoc.exists()) {
-          console.log(
-            "✅ [LOGIN] Utilisateur trouvé dans la collection patients"
-          );
           const patientData = patientDoc.data();
-          console.log("📋 [LOGIN] Données patient:", patientData);
-
-          // Get user document to ensure it exists
-          console.log("🔍 [LOGIN] Vérification du document users...");
           const userDoc = await getDoc(doc(db, "users", userId));
 
-          // If user document doesn't exist, create it
           if (!userDoc.exists()) {
-            console.log(
-              "⚠️ [LOGIN] Document utilisateur manquant, création automatique"
-            );
             await setDoc(doc(db, "users", userId), {
               id: userId,
               name: patientData.name,
@@ -664,99 +393,39 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
               createdAt: serverTimestamp(),
               updatedAt: serverTimestamp(),
             });
-            console.log("✅ [LOGIN] Document users créé");
-          } else {
-            console.log("✅ [LOGIN] Document users existe déjà");
           }
 
-          console.log("👤 [LOGIN] Mise à jour de currentUser...");
-          setCurrentUser({
+          const user = {
             id: userId,
             name: patientData.name || "",
             email: patientData.email || "",
-            type: "patient",
+            type: "patient" as const,
             profileImage: patientData.profileImage,
             phoneNumber: phoneNumber,
-          });
-
-          // Save to localStorage as fallback
-          console.log("💾 [LOGIN] Sauvegarde dans localStorage...");
-          localStorage.setItem(
-            "health-e-user",
-            JSON.stringify({
-              id: userId,
-              name: patientData.name || "",
-              email: patientData.email || "",
-              type: "patient",
-              profileImage: patientData.profileImage,
-              phoneNumber: phoneNumber,
-            })
-          );
-
-          console.log("🎉 [LOGIN] LOGIN WITH PHONE TERMINÉ AVEC SUCCÈS");
+          };
+          setCurrentUser(user);
+          localStorage.setItem("health-e-user", JSON.stringify(user));
           return;
-        } else {
-          console.log("❌ [LOGIN] Document patients non trouvé");
         }
       } catch (firestoreError) {
-        console.log("❌ [LOGIN] ===== ERREUR FIRESTORE =====");
-        console.error(
-          "❌ [LOGIN] Erreur lors de la vérification du profil patient:",
-          firestoreError
-        );
-
-        // Si l'erreur est que le document n'existe pas, on crée un profil par défaut
         if (
           firestoreError instanceof Error &&
           (firestoreError.message.includes("not found") ||
             firestoreError.message.includes("does not exist"))
         ) {
-          console.log(
-            "🔄 [LOGIN] Création automatique d'un profil patient par défaut"
-          );
-
-          // Créer un profil patient par défaut
           try {
-            await createDefaultPatientProfile(
-              userId,
-              "Utilisateur", // Nom par défaut
-              "", // Email vide
-              phoneNumber // Numéro de téléphone
-            );
-
-            console.log("✅ [LOGIN] Profil patient créé avec succès");
-
-            // Définir l'utilisateur courant
-            setCurrentUser({
-              id: userId,
-              name: "Utilisateur",
-              type: "patient",
-              phoneNumber: phoneNumber,
-            });
-
+            await createDefaultPatientProfile(userId, "Utilisateur", "", phoneNumber);
+            setCurrentUser({ id: userId, name: "Utilisateur", type: "patient", phoneNumber });
             return;
           } catch (createError) {
-            console.error(
-              "❌ Erreur lors de la création du profil par défaut:",
-              createError
-            );
-            throw new Error(
-              "Erreur lors de la création de votre profil. Veuillez réessayer."
-            );
+            console.error("Erreur création profil:", createError);
+            throw new Error("Erreur lors de la création de votre profil. Veuillez réessayer.");
           }
         }
-
         throw firestoreError;
       }
 
-      // Si on arrive ici, c'est que l'utilisateur n'existe pas dans la collection patients
-      console.warn(
-        "⚠️ Utilisateur non trouvé dans la collection patients:",
-        userId
-      );
-      throw new Error(
-        "Ce numéro n'est pas lié à un compte. Veuillez vous inscrire."
-      );
+      throw new Error("Ce numéro n'est pas lié à un compte. Veuillez vous inscrire.");
     } catch (error) {
       console.error("Login with phone error:", error);
       throw error;
@@ -764,17 +433,11 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   };
 
   const register = async (
-    email: string, // ✅ Premier paramètre
-    password: string, // ✅ Deuxième paramètre
-    userType: "patient" | "professional", // ✅ Troisième paramètre
-    additionalData?: any // ✅ Quatrième paramètre (optionnel)
+    email: string,
+    password: string,
+    userType: "patient" | "professional",
+    additionalData?: any
   ): Promise<void> => {
-    console.log(
-      "🚀 [REGISTER] Début de l'inscription pour:",
-      email,
-      "Type:",
-      userType
-    );
 
     try {
       // Prevent multiple simultaneous registrations
@@ -898,6 +561,29 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
           additionalData.serviceType
         );
       }
+      // Stocker la spécialité choisie pour les professionnels
+      // ✅ Vérifier que primarySpecialty n'est pas vide avant de le stocker
+      if (
+        userType === "professional" &&
+        additionalData?.primarySpecialty &&
+        additionalData.primarySpecialty.trim() !== ""
+      ) {
+        localStorage.setItem(
+          "pending-primary-specialty",
+          additionalData.primarySpecialty
+        );
+        console.log(
+          "✅ [REGISTER] Spécialité stockée:",
+          additionalData.primarySpecialty
+        );
+      } else if (userType === "professional") {
+        console.warn(
+          "⚠️ [REGISTER] Aucune spécialité fournie ou spécialité vide pour professionnel"
+        );
+      }
+      if (userType === "professional" && additionalData?.category) {
+        localStorage.setItem("pending-category", additionalData.category);
+      }
 
       console.log("🎉 [REGISTER] Inscription terminée avec succès!");
     } catch (error) {
@@ -943,115 +629,58 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     additionalData?: any
   ): Promise<void> => {
     try {
-      console.log("👤 [AUTH] ===== DÉBUT CREATE USER WITH PHONE =====");
-      console.log("👤 [AUTH] Nom:", name);
-      console.log("📱 [AUTH] Téléphone:", phoneNumber);
-      console.log("📋 [AUTH] Données additionnelles:", additionalData);
-
-      // Prevent multiple simultaneous registrations
       if (registrationInProgressRef.current) {
-        console.warn("⚠️ [AUTH] Registration déjà en cours");
         throw new Error("Inscription déjà en cours. Veuillez patienter.");
       }
 
       registrationInProgressRef.current = true;
-      console.log("🔒 [AUTH] Registration lock activé");
 
-      // Get the current user from auth (should be authenticated with phone)
       const firebaseUser = auth.currentUser;
-      console.log("👤 [AUTH] Firebase user:", firebaseUser);
-
-      // Numéros de test pour développement
-      const testPhoneNumbers: string[] = [
-        "+1 450-516-8884",
-        "+14505168884",
-        "+1 450 516 8884",
-      ];
+      const testPhoneNumbers = ["+1 450-516-8884", "+14505168884", "+1 450 516 8884"];
       const isTestNumber = testPhoneNumbers.includes(phoneNumber);
-      console.log("🧪 [AUTH] Numéro de test:", isTestNumber);
 
       if (!firebaseUser && !isTestNumber) {
-        console.log("❌ [AUTH] Utilisateur non authentifié");
         throw new Error("Utilisateur non authentifié");
       }
 
-      // Utiliser l'uid de Firebase Auth même pour les numéros de test
-      // car l'utilisateur est maintenant authentifié via signInWithPhoneNumber
-      const userId = firebaseUser
-        ? firebaseUser.uid
-        : `test-user-${Date.now()}`;
-      console.log("🆔 [AUTH] User ID:", userId);
+      const userId = firebaseUser ? firebaseUser.uid : `test-user-${Date.now()}`;
 
-      // Create Firestore documents
-      console.log("🔧 [AUTH] Initialisation Firestore...");
       await ensureFirestoreReady();
       await ensureRequiredCollectionsExist();
 
       const db = getFirestoreInstance();
-      if (!db) {
-        console.log("❌ [AUTH] Firestore non disponible");
-        throw new Error("Firestore non disponible");
-      }
-      console.log("✅ [AUTH] Firestore prêt");
+      if (!db) throw new Error("Firestore non disponible");
 
-      // Create user document
-      console.log("📝 [AUTH] Création du document users...");
       const userRef = doc(db, "users", userId);
       await retryFirestoreOperation(async () => {
-        const userData = {
+        await setDoc(userRef, {
           id: userId,
-          name: name,
-          phoneNumber: phoneNumber,
+          name,
+          phoneNumber,
           type: "patient",
           isActive: true,
           createdAt: serverTimestamp(),
           updatedAt: serverTimestamp(),
-          ...additionalData, // Include additional data like gender
-        };
-        console.log("📝 [AUTH] Données utilisateur:", userData);
-        await setDoc(userRef, userData);
+          ...additionalData,
+        });
       });
-      console.log("✅ [AUTH] Document users créé");
 
-      // Create patient profile
-      console.log("👤 [AUTH] Création du profil patient...");
-      await createDefaultPatientProfile(
-        userId,
-        name,
-        "",
-        phoneNumber,
-        additionalData
-      );
-      console.log("✅ [AUTH] Profil patient créé");
+      await createDefaultPatientProfile(userId, name, "", phoneNumber, additionalData);
 
-      // Mettre à jour phone_index pour accélérer les pré-checks
-      console.log("📱 [AUTH] Mise à jour de phone_index...");
       try {
         const db2 = getFirestore();
         await setDoc(
           doc(db2, "phone_index", phoneNumber),
-          {
-            exists: true,
-            type: "patient",
-            userId: userId,
-            updatedAt: serverTimestamp(),
-          },
+          { exists: true, type: "patient", userId, updatedAt: serverTimestamp() },
           { merge: true }
         );
-        console.log("✅ [AUTH] phone_index mis à jour");
-      } catch (indexError) {
-        console.log("⚠️ [AUTH] Erreur phone_index (non-bloquant):", indexError);
+      } catch {
+        // non-blocking
       }
-
-      console.log("🎉 [AUTH] CREATE USER WITH PHONE TERMINÉ AVEC SUCCÈS");
     } catch (error) {
-      console.log("❌ [AUTH] ===== ERREUR CREATE USER WITH PHONE =====");
-      console.error("❌ [AUTH] Erreur complète:", error);
-      console.error("❌ [AUTH] Message:", error?.message);
+      console.error("createUserWithPhone error:", error);
       throw error;
     } finally {
-      // Reset registration flag
-      console.log("🔓 [AUTH] Registration lock désactivé");
       registrationInProgressRef.current = false;
     }
   };

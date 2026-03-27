@@ -134,6 +134,8 @@ function buildSubject(n) {
             return `Nouvelle demande de rendez-vous le ${n?.data?.date ?? ""} à ${n?.data?.time ?? ""}`;
         case "appointment_confirmed":
             return `Rendez-vous confirmé le ${n?.data?.date ?? ""} à ${n?.data?.time ?? ""}`;
+        case "appointment_reminder_pro":
+            return `Rappel – RDV ${n?.data?.patientName ?? "patient"} (${n?.data?.date ?? ""} ${n?.data?.time ?? ""})`;
         case "appointment_cancelled":
             return `Rendez-vous annulé le ${n?.data?.date ?? ""} à ${n?.data?.time ?? ""}`;
         case "appointment_modified":
@@ -174,6 +176,7 @@ function buildHtml(n, userData) {
     }
     else if (n?.type === "appointment_request" ||
         n?.type === "appointment_confirmed" ||
+        n?.type === "appointment_reminder_pro" ||
         n?.type === "appointment_cancelled" ||
         n?.type === "appointment_modified") {
         // Utiliser le titre de la notification pour les rendez-vous
@@ -205,6 +208,7 @@ function buildText(n) {
     }
     else if (n?.type === "appointment_request" ||
         n?.type === "appointment_confirmed" ||
+        n?.type === "appointment_reminder_pro" ||
         n?.type === "appointment_cancelled" ||
         n?.type === "appointment_modified") {
         // Utiliser le titre de la notification pour les rendez-vous

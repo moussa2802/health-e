@@ -58,11 +58,29 @@ const VerifyEmail: React.FC = () => {
             | "professional";
           const serviceType =
             localStorage.getItem("pending-service-type") || "mental";
+          // ✅ Vérifier que primarySpecialty n'est pas vide avant de l'utiliser
+          const primarySpecialtyRaw = localStorage.getItem(
+            "pending-primary-specialty"
+          );
+          const primarySpecialty =
+            primarySpecialtyRaw && primarySpecialtyRaw.trim() !== ""
+              ? primarySpecialtyRaw
+              : undefined;
+          const category =
+            (localStorage.getItem("pending-category") as
+              | "mental-health"
+              | "sexual-health"
+              | null) || undefined;
 
           if (uid && email && name && userType) {
             console.log(
               "✅ [VERIFY DEBUG] All required data found, creating Firestore documents..."
             );
+            console.log("📋 [VERIFY DEBUG] Specialty data:", {
+              serviceType,
+              primarySpecialty,
+              category,
+            });
             const db = getFirestore();
             const userRef = doc(collection(db, "users"), uid);
 
@@ -83,11 +101,14 @@ const VerifyEmail: React.FC = () => {
               if (userType === "patient") {
                 await createDefaultPatientProfile(uid, name, email);
               } else {
+                // Passer la spécialité choisie et la catégorie à createDefaultProfessionalProfile
                 await createDefaultProfessionalProfile(
                   uid,
                   name,
                   email,
-                  serviceType as "mental" | "sexual"
+                  serviceType as "mental" | "sexual",
+                  primarySpecialty, // ✅ 5ème paramètre : customSpecialty
+                  category // ✅ 6ème paramètre : customCategory
                 );
               }
             } catch (error) {

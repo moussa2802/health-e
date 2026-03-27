@@ -44,6 +44,14 @@ import { formatDateTimeWithTimezone } from "../../utils/dateTimeUtils";
 import EthicsReminder from "../../components/dashboard/EthicsReminder";
 import LoadingSpinner from "../../components/ui/LoadingSpinner";
 import UserSupportTickets from "../../components/support/UserSupportTickets";
+import {
+  getProfessionalGroupTherapySessions,
+  getMeetingInfo,
+  openGroupTherapyMeeting,
+  GroupTherapySession,
+} from "../../services/groupTherapyService";
+import { format } from "date-fns";
+import { fr } from "date-fns/locale";
 
 // Helpers pour la gestion des dates
 const WEEKDAYS_FR = [
@@ -733,6 +741,13 @@ const ProfessionalDashboard: React.FC = () => {
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [bookingToCancel, setBookingToCancel] = useState<string | null>(null);
   const [isCancelling, setIsCancelling] = useState(false);
+  const [groupTherapySessions, setGroupTherapySessions] = useState<
+    GroupTherapySession[]
+  >([]);
+  const [loadingGroupTherapy, setLoadingGroupTherapy] = useState(false);
+  const [meetingInfoMap, setMeetingInfoMap] = useState<
+    Record<string, { meetingLink: string; meetingStatus: "closed" | "open" }>
+  >({});
 
   // Only fetch bookings if user is authenticated
   const { bookings, loading, error, refreshBookings } = useBookings(
@@ -895,6 +910,51 @@ const ProfessionalDashboard: React.FC = () => {
       cancelled = true;
       clearInterval(interval);
     };
+  }, [currentUser?.id]);
+
+  // Fetch group therapy sessions
+  useEffect(() => {
+    const fetchGroupTherapySessions = async () => {
+      if (!currentUser?.id) return;
+
+      try {
+        setLoadingGroupTherapy(true);
+        const sessions = await getProfessionalGroupTherapySessions(
+          currentUser.id
+        );
+        setGroupTherapySessions(sessions);
+
+        // Charger les informations de réunion pour chaque session
+        const meetingInfoPromises = sessions.map(async (session) => {
+          const info = await getMeetingInfo(session.id);
+          return {
+            sessionId: session.id,
+            info: info
+              ? {
+                  meetingLink: info.meetingLink,
+                  meetingStatus: info.meetingStatus,
+                }
+              : { meetingLink: "", meetingStatus: "closed" as const },
+          };
+        });
+
+        const meetingInfos = await Promise.all(meetingInfoPromises);
+        const infoMap: Record<
+          string,
+          { meetingLink: string; meetingStatus: "closed" | "open" }
+        > = {};
+        meetingInfos.forEach(({ sessionId, info }) => {
+          infoMap[sessionId] = info;
+        });
+        setMeetingInfoMap(infoMap);
+      } catch (error) {
+        console.error("Error fetching group therapy sessions:", error);
+      } finally {
+        setLoadingGroupTherapy(false);
+      }
+    };
+
+    fetchGroupTherapySessions();
   }, [currentUser?.id]);
 
   const handleCancelBooking = async (bookingId: string) => {
@@ -1164,6 +1224,155 @@ const ProfessionalDashboard: React.FC = () => {
 
         {/* Quick Actions */}
         <QuickActions />
+
+        {/* Group Therapy Sessions Section */}
+        {loadingGroupTherapy ? (
+          <div className="bg-white rounded-2xl shadow-lg p-6 mb-8">
+            <div className="flex items-center justify-center py-8">
+              <LoadingSpinner size="md" />
+              <span className="ml-3 text-gray-600">
+                Chargement des thérapies...
+              </span>
+            </div>
+          </div>
+        ) : groupTherapySessions.length > 0 ? (
+          <div className="bg-white rounded-2xl shadow-lg p-6 mb-8">
+            <h2 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
+              <Users2 className="h-6 w-6 text-purple-600" />
+              Mes thérapies de groupe
+            </h2>
+            <div className="space-y-4">
+              {groupTherapySessions.map((session) => {
+                const formattedDate = session.date
+                  ? format(
+                      new Date(session.date + "T00:00:00"),
+                      "EEEE d MMMM yyyy",
+                      { locale: fr }
+                    )
+                  : "";
+                const isFree = session.price === 0;
+                const registrationsCount = session.registrationsCount ?? 0;
+
+                return (
+                  <div
+                    key={session.id}
+                    className="border border-gray-200 rounded-xl p-4 hover:shadow-md transition-shadow"
+                  >
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                          {session.title}
+                        </h3>
+                        <p className="text-sm text-gray-600 mb-3">
+                          {session.description}
+                        </p>
+                        <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600">
+                          {session.date && (
+                            <div className="flex items-center">
+                              <Calendar className="h-4 w-4 mr-2" />
+                              <span>{formattedDate}</span>
+                            </div>
+                          )}
+                          {session.time && (
+                            <div className="flex items-center">
+                              <Clock className="h-4 w-4 mr-2" />
+                              <span>{session.time}</span>
+                            </div>
+                          )}
+                          <div className="flex items-center">
+                            <Users2 className="h-4 w-4 mr-2" />
+                            <span>
+                              {registrationsCount}/{session.capacity}{" "}
+                              participants
+                            </span>
+                          </div>
+                          <div>
+                            {isFree ? (
+                              <span className="text-green-600 font-medium">
+                                Gratuit
+                              </span>
+                            ) : (
+                              <span className="text-blue-600 font-medium">
+                                {session.price} FCFA
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="ml-4">
+                        {/* Les professionnels hôtes peuvent démarrer la réunion */}
+                        {meetingInfoMap[session.id]?.meetingStatus ===
+                        "open" ? (
+                          <button
+                            onClick={async () => {
+                              try {
+                                const meetingLink =
+                                  meetingInfoMap[session.id]?.meetingLink;
+                                // Accéder directement à la réunion Jitsi
+                                if (meetingLink) {
+                                  window.open(meetingLink, "_blank");
+                                }
+                              } catch (error) {
+                                console.error(
+                                  "Error accessing meeting:",
+                                  error
+                                );
+                                alert(
+                                  "Erreur lors de l'accès à la réunion. Veuillez réessayer."
+                                );
+                              }
+                            }}
+                            className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-600 text-white rounded-lg font-medium hover:from-purple-600 hover:to-pink-700 transition-all shadow-sm hover:shadow-md"
+                          >
+                            <Video className="h-4 w-4 mr-2" />
+                            Rejoindre
+                          </button>
+                        ) : (
+                          <button
+                            onClick={async () => {
+                              if (!currentUser?.id) return;
+                              try {
+                                // Démarrer la réunion et récupérer le meetingLink directement
+                                const meetingLink =
+                                  await openGroupTherapyMeeting(
+                                    session.id,
+                                    currentUser.id
+                                  );
+                                // Mettre à jour l'état local
+                                setMeetingInfoMap((prev) => ({
+                                  ...prev,
+                                  [session.id]: {
+                                    meetingLink,
+                                    meetingStatus: "open",
+                                  },
+                                }));
+                                // Ouvrir directement la réunion Jitsi
+                                if (meetingLink) {
+                                  window.open(meetingLink, "_blank");
+                                }
+                              } catch (error) {
+                                console.error("Error starting meeting:", error);
+                                const errorMessage =
+                                  error instanceof Error
+                                    ? error.message
+                                    : "Erreur lors du démarrage de la réunion. Veuillez réessayer.";
+                                alert(errorMessage);
+                              }
+                            }}
+                            className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-lg font-medium hover:from-green-600 hover:to-emerald-700 transition-all shadow-sm hover:shadow-md"
+                          >
+                            <Video className="h-4 w-4 mr-2" />
+                            Démarrer la réunion
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        ) : null}
 
         {/* Today's Agenda */}
         <TodaysAgenda bookings={bookings} />

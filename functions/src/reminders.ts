@@ -69,22 +69,27 @@ export const remindTMinus5 = onSchedule(
 
         // Prepare message - format Dakar
         const startsAt = booking.startsAt as admin.firestore.Timestamp;
-        const professionalName = booking.professionalName || "votre professionnel";
-        
+        const professionalName =
+          booking.professionalName || "votre professionnel";
+
         const fmtDakar = (ts: admin.firestore.Timestamp) => {
           const date = new Date(ts.toMillis());
-          return date.toLocaleString("fr-CA", {
-            day: "2-digit",
-            month: "2-digit",
-            year: "numeric",
-            hour: "2-digit",
-            minute: "2-digit",
-            timeZone: TZ,
-          }) + " (Dakar)";
+          return (
+            date.toLocaleString("fr-CA", {
+              day: "2-digit",
+              month: "2-digit",
+              year: "numeric",
+              hour: "2-digit",
+              minute: "2-digit",
+              timeZone: TZ,
+            }) + " (Dakar)"
+          );
         };
 
         const canFill = !!(professionalName && startsAt);
-        const bodyParams = canFill ? [professionalName, fmtDakar(startsAt)] : undefined;
+        const bodyParams = canFill
+          ? [professionalName, fmtDakar(startsAt)]
+          : undefined;
 
         const success = await sendWaTemplate({
           to: phone,
@@ -97,7 +102,8 @@ export const remindTMinus5 = onSchedule(
           // Mark as notified
           await db.doc(`bookings/${bookingId}`).update({
             "notify.sent.reminder5m": true,
-            "notify.last.reminder5mAt": admin.firestore.FieldValue.serverTimestamp(),
+            "notify.last.reminder5mAt":
+              admin.firestore.FieldValue.serverTimestamp(),
             updatedAt: admin.firestore.FieldValue.serverTimestamp(),
           });
           console.log(`[T-5] Reminder sent for booking ${bookingId}`);
@@ -155,7 +161,8 @@ export const remindStartNow = onSchedule(
         }
 
         // Construire le suffixe pour le bouton dynamique
-        const joinSuffix = booking.join?.code || booking.room?.joinCode || bookingId;
+        const joinSuffix =
+          booking.join?.code || booking.room?.joinCode || bookingId;
 
         // Template rdv_consultation avec bouton dynamique (0 variable body, 1 param button)
         const success = await sendWaTemplate({
@@ -170,7 +177,8 @@ export const remindStartNow = onSchedule(
           // Mark as notified
           await db.doc(`bookings/${bookingId}`).update({
             "notify.sent.startNow": true,
-            "notify.last.startNowAt": admin.firestore.FieldValue.serverTimestamp(),
+            "notify.last.startNowAt":
+              admin.firestore.FieldValue.serverTimestamp(),
             updatedAt: admin.firestore.FieldValue.serverTimestamp(),
           });
           console.log(`[H-0] Start reminder sent for booking ${bookingId}`);
@@ -234,21 +242,25 @@ export const remindMinus24h = onSchedule(
         if (phone) {
           const startsAt = b.startsAt as admin.firestore.Timestamp;
           const professionalName = b.professionalName || "votre professionnel";
-          
+
           const fmtDakar = (ts: admin.firestore.Timestamp) => {
             const date = new Date(ts.toMillis());
-            return date.toLocaleString("fr-CA", {
-              day: "2-digit",
-              month: "2-digit",
-              year: "numeric",
-              hour: "2-digit",
-              minute: "2-digit",
-              timeZone: TZ,
-            }) + " (Dakar)";
+            return (
+              date.toLocaleString("fr-CA", {
+                day: "2-digit",
+                month: "2-digit",
+                year: "numeric",
+                hour: "2-digit",
+                minute: "2-digit",
+                timeZone: TZ,
+              }) + " (Dakar)"
+            );
           };
 
           const canFill = !!(professionalName && startsAt);
-          const bodyParams = canFill ? [professionalName, fmtDakar(startsAt)] : undefined;
+          const bodyParams = canFill
+            ? [professionalName, fmtDakar(startsAt)]
+            : undefined;
 
           await sendWaTemplate({
             to: phone,
@@ -260,7 +272,8 @@ export const remindMinus24h = onSchedule(
 
         await doc.ref.update({
           "notify.sent.reminder24h": true,
-          "notify.last.reminder24hAt": admin.firestore.FieldValue.serverTimestamp(),
+          "notify.last.reminder24hAt":
+            admin.firestore.FieldValue.serverTimestamp(),
           updatedAt: admin.firestore.FieldValue.serverTimestamp(),
         });
       } catch (e) {
@@ -308,21 +321,25 @@ export const remindMinus1h = onSchedule(
         if (phone) {
           const startsAt = b.startsAt as admin.firestore.Timestamp;
           const professionalName = b.professionalName || "votre professionnel";
-          
+
           const fmtDakar = (ts: admin.firestore.Timestamp) => {
             const date = new Date(ts.toMillis());
-            return date.toLocaleString("fr-CA", {
-              day: "2-digit",
-              month: "2-digit",
-              year: "numeric",
-              hour: "2-digit",
-              minute: "2-digit",
-              timeZone: TZ,
-            }) + " (Dakar)";
+            return (
+              date.toLocaleString("fr-CA", {
+                day: "2-digit",
+                month: "2-digit",
+                year: "numeric",
+                hour: "2-digit",
+                minute: "2-digit",
+                timeZone: TZ,
+              }) + " (Dakar)"
+            );
           };
 
           const canFill = !!(professionalName && startsAt);
-          const bodyParams = canFill ? [professionalName, fmtDakar(startsAt)] : undefined;
+          const bodyParams = canFill
+            ? [professionalName, fmtDakar(startsAt)]
+            : undefined;
 
           await sendWaTemplate({
             to: phone,
@@ -334,7 +351,8 @@ export const remindMinus1h = onSchedule(
 
         await doc.ref.update({
           "notify.sent.reminder1h": true,
-          "notify.last.reminder1hAt": admin.firestore.FieldValue.serverTimestamp(),
+          "notify.last.reminder1hAt":
+            admin.firestore.FieldValue.serverTimestamp(),
           updatedAt: admin.firestore.FieldValue.serverTimestamp(),
         });
       } catch (e) {

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { ArrowLeft, User, AlertCircle } from "lucide-react";
 import PhoneInput, { isValidPhoneNumber } from "react-phone-number-input";
@@ -11,7 +11,11 @@ import { usePhoneAuth } from "../../hooks/usePhoneAuth";
 import { getFirestore, doc, getDoc } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
 
-type Step = "enterPhone" | "verify" | "completeProfile";
+type Step =
+  | "enterPhone"
+  | "verify"
+  | "completeProfile"
+  | "alreadyAuthenticated";
 
 const toE164 = (v: string) => (v?.startsWith("+") ? v : `+${(v || "").trim()}`);
 
@@ -19,6 +23,8 @@ const toE164 = (v: string) => (v?.startsWith("+") ? v : `+${(v || "").trim()}`);
 
 const PatientAccess: React.FC = () => {
   const navigate = useNavigate();
+  const [hasProcessedPendingRegistration, setHasProcessedPendingRegistration] =
+    useState(false);
 
   const { isAuthenticated, currentUser, createUserWithPhone, loginWithPhone } =
     useAuth();
@@ -45,12 +51,121 @@ const PatientAccess: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(false);
   const [err, setErr] = useState<string>("");
 
-  // Redirect si déjà loggé
+  // Ref pour éviter les tentatives multiples d'inscription
+  const registrationAlreadyAttemptedRef = useRef<boolean>(false);
+
+  // Fonction pour vérifier si l'inscription est autorisée (action explicite)
+  const getPendingGroupTherapySessionId = (): string | null => {
+    const pendingFlag = sessionStorage.getItem(
+      "pendingGroupTherapyRegistration"
+    );
+    if (pendingFlag === "1") {
+      return sessionStorage.getItem("pendingGroupTherapySessionId");
+    }
+    return null;
+  };
+
+  // Fonction pour gérer l'inscription après authentification
+  const handlePostAuthGroupTherapyRegistration = async (sessionId: string) => {
+    // Garde principal : ne pas autoriser l'inscription sans action explicite
+    const pendingSessionId = getPendingGroupTherapySessionId();
+    if (!pendingSessionId || pendingSessionId !== sessionId) {
+      console.warn("Group registration not allowed - no explicit user action");
+      return;
+    }
+
+    // Gardes : vérifier les préconditions
+    if (!sessionId) {
+      console.warn("No session ID provided");
+      return;
+    }
+
+    const auth = getAuth();
+    const userId = auth.currentUser?.uid;
+
+    if (!userId) {
+      console.warn("No user ID available");
+      return;
+    }
+
+    // Éviter les tentatives multiples
+    if (registrationAlreadyAttemptedRef.current) {
+      console.warn("Registration already attempted");
+      return;
+    }
+
+    // Marquer comme tenté
+    registrationAlreadyAttemptedRef.current = true;
+    setLoading(true);
+    setErr("");
+
+    try {
+      const { registerUserToSession } = await import(
+        "../../services/groupTherapyService"
+      );
+
+      // Inscrire l'utilisateur (retourne { status: "registered" } ou { status: "alreadyRegistered" })
+      console.log(
+        `🔄 [PATIENT] Inscription à la thérapie de groupe: sessionId=${sessionId}, userId=${userId}`
+      );
+      const result = await registerUserToSession(sessionId, userId);
+
+      // Nettoyer sessionStorage après inscription
+      sessionStorage.removeItem("pendingGroupTherapySessionId");
+      sessionStorage.removeItem("pendingGroupTherapyRegistration");
+
+      if (result.status === "alreadyRegistered") {
+        console.log(
+          `ℹ️ [PATIENT] Utilisateur déjà inscrit à la session ${sessionId}`
+        );
+        // Rediriger quand même vers la page de réunion
+        navigate(`/group-therapy/${sessionId}/meeting`, {
+          state: { registered: true, alreadyRegistered: true },
+        });
+        return;
+      }
+
+      console.log(`✅ [PATIENT] Inscription réussie à la session ${sessionId}`);
+      // Rediriger vers la page de réunion SEULEMENT après succès
+      navigate(`/group-therapy/${sessionId}/meeting`, {
+        state: { registered: true },
+      });
+    } catch (error: unknown) {
+      console.error("Error registering to group therapy:", error);
+
+      // Réinitialiser le flag en cas d'erreur pour permettre une nouvelle tentative
+      registrationAlreadyAttemptedRef.current = false;
+
+      // Afficher l'erreur et rediriger vers la page de détails
+      const errorMessage =
+        error instanceof Error ? error.message : "Erreur lors de l'inscription";
+      setErr(errorMessage);
+      // Ne pas naviguer automatiquement, laisser l'utilisateur voir l'erreur
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Gérer l'affichage si l'utilisateur est déjà authentifié
   useEffect(() => {
-    if (isAuthenticated && currentUser?.type === "patient") {
+    const pendingSessionId = getPendingGroupTherapySessionId();
+    if (
+      isAuthenticated &&
+      currentUser &&
+      pendingSessionId &&
+      step === "enterPhone"
+    ) {
+      // Afficher l'écran "déjà authentifié" pour demander confirmation
+      setStep("alreadyAuthenticated");
+    } else if (
+      isAuthenticated &&
+      currentUser?.type === "patient" &&
+      !pendingSessionId
+    ) {
+      // Si authentifié sans pendingSessionId, rediriger vers le dashboard
       navigate("/patient/dashboard");
     }
-  }, [isAuthenticated, currentUser, navigate]);
+  }, [isAuthenticated, currentUser, step, navigate]);
 
   // ---- Étape 1: envoi du SMS ----
   const onSubmitPhone = async (e: React.FormEvent) => {
@@ -73,18 +188,23 @@ const PatientAccess: React.FC = () => {
     try {
       console.log("🔄 [PATIENT] Début de l'envoi du code...");
       setLoading(true);
-      const confirmation = await sendVerificationCode(e164);
-      if (!confirmation) {
-        console.log("❌ [PATIENT] Confirmation null, échec de l'envoi");
-        throw new Error("Envoi du code échoué");
-      }
+      await sendVerificationCode(e164);
+      // sendVerificationCode throw une exception en cas d'erreur, donc si on arrive ici, c'est un succès
       console.log("✅ [PATIENT] Code envoyé, passage à l'étape verify");
       setStep("verify");
-    } catch (e: any) {
+    } catch (e: unknown) {
       console.log("❌ [PATIENT] ===== ERREUR ON SUBMIT PHONE =====");
       console.error("❌ [PATIENT] Erreur complète:", e);
-      console.error("❌ [PATIENT] Message:", e?.message);
-      setErr(e?.message || "Erreur lors de l'envoi du code.");
+      const error = e as {
+        code?: string;
+        message?: string;
+        originalError?: unknown;
+      };
+      console.error("❌ [PATIENT] Code d'erreur:", error?.code);
+      console.error("❌ [PATIENT] Message:", error?.message);
+      console.error("❌ [PATIENT] Erreur originale:", error?.originalError);
+      // Le message d'erreur contient déjà le code (format: [code] message)
+      setErr(error?.message || "Erreur lors de l'envoi du code.");
     } finally {
       console.log("🏁 [PATIENT] Fin de onSubmitPhone, loading = false");
       setLoading(false);
@@ -139,8 +259,16 @@ const PatientAccess: React.FC = () => {
       console.log("✅ [PATIENT] Profil créé, connexion...");
 
       await loginWithPhone(uid, e164);
-      console.log("🚀 [PATIENT] Redirection vers dashboard");
-      navigate("/patient/dashboard");
+      console.log("🚀 [PATIENT] Connexion réussie");
+
+      // Si on vient d'une thérapie de groupe, inscrire l'utilisateur (si intent autorisé)
+      const pendingSessionId = getPendingGroupTherapySessionId();
+      if (pendingSessionId && !hasProcessedPendingRegistration) {
+        setHasProcessedPendingRegistration(true);
+        await handlePostAuthGroupTherapyRegistration(pendingSessionId);
+      } else {
+        navigate("/patient/dashboard");
+      }
     } catch (e: any) {
       console.log("❌ [PATIENT] ===== ERREUR ON SUBMIT PROFILE =====");
       console.error("❌ [PATIENT] Erreur complète:", e);
@@ -203,13 +331,60 @@ const PatientAccess: React.FC = () => {
       if (profileExists) {
         console.log("✅ [PATIENT] Profil existant, connexion...");
         await loginWithPhone(uid, e164);
-        console.log("🚀 [PATIENT] Redirection vers dashboard");
-        navigate("/patient/dashboard");
+        console.log("🚀 [PATIENT] Connexion réussie");
+
+        // Si on vient d'une thérapie de groupe, inscrire l'utilisateur (si intent autorisé)
+        const pendingSessionId = getPendingGroupTherapySessionId();
+        if (pendingSessionId && !hasProcessedPendingRegistration) {
+          setHasProcessedPendingRegistration(true);
+          await handlePostAuthGroupTherapyRegistration(pendingSessionId);
+        } else {
+          navigate("/patient/dashboard");
+        }
       } else {
-        console.log(
-          "📝 [PATIENT] Profil inexistant, passage à completeProfile"
-        );
-        setStep("completeProfile");
+        // Nouvel utilisateur - créer automatiquement avec un nom par défaut
+        console.log("🆕 [PATIENT] Nouvel utilisateur, création automatique...");
+
+        // Vérifier si les termes sont acceptés
+        if (!hasAgreedToTerms) {
+          console.log(
+            "⚠️ [PATIENT] Terms non acceptés, passage à completeProfile"
+          );
+          setStep("completeProfile");
+          return;
+        }
+
+        try {
+          // Créer un nom par défaut basé sur le numéro de téléphone
+          const defaultName = `Patient ${e164.slice(-4)}`;
+
+          await createUserWithPhone(defaultName, e164, {
+            type: "patient",
+            gender: "homme", // Genre par défaut
+          });
+
+          console.log("✅ [PATIENT] Compte créé automatiquement");
+
+          // Se connecter
+          await loginWithPhone(uid, e164);
+          console.log("🚀 [PATIENT] Connexion réussie");
+
+          // Si on vient d'une thérapie de groupe, inscrire l'utilisateur (si intent autorisé)
+          const pendingSessionId = getPendingGroupTherapySessionId();
+          if (pendingSessionId && !hasProcessedPendingRegistration) {
+            setHasProcessedPendingRegistration(true);
+            await handlePostAuthGroupTherapyRegistration(pendingSessionId);
+          } else {
+            navigate("/patient/dashboard");
+          }
+        } catch (createError: any) {
+          console.error(
+            "❌ [PATIENT] Erreur création automatique:",
+            createError
+          );
+          // En cas d'erreur, passer à l'étape de création manuelle
+          setStep("completeProfile");
+        }
       }
     } catch (e: any) {
       console.log("❌ [PATIENT] ===== ERREUR ON VERIFY CODE =====");
@@ -389,6 +564,42 @@ const PatientAccess: React.FC = () => {
               </button>
             </form>
           )}
+
+          {/* STEP: Déjà authentifié - demander confirmation pour s'inscrire */}
+          {step === "alreadyAuthenticated" &&
+            getPendingGroupTherapySessionId() && (
+              <div className="space-y-5">
+                <div className="text-sm text-gray-600 text-center">
+                  Vous êtes déjà connecté. Cliquez sur le bouton ci-dessous pour
+                  vous inscrire à la session de thérapie de groupe.
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    const pendingSessionId = getPendingGroupTherapySessionId();
+                    if (pendingSessionId && !hasProcessedPendingRegistration) {
+                      setHasProcessedPendingRegistration(true);
+                      handlePostAuthGroupTherapyRegistration(pendingSessionId);
+                    }
+                  }}
+                  disabled={loading}
+                  className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-3 rounded-xl shadow disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {loading
+                    ? "Inscription en cours…"
+                    : "S'inscrire à la session"}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => navigate("/patient/dashboard")}
+                  className="w-full text-gray-600 font-medium mt-2"
+                >
+                  Retour au tableau de bord
+                </button>
+              </div>
+            )}
 
           {/* STEP 3: vérification du code */}
           {step === "verify" && (

@@ -33,7 +33,7 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.patients_onWrite = exports.users_onWrite = exports.checkPhoneIndex = exports.onBookingUpdated = exports.joinInfo = exports.remindStartNow = exports.remindTMinus5 = exports.onBookingConfirmed = void 0;
+exports.onGroupTherapyRegistrationDeleted = exports.onGroupTherapyRegistrationCreated = exports.patients_onWrite = exports.users_onWrite = exports.checkPhoneIndex = exports.onNotificationCreated = exports.onBookingUpdated = exports.joinInfo = exports.remindMinus1h = exports.remindMinus24h = exports.remindStartNow = exports.remindTMinus5 = exports.onBookingConfirmed = void 0;
 const crypto = __importStar(require("crypto"));
 const admin = __importStar(require("firebase-admin"));
 const https_1 = require("firebase-functions/v2/https");
@@ -57,10 +57,14 @@ Object.defineProperty(exports, "onBookingConfirmed", { enumerable: true, get: fu
 var reminders_1 = require("./reminders");
 Object.defineProperty(exports, "remindTMinus5", { enumerable: true, get: function () { return reminders_1.remindTMinus5; } });
 Object.defineProperty(exports, "remindStartNow", { enumerable: true, get: function () { return reminders_1.remindStartNow; } });
+Object.defineProperty(exports, "remindMinus24h", { enumerable: true, get: function () { return reminders_1.remindMinus24h; } });
+Object.defineProperty(exports, "remindMinus1h", { enumerable: true, get: function () { return reminders_1.remindMinus1h; } });
 var join_1 = require("./join");
 Object.defineProperty(exports, "joinInfo", { enumerable: true, get: function () { return join_1.joinInfo; } });
 var bookingHooks_1 = require("./bookingHooks");
 Object.defineProperty(exports, "onBookingUpdated", { enumerable: true, get: function () { return bookingHooks_1.onBookingUpdated; } });
+var notificationEmailBridge_1 = require("./notificationEmailBridge");
+Object.defineProperty(exports, "onNotificationCreated", { enumerable: true, get: function () { return notificationEmailBridge_1.onNotificationCreated; } });
 function normalizePhone(input) {
     // conserve + et chiffres, retire espaces, -, ()
     const trimmed = (input || "").trim();
@@ -188,6 +192,52 @@ exports.patients_onWrite = (0, firestore_1.onDocumentWritten)({
     }
     if (afterPhone) {
         await upsertPhoneIndex(event.params.uid, afterPhone, secret);
+    }
+});
+/**
+ * Gérer registrationsCount pour les thérapies de groupe
+ * Quand une inscription est créée, incrémenter registrationsCount
+ */
+exports.onGroupTherapyRegistrationCreated = (0, firestore_1.onDocumentCreated)({
+    document: "group_therapy_sessions/{sessionId}/registrations/{registrationId}",
+    region: "europe-west1",
+}, async (event) => {
+    const sessionId = event.params.sessionId;
+    const db = (0, firestore_2.getFirestore)();
+    try {
+        const sessionRef = db.doc(`group_therapy_sessions/${sessionId}`);
+        await sessionRef.update({
+            registrationsCount: admin.firestore.FieldValue.increment(1),
+            updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        });
+        console.log(`✅ Incremented registrationsCount for session ${sessionId}`);
+    }
+    catch (error) {
+        console.error(`❌ Error incrementing registrationsCount for session ${sessionId}:`, error);
+        throw error;
+    }
+});
+/**
+ * Gérer registrationsCount pour les thérapies de groupe
+ * Quand une inscription est supprimée, décrémenter registrationsCount
+ */
+exports.onGroupTherapyRegistrationDeleted = (0, firestore_1.onDocumentDeleted)({
+    document: "group_therapy_sessions/{sessionId}/registrations/{registrationId}",
+    region: "europe-west1",
+}, async (event) => {
+    const sessionId = event.params.sessionId;
+    const db = (0, firestore_2.getFirestore)();
+    try {
+        const sessionRef = db.doc(`group_therapy_sessions/${sessionId}`);
+        await sessionRef.update({
+            registrationsCount: admin.firestore.FieldValue.increment(-1),
+            updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        });
+        console.log(`✅ Decremented registrationsCount for session ${sessionId}`);
+    }
+    catch (error) {
+        console.error(`❌ Error decrementing registrationsCount for session ${sessionId}:`, error);
+        throw error;
     }
 });
 /**

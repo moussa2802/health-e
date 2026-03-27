@@ -1,7 +1,11 @@
 import * as crypto from "crypto";
 import * as admin from "firebase-admin";
 import { HttpsError, onCall } from "firebase-functions/v2/https";
-import { onDocumentWritten } from "firebase-functions/v2/firestore";
+import {
+  onDocumentWritten,
+  onDocumentCreated,
+  onDocumentDeleted,
+} from "firebase-functions/v2/firestore";
 import { setGlobalOptions } from "firebase-functions/v2/options";
 import { getFirestore } from "firebase-admin/firestore";
 // import { onUserCreated } from "firebase-functions/v2/identity";
@@ -21,7 +25,12 @@ if (!admin.apps.length) {
 }
 
 export { onBookingConfirmed } from "./onBookingConfirmed";
-export { remindTMinus5, remindStartNow, remindMinus24h, remindMinus1h } from "./reminders";
+export {
+  remindTMinus5,
+  remindStartNow,
+  remindMinus24h,
+  remindMinus1h,
+} from "./reminders";
 export { joinInfo } from "./join";
 export { onBookingUpdated } from "./bookingHooks";
 export { onNotificationCreated } from "./notificationEmailBridge";
@@ -176,6 +185,70 @@ export const patients_onWrite = onDocumentWritten(
     }
     if (afterPhone) {
       await upsertPhoneIndex(event.params.uid as string, afterPhone, secret);
+    }
+  }
+);
+
+/**
+ * Gérer registrationsCount pour les thérapies de groupe
+ * Quand une inscription est créée, incrémenter registrationsCount
+ */
+export const onGroupTherapyRegistrationCreated = onDocumentCreated(
+  {
+    document:
+      "group_therapy_sessions/{sessionId}/registrations/{registrationId}",
+    region: "europe-west1",
+  },
+  async (event) => {
+    const sessionId = event.params.sessionId;
+    const db = getFirestore();
+
+    try {
+      // Mettre à jour la session
+      const sessionRef = db.doc(`group_therapy_sessions/${sessionId}`);
+      await sessionRef.update({
+        registrationsCount: admin.firestore.FieldValue.increment(1),
+        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      });
+      console.log(`✅ Incremented registrationsCount for session ${sessionId}`);
+    } catch (error) {
+      console.error(
+        `❌ Error incrementing registrationsCount for session ${sessionId}:`,
+        error
+      );
+      throw error;
+    }
+  }
+);
+
+/**
+ * Gérer registrationsCount pour les thérapies de groupe
+ * Quand une inscription est supprimée, décrémenter registrationsCount
+ */
+export const onGroupTherapyRegistrationDeleted = onDocumentDeleted(
+  {
+    document:
+      "group_therapy_sessions/{sessionId}/registrations/{registrationId}",
+    region: "europe-west1",
+  },
+  async (event) => {
+    const sessionId = event.params.sessionId;
+    const db = getFirestore();
+
+    try {
+      // Mettre à jour la session
+      const sessionRef = db.doc(`group_therapy_sessions/${sessionId}`);
+      await sessionRef.update({
+        registrationsCount: admin.firestore.FieldValue.increment(-1),
+        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      });
+      console.log(`✅ Decremented registrationsCount for session ${sessionId}`);
+    } catch (error) {
+      console.error(
+        `❌ Error decrementing registrationsCount for session ${sessionId}:`,
+        error
+      );
+      throw error;
     }
   }
 );

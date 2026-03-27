@@ -1,5 +1,5 @@
 import React, { useState, useEffect, Suspense, lazy, useRef } from "react";
-import { Link, Navigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import {
   Brain,
@@ -14,12 +14,23 @@ import {
   ArrowRight,
   Users,
   MessageCircle,
+  UsersRound,
+  X,
 } from "lucide-react";
 import { useOptimizedProfessionals } from "../hooks/useOptimizedProfessionals";
 import { useDebounce } from "../hooks/useDebounce";
 import { useIntersectionObserver } from "../hooks/useIntersectionObserver";
 import LoadingSpinner from "../components/ui/LoadingSpinner";
 import ErrorBoundary from "../components/ui/ErrorBoundary";
+import {
+  getActiveGroupTherapySessions,
+  registerUserToSession,
+  isUserRegisteredInSession,
+  GroupTherapySession,
+} from "../services/groupTherapyService";
+import { getProfessionalPublicById } from "../services/professionalService";
+import { format } from "date-fns";
+import { fr } from "date-fns/locale";
 
 // Lazy load heavy components
 const FeaturedContentSection = lazy(
@@ -28,9 +39,25 @@ const FeaturedContentSection = lazy(
 
 const OptimizedHomePage: React.FC = () => {
   const { isAuthenticated, currentUser } = useAuth();
+  const navigate = useNavigate();
   const [searchTerm] = useState("");
   const searchContainerRef = useRef<HTMLDivElement>(null);
   const [isScrolled, setIsScrolled] = useState(false);
+  const [groupTherapySessions, setGroupTherapySessions] = useState<
+    GroupTherapySession[]
+  >([]);
+  const [loadingSessions, setLoadingSessions] = useState(false);
+  const [selectedSession, setSelectedSession] =
+    useState<GroupTherapySession | null>(null);
+  const [showRegistrationModal, setShowRegistrationModal] = useState(false);
+  const [phoneNumber, setPhoneNumber] = useState("");
+  const [registrationLoading, setRegistrationLoading] = useState(false);
+  const [registrationError, setRegistrationError] = useState<string | null>(
+    null
+  );
+  const [professionalNames, setProfessionalNames] = useState<
+    Record<string, { name: string; specialty?: string; profileImage?: string }>
+  >({});
 
   // Debounce search to reduce API calls
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
@@ -92,6 +119,140 @@ const OptimizedHomePage: React.FC = () => {
     };
   }, []);
 
+  // Charger les sessions de thérapie de groupe et les noms des professionnels avec retry robuste
+  useEffect(() => {
+    let cancelled = false;
+    let retryCount = 0;
+    const MAX_RETRIES = 3;
+    const RETRY_DELAYS = [1000, 2000, 3000]; // Delays en ms pour chaque retry
+
+    const fetchSessions = async (): Promise<void> => {
+      if (cancelled) return;
+
+      try {
+        if (retryCount === 0) {
+          setLoadingSessions(true);
+        }
+        console.log(
+          `🔄 [HOMEPAGE] Fetching group therapy sessions (attempt ${
+            retryCount + 1
+          }/${MAX_RETRIES + 1})...`
+        );
+
+        const sessions = await getActiveGroupTherapySessions();
+
+        if (cancelled) return;
+
+        // Si aucune session n'est retournée mais qu'on n'est pas au dernier retry, réessayer
+        if (sessions.length === 0 && retryCount < MAX_RETRIES) {
+          console.warn(
+            `⚠️ [HOMEPAGE] No sessions found, retrying in ${RETRY_DELAYS[retryCount]}ms...`
+          );
+          const currentRetry = retryCount;
+          retryCount++;
+          setTimeout(() => {
+            if (!cancelled) {
+              fetchSessions();
+            }
+          }, RETRY_DELAYS[currentRetry]);
+          return;
+        }
+
+        console.log(
+          `✅ [HOMEPAGE] Group therapy sessions loaded: ${sessions.length} sessions`
+        );
+        setGroupTherapySessions(sessions);
+
+        // Charger les noms des professionnels
+        const professionalIds = new Set<string>();
+        sessions.forEach((session) => {
+          if (session.primaryHostId) professionalIds.add(session.primaryHostId);
+          session.secondaryHostIds?.forEach((id) => professionalIds.add(id));
+        });
+
+        const namesMap: Record<
+          string,
+          { name: string; specialty?: string; profileImage?: string }
+        > = {};
+
+        // Charger les noms des professionnels depuis professionals (public, pas besoin d'auth)
+        console.log(
+          `[HOMEPAGE] Loading host profiles from professionals for ${professionalIds.size} professionals`
+        );
+        await Promise.all(
+          Array.from(professionalIds).map(async (id) => {
+            try {
+              const prof = await getProfessionalPublicById(id);
+              if (prof && !cancelled) {
+                namesMap[id] = {
+                  name: prof.name,
+                  specialty: prof.specialty || prof.primarySpecialty,
+                  profileImage: prof.profileImage,
+                };
+              } else if (!cancelled) {
+                console.warn(
+                  `⚠️ [HOMEPAGE] Professional ${id} not found in professionals`
+                );
+              }
+            } catch (error) {
+              console.warn(
+                `⚠️ [HOMEPAGE] Failed to load professional ${id}:`,
+                error
+              );
+              // Continue même si un professionnel ne charge pas
+            }
+          })
+        );
+        console.log(
+          `[HOMEPAGE] Loaded ${
+            Object.keys(namesMap).length
+          } professional profiles`
+        );
+
+        if (!cancelled) {
+          setProfessionalNames(namesMap);
+          setLoadingSessions(false);
+        }
+      } catch (error) {
+        console.error(
+          "❌ [HOMEPAGE] Error fetching group therapy sessions:",
+          error
+        );
+
+        // Retry si on n'a pas atteint le maximum
+        if (retryCount < MAX_RETRIES) {
+          const currentRetry = retryCount;
+          console.log(
+            `🔄 [HOMEPAGE] Retrying after error (attempt ${
+              currentRetry + 1
+            }/${MAX_RETRIES})...`
+          );
+          retryCount++;
+          setTimeout(() => {
+            if (!cancelled) {
+              fetchSessions();
+            }
+          }, RETRY_DELAYS[currentRetry]);
+          return;
+        }
+
+        // Après tous les retries, définir un tableau vide
+        if (!cancelled) {
+          setGroupTherapySessions([]);
+          setLoadingSessions(false);
+        }
+      }
+    };
+
+    // Démarrer le chargement
+    fetchSessions();
+
+    // Cleanup function
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   useEffect(() => {
     if (debouncedSearchTerm.length >= 2) {
       const filtered = professionals.filter((professional) => {
@@ -117,17 +278,118 @@ const OptimizedHomePage: React.FC = () => {
     }
   }, [debouncedSearchTerm, professionals]);
 
-  // Redirect authenticated users to their dashboard
-  if (isAuthenticated && currentUser) {
-    const dashboardPath =
-      currentUser.type === "patient"
-        ? "/patient/dashboard"
-        : currentUser.type === "professional"
-        ? "/professional/dashboard"
-        : "/admin/dashboard";
+  const handleRegisterToSession = async (session: GroupTherapySession) => {
+    if (!isAuthenticated || !currentUser) {
+      // Si non connecté, rediriger vers /patient/access avec sessionId en query param
+      navigate(`/patient/access?groupSessionId=${session.id}`);
+      return;
+    }
 
-    return <Navigate to={dashboardPath} replace />;
-  }
+    // Vérifier si déjà inscrit
+    try {
+      const alreadyRegistered = await isUserRegisteredInSession(
+        session.id,
+        currentUser.id
+      );
+      if (alreadyRegistered) {
+        alert("Vous êtes déjà inscrit à cette session ✅");
+        return;
+      }
+
+      // Vérifier si complet (utiliser registrationsCount mis à jour par transaction atomique)
+      const registrationsCount = session.registrationsCount ?? 0;
+      if (registrationsCount >= session.capacity) {
+        alert("Cette session est complète");
+        return;
+      }
+
+      // Inscription
+      setRegistrationLoading(true);
+      setRegistrationError(null);
+      const result = await registerUserToSession(session.id, currentUser.id);
+      if (result.status === "alreadyRegistered") {
+        alert("Vous êtes déjà inscrit à cette session ✅");
+      } else {
+        alert("Inscription réussie ! ✅");
+      }
+
+      // Recharger les sessions et les noms des professionnels
+      const sessions = await getActiveGroupTherapySessions();
+      setGroupTherapySessions(sessions);
+
+      // Recharger les noms des professionnels
+      const professionalIds = new Set<string>();
+      sessions.forEach((s) => {
+        if (s.primaryHostId) professionalIds.add(s.primaryHostId);
+        s.secondaryHostIds?.forEach((id) => professionalIds.add(id));
+      });
+
+      const namesMap: Record<
+        string,
+        { name: string; specialty?: string; profileImage?: string }
+      > = {};
+      await Promise.all(
+        Array.from(professionalIds).map(async (id) => {
+          const prof = await getProfessionalPublicById(id);
+          if (prof) {
+            namesMap[id] = {
+              name: prof.name,
+              specialty: prof.specialty || prof.primarySpecialty,
+              profileImage: prof.profileImage,
+            };
+          }
+        })
+      );
+      setProfessionalNames(namesMap);
+    } catch (error) {
+      console.error("Error registering to session:", error);
+      setRegistrationError(
+        error instanceof Error ? error.message : "Erreur lors de l'inscription"
+      );
+      alert(
+        error instanceof Error ? error.message : "Erreur lors de l'inscription"
+      );
+    } finally {
+      setRegistrationLoading(false);
+    }
+  };
+
+  const handlePhoneRegistration = async () => {
+    if (!selectedSession) return;
+    if (!phoneNumber.trim()) {
+      setRegistrationError("Veuillez entrer un numéro de téléphone");
+      return;
+    }
+
+    try {
+      setRegistrationLoading(true);
+      setRegistrationError(null);
+
+      // Normaliser le numéro de téléphone
+      const normalizedPhone = phoneNumber.startsWith("+")
+        ? phoneNumber
+        : `+${phoneNumber}`;
+
+      // Rediriger vers la page de création de compte patient
+      navigate("/patient/access", {
+        state: {
+          phone: normalizedPhone,
+          redirectAfterAuth: true,
+          groupTherapySessionId: selectedSession.id,
+        },
+      });
+    } catch (error) {
+      console.error("Error initiating phone registration:", error);
+      setRegistrationError(
+        error instanceof Error ? error.message : "Erreur lors de l'inscription"
+      );
+    } finally {
+      setRegistrationLoading(false);
+    }
+  };
+
+  // Note: On permet aux utilisateurs de voir la page d'accueil même s'ils sont connectés
+  // pour qu'ils puissent s'inscrire aux thérapies de groupe
 
   return (
     <ErrorBoundary>
@@ -242,6 +504,222 @@ const OptimizedHomePage: React.FC = () => {
                 </div>
               </div>
             </div>
+          </div>
+        </section>
+
+        {/* Group Therapy Section */}
+        <section className="py-20 bg-white">
+          <div className="container mx-auto px-4">
+            <h2 className="text-4xl font-bold text-center mb-4">
+              Thérapies de groupe
+            </h2>
+            <p className="text-gray-600 text-center mb-16 max-w-2xl mx-auto">
+              Rejoignez nos sessions de thérapie de groupe animées par des
+              professionnels qualifiés
+            </p>
+
+            {loadingSessions ? (
+              <div className="flex justify-center items-center py-12">
+                <LoadingSpinner size="lg" />
+                <span className="ml-3 text-gray-600">
+                  Chargement des sessions...
+                </span>
+              </div>
+            ) : groupTherapySessions.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-7xl mx-auto">
+                {groupTherapySessions.map((session) => {
+                  // Utiliser uniquement registrationsCount (mis à jour par transaction atomique)
+                  const registrationsCount = session.registrationsCount ?? 0;
+                  const isFull = registrationsCount >= session.capacity;
+                  const isFree = session.price === 0;
+
+                  // Formater la date
+                  const formattedDate = session.date
+                    ? format(
+                        new Date(session.date + "T00:00:00"),
+                        "EEEE d MMMM yyyy",
+                        {
+                          locale: fr,
+                        }
+                      )
+                    : "";
+
+                  // Récupérer les infos des hôtes
+                  const primaryHost = professionalNames[session.primaryHostId];
+                  const secondaryHosts =
+                    session.secondaryHostIds
+                      ?.map((id) => professionalNames[id])
+                      .filter(Boolean) || [];
+
+                  return (
+                    <div
+                      key={session.id}
+                      className="bg-white rounded-xl shadow-lg border border-gray-200 hover:shadow-xl transition-all duration-300 overflow-hidden"
+                    >
+                      {/* Header avec gradient */}
+                      <div className="bg-gradient-to-r from-purple-600 via-pink-600 to-orange-500 p-6 text-white">
+                        <h3 className="text-xl font-bold mb-4">
+                          {session.title}
+                        </h3>
+                        {session.date && (
+                          <div className="flex items-center space-x-2 mb-2 text-sm">
+                            <Calendar className="h-4 w-4" />
+                            <span>{formattedDate}</span>
+                          </div>
+                        )}
+                        {session.time && (
+                          <div className="flex items-center space-x-2 text-sm">
+                            <Video className="h-4 w-4" />
+                            <span>{session.time}</span>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Body */}
+                      <div className="p-6">
+                        <p className="text-gray-600 text-sm mb-4 line-clamp-3">
+                          {session.description}
+                        </p>
+
+                        {/* Hôtes */}
+                        {(primaryHost || secondaryHosts.length > 0) && (
+                          <div className="mb-4">
+                            <p className="font-semibold text-sm text-gray-700 mb-2">
+                              Hôte(s):
+                            </p>
+                            {primaryHost && (
+                              <Link
+                                to={`/professional/${session.primaryHostId}`}
+                                className="flex items-center space-x-2 mb-2 p-2 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer group"
+                              >
+                                {primaryHost.profileImage ? (
+                                  <img
+                                    src={primaryHost.profileImage}
+                                    alt={primaryHost.name}
+                                    className="w-8 h-8 rounded-full object-cover"
+                                  />
+                                ) : (
+                                  <div className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center">
+                                    <User className="h-4 w-4 text-purple-600" />
+                                  </div>
+                                )}
+                                <div className="flex-1">
+                                  <div className="flex items-center space-x-2">
+                                    <span className="text-sm font-medium group-hover:text-purple-600 transition-colors">
+                                      {primaryHost.name}
+                                    </span>
+                                    <span className="bg-purple-100 text-purple-800 px-2 py-0.5 rounded-full text-xs font-semibold">
+                                      Principal
+                                    </span>
+                                  </div>
+                                  {primaryHost.specialty && (
+                                    <p className="text-xs text-gray-500">
+                                      {primaryHost.specialty}
+                                    </p>
+                                  )}
+                                </div>
+                              </Link>
+                            )}
+                            {secondaryHosts.map((host, idx) => {
+                              const hostId = session.secondaryHostIds?.[idx];
+                              return (
+                                <Link
+                                  key={idx}
+                                  to={`/professional/${hostId}`}
+                                  className="flex items-center space-x-2 mb-2 p-2 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer group"
+                                >
+                                  {host.profileImage ? (
+                                    <img
+                                      src={host.profileImage}
+                                      alt={host.name}
+                                      className="w-8 h-8 rounded-full object-cover"
+                                    />
+                                  ) : (
+                                    <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center">
+                                      <User className="h-4 w-4 text-gray-600" />
+                                    </div>
+                                  )}
+                                  <div className="flex-1">
+                                    <span className="text-sm font-medium group-hover:text-purple-600 transition-colors">
+                                      {host.name}
+                                    </span>
+                                    {host.specialty && (
+                                      <p className="text-xs text-gray-500">
+                                        {host.specialty}
+                                      </p>
+                                    )}
+                                  </div>
+                                </Link>
+                              );
+                            })}
+                          </div>
+                        )}
+
+                        {/* Places et prix */}
+                        <div className="flex items-center justify-between mb-4 text-sm">
+                          <div className="flex items-center text-gray-600">
+                            <Users className="h-4 w-4 mr-1" />
+                            <span>
+                              {session.registrationsCount !== undefined
+                                ? `${session.registrationsCount} / ${session.capacity} places`
+                                : "Places limitées"}
+                            </span>
+                          </div>
+                          <div className="flex items-center">
+                            {isFree ? (
+                              <>
+                                <Heart className="h-4 w-4 text-green-600 mr-1" />
+                                <span className="text-green-600 font-semibold">
+                                  Gratuit
+                                </span>
+                              </>
+                            ) : (
+                              <span className="text-gray-700 font-semibold">
+                                {session.price} XOF
+                              </span>
+                            )}
+                          </div>
+                        </div>
+
+                        <button
+                          onClick={() => {
+                            sessionStorage.setItem(
+                              "pendingGroupTherapySessionId",
+                              session.id
+                            );
+                            sessionStorage.setItem(
+                              "pendingGroupTherapyRegistration",
+                              "1"
+                            );
+                            navigate("/patient/access");
+                          }}
+                          disabled={isFull}
+                          className={`w-full py-3 rounded-xl font-semibold transition-all duration-200 flex items-center justify-center ${
+                            isFull
+                              ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                              : "bg-gradient-to-r from-purple-500 to-pink-600 text-white hover:from-purple-600 hover:to-pink-700 shadow-md hover:shadow-lg"
+                          }`}
+                        >
+                          {isFull ? "Complet" : "S'inscrire"}
+                          {!isFull && <ArrowRight className="h-4 w-4 ml-2" />}
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="text-center py-12">
+                <UsersRound className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+                <p className="text-gray-500 text-lg">
+                  Aucune session de thérapie de groupe disponible pour le
+                  moment.
+                </p>
+                <p className="text-gray-400 text-sm mt-2">
+                  Revenez bientôt pour découvrir nos prochaines sessions !
+                </p>
+              </div>
+            )}
           </div>
         </section>
 
@@ -412,6 +890,93 @@ const OptimizedHomePage: React.FC = () => {
             </div>
           )}
         </section>
+
+        {/* Registration Modal */}
+        {showRegistrationModal && selectedSession && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-xl font-bold">
+                  Inscription à la thérapie de groupe
+                </h3>
+                <button
+                  onClick={() => {
+                    setShowRegistrationModal(false);
+                    setSelectedSession(null);
+                    setPhoneNumber("");
+                    setRegistrationError(null);
+                  }}
+                  className="text-gray-500 hover:text-gray-700"
+                >
+                  <X className="h-6 w-6" />
+                </button>
+              </div>
+
+              <div className="mb-4">
+                <h4 className="font-semibold mb-2">{selectedSession.title}</h4>
+                <p className="text-sm text-gray-600 mb-4">
+                  {selectedSession.description}
+                </p>
+                <div className="text-sm text-gray-500 mb-4">
+                  <div>
+                    Places disponibles:{" "}
+                    {selectedSession.registrationsCount !== undefined
+                      ? `${selectedSession.registrationsCount} / ${selectedSession.capacity}`
+                      : `Places limitées (${selectedSession.capacity} max)`}
+                  </div>
+                  {selectedSession.price === 0 ? (
+                    <div className="text-green-600 font-semibold">Gratuit</div>
+                  ) : (
+                    <div>Prix: {selectedSession.price} XOF</div>
+                  )}
+                </div>
+              </div>
+
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Numéro de téléphone *
+                </label>
+                <input
+                  type="tel"
+                  value={phoneNumber}
+                  onChange={(e) => setPhoneNumber(e.target.value)}
+                  placeholder="+221 XX XXX XX XX"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Nous créerons votre compte et vous inscrirons automatiquement
+                </p>
+              </div>
+
+              {registrationError && (
+                <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+                  {registrationError}
+                </div>
+              )}
+
+              <div className="flex justify-end space-x-4">
+                <button
+                  onClick={() => {
+                    setShowRegistrationModal(false);
+                    setSelectedSession(null);
+                    setPhoneNumber("");
+                    setRegistrationError(null);
+                  }}
+                  className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+                >
+                  Annuler
+                </button>
+                <button
+                  onClick={handlePhoneRegistration}
+                  disabled={registrationLoading || !phoneNumber.trim()}
+                  className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {registrationLoading ? "Inscription..." : "Continuer"}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* How It Works Section */}
         <section className="py-20 bg-gray-100">

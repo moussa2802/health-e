@@ -43,6 +43,8 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
       return language === "fr" ? "Messagerie" : "Messages";
     } else if (path.includes("/admin/support")) {
       return language === "fr" ? "Support" : "Support";
+    } else if (path.includes("/admin/group-therapy")) {
+      return language === "fr" ? "Thérapie de groupe" : "Group Therapy";
     } else {
       return language === "fr" ? "Administration" : "Administration";
     }

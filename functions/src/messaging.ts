@@ -173,7 +173,7 @@ export async function sendWaTemplate(options: {
 }): Promise<boolean> {
   const WA_TOKEN = process.env.WA_TOKEN;
   const WA_PHONE_NUMBER_ID = process.env.WA_PHONE_NUMBER_ID;
-  
+
   if (!WA_TOKEN || !WA_PHONE_NUMBER_ID) {
     console.log("[WA Template] Config missing, skipping");
     return false;

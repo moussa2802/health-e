@@ -9,9 +9,11 @@ import {
   User,
   CheckCircle,
   XCircle,
+  RefreshCw,
 } from "lucide-react";
 import AdminLayout from "../../components/admin/AdminLayout";
 import UserListPage from "../../components/admin/UserListPage";
+import { backfillProfessionalsPublic } from "../../services/professionalService";
 
 interface Professional {
   id: string;
@@ -38,7 +40,8 @@ const AdminProfessionals: React.FC = () => {
   const [professionals, setProfessionals] = useState<Professional[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [actionLoading, setActionLoading] = useState<string | null>(null);
+    const [actionLoading, setActionLoading] = useState<string | null>(null);
+    const [isBackfilling, setIsBackfilling] = useState(false);
 
   // Charger les données une seule fois au montage
   useEffect(() => {
@@ -357,10 +360,43 @@ const AdminProfessionals: React.FC = () => {
     </tr>
   );
 
+  const handleBackfillPublic = async () => {
+    try {
+      setIsBackfilling(true);
+      const count = await backfillProfessionalsPublic();
+      alert(`Synchronisation terminée: ${count} professionnels copiés vers professionals_public`);
+    } catch (error) {
+      console.error("Error during backfill:", error);
+      alert("Erreur lors de la synchronisation: " + (error instanceof Error ? error.message : "Erreur inconnue"));
+    } finally {
+      setIsBackfilling(false);
+    }
+  };
+
   return (
     <AdminLayout>
+      <div className="mb-4 flex justify-between items-center">
+        <h1 className="text-2xl font-bold">Gestion des Professionnels</h1>
+        <button
+          onClick={handleBackfillPublic}
+          disabled={isBackfilling}
+          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {isBackfilling ? (
+            <>
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+              <span>Synchronisation...</span>
+            </>
+          ) : (
+            <>
+              <RefreshCw className="h-4 w-4" />
+              <span>Réparer affichage pros (public)</span>
+            </>
+          )}
+        </button>
+      </div>
       <UserListPage
-        title="Gestion des Professionnels"
+        title=""
         data={professionals}
         filters={filters}
         searchFields={searchFields}

@@ -56,7 +56,6 @@ export async function createAvailabilitySlot(
   }
 ): Promise<string> {
   try {
-    console.log('📅 Creating new availability slot...');
     
     // Convert string dates to Date objects if needed
     const startDate = typeof start === 'string' ? new Date(start) : start;
@@ -94,7 +93,6 @@ export async function createAvailabilitySlot(
     const eventsRef = collection(db, 'calendar_events');
     const docRef = await addDoc(eventsRef, eventData);
     
-    console.log('✅ Availability slot created successfully:', docRef.id);
     
     // If recurring, create recurring instances
     if (isRecurring && recurringPattern) {
@@ -113,7 +111,6 @@ export async function deleteAllCalendarEventsForProfessional(
   professionalId: string
 ): Promise<void> {
   try {
-    console.log('🗑️ Deleting all calendar events for professional:', professionalId);
     
     // CRITICAL: Ensure Firestore is ready before deleting
     await ensureFirestoreReady();
@@ -129,10 +126,8 @@ export async function deleteAllCalendarEventsForProfessional(
     );
     
     const snapshot = await getDocs(q);
-    console.log(`Found ${snapshot.docs.length} calendar events to delete`);
     
     if (snapshot.docs.length === 0) {
-      console.log('No events to delete');
       return;
     }
     
@@ -152,7 +147,6 @@ export async function deleteAllCalendarEventsForProfessional(
     }
     
     await Promise.all(batches);
-    console.log(`✅ Deleted ${snapshot.docs.length} calendar events`);
   } catch (error) {
     console.error('❌ Error deleting calendar events:', error);
     throw new Error('Failed to delete calendar events');
@@ -164,7 +158,6 @@ async function createRecurringInstances(
   parentEvent: any
 ): Promise<void> {
   try {
-    console.log('🔄 Creating recurring instances for event:', parentEventId);
     
     const { recurringPattern, start, end, professionalId, title } = parentEvent;
     if (!recurringPattern) return;
@@ -183,7 +176,6 @@ async function createRecurringInstances(
       maxEndDate
     );
     
-    console.log(`Generated ${instances.length} recurring instances for ${format(start, 'yyyy-MM-dd HH:mm')}`);
     
     // Save instances to Firestore
     const db = getFirestoreInstance();
@@ -218,7 +210,6 @@ async function createRecurringInstances(
       }
     }
     
-    console.log('✅ Recurring instances created successfully');
   } catch (error) {
     console.error('❌ Error creating recurring instances:', error);
     // Don't throw, just log the error to avoid blocking the parent event creation
@@ -269,7 +260,6 @@ export async function updateAvailabilitySlot(
   updateRecurring: boolean = false
 ): Promise<void> {
   try {
-    console.log('🔄 Updating availability slot:', eventId);
     
     // CRITICAL: Ensure Firestore is ready before updating
     await ensureFirestoreReady();
@@ -293,11 +283,9 @@ export async function updateAvailabilitySlot(
       updatedAt: serverTimestamp()
     });
     
-    console.log('✅ Availability slot updated successfully');
     
     // If it's a recurring event and updateRecurring is true, update all future instances
     if (eventData.isRecurring && updateRecurring) {
-      console.log('🔄 Updating future recurring instances...');
       
       // Get all future instances
       const eventsRef = collection(db, 'calendar_events');
@@ -319,7 +307,6 @@ export async function updateAvailabilitySlot(
       
       await Promise.all(updatePromises);
       
-      console.log(`✅ Updated ${snapshot.docs.length} future recurring instances`);
     }
   } catch (error) {
     console.error('❌ Error updating availability slot:', error);
@@ -333,7 +320,6 @@ export async function deleteAvailabilitySlot(
   deleteFutureRecurring: boolean = false
 ): Promise<void> {
   try {
-    console.log('🗑️ Deleting availability slot:', eventId);
     
     // CRITICAL: Ensure Firestore is ready before deleting
     await ensureFirestoreReady();
@@ -354,11 +340,9 @@ export async function deleteAvailabilitySlot(
     // Delete the event
     await deleteDoc(eventRef);
     
-    console.log('✅ Availability slot deleted successfully');
     
     // If it's a recurring event and deleteFutureRecurring is true, delete all future instances
     if (eventData.isRecurring && deleteFutureRecurring) {
-      console.log('🗑️ Deleting future recurring instances...');
       
       // Get all future instances
       const eventsRef = collection(db, 'calendar_events');
@@ -377,7 +361,6 @@ export async function deleteAvailabilitySlot(
       
       await Promise.all(deletePromises);
       
-      console.log(`✅ Deleted ${snapshot.docs.length} future recurring instances`);
     }
   } catch (error) {
     console.error('❌ Error deleting availability slot:', error);
@@ -389,7 +372,6 @@ export async function deleteAvailabilitySlot(
 // Get professional availability data directly from the professionals collection
 export async function getProfessionalAvailabilityData(professionalId: string): Promise<AvailabilityData[]> {
   try {
-    console.log('📅 Getting direct availability data for professional:', professionalId);
     
     // CRITICAL: Ensure Firestore is ready before fetching
     await ensureFirestoreReady();
@@ -402,7 +384,6 @@ export async function getProfessionalAvailabilityData(professionalId: string): P
     const professionalSnap = await getDoc(professionalRef);
     
     if (!professionalSnap.exists()) {
-      console.warn('⚠️ Professional not found');
       return [];
     }
     
@@ -410,7 +391,6 @@ export async function getProfessionalAvailabilityData(professionalId: string): P
     
     // Check if availability exists and is an array
     if (!professionalData.availability || !Array.isArray(professionalData.availability)) {
-      console.warn('⚠️ No availability data found for professional in document');
       return [];
     }
     
@@ -426,7 +406,6 @@ export async function getProfessionalAvailabilityData(professionalId: string): P
         endTime: avail.endTime || avail.slots[avail.slots.length - 1]
       }));
     
-    console.log(`✅ Found ${availability.length} availability entries with ${availability.reduce((sum, avail) => sum + (Array.isArray(avail.slots) ? avail.slots.length : 0), 0)} total slots`);
     return availability;
   } catch (error) {
     console.error('❌ Error getting professional availability data:', error);
@@ -441,13 +420,11 @@ export async function getProfessionalAvailability(
   endDate: Date
 ): Promise<CalendarEvent[]> {
   try {
-    console.log('📅 Getting availability for professional:', professionalId);
     
     // First, try to get availability data directly from the professional document
     const availabilityData = await getProfessionalAvailabilityData(professionalId);
     
     if (availabilityData.length > 0) {
-      console.log('✅ Using availability data from professional document');
       
       // Convert availability data to calendar events
       const events: CalendarEvent[] = [];
@@ -467,7 +444,6 @@ export async function getProfessionalAvailability(
       availabilityData.forEach(avail => {
         const dayNumber = dayMap[avail.day];
         if (dayNumber === undefined) {
-          console.warn(`⚠️ Unknown day: ${avail.day}, skipping`);
           return;
         }
         
@@ -508,7 +484,6 @@ export async function getProfessionalAvailability(
         });
       });
       
-      console.log(`✅ Generated ${events.length} availability events from professional data`);
       return events;
     }
     
@@ -543,14 +518,12 @@ export async function getProfessionalAvailability(
       } as CalendarEvent;
     });
     
-    console.log(`✅ Found ${events.length} availability slots`);
     return events;
   } catch (error) {
     console.error('❌ Error getting professional availability:', error);
     
     // Try a simpler query without date range if the index doesn't exist
     try {
-      console.log('🔄 Trying simpler query without date range...');
       
       const db = getFirestoreInstance();
       if (!db) throw new Error('Firestore not available');
@@ -583,7 +556,6 @@ export async function getProfessionalAvailability(
         )
         .sort((a, b) => a.start.getTime() - b.start.getTime());
       
-      console.log(`✅ Found ${events.length} availability slots (client-side filtering)`);
       return events;
     } catch (fallbackError) {
       console.error('❌ Fallback query also failed:', fallbackError);
@@ -599,7 +571,6 @@ export async function getAvailableTimeSlots(
   useDirectData: boolean = true
 ): Promise<Array<{ start: Date; end: Date }>> {
   try {
-    console.log('🕒 Getting available time slots for date:', date);
     
     // Set start and end of the selected date
     const dayStart = startOfDay(date);
@@ -612,7 +583,6 @@ export async function getAvailableTimeSlots(
         const availabilityData = await getProfessionalAvailabilityData(professionalId);
         
         if (availabilityData.length > 0) {
-          console.log('✅ Using availability data from professional document for time slots');
           
           // Get day name for the date
           const dayNames = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
@@ -622,7 +592,6 @@ export async function getAvailableTimeSlots(
           const dayAvailability = availabilityData.find(avail => avail.day === dayName);
           
           if (dayAvailability && Array.isArray(dayAvailability.slots) && dayAvailability.slots.length > 0) {
-            console.log(`✅ Found ${dayAvailability.slots.length} slots for ${dayName} on ${format(date, 'yyyy-MM-dd')}`);
             
             // Convert time strings to Date objects
             const timeSlots = dayAvailability.slots.map(timeStr => {
@@ -655,12 +624,10 @@ export async function getAvailableTimeSlots(
               });
             });
             
-            console.log(`✅ Found ${availableSlots.length} available time slots for ${dayName}`);
             return availableSlots;
           }
         }
       } catch (directError) {
-        console.warn('⚠️ Error getting direct availability data:', directError);
         // Continue with the regular method
       }
     }
@@ -710,14 +677,12 @@ export async function getAvailableTimeSlots(
       }
     });
     
-    console.log(`✅ Found ${timeSlots.length} available time slots`);
     return timeSlots;
   } catch (error) {
     console.error('❌ Error getting available time slots:', error);
     
     // Try fallback method
     try {
-      console.log('🔄 Trying fallback method for time slots...');
       
       const availabilityData = await getProfessionalAvailabilityData(professionalId);
       
@@ -743,7 +708,6 @@ export async function getAvailableTimeSlots(
             return { start, end };
           });
           
-          console.log(`✅ Found ${timeSlots.length} time slots for ${dayName} (fallback)`);
           return timeSlots;
         }
       }
@@ -763,7 +727,6 @@ async function getBookedAppointments(
   endDate: Date
 ): Promise<Array<{ start: Date; end: Date }>> {
   try {
-    console.log('📋 Getting booked appointments...');
     
     // CRITICAL: Ensure Firestore is ready before fetching
     await ensureFirestoreReady();
@@ -806,7 +769,6 @@ async function getBookedAppointments(
       return { start, end };
     });
     
-    console.log(`✅ Found ${bookedSlots.length} booked appointments`);
     return bookedSlots;
   } catch (error) {
     console.error('❌ Error getting booked appointments:', error);
@@ -821,7 +783,6 @@ export async function getProfessionalCalendar(
   endDate: Date
 ): Promise<CalendarEvent[]> {
   try {
-    console.log('📅 Getting calendar for professional:', professionalId);
     
     // CRITICAL: Ensure Firestore is ready before fetching
     await ensureFirestoreReady();
@@ -901,14 +862,12 @@ export async function getProfessionalCalendar(
     // Combine availability events and booking events
     const allEvents = [...events, ...bookingEvents];
     
-    console.log(`✅ Found ${allEvents.length} calendar events`);
     return allEvents;
   } catch (error) {
     console.error('❌ Error getting professional calendar:', error);
     
     // Try a simpler query without date range if the index doesn't exist
     try {
-      console.log('🔄 Trying simpler query without date range...');
       
       const db = getFirestoreInstance();
       if (!db) throw new Error('Firestore not available');
@@ -985,7 +944,6 @@ export async function getProfessionalCalendar(
             }
             return null;
           } catch (parseError) {
-            console.warn('⚠️ Error parsing booking date:', parseError);
             return null;
           }
         })
@@ -994,7 +952,6 @@ export async function getProfessionalCalendar(
       // Combine availability events and booking events
       const allEvents = [...events, ...bookingEvents];
       
-      console.log(`✅ Found ${allEvents.length} calendar events (client-side filtering)`);
       return allEvents;
     } catch (fallbackError) {
       console.error('❌ Fallback query also failed:', fallbackError);
@@ -1048,7 +1005,6 @@ export function generateGoogleCalendarUrl(event: CalendarEvent): string {
 // Migrate availability to calendar events
 export async function migrateAvailabilityToCalendar(professionalId: string): Promise<number> {
   try {
-    console.log('🔄 Migrating availability to calendar for professional:', professionalId);
     
     // CRITICAL: Ensure Firestore is ready before migrating
     await ensureFirestoreReady();
@@ -1068,11 +1024,9 @@ export async function migrateAvailabilityToCalendar(professionalId: string): Pro
     const oldAvailability = professionalData.availability || [];
     
     if (!Array.isArray(oldAvailability) || oldAvailability.length === 0) {
-      console.log('⚠️ No availability data to migrate');
       return 0;
     }
     
-    console.log(`📊 Found ${oldAvailability.length} availability entries to migrate`);
     
     // Map day names to day numbers (0 = Sunday, 1 = Monday, etc.)
     const dayMap: Record<string, number> = {
@@ -1092,13 +1046,11 @@ export async function migrateAvailabilityToCalendar(professionalId: string): Pro
     for (const slot of oldAvailability) {
       try {
         if (!slot.day || !slot.startTime || !slot.endTime) {
-          console.warn('⚠️ Invalid availability slot, skipping:', slot);
           continue;
         }
         
         const dayNumber = dayMap[slot.day];
         if (dayNumber === undefined) {
-          console.warn(`⚠️ Unknown day: ${slot.day}, skipping`);
           continue;
         }
         
@@ -1136,7 +1088,6 @@ export async function migrateAvailabilityToCalendar(professionalId: string): Pro
         };
         
         const docRef = await addDoc(eventsRef, eventData);
-        console.log(`✅ Created recurring event for ${slot.day}: ${docRef.id}`);
         
         // Create recurring instances
         await createRecurringInstances(docRef.id, eventData);
@@ -1147,7 +1098,6 @@ export async function migrateAvailabilityToCalendar(professionalId: string): Pro
       }
     }
     
-    console.log(`🎉 Migration completed! Created ${createdCount} recurring events`);
     return createdCount;
   } catch (error) {
     console.error('❌ Error migrating availability to calendar:', error);

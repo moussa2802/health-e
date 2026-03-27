@@ -178,6 +178,8 @@ exports.handler = async (event, context) => {
       endTime,
       type,
       price,
+      sessionId,
+      paymentType,
     } = customData;
 
     console.log("🔍 [PAYTECH IPN] Processing payment:", {
@@ -198,6 +200,117 @@ exports.handler = async (event, context) => {
     ];
     if (successTypes.includes(String(paymentData.type_event))) {
       const paymentRef = paymentData.ref_command || paymentData.refCommand || paymentData.reference;
+      
+      // Gérer les thérapies de groupe différemment des bookings
+      if (paymentType === "group_therapy" && sessionId && patientId) {
+        console.log("🔔 [PAYTECH IPN] Processing group therapy payment:", { sessionId, patientId });
+        
+        // Idempotence: vérifier si déjà traité
+        const ipnRef = db.collection("ipn_processed").doc(String(paymentRef || `group_therapy_${sessionId}_${patientId}`));
+        const ipnSnap = await ipnRef.get();
+        if (ipnSnap.exists) {
+          console.log("IPN already processed for group therapy", { paymentRef, sessionId, patientId });
+          return {
+            statusCode: 200,
+            headers,
+            body: JSON.stringify({
+              success: true,
+              message: "IPN already processed",
+            }),
+          };
+        }
+
+        // Enregistrer le patient dans la session de thérapie de groupe
+        try {
+          const sessionRef = db.collection("group_therapy_sessions").doc(sessionId);
+          
+          await db.runTransaction(async (tx) => {
+            const sessionDoc = await tx.get(sessionRef);
+            
+            if (!sessionDoc.exists) {
+              throw new Error("Group therapy session not found");
+            }
+            
+            const sessionData = sessionDoc.data();
+            const participants = sessionData.participants || [];
+            const capacity = sessionData.capacity || 0;
+            
+            // Vérifier si la session est complète
+            if (participants.length >= capacity) {
+              throw new Error("Group therapy session is full");
+            }
+            
+            // Vérifier si l'utilisateur est déjà inscrit
+            if (participants.includes(patientId)) {
+              console.log("User already registered in group therapy session");
+              return; // Déjà inscrit, ne pas réinscrire
+            }
+            
+            // Ajouter le participant
+            tx.update(sessionRef, {
+              participants: admin.firestore.FieldValue.arrayUnion(patientId),
+              updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+            });
+          });
+          
+          console.log("✅ [PAYTECH IPN] User registered to group therapy session:", { sessionId, patientId });
+          
+          // Marquer l'IPN comme traité
+          await ipnRef.set({
+            at: admin.firestore.FieldValue.serverTimestamp(),
+            sessionId,
+            patientId,
+            paymentType: "group_therapy",
+          }, { merge: true });
+          
+          // Log de l'événement
+          await db.collection("payment_logs").add({
+            type_event: paymentData.type_event,
+            ref_command: paymentRef,
+            item_price: paymentData.item_price,
+            payment_method: paymentData.payment_method,
+            customData,
+            sessionId,
+            patientId,
+            paymentType: "group_therapy",
+            receivedAt: admin.firestore.FieldValue.serverTimestamp(),
+            source: "paytech_ipn",
+          });
+          
+          return {
+            statusCode: 200,
+            headers,
+            body: JSON.stringify({
+              success: true,
+              message: "Group therapy registration processed successfully",
+            }),
+          };
+        } catch (groupTherapyError) {
+          console.error("❌ [PAYTECH IPN] Error processing group therapy registration:", groupTherapyError);
+          // Log l'erreur mais répondre 200 pour ne pas faire rejouer PayTech
+          await db.collection("payment_logs").add({
+            type_event: paymentData.type_event,
+            ref_command: paymentRef,
+            item_price: paymentData.item_price,
+            payment_method: paymentData.payment_method,
+            customData,
+            error: groupTherapyError.message,
+            receivedAt: admin.firestore.FieldValue.serverTimestamp(),
+            source: "paytech_ipn",
+          });
+          
+          return {
+            statusCode: 200,
+            headers,
+            body: JSON.stringify({
+              success: true,
+              message: "IPN processed (error logged)",
+            }),
+          };
+        }
+      }
+
+      // Traitement normal pour les bookings
       // 1) Source fiable: custom_field.booking_id
       let tempId = (customData && typeof customData.booking_id === "string" && customData.booking_id.startsWith("temp_"))
         ? customData.booking_id

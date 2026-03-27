@@ -133,7 +133,7 @@ export const usePhoneAuth = () => {
   // ——— Envoi du SMS ———
   const sendVerificationCode = async (
     phoneNumber: string
-  ): Promise<ConfirmationResult | null> => {
+  ): Promise<ConfirmationResult> => {
     try {
       setLoading(true);
       setError(null);
@@ -167,50 +167,67 @@ export const usePhoneAuth = () => {
         recaptchaVerifierRef.current
       );
 
+      // Si confirmation est null, c'est une erreur
+      if (!confirmation) {
+        const error = new Error("signInWithPhoneNumber a retourné null");
+        (error as any).code = "auth/internal-error";
+        throw error;
+      }
+
       setVerificationSent(true);
       setLoginConfirmation(confirmation);
       startCooldown(60);
       return confirmation;
     } catch (err: any) {
-      let msg = "Erreur lors de l'envoi du code";
-      const code = (err as FirebaseError)?.code;
+      // 🔍 LOGGER EXACTEMENT TOUTES LES INFORMATIONS D'ERREUR
+      console.error("❌ [PHONE_AUTH] ===== ERREUR DÉTAILLÉE signInWithPhoneNumber =====");
+      console.error("❌ [PHONE_AUTH] error.code:", err?.code);
+      console.error("❌ [PHONE_AUTH] error.message:", err?.message);
+      console.error("❌ [PHONE_AUTH] error.customData:", err?.customData);
+      console.error("❌ [PHONE_AUTH] error.stack:", err?.stack);
+      console.error("❌ [PHONE_AUTH] error complet:", err);
+      
+      // Essayer de logger la réponse réseau si disponible
+      if (err?.serverResponse) {
+        console.error("❌ [PHONE_AUTH] error.serverResponse:", err.serverResponse);
+      }
+      if (err?.response) {
+        console.error("❌ [PHONE_AUTH] error.response:", err.response);
+      }
+      if (err?.details) {
+        console.error("❌ [PHONE_AUTH] error.details:", err.details);
+      }
 
+      // Gestion spéciale pour certaines erreurs reCAPTCHA (réinitialisation)
       if (err?.message?.includes("reCAPTCHA has already been rendered")) {
         if (window.grecaptcha && window.__heRecaptchaWidgetId != null) {
           window.grecaptcha.reset(window.__heRecaptchaWidgetId);
         } else {
           cleanupRecaptcha();
         }
-        msg = "reCAPTCHA ré-initialisé, réessayez.";
       } else if (err?.message?.includes("captcha-check-failed")) {
         if (window.grecaptcha && window.__heRecaptchaWidgetId != null) {
           window.grecaptcha.reset(window.__heRecaptchaWidgetId);
         } else {
           cleanupRecaptcha();
         }
-        msg = "Vérification reCAPTCHA échouée, réessayez.";
-      } else {
-        switch (code) {
-          case "auth/too-many-requests":
-            startCooldown(300);
-            cleanupRecaptcha();
-            msg = "Trop de tentatives. Réessayez dans quelques minutes.";
-            break;
-          case "auth/invalid-phone-number":
-            msg = "Numéro invalide.";
-            break;
-          case "auth/quota-exceeded":
-            msg = "Quota SMS dépassé. Réessayez plus tard.";
-            break;
-          case "auth/invalid-app-credential":
-            msg = "reCAPTCHA non valide.";
-            break;
-          default:
-            msg = err?.message || msg;
-        }
       }
-      setError(msg);
-      return null;
+
+      const code = (err as FirebaseError)?.code || "unknown-error";
+      const errorMessage = err?.message || "Erreur lors de l'envoi du code";
+      
+      // Construire le message d'erreur avec le code
+      const finalMessage = code !== "unknown-error" 
+        ? `[${code}] ${errorMessage}`
+        : errorMessage;
+      
+      setError(finalMessage);
+      
+      // Renvoyer une exception avec le code inclus dans le message
+      const enhancedError = new Error(finalMessage);
+      (enhancedError as any).code = code;
+      (enhancedError as any).originalError = err;
+      throw enhancedError;
     } finally {
       setLoading(false);
     }

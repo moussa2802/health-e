@@ -243,7 +243,6 @@ export async function isEmailAlreadyRegistered(
   email: string
 ): Promise<boolean> {
   try {
-    console.log("🔍 Checking if email already exists:", email);
 
     // Skip check in web container environment
     if (
@@ -252,14 +251,12 @@ export async function isEmailAlreadyRegistered(
         window.location.hostname.includes("webcontainer") ||
         window.location.hostname.includes("health-e.sn"))
     ) {
-      console.log("⚠️ Skipping email check in web container environment");
       return false;
     }
 
     // CRITICAL: Ensure Firestore is ready before checking
     const isReady = await ensureFirestoreReady();
     if (!isReady) {
-      console.warn("⚠️ Firestore not ready for email check, returning false");
       throw new Error(
         "Vérification impossible. Vous pourrez continuer quand même."
       );
@@ -278,7 +275,6 @@ export async function isEmailAlreadyRegistered(
     const usersSnapshot = await getDocs(usersQuery);
 
     if (!usersSnapshot.empty) {
-      console.log("✅ Email already exists in users collection");
       return true;
     }
 
@@ -292,7 +288,6 @@ export async function isEmailAlreadyRegistered(
     const patientsSnapshot = await getDocs(patientsQuery);
 
     if (!patientsSnapshot.empty) {
-      console.log("✅ Email already exists in patients collection");
       return true;
     }
 
@@ -306,11 +301,9 @@ export async function isEmailAlreadyRegistered(
     const professionalsSnapshot = await getDocs(professionalsQuery);
 
     if (!professionalsSnapshot.empty) {
-      console.log("✅ Email already exists in professionals collection");
       return true;
     }
 
-    console.log("✅ Email is available for registration");
     return false;
   } catch (error) {
     console.error("❌ Error checking if email exists:", error);
@@ -324,7 +317,6 @@ export async function isPhoneAlreadyRegistered(
   phoneNumber: string
 ): Promise<boolean> {
   try {
-    console.log("🔍 Checking if phone already exists:", phoneNumber);
 
     // Skip check in web container environment
     if (
@@ -333,14 +325,12 @@ export async function isPhoneAlreadyRegistered(
         window.location.hostname.includes("webcontainer") ||
         window.location.hostname.includes("health-e.sn"))
     ) {
-      console.log("⚠️ Skipping phone check in web container environment");
       return false;
     }
 
     // CRITICAL: Ensure Firestore is ready before checking
     const isReady = await ensureFirestoreReady();
     if (!isReady) {
-      console.warn("⚠️ Firestore not ready for phone check, returning false");
       throw new Error(
         "Vérification impossible. Vous pourrez continuer quand même."
       );
@@ -359,7 +349,6 @@ export async function isPhoneAlreadyRegistered(
     const usersSnapshot = await getDocs(usersQuery);
 
     if (!usersSnapshot.empty) {
-      console.log("✅ Phone already exists in users collection");
       return true;
     }
 
@@ -373,11 +362,9 @@ export async function isPhoneAlreadyRegistered(
     const patientsSnapshot = await getDocs(patientsQuery);
 
     if (!patientsSnapshot.empty) {
-      console.log("✅ Phone already exists in patients collection");
       return true;
     }
 
-    console.log("✅ Phone is available for registration");
     return false;
   } catch (error) {
     console.error("❌ Error checking if phone exists:", error);
@@ -392,7 +379,6 @@ export async function isNameAlreadyRegistered(
   userType: "patient" | "professional"
 ): Promise<boolean> {
   try {
-    console.log("🔍 Checking if name already exists:", name);
 
     // Skip check in web container environment
     if (
@@ -401,14 +387,12 @@ export async function isNameAlreadyRegistered(
         window.location.hostname.includes("webcontainer") ||
         window.location.hostname.includes("health-e.sn"))
     ) {
-      console.log("⚠️ Skipping name check in web container environment");
       return false;
     }
 
     // CRITICAL: Ensure Firestore is ready before checking
     const isReady = await ensureFirestoreReady();
     if (!isReady) {
-      console.warn("⚠️ Firestore not ready for name check, returning false");
       throw new Error(
         "Vérification impossible. Vous pourrez continuer quand même."
       );
@@ -429,11 +413,9 @@ export async function isNameAlreadyRegistered(
     const snapshot = await getDocs(nameQuery);
 
     if (!snapshot.empty) {
-      console.log(`✅ Name already exists in ${collectionName} collection`);
       return true;
     }
 
-    console.log("✅ Name is available for registration");
     return false;
   } catch (error) {
     console.error("❌ Error checking if name exists:", error);
@@ -451,7 +433,6 @@ export async function createDefaultPatientProfile(
   gender: "M" | "F" | "O" = "F"
 ): Promise<PatientProfile> {
   try {
-    console.log("🔧 Creating default patient profile for user:", userId);
 
     // Validate required fields
     if (!userId) throw new Error("ID utilisateur manquant");
@@ -545,7 +526,6 @@ export async function createDefaultPatientProfile(
       );
     });
 
-    console.log("✅ Default patient profile created successfully");
 
     return {
       id: userId, // ✅ Use userId as document ID
@@ -570,7 +550,6 @@ export async function createDefaultProfessionalProfile(
   customCategory?: "mental-health" | "sexual-health"
 ): Promise<ProfessionalProfile> {
   try {
-    console.log("🔧 Creating default professional profile for user:", userId);
 
     // Validate required fields
     if (!userId) throw new Error("ID utilisateur manquant");
@@ -620,15 +599,22 @@ export async function createDefaultProfessionalProfile(
 
     const defaultCategory =
       customCategory || (type === "mental" ? "mental-health" : "sexual-health");
+    // ✅ Vérifier que customSpecialty est défini ET non vide avant de l'utiliser
     const defaultPrimary =
-      customSpecialty ||
-      (type === "mental" ? "psychologue-clinicien" : "sexologue-clinique");
+      customSpecialty && customSpecialty.trim() !== ""
+        ? customSpecialty
+        : type === "mental"
+        ? "psychologue-clinicien"
+        : "sexologue-clinique";
+
+    // ✅ Générer le libellé de la spécialité pour le champ legacy 'specialty'
+    const specialtyLabel = getSpecialtyLabel(defaultPrimary, "fr");
 
     const professionalData: Omit<ProfessionalProfile, "id"> = {
       userId,
       name,
       email,
-      specialty: type === "mental" ? "Psychologue" : "Sexologue", // legacy
+      specialty: specialtyLabel, // ✅ Utiliser le libellé de la spécialité choisie
       type,
       // 🔽 nouveaux champs cohérents
       category: defaultCategory,
@@ -678,14 +664,19 @@ export async function createDefaultProfessionalProfile(
       );
     });
 
-    console.log("✅ Default professional profile created successfully");
 
     // 🔔 Send notification to admin about new professional registration
     try {
       await createAdminNotificationForNewProfessional(userId, name, email);
-      console.log("✅ Admin notification sent for new professional");
     } catch (notificationError) {
-      console.warn("⚠️ Failed to send admin notification:", notificationError);
+      // Don't throw error, as the profile creation was successful
+    }
+
+    // 🔄 Synchroniser vers professionals_public
+    try {
+      const { syncProfessionalToPublic } = await import("./professionalService");
+      await syncProfessionalToPublic(userId);
+    } catch (syncError) {
       // Don't throw error, as the profile creation was successful
     }
 
@@ -710,11 +701,9 @@ export function generateTimeSlots(
   const slots: string[] = [];
 
   if (!startTime || !endTime) {
-    console.warn("⚠️ Invalid start or end time:", startTime, endTime);
     return [];
   }
 
-  console.log("🕒 Generating time slots from", startTime, "to", endTime);
 
   try {
     const [startHour, startMinute] = startTime.split(":").map(Number);
@@ -728,11 +717,6 @@ export function generateTimeSlots(
 
     // If end time is earlier than start time, return empty array
     if (end <= start) {
-      console.warn(
-        "⚠️ End time is earlier than or equal to start time:",
-        startTime,
-        endTime
-      );
       return [];
     }
 
@@ -751,7 +735,6 @@ export function generateTimeSlots(
       }
     }
 
-    console.log(`✅ Generated ${slots.length} time slots:`, slots);
     return slots;
   } catch (error) {
     console.error("❌ Error generating time slots:", error);
@@ -765,7 +748,6 @@ export async function updatePatientProfile(
   updates: Partial<PatientProfile>
 ): Promise<void> {
   try {
-    console.log("🔧 Updating patient profile:", patientId);
 
     await ensureFirestoreReady();
     const db = getFirestoreInstance();
@@ -787,7 +769,6 @@ export async function updatePatientProfile(
         name: updates.name,
         updatedAt: serverTimestamp(),
       });
-      console.log("✅ User document name synchronized:", updates.name);
 
       // ✅ UPDATE CONVERSATIONS: Update participant name in all conversations
       try {
@@ -796,9 +777,7 @@ export async function updatePatientProfile(
           updates.name,
           "patient"
         );
-        console.log("✅ Participant name updated in all conversations");
       } catch (conversationError) {
-        console.warn("⚠️ Failed to update conversations:", conversationError);
         // Continue anyway, this is not critical
       }
 
@@ -808,11 +787,9 @@ export async function updatePatientProfile(
           detail: { userId: patientId, newName: updates.name },
         });
         window.dispatchEvent(syncEvent);
-        console.log("✅ Custom event dispatched for immediate sync");
       }
     }
 
-    console.log("✅ Patient profile updated successfully");
   } catch (error) {
     console.error("❌ Error updating patient profile:", error);
     throw new Error(
@@ -829,7 +806,6 @@ export async function uploadProfileImage(
   progressCallback?: (progress: number) => void
 ): Promise<string> {
   try {
-    console.log("📤 Uploading profile image for user:", userId);
 
     if (!storage) throw new Error("Storage not available");
 
@@ -876,7 +852,6 @@ export async function uploadProfileImage(
     const snapshot = await uploadTask;
     const downloadURL = await getDownloadURL(snapshot.ref);
 
-    console.log("✅ Profile image uploaded successfully");
     return downloadURL;
   } catch (error) {
     console.error("❌ Error uploading profile image:", error);
@@ -895,7 +870,6 @@ export async function uploadSignatureImage(
   progressCallback?: (progress: number) => void
 ): Promise<string> {
   try {
-    console.log(`📤 Uploading ${type} image for professional:`, userId);
 
     if (!storage) throw new Error("Storage not available");
 
@@ -942,7 +916,6 @@ export async function uploadSignatureImage(
     const snapshot = await uploadTask;
     const downloadURL = await getDownloadURL(snapshot.ref);
 
-    console.log(`✅ ${type} image uploaded successfully`);
     return downloadURL;
   } catch (error) {
     console.error(`❌ Error uploading ${type} image:`, error);
@@ -961,7 +934,6 @@ export async function uploadAndSaveProfileImage(
   progressCallback?: (progress: number) => void
 ): Promise<string> {
   try {
-    console.log("📤 Uploading and saving profile image for user:", userId);
 
     // First upload the image
     const downloadURL = await uploadProfileImage(
@@ -987,7 +959,6 @@ export async function uploadAndSaveProfileImage(
       });
     }
 
-    console.log("✅ Profile image uploaded and saved successfully");
     return downloadURL;
   } catch (error) {
     console.error("❌ Error uploading and saving profile image:", error);
@@ -1006,10 +977,6 @@ export async function uploadAndSaveSignatureImage(
   progressCallback?: (progress: number) => void
 ): Promise<string> {
   try {
-    console.log(
-      `📤 Uploading and saving ${type} image for professional:`,
-      userId
-    );
 
     // First upload the image
     const downloadURL = await uploadSignatureImage(
@@ -1027,7 +994,6 @@ export async function uploadAndSaveSignatureImage(
 
     await updateProfessionalProfile(userId, updateData);
 
-    console.log(`✅ ${type} image uploaded and saved successfully`);
     return downloadURL;
   } catch (error) {
     console.error(`❌ Error uploading and saving ${type} image:`, error);
@@ -1043,14 +1009,8 @@ export function migrateAvailabilityData(
   availability: any[]
 ): AvailabilitySlot[] {
   try {
-    console.log(
-      "🔄 Migrating availability data for",
-      availability.length,
-      "days"
-    );
 
     if (!Array.isArray(availability)) {
-      console.warn("⚠️ Availability is not an array, returning empty array");
       return [];
     }
 
@@ -1058,7 +1018,6 @@ export function migrateAvailabilityData(
       .map((slot) => {
         // Ensure slot has required fields
         if (!slot || !slot.day || !slot.startTime || !slot.endTime) {
-          console.warn("⚠️ Invalid availability slot, skipping:", slot);
           console.log(
             "⚠️ Missing required fields in slot:",
             JSON.stringify(slot)
@@ -1094,7 +1053,6 @@ export async function getPatientProfile(
   patientId: string
 ): Promise<PatientProfile | null> {
   try {
-    console.log("🔍 Getting patient profile:", patientId);
 
     await ensureFirestoreReady();
     const db = getFirestoreInstance();
@@ -1108,13 +1066,11 @@ export async function getPatientProfile(
     });
 
     if (!patientSnap.exists()) {
-      console.warn("⚠️ Patient profile not found");
       return null;
     }
 
     const patientData = patientSnap.data() as PatientProfile;
 
-    console.log("✅ Patient profile retrieved successfully");
     return {
       id: patientSnap.id,
       ...patientData,
@@ -1133,16 +1089,13 @@ export async function getOrCreatePatientProfile(
   patientId: string
 ): Promise<PatientProfile> {
   try {
-    console.log("🔍 Getting or creating patient profile:", patientId);
 
     const existingProfile = await getPatientProfile(patientId);
 
     if (existingProfile) {
-      console.log("✅ Existing patient profile found");
       return existingProfile;
     }
 
-    console.log("⚠️ Patient profile not found, creating default profile");
 
     // Get user data to create default profile
     await ensureFirestoreReady();
@@ -1178,11 +1131,9 @@ export function subscribeToPatientProfile(
   patientId: string,
   callback: (profile: PatientProfile) => void
 ): () => void {
-  console.log("🔔 Setting up patient profile subscription:", patientId);
 
   const db = getFirestoreInstance();
   if (!db) {
-    console.warn("⚠️ Firestore not available for subscription");
     return () => {};
   }
 
@@ -1199,7 +1150,6 @@ export function subscribeToPatientProfile(
           ...profileData,
         });
       } else {
-        console.warn("⚠️ Patient document does not exist in subscription");
       }
     },
     (error) => {
@@ -1215,10 +1165,6 @@ export async function getProfessionalProfile(
   professionalId: string
 ): Promise<ProfessionalProfile | null> {
   try {
-    console.log(
-      "🔍 Getting professional profile by document ID:",
-      professionalId
-    );
 
     await ensureFirestoreReady();
     const db = getFirestoreInstance();
@@ -1232,7 +1178,6 @@ export async function getProfessionalProfile(
     });
 
     if (!professionalSnap.exists()) {
-      console.warn("⚠️ Professional profile not found");
       return null;
     }
 
@@ -1271,20 +1216,14 @@ export async function getOrCreateProfessionalProfile(
   userId: string
 ): Promise<ProfessionalProfile> {
   try {
-    console.log(
-      "🔍 Getting or creating professional profile for userId:",
-      userId
-    );
 
     // ✅ Direct document access by userId
     const existingProfile = await getProfessionalProfile(userId);
 
     if (existingProfile) {
-      console.log("✅ Existing professional profile found");
       return existingProfile;
     }
 
-    console.log("⚠️ Professional profile not found, creating default profile");
 
     // Get user data to create default profile
     await ensureFirestoreReady();
@@ -1336,14 +1275,9 @@ export function subscribeToProfessionalProfile(
   userId: string,
   callback: (profile: ProfessionalProfile) => void
 ): () => void {
-  console.log(
-    "🔔 Setting up professional profile subscription for userId:",
-    userId
-  );
 
   const db = getFirestoreInstance();
   if (!db) {
-    console.warn("⚠️ Firestore not available for subscription");
     return () => {};
   }
 
@@ -1360,7 +1294,6 @@ export function subscribeToProfessionalProfile(
           ...profileData,
         });
       } else {
-        console.warn("⚠️ Professional document does not exist in subscription");
       }
     },
     (error) => {
@@ -1377,7 +1310,6 @@ export async function updateProfessionalProfile(
   updates: Partial<ProfessionalProfile>
 ): Promise<void> {
   try {
-    console.log("🔧 Updating professional profile:", professionalId, updates);
 
     // Validate specialty fields if provided
     if (updates.category && !isValidCategory(updates.category)) {
@@ -1493,12 +1425,10 @@ export async function updateProfessionalProfile(
         updatedAt: serverTimestamp(),
       };
 
-      console.log("📝 Updating professional document with data:", updateData);
       await updateDoc(professionalRef, updateData);
 
       const updatedDoc = await getDoc(professionalRef);
       if (updatedDoc.exists()) {
-        console.log("✅ Document updated successfully:", updatedDoc.data());
       } else {
         console.error("❌ Document not found after update");
       }
@@ -1511,7 +1441,6 @@ export async function updateProfessionalProfile(
         name: updates.name,
         updatedAt: serverTimestamp(),
       });
-      console.log("✅ User document name synchronized:", updates.name);
 
       // ✅ UPDATE CONVERSATIONS: Update participant name in all conversations
       try {
@@ -1520,9 +1449,7 @@ export async function updateProfessionalProfile(
           updates.name,
           "professional"
         );
-        console.log("✅ Participant name updated in all conversations");
       } catch (conversationError) {
-        console.warn("⚠️ Failed to update conversations:", conversationError);
         // Continue anyway, this is not critical
       }
 
@@ -1532,11 +1459,17 @@ export async function updateProfessionalProfile(
           detail: { userId: professionalId, newName: updates.name },
         });
         window.dispatchEvent(syncEvent);
-        console.log("✅ Custom event dispatched for immediate sync");
       }
     }
 
-    console.log("✅ Professional profile updated successfully");
+    // 🔄 Synchroniser vers professionals_public
+    try {
+      const { syncProfessionalToPublic } = await import("./professionalService");
+      await syncProfessionalToPublic(professionalId);
+    } catch (syncError) {
+      // Don't throw error, as the profile update was successful
+    }
+
   } catch (error) {
     console.error("❌ Error updating professional profile:", error);
     throw new Error(
@@ -1649,9 +1582,6 @@ export function ensureAvailabilityFormat(
 // Function to migrate all professionals' availability data
 export async function migrateAllProfessionalsAvailability(): Promise<number> {
   try {
-    console.log(
-      "🔄 Starting migration of all professionals availability data..."
-    );
 
     await ensureFirestoreReady();
     const db = getFirestoreInstance();
@@ -1661,9 +1591,6 @@ export async function migrateAllProfessionalsAvailability(): Promise<number> {
     const professionalsRef = collection(db, "professionals");
     const snapshot = await getDocs(professionalsRef);
 
-    console.log(
-      `📊 Found ${snapshot.docs.length} professionals to check for migration`
-    );
 
     let migratedCount = 0;
     let skippedCount = 0;
@@ -1693,11 +1620,6 @@ export async function migrateAllProfessionalsAvailability(): Promise<number> {
           );
 
           if (needsMigration) {
-            console.log(
-              `🔧 Migrating availability for ${
-                professionalData.name || "Unknown"
-              }...`
-            );
 
             const migratedAvailability = migrateAvailabilityData(
               professionalData.availability
@@ -1709,22 +1631,11 @@ export async function migrateAllProfessionalsAvailability(): Promise<number> {
               updatedAt: serverTimestamp(),
             });
 
-            console.log(
-              `✅ Successfully migrated ${professionalData.name || "Unknown"}`
-            );
             migratedCount++;
           } else {
-            console.log(
-              `✅ ${
-                professionalData.name || "Unknown"
-              } already has proper slots`
-            );
             skippedCount++;
           }
         } else {
-          console.log(
-            `⚠️ ${professionalData.name || "Unknown"} has no availability data`
-          );
           skippedCount++;
         }
 
@@ -1735,9 +1646,6 @@ export async function migrateAllProfessionalsAvailability(): Promise<number> {
       }
     }
 
-    console.log(
-      `🎉 Migration completed! Migrated: ${migratedCount}, Skipped: ${skippedCount}`
-    );
     return migratedCount;
   } catch (error) {
     console.error("❌ Error during bulk migration:", error);
