@@ -114,6 +114,13 @@ const Ethics = lazy(() => import("./pages/Ethics"));
 const VerifyEmail = lazy(() => import("./pages/VerifyEmail"));
 const Join = lazy(() => import("./pages/Join"));
 
+// Assessment pages
+const AssessmentHomePage = lazy(() => import("./pages/assessment/AssessmentHomePage"));
+const AssessmentSelectPage = lazy(() => import("./pages/assessment/AssessmentSelectPage"));
+const AssessmentQuizPage = lazy(() => import("./pages/assessment/AssessmentQuizPage"));
+const AssessmentResultsPage = lazy(() => import("./pages/assessment/AssessmentResultsPage"));
+const CompatibilityPage = lazy(() => import("./pages/assessment/CompatibilityPage"));
+
 // Loading fallback component
 const PageLoader = () => (
   <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -400,6 +407,13 @@ const AppChrome: React.FC = () => {
                 </ProtectedRoute>
               }
             />
+
+            {/* Assessment Routes */}
+            <Route path="/assessment" element={<AssessmentHomePage />} />
+            <Route path="/assessment/select" element={<AssessmentSelectPage />} />
+            <Route path="/assessment/quiz/:sessionId" element={<AssessmentQuizPage />} />
+            <Route path="/assessment/results/:sessionId" element={<AssessmentResultsPage />} />
+            <Route path="/assessment/compatibility" element={<CompatibilityPage />} />
 
             {/* Fallback route - évite les 404 "profonds" */}
             <Route path="*" element={<Navigate to="/" replace />} />

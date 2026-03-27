@@ -1,0 +1,55 @@
+import type { AssessmentScale } from '../../../types/assessment';
+
+const opts = [
+  { value: 1, label: "Pas du tout satisfait(e)" },
+  { value: 2, label: "Un peu satisfait(e)" },
+  { value: 3, label: "Modérément satisfait(e)" },
+  { value: 4, label: "Très satisfait(e)" },
+  { value: 5, label: "Extrêmement satisfait(e)" },
+];
+
+export const NSSS: AssessmentScale = {
+  id: 'nsss',
+  name: "Satisfaction Sexuelle Globale",
+  shortName: "NSSS",
+  category: 'sexual_health',
+  description: "Évalue la satisfaction sexuelle selon deux dimensions : la satisfaction centrée sur soi et la satisfaction centrée sur le partenaire.",
+  instructions: "Les questions suivantes portent sur votre satisfaction sexuelle au cours des 6 derniers mois. Il n'y a pas de bonne ou mauvaise réponse.",
+  timeEstimateMinutes: 10,
+  reference: "Stulhofer, A., Busko, V., & Brouillard, P. (2010). Development and bicultural validation of the New Sexual Satisfaction Scale. Journal of Sex Research, 47(4), 257–268.",
+  licenseNote: "Libre pour usage clinique et de recherche.",
+  warningMessage: "Ces résultats ne remplacent pas une consultation avec un professionnel de santé.",
+  scoreRange: { min: 20, max: 100 },
+  items: [
+    { id: 1,  text: "La fréquence de vos activités sexuelles",                                                       type: 'likert', options: opts, subscale: 'self_focused' },
+    { id: 2,  text: "La variété de vos activités sexuelles",                                                          type: 'likert', options: opts, subscale: 'self_focused' },
+    { id: 3,  text: "La qualité de votre vie sexuelle en général",                                                    type: 'likert', options: opts, subscale: 'self_focused' },
+    { id: 4,  text: "Votre capacité à vous laisser aller sexuellement",                                              type: 'likert', options: opts, subscale: 'self_focused' },
+    { id: 5,  text: "Vos orgasmes",                                                                                   type: 'likert', options: opts, subscale: 'self_focused' },
+    { id: 6,  text: "Votre état d'éveil et d'excitation sexuels",                                                    type: 'likert', options: opts, subscale: 'self_focused' },
+    { id: 7,  text: "Les aspects émotionnels de votre vie sexuelle",                                                  type: 'likert', options: opts, subscale: 'self_focused' },
+    { id: 8,  text: "Le niveau de sensualité et de toucher dans votre vie sexuelle",                                  type: 'likert', options: opts, subscale: 'self_focused' },
+    { id: 9,  text: "Votre confiance sexuelle",                                                                       type: 'likert', options: opts, subscale: 'self_focused' },
+    { id: 10, text: "La qualité de votre expérience de plaisir sexuel",                                              type: 'likert', options: opts, subscale: 'self_focused' },
+    { id: 11, text: "L'attitude de votre partenaire envers le sexe",                                                 type: 'likert', options: opts, subscale: 'partner_focused' },
+    { id: 12, text: "Les compétences sexuelles de votre partenaire",                                                 type: 'likert', options: opts, subscale: 'partner_focused' },
+    { id: 13, text: "L'intimité émotionnelle que vous partagez avec votre partenaire pendant les rapports",          type: 'likert', options: opts, subscale: 'partner_focused' },
+    { id: 14, text: "La façon dont votre partenaire traite vos désirs et besoins sexuels",                          type: 'likert', options: opts, subscale: 'partner_focused' },
+    { id: 15, text: "L'ouverture de votre partenaire à vos initiatives sexuelles",                                   type: 'likert', options: opts, subscale: 'partner_focused' },
+    { id: 16, text: "La capacité de votre partenaire à vous amener à l'orgasme",                                    type: 'likert', options: opts, subscale: 'partner_focused' },
+    { id: 17, text: "La communication sexuelle entre vous et votre partenaire",                                      type: 'likert', options: opts, subscale: 'partner_focused' },
+    { id: 18, text: "La réactivité sexuelle de votre partenaire envers vous",                                       type: 'likert', options: opts, subscale: 'partner_focused' },
+    { id: 19, text: "La connexion émotionnelle avec votre partenaire pendant le sexe",                              type: 'likert', options: opts, subscale: 'partner_focused' },
+    { id: 20, text: "La façon dont votre partenaire gère vos préférences sexuelles",                                type: 'likert', options: opts, subscale: 'partner_focused' },
+  ],
+  subscales: [
+    { key: 'self_focused',    label: "Satisfaction centrée sur soi",         itemIds: [1,2,3,4,5,6,7,8,9,10],       range: { min: 10, max: 50 } },
+    { key: 'partner_focused', label: "Satisfaction centrée sur le partenaire", itemIds: [11,12,13,14,15,16,17,18,19,20], range: { min: 10, max: 50 } },
+  ],
+  interpretation: [
+    { min: 20, max: 40, label: "Satisfaction sexuelle faible",      severity: 'mild',     description: "Niveau de satisfaction sexuelle bas pouvant affecter le bien-être.", referralRequired: false, recommendation: "Explorer les facteurs qui limitent votre épanouissement sexuel peut être bénéfique." },
+    { min: 41, max: 65, label: "Satisfaction sexuelle modérée",     severity: 'minimal',  description: "Niveau de satisfaction sexuelle dans la moyenne.", referralRequired: false, recommendation: "Il existe des pistes pour améliorer votre satisfaction sexuelle et celle de votre partenaire." },
+    { min: 66, max: 80, label: "Bonne satisfaction sexuelle",       severity: 'positive', description: "Bon niveau de satisfaction sexuelle globale.", referralRequired: false, recommendation: "Continuez à cultiver l'intimité et la communication avec votre partenaire." },
+    { min: 81, max: 100, label: "Excellente satisfaction sexuelle", severity: 'positive', description: "Excellent niveau de satisfaction sexuelle et d'intimité.", referralRequired: false, recommendation: "Votre vie sexuelle semble épanouissante. Continuez à entretenir cette qualité." },
+  ],
+};

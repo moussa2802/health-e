@@ -1,0 +1,55 @@
+import type { AssessmentScale } from '../../../types/assessment';
+
+const opts = [
+  { value: 1, label: "Pas du tout d'accord" },
+  { value: 2, label: "Plutôt pas d'accord" },
+  { value: 3, label: "Neutre" },
+  { value: 4, label: "Plutôt d'accord" },
+  { value: 5, label: "Tout à fait d'accord" },
+];
+
+export const SISE: AssessmentScale = {
+  id: 'sise',
+  name: "Identité et Satisfaction Sexuelles",
+  shortName: "SISE",
+  category: 'sexual_health',
+  description: "Évalue la clarté, la satisfaction et l'acceptation de l'identité sexuelle.",
+  instructions: "Indiquez dans quelle mesure vous êtes d'accord avec chacune des affirmations suivantes concernant votre identité sexuelle.",
+  timeEstimateMinutes: 7,
+  reference: "Schmitt, D.P. & Allik, J. (2005). Sexual Identity and Self-Esteem constructs. Adapté avec questions Healt-e (2026).",
+  licenseNote: "Libre pour usage clinique et de recherche. Questions supplémentaires : Questionnaire Healt-e (2026).",
+  warningMessage: "Ces résultats ne remplacent pas une consultation avec un professionnel de santé.",
+  scoreRange: { min: 16, max: 80 },
+  reverseIds: [4, 7, 8, 10, 11],
+  items: [
+    { id: 1,  text: "J'ai une idée claire de qui je suis sur le plan sexuel",                                                              type: 'likert', options: opts, subscale: 'clarity' },
+    { id: 2,  text: "Je comprends bien mes désirs et mes besoins sexuels",                                                                 type: 'likert', options: opts, subscale: 'clarity' },
+    { id: 3,  text: "Mon identité sexuelle est stable et cohérente",                                                                       type: 'likert', options: opts, subscale: 'clarity' },
+    { id: 4,  text: "Je suis souvent confus(e) concernant mon identité ou orientation sexuelle",                                          type: 'likert', options: opts, subscale: 'clarity', reversed: true },
+    { id: 5,  text: "Je suis à l'aise avec mon orientation sexuelle ou mon identité de genre",                                            type: 'likert', options: opts, subscale: 'satisfaction' },
+    { id: 6,  text: "Je suis satisfait(e) de ma vie sexuelle en général",                                                                 type: 'likert', options: opts, subscale: 'satisfaction' },
+    { id: 7,  text: "Je souhaiterais être différent(e) sur le plan sexuel",                                                               type: 'likert', options: opts, subscale: 'satisfaction', reversed: true },
+    { id: 8,  text: "Je me sens mal à l'aise avec certains aspects de ma sexualité",                                                      type: 'likert', options: opts, subscale: 'satisfaction', reversed: true },
+    { id: 9,  text: "Mes comportements sexuels sont alignés avec mes valeurs et désirs",                                                  type: 'likert', options: opts, subscale: 'congruence' },
+    { id: 10, text: "Il y a souvent un écart entre ce que je veux sexuellement et ce que je fais",                                       type: 'likert', options: opts, subscale: 'congruence', reversed: true },
+    { id: 11, text: "La honte ou la culpabilité liées à ma sexualité m'empêchent de vivre pleinement",                                   type: 'likert', options: opts, subscale: 'shame', reversed: true },
+    { id: 12, text: "Les normes de ma culture ou religion créent une tension avec ma sexualité",                                          type: 'likert', options: opts, subscale: 'shame', reversed: true },
+    { id: 13, text: "Je peux m'exprimer sexuellement sans craindre le jugement de mon entourage",                                        type: 'likert', options: opts, subscale: 'expression' },
+    { id: 14, text: "Je vis dans un environnement où je peux être honnête sur ma sexualité",                                             type: 'likert', options: opts, subscale: 'expression' },
+    { id: 15, text: "Je m'accepte tel(le) que je suis sur le plan sexuel",                                                               type: 'likert', options: opts, subscale: 'acceptance' },
+    { id: 16, text: "Je peux parler de ma sexualité avec bienveillance envers moi-même",                                                 type: 'likert', options: opts, subscale: 'acceptance' },
+  ],
+  subscales: [
+    { key: 'clarity',      label: "Clarté de l'identité",        itemIds: [1,2,3,4],    reverseIds: [4],     range: { min: 4, max: 20 } },
+    { key: 'satisfaction', label: "Satisfaction sexuelle",       itemIds: [5,6,7,8],    reverseIds: [7,8],   range: { min: 4, max: 20 } },
+    { key: 'congruence',   label: "Congruence désirs/actions",  itemIds: [9,10],        reverseIds: [10],    range: { min: 2, max: 10 } },
+    { key: 'shame',        label: "Honte et culpabilité",        itemIds: [11,12],       reverseIds: [11,12], range: { min: 2, max: 10 } },
+    { key: 'expression',   label: "Liberté d'expression",        itemIds: [13,14],                           range: { min: 2, max: 10 } },
+    { key: 'acceptance',   label: "Acceptation de soi",          itemIds: [15,16],                           range: { min: 2, max: 10 } },
+  ],
+  interpretation: [
+    { min: 16, max: 40, label: "Identité sexuelle peu affirmée",    severity: 'moderate', description: "Difficultés avec l'identité ou l'acceptation sexuelle.", referralRequired: false, recommendation: "Un espace de dialogue sécurisant peut vous aider à explorer votre identité sexuelle." },
+    { min: 41, max: 60, label: "Identité sexuelle en construction", severity: 'mild',     description: "Processus d'affirmation de l'identité sexuelle en cours.", referralRequired: false, recommendation: "Continuer à explorer qui vous êtes avec bienveillance envers vous-même." },
+    { min: 61, max: 80, label: "Identité sexuelle affirmée",        severity: 'positive', description: "Bonne clarté et acceptation de votre identité sexuelle.", referralRequired: false, recommendation: "Votre identité sexuelle semble bien intégrée. Continuez à vous respecter." },
+  ],
+};

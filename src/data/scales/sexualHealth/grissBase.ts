@@ -1,0 +1,57 @@
+import type { AssessmentScale } from '../../../types/assessment';
+
+const opts = [
+  { value: 1, label: "Jamais" },
+  { value: 2, label: "Rarement" },
+  { value: 3, label: "Parfois" },
+  { value: 4, label: "Souvent" },
+  { value: 5, label: "Toujours" },
+];
+
+export const GRISS_BASE: AssessmentScale = {
+  id: 'griss_base',
+  name: "Communication et Satisfaction Sexuelle dans le Couple",
+  shortName: "Communication Couple",
+  category: 'sexual_health',
+  description: "Évalue la communication sexuelle et la satisfaction dans la relation de couple. Basé sur les construits publiés par Golombok et Rust (1985).",
+  instructions: "Les questions suivantes portent sur votre relation sexuelle actuelle avec votre partenaire. Répondez honnêtement.",
+  timeEstimateMinutes: 7,
+  reference: "Golombok, S. & Rust, J. (1985). The Golombok-Rust Inventory of Sexual Satisfaction. British Journal of Clinical Psychology, 24(1), 63–64.",
+  licenseNote: "Basé sur les construits théoriques publiés de Golombok & Rust (1985). Ne constitue pas l'outil GRISS commercial (NFER-Nelson).",
+  warningMessage: "Ces résultats ne remplacent pas une consultation avec un professionnel de santé.",
+  scoreRange: { min: 16, max: 80 },
+  reverseIds: [1, 3, 7, 9, 13],
+  items: [
+    { id: 1,  text: "Notre vie sexuelle est satisfaisante pour nous deux",                                                        type: 'likert', options: opts, subscale: 'satisfaction', reversed: true },
+    { id: 2,  text: "Je pense que notre vie sexuelle manque de qualité",                                                         type: 'likert', options: opts, subscale: 'satisfaction' },
+    { id: 3,  text: "Nous avons des rapports sexuels à une fréquence qui nous convient à tous les deux",                        type: 'likert', options: opts, subscale: 'frequency', reversed: true },
+    { id: 4,  text: "Je souhaiterais que nous ayons des rapports sexuels plus souvent",                                         type: 'likert', options: opts, subscale: 'frequency' },
+    { id: 5,  text: "Mon partenaire et moi évitons les contacts physiques ou les situations qui pourraient mener au sexe",       type: 'likert', options: opts, subscale: 'avoidance' },
+    { id: 6,  text: "Il nous arrive d'éviter les conversations sur notre sexualité",                                             type: 'likert', options: opts, subscale: 'avoidance' },
+    { id: 7,  text: "Nous pouvons parler librement et ouvertement de sexualité ensemble",                                       type: 'likert', options: opts, subscale: 'communication', reversed: true },
+    { id: 8,  text: "Il m'est difficile de dire à mon partenaire ce que j'aime ou ce que je n'aime pas sexuellement",           type: 'likert', options: opts, subscale: 'communication' },
+    { id: 9,  text: "Nous prenons du temps pour nous connecter physiquement avant les rapports sexuels",                        type: 'likert', options: opts, subscale: 'sensuality', reversed: true },
+    { id: 10, text: "La sensualité et les préliminaires sont insuffisants dans notre relation",                                 type: 'likert', options: opts, subscale: 'sensuality' },
+    { id: 11, text: "Je ressens parfois de la douleur ou de l'inconfort pendant les rapports sexuels",                         type: 'likert', options: opts, subscale: 'pain' },
+    { id: 12, text: "Des difficultés physiques (douleur, sécheresse, tension) affectent notre vie sexuelle",                   type: 'likert', options: opts, subscale: 'pain' },
+    { id: 13, text: "Nous sommes capables d'atteindre l'orgasme ensemble ou l'un après l'autre",                               type: 'likert', options: opts, subscale: 'orgasm', reversed: true },
+    { id: 14, text: "L'un de nous deux a souvent des difficultés à atteindre l'orgasme",                                       type: 'likert', options: opts, subscale: 'orgasm' },
+    { id: 15, text: "Des préoccupations psychologiques (anxiété, stress, honte) interfèrent avec notre vie sexuelle",          type: 'likert', options: opts, subscale: 'psychological' },
+    { id: 16, text: "Des tensions non résolues dans notre relation affectent négativement notre intimité sexuelle",            type: 'likert', options: opts, subscale: 'psychological' },
+  ],
+  subscales: [
+    { key: 'satisfaction',    label: "Satisfaction globale",      itemIds: [1,2],    reverseIds: [1],  range: { min: 2, max: 10 } },
+    { key: 'frequency',       label: "Fréquence",                 itemIds: [3,4],    reverseIds: [3],  range: { min: 2, max: 10 } },
+    { key: 'avoidance',       label: "Évitement",                 itemIds: [5,6],                      range: { min: 2, max: 10 } },
+    { key: 'communication',   label: "Communication",             itemIds: [7,8],    reverseIds: [7],  range: { min: 2, max: 10 } },
+    { key: 'sensuality',      label: "Sensualité",                itemIds: [9,10],   reverseIds: [9],  range: { min: 2, max: 10 } },
+    { key: 'pain',            label: "Douleur / Inconfort",       itemIds: [11,12],                    range: { min: 2, max: 10 } },
+    { key: 'orgasm',          label: "Orgasme",                   itemIds: [13,14],  reverseIds: [13], range: { min: 2, max: 10 } },
+    { key: 'psychological',   label: "Facteurs psychologiques",   itemIds: [15,16],                    range: { min: 2, max: 10 } },
+  ],
+  interpretation: [
+    { min: 16, max: 40, label: "Dysfonctionnement sexuel dans le couple", severity: 'severe',   description: "Plusieurs dimensions de la sexualité du couple semblent problématiques.", referralRequired: true, recommendation: "Une thérapie sexologique ou de couple est recommandée." },
+    { min: 41, max: 60, label: "Difficultés modérées dans la relation",   severity: 'moderate', description: "Certaines dimensions de la vie sexuelle du couple nécessitent attention.", referralRequired: false, recommendation: "Améliorer la communication sexuelle peut transformer votre relation intime." },
+    { min: 61, max: 80, label: "Bonne satisfaction sexuelle dans le couple", severity: 'positive', description: "Bonne qualité de la vie sexuelle et de la communication dans le couple.", referralRequired: false, recommendation: "Continuez à nourrir l'intimité et la communication dans votre relation." },
+  ],
+};

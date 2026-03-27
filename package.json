@@ -13,6 +13,7 @@
     "test:e2e:report": "playwright show-report"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.39.0",
     "@sentry/react": "^10.45.0",
     "@sentry/vite-plugin": "^5.1.1",
     "date-fns": "^3.3.1",
