@@ -34,6 +34,7 @@ import type { SexualHealthFilter } from '../../types/onboarding';
 import type { ScaleResult, AssessmentScale } from '../../types/assessment';
 import type { OnboardingProfile as OnboardingProfileType } from '../../types/onboarding';
 import { SCALE_META, getScaleMeta } from '../../utils/scaleMeta';
+import { triggerDrLoSynthesis } from '../../utils/drLoAnalysis';
 
 // SCALE_META et getScaleMeta sont importés depuis '../../utils/scaleMeta'
 
@@ -620,14 +621,17 @@ const AssessmentHomePage: React.FC = () => {
       .finally(() => setLoadingProfile(false));
   }, [isAuthenticated, currentUser?.id, loadRetry]);
 
-  // Polling : attend que drLoSynthesis soit prête dans Firestore après une évaluation
+  // Polling : attend que drLoSynthesis soit prête — re-déclenche la génération si absente
   useEffect(() => {
     if (!isAuthenticated || !currentUser) return;
     if (drLoSynthesis) return; // déjà chargée
     if (Object.keys(profileResults).length === 0) return; // rien de complété
 
+    // Re-déclencher la synthèse si elle n'est pas encore en base (ex: save raté avant fix des règles)
+    triggerDrLoSynthesis(currentUser.id).catch(() => {});
+
     let attempts = 0;
-    const MAX_ATTEMPTS = 10;
+    const MAX_ATTEMPTS = 15;
 
     const poll = async () => {
       attempts++;

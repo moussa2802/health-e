@@ -11,6 +11,7 @@ import { MENTAL_HEALTH_SCALES, SEXUAL_HEALTH_SCALES } from '../../data/scales';
 import type { ScaleResult } from '../../types/assessment';
 import type { AssessmentScale } from '../../types/assessment';
 import { getOnboardingProfile } from '../../utils/onboardingProfile';
+import { triggerDrLoAnalysis } from '../../utils/drLoAnalysis';
 
 // ── Icônes par scale ──────────────────────────────────────────────────────────
 const SCALE_ICONS: Record<string, string> = {
@@ -669,15 +670,18 @@ const AssessmentProfilePage: React.FC = () => {
       .finally(() => setLoadingProfile(false));
   }, [isAuthenticated, currentUser]);
 
-  // Polling drLoAnalysis si pas encore disponible après le chargement
+  // Polling drLoAnalysis — re-déclenche la génération si absente en base
   const drLoPollingRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
     if (!isAuthenticated || !currentUser) return;
     if (drLoAnalysis) return;
     if (completedCount === 0) return;
 
+    // Re-déclencher si l'analyse n'est pas en base (ex: save raté avant fix des règles Firestore)
+    triggerDrLoAnalysis(currentUser.id).catch(() => {});
+
     let attempts = 0;
-    const MAX_ATTEMPTS = 12;
+    const MAX_ATTEMPTS = 15;
     const poll = async () => {
       attempts++;
       try {
@@ -686,7 +690,7 @@ const AssessmentProfilePage: React.FC = () => {
       } catch { /* silencieux */ }
       if (attempts < MAX_ATTEMPTS) drLoPollingRef.current = setTimeout(poll, 3000);
     };
-    drLoPollingRef.current = setTimeout(poll, 2000);
+    drLoPollingRef.current = setTimeout(poll, 3000);
     return () => { if (drLoPollingRef.current) clearTimeout(drLoPollingRef.current); };
   }, [isAuthenticated, currentUser?.id, drLoAnalysis, completedCount]);
 
