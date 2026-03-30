@@ -896,11 +896,17 @@ const AssessmentHomePage: React.FC = () => {
         </div>
       )}
 
-      {/* ── Mobile : onglets Évaluations / Profil ─────────────────────────── */}
-      <div className="md:hidden" style={{ maxWidth: 1100, margin: '14px auto 0', padding: '0 20px' }}>
+      {/* ── Mobile : bottom tab bar fixe ───────────────────────────────────── */}
+      <div className="md:hidden" style={{
+        position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 100,
+        background: 'rgba(255,255,255,0.97)',
+        backdropFilter: 'blur(12px)',
+        borderTop: '1px solid rgba(59,130,246,0.15)',
+        padding: '8px 20px 16px',
+        boxShadow: '0 -4px 20px rgba(0,0,0,0.06)',
+      }}>
         <div style={{
-          display: 'flex', background: 'white',
-          border: '1px solid rgba(59,130,246,0.12)',
+          display: 'flex', background: '#F1F5F9',
           borderRadius: 12, overflow: 'hidden', padding: 3, gap: 3,
         }}>
           {(['scales','profile'] as MobileView[]).map(v => (
@@ -908,13 +914,13 @@ const AssessmentHomePage: React.FC = () => {
               key={v}
               onClick={() => setMobileView(v)}
               style={{
-                flex: 1, padding: '8px 0',
+                flex: 1, padding: '9px 0',
                 borderRadius: 9, border: 'none',
                 background: mobileView === v
                   ? 'linear-gradient(135deg,#3B82F6,#2DD4BF)'
                   : 'transparent',
                 color: mobileView === v ? 'white' : '#64748B',
-                fontWeight: 700, fontSize: 12, cursor: 'pointer',
+                fontWeight: 700, fontSize: 13, cursor: 'pointer',
                 transition: 'all 0.18s ease',
               }}
             >
@@ -927,7 +933,7 @@ const AssessmentHomePage: React.FC = () => {
       {/* ── Contenu principal : 2 colonnes ────────────────────────────────── */}
       <div style={{
         maxWidth: 1100, margin: '16px auto 0',
-        padding: '0 20px 48px',
+        padding: '0 20px 80px', // 80px pour la tab bar fixe mobile
         display: 'grid',
         gridTemplateColumns: '1fr',
         gap: 16,
@@ -936,7 +942,7 @@ const AssessmentHomePage: React.FC = () => {
       >
         <style>{`
           @media (min-width: 768px) {
-            .assessment-grid { grid-template-columns: 55% 1fr !important; }
+            .assessment-grid { grid-template-columns: 58% 1fr !important; padding-bottom: 48px !important; }
             .profile-col { display: flex !important; }
           }
           .scales-col-mobile-hidden { display: block; }
@@ -966,7 +972,7 @@ const AssessmentHomePage: React.FC = () => {
             </span>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(290px,1fr))', gap: 8 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(240px,1fr))', gap: 8 }}>
             {currentScales.map(scale => (
               <ScaleCard
                 key={scale.id}
