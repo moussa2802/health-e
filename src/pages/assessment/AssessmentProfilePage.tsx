@@ -1,14 +1,16 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import {
   getOrCreateUserProfile,
   getProfileProgress,
   createSession,
+  resetUserProfile,
 } from '../../services/evaluationService';
 import { MENTAL_HEALTH_SCALES, SEXUAL_HEALTH_SCALES } from '../../data/scales';
 import type { ScaleResult } from '../../types/assessment';
 import type { AssessmentScale } from '../../types/assessment';
+import { getOnboardingProfile } from '../../utils/onboardingProfile';
 
 // ── Icônes par scale ──────────────────────────────────────────────────────────
 const SCALE_ICONS: Record<string, string> = {
@@ -56,10 +58,19 @@ function getSeverityBg(severity: string): string {
   }
 }
 
-function formatDate(date: Date | string | undefined): string {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function formatDate(date: any): string {
   if (!date) return '';
   try {
-    const d = date instanceof Date ? date : new Date(date);
+    let d: Date;
+    if (typeof date.toDate === 'function') {
+      d = date.toDate(); // Firestore Timestamp
+    } else if (date instanceof Date) {
+      d = date;
+    } else {
+      d = new Date(date);
+    }
+    if (isNaN(d.getTime())) return '';
     return d.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' });
   } catch {
     return '';
@@ -240,6 +251,353 @@ const ScaleRow: React.FC<ScaleRowProps> = ({ scale, result, onStart, loading }) 
   );
 };
 
+// ── Dr. Lô Panel ──────────────────────────────────────────────────────────────
+
+function renderAnalysis(text: string): React.ReactNode {
+  const lines = text.split('\n');
+  return lines.map((line, i) => {
+    // Split on **bold** markers
+    const parts = line.split(/\*\*([^*]+)\*\*/g);
+    const rendered = parts.map((part, j) =>
+      j % 2 === 1 ? <strong key={j} style={{ fontWeight: 700 }}>{part}</strong> : part
+    );
+    // Signature line
+    if (line.startsWith('— Dr Lo')) {
+      return (
+        <p key={i} style={{ margin: '14px 0 0', fontSize: 13, fontWeight: 700, color: '#3B82F6', fontStyle: 'italic' }}>
+          {rendered}
+        </p>
+      );
+    }
+    // Section header lines (start with emoji + **text**)
+    if (/^[✅⚠️💡👨‍⚕️]/.test(line)) {
+      return (
+        <p key={i} style={{ margin: '14px 0 4px', fontSize: 14, fontWeight: 600, color: '#0A2342' }}>
+          {rendered}
+        </p>
+      );
+    }
+    // Bullet points
+    if (line.startsWith('•') || line.startsWith('-')) {
+      return (
+        <p key={i} style={{ margin: '3px 0', paddingLeft: 12, fontSize: 13, color: '#374151', lineHeight: 1.55 }}>
+          {rendered}
+        </p>
+      );
+    }
+    // Empty line
+    if (line.trim() === '') {
+      return <div key={i} style={{ height: 6 }} />;
+    }
+    // Default paragraph
+    return (
+      <p key={i} style={{ margin: '2px 0', fontSize: 13, color: '#374151', lineHeight: 1.65 }}>
+        {rendered}
+      </p>
+    );
+  });
+}
+
+interface DrLoPanelProps {
+  analysis: string | null;
+  completedCount: number;
+  prenom: string;
+  isRefreshing?: boolean;
+}
+
+const DrLoPanel: React.FC<DrLoPanelProps> = ({ analysis, completedCount, prenom, isRefreshing }) => {
+  return (
+    <div
+      style={{
+        background: 'rgba(255,255,255,0.88)',
+        backdropFilter: 'blur(18px)',
+        border: '1.5px solid rgba(59,130,246,0.18)',
+        borderRadius: 20,
+        padding: '22px 24px',
+        marginBottom: 28,
+        boxShadow: '0 4px 24px rgba(59,130,246,0.08)',
+        position: 'relative',
+        overflow: 'hidden',
+      }}
+    >
+      {/* Gradient accent top-left */}
+      <div
+        style={{
+          position: 'absolute',
+          top: -30,
+          left: -30,
+          width: 120,
+          height: 120,
+          borderRadius: '50%',
+          background: 'radial-gradient(circle, rgba(59,130,246,0.10) 0%, transparent 70%)',
+          pointerEvents: 'none',
+        }}
+      />
+
+      {/* Header */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
+        <div
+          style={{
+            width: 48,
+            height: 48,
+            borderRadius: '50%',
+            overflow: 'hidden',
+            flexShrink: 0,
+            boxShadow: '0 2px 10px rgba(59,130,246,0.3)',
+            border: '2px solid rgba(59,130,246,0.25)',
+          }}
+        >
+          <img
+            src="/dr-lo.png"
+            alt="Dr. LO"
+            style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'top center' }}
+          />
+        </div>
+        <div style={{ flex: 1 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <h3 style={{ margin: 0, fontSize: 16, fontWeight: 800, color: '#0A2342' }}>Dr. Lô</h3>
+            <span
+              style={{
+                background: 'linear-gradient(135deg, #EFF6FF, #F0FDFA)',
+                border: '1px solid rgba(59,130,246,0.2)',
+                borderRadius: 20,
+                padding: '2px 8px',
+                fontSize: 10,
+                fontWeight: 700,
+                color: '#3B82F6',
+                letterSpacing: '0.05em',
+              }}
+            >
+              IA ÉVOLUTIVE
+            </span>
+          </div>
+          <p style={{ margin: 0, fontSize: 11, color: '#94A3B8' }}>
+            Mise à jour après chaque évaluation
+          </p>
+        </div>
+        {isRefreshing && (
+          <div
+            style={{
+              width: 16,
+              height: 16,
+              border: '2px solid #3B82F6',
+              borderTopColor: 'transparent',
+              borderRadius: '50%',
+              animation: 'spin 0.8s linear infinite',
+              flexShrink: 0,
+            }}
+          />
+        )}
+      </div>
+
+      {/* Content */}
+      {completedCount === 0 ? (
+        <div
+          style={{
+            background: '#F8FAFF',
+            borderRadius: 12,
+            padding: '16px 18px',
+            textAlign: 'center',
+          }}
+        >
+          <p style={{ margin: 0, fontSize: 14, color: '#64748B', lineHeight: 1.6 }}>
+            {prenom ? `Hey ${prenom} 👋 — ` : ''}Complète ta première évaluation pour que je puisse te donner mon analyse personnalisée 🎯
+          </p>
+        </div>
+      ) : analysis ? (
+        <div>{renderAnalysis(analysis)}</div>
+      ) : (
+        <div
+          style={{
+            background: '#F8FAFF',
+            borderRadius: 12,
+            padding: '16px 18px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 12,
+          }}
+        >
+          <div
+            style={{
+              width: 20,
+              height: 20,
+              border: '2px solid #3B82F6',
+              borderTopColor: 'transparent',
+              borderRadius: '50%',
+              animation: 'spin 0.8s linear infinite',
+              flexShrink: 0,
+            }}
+          />
+          <p style={{ margin: 0, fontSize: 13, color: '#64748B' }}>
+            Dr. Lô prépare ton analyse… reviens dans quelques secondes 🔄
+          </p>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ── Composant CompatibilityCodeCard ──────────────────────────────────────────
+interface CodeCardProps {
+  type: 'mental' | 'sexual';
+  icon: string;
+  label: string;
+  accentColor: string;
+  accentBg: string;
+  isComplete: boolean;
+  compatibilityId: string | null;
+  completedCount: number;
+  totalCount: number;
+  copied: boolean;
+  onCopy: () => void;
+}
+
+const CompatibilityCodeCard: React.FC<CodeCardProps> = ({
+  icon, label, accentColor, accentBg,
+  isComplete, compatibilityId, completedCount, totalCount, copied, onCopy,
+}) => {
+  const pct = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
+  return (
+    <div
+      style={{
+        background: isComplete ? accentBg : '#FFFFFF',
+        border: `1.5px solid ${isComplete ? accentColor + '40' : 'rgba(59,130,246,0.12)'}`,
+        borderRadius: 16,
+        padding: '18px 20px',
+      }}
+    >
+      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+        <div
+          style={{
+            width: 42,
+            height: 42,
+            borderRadius: 11,
+            background: accentBg,
+            border: `1.5px solid ${accentColor}30`,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: 18,
+            flexShrink: 0,
+          }}
+        >
+          {icon}
+        </div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+            <h3 style={{ margin: 0, fontSize: 14, fontWeight: 800, color: '#0A2342' }}>{label}</h3>
+            {isComplete && (
+              <span
+                style={{
+                  background: accentBg,
+                  border: `1px solid ${accentColor}30`,
+                  borderRadius: 20,
+                  padding: '1px 8px',
+                  fontSize: 10,
+                  fontWeight: 700,
+                  color: accentColor,
+                  letterSpacing: '0.04em',
+                }}
+              >
+                COMPLET
+              </span>
+            )}
+          </div>
+
+          {isComplete && compatibilityId ? (
+            <>
+              <p style={{ margin: '0 0 10px', fontSize: 12, color: '#64748B' }}>
+                Partagez ce code pour tester votre compatibilité.
+              </p>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                <code
+                  style={{
+                    display: 'inline-block',
+                    background: '#FFFFFF',
+                    border: `1.5px solid ${accentColor}30`,
+                    borderRadius: 9,
+                    padding: '8px 16px',
+                    fontSize: 18,
+                    fontFamily: "'JetBrains Mono', 'Courier New', monospace",
+                    fontWeight: 800,
+                    color: accentColor,
+                    letterSpacing: '0.12em',
+                  }}
+                >
+                  {compatibilityId}
+                </code>
+                <button
+                  onClick={onCopy}
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 5,
+                    padding: '7px 13px',
+                    borderRadius: 9,
+                    border: copied ? '1.5px solid rgba(22,163,74,0.4)' : `1.5px solid ${accentColor}30`,
+                    background: copied ? '#F0FDF4' : '#FFFFFF',
+                    color: copied ? '#16A34A' : accentColor,
+                    fontSize: 12,
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    transition: 'all 0.15s ease',
+                  }}
+                >
+                  {copied ? '✅ Copié !' : '📋 Copier'}
+                </button>
+              </div>
+              <Link
+                to="/assessment/compatibility"
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 4,
+                  marginTop: 10,
+                  fontSize: 12,
+                  color: accentColor,
+                  fontWeight: 600,
+                  textDecoration: 'none',
+                }}
+              >
+                Tester ma compatibilité →
+              </Link>
+            </>
+          ) : (
+            <>
+              <p style={{ margin: '0 0 8px', fontSize: 12, color: '#64748B', lineHeight: 1.5 }}>
+                <strong style={{ color: accentColor }}>{totalCount - completedCount} évaluation{totalCount - completedCount > 1 ? 's' : ''}</strong> restantes pour obtenir ce code.
+              </p>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <div
+                  style={{
+                    flex: 1,
+                    height: 5,
+                    background: '#E0EAFF',
+                    borderRadius: 99,
+                    overflow: 'hidden',
+                  }}
+                >
+                  <div
+                    style={{
+                      height: '100%',
+                      width: `${pct}%`,
+                      background: `linear-gradient(90deg, ${accentColor}, ${accentColor}BB)`,
+                      borderRadius: 99,
+                    }}
+                  />
+                </div>
+                <span style={{ fontSize: 11, fontWeight: 700, color: accentColor, minWidth: 32, textAlign: 'right' }}>
+                  {completedCount}/{totalCount}
+                </span>
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // ── Page principale ───────────────────────────────────────────────────────────
 const AssessmentProfilePage: React.FC = () => {
   const navigate = useNavigate();
@@ -248,12 +606,35 @@ const AssessmentProfilePage: React.FC = () => {
   const [scaleResults, setScaleResults] = useState<Record<string, ScaleResult>>({});
   const [completedCount, setCompletedCount] = useState(0);
   const [totalCount, setTotalCount] = useState(0);
-  const [isComplete, setIsComplete] = useState(false);
-  const [compatibilityId, setCompatibilityId] = useState<string | null>(null);
+  const [compatibilityIdMental, setCompatibilityIdMental] = useState<string | null>(null);
+  const [compatibilityIdSexual, setCompatibilityIdSexual] = useState<string | null>(null);
+  const [isMentalComplete, setIsMentalComplete] = useState(false);
+  const [isSexualComplete, setIsSexualComplete] = useState(false);
+  const [mentalCompletedCount, setMentalCompletedCount] = useState(0);
+  const [sexualCompletedCount, setSexualCompletedCount] = useState(0);
+  const [drLoAnalysis, setDrLoAnalysis] = useState<string | null>(null);
   const [loadingProfile, setLoadingProfile] = useState(true);
   const [loadingCard, setLoadingCard] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
-  const [copied, setCopied] = useState(false);
+  const [copiedMental, setCopiedMental] = useState(false);
+  const [copiedSexual, setCopiedSexual] = useState(false);
+
+  const onboardingProfile = getOnboardingProfile();
+  const prenom = onboardingProfile?.prenom || '';
+  const [resetting, setResetting] = useState(false);
+
+  const handleReset = async () => {
+    if (!currentUser) return;
+    if (!window.confirm('Supprimer tous tes résultats et recommencer à zéro ?')) return;
+    setResetting(true);
+    try {
+      await resetUserProfile(currentUser.id);
+      localStorage.removeItem('he_onboarding_profile');
+      window.location.reload();
+    } catch {
+      setResetting(false);
+    }
+  };
 
   // Redirection si non authentifié
   useEffect(() => {
@@ -274,12 +655,40 @@ const AssessmentProfilePage: React.FC = () => {
         setScaleResults(progress.scaleResults);
         setCompletedCount(progress.completedCount);
         setTotalCount(progress.totalCount);
-        setIsComplete(progress.isComplete);
-        setCompatibilityId(progress.compatibilityId);
+        setCompatibilityIdMental(progress.compatibilityIdMental);
+        setCompatibilityIdSexual(progress.compatibilityIdSexual);
+        setIsMentalComplete(progress.isMentalComplete);
+        setIsSexualComplete(progress.isSexualComplete);
+        setMentalCompletedCount(progress.mentalCompletedCount);
+        setSexualCompletedCount(progress.sexualCompletedCount);
+        setDrLoAnalysis(progress.drLoAnalysis);
       })
-      .catch(() => setErrorMsg('Impossible de charger votre profil.'))
+      .catch(() => {
+        // Erreurs Firestore transitoires (offline, permission temporaire) → silencieux
+      })
       .finally(() => setLoadingProfile(false));
   }, [isAuthenticated, currentUser]);
+
+  // Polling drLoAnalysis si pas encore disponible après le chargement
+  const drLoPollingRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => {
+    if (!isAuthenticated || !currentUser) return;
+    if (drLoAnalysis) return;
+    if (completedCount === 0) return;
+
+    let attempts = 0;
+    const MAX_ATTEMPTS = 12;
+    const poll = async () => {
+      attempts++;
+      try {
+        const p = await getProfileProgress(currentUser.id);
+        if (p.drLoAnalysis) { setDrLoAnalysis(p.drLoAnalysis); return; }
+      } catch { /* silencieux */ }
+      if (attempts < MAX_ATTEMPTS) drLoPollingRef.current = setTimeout(poll, 3000);
+    };
+    drLoPollingRef.current = setTimeout(poll, 2000);
+    return () => { if (drLoPollingRef.current) clearTimeout(drLoPollingRef.current); };
+  }, [isAuthenticated, currentUser?.id, drLoAnalysis, completedCount]);
 
   // Démarrer une scale
   const startScale = async (scaleId: string) => {
@@ -297,16 +706,22 @@ const AssessmentProfilePage: React.FC = () => {
     }
   };
 
-  // Copier l'ID
-  const handleCopy = async () => {
-    if (!compatibilityId) return;
+  const handleCopyMental = async () => {
+    if (!compatibilityIdMental) return;
     try {
-      await navigator.clipboard.writeText(compatibilityId);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2200);
-    } catch {
-      // fallback silencieux
-    }
+      await navigator.clipboard.writeText(compatibilityIdMental);
+      setCopiedMental(true);
+      setTimeout(() => setCopiedMental(false), 2200);
+    } catch { /* silencieux */ }
+  };
+
+  const handleCopySexual = async () => {
+    if (!compatibilityIdSexual) return;
+    try {
+      await navigator.clipboard.writeText(compatibilityIdSexual);
+      setCopiedSexual(true);
+      setTimeout(() => setCopiedSexual(false), 2200);
+    } catch { /* silencieux */ }
   };
 
   const progressPct = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
@@ -452,168 +867,44 @@ const AssessmentProfilePage: React.FC = () => {
           </div>
         )}
 
-        {/* ── Card Numéro de référence ───────────────────────────────── */}
-        <div
-          style={{
-            background: isComplete
-              ? 'linear-gradient(135deg, #EFF6FF, #F0FDFA)'
-              : '#FFFFFF',
-            border: isComplete
-              ? '1.5px solid rgba(59,130,246,0.25)'
-              : '1.5px solid rgba(59,130,246,0.12)',
-            borderRadius: 16,
-            padding: '20px 22px',
-            marginBottom: 28,
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'flex-start', gap: 14 }}>
-            {/* Icône bouclier */}
-            <div
-              style={{
-                width: 46,
-                height: 46,
-                borderRadius: 12,
-                background: 'linear-gradient(135deg, #3B82F6, #2DD4BF)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                flexShrink: 0,
-                fontSize: 20,
-              }}
-            >
-              🛡️
-            </div>
-
-            <div style={{ flex: 1 }}>
-              <h2 style={{ margin: '0 0 6px', fontSize: 16, fontWeight: 800, color: '#0A2342' }}>
-                Numéro de référence
-              </h2>
-
-              {isComplete && compatibilityId ? (
-                <>
-                  <p style={{ margin: '0 0 12px', fontSize: 13, color: '#64748B' }}>
-                    Votre profil est complet. Partagez cet identifiant pour la compatibilité.
-                  </p>
-                  <div
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 10,
-                      flexWrap: 'wrap',
-                    }}
-                  >
-                    <code
-                      style={{
-                        display: 'inline-block',
-                        background: '#EFF6FF',
-                        border: '1.5px solid rgba(59,130,246,0.25)',
-                        borderRadius: 10,
-                        padding: '10px 18px',
-                        fontSize: 20,
-                        fontFamily: "'JetBrains Mono', 'Courier New', monospace",
-                        fontWeight: 800,
-                        color: '#1D4ED8',
-                        letterSpacing: '0.12em',
-                      }}
-                    >
-                      {compatibilityId}
-                    </code>
-                    <button
-                      onClick={handleCopy}
-                      style={{
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: 6,
-                        padding: '9px 16px',
-                        borderRadius: 10,
-                        border: copied
-                          ? '1.5px solid rgba(22,163,74,0.4)'
-                          : '1.5px solid rgba(59,130,246,0.3)',
-                        background: copied ? '#F0FDF4' : '#EFF6FF',
-                        color: copied ? '#16A34A' : '#2563EB',
-                        fontSize: 13,
-                        fontWeight: 600,
-                        cursor: 'pointer',
-                        transition: 'all 0.15s ease',
-                      }}
-                    >
-                      {copied ? '✅ Copié !' : '📋 Copier'}
-                    </button>
-                  </div>
-                  <Link
-                    to="/assessment/compatibility"
-                    style={{
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: 5,
-                      marginTop: 12,
-                      fontSize: 13,
-                      color: '#3B82F6',
-                      fontWeight: 600,
-                      textDecoration: 'none',
-                    }}
-                  >
-                    Tester ma compatibilité avec un proche
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                      <polyline points="9 18 15 12 9 6" />
-                    </svg>
-                  </Link>
-                </>
-              ) : (
-                <>
-                  <p style={{ margin: '0 0 10px', fontSize: 13, color: '#64748B', lineHeight: 1.55 }}>
-                    Il vous reste{' '}
-                    <strong style={{ color: '#3B82F6' }}>
-                      {totalCount - completedCount} évaluation{totalCount - completedCount > 1 ? 's' : ''}
-                    </strong>{' '}
-                    pour obtenir votre numéro de référence unique.
-                  </p>
-                  <div
-                    style={{
-                      background: '#F8FAFF',
-                      border: '1px solid rgba(59,130,246,0.12)',
-                      borderRadius: 10,
-                      padding: '10px 14px',
-                    }}
-                  >
-                    <div
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        marginBottom: 6,
-                      }}
-                    >
-                      <span style={{ fontSize: 12, color: '#64748B', fontWeight: 500 }}>
-                        Progression
-                      </span>
-                      <span style={{ fontSize: 12, fontWeight: 700, color: '#3B82F6' }}>
-                        {completedCount}/{totalCount}
-                      </span>
-                    </div>
-                    <div
-                      style={{
-                        height: 6,
-                        background: '#E0EAFF',
-                        borderRadius: 99,
-                        overflow: 'hidden',
-                      }}
-                    >
-                      <div
-                        style={{
-                          height: '100%',
-                          width: `${progressPct}%`,
-                          background: 'linear-gradient(90deg, #3B82F6, #2DD4BF)',
-                          borderRadius: 99,
-                        }}
-                      />
-                    </div>
-                  </div>
-                </>
-              )}
-            </div>
-          </div>
+        {/* ── Cards Codes de compatibilité ──────────────────────────── */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 14, marginBottom: 28 }}>
+          {/* Card Mental */}
+          <CompatibilityCodeCard
+            type="mental"
+            icon="🧠"
+            label="Profil Mental"
+            accentColor="#3B82F6"
+            accentBg="#EFF6FF"
+            isComplete={isMentalComplete}
+            compatibilityId={compatibilityIdMental}
+            completedCount={mentalCompletedCount}
+            totalCount={MENTAL_HEALTH_SCALES.length}
+            copied={copiedMental}
+            onCopy={handleCopyMental}
+          />
+          {/* Card Sexuel */}
+          <CompatibilityCodeCard
+            type="sexual"
+            icon="💋"
+            label="Profil Sexuel"
+            accentColor="#C026D3"
+            accentBg="#FDF4FF"
+            isComplete={isSexualComplete}
+            compatibilityId={compatibilityIdSexual}
+            completedCount={sexualCompletedCount}
+            totalCount={SEXUAL_HEALTH_SCALES.length}
+            copied={copiedSexual}
+            onCopy={handleCopySexual}
+          />
         </div>
+
+        {/* ── Dr. Lô Panel ──────────────────────────────────────────── */}
+        <DrLoPanel
+          analysis={drLoAnalysis}
+          completedCount={completedCount}
+          prenom={prenom}
+        />
 
         {/* ── Section Santé Mentale ─────────────────────────────────── */}
         <section style={{ marginBottom: 32 }}>
@@ -733,6 +1024,27 @@ const AssessmentProfilePage: React.FC = () => {
             En cas de détresse psychologique ou d'urgence, contactez immédiatement un médecin
             ou un service d'urgence.
           </p>
+        </div>
+
+        {/* ── Reset ─────────────────────────────────────────────────── */}
+        <div style={{ textAlign: 'center', marginTop: 24 }}>
+          <button
+            onClick={handleReset}
+            disabled={resetting}
+            style={{
+              background: 'none',
+              border: 'none',
+              color: '#94A3B8',
+              fontSize: 12,
+              cursor: resetting ? 'not-allowed' : 'pointer',
+              textDecoration: 'underline',
+              textDecorationStyle: 'dotted',
+              padding: '4px 8px',
+              opacity: resetting ? 0.5 : 1,
+            }}
+          >
+            {resetting ? 'Réinitialisation…' : 'Réinitialiser mon profil'}
+          </button>
         </div>
       </div>
     </div>

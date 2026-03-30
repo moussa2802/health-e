@@ -4,10 +4,10 @@ import {
 } from 'firebase/firestore';
 import { db } from '../utils/firebase';
 import type {
-  UserAssessmentSession, ScaleResult, UserProfile
+  UserAssessmentSession, ScaleResult, UserProfile, TriggeredAlert
 } from '../types/assessment';
-import { ALL_SCALES } from '../data/scales';
-import { generateCompatibilityId } from '../utils/idGenerator';
+import { ALL_SCALES, MENTAL_HEALTH_SCALES, SEXUAL_HEALTH_SCALES } from '../data/scales';
+import { generateMentalCompatibilityId, generateSexualCompatibilityId } from '../utils/idGenerator';
 
 const SESSIONS_COL = 'assessmentSessions';
 const PROFILES_COL = 'userProfiles';
@@ -21,7 +21,8 @@ export async function getOrCreateUserProfile(uid: string, displayName: string): 
 
   const profile: UserProfile = {
     uid,
-    compatibilityId: null,
+    compatibilityIdMental: null,
+    compatibilityIdSexual: null,
     displayName,
     assessmentHistory: [],
     scaleResults: {},
@@ -32,8 +33,9 @@ export async function getOrCreateUserProfile(uid: string, displayName: string): 
   return profile;
 }
 
-export async function getUserProfileByCompatibilityId(compatibilityId: string): Promise<UserProfile | null> {
-  const q = query(collection(db, PROFILES_COL), where('compatibilityId', '==', compatibilityId));
+export async function getUserProfileByCompatibilityId(id: string): Promise<UserProfile | null> {
+  const field = id.startsWith('SM-') ? 'compatibilityIdMental' : 'compatibilityIdSexual';
+  const q = query(collection(db, PROFILES_COL), where(field, '==', id));
   const snap = await getDocs(q);
   if (snap.empty) return null;
   return snap.docs[0].data() as UserProfile;
@@ -81,59 +83,123 @@ export async function saveAnswer(
   });
 }
 
-export async function computeAndSaveScaleResult(
-  sessionId: string,
+// ── Calcul du score ─────────────────────────────────────────────────
+
+/**
+ * Reverse scoring correct pour toutes les échelles (y compris base 1).
+ * Formula : (max + min) - val  →  0-3 : 3-val, 1-4 : 5-val, 1-7 : 8-val, 1-5 : 6-val
+ */
+function reverseValue(val: number, min: number, max: number): number {
+  return (max + min) - val;
+}
+
+export function computeScaleScore(
   scaleId: string,
   answers: Record<number, number>
-): Promise<ScaleResult> {
+): ScaleResult {
   const scale = ALL_SCALES.find(s => s.id === scaleId);
   if (!scale) throw new Error(`Scale ${scaleId} introuvable`);
 
-  // Calcul du score total
-  let totalScore = 0;
+  const opts = scale.items[0]?.options ?? [];
+  const maxPerItem = Math.max(...opts.map(o => o.value), 3);
+  const minPerItem = Math.min(...opts.map(o => o.value), 0);
   const reverseIds = new Set(scale.reverseIds ?? []);
-  const maxPerItem = Math.max(...(scale.items[0]?.options?.map(o => o.value) ?? [3]));
 
-  for (const item of scale.items) {
-    let val = answers[item.id] ?? 0;
+  // ── Score total (items noScore=true exclus) ──
+  let totalScore = 0;
+  const scoredItems = scale.items.filter(i => !i.noScore);
+  for (const item of scoredItems) {
+    let val = answers[item.id] ?? minPerItem;
     const isReversed = (item.reversed === true) || reverseIds.has(item.id);
-    if (isReversed) val = maxPerItem - val;
+    if (isReversed) val = reverseValue(val, minPerItem, maxPerItem);
     totalScore += val;
   }
 
-  // Calcul des sous-scores
+  // Mode moyenne (ex: BRS)
+  if (scale.scoringMode === 'mean' && scoredItems.length > 0) {
+    totalScore = Math.round((totalScore / scoredItems.length) * 100) / 100;
+  }
+
+  // ── Sous-scores ──
+  // IMPORTANT: les subscales utilisent UNIQUEMENT sub.reverseIds, PAS les reverseIds globaux.
+  // Cela évite les doubles-inversions (ex: Big Five neuroticism item 4).
   const subscaleScores: Record<string, number> = {};
   if (scale.subscales) {
     for (const sub of scale.subscales) {
       const subReverseIds = new Set(sub.reverseIds ?? []);
       let subScore = 0;
-      const subMaxPerItem = Math.max(...(scale.items[0]?.options?.map(o => o.value) ?? [3]));
       for (const itemId of sub.itemIds) {
-        let val = answers[itemId] ?? 0;
-        if (subReverseIds.has(itemId) || reverseIds.has(itemId)) val = subMaxPerItem - val;
+        let val = answers[itemId] ?? minPerItem;
+        if (subReverseIds.has(itemId)) val = reverseValue(val, minPerItem, maxPerItem);
         subScore += val;
+      }
+      if (sub.scoringMode === 'mean' && sub.itemIds.length > 0) {
+        subScore = Math.round((subScore / sub.itemIds.length) * 100) / 100;
       }
       subscaleScores[sub.key] = subScore;
     }
   }
 
-  // Interprétation
+  // ── Interprétation ──
   const interpretation =
     scale.interpretation.find(r => totalScore >= r.min && totalScore <= r.max) ??
     scale.interpretation[scale.interpretation.length - 1];
 
-  const result: ScaleResult = {
+  // ── Alertes spécifiques par item ──
+  const alertsTriggered: TriggeredAlert[] = [];
+  if (scale.alertItems) {
+    for (const alertItem of scale.alertItems) {
+      const val = answers[alertItem.itemId];
+      if (val !== undefined && val >= alertItem.minValue) {
+        alertsTriggered.push({
+          itemId: alertItem.itemId,
+          value: val,
+          alertLevel: alertItem.alertLevel,
+          message: alertItem.message,
+        });
+      }
+    }
+  }
+
+  // Niveau d'alerte global (le plus élevé entre interpretation.alertLevel et alertItems)
+  const interpretationAlert = interpretation.alertLevel ?? 0;
+  const itemsAlert = alertsTriggered.length > 0
+    ? Math.max(...alertsTriggered.map(a => a.alertLevel))
+    : 0;
+  const alertLevel = Math.max(interpretationAlert, itemsAlert) as 0 | 1 | 2 | 3;
+
+  return {
     scaleId,
     totalScore,
     subscaleScores: Object.keys(subscaleScores).length > 0 ? subscaleScores : undefined,
     interpretation,
     completedAt: new Date(),
+    alertLevel: alertLevel > 0 ? alertLevel : undefined,
+    alertsTriggered: alertsTriggered.length > 0 ? alertsTriggered : undefined,
+  };
+}
+
+export async function computeAndSaveScaleResult(
+  sessionId: string,
+  scaleId: string,
+  answers: Record<number, number>
+): Promise<ScaleResult> {
+  const result = computeScaleScore(scaleId, answers);
+  const alertDetected = result.interpretation.referralRequired || (result.alertLevel ?? 0) >= 2;
+
+  // Strip undefined fields — Firestore rejects them
+  const resultForFirestore: Record<string, unknown> = {
+    scaleId: result.scaleId,
+    totalScore: result.totalScore,
+    subscaleScores: result.subscaleScores ?? null,
+    interpretation: result.interpretation,
+    completedAt: result.completedAt,
+    alertLevel: result.alertLevel ?? null,
+    alertsTriggered: result.alertsTriggered ?? null,
   };
 
-  const alertDetected = interpretation.referralRequired;
-
   await updateDoc(doc(db, SESSIONS_COL, sessionId), {
-    [`scores.${scaleId}`]: result,
+    [`scores.${scaleId}`]: resultForFirestore,
     alertDetected,
   });
 
@@ -166,11 +232,43 @@ export async function saveClaudeInterpretation(sessionId: string, text: string):
   await updateDoc(doc(db, SESSIONS_COL, sessionId), { claudeInterpretation: text });
 }
 
-const ALL_SCALE_IDS = ALL_SCALES.map(s => s.id);
-export const TOTAL_SCALES = ALL_SCALE_IDS.length;
+export async function saveDrLoAnalysis(userId: string, analysis: string): Promise<void> {
+  await updateDoc(doc(db, PROFILES_COL, userId), {
+    drLoAnalysis: analysis,
+    drLoUpdatedAt: serverTimestamp(),
+  });
+}
 
-/** Sauvegarde le résultat d'une scale dans le profil utilisateur.
- *  Si toutes les scales sont complètes, génère l'ID de compatibilité. */
+export async function saveDrLoSynthesis(userId: string, synthesis: string): Promise<void> {
+  await updateDoc(doc(db, PROFILES_COL, userId), {
+    drLoSynthesis: synthesis,
+    drLoSynthesisUpdatedAt: serverTimestamp(),
+  });
+}
+
+export async function saveOnboardingToProfile(userId: string, profile: Record<string, string>): Promise<void> {
+  await updateDoc(doc(db, PROFILES_COL, userId), { onboardingProfile: profile });
+}
+
+export async function resetUserProfile(userId: string): Promise<void> {
+  const ref = doc(db, PROFILES_COL, userId);
+  await updateDoc(ref, {
+    scaleResults: {},
+    compatibilityIdMental: null,
+    compatibilityIdSexual: null,
+    drLoAnalysis: null,
+    drLoSynthesis: null,
+    drLoUpdatedAt: null,
+    drLoSynthesisUpdatedAt: null,
+    lastAssessmentDate: null,
+    updatedAt: serverTimestamp(),
+  });
+}
+
+export const TOTAL_MENTAL_SCALES = MENTAL_HEALTH_SCALES.length;
+export const TOTAL_SEXUAL_SCALES = SEXUAL_HEALTH_SCALES.length;
+export const TOTAL_SCALES = ALL_SCALES.length;
+
 export async function saveScaleResultToProfile(
   userId: string,
   scaleId: string,
@@ -182,7 +280,6 @@ export async function saveScaleResultToProfile(
 
   const existing: Record<string, ScaleResult> = snap.data().scaleResults ?? {};
   const updated = { ...existing, [scaleId]: result };
-  const completedCount = Object.keys(updated).length;
 
   const updateData: Record<string, unknown> = {
     [`scaleResults.${scaleId}`]: {
@@ -191,30 +288,42 @@ export async function saveScaleResultToProfile(
       subscaleScores: result.subscaleScores ?? null,
       interpretation: result.interpretation,
       completedAt: serverTimestamp(),
+      alertLevel: result.alertLevel ?? null,
     },
     updatedAt: serverTimestamp(),
     lastAssessmentDate: serverTimestamp(),
   };
 
-  // Générer l'ID de compatibilité si profil 100% complet
-  if (completedCount >= TOTAL_SCALES) {
-    const currentId = snap.data().compatibilityId;
-    if (!currentId) {
-      updateData.compatibilityId = generateCompatibilityId();
-    }
+  // Generate mental code when all mental scales are done
+  const mentalDone = MENTAL_HEALTH_SCALES.every(s => !!updated[s.id]);
+  if (mentalDone && !snap.data().compatibilityIdMental) {
+    updateData.compatibilityIdMental = generateMentalCompatibilityId();
+  }
+
+  // Generate sexual code when all sexual scales are done
+  const sexualDone = SEXUAL_HEALTH_SCALES.every(s => !!updated[s.id]);
+  if (sexualDone && !snap.data().compatibilityIdSexual) {
+    updateData.compatibilityIdSexual = generateSexualCompatibilityId();
   }
 
   await updateDoc(ref, updateData);
 }
 
-/** Retourne la progression du profil utilisateur (scales complétées / total). */
 export async function getProfileProgress(userId: string): Promise<{
   scaleResults: Record<string, ScaleResult>;
   completedCount: number;
   totalCount: number;
   isComplete: boolean;
-  compatibilityId: string | null;
+  compatibilityIdMental: string | null;
+  compatibilityIdSexual: string | null;
+  mentalCompletedCount: number;
+  sexualCompletedCount: number;
+  isMentalComplete: boolean;
+  isSexualComplete: boolean;
   remaining: number;
+  drLoAnalysis: string | null;
+  drLoSynthesis: string | null;
+  onboardingProfile: Record<string, string> | null;
 }> {
   const ref = doc(db, PROFILES_COL, userId);
   const snap = await getDoc(ref);
@@ -224,28 +333,46 @@ export async function getProfileProgress(userId: string): Promise<{
       completedCount: 0,
       totalCount: TOTAL_SCALES,
       isComplete: false,
-      compatibilityId: null,
+      compatibilityIdMental: null,
+      compatibilityIdSexual: null,
+      mentalCompletedCount: 0,
+      sexualCompletedCount: 0,
+      isMentalComplete: false,
+      isSexualComplete: false,
       remaining: TOTAL_SCALES,
+      drLoAnalysis: null,
+      drLoSynthesis: null,
+      onboardingProfile: null,
     };
   }
   const data = snap.data();
   const scaleResults: Record<string, ScaleResult> = data.scaleResults ?? {};
   const completedCount = Object.keys(scaleResults).length;
-  const isComplete = completedCount >= TOTAL_SCALES;
+  const mentalCompletedCount = MENTAL_HEALTH_SCALES.filter(s => !!scaleResults[s.id]).length;
+  const sexualCompletedCount = SEXUAL_HEALTH_SCALES.filter(s => !!scaleResults[s.id]).length;
+  const isMentalComplete = mentalCompletedCount >= TOTAL_MENTAL_SCALES;
+  const isSexualComplete = sexualCompletedCount >= TOTAL_SEXUAL_SCALES;
+  const isComplete = isMentalComplete || isSexualComplete;
   return {
     scaleResults,
     completedCount,
     totalCount: TOTAL_SCALES,
     isComplete,
-    compatibilityId: (data.compatibilityId as string | null) ?? null,
+    compatibilityIdMental: (data.compatibilityIdMental as string | null) ?? null,
+    compatibilityIdSexual: (data.compatibilityIdSexual as string | null) ?? null,
+    mentalCompletedCount,
+    sexualCompletedCount,
+    isMentalComplete,
+    isSexualComplete,
     remaining: Math.max(0, TOTAL_SCALES - completedCount),
+    drLoAnalysis: (data.drLoAnalysis as string | null) ?? null,
+    drLoSynthesis: (data.drLoSynthesis as string | null) ?? null,
+    onboardingProfile: (data.onboardingProfile as Record<string, string> | null) ?? null,
   };
 }
 
-/** Vérifie si un profil (par son compatibilityId) est complet. */
-export async function isProfileCompleteById(compatibilityId: string): Promise<boolean> {
-  const profile = await getUserProfileByCompatibilityId(compatibilityId);
-  if (!profile) return false;
-  const scaleResults = (profile as Record<string, unknown>).scaleResults as Record<string, unknown> ?? {};
-  return Object.keys(scaleResults).length >= TOTAL_SCALES;
+/** A profile is "complete" for a given code type if the code exists in Firestore */
+export async function isProfileCompleteById(id: string): Promise<boolean> {
+  const profile = await getUserProfileByCompatibilityId(id);
+  return profile !== null;
 }

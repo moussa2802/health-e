@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { ChevronLeft, ChevronRight, AlertTriangle, X, Loader2 } from 'lucide-react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
+import { Loader2 } from 'lucide-react';
 import {
   getSession,
   saveAnswer,
@@ -8,13 +8,50 @@ import {
   finalizeSession,
   saveScaleResultToProfile,
 } from '../../services/evaluationService';
-import { getScaleById } from '../../data/scales';
+import {
+  getGuestSession,
+  saveGuestAnswer,
+  computeGuestResult,
+  guestToUserSession,
+} from '../../utils/guestSession';
+import { getScaleById, getAdaptedScaleById } from '../../data/scales';
 import type { UserAssessmentSession, AssessmentScale } from '../../types/assessment';
 import QuestionItem from '../../components/assessment/QuestionItem';
+import { triggerDrLoAnalysis, triggerDrLoSynthesis } from '../../utils/drLoAnalysis';
+import { getSexualHealthFilter } from '../../utils/sexualHealthFilter';
 
+// ── Thème par catégorie ───────────────────────────────────────────────────────
+function getTheme(category?: string) {
+  const isSexual = category === 'sexual_health';
+  return {
+    accent1: isSexual ? '#C026D3' : '#3B82F6',
+    accent2: isSexual ? '#EC4899' : '#2DD4BF',
+    pageBg: isSexual
+      ? 'linear-gradient(160deg, #FFF0F9 0%, #FAFAFA 55%, #F5F0FF 100%)'
+      : 'linear-gradient(160deg, #EFF6FF 0%, #FAFFFE 55%, #F0FDF4 100%)',
+    cardBorder: isSexual ? 'rgba(192,38,211,0.12)' : 'rgba(59,130,246,0.12)',
+    badgeBg: isSexual ? '#FFF0F9' : '#EFF6FF',
+    badgeColor: isSexual ? '#C026D3' : '#3B82F6',
+    label: isSexual ? 'Santé sexuelle' : 'Santé mentale',
+  };
+}
+
+const SCALE_ICONS: Record<string, string> = {
+  gad7: '😰', phq9: '💙', big_five: '🌟', ecr_r: '🫶',
+  rses: '💪', brs: '🌱', pss10: '⚡', ace: '🧩',
+  pcl5: '🌀', pg13: '🕊️', ceca_q: '👶', social_pressure: '🌍',
+  religious_cultural: '✨', economic_stress: '💰',
+  nsss: '❤️', sdi2: '🔥', sis_ses: '⚖️', fsfi: '🌸',
+  iief: '💙', tsi_base: '🧩', pair: '🫂', sise: '🪞',
+  social_pressure_sex: '🤐', griss_base: '💑',
+};
+
+// ── Composant principal ───────────────────────────────────────────────────────
 const AssessmentQuizPage: React.FC = () => {
   const { sessionId } = useParams<{ sessionId: string }>();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const isGuestMode = searchParams.get('guest') === 'true';
 
   const [session, setSession] = useState<UserAssessmentSession | null>(null);
   const [currentScale, setCurrentScale] = useState<AssessmentScale | null>(null);
@@ -25,40 +62,56 @@ const AssessmentQuizPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [showAbandonConfirm, setShowAbandonConfirm] = useState(false);
   const [transitioning, setTransitioning] = useState(false);
+  const [slideDir, setSlideDir] = useState<'left' | 'right'>('left');
 
   // Charger la session
   useEffect(() => {
     if (!sessionId) return;
     setLoading(true);
+
+    if (isGuestMode) {
+      const guestSession = getGuestSession(sessionId);
+      if (!guestSession) {
+        setError('Session introuvable. Veuillez recommencer une nouvelle évaluation.');
+        setLoading(false);
+        return;
+      }
+      if (guestSession.status === 'completed') {
+        navigate(`/assessment/results/${sessionId}?guest=true`, { replace: true });
+        setLoading(false);
+        return;
+      }
+      const s = guestToUserSession(guestSession);
+      setSession(s);
+      const sexProfile = getSexualHealthFilter()?.experienceProfile;
+      const scale = getAdaptedScaleById(guestSession.scaleId, sexProfile) ?? getScaleById(guestSession.scaleId);
+      if (scale) { setCurrentScale(scale); setLocalAnswers(guestSession.answers); }
+      setLoading(false);
+      return;
+    }
+
     getSession(sessionId)
       .then((s) => {
-        if (!s) {
-          setError('Session introuvable. Veuillez recommencer une nouvelle évaluation.');
-          return;
-        }
-        if (s.status === 'completed') {
-          navigate(`/assessment/results/${sessionId}`, { replace: true });
-          return;
-        }
+        if (!s) { setError('Session introuvable. Veuillez recommencer une nouvelle évaluation.'); return; }
+        if (s.status === 'completed') { navigate(`/assessment/results/${sessionId}`, { replace: true }); return; }
         setSession(s);
-        const scale = getScaleById(s.selectedScaleIds[s.currentScaleIndex]);
+        const sexProfile = getSexualHealthFilter()?.experienceProfile;
+        const scale = getAdaptedScaleById(s.selectedScaleIds[s.currentScaleIndex], sexProfile)
+          ?? getScaleById(s.selectedScaleIds[s.currentScaleIndex]);
         if (scale) {
           setCurrentScale(scale);
-          // Pré-charger les réponses existantes pour cette scale
-          const existingAnswers = s.answers[scale.id] ?? {};
-          setLocalAnswers(existingAnswers);
+          setLocalAnswers(s.answers[scale.id] ?? {});
         }
       })
       .catch(() => setError('Erreur lors du chargement de la session.'))
       .finally(() => setLoading(false));
-  }, [sessionId, navigate]);
+  }, [sessionId, navigate, isGuestMode]);
 
   const scaleIndex = session?.currentScaleIndex ?? 0;
   const totalScales = session?.selectedScaleIds.length ?? 0;
   const items = currentScale?.items ?? [];
   const currentItem = items[currentItemIndex] ?? null;
 
-  // Filtrer les items conditionnels
   const visibleItems = items.filter((item) => {
     if (!item.conditional) return true;
     const depAnswer = localAnswers[item.conditional.itemId];
@@ -76,65 +129,66 @@ const AssessmentQuizPage: React.FC = () => {
     if (!currentItem || !sessionId || !currentScale) return;
     const newAnswers = { ...localAnswers, [currentItem.id]: value };
     setLocalAnswers(newAnswers);
-
-    // Sauvegarder en arrière-plan
     try {
-      await saveAnswer(sessionId, currentScale.id, currentItem.id, value);
-    } catch {
-      // Silencieux — on continue quand même
-    }
-  }, [currentItem, sessionId, currentScale, localAnswers]);
+      if (isGuestMode) saveGuestAnswer(sessionId, currentItem.id, value);
+      else await saveAnswer(sessionId, currentScale.id, currentItem.id, value);
+    } catch { /* silencieux */ }
+  }, [currentItem, sessionId, currentScale, localAnswers, isGuestMode]);
 
   const canGoNext = currentItem ? localAnswers[currentItem.id] !== undefined : false;
 
+  // Ref to always have latest handleNext for auto-advance
+  const handleNextRef = useRef<() => void>(() => {});
+
   const handleNext = useCallback(async () => {
     if (!session || !currentScale || !sessionId) return;
-
     const nextVisibleIndex = currentVisibleIndex + 1;
 
     if (nextVisibleIndex < totalVisible) {
-      // Prochain item dans la même scale
-      const nextItem = visibleItems[nextVisibleIndex];
-      const itemIndex = items.findIndex((i) => i.id === nextItem.id);
-      setCurrentItemIndex(itemIndex >= 0 ? itemIndex : currentItemIndex + 1);
+      setSlideDir('left');
+      setTransitioning(true);
+      setTimeout(() => {
+        const nextItem = visibleItems[nextVisibleIndex];
+        const itemIndex = items.findIndex((i) => i.id === nextItem.id);
+        setCurrentItemIndex(itemIndex >= 0 ? itemIndex : currentItemIndex + 1);
+        setTransitioning(false);
+      }, 220);
     } else {
-      // Fin de la scale → calculer le résultat
       setSubmitting(true);
       try {
+        if (isGuestMode) {
+          const guestResult = computeGuestResult(sessionId);
+          if (!guestResult) throw new Error('Erreur lors du calcul du résultat.');
+          navigate(`/assessment/results/${sessionId}?guest=true`);
+          return;
+        }
         const scaleResult = await computeAndSaveScaleResult(sessionId, currentScale.id, localAnswers);
-
         const nextScaleIndex = scaleIndex + 1;
         if (nextScaleIndex >= totalScales) {
-          // Fin de toutes les scales
           await finalizeSession(sessionId);
-          // Sauvegarde au profil progressif (non bloquant)
           if (session.userId) {
             try {
               await saveScaleResultToProfile(session.userId, currentScale.id, scaleResult);
-            } catch {
-              // silencieux — la session est déjà sauvegardée
-            }
+              triggerDrLoAnalysis(session.userId).catch((e) => console.error('[DrLo analysis]', e));
+              triggerDrLoSynthesis(session.userId).catch((e) => console.error('[DrLo synthesis]', e));
+            } catch { /* silencieux */ }
           }
           navigate(`/assessment/results/${sessionId}`);
         } else {
-          // Prochaine scale
+          setSlideDir('left');
           setTransitioning(true);
           setTimeout(() => {
             const nextScaleId = session.selectedScaleIds[nextScaleIndex];
-            const nextScale = getScaleById(nextScaleId);
+            const nextScale = getAdaptedScaleById(nextScaleId, getSexualHealthFilter()?.experienceProfile)
+              ?? getScaleById(nextScaleId);
             if (nextScale) {
-              const updatedSession = {
-                ...session,
-                currentScaleIndex: nextScaleIndex,
-              };
-              setSession(updatedSession);
+              setSession({ ...session, currentScaleIndex: nextScaleIndex });
               setCurrentScale(nextScale);
-              const existingAnswers = session.answers[nextScale.id] ?? {};
-              setLocalAnswers(existingAnswers);
+              setLocalAnswers(session.answers[nextScale.id] ?? {});
               setCurrentItemIndex(0);
             }
             setTransitioning(false);
-          }, 400);
+          }, 220);
         }
       } catch (err: unknown) {
         setError(err instanceof Error ? err.message : 'Erreur lors de la sauvegarde.');
@@ -144,43 +198,55 @@ const AssessmentQuizPage: React.FC = () => {
     }
   }, [
     session, currentScale, sessionId, currentVisibleIndex, totalVisible,
-    visibleItems, items, currentItemIndex, localAnswers, scaleIndex,
-    totalScales, navigate,
+    visibleItems, items, currentItemIndex, localAnswers, scaleIndex, totalScales, navigate, isGuestMode,
   ]);
+
+  // Keep ref in sync
+  useEffect(() => { handleNextRef.current = handleNext; }, [handleNext]);
 
   const handlePrev = () => {
     if (currentVisibleIndex > 0) {
-      const prevItem = visibleItems[currentVisibleIndex - 1];
-      const itemIndex = items.findIndex((i) => i.id === prevItem.id);
-      setCurrentItemIndex(itemIndex >= 0 ? itemIndex : currentItemIndex - 1);
+      setSlideDir('right');
+      setTransitioning(true);
+      setTimeout(() => {
+        const prevItem = visibleItems[currentVisibleIndex - 1];
+        const itemIndex = items.findIndex((i) => i.id === prevItem.id);
+        setCurrentItemIndex(itemIndex >= 0 ? itemIndex : currentItemIndex - 1);
+        setTransitioning(false);
+      }, 180);
     }
   };
 
   const isLastItemOfScale = currentVisibleIndex === totalVisible - 1;
   const isLastScale = scaleIndex === totalScales - 1;
 
-  // Loading / Error states
+  const theme = getTheme(currentScale?.category);
+  const scaleIcon = currentScale ? (SCALE_ICONS[currentScale.id] ?? '📋') : '📋';
+
+  // ── Loading ──
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-center">
-          <Loader2 size={40} className="animate-spin text-sky-500 mx-auto mb-4" />
-          <p className="text-gray-600">Chargement de votre évaluation...</p>
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#F8FAFF' }}>
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ width: 44, height: 44, border: '3px solid #3B82F6', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite', margin: '0 auto 14px' }} />
+          <p style={{ color: '#64748B', fontSize: 14 }}>Chargement de votre évaluation…</p>
+          <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
         </div>
       </div>
     );
   }
 
+  // ── Error ──
   if (error) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
-        <div className="bg-white rounded-2xl border border-red-200 p-8 max-w-md w-full text-center shadow">
-          <AlertTriangle size={40} className="text-red-500 mx-auto mb-4" />
-          <h2 className="text-lg font-bold text-gray-900 mb-2">Une erreur est survenue</h2>
-          <p className="text-gray-600 mb-6">{error}</p>
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#F8FAFF', padding: '0 20px' }}>
+        <div style={{ background: '#fff', borderRadius: 20, border: '1px solid rgba(220,38,38,0.15)', padding: '36px 32px', maxWidth: 420, width: '100%', textAlign: 'center', boxShadow: '0 8px 32px rgba(0,0,0,0.06)' }}>
+          <div style={{ fontSize: 40, marginBottom: 14 }}>⚠️</div>
+          <h2 style={{ fontSize: 18, fontWeight: 800, color: '#0A2342', marginBottom: 8 }}>Une erreur est survenue</h2>
+          <p style={{ fontSize: 14, color: '#64748B', marginBottom: 24, lineHeight: 1.6 }}>{error}</p>
           <button
             onClick={() => navigate('/assessment')}
-            className="bg-sky-500 text-white px-6 py-2.5 rounded-full font-medium hover:bg-sky-600 transition-colors"
+            style={{ background: 'linear-gradient(135deg, #3B82F6, #2DD4BF)', border: 'none', borderRadius: 12, padding: '11px 28px', fontSize: 14, fontWeight: 700, color: '#fff', cursor: 'pointer' }}
           >
             Recommencer
           </button>
@@ -192,134 +258,277 @@ const AssessmentQuizPage: React.FC = () => {
   if (!session || !currentScale || !currentItem) return null;
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
-      {/* Top progress bar */}
-      <div className="fixed top-0 left-0 right-0 z-30 bg-white border-b border-gray-200 shadow-sm">
-        <div className="max-w-2xl mx-auto px-4 py-3">
-          <div className="flex items-center justify-between mb-2">
-            <div>
-              <p className="text-xs text-gray-500">
-                Évaluation {scaleIndex + 1} sur {totalScales}
-              </p>
-              <p className="text-sm font-semibold text-gray-900">{currentScale.shortName} — {currentScale.name}</p>
+    <div style={{ minHeight: '100vh', background: theme.pageBg, fontFamily: "'Inter', -apple-system, sans-serif", display: 'flex', flexDirection: 'column' }}>
+      <style>{`
+        @keyframes spin { to { transform: rotate(360deg); } }
+        @keyframes slideInLeft { from { opacity: 0; transform: translateX(28px); } to { opacity: 1; transform: translateX(0); } }
+        @keyframes slideInRight { from { opacity: 0; transform: translateX(-28px); } to { opacity: 1; transform: translateX(0); } }
+        @keyframes fadeOut { from { opacity: 1; } to { opacity: 0; } }
+        .option-btn:hover:not(:disabled) { transform: translateY(-1px) !important; box-shadow: 0 4px 16px rgba(59,130,246,0.13) !important; }
+      `}</style>
+
+      {/* ── Top bar ──────────────────────────────────────────────────────── */}
+      <div style={{
+        position: 'fixed', top: 0, left: 0, right: 0, zIndex: 30,
+        background: 'rgba(255,255,255,0.88)',
+        backdropFilter: 'blur(18px)',
+        WebkitBackdropFilter: 'blur(18px)',
+        borderBottom: `1px solid ${theme.cardBorder}`,
+        boxShadow: '0 2px 20px rgba(0,0,0,0.04)',
+      }}>
+        <div style={{ maxWidth: 680, margin: '0 auto', padding: '13px 20px 11px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 10 }}>
+            {/* Scale icon + name */}
+            <div style={{
+              width: 36, height: 36, borderRadius: 10, flexShrink: 0,
+              background: `linear-gradient(135deg, ${theme.accent1}, ${theme.accent2})`,
+              display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 17,
+            }}>
+              {scaleIcon}
             </div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <p style={{ margin: 0, fontSize: 10, fontWeight: 600, color: theme.accent1, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                {theme.label} · Évaluation {scaleIndex + 1}/{totalScales}
+              </p>
+              <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: '#0F172A', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {currentScale.shortName} — {currentScale.name}
+              </p>
+            </div>
+            {/* Question counter */}
+            <div style={{
+              background: theme.badgeBg,
+              border: `1px solid ${theme.accent1}25`,
+              borderRadius: 20, padding: '3px 11px',
+              fontSize: 12, fontWeight: 800, color: theme.accent1,
+              flexShrink: 0,
+            }}>
+              {currentVisibleIndex + 1} / {totalVisible}
+            </div>
+            {/* Abandon */}
             <button
               onClick={() => setShowAbandonConfirm(true)}
-              className="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100 transition-colors"
-              title="Abandonner l'évaluation"
+              style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px 6px', color: '#94A3B8', borderRadius: 8, flexShrink: 0, fontSize: 18, lineHeight: 1 }}
+              title="Abandonner"
             >
-              <X size={18} />
+              ✕
             </button>
           </div>
-          {/* Global progress bar */}
-          <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
-            <div
-              className="h-full bg-gradient-to-r from-sky-500 to-violet-500 rounded-full transition-all duration-500"
-              style={{ width: `${progressOverall}%` }}
-            />
+
+          {/* Progress bar */}
+          <div style={{ height: 5, background: `${theme.accent1}18`, borderRadius: 99, overflow: 'hidden' }}>
+            <div style={{
+              height: '100%',
+              width: `${progressOverall}%`,
+              background: `linear-gradient(90deg, ${theme.accent1}, ${theme.accent2})`,
+              borderRadius: 99,
+              transition: 'width 0.5s cubic-bezier(0.4, 0, 0.2, 1)',
+            }} />
           </div>
         </div>
       </div>
 
-      {/* Main content */}
-      <div className={`flex-1 max-w-2xl mx-auto w-full px-4 pt-24 pb-32 transition-opacity duration-400 ${transitioning ? 'opacity-0' : 'opacity-100'}`}>
-        {/* Scale header */}
-        <div className="bg-white rounded-2xl border border-gray-200 p-5 mb-6 shadow-sm">
-          <div className="flex items-start justify-between gap-3">
-            <div className="flex-1">
-              <p className="text-xs text-gray-500 mb-1">{currentScale.category === "mental_health"? "Santé mentale": "Santé sexuelle"}</p>
-              <h2 className="text-lg font-bold text-gray-900 mb-2">{currentScale.name}</h2>
-              <p className="text-sm text-gray-600 leading-relaxed">{currentScale.instructions}</p>
-            </div>
-            <div className="flex-shrink-0 text-center bg-sky-50 rounded-xl px-3 py-2">
-              <div className="text-lg font-bold text-sky-700">{currentVisibleIndex + 1}</div>
-              <div className="text-xs text-sky-500">/ {totalVisible}</div>
-            </div>
+      {/* ── Content ──────────────────────────────────────────────────────── */}
+      <div style={{ flex: 1, maxWidth: 680, margin: '0 auto', width: '100%', padding: '86px 20px 110px', boxSizing: 'border-box' }}>
+
+        {/* Scale instructions (shown only on first question of a scale) */}
+        {currentVisibleIndex === 0 && currentScale.instructions && (
+          <div style={{
+            background: 'rgba(255,255,255,0.72)',
+            backdropFilter: 'blur(10px)',
+            border: `1.5px solid ${theme.cardBorder}`,
+            borderRadius: 16,
+            padding: '14px 18px',
+            marginBottom: 16,
+            display: 'flex',
+            alignItems: 'flex-start',
+            gap: 10,
+          }}>
+            <span style={{ fontSize: 16, flexShrink: 0 }}>💬</span>
+            <p style={{ margin: 0, fontSize: 13, color: '#475569', lineHeight: 1.6 }}>
+              {currentScale.instructions}
+            </p>
           </div>
-        </div>
+        )}
 
         {/* Question card */}
-        <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
+        <div
+          style={{
+            background: 'rgba(255,255,255,0.95)',
+            backdropFilter: 'blur(16px)',
+            WebkitBackdropFilter: 'blur(16px)',
+            border: `1.5px solid ${theme.cardBorder}`,
+            borderRadius: 22,
+            padding: '28px 26px 26px',
+            boxShadow: `0 8px 40px ${theme.accent1}10, 0 2px 8px rgba(0,0,0,0.04)`,
+            animation: transitioning
+              ? 'fadeOut 0.18s ease forwards'
+              : slideDir === 'left'
+                ? 'slideInLeft 0.25s cubic-bezier(0.4, 0, 0.2, 1) forwards'
+                : 'slideInRight 0.25s cubic-bezier(0.4, 0, 0.2, 1) forwards',
+          }}
+        >
+          {/* Question number chip */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
+            <div style={{
+              height: 28,
+              padding: '0 12px',
+              borderRadius: 20,
+              background: `linear-gradient(135deg, ${theme.accent1}, ${theme.accent2})`,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: 12, fontWeight: 800, color: '#fff',
+              letterSpacing: '0.04em',
+            }}>
+              Q.{currentVisibleIndex + 1}
+            </div>
+            {/* Mini dots progress */}
+            <div style={{ display: 'flex', gap: 4, flex: 1, overflow: 'hidden' }}>
+              {Array.from({ length: Math.min(totalVisible, 20) }).map((_, i) => (
+                <div
+                  key={i}
+                  style={{
+                    height: 4,
+                    flex: 1,
+                    borderRadius: 99,
+                    background: i <= currentVisibleIndex
+                      ? `linear-gradient(90deg, ${theme.accent1}, ${theme.accent2})`
+                      : `${theme.accent1}18`,
+                    transition: 'background 0.3s ease',
+                  }}
+                />
+              ))}
+            </div>
+          </div>
+
           <QuestionItem
             item={currentItem}
             value={localAnswers[currentItem.id]}
             onChange={handleAnswer}
             disabled={submitting}
+            accentColor={theme.accent1}
+            accentColor2={theme.accent2}
+            scaleId={currentScale.id}
           />
         </div>
       </div>
 
-      {/* Bottom navigation */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-4 py-3 z-20">
-        <div className="max-w-2xl mx-auto flex items-center gap-3">
+      {/* ── Bottom navigation (floating) ─────────────────────────────────── */}
+      <div style={{
+        position: 'fixed', bottom: 16, left: 16, right: 16, zIndex: 20,
+      }}>
+        <div style={{
+          maxWidth: 648, margin: '0 auto',
+          background: 'rgba(255,255,255,0.92)',
+          backdropFilter: 'blur(20px)',
+          WebkitBackdropFilter: 'blur(20px)',
+          borderRadius: 20,
+          border: `1.5px solid ${theme.cardBorder}`,
+          padding: '12px 14px',
+          display: 'flex',
+          gap: 10,
+          boxShadow: '0 8px 32px rgba(0,0,0,0.10)',
+        }}>
+          {/* Précédent */}
           <button
             onClick={handlePrev}
             disabled={currentVisibleIndex === 0 || submitting}
-            className="flex items-center gap-2 px-5 py-2.5 rounded-xl border border-gray-200 text-gray-700 font-medium text-sm hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+            style={{
+              width: 48, height: 48, borderRadius: 13, flexShrink: 0,
+              border: `1.5px solid ${theme.accent1}22`,
+              background: currentVisibleIndex === 0 ? '#F8FAFF' : theme.badgeBg,
+              color: currentVisibleIndex === 0 ? '#CBD5E1' : theme.accent1,
+              fontSize: 20,
+              cursor: currentVisibleIndex === 0 ? 'not-allowed' : 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              transition: 'all 0.15s ease',
+              opacity: currentVisibleIndex === 0 ? 0.5 : 1,
+            }}
           >
-            <ChevronLeft size={16} />
-            Précédent
+            ←
           </button>
 
+          {/* Suivant / Terminer */}
           <button
             onClick={handleNext}
             disabled={!canGoNext || submitting}
-            className={`flex-1 flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl font-semibold text-sm transition-all duration-200 ${
-              canGoNext && !submitting
-                ? 'bg-gradient-to-r from-sky-500 to-violet-500 text-white shadow-md hover:shadow-lg'
-                : 'bg-gray-100 text-gray-400 cursor-not-allowed'
-            }`}
+            style={{
+              flex: 1,
+              height: 48,
+              borderRadius: 13,
+              border: 'none',
+              background: canGoNext && !submitting
+                ? `linear-gradient(135deg, ${theme.accent1}, ${theme.accent2})`
+                : '#F1F5F9',
+              color: canGoNext && !submitting ? '#fff' : '#94A3B8',
+              fontSize: 14,
+              fontWeight: 700,
+              cursor: canGoNext && !submitting ? 'pointer' : 'not-allowed',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 8,
+              transition: 'all 0.18s ease',
+              boxShadow: canGoNext && !submitting ? `0 4px 20px ${theme.accent1}35` : 'none',
+              letterSpacing: '0.01em',
+            }}
           >
             {submitting ? (
               <>
-                <Loader2 size={16} className="animate-spin" />
-                Calcul en cours...
+                <div style={{ width: 16, height: 16, border: '2px solid rgba(255,255,255,0.5)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+                Calcul en cours…
               </>
             ) : isLastItemOfScale ? (
-              isLastScale ? (
-                <>
-                  Terminer l'évaluation
-                  <ChevronRight size={16} />
-                </>
-              ) : (
-                <>
-                  Évaluation suivante
-                  <ChevronRight size={16} />
-                </>
-              )
+              isLastScale ? '✓ Terminer l\'évaluation' : 'Évaluation suivante →'
             ) : (
-              <>
-                Suivant
-                <ChevronRight size={16} />
-              </>
+              'Suivant →'
             )}
           </button>
         </div>
       </div>
 
-      {/* Abandon confirmation modal */}
+      {/* ── Modal abandon ─────────────────────────────────────────────────── */}
       {showAbandonConfirm && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center px-4">
-          <div className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-2xl">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 bg-red-100 rounded-xl flex items-center justify-center">
-                <AlertTriangle size={20} className="text-red-500" />
-              </div>
-              <h3 className="text-lg font-bold text-gray-900">Abandonner l'évaluation ?</h3>
+        <div
+          style={{
+            position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.55)',
+            backdropFilter: 'blur(4px)', WebkitBackdropFilter: 'blur(4px)',
+            zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 20px',
+          }}
+        >
+          <div style={{
+            background: '#fff', borderRadius: 22, padding: '28px 26px',
+            maxWidth: 360, width: '100%',
+            boxShadow: '0 20px 60px rgba(0,0,0,0.18)',
+            animation: 'slideInLeft 0.2s ease',
+          }}>
+            <div style={{ width: 48, height: 48, borderRadius: 14, background: '#FEF2F2', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, marginBottom: 16 }}>
+              ⚠️
             </div>
-            <p className="text-sm text-gray-600 mb-6">
+            <h3 style={{ margin: '0 0 8px', fontSize: 17, fontWeight: 800, color: '#0F172A' }}>
+              Abandonner l'évaluation ?
+            </h3>
+            <p style={{ margin: '0 0 22px', fontSize: 13, color: '#64748B', lineHeight: 1.6 }}>
               Vos réponses actuelles seront perdues. Êtes-vous sûr(e) de vouloir arrêter ?
             </p>
-            <div className="flex gap-3">
+            <div style={{ display: 'flex', gap: 10 }}>
               <button
                 onClick={() => setShowAbandonConfirm(false)}
-                className="flex-1 px-4 py-2.5 border border-gray-200 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+                style={{
+                  flex: 1, padding: '11px 0', borderRadius: 12,
+                  border: '1.5px solid rgba(148,163,184,0.3)',
+                  background: '#F8FAFF', color: '#475569', fontSize: 13, fontWeight: 600, cursor: 'pointer',
+                }}
               >
                 Continuer
               </button>
               <button
                 onClick={() => navigate('/assessment')}
-                className="flex-1 px-4 py-2.5 bg-red-500 text-white rounded-xl text-sm font-medium hover:bg-red-600 transition-colors"
+                style={{
+                  flex: 1, padding: '11px 0', borderRadius: 12,
+                  border: 'none',
+                  background: 'linear-gradient(135deg, #EF4444, #DC2626)',
+                  color: '#fff', fontSize: 13, fontWeight: 700, cursor: 'pointer',
+                  boxShadow: '0 4px 12px rgba(220,38,38,0.3)',
+                }}
               >
                 Abandonner
               </button>
