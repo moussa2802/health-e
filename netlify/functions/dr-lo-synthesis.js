@@ -1,100 +1,134 @@
-const Anthropic = require('@anthropic-ai/sdk');
-
-const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
-
-const headers = {
-  'Content-Type': 'application/json',
-  'Access-Control-Allow-Origin': process.env.URL || '*',
-  'Access-Control-Allow-Headers': 'Content-Type',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-};
-
 exports.handler = async (event) => {
-  if (event.httpMethod === 'OPTIONS') return { statusCode: 204, headers, body: '' };
-  if (event.httpMethod !== 'POST') {
-    return { statusCode: 405, headers, body: JSON.stringify({ error: 'Méthode non autorisée' }) };
-  }
-  if (!process.env.ANTHROPIC_API_KEY) {
-    return { statusCode: 500, headers, body: JSON.stringify({ error: 'Configuration serveur incorrecte' }) };
+
+  const headers = {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Headers': 'Content-Type',
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'Content-Type': 'application/json'
   }
 
-  let body;
+  if (event.httpMethod === 'OPTIONS') {
+    return { statusCode: 200, headers, body: '' }
+  }
+
+  if (!event.body) {
+    return {
+      statusCode: 400,
+      headers,
+      body: JSON.stringify({ error: 'Body manquant' })
+    }
+  }
+
+  let payload
   try {
-    body = JSON.parse(event.body || '{}');
-  } catch {
-    return { statusCode: 400, headers, body: JSON.stringify({ error: 'Corps de requête invalide' }) };
+    payload = JSON.parse(event.body)
+  } catch (e) {
+    return {
+      statusCode: 400,
+      headers,
+      body: JSON.stringify({ error: 'JSON invalide' })
+    }
   }
 
-  const { prenom, items_completes, nombre_items_faits, nombre_items_total } = body;
+  const {
+    prenom = 'toi',
+    items_completes = [],
+    nombre_items_faits = 0,
+    nombre_items_total = 24
+  } = payload
 
   if (!items_completes || items_completes.length === 0) {
-    return { statusCode: 400, headers, body: JSON.stringify({ error: 'Aucun item complété' }) };
+    return {
+      statusCode: 400,
+      headers,
+      body: JSON.stringify({ error: 'items_completes vide' })
+    }
+  }
+
+  const itemsText = items_completes.map(item => {
+    const score = item.score ?? item.totalScore ?? ''
+    const niveau = item.niveau ?? item.label ?? ''
+    const nom = item.nom ?? item.scaleName ?? ''
+    const outil = item.outil ?? ''
+    const alerte = (item.alertLevel > 1) ? '⚠️ ALERTE' : ''
+    return `- ${nom} (${outil}) : ${niveau} — ${score} ${alerte}`
+  }).join('\n')
+
+  const prompt = `Tu es le Dr Lo, médecin IA bienveillant et fun de la plateforme Healt-e, spécialisé en santé mentale et sexuelle avec une sensibilité au contexte sénégalais et africain.
+
+RÈGLES ABSOLUES :
+- Tutoiement obligatoire${prenom && prenom !== 'toi' ? `, mentionne "${prenom}" au moins une fois` : ''}
+- 5 à 6 phrases MAXIMUM — pas plus
+- Ton chaleureux, direct, jamais clinique ni froid
+- Fais une lecture croisée des résultats : cherche les liens, ne les liste pas un par un
+- Si alerte ⚠️ : orienter avec douceur vers un professionnel
+- JAMAIS de diagnostic explicite
+- Signe TOUJOURS "— Dr Lo 🩺" à la fin
+
+${nombre_items_faits} évaluation(s) complétée(s) sur ${nombre_items_total} :
+${itemsText}
+
+Génère UNIQUEMENT la synthèse courte (5-6 phrases max). Commence directement par l'accroche personnalisée, sans titre ni section.`
+
+  const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY
+
+  if (!ANTHROPIC_API_KEY) {
+    return {
+      statusCode: 500,
+      headers,
+      body: JSON.stringify({ error: 'Clé API manquante' })
+    }
   }
 
   try {
-    const prompt = buildSynthesisPrompt({ prenom, items_completes, nombre_items_faits, nombre_items_total });
+    const response = await fetch(
+      'https://api.anthropic.com/v1/messages',
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': ANTHROPIC_API_KEY,
+          'anthropic-version': '2023-06-01'
+        },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 450,
+          messages: [{
+            role: 'user',
+            content: prompt
+          }]
+        })
+      }
+    )
 
-    const message = await client.messages.create({
-      model: 'claude-sonnet-4-20250514',
-      max_tokens: 450,
-      messages: [{ role: 'user', content: prompt }],
-    });
+    if (!response.ok) {
+      const errText = await response.text()
+      console.error('Erreur Anthropic:', errText)
+      return {
+        statusCode: 500,
+        headers,
+        body: JSON.stringify({
+          error: 'Erreur API Anthropic',
+          detail: errText
+        })
+      }
+    }
 
-    const synthesis = message.content[0].type === 'text' ? message.content[0].text : '';
+    const data = await response.json()
+    const synthesis = data.content[0].text
 
     return {
       statusCode: 200,
       headers,
-      body: JSON.stringify({ synthesis }),
-    };
-  } catch (err) {
-    console.error('[DR-LO-SYNTHESIS] Erreur:', err.message);
+      body: JSON.stringify({ synthesis })
+    }
+
+  } catch (e) {
+    console.error('Erreur fetch:', e.message)
     return {
       statusCode: 500,
       headers,
-      body: JSON.stringify({ error: 'Erreur lors de la génération' }),
-    };
+      body: JSON.stringify({ error: e.message })
+    }
   }
-};
-
-function buildSynthesisPrompt({ prenom, items_completes, nombre_items_faits, nombre_items_total }) {
-  const alertesCritiques = items_completes.filter(i => (i.alertLevel || 0) >= 3);
-  const alertesModerees  = items_completes.filter(i => (i.alertLevel || 0) >= 2 && (i.alertLevel || 0) < 3);
-
-  const contextItems = items_completes
-    .map(i => {
-      const alert = (i.alertLevel || 0) >= 3 ? ' 🚨' : (i.alertLevel || 0) >= 2 ? ' ⚠️' : '';
-      return `• ${i.nom} (${i.outil}) : ${i.score} — niveau ${i.niveau} [${i.severity}]${alert}`;
-    })
-    .join('\n');
-
-  const phaseInstruction = nombre_items_faits === 1
-    ? "C'est le tout premier résultat — ton accroche est encourageante, tu vois \"le début d'un tableau\"."
-    : nombre_items_faits <= 3
-    ? `${nombre_items_faits} évaluations complétées — commence à tisser des liens entre les résultats.`
-    : nombre_items_faits <= 7
-    ? `${nombre_items_faits} évaluations complétées — profil qui prend vraiment forme, analyse croisée riche.`
-    : `Profil avancé (${nombre_items_faits}/${nombre_items_total}) — synthèse complète et nuancée.`;
-
-  return `Tu es Dr. Lô — psychologue clinicien et sexologue sur Healt-e, spécialisé dans le contexte culturel sénégalais et africain francophone.
-
-RÈGLES ABSOLUES :
-- Tutoiement obligatoire${prenom ? `, mentionne "${prenom}" au moins une fois` : ''}
-- 5 à 6 phrases MAXIMUM — pas plus
-- Ton chaleureux, direct, jamais clinique ni froid
-- Fais une VRAIE lecture croisée des résultats : cherche les LIENS entre les différentes évaluations, ne les liste pas un par un
-- Identifie 1-2 points forts et 1 zone d'attention si applicable
-- Termine par une phrase qui donne envie de continuer les évaluations (cite ce que les prochains items permettront de comprendre en plus)
-- Si alerte critique 🚨 : ton doux et orienter clairement mais avec bienveillance vers un professionnel
-- JAMAIS de diagnostic explicite
-- Signe TOUJOURS "— Dr Lo 🩺" à la fin
-
-${phaseInstruction}
-
-Évaluations complétées :
-${contextItems}
-${alertesCritiques.length > 0 ? '\n🚨 ALERTE CRITIQUE DÉTECTÉE — orienter vers professionnel avec douceur.' : ''}
-${alertesModerees.length > 0 && alertesCritiques.length === 0 ? "\n⚠️ Signaux d'alerte — mentionner l'utilité d'un suivi professionnel." : ''}
-
-Génère UNIQUEMENT la synthèse courte (5-6 phrases max). Commence directement par l'accroche personnalisée, sans titre ni section.`;
 }
