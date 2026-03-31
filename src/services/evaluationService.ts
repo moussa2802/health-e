@@ -239,6 +239,20 @@ export async function saveDrLoAnalysis(userId: string, analysis: string): Promis
   });
 }
 
+export async function saveDrLoMentalAnalysis(userId: string, analysis: string): Promise<void> {
+  await updateDoc(doc(db, PROFILES_COL, userId), {
+    drLoMentalAnalysis: analysis,
+    drLoMentalUpdatedAt: serverTimestamp(),
+  });
+}
+
+export async function saveDrLoSexualAnalysis(userId: string, analysis: string): Promise<void> {
+  await updateDoc(doc(db, PROFILES_COL, userId), {
+    drLoSexualAnalysis: analysis,
+    drLoSexualUpdatedAt: serverTimestamp(),
+  });
+}
+
 export async function saveDrLoSynthesis(userId: string, synthesis: string): Promise<void> {
   await updateDoc(doc(db, PROFILES_COL, userId), {
     drLoSynthesis: synthesis,
@@ -257,8 +271,12 @@ export async function resetUserProfile(userId: string): Promise<void> {
     compatibilityIdMental: null,
     compatibilityIdSexual: null,
     drLoAnalysis: null,
+    drLoMentalAnalysis: null,
+    drLoSexualAnalysis: null,
     drLoSynthesis: null,
     drLoUpdatedAt: null,
+    drLoMentalUpdatedAt: null,
+    drLoSexualUpdatedAt: null,
     drLoSynthesisUpdatedAt: null,
     lastAssessmentDate: null,
     updatedAt: serverTimestamp(),
@@ -322,6 +340,8 @@ export async function getProfileProgress(userId: string): Promise<{
   isSexualComplete: boolean;
   remaining: number;
   drLoAnalysis: string | null;
+  drLoMentalAnalysis: string | null;
+  drLoSexualAnalysis: string | null;
   drLoSynthesis: string | null;
   onboardingProfile: Record<string, string> | null;
 }> {
@@ -341,6 +361,8 @@ export async function getProfileProgress(userId: string): Promise<{
       isSexualComplete: false,
       remaining: TOTAL_SCALES,
       drLoAnalysis: null,
+      drLoMentalAnalysis: null,
+      drLoSexualAnalysis: null,
       drLoSynthesis: null,
       onboardingProfile: null,
     };
@@ -366,6 +388,8 @@ export async function getProfileProgress(userId: string): Promise<{
     isSexualComplete,
     remaining: Math.max(0, TOTAL_SCALES - completedCount),
     drLoAnalysis: (data.drLoAnalysis as string | null) ?? null,
+    drLoMentalAnalysis: (data.drLoMentalAnalysis as string | null) ?? null,
+    drLoSexualAnalysis: (data.drLoSexualAnalysis as string | null) ?? null,
     drLoSynthesis: (data.drLoSynthesis as string | null) ?? null,
     onboardingProfile: (data.onboardingProfile as Record<string, string> | null) ?? null,
   };

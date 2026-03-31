@@ -38,7 +38,8 @@ exports.handler = async (event) => {
     items_completes = [],
     items_restants = [],
     nombre_items_faits = 0,
-    nombre_items_total = 24
+    nombre_items_total = 24,
+    bloc = 'mental'
   } = payload
 
   if (!items_completes || items_completes.length === 0) {
@@ -57,15 +58,20 @@ exports.handler = async (event) => {
     return `- ${nom} : ${label} (score ${score}) ${alerte}`
   }).join('\n')
 
-  const prompt = `Tu es le Dr Lo, médecin IA bienveillant et fun de la plateforme Healt-e, spécialisé en santé mentale et sexuelle avec une sensibilité au contexte sénégalais et africain.
+  const blocContext = bloc === 'sexual'
+    ? `Tu analyses UNIQUEMENT la santé sexuelle de ${prenom}. Ne mentionne JAMAIS la santé mentale dans ce message. Reste centré sur la vie intime, le désir, la satisfaction, l'identité et le bien-être sexuel uniquement. Ton ton est bienveillant, sans jugement et non clinique. Respecte les valeurs personnelles et le contexte culturel sénégalais.`
+    : `Tu analyses UNIQUEMENT la santé mentale et émotionnelle de ${prenom}. Ne mentionne JAMAIS la santé sexuelle dans ce message. Reste centré sur le bien-être psychologique, émotionnel, les relations interpersonnelles et la résilience uniquement.`
+
+  const prompt = `Tu es le Dr Lo, médecin IA bienveillant et fun de la plateforme Healt-e, spécialisé dans le contexte sénégalais et africain francophone.
 Tu tutoies toujours. Maximum 6 phrases.
 Tu signes toujours "— Dr Lo 🩺".
 Tu ne poses jamais de diagnostic explicite.
+${blocContext}
 ${genre ? `Genre : ${genre}.` : ''}
 ${age ? `Âge : ${age}.` : ''}
 ${situation_relationnelle ? `Situation : ${situation_relationnelle}.` : ''}
 
-${prenom} a complété ${nombre_items_faits} évaluation(s) sur ${nombre_items_total} :
+${prenom} a complété ${nombre_items_faits} évaluation(s) ${bloc === 'sexual' ? 'de santé sexuelle' : 'de santé mentale'} :
 ${itemsText}
 
 Génère une synthèse qui :

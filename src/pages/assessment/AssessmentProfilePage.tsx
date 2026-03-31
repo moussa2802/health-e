@@ -11,7 +11,7 @@ import { MENTAL_HEALTH_SCALES, SEXUAL_HEALTH_SCALES } from '../../data/scales';
 import type { ScaleResult } from '../../types/assessment';
 import type { AssessmentScale } from '../../types/assessment';
 import { getOnboardingProfile } from '../../utils/onboardingProfile';
-import { triggerDrLoAnalysis } from '../../utils/drLoAnalysis';
+import { triggerDrLoMentalHealth, triggerDrLoSexualHealth } from '../../utils/drLoAnalysis';
 
 // ── Icônes par scale ──────────────────────────────────────────────────────────
 const SCALE_ICONS: Record<string, string> = {
@@ -303,20 +303,34 @@ interface DrLoPanelProps {
   analysis: string | null;
   completedCount: number;
   prenom: string;
+  bloc: 'mental' | 'sexual';
   isRefreshing?: boolean;
 }
 
-const DrLoPanel: React.FC<DrLoPanelProps> = ({ analysis, completedCount, prenom, isRefreshing }) => {
+const DrLoPanel: React.FC<DrLoPanelProps> = ({ analysis, completedCount, prenom, bloc, isRefreshing }) => {
+  const isMental = bloc === 'mental';
+  const accentColor  = isMental ? '#3B82F6' : '#C026D3';
+  const accentLight  = isMental ? 'rgba(59,130,246,0.18)' : 'rgba(192,38,211,0.18)';
+  const accentGlow   = isMental ? 'rgba(59,130,246,0.08)' : 'rgba(192,38,211,0.08)';
+  const accentRadial = isMental ? 'rgba(59,130,246,0.10)' : 'rgba(192,38,211,0.10)';
+  const blocLabel    = isMental ? '🧠 Dr Lô — Santé Mentale' : '💋 Dr Lô — Santé Sexuelle';
+  const blocSubtitle = isMental
+    ? 'IA ÉVOLUTIVE · Mise à jour après chaque évaluation mentale'
+    : 'IA ÉVOLUTIVE · Mise à jour après chaque évaluation sexuelle';
+  const emptyMsg = isMental
+    ? `${prenom ? `Hey ${prenom} 👋 — ` : ''}Complète ta première évaluation de santé mentale pour que je puisse t'analyser 🎯`
+    : `${prenom ? `Hey ${prenom} 👋 — ` : ''}Complète ta première évaluation de santé sexuelle pour que je puisse t'analyser 🔐`;
+
   return (
     <div
       style={{
         background: 'rgba(255,255,255,0.88)',
         backdropFilter: 'blur(18px)',
-        border: '1.5px solid rgba(59,130,246,0.18)',
+        border: `1.5px solid ${accentLight}`,
         borderRadius: 20,
         padding: '22px 24px',
-        marginBottom: 28,
-        boxShadow: '0 4px 24px rgba(59,130,246,0.08)',
+        marginBottom: 20,
+        boxShadow: `0 4px 24px ${accentGlow}`,
         position: 'relative',
         overflow: 'hidden',
       }}
@@ -330,7 +344,7 @@ const DrLoPanel: React.FC<DrLoPanelProps> = ({ analysis, completedCount, prenom,
           width: 120,
           height: 120,
           borderRadius: '50%',
-          background: 'radial-gradient(circle, rgba(59,130,246,0.10) 0%, transparent 70%)',
+          background: `radial-gradient(circle, ${accentRadial} 0%, transparent 70%)`,
           pointerEvents: 'none',
         }}
       />
@@ -344,8 +358,8 @@ const DrLoPanel: React.FC<DrLoPanelProps> = ({ analysis, completedCount, prenom,
             borderRadius: '50%',
             overflow: 'hidden',
             flexShrink: 0,
-            boxShadow: '0 2px 10px rgba(59,130,246,0.3)',
-            border: '2px solid rgba(59,130,246,0.25)',
+            boxShadow: `0 2px 10px ${accentLight}`,
+            border: `2px solid ${accentLight}`,
           }}
         >
           <img
@@ -355,25 +369,11 @@ const DrLoPanel: React.FC<DrLoPanelProps> = ({ analysis, completedCount, prenom,
           />
         </div>
         <div style={{ flex: 1 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <h3 style={{ margin: 0, fontSize: 16, fontWeight: 800, color: '#0A2342' }}>Dr. Lô</h3>
-            <span
-              style={{
-                background: 'linear-gradient(135deg, #EFF6FF, #F0FDFA)',
-                border: '1px solid rgba(59,130,246,0.2)',
-                borderRadius: 20,
-                padding: '2px 8px',
-                fontSize: 10,
-                fontWeight: 700,
-                color: '#3B82F6',
-                letterSpacing: '0.05em',
-              }}
-            >
-              IA ÉVOLUTIVE
-            </span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+            <h3 style={{ margin: 0, fontSize: 15, fontWeight: 800, color: '#0A2342' }}>{blocLabel}</h3>
           </div>
-          <p style={{ margin: 0, fontSize: 11, color: '#94A3B8' }}>
-            Mise à jour après chaque évaluation
+          <p style={{ margin: '2px 0 0', fontSize: 10, color: '#94A3B8', fontWeight: 600, letterSpacing: '0.03em' }}>
+            {blocSubtitle}
           </p>
         </div>
         {isRefreshing && (
@@ -402,7 +402,7 @@ const DrLoPanel: React.FC<DrLoPanelProps> = ({ analysis, completedCount, prenom,
           }}
         >
           <p style={{ margin: 0, fontSize: 14, color: '#64748B', lineHeight: 1.6 }}>
-            {prenom ? `Hey ${prenom} 👋 — ` : ''}Complète ta première évaluation pour que je puisse te donner mon analyse personnalisée 🎯
+            {emptyMsg}
           </p>
         </div>
       ) : analysis ? (
@@ -613,7 +613,8 @@ const AssessmentProfilePage: React.FC = () => {
   const [isSexualComplete, setIsSexualComplete] = useState(false);
   const [mentalCompletedCount, setMentalCompletedCount] = useState(0);
   const [sexualCompletedCount, setSexualCompletedCount] = useState(0);
-  const [drLoAnalysis, setDrLoAnalysis] = useState<string | null>(null);
+  const [drLoMentalAnalysis, setDrLoMentalAnalysis] = useState<string | null>(null);
+  const [drLoSexualAnalysis, setDrLoSexualAnalysis] = useState<string | null>(null);
   const [loadingProfile, setLoadingProfile] = useState(true);
   const [loadingCard, setLoadingCard] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -662,7 +663,8 @@ const AssessmentProfilePage: React.FC = () => {
         setIsSexualComplete(progress.isSexualComplete);
         setMentalCompletedCount(progress.mentalCompletedCount);
         setSexualCompletedCount(progress.sexualCompletedCount);
-        setDrLoAnalysis(progress.drLoAnalysis);
+        setDrLoMentalAnalysis(progress.drLoMentalAnalysis);
+        setDrLoSexualAnalysis(progress.drLoSexualAnalysis);
       })
       .catch(() => {
         // Erreurs Firestore transitoires (offline, permission temporaire) → silencieux
@@ -670,15 +672,14 @@ const AssessmentProfilePage: React.FC = () => {
       .finally(() => setLoadingProfile(false));
   }, [isAuthenticated, currentUser]);
 
-  // Polling drLoAnalysis — re-déclenche la génération si absente en base
-  const drLoPollingRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Polling mental — re-déclenche si analyse mentale absente
+  const drLoMentalPollingRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
     if (!isAuthenticated || !currentUser) return;
-    if (drLoAnalysis) return;
-    if (completedCount === 0) return;
+    if (drLoMentalAnalysis) return;
+    if (mentalCompletedCount === 0) return;
 
-    // Re-déclencher si l'analyse n'est pas en base (ex: save raté avant fix des règles Firestore)
-    triggerDrLoAnalysis(currentUser.id).catch(() => {});
+    triggerDrLoMentalHealth(currentUser.id).catch(() => {});
 
     let attempts = 0;
     const MAX_ATTEMPTS = 15;
@@ -686,13 +687,36 @@ const AssessmentProfilePage: React.FC = () => {
       attempts++;
       try {
         const p = await getProfileProgress(currentUser.id);
-        if (p.drLoAnalysis) { setDrLoAnalysis(p.drLoAnalysis); return; }
+        if (p.drLoMentalAnalysis) { setDrLoMentalAnalysis(p.drLoMentalAnalysis); return; }
       } catch { /* silencieux */ }
-      if (attempts < MAX_ATTEMPTS) drLoPollingRef.current = setTimeout(poll, 3000);
+      if (attempts < MAX_ATTEMPTS) drLoMentalPollingRef.current = setTimeout(poll, 3000);
     };
-    drLoPollingRef.current = setTimeout(poll, 3000);
-    return () => { if (drLoPollingRef.current) clearTimeout(drLoPollingRef.current); };
-  }, [isAuthenticated, currentUser?.id, drLoAnalysis, completedCount]);
+    drLoMentalPollingRef.current = setTimeout(poll, 3000);
+    return () => { if (drLoMentalPollingRef.current) clearTimeout(drLoMentalPollingRef.current); };
+  }, [isAuthenticated, currentUser?.id, drLoMentalAnalysis, mentalCompletedCount]);
+
+  // Polling sexual — re-déclenche si analyse sexuelle absente
+  const drLoSexualPollingRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => {
+    if (!isAuthenticated || !currentUser) return;
+    if (drLoSexualAnalysis) return;
+    if (sexualCompletedCount === 0) return;
+
+    triggerDrLoSexualHealth(currentUser.id).catch(() => {});
+
+    let attempts = 0;
+    const MAX_ATTEMPTS = 15;
+    const poll = async () => {
+      attempts++;
+      try {
+        const p = await getProfileProgress(currentUser.id);
+        if (p.drLoSexualAnalysis) { setDrLoSexualAnalysis(p.drLoSexualAnalysis); return; }
+      } catch { /* silencieux */ }
+      if (attempts < MAX_ATTEMPTS) drLoSexualPollingRef.current = setTimeout(poll, 3000);
+    };
+    drLoSexualPollingRef.current = setTimeout(poll, 3000);
+    return () => { if (drLoSexualPollingRef.current) clearTimeout(drLoSexualPollingRef.current); };
+  }, [isAuthenticated, currentUser?.id, drLoSexualAnalysis, sexualCompletedCount]);
 
   // Démarrer une scale
   const startScale = async (scaleId: string) => {
@@ -903,10 +927,11 @@ const AssessmentProfilePage: React.FC = () => {
           />
         </div>
 
-        {/* ── Dr. Lô Panel ──────────────────────────────────────────── */}
+        {/* ── Dr. Lô — Santé Mentale ────────────────────────────────── */}
         <DrLoPanel
-          analysis={drLoAnalysis}
-          completedCount={completedCount}
+          bloc="mental"
+          analysis={drLoMentalAnalysis}
+          completedCount={mentalCompletedCount}
           prenom={prenom}
         />
 
@@ -952,6 +977,16 @@ const AssessmentProfilePage: React.FC = () => {
             ))}
           </div>
         </section>
+
+        {/* ── Dr. Lô — Santé Sexuelle ───────────────────────────────── */}
+        {sexualCompletedCount > 0 && (
+          <DrLoPanel
+            bloc="sexual"
+            analysis={drLoSexualAnalysis}
+            completedCount={sexualCompletedCount}
+            prenom={prenom}
+          />
+        )}
 
         {/* ── Section Santé Sexuelle ────────────────────────────────── */}
         <section style={{ marginBottom: 32 }}>

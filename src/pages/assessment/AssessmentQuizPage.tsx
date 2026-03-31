@@ -17,7 +17,8 @@ import {
 import { getScaleById, getAdaptedScaleById } from '../../data/scales';
 import type { UserAssessmentSession, AssessmentScale } from '../../types/assessment';
 import QuestionItem from '../../components/assessment/QuestionItem';
-import { triggerDrLoAnalysis, triggerDrLoSynthesis } from '../../utils/drLoAnalysis';
+import { triggerDrLoMentalHealth, triggerDrLoSexualHealth, triggerDrLoSynthesis } from '../../utils/drLoAnalysis';
+import { MENTAL_HEALTH_SCALES } from '../../data/scales';
 import { getSexualHealthFilter } from '../../utils/sexualHealthFilter';
 
 // ── Thème par catégorie ───────────────────────────────────────────────────────
@@ -169,7 +170,12 @@ const AssessmentQuizPage: React.FC = () => {
           if (session.userId) {
             try {
               await saveScaleResultToProfile(session.userId, currentScale.id, scaleResult);
-              triggerDrLoAnalysis(session.userId).catch((e) => console.error('[DrLo analysis]', e));
+              const isMentalScale = MENTAL_HEALTH_SCALES.some(s => s.id === currentScale.id);
+              if (isMentalScale) {
+                triggerDrLoMentalHealth(session.userId).catch((e) => console.error('[DrLo mental]', e));
+              } else {
+                triggerDrLoSexualHealth(session.userId).catch((e) => console.error('[DrLo sexual]', e));
+              }
               triggerDrLoSynthesis(session.userId).catch((e) => console.error('[DrLo synthesis]', e));
             } catch { /* silencieux */ }
           }
