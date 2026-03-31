@@ -30,13 +30,18 @@ exports.handler = async (event) => {
   }
 
   const {
-    prenom, age, genre, situation_relationnelle,
-    items_completes, items_restants,
-    nombre_items_faits, nombre_items_total,
+    prenom = 'toi',
+    age = '',
+    genre = '',
+    situation_relationnelle = '',
+    items_completes = [],
+    items_restants = [],
+    nombre_items_faits = 0,
+    nombre_items_total = 24,
   } = body;
 
   if (!items_completes || items_completes.length === 0) {
-    return { statusCode: 400, headers, body: JSON.stringify({ error: 'Aucun item complété' }) };
+    return { statusCode: 400, headers, body: JSON.stringify({ error: 'items_completes est vide ou manquant' }) };
   }
 
   try {
@@ -47,7 +52,7 @@ exports.handler = async (event) => {
     });
 
     const message = await client.messages.create({
-      model: 'claude-sonnet-4-6',
+      model: 'claude-sonnet-4-20250514',
       max_tokens: 800,
       system: buildSystemPrompt(),
       messages: [{ role: 'user', content: prompt }],

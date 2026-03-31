@@ -35,7 +35,7 @@ exports.handler = async (event) => {
     const prompt = buildSynthesisPrompt({ prenom, items_completes, nombre_items_faits, nombre_items_total });
 
     const message = await client.messages.create({
-      model: 'claude-sonnet-4-6',
+      model: 'claude-sonnet-4-20250514',
       max_tokens: 450,
       messages: [{ role: 'user', content: prompt }],
     });
