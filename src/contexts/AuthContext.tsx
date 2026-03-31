@@ -478,10 +478,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
           password
         );
         user = userCredential.user;
-        console.log(
-          "✅ [REGISTER] Nouveau compte Firebase Auth créé avec UID:",
-          user.uid
-        );
+        console.log("✅ [REGISTER] Nouveau compte Firebase Auth créé");
       } catch (firebaseError) {
         if (
           firebaseError instanceof FirebaseError &&
@@ -500,10 +497,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
               password
             );
             user = signInResult.user;
-            console.log(
-              "✅ [REGISTER] Connexion réussie avec l'utilisateur existant, UID:",
-              user.uid
-            );
+            console.log("✅ [REGISTER] Connexion réussie avec l'utilisateur existant");
           } catch (signInError) {
             console.log(
               "❌ [REGISTER] Échec de la connexion avec l'utilisateur existant"
@@ -532,7 +526,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         ...additionalData,
       };
 
-      console.log("📝 [REGISTER] Données utilisateur préparées:", userData);
+      // Données utilisateur préparées (log supprimé — contient email/uid)
 
       // Sauvegarde dans Firestore
       console.log("💾 [REGISTER] Sauvegarde dans Firestore...");

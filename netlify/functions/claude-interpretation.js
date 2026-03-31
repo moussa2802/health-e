@@ -1,7 +1,3 @@
-const Anthropic = require('@anthropic-ai/sdk');
-
-const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
-
 const MEDICAL_DISCLAIMER = `⚠️ Ces résultats sont fournis à titre informatif uniquement et ne constituent pas un diagnostic médical ou psychologique. Ils ne remplacent en aucun cas une consultation avec un professionnel de santé qualifié (médecin, psychologue, psychiatre ou sexologue).`;
 
 const headers = {
@@ -19,7 +15,8 @@ exports.handler = async (event) => {
     return { statusCode: 405, headers, body: JSON.stringify({ error: 'Méthode non autorisée' }) };
   }
 
-  if (!process.env.ANTHROPIC_API_KEY) {
+  const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
+  if (!ANTHROPIC_API_KEY) {
     console.error('[CLAUDE] ANTHROPIC_API_KEY manquante');
     return { statusCode: 500, headers, body: JSON.stringify({ error: 'Configuration serveur incorrecte' }) };
   }
@@ -47,15 +44,30 @@ exports.handler = async (event) => {
       prompt = buildInterpretationPrompt(scores, selectedScaleIds, demographique);
     }
 
-    const message = await client.messages.create({
-      model: 'claude-sonnet-4-6',
-      max_tokens: 2000,
-      messages: [{ role: 'user', content: prompt }],
-      system: buildSystemPrompt(),
+    const apiResponse = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': ANTHROPIC_API_KEY,
+        'anthropic-version': '2023-06-01',
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 2000,
+        system: buildSystemPrompt(),
+        messages: [{ role: 'user', content: prompt }],
+      }),
     });
 
-    const interpretation = message.content[0].type === 'text'
-      ? message.content[0].text
+    if (!apiResponse.ok) {
+      const errText = await apiResponse.text();
+      console.error('[CLAUDE] Erreur Anthropic:', errText);
+      return { statusCode: 500, headers, body: JSON.stringify({ error: 'Erreur API Anthropic', detail: errText }) };
+    }
+
+    const apiData = await apiResponse.json();
+    const interpretation = apiData.content[0].type === 'text'
+      ? apiData.content[0].text
       : '';
 
     return {
@@ -68,7 +80,7 @@ exports.handler = async (event) => {
       }),
     };
   } catch (err) {
-    console.error('[CLAUDE] Erreur API:', err.message);
+    console.error('[CLAUDE] Erreur fetch:', err.message);
     return {
       statusCode: 500,
       headers,
