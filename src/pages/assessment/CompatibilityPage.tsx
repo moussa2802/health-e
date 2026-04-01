@@ -373,12 +373,15 @@ const CompatibilityPage: React.FC = () => {
               <div style={{ marginBottom: 22, animation: 'slideDown 0.2s ease' }}>
                 <div style={{ height: 1, background: 'linear-gradient(90deg, transparent, rgba(124,58,237,0.12), transparent)', marginBottom: 18 }} />
 
-                {/* Code mental — toujours requis */}
-                <div style={{ marginBottom: isRomantic ? 14 : 0 }}>
+                {/* Code mental — optionnel pour romantique, requis sinon */}
+                <div style={{ marginBottom: 14 }}>
                   <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, fontWeight: 600, color: '#374151', marginBottom: 8 }}>
                     <span>🧠</span>
                     {isRomantic ? 'Code Mental de ton/ta partenaire' : 'Code Mental de cette personne'}
-                    <span style={{ fontWeight: 400, color: '#DC2626', fontSize: 12 }}>*</span>
+                    {isRomantic
+                      ? <span style={{ fontWeight: 400, color: '#94A3B8', fontSize: 12 }}>optionnel</span>
+                      : <span style={{ fontWeight: 400, color: '#DC2626', fontSize: 12 }}>*</span>
+                    }
                   </label>
                   <div style={{ position: 'relative' }}>
                     <input
