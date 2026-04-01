@@ -264,6 +264,10 @@ export async function saveOnboardingToProfile(userId: string, profile: Record<st
   await updateDoc(doc(db, PROFILES_COL, userId), { onboardingProfile: profile });
 }
 
+export async function saveSexualFilterToProfile(userId: string, filter: Record<string, unknown>): Promise<void> {
+  await updateDoc(doc(db, PROFILES_COL, userId), { sexualHealthFilter: filter });
+}
+
 export async function resetUserProfile(userId: string): Promise<void> {
   const ref = doc(db, PROFILES_COL, userId);
   await updateDoc(ref, {
@@ -346,6 +350,7 @@ export async function getProfileProgress(userId: string): Promise<{
   drLoSexualAnalysis: string | null;
   drLoSynthesis: string | null;
   onboardingProfile: Record<string, string> | null;
+  sexualHealthFilter: Record<string, unknown> | null;
 }> {
   const ref = doc(db, PROFILES_COL, userId);
   const snap = await getDoc(ref);
@@ -367,6 +372,7 @@ export async function getProfileProgress(userId: string): Promise<{
       drLoSexualAnalysis: null,
       drLoSynthesis: null,
       onboardingProfile: null,
+      sexualHealthFilter: null,
     };
   }
   const data = snap.data();
@@ -394,6 +400,7 @@ export async function getProfileProgress(userId: string): Promise<{
     drLoSexualAnalysis: (data.drLoSexualAnalysis as string | null) ?? null,
     drLoSynthesis: (data.drLoSynthesis as string | null) ?? null,
     onboardingProfile: (data.onboardingProfile as Record<string, string> | null) ?? null,
+    sexualHealthFilter: (data.sexualHealthFilter as Record<string, unknown> | null) ?? null,
   };
 }
 

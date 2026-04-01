@@ -7,6 +7,7 @@ import {
   getOrCreateUserProfile,
   getProfileProgress,
   createSession,
+  saveSexualFilterToProfile,
 } from '../../services/evaluationService';
 import {
   getGuestCount,
@@ -582,7 +583,15 @@ const AssessmentCategoryPage: React.FC = () => {
     }
     getOrCreateUserProfile(currentUser.id, currentUser.name)
       .then(() => getProfileProgress(currentUser.id))
-      .then(p => setProfileResults(p.scaleResults))
+      .then(p => {
+        setProfileResults(p.scaleResults);
+        // Sync le filtre sexuel depuis Firestore si localStorage est vide (nouvel appareil)
+        if (!isMental && !isSexualFilterComplete() && p.sexualHealthFilter) {
+          saveSexualHealthFilter(p.sexualHealthFilter as SexualHealthFilter);
+          setSexualFilter(p.sexualHealthFilter as SexualHealthFilter);
+          setShowSexualFilter(false);
+        }
+      })
       .catch(() => {});
   }, [isAuthenticated, currentUser?.id, isValidCategory]);
 
@@ -696,6 +705,10 @@ const AssessmentCategoryPage: React.FC = () => {
           setSexualFilter(filter);
           saveSexualHealthFilter(filter);
           setShowSexualFilter(false);
+          // Persister dans Firestore pour les autres appareils
+          if (isAuthenticated && currentUser) {
+            saveSexualFilterToProfile(currentUser.id, filter as unknown as Record<string, unknown>).catch(() => {});
+          }
         }}
       />
     );
