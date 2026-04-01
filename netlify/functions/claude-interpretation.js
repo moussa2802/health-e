@@ -15,9 +15,9 @@ exports.handler = async (event) => {
     return { statusCode: 405, headers, body: JSON.stringify({ error: 'Méthode non autorisée' }) };
   }
 
-  const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
+  const ANTHROPIC_API_KEY = process.env.ANTHROPIC_KEY;
   if (!ANTHROPIC_API_KEY) {
-    console.error('[CLAUDE] ANTHROPIC_API_KEY manquante');
+    console.error('[CLAUDE] ANTHROPIC_KEY manquante');
     return { statusCode: 500, headers, body: JSON.stringify({ error: 'Configuration serveur incorrecte' }) };
   }
 

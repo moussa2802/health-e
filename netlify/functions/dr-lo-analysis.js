@@ -92,7 +92,7 @@ Génère une synthèse qui :
 6. Donne envie de continuer les évaluations
 7. Signe avec "— Dr Lo 🩺"`
 
-  const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY
+  const ANTHROPIC_API_KEY = process.env.ANTHROPIC_KEY
 
   if (!ANTHROPIC_API_KEY) {
     return {

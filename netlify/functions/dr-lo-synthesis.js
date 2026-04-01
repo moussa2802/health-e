@@ -70,7 +70,7 @@ ${itemsText}
 
 Génère UNIQUEMENT la synthèse courte (5-6 phrases max). Commence directement par l'accroche personnalisée, sans titre ni section.`
 
-  const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY
+  const ANTHROPIC_API_KEY = process.env.ANTHROPIC_KEY
 
   if (!ANTHROPIC_API_KEY) {
     return {
