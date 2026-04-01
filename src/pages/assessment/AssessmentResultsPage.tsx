@@ -325,6 +325,11 @@ const AssessmentResultsPage: React.FC = () => {
   useEffect(() => {
     if (isGuestMode || !isAuthenticated || !currentUser || !session) return;
 
+    // Détermine la catégorie de l'échelle complétée pour lire le bon champ Dr Lo
+    const completedScaleId = session.selectedScaleIds[0];
+    const completedScale = getScaleById(completedScaleId);
+    const isMentalScale = completedScale?.category === 'mental_health';
+
     setDrLoLoading(true);
     let attempts = 0;
     const MAX_ATTEMPTS = 8;
@@ -333,8 +338,11 @@ const AssessmentResultsPage: React.FC = () => {
       attempts++;
       try {
         const progress = await getProfileProgress(currentUser.id);
-        if (progress.drLoAnalysis) {
-          setDrLoNarrative(progress.drLoAnalysis);
+        const analysis = isMentalScale
+          ? progress.drLoMentalAnalysis
+          : progress.drLoSexualAnalysis;
+        if (analysis) {
+          setDrLoNarrative(analysis);
           setDrLoLoading(false);
           return;
         }
