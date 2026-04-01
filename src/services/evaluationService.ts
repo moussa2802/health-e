@@ -312,15 +312,17 @@ export async function saveScaleResultToProfile(
     lastAssessmentDate: serverTimestamp(),
   };
 
-  // Generate mental code when all mental scales are done
-  const mentalDone = MENTAL_HEALTH_SCALES.every(s => !!updated[s.id]);
-  if (mentalDone && !snap.data().compatibilityIdMental) {
+  // Generate mental code when the 5 required mental scales are done
+  const MENTAL_REQUIRED = ['big_five', 'ecr_r', 'rses', 'gad7', 'phq9'];
+  const mentalUnlocked = MENTAL_REQUIRED.every(id => !!updated[id]);
+  if (mentalUnlocked && !snap.data().compatibilityIdMental) {
     updateData.compatibilityIdMental = generateMentalCompatibilityId();
   }
 
-  // Generate sexual code when all sexual scales are done
-  const sexualDone = SEXUAL_HEALTH_SCALES.every(s => !!updated[s.id]);
-  if (sexualDone && !snap.data().compatibilityIdSexual) {
+  // Generate sexual code when the 3 required sexual scales are done
+  const SEXUAL_REQUIRED = ['nsss', 'sdi2', 'pair'];
+  const sexualUnlocked = SEXUAL_REQUIRED.every(id => !!updated[id]);
+  if (sexualUnlocked && !snap.data().compatibilityIdSexual) {
     updateData.compatibilityIdSexual = generateSexualCompatibilityId();
   }
 

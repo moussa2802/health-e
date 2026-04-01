@@ -1,10 +1,11 @@
 import type { AssessmentScale } from '../../../types/assessment';
 
+// Échelle de Likert 1-4 conforme à la version originale de Rosenberg (1965)
 const opts = [
-  { value: 3, label: "Tout à fait d'accord" },
-  { value: 2, label: "D'accord" },
-  { value: 1, label: "Pas d'accord" },
-  { value: 0, label: "Pas du tout d'accord" },
+  { value: 4, label: "Tout à fait d'accord" },
+  { value: 3, label: "D'accord" },
+  { value: 2, label: "Pas d'accord" },
+  { value: 1, label: "Pas du tout d'accord" },
 ];
 
 export const RSES: AssessmentScale = {
@@ -18,8 +19,8 @@ export const RSES: AssessmentScale = {
   reference: "Rosenberg, M. (1965). Society and the adolescent self-image. Princeton University Press.",
   licenseNote: "Domaine public.",
   warningMessage: "Ces résultats ne remplacent pas une consultation avec un professionnel de santé.",
-  scoreRange: { min: 0, max: 30 },
-  reverseIds: [3, 5, 8, 9, 10],
+  // Items 2, 5, 6, 8, 9 sont négatifs → inversés. Score sur 40 (10 items × 4).
+  scoreRange: { min: 10, max: 40 },
   items: [
     { id: 1,  text: "Dans l'ensemble, je suis satisfait(e) de moi",                                         type: 'likert', options: opts },
     { id: 2,  text: "Parfois je pense que je ne vaux rien",                                                 type: 'likert', options: opts, reversed: true },
@@ -33,8 +34,39 @@ export const RSES: AssessmentScale = {
     { id: 10, text: "J'ai une attitude positive vis-à-vis de moi-même",                                     type: 'likert', options: opts },
   ],
   interpretation: [
-    { min: 0,  max: 14, label: "Faible estime de soi",   severity: 'moderate', description: "Niveau d'estime de soi bas pouvant impacter le bien-être et les relations.", referralRequired: false, recommendation: "Un accompagnement thérapeutique peut vous aider à renforcer votre estime de soi." },
-    { min: 15, max: 25, label: "Estime de soi moyenne",  severity: 'mild',     description: "Niveau d'estime de soi dans la moyenne avec des variations possibles.", referralRequired: false, recommendation: "Renforcer la confiance en soi à travers des activités valorisantes est bénéfique." },
-    { min: 26, max: 30, label: "Bonne estime de soi",    severity: 'positive', description: "Niveau d'estime de soi élevé et positif.", referralRequired: false, recommendation: "Maintenir cette estime de soi positive en cultivant vos forces." },
+    {
+      min: 10, max: 14,
+      label: "Estime de soi très faible",
+      severity: 'moderate',
+      alertLevel: 2,
+      description: "Niveau d'estime de soi très bas pouvant sérieusement impacter le bien-être et les relations.",
+      referralRequired: true,
+      recommendation: "Un accompagnement psychologique peut vous aider à reconstruire une image de soi plus positive."
+    },
+    {
+      min: 15, max: 25,
+      label: "Estime de soi faible",
+      severity: 'mild',
+      alertLevel: 1,
+      description: "Niveau d'estime de soi bas pouvant affecter la confiance en soi et les relations.",
+      referralRequired: false,
+      recommendation: "Un accompagnement thérapeutique peut vous aider à renforcer votre estime de soi."
+    },
+    {
+      min: 26, max: 30,
+      label: "Estime de soi dans la normale",
+      severity: 'minimal',
+      description: "Niveau d'estime de soi dans la moyenne, avec des variations possibles selon les contextes.",
+      referralRequired: false,
+      recommendation: "Renforcer la confiance en soi à travers des activités valorisantes est bénéfique."
+    },
+    {
+      min: 31, max: 40,
+      label: "Bonne estime de soi",
+      severity: 'positive',
+      description: "Niveau d'estime de soi élevé et positif, atout précieux pour le bien-être et les relations.",
+      referralRequired: false,
+      recommendation: "Maintenir cette estime de soi positive en cultivant vos forces et en soutenant les autres."
+    },
   ],
 };

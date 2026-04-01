@@ -1,5 +1,11 @@
 import type { AssessmentScale } from '../../../types/assessment';
 
+// BRS : Brief Resilience Scale (Smith et al., 2008)
+// 6 items, échelle 1-5
+// Items 2, 4, 6 inversés (formulés négativement)
+// Score : MOYENNE (somme / 6), plage 1–5
+// Seuils : 1–2.99 faible | 3–4.30 normale | 4.31–5 élevée
+
 const opts = [
   { value: 1, label: "Pas du tout d'accord" },
   { value: 2, label: "Plutôt pas d'accord" },
@@ -19,7 +25,9 @@ export const BRS: AssessmentScale = {
   reference: "Smith, B.W., et al. (2008). The brief resilience scale. International Journal of Behavioral Medicine, 15(3), 194–200.",
   licenseNote: "Libre pour usage clinique et de recherche.",
   warningMessage: "Ces résultats ne remplacent pas une consultation avec un professionnel de santé.",
-  scoreRange: { min: 6, max: 30 },
+  scoreRange: { min: 1, max: 5 },  // score = moyenne
+  scoringMode: 'mean',
+  // reverseIds utilisé pour le totalScore (= la moyenne calculée sur toutes items après inversions)
   reverseIds: [2, 4, 6],
   items: [
     { id: 1, text: "J'arrive à rebondir rapidement après des moments difficiles",                  type: 'likert', options: opts },
@@ -30,8 +38,30 @@ export const BRS: AssessmentScale = {
     { id: 6, text: "Je mets beaucoup de temps à me remettre d'un contretemps",                    type: 'likert', options: opts, reversed: true },
   ],
   interpretation: [
-    { min: 6,  max: 18, label: "Résilience faible",    severity: 'moderate', description: "Difficulté à récupérer des situations stressantes.", referralRequired: false, recommendation: "Des techniques de gestion du stress et un soutien social peuvent renforcer votre résilience." },
-    { min: 19, max: 25, label: "Résilience normale",   severity: 'minimal',  description: "Capacité de récupération dans la moyenne.", referralRequired: false, recommendation: "Continuez à développer vos stratégies d'adaptation face aux défis." },
-    { min: 26, max: 30, label: "Résilience élevée",    severity: 'positive', description: "Grande capacité à rebondir face aux adversités.", referralRequired: false, recommendation: "Votre résilience est un atout précieux. Continuez à cultiver ces ressources intérieures." },
+    {
+      min: 1, max: 2.99,
+      label: "Résilience faible",
+      severity: 'moderate',
+      alertLevel: 1,
+      description: "Difficulté à récupérer des situations stressantes. Cette vulnérabilité peut impacter votre bien-être émotionnel.",
+      referralRequired: false,
+      recommendation: "Des techniques de gestion du stress, un soutien social renforcé et éventuellement un accompagnement professionnel peuvent renforcer votre résilience."
+    },
+    {
+      min: 3, max: 4.30,
+      label: "Résilience normale",
+      severity: 'minimal',
+      description: "Capacité de récupération dans la moyenne. Vous faites généralement face aux défis de manière satisfaisante.",
+      referralRequired: false,
+      recommendation: "Continuez à développer vos stratégies d'adaptation et cultivez votre réseau de soutien."
+    },
+    {
+      min: 4.31, max: 5,
+      label: "Résilience élevée",
+      severity: 'positive',
+      description: "Grande capacité à rebondir face aux adversités. Ressource psychologique précieuse.",
+      referralRequired: false,
+      recommendation: "Votre résilience est un atout remarquable. Vous pouvez aussi soutenir les autres dans leur développement."
+    },
   ],
 };

@@ -5,11 +5,41 @@ import { getUserProfileByCompatibilityId, getUserSessions } from './evaluationSe
 
 const COL = 'compatibilityRequests';
 
+function getCodeType(id: string): 'mental' | 'sexual' | null {
+  // New format: HE-MNT-YYYY-XXXX / HE-SEX-YYYY-XXXX
+  if (id.startsWith('HE-MNT-')) return 'mental';
+  if (id.startsWith('HE-SEX-')) return 'sexual';
+  // Legacy format: SM-XXXX / SE-XXXX
+  if (id.startsWith('SM-')) return 'mental';
+  if (id.startsWith('SE-')) return 'sexual';
+  return null;
+}
+
 export async function createCompatibilityRequest(
   initiatorUserId: string,
   partnerCompatibilityId: string,
   relationshipType: CompatibilityRequest['relationshipType']
 ): Promise<CompatibilityRequest> {
+  const codeType = getCodeType(partnerCompatibilityId);
+  if (!codeType) {
+    throw new Error("Format de code invalide. Utilisez un code SM-XXXX (profil mental) ou SE-XXXX (profil sexuel).");
+  }
+
+  // Check that initiator has the matching profile type
+  const initiatorSnap = await getDoc(doc(db, 'userProfiles', initiatorUserId));
+  if (!initiatorSnap.exists()) throw new Error('Profil introuvable.');
+  const initiatorData = initiatorSnap.data();
+  const initiatorCode = codeType === 'mental'
+    ? initiatorData.compatibilityIdMental
+    : initiatorData.compatibilityIdSexual;
+  if (!initiatorCode) {
+    throw new Error(
+      codeType === 'mental'
+        ? "Tu dois compléter toutes les évaluations de santé mentale avant de comparer un profil mental."
+        : "Tu dois compléter toutes les évaluations de santé sexuelle avant de comparer un profil sexuel."
+    );
+  }
+
   const partner = await getUserProfileByCompatibilityId(partnerCompatibilityId);
   if (!partner) throw new Error('Identifiant partenaire introuvable.');
 
@@ -47,7 +77,8 @@ export async function computeCompatibility(requestId: string): Promise<Compatibi
     throw new Error('Les deux profils doivent avoir complété au moins une évaluation.');
   }
 
-  const dimensionScores = computeDimensionScores(lastInitiator, lastPartner);
+  const codeType = getCodeType(req.partnerCompatibilityId) ?? 'mental';
+  const dimensionScores = computeDimensionScores(lastInitiator, lastPartner, codeType);
   const globalScore = Math.round(
     Object.values(dimensionScores).reduce((a, b) => a + b, 0) / Object.values(dimensionScores).length
   );
@@ -70,17 +101,28 @@ export async function computeCompatibility(requestId: string): Promise<Compatibi
   return result;
 }
 
+const MENTAL_DIMENSIONS: Record<string, string[]> = {
+  'Émotionnel':    ['ecr_r', 'rses', 'brs'],
+  'Psychologique': ['big_five', 'pss10'],
+  'Santé mentale': ['gad7', 'phq9'],
+  'Résilience':    ['brs', 'pss10'],
+  'Traumatismes':  ['ace', 'pcl5', 'ceca_q'],
+};
+
+const SEXUAL_DIMENSIONS: Record<string, string[]> = {
+  'Désir & excitation':  ['nsss', 'sdi2', 'sis_ses'],
+  'Fonctionnement':      ['fsfi', 'iief'],
+  'Communication':       ['griss_base', 'pair'],
+  'Identité & image':    ['sise', 'tsi_base'],
+  'Pressions sociales':  ['social_pressure_sex'],
+};
+
 function computeDimensionScores(
   s1: UserAssessmentSession,
-  s2: UserAssessmentSession
+  s2: UserAssessmentSession,
+  codeType: 'mental' | 'sexual'
 ): Record<string, number> {
-  const dimensions: Record<string, string[]> = {
-    'Émotionnel': ['ecr_r', 'rses', 'brs'],
-    'Psychologique': ['big_five', 'pss10'],
-    'Communication': ['griss_base', 'pair'],
-    'Santé mentale': ['gad7', 'phq9'],
-    'Sexualité': ['nsss', 'sdi2', 'sis_ses'],
-  };
+  const dimensions = codeType === 'mental' ? MENTAL_DIMENSIONS : SEXUAL_DIMENSIONS;
 
   const scores: Record<string, number> = {};
   for (const [dim, scaleIds] of Object.entries(dimensions)) {

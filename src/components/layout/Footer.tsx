@@ -1,172 +1,88 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import { useLanguage } from "../../contexts/LanguageContext";
-import {
-  Heart,
-  Mail,
-  Shield,
-  Facebook,
-  Instagram,
-  Twitter,
-} from "lucide-react";
 
 const Footer: React.FC = () => {
-  const { t, language } = useLanguage();
+  const { language } = useLanguage();
+
+  const links = [
+    { to: "/assessment",     label: language === "fr" ? "Évaluations"      : "Assessments" },
+    { to: "/assessment/compatibility", label: language === "fr" ? "Compatibilité"    : "Compatibility" },
+    { to: "/professionals",  label: language === "fr" ? "Professionnels"   : "Professionals" },
+    { to: "/confidentialite",label: language === "fr" ? "Confidentialité"  : "Privacy" },
+    { to: "/contact",        label: "Contact" },
+  ];
 
   return (
-    <footer className="bg-gray-800 text-white">
-      <div className="container mx-auto px-4 py-8">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-          {/* Branding Column */}
-          <div>
-            <h3 className="text-xl font-bold mb-4">Health-e</h3>
-            <p className="text-gray-400">
+    <footer
+      style={{
+        background: "rgba(255,255,255,0.72)",
+        backdropFilter: "blur(12px)",
+        WebkitBackdropFilter: "blur(12px)",
+        borderTop: "1px solid rgba(59,130,246,0.1)",
+      }}
+    >
+      <div className="container mx-auto px-4 py-5">
+        <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+
+          {/* Logo + tagline */}
+          <div className="flex items-center gap-3">
+            <span
+              className="text-lg font-black"
+              style={{
+                background: "linear-gradient(135deg,#3B82F6,#2DD4BF)",
+                WebkitBackgroundClip: "text",
+                WebkitTextFillColor: "transparent",
+                backgroundClip: "text",
+              }}
+            >
+              Health-e
+            </span>
+            <span style={{ color: "#CBD5E1" }}>·</span>
+            <span className="text-xs" style={{ color: "#94A3B8" }}>
               {language === "fr"
-                ? "Une collaboration Sénégal–Canada pour votre santé mentale et sexuelle"
-                : "A Senegal–Canada collaboration for your mental and sexual health"}
-            </p>
+                ? "Ces évaluations ne remplacent pas un professionnel de santé."
+                : "These assessments do not replace a healthcare professional."}
+            </span>
           </div>
 
-          {/* Services Column */}
-          <div>
-            <h3 className="text-lg font-semibold mb-4">
-              {language === "fr" ? "Services" : "Services"}
-            </h3>
-            <ul className="space-y-2">
-              <li>
+          {/* Navigation links */}
+          <nav className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1">
+            {links.map((link, i) => (
+              <React.Fragment key={link.to}>
                 <Link
-                  to="/professionals/mental"
-                  className="text-gray-400 hover:text-white transition-colors"
+                  to={link.to}
+                  className="text-xs font-medium transition-colors"
+                  style={{ color: "#94A3B8", textDecoration: "none" }}
+                  onMouseEnter={e => (e.currentTarget.style.color = "#3B82F6")}
+                  onMouseLeave={e => (e.currentTarget.style.color = "#94A3B8")}
                 >
-                  {language === "fr" ? "Santé mentale" : "Mental Health"}
+                  {link.label}
                 </Link>
-              </li>
-              <li>
-                <Link
-                  to="/professionals/sexual"
-                  className="text-gray-400 hover:text-white transition-colors"
-                >
-                  {language === "fr" ? "Santé sexuelle" : "Sexual Health"}
-                </Link>
-              </li>
-            </ul>
-          </div>
+                {i < links.length - 1 && (
+                  <span style={{ color: "#E2E8F0", fontSize: 10 }}>·</span>
+                )}
+              </React.Fragment>
+            ))}
+          </nav>
 
-          {/* Support Column */}
-          <div>
-            <h3 className="text-lg font-semibold mb-4">
-              {language === "fr" ? "Support" : "Support"}
-            </h3>
-            <ul className="space-y-2">
-              <li>
-                <Link
-                  to="/faq"
-                  className="text-gray-400 hover:text-white transition-colors"
-                >
-                  FAQ
-                </Link>
-              </li>
-              <li>
-                <Link
-                  to="/contact"
-                  className="text-gray-400 hover:text-white transition-colors"
-                >
-                  {language === "fr" ? "Contact" : "Contact"}
-                </Link>
-              </li>
-            </ul>
-          </div>
-
-          {/* Legal Column */}
-          <div>
-            <h3 className="text-lg font-semibold mb-4">
-              {language === "fr" ? "Légal" : "Legal"}
-            </h3>
-            <ul className="space-y-2">
-              <li>
-                <Link
-                  to="/confidentialite"
-                  className="text-gray-400 hover:text-white transition-colors"
-                >
-                  {language === "fr" ? "Confidentialité" : "Privacy"}
-                </Link>
-              </li>
-              <li>
-                <Link
-                  to="/conditions"
-                  className="text-gray-400 hover:text-white transition-colors"
-                >
-                  {language === "fr"
-                    ? "Conditions d'utilisation"
-                    : "Terms of Use"}
-                </Link>
-              </li>
-              <li>
-                <Link
-                  to="/cgu"
-                  className="text-gray-400 hover:text-white transition-colors"
-                >
-                  {language === "fr" ? "CGU" : "T&C"}
-                </Link>
-              </li>
-              <li>
-                <Link
-                  to="/ethique"
-                  className="text-gray-400 hover:text-white transition-colors"
-                >
-                  {language === "fr" ? "Règles d'éthique" : "Code of Ethics"}
-                </Link>
-              </li>
-            </ul>
-          </div>
-        </div>
-
-        {/* Bottom Section with Flags and Social Media */}
-        <div className="mt-8 pt-8 border-t border-gray-700">
-          <div className="flex flex-col md:flex-row justify-between items-center">
-            <div className="flex items-center mb-4 md:mb-0">
-              <img
-                src="https://flagcdn.com/w40/sn.png"
-                alt="Drapeau du Sénégal"
-                className="w-6 h-4 rounded shadow-sm"
-              />
-              <img
-                src="https://flagcdn.com/w40/ca.png"
-                alt="Drapeau du Canada"
-                className="w-6 h-4 rounded shadow-sm ml-2"
-              />
-              <span className="ml-4 text-gray-400">
-                © {new Date().getFullYear()} Health-e.{" "}
-                {language === "fr"
-                  ? "Tous droits réservés."
-                  : "All rights reserved."}
-              </span>
-            </div>
-
-            {/* Social Media Links */}
-            <div className="flex space-x-4">
-              <a
-                href="#"
-                className="text-gray-400 hover:text-white transition-colors"
-                aria-label="Facebook"
-              >
-                <Facebook className="h-5 w-5" />
-              </a>
-              <a
-                href="#"
-                className="text-gray-400 hover:text-white transition-colors"
-                aria-label="Instagram"
-              >
-                <Instagram className="h-5 w-5" />
-              </a>
-              <a
-                href="#"
-                className="text-gray-400 hover:text-white transition-colors"
-                aria-label="Twitter"
-              >
-                <Twitter className="h-5 w-5" />
-              </a>
-            </div>
+          {/* Flags + copyright */}
+          <div className="flex items-center gap-2">
+            <img
+              src="https://flagcdn.com/w40/sn.png"
+              alt="Sénégal"
+              className="w-5 h-3.5 rounded shadow-sm"
+              loading="lazy"
+            />
+            <img
+              src="https://flagcdn.com/w40/ca.png"
+              alt="Canada"
+              className="w-5 h-3.5 rounded shadow-sm"
+              loading="lazy"
+            />
+            <span className="text-xs" style={{ color: "#CBD5E1" }}>
+              © {new Date().getFullYear()}
+            </span>
           </div>
         </div>
       </div>

@@ -1,13 +1,22 @@
-/**
- * Génère un ID de compatibilité unique au format HE-XXXX-NNNN
- * Ex: HE-2026-A3F7
- */
+const CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+
+function randomSuffix(len: number): string {
+  let s = '';
+  for (let i = 0; i < len; i++) s += CHARS[Math.floor(Math.random() * CHARS.length)];
+  return s;
+}
+
+/** @deprecated Use generateMentalCompatibilityId or generateSexualCompatibilityId */
 export function generateCompatibilityId(): string {
-  const year = new Date().getFullYear();
-  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-  let suffix = '';
-  for (let i = 0; i < 4; i++) {
-    suffix += chars[Math.floor(Math.random() * chars.length)];
-  }
-  return `HE-${year}-${suffix}`;
+  return `HE-${new Date().getFullYear()}-${randomSuffix(4)}`;
+}
+
+/** Code profil mental — format HE-MNT-YYYY-XXXX */
+export function generateMentalCompatibilityId(): string {
+  return `HE-MNT-${new Date().getFullYear()}-${randomSuffix(4)}`;
+}
+
+/** Code profil sexuel — format HE-SEX-YYYY-XXXX */
+export function generateSexualCompatibilityId(): string {
+  return `HE-SEX-${new Date().getFullYear()}-${randomSuffix(4)}`;
 }

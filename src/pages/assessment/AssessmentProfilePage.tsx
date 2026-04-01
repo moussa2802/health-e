@@ -1,6 +1,9 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { doc, onSnapshot } from 'firebase/firestore';
+import { db } from '../../utils/firebase';
 import { useAuth } from '../../contexts/AuthContext';
+import { triggerDrLoMentalHealth, triggerDrLoSexualHealth } from '../../utils/drLoAnalysis';
 import {
   getOrCreateUserProfile,
   getProfileProgress,
@@ -11,7 +14,6 @@ import { MENTAL_HEALTH_SCALES, SEXUAL_HEALTH_SCALES } from '../../data/scales';
 import type { ScaleResult } from '../../types/assessment';
 import type { AssessmentScale } from '../../types/assessment';
 import { getOnboardingProfile } from '../../utils/onboardingProfile';
-import { triggerDrLoMentalHealth, triggerDrLoSexualHealth } from '../../utils/drLoAnalysis';
 
 // ── Icônes par scale ──────────────────────────────────────────────────────────
 const SCALE_ICONS: Record<string, string> = {
@@ -252,184 +254,60 @@ const ScaleRow: React.FC<ScaleRowProps> = ({ scale, result, onStart, loading }) 
   );
 };
 
-// ── Dr. Lô Panel ──────────────────────────────────────────────────────────────
+// ── Dr Lo Panel ───────────────────────────────────────────────────────────────
 
-function renderAnalysis(text: string): React.ReactNode {
-  const lines = text.split('\n');
-  return lines.map((line, i) => {
-    // Split on **bold** markers
-    const parts = line.split(/\*\*([^*]+)\*\*/g);
-    const rendered = parts.map((part, j) =>
-      j % 2 === 1 ? <strong key={j} style={{ fontWeight: 700 }}>{part}</strong> : part
-    );
-    // Signature line
-    if (line.startsWith('— Dr Lo')) {
-      return (
-        <p key={i} style={{ margin: '14px 0 0', fontSize: 13, fontWeight: 700, color: '#3B82F6', fontStyle: 'italic' }}>
-          {rendered}
-        </p>
-      );
-    }
-    // Section header lines (start with emoji + **text**)
-    if (/^[✅⚠️💡👨‍⚕️]/.test(line)) {
-      return (
-        <p key={i} style={{ margin: '14px 0 4px', fontSize: 14, fontWeight: 600, color: '#0A2342' }}>
-          {rendered}
-        </p>
-      );
-    }
-    // Bullet points
-    if (line.startsWith('•') || line.startsWith('-')) {
-      return (
-        <p key={i} style={{ margin: '3px 0', paddingLeft: 12, fontSize: 13, color: '#374151', lineHeight: 1.55 }}>
-          {rendered}
-        </p>
-      );
-    }
-    // Empty line
-    if (line.trim() === '') {
-      return <div key={i} style={{ height: 6 }} />;
-    }
-    // Default paragraph
-    return (
-      <p key={i} style={{ margin: '2px 0', fontSize: 13, color: '#374151', lineHeight: 1.65 }}>
-        {rendered}
-      </p>
-    );
-  });
-}
-
-interface DrLoPanelProps {
+const DrLoPanel: React.FC<{
+  bloc: 'mental' | 'sexual';
   analysis: string | null;
   completedCount: number;
-  prenom: string;
-  bloc: 'mental' | 'sexual';
-  isRefreshing?: boolean;
-}
-
-const DrLoPanel: React.FC<DrLoPanelProps> = ({ analysis, completedCount, prenom, bloc, isRefreshing }) => {
-  const isMental = bloc === 'mental';
-  const accentColor  = isMental ? '#3B82F6' : '#C026D3';
-  const accentLight  = isMental ? 'rgba(59,130,246,0.18)' : 'rgba(192,38,211,0.18)';
-  const accentGlow   = isMental ? 'rgba(59,130,246,0.08)' : 'rgba(192,38,211,0.08)';
-  const accentRadial = isMental ? 'rgba(59,130,246,0.10)' : 'rgba(192,38,211,0.10)';
-  const blocLabel    = isMental ? '🧠 Dr Lô — Santé Mentale' : '💋 Dr Lô — Santé Sexuelle';
-  const blocSubtitle = isMental
-    ? 'IA ÉVOLUTIVE · Mise à jour après chaque évaluation mentale'
-    : 'IA ÉVOLUTIVE · Mise à jour après chaque évaluation sexuelle';
-  const emptyMsg = isMental
-    ? `${prenom ? `Hey ${prenom} 👋 — ` : ''}Complète ta première évaluation de santé mentale pour que je puisse t'analyser 🎯`
-    : `${prenom ? `Hey ${prenom} 👋 — ` : ''}Complète ta première évaluation de santé sexuelle pour que je puisse t'analyser 🔐`;
+}> = ({ bloc, analysis, completedCount }) => {
+  if (completedCount === 0) return null;
+  const isMental    = bloc === 'mental';
+  const accentColor = isMental ? '#3B82F6' : '#C026D3';
+  const title       = isMental ? '🧠 Dr Lô — Santé Mentale' : '💋 Dr Lô — Santé Sexuelle';
 
   return (
-    <div
-      style={{
-        background: 'rgba(255,255,255,0.88)',
-        backdropFilter: 'blur(18px)',
-        border: `1.5px solid ${accentLight}`,
-        borderRadius: 20,
-        padding: '22px 24px',
-        marginBottom: 20,
-        boxShadow: `0 4px 24px ${accentGlow}`,
-        position: 'relative',
-        overflow: 'hidden',
-      }}
-    >
-      {/* Gradient accent top-left */}
-      <div
-        style={{
-          position: 'absolute',
-          top: -30,
-          left: -30,
-          width: 120,
-          height: 120,
-          borderRadius: '50%',
-          background: `radial-gradient(circle, ${accentRadial} 0%, transparent 70%)`,
-          pointerEvents: 'none',
-        }}
-      />
-
-      {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
-        <div
-          style={{
-            width: 48,
-            height: 48,
-            borderRadius: '50%',
-            overflow: 'hidden',
-            flexShrink: 0,
-            boxShadow: `0 2px 10px ${accentLight}`,
-            border: `2px solid ${accentLight}`,
-          }}
-        >
-          <img
-            src="/dr-lo.png"
-            alt="Dr. LO"
-            style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'top center' }}
-          />
+    <div style={{
+      background: isMental ? 'linear-gradient(135deg,#EFF6FF,#F0FDFA)' : 'linear-gradient(135deg,#FDF4FF,#FFF0F9)',
+      border: `1.5px solid ${accentColor}25`,
+      borderRadius: 14,
+      padding: '16px 18px',
+      marginBottom: 14,
+    }}>
+      {/* En-tête */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+        <div style={{
+          width: 40, height: 40, borderRadius: '50%', overflow: 'hidden', flexShrink: 0,
+          border: `2px solid ${accentColor}40`,
+        }}>
+          <img src="/dr-lo.png" alt="Dr. Lô"
+            style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'top center' }} />
         </div>
-        <div style={{ flex: 1 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-            <h3 style={{ margin: 0, fontSize: 15, fontWeight: 800, color: '#0A2342' }}>{blocLabel}</h3>
-          </div>
-          <p style={{ margin: '2px 0 0', fontSize: 10, color: '#94A3B8', fontWeight: 600, letterSpacing: '0.03em' }}>
-            {blocSubtitle}
+        <div>
+          <p style={{ margin: 0, fontSize: 13, fontWeight: 800, color: '#0A2342' }}>{title}</p>
+          <p style={{ margin: 0, fontSize: 10, color: '#94A3B8', fontWeight: 600, letterSpacing: '0.03em' }}>
+            IA ÉVOLUTIVE · Mise à jour après chaque évaluation
           </p>
         </div>
-        {isRefreshing && (
-          <div
-            style={{
-              width: 16,
-              height: 16,
-              border: '2px solid #3B82F6',
-              borderTopColor: 'transparent',
-              borderRadius: '50%',
-              animation: 'spin 0.8s linear infinite',
-              flexShrink: 0,
-            }}
-          />
-        )}
+        <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 4 }}>
+          <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#22C55E', display: 'inline-block' }} />
+          <span style={{ fontSize: 10, fontWeight: 700, color: '#16A34A' }}>En ligne</span>
+        </div>
       </div>
 
-      {/* Content */}
-      {completedCount === 0 ? (
-        <div
-          style={{
-            background: '#F8FAFF',
-            borderRadius: 12,
-            padding: '16px 18px',
-            textAlign: 'center',
-          }}
-        >
-          <p style={{ margin: 0, fontSize: 14, color: '#64748B', lineHeight: 1.6 }}>
-            {emptyMsg}
-          </p>
+      {/* Contenu */}
+      {analysis ? (
+        <div style={{ fontSize: 13, color: '#374151', lineHeight: 1.7, whiteSpace: 'pre-line' }}>
+          {analysis}
         </div>
-      ) : analysis ? (
-        <div>{renderAnalysis(analysis)}</div>
       ) : (
-        <div
-          style={{
-            background: '#F8FAFF',
-            borderRadius: 12,
-            padding: '16px 18px',
-            display: 'flex',
-            alignItems: 'center',
-            gap: 12,
-          }}
-        >
-          <div
-            style={{
-              width: 20,
-              height: 20,
-              border: '2px solid #3B82F6',
-              borderTopColor: 'transparent',
-              borderRadius: '50%',
-              animation: 'spin 0.8s linear infinite',
-              flexShrink: 0,
-            }}
-          />
-          <p style={{ margin: 0, fontSize: 13, color: '#64748B' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{
+            width: 18, height: 18, border: `2px solid ${accentColor}`,
+            borderTopColor: 'transparent', borderRadius: '50%',
+            animation: 'spin 0.8s linear infinite', flexShrink: 0,
+          }} />
+          <p style={{ margin: 0, fontSize: 13, color: '#64748B', fontStyle: 'italic' }}>
             Dr. Lô prépare ton analyse… reviens dans quelques secondes 🔄
           </p>
         </div>
@@ -663,8 +541,6 @@ const AssessmentProfilePage: React.FC = () => {
         setIsSexualComplete(progress.isSexualComplete);
         setMentalCompletedCount(progress.mentalCompletedCount);
         setSexualCompletedCount(progress.sexualCompletedCount);
-        setDrLoMentalAnalysis(progress.drLoMentalAnalysis);
-        setDrLoSexualAnalysis(progress.drLoSexualAnalysis);
       })
       .catch(() => {
         // Erreurs Firestore transitoires (offline, permission temporaire) → silencieux
@@ -672,50 +548,33 @@ const AssessmentProfilePage: React.FC = () => {
       .finally(() => setLoadingProfile(false));
   }, [isAuthenticated, currentUser]);
 
-  // Polling mental — re-déclenche si analyse mentale absente
-  const drLoMentalPollingRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // onSnapshot : mise à jour temps réel des analyses Dr Lo
+  useEffect(() => {
+    if (!isAuthenticated || !currentUser) return;
+    const ref = doc(db, 'userProfiles', currentUser.id);
+    const unsubscribe = onSnapshot(ref, (snap) => {
+      if (!snap.exists()) return;
+      const data = snap.data();
+      if (data.drLoMentalAnalysis) setDrLoMentalAnalysis(data.drLoMentalAnalysis as string);
+      if (data.drLoSexualAnalysis) setDrLoSexualAnalysis(data.drLoSexualAnalysis as string);
+    }, () => { /* silencieux */ });
+    return () => unsubscribe();
+  }, [isAuthenticated, currentUser?.id]);
+
+  // Déclenche la génération si l'analyse mentale est absente
   useEffect(() => {
     if (!isAuthenticated || !currentUser) return;
     if (drLoMentalAnalysis) return;
     if (mentalCompletedCount === 0) return;
-
     triggerDrLoMentalHealth(currentUser.id).catch(() => {});
-
-    let attempts = 0;
-    const MAX_ATTEMPTS = 15;
-    const poll = async () => {
-      attempts++;
-      try {
-        const p = await getProfileProgress(currentUser.id);
-        if (p.drLoMentalAnalysis) { setDrLoMentalAnalysis(p.drLoMentalAnalysis); return; }
-      } catch { /* silencieux */ }
-      if (attempts < MAX_ATTEMPTS) drLoMentalPollingRef.current = setTimeout(poll, 3000);
-    };
-    drLoMentalPollingRef.current = setTimeout(poll, 3000);
-    return () => { if (drLoMentalPollingRef.current) clearTimeout(drLoMentalPollingRef.current); };
   }, [isAuthenticated, currentUser?.id, drLoMentalAnalysis, mentalCompletedCount]);
 
-  // Polling sexual — re-déclenche si analyse sexuelle absente
-  const drLoSexualPollingRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Déclenche la génération si l'analyse sexuelle est absente
   useEffect(() => {
     if (!isAuthenticated || !currentUser) return;
     if (drLoSexualAnalysis) return;
     if (sexualCompletedCount === 0) return;
-
     triggerDrLoSexualHealth(currentUser.id).catch(() => {});
-
-    let attempts = 0;
-    const MAX_ATTEMPTS = 15;
-    const poll = async () => {
-      attempts++;
-      try {
-        const p = await getProfileProgress(currentUser.id);
-        if (p.drLoSexualAnalysis) { setDrLoSexualAnalysis(p.drLoSexualAnalysis); return; }
-      } catch { /* silencieux */ }
-      if (attempts < MAX_ATTEMPTS) drLoSexualPollingRef.current = setTimeout(poll, 3000);
-    };
-    drLoSexualPollingRef.current = setTimeout(poll, 3000);
-    return () => { if (drLoSexualPollingRef.current) clearTimeout(drLoSexualPollingRef.current); };
   }, [isAuthenticated, currentUser?.id, drLoSexualAnalysis, sexualCompletedCount]);
 
   // Démarrer une scale
@@ -927,14 +786,6 @@ const AssessmentProfilePage: React.FC = () => {
           />
         </div>
 
-        {/* ── Dr. Lô — Santé Mentale ────────────────────────────────── */}
-        <DrLoPanel
-          bloc="mental"
-          analysis={drLoMentalAnalysis}
-          completedCount={mentalCompletedCount}
-          prenom={prenom}
-        />
-
         {/* ── Section Santé Mentale ─────────────────────────────────── */}
         <section style={{ marginBottom: 32 }}>
           <div
@@ -965,6 +816,13 @@ const AssessmentProfilePage: React.FC = () => {
             </span>
           </div>
 
+          {/* Bulle Dr Lô Santé Mentale */}
+          <DrLoPanel
+            bloc="mental"
+            analysis={drLoMentalAnalysis}
+            completedCount={mentalCompletedCount}
+          />
+
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {MENTAL_HEALTH_SCALES.map(scale => (
               <ScaleRow
@@ -977,16 +835,6 @@ const AssessmentProfilePage: React.FC = () => {
             ))}
           </div>
         </section>
-
-        {/* ── Dr. Lô — Santé Sexuelle ───────────────────────────────── */}
-        {sexualCompletedCount > 0 && (
-          <DrLoPanel
-            bloc="sexual"
-            analysis={drLoSexualAnalysis}
-            completedCount={sexualCompletedCount}
-            prenom={prenom}
-          />
-        )}
 
         {/* ── Section Santé Sexuelle ────────────────────────────────── */}
         <section style={{ marginBottom: 32 }}>
@@ -1030,6 +878,13 @@ const AssessmentProfilePage: React.FC = () => {
               Confidentiel
             </span>
           </div>
+
+          {/* Bulle Dr Lô Santé Sexuelle */}
+          <DrLoPanel
+            bloc="sexual"
+            analysis={drLoSexualAnalysis}
+            completedCount={sexualCompletedCount}
+          />
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {SEXUAL_HEALTH_SCALES.map(scale => (

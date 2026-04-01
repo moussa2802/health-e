@@ -11,7 +11,7 @@ export const PG13: AssessmentScale = {
   reference: "Prigerson, H.G., et al. (2009). Prolonged Grief Disorder: Psychometric Validation of Criteria. PLOS Medicine, 6(8).",
   licenseNote: "Libre pour usage clinique et de recherche.",
   warningMessage: "Ces questions portent sur le deuil. Prenez soin de vous. Ces résultats ne remplacent pas une consultation professionnelle.",
-  scoreRange: { min: 0, max: 52 },
+  scoreRange: { min: 0, max: 44 },
   items: [
     { id: 1,  text: "À quelle fréquence avez-vous des pensées douloureuses sur la personne décédée ?",
       type: 'frequency', options: [{ value: 0, label: "Jamais" }, { value: 1, label: "Rarement" }, { value: 2, label: "Parfois" }, { value: 3, label: "Souvent" }, { value: 4, label: "Toujours" }] },
@@ -42,7 +42,7 @@ export const PG13: AssessmentScale = {
   ],
   interpretation: [
     { min: 0,  max: 15, label: "Deuil dans la norme",          severity: 'minimal',  description: "Processus de deuil dans la norme, sans complications majeures.", referralRequired: false, recommendation: "Le deuil prend du temps. Accordez-vous la permission de ressentir." },
-    { min: 16, max: 30, label: "Deuil intensifié",             severity: 'moderate', description: "Symptômes de deuil notables pouvant nécessiter soutien.", referralRequired: false, recommendation: "Un soutien psychologique ou un groupe de parole peut vous aider." },
-    { min: 31, max: 52, label: "Deuil prolongé probable",      severity: 'severe',   description: "Symptômes compatibles avec un trouble de deuil prolongé.", referralRequired: true, recommendation: "Une consultation avec un professionnel spécialisé en deuil est recommandée." },
+    { min: 16, max: 25, label: "Deuil intensifié",             severity: 'moderate', description: "Symptômes de deuil notables pouvant nécessiter soutien.", referralRequired: false, recommendation: "Un soutien psychologique ou un groupe de parole peut vous aider." },
+    { min: 26, max: 44, label: "Deuil prolongé probable",      severity: 'severe',   alertLevel: 2, description: "Score ≥ 26 : symptômes compatibles avec un trouble de deuil prolongé (critères Prigerson, 2009).", referralRequired: true, recommendation: "Une consultation avec un professionnel spécialisé en deuil est fortement recommandée." },
   ],
 };

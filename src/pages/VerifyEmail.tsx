@@ -150,8 +150,8 @@ const VerifyEmail: React.FC = () => {
           let dashboardPath = "/";
 
           if (finalUserType === "patient") {
-            dashboardPath = "/patient/dashboard";
-            console.log("👤 [VERIFY DEBUG] Patient dashboard selected");
+            dashboardPath = "/assessment";
+            console.log("👤 [VERIFY DEBUG] Patient → Healt-e 2.0 assessment");
           } else if (finalUserType === "professional") {
             dashboardPath = "/professional/dashboard";
             console.log("👨‍⚕️ [VERIFY DEBUG] Professional dashboard selected");

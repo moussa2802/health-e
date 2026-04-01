@@ -27,6 +27,8 @@ import { SOCIAL_PRESSURE_SEX } from './sexualHealth/socialPressureSex';
 import { GRISS_BASE } from './sexualHealth/grissBase';
 
 import type { AssessmentScale } from '../../types/assessment';
+import type { SexualExperienceProfile } from '../../types/onboarding';
+import { getAdaptedScale } from '../../utils/sexualHealthFilter';
 
 export const MENTAL_HEALTH_SCALES: AssessmentScale[] = [
   GAD7, PHQ9, BIG_FIVE, ECR_R, RSES, BRS, PSS10, ACE, PCL5, PG13,
@@ -45,4 +47,13 @@ export const ALL_SCALES: AssessmentScale[] = [
 
 export function getScaleById(id: string): AssessmentScale | undefined {
   return ALL_SCALES.find(s => s.id === id);
+}
+
+export function getAdaptedScaleById(
+  id: string,
+  sexualProfile?: SexualExperienceProfile
+): AssessmentScale | undefined {
+  const scale = ALL_SCALES.find(s => s.id === id);
+  if (!scale || !sexualProfile) return scale;
+  return getAdaptedScale(scale, sexualProfile);
 }

@@ -19,7 +19,7 @@ export const SOCIAL_PRESSURE_SEX: AssessmentScale = {
   reference: "Questionnaire Healt-e (2026). Développé pour le contexte africain francophone.",
   licenseNote: "Questionnaire original Healt-e. Tous droits réservés.",
   warningMessage: "Ces résultats ne remplacent pas une consultation avec un professionnel de santé.",
-  scoreRange: { min: 12, max: 60 },
+  scoreRange: { min: 14, max: 70 },
   items: [
     { id: 1,  text: "Je me sens obligé(e) d'avoir des rapports sexuels même quand je n'en ai pas envie (devoir conjugal, pression du partenaire)", type: 'likert', options: opts, subscale: 'coercion' },
     { id: 2,  text: "Je ressens une pression liée à ma virginité ou à mes expériences sexuelles passées",                                          type: 'likert', options: opts, subscale: 'coercion' },
@@ -33,17 +33,21 @@ export const SOCIAL_PRESSURE_SEX: AssessmentScale = {
     { id: 10, text: "Certains aspects de ma sexualité sont considérés comme inacceptables dans mon environnement social",                        type: 'likert', options: opts, subscale: 'stigma' },
     { id: 11, text: "Mon partenaire et moi évitions de parler ouvertement de nos désirs ou insatisfactions sexuelles",                          type: 'likert', options: opts, subscale: 'communication' },
     { id: 12, text: "Il m'est difficile de dire non ou d'exprimer mes limites sexuelles dans ma relation",                                       type: 'likert', options: opts, subscale: 'communication' },
+    // Items pression virginité — contexte sénégalais
+    { id: 13, text: "Dans mon entourage, la question de la virginité est une pression que je ressens régulièrement",                             type: 'likert', options: opts, subscale: 'virginity' },
+    { id: 14, text: "Ma façon de vivre ma sexualité crée un conflit avec ce qu'on attend de moi",                  type: 'likert', options: opts, subscale: 'virginity' },
   ],
   subscales: [
-    { key: 'coercion',      label: "Pression et coercition",      itemIds: [1,2,3],  range: { min: 3, max: 15 } },
-    { key: 'taboo',         label: "Tabou et silence",            itemIds: [4,5,6],  range: { min: 3, max: 15 } },
-    { key: 'norms',         label: "Normes culturelles",          itemIds: [7,8],    range: { min: 2, max: 10 } },
-    { key: 'stigma',        label: "Stigmatisation",              itemIds: [9,10],   range: { min: 2, max: 10 } },
-    { key: 'communication', label: "Communication sexuelle",      itemIds: [11,12],  range: { min: 2, max: 10 } },
+    { key: 'coercion',      label: "Pression et coercition",       itemIds: [1,2,3],   range: { min: 3, max: 15 } },
+    { key: 'taboo',         label: "Tabou et silence",             itemIds: [4,5,6],   range: { min: 3, max: 15 } },
+    { key: 'norms',         label: "Normes culturelles",           itemIds: [7,8],     range: { min: 2, max: 10 } },
+    { key: 'stigma',        label: "Stigmatisation",               itemIds: [9,10],    range: { min: 2, max: 10 } },
+    { key: 'communication', label: "Communication sexuelle",       itemIds: [11,12],   range: { min: 2, max: 10 } },
+    { key: 'virginity',     label: "Pression virginité / valeurs", itemIds: [13,14],   range: { min: 2, max: 10 } },
   ],
   interpretation: [
-    { min: 12, max: 24, label: "Pression sociale faible",    severity: 'positive', description: "Vous semblez relativement libre des pressions sociales dans votre sexualité.", referralRequired: false, recommendation: "Continuez à cultiver une sexualité épanouie et respectueuse de vos valeurs." },
-    { min: 25, max: 42, label: "Pression sociale modérée",   severity: 'mild',     description: "Des pressions sociales influencent modérément votre vie sexuelle.", referralRequired: false, recommendation: "Identifier ces pressions et leurs impacts peut vous aider à mieux les gérer." },
-    { min: 43, max: 60, label: "Pression sociale élevée",    severity: 'moderate', description: "Des pressions sociales importantes limitent votre épanouissement sexuel.", referralRequired: false, recommendation: "Un accompagnement par un professionnel sensible aux enjeux culturels peut être bénéfique." },
+    { min: 14, max: 28, label: "Pression sociale faible",    severity: 'positive', description: "Vous semblez relativement libre des pressions sociales dans votre sexualité.", referralRequired: false, recommendation: "Continuez à cultiver une sexualité épanouie et respectueuse de vos valeurs." },
+    { min: 29, max: 49, label: "Pression sociale modérée",   severity: 'mild',     description: "Des pressions sociales influencent modérément votre vie sexuelle.", referralRequired: false, recommendation: "Identifier ces pressions et leurs impacts peut vous aider à mieux les gérer." },
+    { min: 50, max: 70, label: "Pression sociale élevée",    severity: 'moderate', description: "Des pressions sociales importantes limitent votre épanouissement sexuel.", referralRequired: false, recommendation: "Un accompagnement par un professionnel sensible aux enjeux culturels peut être bénéfique." },
   ],
 };

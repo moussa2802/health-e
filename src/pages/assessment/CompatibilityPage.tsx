@@ -1,328 +1,420 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import {
-  Heart, Users, Briefcase, UserCheck, Copy, Check,
-  Loader2, AlertTriangle, ChevronRight, Sparkles, RefreshCw,
-} from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
-import { getOrCreateUserProfile, getProfileProgress, isProfileCompleteById, TOTAL_SCALES } from '../../services/evaluationService';
+import { getOrCreateUserProfile, getProfileProgress } from '../../services/evaluationService';
 import {
   createCompatibilityRequest,
   computeCompatibility,
 } from '../../services/compatibilityService';
-import type { CompatibilityResult, CompatibilityRequest } from '../../types/assessment';
+import type { CompatibilityResult } from '../../types/assessment';
+import { RELATIONSHIP_CATEGORIES, getRelationshipLabel } from '../../utils/relationshipTypes';
 
-type RelationshipType = CompatibilityRequest['relationshipType'];
-
-const RELATIONSHIP_OPTIONS: { value: RelationshipType; label: string; icon: React.ReactNode }[] = [
-  { value: "couple",    label: "Couple",     icon: <Heart size={18} /> },
-  { value: "family",   label: "Famille",    icon: <Users size={18} /> },
-  { value: "friend",   label: "Amis",       icon: <UserCheck size={18} /> },
-  { value: "colleague", label: "Collègues", icon: <Briefcase size={18} /> },
-];
-
-const scoreColor = (score: number) => {
-  if (score >= 75) return { ring: "text-green-600", bg: "bg-green-100", bar: "bg-green-500"};
-  if (score >= 50) return { ring: "text-yellow-600", bg: "bg-yellow-100", bar: "bg-yellow-500"};
-  return { ring: "text-red-600", bg: "bg-red-100", bar: "bg-red-500"};
-};
+function scoreStyle(score: number) {
+  if (score >= 75) return { color: '#16A34A', bg: 'rgba(22,163,74,0.1)', bar: 'linear-gradient(90deg, #16A34A, #4ADE80)', label: 'Très bonne compatibilité ✨' };
+  if (score >= 50) return { color: '#D97706', bg: 'rgba(217,119,6,0.1)', bar: 'linear-gradient(90deg, #D97706, #FBBF24)', label: 'Compatibilité modérée 🌱' };
+  return { color: '#DC2626', bg: 'rgba(220,38,38,0.1)', bar: 'linear-gradient(90deg, #DC2626, #F87171)', label: 'Des zones à explorer ensemble 🔍' };
+}
 
 const CompatibilityPage: React.FC = () => {
   const { currentUser, isAuthenticated } = useAuth();
 
-  // Profile / ID
-  const [myCompatibilityId, setMyCompatibilityId] = useState<string | null>(null);
-  const [myIsComplete, setMyIsComplete] = useState(false);
-  const [myRemaining, setMyRemaining] = useState(TOTAL_SCALES);
+  const [myIdMental, setMyIdMental] = useState<string | null>(null);
+  const [myIdSexual, setMyIdSexual] = useState<string | null>(null);
   const [loadingProfile, setLoadingProfile] = useState(false);
-  const [idCopied, setIdCopied] = useState(false);
+  const [copiedMental, setCopiedMental] = useState(false);
+  const [copiedSexual, setCopiedSexual] = useState(false);
 
-  // Form
   const [partnerIdInput, setPartnerIdInput] = useState('');
-  const [relationshipType, setRelationshipType] = useState<RelationshipType>('couple');
+  const [mainCategoryId, setMainCategoryId] = useState<string | null>(null);
+  const [selectedSubTypeId, setSelectedSubTypeId] = useState<string | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
   const [calculating, setCalculating] = useState(false);
 
-  // Results
   const [result, setResult] = useState<CompatibilityResult | null>(null);
+
+  const selectedCategory = RELATIONSHIP_CATEGORIES.find(c => c.id === mainCategoryId) ?? null;
+
+  // Reset sub-type when main category changes
+  useEffect(() => { setSelectedSubTypeId(null); }, [mainCategoryId]);
 
   useEffect(() => {
     if (isAuthenticated && currentUser) {
       setLoadingProfile(true);
       getOrCreateUserProfile(currentUser.id, currentUser.name)
         .then(() => getProfileProgress(currentUser.id))
-        .then((progress) => {
-          setMyCompatibilityId(progress.compatibilityId);
-          setMyIsComplete(progress.isComplete);
-          setMyRemaining(progress.remaining);
-        })
+        .then((p) => { setMyIdMental(p.compatibilityIdMental); setMyIdSexual(p.compatibilityIdSexual); })
         .catch(() => {})
         .finally(() => setLoadingProfile(false));
     }
   }, [isAuthenticated, currentUser]);
 
-  const handleCopyId = async () => {
-    if (!myCompatibilityId) return;
-    try {
-      await navigator.clipboard.writeText(myCompatibilityId);
-      setIdCopied(true);
-      setTimeout(() => setIdCopied(false), 2000);
-    } catch { /* silencieux */ }
+  const copy = async (text: string, setCopied: (v: boolean) => void) => {
+    try { await navigator.clipboard.writeText(text); setCopied(true); setTimeout(() => setCopied(false), 2000); } catch { /* silencieux */ }
   };
 
   const handleCalculate = async () => {
     setFormError(null);
     const trimmedId = partnerIdInput.trim().toUpperCase();
-
-    if (!trimmedId) {
-      setFormError("Veuillez saisir l'identifiant de votre partenaire.");
-      return;
-    }
-    if (!/^HE-[A-Z0-9]{4}-[A-Z0-9]{4}$/i.test(trimmedId)) {
-      setFormError("L'identifiant doit être au format HE-XXXX-XXXX (ex: HE-AB12-CD34).");
-      return;
-    }
-    if (!isAuthenticated || !currentUser) {
-      setFormError("Vous devez être connecté(e) pour calculer la compatibilité.");
-      return;
-    }
-    if (trimmedId === myCompatibilityId) {
-      setFormError("Vous ne pouvez pas calculer votre compatibilité avec vous-même.");
-      return;
-    }
-
-    // Vérification : mon propre profil doit être complet
-    if (!myIsComplete) {
-      setFormError(`Ton profil n'est pas complet. Il te reste ${myRemaining} évaluation(s) à compléter avant de pouvoir utiliser le test de compatibilité.`);
-      return;
-    }
-
-    // Vérification : le profil du partenaire doit aussi être complet
+    if (!trimmedId) { setFormError("Saisis le code de ton partenaire."); return; }
+    if (!selectedSubTypeId) { setFormError("Sélectionne le type de relation."); return; }
+    if (!isAuthenticated || !currentUser) { setFormError("Tu dois être connecté(e)."); return; }
+    const isMental = /^SM-[A-Z0-9]{4}$/i.test(trimmedId);
+    const isSexual = /^SE-[A-Z0-9]{4}$/i.test(trimmedId);
+    if (!isMental && !isSexual) { setFormError("Format invalide — les codes font SM-XXXX (mental) ou SE-XXXX (sexuel)."); return; }
+    if (trimmedId === myIdMental || trimmedId === myIdSexual) { setFormError("Tu ne peux pas te comparer à toi-même 😄"); return; }
+    if (isMental && !myIdMental) { setFormError("Tu dois compléter toutes les évaluations mentales (SM) pour comparer ce type de profil."); return; }
+    if (isSexual && !myIdSexual) { setFormError("Tu dois compléter toutes les évaluations sexuelles (SE) pour comparer ce type de profil."); return; }
     setCalculating(true);
     try {
-      const partnerComplete = await isProfileCompleteById(trimmedId);
-      if (!partnerComplete) {
-        setFormError("Le profil associé à cet identifiant n'est pas encore complet. Les deux profils doivent avoir complété toutes les évaluations.");
-        setCalculating(false);
-        return;
-      }
-    } catch {
-      setFormError("Impossible de vérifier cet identifiant. Vérifiez qu'il est correct.");
-      setCalculating(false);
-      return;
-    }
-
-    try {
-      const req = await createCompatibilityRequest(
-        currentUser.id,
-        trimmedId,
-        relationshipType,
-      );
+      const req = await createCompatibilityRequest(currentUser.id, trimmedId, selectedSubTypeId);
       const res = await computeCompatibility(req.id);
       setResult(res);
     } catch (err: unknown) {
-      setFormError(err instanceof Error ? err.message : 'Erreur lors du calcul. Veuillez réessayer.');
+      setFormError(err instanceof Error ? err.message : 'Erreur lors du calcul. Réessaie.');
     } finally {
       setCalculating(false);
     }
   };
 
-  const globalColors = result ? scoreColor(result.globalScore) : null;
+  const globalStyle = result ? scoreStyle(result.globalScore) : null;
+  const isFamilyCategory = mainCategoryId === 'famille';
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-sky-50 via-white to-violet-50">
-      <div className="max-w-3xl mx-auto px-4 py-10">
+    <div style={{ minHeight: '100vh', background: 'linear-gradient(160deg, #F5F0FF 0%, #FFF0F9 45%, #EFF6FF 100%)', fontFamily: "'Inter', -apple-system, sans-serif" }}>
+      <style>{`
+        @keyframes spin { to { transform: rotate(360deg); } }
+        @keyframes floatHeart { 0%,100% { transform: translateY(0) rotate(-5deg); } 50% { transform: translateY(-12px) rotate(5deg); } }
+        @keyframes slideUp { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:none; } }
+        @keyframes slideDown { from { opacity:0; transform:translateY(-10px); } to { opacity:1; transform:none; } }
+      `}</style>
+
+      {/* Blobs décoratifs */}
+      <div style={{ position: 'fixed', inset: 0, pointerEvents: 'none', overflow: 'hidden', zIndex: 0 }}>
+        <div style={{ position: 'absolute', top: '5%', left: '-8%', width: 380, height: 380, borderRadius: '50%', background: 'radial-gradient(circle, rgba(167,139,250,0.15) 0%, transparent 70%)' }} />
+        <div style={{ position: 'absolute', bottom: '15%', right: '-8%', width: 320, height: 320, borderRadius: '50%', background: 'radial-gradient(circle, rgba(236,72,153,0.10) 0%, transparent 70%)' }} />
+        <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', width: 500, height: 500, borderRadius: '50%', background: 'radial-gradient(circle, rgba(59,130,246,0.05) 0%, transparent 70%)' }} />
+      </div>
+
+      <div style={{ maxWidth: 680, margin: '0 auto', padding: '52px 20px 80px', position: 'relative', zIndex: 1 }}>
 
         {/* ── Hero ── */}
-        <div className="text-center mb-10">
-          <div className="inline-flex items-center gap-2 bg-violet-100 text-violet-700 rounded-full px-4 py-1.5 text-sm font-medium mb-4">
-            <Heart size={15} />
-            <span>Test de compatibilité</span>
+        <div style={{ textAlign: 'center', marginBottom: 48 }}>
+          <div style={{ fontSize: 60, marginBottom: 18, display: 'inline-block', animation: 'floatHeart 3.5s ease-in-out infinite' }}>
+            💞
           </div>
-          <h1 className="text-3xl sm:text-4xl font-extrabold text-gray-900 mb-3">
-            Découvrez votre{' '}
-            <span className="bg-gradient-to-r from-sky-500 to-violet-500 bg-clip-text text-transparent">
+          <h1 style={{ margin: '0 0 14px', fontSize: 34, fontWeight: 900, color: '#0A2342', letterSpacing: '-0.025em', lineHeight: 1.15 }}>
+            Test de{' '}
+            <span style={{ background: 'linear-gradient(135deg, #7C3AED 0%, #EC4899 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
               compatibilité
             </span>
           </h1>
-          <p className="text-gray-600 max-w-xl mx-auto text-sm sm:text-base">
-            Comparez vos profils de bien-être avec un proche et identifiez vos points forts
-            ainsi que les zones de dialogue à explorer ensemble.
+          <p style={{ margin: '0 auto', fontSize: 15, color: '#64748B', lineHeight: 1.7, maxWidth: 460 }}>
+            Comparez vos profils psychologiques avec un proche — identifiez vos forces communes et les zones à explorer ensemble.
           </p>
         </div>
 
-        {/* ── Mon ID ── */}
-        <div className="bg-white rounded-2xl border border-gray-200 p-5 shadow-sm mb-6">
-          <h2 className="text-base font-bold text-gray-900 mb-3">Mon identifiant de compatibilité</h2>
+        {/* ── Mes codes ── */}
+        <div style={{ background: 'rgba(255,255,255,0.88)', backdropFilter: 'blur(18px)', WebkitBackdropFilter: 'blur(18px)', border: '1.5px solid rgba(124,58,237,0.12)', borderRadius: 22, padding: '22px 24px', marginBottom: 18, boxShadow: '0 4px 28px rgba(124,58,237,0.07)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 18 }}>
+            <div style={{ width: 34, height: 34, borderRadius: 10, background: 'linear-gradient(135deg, #7C3AED, #EC4899)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, flexShrink: 0 }}>🔑</div>
+            <h2 style={{ margin: 0, fontSize: 15, fontWeight: 800, color: '#0A2342' }}>Mes codes de compatibilité</h2>
+          </div>
+
           {!isAuthenticated ? (
-            <div className="flex items-center justify-between gap-3">
-              <p className="text-sm text-gray-600">Connectez-vous pour voir et partager votre identifiant.</p>
-              <Link
-                to="/patient/access"
-                className="flex-shrink-0 bg-sky-500 text-white text-sm font-semibold px-4 py-2 rounded-full hover:bg-sky-600 transition-colors"
-              >
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, background: '#F8F5FF', borderRadius: 14, padding: '14px 16px' }}>
+              <p style={{ margin: 0, fontSize: 14, color: '#64748B' }}>Connecte-toi pour voir et partager tes codes.</p>
+              <Link to="/patient/access" style={{ flexShrink: 0, background: 'linear-gradient(135deg, #7C3AED, #EC4899)', color: '#fff', fontSize: 13, fontWeight: 700, padding: '9px 18px', borderRadius: 22, textDecoration: 'none', whiteSpace: 'nowrap' }}>
                 Se connecter
               </Link>
             </div>
           ) : loadingProfile ? (
-            <div className="flex items-center gap-2 text-sm text-gray-500">
-              <Loader2 size={16} className="animate-spin text-sky-500" />
-              Chargement...
-            </div>
-          ) : myCompatibilityId ? (
-            <div className="flex items-center gap-3">
-              <code className="flex-1 bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 font-mono font-bold text-gray-900 tracking-widest text-sm">
-                {myCompatibilityId}
-              </code>
-              <button
-                onClick={handleCopyId}
-                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ${
-                  idCopied
-                    ? 'bg-green-100 text-green-700 border border-green-200'
-                    : 'bg-gray-50 text-gray-600 border border-gray-200 hover:bg-sky-50 hover:text-sky-700 hover:border-sky-200'
-                }`}
-              >
-                {idCopied ? <Check size={15} /> : <Copy size={15} />}
-                {idCopied ? "Copié !": "Copier"}
-              </button>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, color: '#94A3B8', fontSize: 14 }}>
+              <div style={{ width: 18, height: 18, border: '2px solid #7C3AED', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+              Chargement…
             </div>
           ) : (
-            <p className="text-sm text-red-500">Impossible de charger votre identifiant.</p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {/* Mental */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '14px 16px', borderRadius: 14, background: 'linear-gradient(135deg, #EFF6FF, #F0F9FF)', border: '1.5px solid rgba(59,130,246,0.15)' }}>
+                <span style={{ fontSize: 22, flexShrink: 0 }}>🧠</span>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <p style={{ margin: '0 0 3px', fontSize: 11, fontWeight: 700, color: '#3B82F6', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Profil Mental</p>
+                  {myIdMental
+                    ? <code style={{ fontSize: 16, fontFamily: "'JetBrains Mono','Courier New',monospace", fontWeight: 800, color: '#1D4ED8', letterSpacing: '0.1em' }}>{myIdMental}</code>
+                    : <span style={{ fontSize: 12, color: '#94A3B8' }}>Complète toutes les évaluations mentales pour obtenir ce code</span>
+                  }
+                </div>
+                {myIdMental && (
+                  <button onClick={() => copy(myIdMental, setCopiedMental)} style={{ flexShrink: 0, display: 'flex', alignItems: 'center', gap: 5, padding: '7px 13px', borderRadius: 10, border: copiedMental ? '1.5px solid rgba(22,163,74,0.4)' : '1.5px solid rgba(59,130,246,0.25)', background: copiedMental ? '#F0FDF4' : '#fff', color: copiedMental ? '#16A34A' : '#3B82F6', fontSize: 12, fontWeight: 600, cursor: 'pointer', transition: 'all 0.15s' }}>
+                    {copiedMental ? '✅ Copié !' : '📋 Copier'}
+                  </button>
+                )}
+              </div>
+              {/* Sexual */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '14px 16px', borderRadius: 14, background: 'linear-gradient(135deg, #FFF0F9, #FDF4FF)', border: '1.5px solid rgba(192,38,211,0.15)' }}>
+                <span style={{ fontSize: 22, flexShrink: 0 }}>💋</span>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <p style={{ margin: '0 0 3px', fontSize: 11, fontWeight: 700, color: '#C026D3', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Profil Sexuel</p>
+                  {myIdSexual
+                    ? <code style={{ fontSize: 16, fontFamily: "'JetBrains Mono','Courier New',monospace", fontWeight: 800, color: '#7E22CE', letterSpacing: '0.1em' }}>{myIdSexual}</code>
+                    : <span style={{ fontSize: 12, color: '#94A3B8' }}>Complète toutes les évaluations sexuelles pour obtenir ce code</span>
+                  }
+                </div>
+                {myIdSexual && (
+                  <button onClick={() => copy(myIdSexual, setCopiedSexual)} style={{ flexShrink: 0, display: 'flex', alignItems: 'center', gap: 5, padding: '7px 13px', borderRadius: 10, border: copiedSexual ? '1.5px solid rgba(22,163,74,0.4)' : '1.5px solid rgba(192,38,211,0.25)', background: copiedSexual ? '#F0FDF4' : '#fff', color: copiedSexual ? '#16A34A' : '#C026D3', fontSize: 12, fontWeight: 600, cursor: 'pointer', transition: 'all 0.15s' }}>
+                    {copiedSexual ? '✅ Copié !' : '📋 Copier'}
+                  </button>
+                )}
+              </div>
+            </div>
           )}
         </div>
 
-        {/* ── Bannière profil incomplet ── */}
-        {isAuthenticated && !loadingProfile && !myIsComplete && (
-          <div className="rounded-2xl border p-5 mb-6 flex items-start gap-4"
-            style={{ background: "#FFFBEB", borderColor: "rgba(234,179,8,0.3)" }}>
-            <AlertTriangle size={20} className="text-amber-500 flex-shrink-0 mt-0.5" />
-            <div className="flex-1">
-              <p className="font-semibold text-amber-800 text-sm mb-1">
-                Profil incomplet — test de compatibilité verrouillé
+        {/* ── Bannière si aucun code ── */}
+        {isAuthenticated && !loadingProfile && !myIdMental && !myIdSexual && (
+          <div style={{ background: 'rgba(255,251,235,0.95)', border: '1.5px solid rgba(234,179,8,0.25)', borderRadius: 16, padding: '16px 20px', marginBottom: 18, display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+            <span style={{ fontSize: 20, flexShrink: 0 }}>🔒</span>
+            <div>
+              <p style={{ margin: '0 0 4px', fontSize: 14, fontWeight: 700, color: '#92400E' }}>Test verrouillé — profil incomplet</p>
+              <p style={{ margin: '0 0 10px', fontSize: 13, color: '#A16207', lineHeight: 1.5 }}>
+                Complète toutes les évaluations de santé mentale <strong>(SM)</strong> ou sexuelle <strong>(SE)</strong> pour débloquer le test.
               </p>
-              <p className="text-amber-700 text-sm">
-                Il te reste <strong>{myRemaining} évaluation{myRemaining > 1 ? "s" : ""}</strong> à compléter pour débloquer le test de compatibilité et obtenir ton numéro de référence.
-              </p>
-              <Link
-                to="/assessment"
-                className="inline-flex items-center gap-1.5 mt-3 text-sm font-semibold text-amber-700 hover:text-amber-900 transition-colors"
-              >
-                Compléter mes évaluations <ChevronRight size={14} />
+              <Link to="/assessment/profile" style={{ fontSize: 13, fontWeight: 700, color: '#92400E', textDecoration: 'none' }}>
+                Voir mon profil →
               </Link>
             </div>
           </div>
         )}
 
-        {/* ── Form ── */}
+        {/* ── Formulaire ── */}
         {!result && (
-          <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm mb-6">
-            <h2 className="text-base font-bold text-gray-900 mb-5">Calculer ma compatibilité</h2>
-
-            {/* Partner ID input */}
-            <div className="mb-5">
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                Identifiant de votre partenaire
-              </label>
-              <input
-                type="text"
-                value={partnerIdInput}
-                onChange={(e) => setPartnerIdInput(e.target.value.toUpperCase())}
-                placeholder="HE-XXXX-XXXX"
-                maxLength={12}
-                className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm font-mono tracking-wider focus:outline-none focus:ring-2 focus:ring-sky-400 focus:border-transparent transition"
-              />
+          <div style={{ background: 'rgba(255,255,255,0.88)', backdropFilter: 'blur(18px)', WebkitBackdropFilter: 'blur(18px)', border: '1.5px solid rgba(124,58,237,0.12)', borderRadius: 22, padding: '26px 24px', marginBottom: 18, boxShadow: '0 4px 28px rgba(124,58,237,0.07)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 22 }}>
+              <div style={{ width: 34, height: 34, borderRadius: 10, background: 'linear-gradient(135deg, #7C3AED, #EC4899)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, flexShrink: 0 }}>✨</div>
+              <h2 style={{ margin: 0, fontSize: 15, fontWeight: 800, color: '#0A2342' }}>Calculer la compatibilité</h2>
             </div>
 
-            {/* Relationship type */}
-            <div className="mb-6">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Type de relation
+            {/* Input code partenaire */}
+            <div style={{ marginBottom: 24 }}>
+              <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#374151', marginBottom: 8 }}>
+                Code de ton partenaire
+                <span style={{ fontWeight: 400, color: '#94A3B8', marginLeft: 6 }}>SM-XXXX · SE-XXXX</span>
               </label>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                {RELATIONSHIP_OPTIONS.map((opt) => (
-                  <button
-                    key={opt.value}
-                    type="button"
-                    onClick={() => setRelationshipType(opt.value)}
-                    className={`flex flex-col items-center gap-2 py-3 px-2 rounded-xl border-2 text-sm font-medium transition-all duration-150 ${
-                      relationshipType === opt.value
-                        ? 'border-sky-500 bg-sky-50 text-sky-700'
-                        : 'border-gray-200 bg-white text-gray-600 hover:border-sky-200 hover:bg-sky-50'
-                    }`}
-                  >
-                    <span className={relationshipType === opt.value ? 'text-sky-600': "text-gray-400"}>
-                      {opt.icon}
-                    </span>
-                    <span>{opt.label}</span>
-                  </button>
-                ))}
+              <div style={{ position: 'relative' }}>
+                <span style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)', fontSize: 16, pointerEvents: 'none' }}>🔍</span>
+                <input
+                  type="text"
+                  value={partnerIdInput}
+                  onChange={(e) => { setPartnerIdInput(e.target.value.toUpperCase()); setFormError(null); }}
+                  placeholder="SM-XXXX ou SE-XXXX"
+                  maxLength={7}
+                  style={{ width: '100%', boxSizing: 'border-box', paddingLeft: 48, paddingRight: 16, paddingTop: 13, paddingBottom: 13, border: '1.5px solid rgba(124,58,237,0.18)', borderRadius: 13, fontSize: 16, fontFamily: "'JetBrains Mono','Courier New',monospace", fontWeight: 700, color: '#0A2342', letterSpacing: '0.08em', background: '#FAFAFF', outline: 'none', transition: 'border-color 0.15s' }}
+                  onFocus={(e) => { e.target.style.borderColor = 'rgba(124,58,237,0.5)'; e.target.style.boxShadow = '0 0 0 3px rgba(124,58,237,0.08)'; }}
+                  onBlur={(e) => { e.target.style.borderColor = 'rgba(124,58,237,0.18)'; e.target.style.boxShadow = 'none'; }}
+                />
               </div>
             </div>
 
-            {/* Error */}
-            {formError && (
-              <div className="flex items-start gap-2 bg-red-50 border border-red-200 rounded-xl p-3 mb-4">
-                <AlertTriangle size={15} className="text-red-500 flex-shrink-0 mt-0.5" />
-                <p className="text-sm text-red-700">{formError}</p>
+            {/* ── Étape 1 — Type principal ── */}
+            <div style={{ marginBottom: mainCategoryId ? 20 : 22 }}>
+              <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#374151', marginBottom: 10 }}>
+                Avec qui fais-tu ce test ?
+              </label>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 10 }}>
+                {RELATIONSHIP_CATEGORIES.map(cat => {
+                  const isActive = mainCategoryId === cat.id;
+                  return (
+                    <button
+                      key={cat.id}
+                      type="button"
+                      onClick={() => setMainCategoryId(isActive ? null : cat.id)}
+                      style={{
+                        display: 'flex', alignItems: 'center', gap: 10,
+                        padding: '12px 14px', borderRadius: 14, textAlign: 'left',
+                        border: isActive ? '2px solid transparent' : '2px solid rgba(124,58,237,0.1)',
+                        background: isActive ? 'linear-gradient(135deg, #7C3AED, #EC4899)' : 'rgba(248,245,255,0.8)',
+                        cursor: 'pointer', transition: 'all 0.18s ease',
+                        boxShadow: isActive ? '0 4px 16px rgba(124,58,237,0.28)' : 'none',
+                        transform: isActive ? 'translateY(-1px)' : 'none',
+                      }}
+                    >
+                      <span style={{ fontSize: 24, flexShrink: 0 }}>{cat.emoji}</span>
+                      <span style={{ fontSize: 13, fontWeight: 700, color: isActive ? '#fff' : '#4C1D95', lineHeight: 1.3 }}>{cat.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* ── Étape 2 — Sous-type ── */}
+            {selectedCategory && (
+              <div style={{ marginBottom: 22, animation: 'slideDown 0.2s ease' }}>
+                {/* Divider */}
+                <div style={{ height: 1, background: 'linear-gradient(90deg, transparent, rgba(124,58,237,0.12), transparent)', marginBottom: 18 }} />
+
+                <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#374151', marginBottom: 12 }}>
+                  {selectedCategory.question}
+                </label>
+
+                {/* Grid compact pour famille (pas de descriptions) */}
+                {isFamilyCategory ? (
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
+                    {selectedCategory.subTypes.map(sub => {
+                      const isActive = selectedSubTypeId === sub.id;
+                      return (
+                        <button
+                          key={sub.id}
+                          type="button"
+                          onClick={() => setSelectedSubTypeId(isActive ? null : sub.id)}
+                          style={{
+                            display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5,
+                            padding: '12px 8px', borderRadius: 12,
+                            border: isActive ? '2px solid transparent' : '2px solid rgba(124,58,237,0.1)',
+                            background: isActive ? 'linear-gradient(135deg, #7C3AED, #EC4899)' : 'rgba(248,245,255,0.8)',
+                            cursor: 'pointer', transition: 'all 0.18s ease',
+                            boxShadow: isActive ? '0 3px 12px rgba(124,58,237,0.28)' : 'none',
+                            transform: isActive ? 'translateY(-1px)' : 'none',
+                          }}
+                        >
+                          <span style={{ fontSize: 22 }}>{sub.emoji}</span>
+                          <span style={{ fontSize: 11, fontWeight: 700, color: isActive ? '#fff' : '#6D28D9', textAlign: 'center', lineHeight: 1.3 }}>{sub.label}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  /* Liste avec descriptions pour les autres catégories */
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    {selectedCategory.subTypes.map(sub => {
+                      const isActive = selectedSubTypeId === sub.id;
+                      return (
+                        <button
+                          key={sub.id}
+                          type="button"
+                          onClick={() => setSelectedSubTypeId(isActive ? null : sub.id)}
+                          style={{
+                            display: 'flex', alignItems: sub.description ? 'flex-start' : 'center', gap: 12,
+                            padding: '12px 14px', borderRadius: 13, textAlign: 'left',
+                            border: isActive ? '2px solid transparent' : '2px solid rgba(124,58,237,0.1)',
+                            background: isActive ? 'linear-gradient(135deg, #7C3AED, #EC4899)' : 'rgba(248,245,255,0.8)',
+                            cursor: 'pointer', transition: 'all 0.18s ease',
+                            boxShadow: isActive ? '0 4px 14px rgba(124,58,237,0.28)' : 'none',
+                            transform: isActive ? 'translateY(-1px)' : 'none',
+                          }}
+                        >
+                          <span style={{ fontSize: 20, flexShrink: 0, marginTop: sub.description ? 1 : 0 }}>{sub.emoji}</span>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <span style={{ display: 'block', fontSize: 13, fontWeight: 700, color: isActive ? '#fff' : '#4C1D95', lineHeight: 1.3 }}>{sub.label}</span>
+                            {sub.description && (
+                              <span style={{ display: 'block', fontSize: 12, fontWeight: 400, color: isActive ? 'rgba(255,255,255,0.78)' : '#94A3B8', marginTop: 2, lineHeight: 1.4 }}>
+                                {sub.description}
+                              </span>
+                            )}
+                          </div>
+                          {isActive && (
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0 }}>
+                              <circle cx="12" cy="12" r="10" fill="rgba(255,255,255,0.22)" />
+                              <polyline points="8 12 11 15 16 9" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+                            </svg>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             )}
 
+            {/* Erreur */}
+            {formError && (
+              <div style={{ background: '#FEF2F2', border: '1px solid rgba(220,38,38,0.2)', borderRadius: 12, padding: '11px 14px', marginBottom: 16, display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+                <span style={{ fontSize: 14, flexShrink: 0 }}>⚠️</span>
+                <p style={{ margin: 0, fontSize: 13, color: '#DC2626', lineHeight: 1.5 }}>{formError}</p>
+              </div>
+            )}
+
+            {/* CTA */}
             <button
               onClick={handleCalculate}
-              disabled={calculating || !isAuthenticated}
-              className={`w-full flex items-center justify-center gap-2 py-3 rounded-xl font-semibold text-sm transition-all duration-200 ${
-                !calculating && isAuthenticated
-                  ? 'bg-gradient-to-r from-sky-500 to-violet-500 text-white shadow-md hover:shadow-lg'
-                  : 'bg-gray-100 text-gray-400 cursor-not-allowed'
-              }`}
+              disabled={calculating || !isAuthenticated || !selectedSubTypeId}
+              style={{
+                width: '100%', padding: '15px 0', borderRadius: 14, border: 'none', fontSize: 15, fontWeight: 700,
+                background: !calculating && isAuthenticated && selectedSubTypeId ? 'linear-gradient(135deg, #7C3AED, #EC4899)' : '#F1F5F9',
+                color: !calculating && isAuthenticated && selectedSubTypeId ? '#fff' : '#94A3B8',
+                cursor: !calculating && isAuthenticated && selectedSubTypeId ? 'pointer' : 'not-allowed',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                boxShadow: !calculating && isAuthenticated && selectedSubTypeId ? '0 6px 24px rgba(124,58,237,0.35)' : 'none',
+                transition: 'all 0.18s ease', letterSpacing: '0.01em',
+              }}
             >
               {calculating ? (
                 <>
-                  <Loader2 size={16} className="animate-spin" />
-                  Calcul en cours...
+                  <div style={{ width: 18, height: 18, border: '2.5px solid rgba(255,255,255,0.4)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+                  Calcul en cours…
                 </>
               ) : (
-                <>
-                  Calculer la compatibilité
-                  <ChevronRight size={16} />
-                </>
+                <>Calculer ma compatibilité ✨</>
               )}
             </button>
           </div>
         )}
 
-        {/* ── Results ── */}
-        {result && globalColors && (
-          <div className="space-y-5">
-            {/* Global score */}
-            <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm text-center">
-              <p className="text-sm text-gray-500 mb-4">Score de compatibilité global</p>
-              <div className={`inline-flex items-center justify-center w-28 h-28 rounded-full border-8 ${globalColors.bg} border-current ${globalColors.ring} mx-auto mb-2`}>
-                <span className={`text-3xl font-extrabold ${globalColors.ring}`}>{result.globalScore}</span>
+        {/* ── Résultats ── */}
+        {result && globalStyle && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16, animation: 'slideUp 0.35s ease' }}>
+
+            {/* Header résultat avec type de relation */}
+            {selectedSubTypeId && (
+              <div style={{ textAlign: 'center', padding: '0 0 4px' }}>
+                <span style={{ fontSize: 13, color: '#94A3B8', fontWeight: 500 }}>
+                  Analyse pour : <strong style={{ color: '#7C3AED' }}>{getRelationshipLabel(selectedSubTypeId)}</strong>
+                </span>
               </div>
-              <p className={`text-sm font-semibold ${globalColors.ring}`}>
-                {result.globalScore >= 75 ? 'Très bonne compatibilité' :
-                 result.globalScore >= 50 ? "Compatibilité modérée": "Des points à explorer ensemble"}
-              </p>
+            )}
+
+            {/* Score global */}
+            <div style={{ background: 'rgba(255,255,255,0.92)', backdropFilter: 'blur(18px)', border: '1.5px solid rgba(124,58,237,0.12)', borderRadius: 22, padding: '32px 24px', textAlign: 'center', boxShadow: '0 8px 40px rgba(124,58,237,0.08)' }}>
+              <p style={{ margin: '0 0 20px', fontSize: 13, fontWeight: 600, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Score de compatibilité</p>
+
+              <div style={{ position: 'relative', width: 140, height: 140, margin: '0 auto 20px' }}>
+                <svg width="140" height="140" viewBox="0 0 140 140" style={{ transform: 'rotate(-90deg)' }}>
+                  <circle cx="70" cy="70" r="58" fill="none" stroke={`${globalStyle.color}18`} strokeWidth="10" />
+                  <circle
+                    cx="70" cy="70" r="58" fill="none"
+                    stroke={globalStyle.color} strokeWidth="10"
+                    strokeLinecap="round"
+                    strokeDasharray={`${2 * Math.PI * 58}`}
+                    strokeDashoffset={`${2 * Math.PI * 58 * (1 - result.globalScore / 100)}`}
+                    style={{ transition: 'stroke-dashoffset 1.2s cubic-bezier(0.4,0,0.2,1)' }}
+                  />
+                </svg>
+                <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                  <span style={{ fontSize: 36, fontWeight: 900, color: globalStyle.color, lineHeight: 1 }}>{result.globalScore}</span>
+                  <span style={{ fontSize: 12, fontWeight: 600, color: '#94A3B8' }}>/ 100</span>
+                </div>
+              </div>
+
+              <p style={{ margin: 0, fontSize: 16, fontWeight: 700, color: globalStyle.color }}>{globalStyle.label}</p>
             </div>
 
-            {/* Dimension scores */}
+            {/* Dimensions */}
             {Object.keys(result.dimensionScores).length > 0 && (
-              <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
-                <h3 className="text-sm font-bold text-gray-900 mb-4">Compatibilité par dimension</h3>
-                <div className="space-y-3">
+              <div style={{ background: 'rgba(255,255,255,0.92)', backdropFilter: 'blur(18px)', border: '1.5px solid rgba(124,58,237,0.12)', borderRadius: 22, padding: '22px 24px', boxShadow: '0 4px 24px rgba(124,58,237,0.06)' }}>
+                <p style={{ margin: '0 0 18px', fontSize: 13, fontWeight: 700, color: '#0A2342', display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <span>📊</span> Compatibilité par dimension
+                </p>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
                   {Object.entries(result.dimensionScores).map(([dim, score]) => {
-                    const c = scoreColor(score);
+                    const s = scoreStyle(score);
                     return (
-                      <div key={dim} className="flex items-center gap-3">
-                        <p className="text-sm text-gray-700 w-36 flex-shrink-0">{dim}</p>
-                        <div className="flex-1 h-2.5 bg-gray-100 rounded-full overflow-hidden">
-                          <div
-                            className={`h-full rounded-full transition-all duration-700 ${c.bar}`}
-                            style={{ width: `${score}%` }}
-                          />
+                      <div key={dim}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+                          <span style={{ fontSize: 13, fontWeight: 600, color: '#374151' }}>{dim}</span>
+                          <span style={{ fontSize: 13, fontWeight: 800, color: s.color }}>{score}</span>
                         </div>
-                        <span className={`text-sm font-bold w-10 text-right ${c.ring}`}>{score}</span>
+                        <div style={{ height: 8, background: '#F1F5F9', borderRadius: 99, overflow: 'hidden' }}>
+                          <div style={{ height: '100%', width: `${score}%`, background: s.bar, borderRadius: 99, transition: 'width 1s cubic-bezier(0.4,0,0.2,1)' }} />
+                        </div>
                       </div>
                     );
                   })}
@@ -330,70 +422,67 @@ const CompatibilityPage: React.FC = () => {
               </div>
             )}
 
-            {/* Strengths & Tensions */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {result.strengths.length > 0 && (
-                <div className="bg-green-50 rounded-2xl border border-green-200 p-5">
-                  <h3 className="text-sm font-bold text-green-800 mb-3">Points forts</h3>
-                  <ul className="space-y-2">
-                    {result.strengths.map((s, i) => (
-                      <li key={i} className="flex items-start gap-2 text-sm text-green-700">
-                        <Check size={15} className="flex-shrink-0 mt-0.5 text-green-600" />
-                        {s}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-              {result.tensions.length > 0 && (
-                <div className="bg-orange-50 rounded-2xl border border-orange-200 p-5">
-                  <h3 className="text-sm font-bold text-orange-800 mb-3">Zones de tension</h3>
-                  <ul className="space-y-2">
-                    {result.tensions.map((t, i) => (
-                      <li key={i} className="flex items-start gap-2 text-sm text-orange-700">
-                        <AlertTriangle size={14} className="flex-shrink-0 mt-0.5 text-orange-500" />
-                        {t}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-            </div>
-
-            {/* Claude narrative */}
-            {result.claudeNarrative ? (
-              <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
-                <div className="flex items-center gap-2 mb-3">
-                  <Sparkles size={16} className="text-violet-500" />
-                  <h3 className="text-sm font-bold text-gray-900">Analyse narrative</h3>
-                </div>
-                <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">{result.claudeNarrative}</p>
+            {/* Points forts & tensions */}
+            {(result.strengths.length > 0 || result.tensions.length > 0) && (
+              <div style={{ display: 'grid', gridTemplateColumns: result.strengths.length > 0 && result.tensions.length > 0 ? '1fr 1fr' : '1fr', gap: 14 }}>
+                {result.strengths.length > 0 && (
+                  <div style={{ background: 'rgba(240,253,244,0.95)', border: '1.5px solid rgba(22,163,74,0.2)', borderRadius: 18, padding: '18px 20px' }}>
+                    <p style={{ margin: '0 0 12px', fontSize: 13, fontWeight: 700, color: '#15803D', display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <span>💚</span> Points forts
+                    </p>
+                    <ul style={{ margin: 0, padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 8 }}>
+                      {result.strengths.map((s, i) => (
+                        <li key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 8, fontSize: 13, color: '#166534', lineHeight: 1.5 }}>
+                          <span style={{ flexShrink: 0 }}>✓</span>{s}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                {result.tensions.length > 0 && (
+                  <div style={{ background: 'rgba(255,247,237,0.95)', border: '1.5px solid rgba(234,88,12,0.2)', borderRadius: 18, padding: '18px 20px' }}>
+                    <p style={{ margin: '0 0 12px', fontSize: 13, fontWeight: 700, color: '#C2410C', display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <span>🔶</span> Zones à explorer
+                    </p>
+                    <ul style={{ margin: 0, padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 8 }}>
+                      {result.tensions.map((t, i) => (
+                        <li key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 8, fontSize: 13, color: '#9A3412', lineHeight: 1.5 }}>
+                          <span style={{ flexShrink: 0 }}>◆</span>{t}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
               </div>
-            ) : null}
+            )}
 
-            {/* Reset */}
+            {/* Narrative Dr Lo */}
+            {result.claudeNarrative && (
+              <div style={{ background: 'rgba(255,255,255,0.92)', backdropFilter: 'blur(18px)', border: '1.5px solid rgba(124,58,237,0.12)', borderRadius: 22, padding: '22px 24px' }}>
+                <p style={{ margin: '0 0 12px', fontSize: 13, fontWeight: 700, color: '#7C3AED', display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <span>👨‍⚕️</span> Analyse du Dr Lo
+                </p>
+                <p style={{ margin: 0, fontSize: 14, color: '#374151', lineHeight: 1.75, whiteSpace: 'pre-wrap' }}>{result.claudeNarrative}</p>
+              </div>
+            )}
+
+            {/* Nouveau calcul */}
             <button
-              onClick={() => { setResult(null); setPartnerIdInput(''); setFormError(null); }}
-              className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border border-gray-200 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+              onClick={() => { setResult(null); setPartnerIdInput(''); setFormError(null); setSelectedSubTypeId(null); setMainCategoryId(null); }}
+              style={{ width: '100%', padding: '14px 0', borderRadius: 14, border: '1.5px solid rgba(124,58,237,0.18)', background: 'rgba(255,255,255,0.8)', color: '#7C3AED', fontSize: 14, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, transition: 'all 0.15s' }}
             >
-              <RefreshCw size={15} />
-              Nouveau calcul
+              🔄 Nouveau calcul
             </button>
           </div>
         )}
 
-        {/* Footer note */}
-        <div className="mt-8 text-center">
-          <p className="text-xs text-gray-400">
-            Le test de compatibilité est basé sur vos dernières évaluations complétées.
-            Pour des résultats plus précis, complétez le plus grand nombre d'évaluations communes.
+        {/* Footer */}
+        <div style={{ marginTop: 40, textAlign: 'center' }}>
+          <p style={{ margin: '0 0 8px', fontSize: 12, color: '#94A3B8', lineHeight: 1.6 }}>
+            Les résultats sont basés sur tes dernières évaluations complétées.
           </p>
-          <Link
-            to="/assessment/select"
-            className="inline-flex items-center gap-1.5 mt-2 text-sm text-sky-600 hover:text-sky-700 font-medium"
-          >
-            Faire une évaluation
-            <ChevronRight size={14} />
+          <Link to="/assessment/profile" style={{ fontSize: 13, color: '#7C3AED', fontWeight: 600, textDecoration: 'none' }}>
+            Voir mon profil →
           </Link>
         </div>
       </div>

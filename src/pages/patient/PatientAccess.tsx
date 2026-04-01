@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { ArrowLeft, User, AlertCircle } from "lucide-react";
+import { ArrowLeft, AlertCircle } from "lucide-react";
 import PhoneInput, { isValidPhoneNumber } from "react-phone-number-input";
 import "react-phone-number-input/style.css";
 
@@ -162,8 +162,8 @@ const PatientAccess: React.FC = () => {
       currentUser?.type === "patient" &&
       !pendingSessionId
     ) {
-      // Si authentifié sans pendingSessionId, rediriger vers le dashboard
-      navigate("/patient/dashboard");
+      // Si authentifié sans pendingSessionId, rediriger vers Healt-e 2.0
+      navigate("/assessment");
     }
   }, [isAuthenticated, currentUser, step, navigate]);
 
@@ -267,7 +267,8 @@ const PatientAccess: React.FC = () => {
         setHasProcessedPendingRegistration(true);
         await handlePostAuthGroupTherapyRegistration(pendingSessionId);
       } else {
-        navigate("/patient/dashboard");
+        localStorage.setItem('he_new_account', 'true');
+        navigate("/assessment");
       }
     } catch (e: any) {
       console.log("❌ [PATIENT] ===== ERREUR ON SUBMIT PROFILE =====");
@@ -339,7 +340,7 @@ const PatientAccess: React.FC = () => {
           setHasProcessedPendingRegistration(true);
           await handlePostAuthGroupTherapyRegistration(pendingSessionId);
         } else {
-          navigate("/patient/dashboard");
+          navigate("/assessment");
         }
       } else {
         // Nouvel utilisateur - créer automatiquement avec un nom par défaut
@@ -375,7 +376,8 @@ const PatientAccess: React.FC = () => {
             setHasProcessedPendingRegistration(true);
             await handlePostAuthGroupTherapyRegistration(pendingSessionId);
           } else {
-            navigate("/patient/dashboard");
+            localStorage.setItem('he_new_account', 'true');
+            navigate("/assessment");
           }
         } catch (createError: any) {
           console.error(
@@ -397,46 +399,152 @@ const PatientAccess: React.FC = () => {
     }
   };
 
+  /* ── Step index for progress dots ── */
+  const stepIndex =
+    step === "enterPhone" ? 0
+    : step === "verify" ? 1
+    : step === "completeProfile" ? 2
+    : 0;
+
+  const gradientBtn =
+    "w-full text-white font-semibold px-4 py-3 rounded-xl shadow disabled:opacity-50 disabled:cursor-not-allowed transition-opacity";
+
+  const inputCls =
+    "w-full rounded-xl border border-white/40 bg-white/60 px-4 py-3 text-gray-800 placeholder-gray-400 focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-200 backdrop-blur-sm";
+
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-gradient-to-r from-blue-500 to-teal-400 py-6">
-        <div className="container mx-auto px-4 flex justify-between items-center">
-          <Link to="/" className="text-white flex items-center">
-            <ArrowLeft className="h-5 w-5 mr-2" />
-            Retour à l'accueil
-          </Link>
-          <h1 className="text-white text-xl font-bold">Espace Patient</h1>
-        </div>
+    <div
+      className="min-h-screen relative overflow-hidden"
+      style={{ background: "#F8FAFF" }}
+    >
+      {/* ── Gradient blobs (same as homepage) ── */}
+      <div
+        style={{
+          position: "absolute", top: "-15%", right: "-10%",
+          width: 500, height: 500, borderRadius: "50%",
+          background: "radial-gradient(circle, rgba(59,130,246,0.10) 0%, transparent 70%)",
+          pointerEvents: "none",
+        }}
+      />
+      <div
+        style={{
+          position: "absolute", bottom: "-10%", left: "-5%",
+          width: 400, height: 400, borderRadius: "50%",
+          background: "radial-gradient(circle, rgba(45,212,191,0.09) 0%, transparent 70%)",
+          pointerEvents: "none",
+        }}
+      />
+
+      {/* ── Back link ── */}
+      <div className="relative z-10 pt-6 px-6">
+        <Link
+          to="/"
+          className="inline-flex items-center gap-1.5 text-sm font-medium text-blue-600 hover:text-blue-700"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Retour à l'accueil
+        </Link>
       </div>
 
-      <div className="container mx-auto px-4 py-12">
-        <div className="max-w-xl mx-auto bg-white rounded-2xl shadow-md p-8">
-          <div className="text-center mb-6">
-            <div className="bg-blue-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-              <User className="h-8 w-8 text-blue-500" />
+      {/* ── Main card ── */}
+      <div className="relative z-10 flex items-center justify-center px-4 py-10 min-h-[calc(100vh-64px)]">
+        <div
+          className="w-full max-w-md rounded-3xl p-8"
+          style={{
+            background: "rgba(255,255,255,0.82)",
+            backdropFilter: "blur(18px)",
+            WebkitBackdropFilter: "blur(18px)",
+            border: "1.5px solid rgba(255,255,255,0.6)",
+            boxShadow: "0 8px 40px rgba(59,130,246,0.10), 0 1.5px 8px rgba(0,0,0,0.04)",
+          }}
+        >
+          {/* ── Dr. Lô avatar (compact) ── */}
+          <div className="flex flex-col items-center mb-7">
+            <div className="relative mb-4" style={{ width: 80, height: 80 }}>
+              {/* Gradient ring */}
+              <div
+                style={{
+                  position: "absolute", inset: 0, borderRadius: "50%",
+                  padding: 3,
+                  background: "linear-gradient(135deg,#3B82F6,#2DD4BF)",
+                }}
+              >
+                <div style={{ borderRadius: "50%", width: "100%", height: "100%", background: "white" }} />
+              </div>
+              <img
+                src="/dr-lo.png"
+                alt="Dr. Lô"
+                style={{
+                  position: "absolute", inset: 5,
+                  width: "calc(100% - 10px)", height: "calc(100% - 10px)",
+                  borderRadius: "50%", objectFit: "cover", objectPosition: "top center",
+                }}
+              />
+              {/* Badge */}
+              <div
+                style={{
+                  position: "absolute", bottom: 2, right: 0,
+                  background: "linear-gradient(135deg,#3B82F6,#2DD4BF)",
+                  borderRadius: "50%", width: 22, height: 22,
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  fontSize: 11, border: "2px solid white",
+                }}
+              >
+                🧠
+              </div>
             </div>
-            <h2 className="text-2xl font-bold text-gray-800">
-              Accès patient par téléphone
-            </h2>
-            <p className="text-gray-600 mt-1">
-              On vous envoie un code par SMS. Après vérification, on détecte si
-              un compte existe déjà.
+
+            <h1
+              className="text-2xl font-bold text-center"
+              style={{
+                background: "linear-gradient(135deg,#3B82F6,#2DD4BF)",
+                WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
+              }}
+            >
+              Espace Patient
+            </h1>
+            <p className="text-sm text-gray-500 mt-1 text-center">
+              {step === "enterPhone" && "Connexion par code SMS — rapide et sécurisée."}
+              {step === "verify" && "Entrez le code reçu par SMS."}
+              {step === "completeProfile" && "Finalisez votre inscription."}
+              {step === "alreadyAuthenticated" && "Vous êtes déjà connecté(e)."}
             </p>
+
+            {/* Step progress dots */}
+            {step !== "alreadyAuthenticated" && (
+              <div className="flex gap-2 mt-4">
+                {[0, 1, 2].map(i => (
+                  <div
+                    key={i}
+                    style={{
+                      width: i === stepIndex ? 22 : 8,
+                      height: 8,
+                      borderRadius: 4,
+                      background: i === stepIndex
+                        ? "linear-gradient(135deg,#3B82F6,#2DD4BF)"
+                        : i < stepIndex ? "rgba(59,130,246,0.4)" : "rgba(0,0,0,0.10)",
+                      transition: "all 0.3s ease",
+                    }}
+                  />
+                ))}
+              </div>
+            )}
           </div>
 
+          {/* ── Error banner ── */}
           {(err || phoneError) && (
-            <div className="mb-4 p-3 bg-red-100 border border-red-300 text-red-700 rounded-lg flex items-center">
-              <AlertCircle className="h-5 w-5 mr-2" />
+            <div className="mb-5 p-3 rounded-xl flex items-center gap-2 text-sm text-red-700"
+              style={{ background: "rgba(254,226,226,0.8)", border: "1px solid rgba(252,165,165,0.5)" }}>
+              <AlertCircle className="h-4 w-4 flex-shrink-0" />
               <span>{err || phoneError}</span>
             </div>
           )}
 
-          {/* STEP 1: téléphone */}
+          {/* ── STEP 1: téléphone ── */}
           {step === "enterPhone" && (
             <form onSubmit={onSubmitPhone} className="space-y-5">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-600 mb-1.5">
                   Numéro de téléphone
                 </label>
                 <PhoneInput
@@ -444,10 +552,10 @@ const PatientAccess: React.FC = () => {
                   defaultCountry="SN"
                   value={phone}
                   onChange={(v) => setPhone(v || "")}
-                  className="w-full rounded-xl border border-gray-300 px-3 py-3 focus:border-blue-500 focus:ring-blue-500"
+                  className="w-full rounded-xl border border-white/40 bg-white/60 px-3 py-3 focus:border-blue-400 focus:ring-blue-200"
                   placeholder="Ex: +221 77 123 45 67"
                 />
-                <p className="text-xs text-gray-500 mt-1">
+                <p className="text-xs text-gray-400 mt-1.5">
                   Format international requis (ex: +221…).
                 </p>
               </div>
@@ -455,161 +563,32 @@ const PatientAccess: React.FC = () => {
               <button
                 type="submit"
                 disabled={
-                  loading ||
-                  phoneLoading ||
-                  !phone ||
-                  !isValidPhoneNumber(toE164(phone)) ||
-                  isInCooldown
+                  loading || phoneLoading || !phone ||
+                  !isValidPhoneNumber(toE164(phone)) || isInCooldown
                 }
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-3 rounded-xl shadow disabled:opacity-50 disabled:cursor-not-allowed"
+                className={gradientBtn}
+                style={{ background: "linear-gradient(135deg,#3B82F6,#2DD4BF)" }}
               >
                 {loading || phoneLoading
-                  ? "Vérification…"
+                  ? "Envoi du code…"
                   : isInCooldown
                   ? `Réessayez dans ${cooldownTime}s`
-                  : "Continuer"}
+                  : "Recevoir le code →"}
               </button>
             </form>
           )}
 
-          {/* STEP 3: profil (si nécessaire) */}
-          {step === "completeProfile" && (
-            <form onSubmit={onSubmitProfile} className="space-y-5">
-              <div className="text-sm text-gray-600 mb-2">
-                Vous n'avez pas encore de compte. Complétez votre profil pour
-                finaliser votre inscription.
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Nom et prénom
-                </label>
-                <input
-                  type="text"
-                  value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
-                  className="w-full rounded-xl border border-gray-300 px-4 py-3 focus:border-blue-500 focus:ring-blue-500"
-                  placeholder="Votre nom complet"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Genre
-                </label>
-                <div className="grid grid-cols-2 gap-3">
-                  <button
-                    type="button"
-                    onClick={() => setGender("homme")}
-                    className={`px-4 py-3 rounded-xl border ${
-                      gender === "homme"
-                        ? "border-blue-600 bg-blue-50 text-blue-700"
-                        : "border-gray-300 text-gray-700"
-                    }`}
-                  >
-                    Homme
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setGender("femme")}
-                    className={`px-4 py-3 rounded-xl border ${
-                      gender === "femme"
-                        ? "border-blue-600 bg-blue-50 text-blue-700"
-                        : "border-gray-300 text-gray-700"
-                    }`}
-                  >
-                    Femme
-                  </button>
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between">
-                <div className="flex items-center">
-                  <input
-                    id="terms"
-                    type="checkbox"
-                    checked={hasAgreedToTerms}
-                    readOnly
-                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                  />
-                  <label htmlFor="terms" className="ml-2 text-sm text-gray-700">
-                    J'accepte les conditions et la politique de confidentialité
-                  </label>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setShowTermsModal(true)}
-                  className="text-blue-600 hover:text-blue-500 text-sm underline"
-                >
-                  Lire et accepter
-                </button>
-              </div>
-
-              <button
-                type="submit"
-                disabled={
-                  loading || phoneLoading || !fullName.trim() || !gender
-                }
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-3 rounded-xl shadow disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {loading || phoneLoading ? "Création…" : "Créer mon compte"}
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setStep("enterPhone")}
-                className="w-full text-gray-600 font-medium mt-2"
-              >
-                Changer de numéro
-              </button>
-            </form>
-          )}
-
-          {/* STEP: Déjà authentifié - demander confirmation pour s'inscrire */}
-          {step === "alreadyAuthenticated" &&
-            getPendingGroupTherapySessionId() && (
-              <div className="space-y-5">
-                <div className="text-sm text-gray-600 text-center">
-                  Vous êtes déjà connecté. Cliquez sur le bouton ci-dessous pour
-                  vous inscrire à la session de thérapie de groupe.
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    const pendingSessionId = getPendingGroupTherapySessionId();
-                    if (pendingSessionId && !hasProcessedPendingRegistration) {
-                      setHasProcessedPendingRegistration(true);
-                      handlePostAuthGroupTherapyRegistration(pendingSessionId);
-                    }
-                  }}
-                  disabled={loading}
-                  className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-3 rounded-xl shadow disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {loading
-                    ? "Inscription en cours…"
-                    : "S'inscrire à la session"}
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => navigate("/patient/dashboard")}
-                  className="w-full text-gray-600 font-medium mt-2"
-                >
-                  Retour au tableau de bord
-                </button>
-              </div>
-            )}
-
-          {/* STEP 3: vérification du code */}
+          {/* ── STEP 2: vérification du code ── */}
           {step === "verify" && (
             <form onSubmit={onVerifyCode} className="space-y-5">
-              <div className="text-sm text-gray-600">
-                Un code a été envoyé au{" "}
-                <span className="font-medium">{toE164(phone)}</span>.
+              <div
+                className="text-sm text-center rounded-xl py-2 px-4"
+                style={{ background: "rgba(59,130,246,0.07)", color: "#2563EB" }}
+              >
+                Code envoyé au <span className="font-semibold">{toE164(phone)}</span>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-600 mb-1.5">
                   Code de vérification
                 </label>
                 <input
@@ -618,31 +597,156 @@ const PatientAccess: React.FC = () => {
                   autoComplete="one-time-code"
                   value={code}
                   onChange={(e) => setCode(e.target.value)}
-                  className="w-full rounded-xl border border-gray-300 px-4 py-3 focus:border-blue-500 focus:ring-blue-500"
-                  placeholder="Ex: 123456"
+                  className={inputCls}
+                  placeholder="123456"
                 />
               </div>
 
               <button
                 type="submit"
                 disabled={loading || phoneLoading || !code.trim()}
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-3 rounded-xl shadow disabled:opacity-50 disabled:cursor-not-allowed"
+                className={gradientBtn}
+                style={{ background: "linear-gradient(135deg,#3B82F6,#2DD4BF)" }}
               >
-                {loading || phoneLoading ? "Vérification…" : "Continuer"}
+                {loading || phoneLoading ? "Vérification…" : "Vérifier →"}
               </button>
 
               <button
                 type="button"
-                onClick={() => {
-                  setCode("");
-                  setStep("enterPhone");
-                }}
-                className="w-full text-gray-600 font-medium mt-2"
+                onClick={() => { setCode(""); setStep("enterPhone"); }}
+                className="w-full text-sm text-gray-500 hover:text-gray-700 font-medium pt-1"
               >
-                Modifier
+                ← Modifier le numéro
               </button>
             </form>
           )}
+
+          {/* ── STEP 3: profil (si nécessaire) ── */}
+          {step === "completeProfile" && (
+            <form onSubmit={onSubmitProfile} className="space-y-5">
+              <p className="text-sm text-gray-500 text-center -mt-2 mb-1">
+                Complétez votre profil pour finaliser l'inscription.
+              </p>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-600 mb-1.5">
+                  Nom et prénom
+                </label>
+                <input
+                  type="text"
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  className={inputCls}
+                  placeholder="Votre nom complet"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-600 mb-1.5">
+                  Genre
+                </label>
+                <div className="grid grid-cols-2 gap-3">
+                  {(["homme", "femme"] as const).map(g => (
+                    <button
+                      key={g}
+                      type="button"
+                      onClick={() => setGender(g)}
+                      className="px-4 py-3 rounded-xl text-sm font-medium transition-all"
+                      style={{
+                        border: gender === g
+                          ? "1.5px solid #3B82F6"
+                          : "1.5px solid rgba(0,0,0,0.12)",
+                        background: gender === g
+                          ? "rgba(59,130,246,0.08)"
+                          : "rgba(255,255,255,0.5)",
+                        color: gender === g ? "#2563EB" : "#4B5563",
+                      }}
+                    >
+                      {g === "homme" ? "👨 Homme" : "👩 Femme"}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div
+                className="flex items-center justify-between rounded-xl p-3"
+                style={{ background: "rgba(0,0,0,0.03)", border: "1px solid rgba(0,0,0,0.07)" }}
+              >
+                <div className="flex items-center gap-2">
+                  <input
+                    id="terms"
+                    type="checkbox"
+                    checked={hasAgreedToTerms}
+                    readOnly
+                    className="h-4 w-4 text-blue-600 border-gray-300 rounded"
+                  />
+                  <label htmlFor="terms" className="text-xs text-gray-600">
+                    J'accepte les conditions & confidentialité
+                  </label>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowTermsModal(true)}
+                  className="text-blue-500 hover:text-blue-600 text-xs font-medium underline ml-2 flex-shrink-0"
+                >
+                  Lire
+                </button>
+              </div>
+
+              <button
+                type="submit"
+                disabled={loading || phoneLoading || !fullName.trim() || !gender}
+                className={gradientBtn}
+                style={{ background: "linear-gradient(135deg,#3B82F6,#2DD4BF)" }}
+              >
+                {loading || phoneLoading ? "Création…" : "Créer mon compte →"}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setStep("enterPhone")}
+                className="w-full text-sm text-gray-500 hover:text-gray-700 font-medium pt-1"
+              >
+                ← Changer de numéro
+              </button>
+            </form>
+          )}
+
+          {/* ── STEP: Déjà authentifié ── */}
+          {step === "alreadyAuthenticated" && getPendingGroupTherapySessionId() && (
+            <div className="space-y-5">
+              <p className="text-sm text-gray-600 text-center">
+                Vous êtes déjà connecté(e). Confirmez pour rejoindre la session de thérapie de groupe.
+              </p>
+
+              <button
+                type="button"
+                onClick={() => {
+                  const pendingSessionId = getPendingGroupTherapySessionId();
+                  if (pendingSessionId && !hasProcessedPendingRegistration) {
+                    setHasProcessedPendingRegistration(true);
+                    handlePostAuthGroupTherapyRegistration(pendingSessionId);
+                  }
+                }}
+                disabled={loading}
+                className={gradientBtn}
+                style={{ background: "linear-gradient(135deg,#3B82F6,#2DD4BF)" }}
+              >
+                {loading ? "Inscription en cours…" : "Rejoindre la session →"}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => navigate("/patient/dashboard")}
+                className="w-full text-sm text-gray-500 hover:text-gray-700 font-medium pt-1"
+              >
+                ← Retour au tableau de bord
+              </button>
+            </div>
+          )}
+
+          {/* recaptcha anchor */}
+          <div id="recaptcha-container" />
         </div>
       </div>
     </div>

@@ -2,6 +2,11 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Force Inter sur tout le site */
+html, body, #root {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
 /* Custom animations */
 @keyframes fadeIn {
   from {

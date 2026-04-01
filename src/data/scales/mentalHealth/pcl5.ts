@@ -21,6 +21,7 @@ export const PCL5: AssessmentScale = {
   warningMessage: "Ces questions portent sur des expériences traumatisantes. Ces résultats ne remplacent pas une consultation professionnelle.",
   scoreRange: { min: 0, max: 80 },
   items: [
+
     { id: 1,  text: "Avoir des souvenirs répétitifs, perturbants et non désirés d'une expérience stressante",                                         type: 'likert', options: opts, subscale: 'intrusion' },
     { id: 2,  text: "Faire des rêves répétitifs et perturbants d'une expérience stressante",                                                          type: 'likert', options: opts, subscale: 'intrusion' },
     { id: 3,  text: "Revivre soudainement une expérience stressante comme si elle se reproduisait (flash-back)",                                      type: 'likert', options: opts, subscale: 'intrusion' },
@@ -51,7 +52,7 @@ export const PCL5: AssessmentScale = {
   interpretation: [
     { min: 0,  max: 20, label: "Sous le seuil clinique",       severity: 'minimal',  description: "Les symptômes sont sous le seuil clinique du TSPT.", referralRequired: false, recommendation: "Maintenir un soutien social et surveiller votre bien-être émotionnel." },
     { min: 21, max: 32, label: "Symptômes sous-cliniques",     severity: 'mild',     description: "Quelques symptômes traumatiques sans atteindre le seuil clinique.", referralRequired: false, recommendation: "Un suivi avec un professionnel de santé mentale peut être utile." },
-    { min: 33, max: 49, label: "TSPT probable",                severity: 'severe',   description: "Score dépassant le seuil clinique. Un TSPT probable.", referralRequired: true, recommendation: "Consultation avec un psychologue ou psychiatre spécialisé en trauma recommandée." },
-    { min: 50, max: 80, label: "TSPT sévère",                  severity: 'severe',   description: "Symptômes traumatiques sévères nécessitant une prise en charge.", referralRequired: true, recommendation: "Consultation urgente avec un spécialiste en trauma. Vous méritez un soutien adapté." },
+    { min: 33, max: 49, label: "TSPT probable",                severity: 'severe',   alertLevel: 2, description: "Score ≥ 33 : seuil clinique du TSPT. Un TSPT probable nécessitant une évaluation professionnelle.", referralRequired: true, recommendation: "Consultation avec un psychologue ou psychiatre spécialisé en trauma recommandée." },
+    { min: 50, max: 80, label: "TSPT sévère",                  severity: 'severe',   alertLevel: 3, description: "Symptômes traumatiques sévères nécessitant une prise en charge urgente.", referralRequired: true, recommendation: "Consultation urgente avec un spécialiste en trauma. Tu mérites un soutien adapté." },
   ],
 };

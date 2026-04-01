@@ -116,11 +116,11 @@ const Join = lazy(() => import("./pages/Join"));
 
 // Assessment pages
 const AssessmentHomePage = lazy(() => import("./pages/assessment/AssessmentHomePage"));
+const AssessmentCategoryPage = lazy(() => import("./pages/assessment/AssessmentCategoryPage"));
 const AssessmentSelectPage = lazy(() => import("./pages/assessment/AssessmentSelectPage"));
 const AssessmentQuizPage = lazy(() => import("./pages/assessment/AssessmentQuizPage"));
 const AssessmentResultsPage = lazy(() => import("./pages/assessment/AssessmentResultsPage"));
 const CompatibilityPage = lazy(() => import("./pages/assessment/CompatibilityPage"));
-const AssessmentProfilePage = lazy(() => import("./pages/assessment/AssessmentProfilePage"));
 
 // Loading fallback component
 const PageLoader = () => (
@@ -415,7 +415,8 @@ const AppChrome: React.FC = () => {
             <Route path="/assessment/quiz/:sessionId" element={<AssessmentQuizPage />} />
             <Route path="/assessment/results/:sessionId" element={<AssessmentResultsPage />} />
             <Route path="/assessment/compatibility" element={<CompatibilityPage />} />
-            <Route path="/assessment/profile" element={<AssessmentProfilePage />} />
+            <Route path="/assessment/profile" element={<Navigate to="/assessment" replace />} />
+            <Route path="/assessment/:category" element={<AssessmentCategoryPage />} />
 
             {/* Fallback route - évite les 404 "profonds" */}
             <Route path="*" element={<Navigate to="/" replace />} />
@@ -433,31 +434,14 @@ function App() {
   const resetAttemptedRef = useRef(false);
   const resetTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // CRITICAL: Clean up all Firestore listeners when the app unmounts
+  // Clean up all Firestore listeners when the app unmounts
   useEffect(() => {
-    // Clean browser storage on initial load to prevent persistence issues
-    const initializeApp = async () => {
-      // CRITICAL: Reset Firestore connection on app initialization
-      try {
-        await resetFirestoreConnection();
-      } catch {
-        // Handle initial reset error silently
-      }
-    };
-    initializeApp();
-
     return () => {
       isMountedRef.current = false;
-
-      // App unmounting, cleaning up all Firestore listeners
-
-      // Clean up all Firestore listeners to prevent "Target ID already exists" errors
       cleanupAllProfessionalsListeners();
       cleanupAllBookingListeners();
       cleanupAllMessageListeners();
       clearMessageCaches();
-
-      // Clear any pending reset timeouts
       if (resetTimeoutRef.current) {
         clearTimeout(resetTimeoutRef.current);
         resetTimeoutRef.current = null;

@@ -14,9 +14,10 @@ export interface ScaleItem {
   text: string;
   type: AnswerType;
   options: AnswerOption[];
-  reversed?: boolean;   // item à scorer inversé
+  reversed?: boolean;   // item à scorer inversé (pour totalScore)
   subscale?: string;
-  conditional?: {       // afficher seulement si
+  noScore?: boolean;    // item affiché mais exclu du calcul du score (ex: question fonctionnelle GAD-7)
+  conditional?: {
     itemId: number;
     value: number | boolean;
   };
@@ -26,8 +27,9 @@ export interface Subscale {
   key: string;
   label: string;
   itemIds: number[];
-  reverseIds?: number[];
+  reverseIds?: number[];              // items inversés DANS ce sous-score
   range: { min: number; max: number };
+  scoringMode?: 'sum' | 'mean';       // default 'sum'
 }
 
 export interface InterpretationRange {
@@ -38,25 +40,35 @@ export interface InterpretationRange {
   description: string;
   referralRequired: boolean;
   recommendation: string;
+  alertLevel?: 1 | 2 | 3;            // 1=vigilance, 2=alerte, 3=critique
+}
+
+export interface AlertItem {
+  itemId: number;
+  minValue: number;                   // déclenche si réponse >= minValue
+  alertLevel: 1 | 2 | 3;
+  message: string;
 }
 
 export interface AssessmentScale {
-  id: string;                        // ex: 'gad7', 'phq9', 'big_five'
-  name: string;                      // nom complet FR
-  shortName: string;                 // ex: 'GAD-7'
+  id: string;
+  name: string;
+  shortName: string;
   category: AssessmentCategory;
   description: string;
   instructions: string;
   timeEstimateMinutes: number;
   items: ScaleItem[];
   subscales?: Subscale[];
-  reverseIds?: number[];             // ids d'items à inverser globalement
+  reverseIds?: number[];              // ids globaux inversés pour totalScore
   scoreRange: { min: number; max: number };
+  scoringMode?: 'sum' | 'mean';       // default 'sum'
   interpretation: InterpretationRange[];
-  reference: string;                 // citation APA
+  alertItems?: AlertItem[];           // alertes déclenchées par un item spécifique
+  reference: string;
   licenseNote: string;
   targetGender?: 'all' | 'female' | 'male';
-  warningMessage: string;            // toujours affiché
+  warningMessage: string;
 }
 
 // --- Session d'évaluation ---
@@ -64,16 +76,23 @@ export interface AssessmentScale {
 export interface UserAssessmentSession {
   id: string;
   userId: string;
-  selectedScaleIds: string[];        // 2 à 10 items choisis
+  selectedScaleIds: string[];
   status: 'in_progress' | 'completed' | 'abandoned';
   currentScaleIndex: number;
-  answers: Record<string, Record<number, number>>;  // scaleId -> itemId -> value
+  answers: Record<string, Record<number, number>>;
   scores: Record<string, ScaleResult>;
-  compatibilityId?: string;          // ID partageable
+  compatibilityId?: string;
   startedAt: Date;
   completedAt?: Date;
   claudeInterpretation?: string;
   alertDetected: boolean;
+}
+
+export interface TriggeredAlert {
+  itemId: number;
+  value: number;
+  alertLevel: 1 | 2 | 3;
+  message: string;
 }
 
 export interface ScaleResult {
@@ -82,6 +101,8 @@ export interface ScaleResult {
   subscaleScores?: Record<string, number>;
   interpretation: InterpretationRange;
   completedAt: Date;
+  alertLevel?: 1 | 2 | 3;            // niveau d'alerte le plus élevé détecté
+  alertsTriggered?: TriggeredAlert[]; // alertes spécifiques déclenchées
 }
 
 // --- Compatibilité ---
@@ -90,14 +111,15 @@ export interface CompatibilityRequest {
   id: string;
   initiatorUserId: string;
   partnerCompatibilityId: string;
-  relationshipType: 'couple' | 'family' | 'friend' | 'colleague';
+  /** Sub-type ID from relationshipTypes.ts (e.g. 'crush', 'couple_etabli', 'pere', 'meilleur_ami'…) */
+  relationshipType: string;
   status: 'pending' | 'completed';
   result?: CompatibilityResult;
   createdAt: Date;
 }
 
 export interface CompatibilityResult {
-  globalScore: number;               // 0–100
+  globalScore: number;
   dimensionScores: Record<string, number>;
   strengths: string[];
   tensions: string[];
@@ -110,12 +132,15 @@ export interface CompatibilityResult {
 
 export interface UserProfile {
   uid: string;
-  compatibilityId: string | null;    // ID unique partageable (ex: HE-2024-XXXX) — null jusqu'à profil complet
+  /** @deprecated use compatibilityIdMental / compatibilityIdSexual */
+  compatibilityId?: string | null;
+  compatibilityIdMental: string | null;
+  compatibilityIdSexual: string | null;
   displayName: string;
-  assessmentHistory: string[];       // sessionIds
+  assessmentHistory: string[];
   lastAssessmentDate?: Date;
-  profileSummary?: string;           // généré par Claude
-  scaleResults?: Record<string, ScaleResult>;  // map scaleId → résultat
+  profileSummary?: string;
+  scaleResults?: Record<string, ScaleResult>;
   createdAt: Date;
   updatedAt: Date;
 }
