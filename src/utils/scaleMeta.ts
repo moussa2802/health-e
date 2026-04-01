@@ -29,6 +29,19 @@ export const SCALE_META: Record<string, ScaleMeta> = {
   sise:               { icon: '🪞', label: 'Image corporelle & Sexualité',   description: 'Explore la relation entre ton image de toi-même et ton bien-être intime.' },
   social_pressure_sex:{ icon: '🤐', label: 'Pression sociale & Sexualité',  description: 'Mesure l\'impact des normes sociales et familiales sur ta vie sexuelle.' },
   griss_base:         { icon: '💑', label: 'Satisfaction de couple',         description: 'Évalue la satisfaction globale dans ta relation de couple.' },
+
+  // Bonus
+  bonus_narcissisme:  { icon: '🎭', label: 'Traits narcissiques',             description: 'Es-tu vraiment toxique ou juste incompris(e) ?' },
+  bonus_personnalite: { icon: '🌪️', label: 'Traits de personnalité',          description: 'Est-ce que ton caractère cache quelque chose ?' },
+  bonus_dependance:   { icon: '💔', label: 'Dépendance affective',             description: 'Aimes-tu trop ou juste assez ?' },
+  bonus_hsp:          { icon: '🌊', label: 'Hypersensibilité (HSP)',           description: 'Ressens-tu plus que les autres ?' },
+  bonus_hpi:          { icon: '⚡', label: 'Haut Potentiel Intellectuel',      description: 'Ton cerveau tourne-t-il à une vitesse différente ?' },
+  bonus_tdah:         { icon: '🔄', label: 'TDAH Adulte',                      description: 'Ton cerveau est-il toujours en mode turbo ?' },
+  bonus_manipulation: { icon: '🎭', label: 'Manipulation & Toxicité',          description: 'Es-tu plus manipulateur(rice) que tu ne le crois ?' },
+  bonus_burnout:      { icon: '🔥', label: 'Burnout professionnel',            description: 'Ton corps te dit-il d\'arrêter ?' },
+  bonus_jalousie:     { icon: '😤', label: 'Jalousie',                         description: 'La jalousie te contrôle-t-elle ?' },
+  bonus_eq:           { icon: '💚', label: 'Intelligence émotionnelle',        description: 'Quel est ton vrai QE émotionnel ?' },
+  bonus_confiance:    { icon: '🦁', label: 'Confiance en soi',                 description: 'À quel point crois-tu vraiment en toi ?' },
 };
 
 export function getScaleMeta(scaleId: string): ScaleMeta {

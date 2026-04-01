@@ -1,4 +1,4 @@
-export type AssessmentCategory = 'mental_health' | 'sexual_health';
+export type AssessmentCategory = 'mental_health' | 'sexual_health' | 'bonus';
 
 export type ItemSeverity = 'none' | 'minimal' | 'mild' | 'moderate' | 'severe' | 'positive' | 'alert';
 

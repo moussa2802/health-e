@@ -39,7 +39,8 @@ exports.handler = async (event) => {
     items_restants = [],
     nombre_items_faits = 0,
     nombre_items_total = 24,
-    bloc = 'mental'
+    bloc = 'mental',
+    bonus_completes = []
   } = payload
 
   if (!items_completes || items_completes.length === 0) {
@@ -58,6 +59,10 @@ exports.handler = async (event) => {
     return `- ${nom} : ${label} (score ${score}) ${alerte}`
   }).join('\n')
 
+  const bonusText = bonus_completes.length > 0
+    ? `\nTests bonus complétés par ${prenom} :\n${bonus_completes.map(t => `- ${t.nom} : ${t.niveau} (score ${t.score})`).join('\n')}\n\nIntègre ces résultats naturellement dans ton analyse si pertinent. Ne les liste pas mécaniquement — fais des liens avec les résultats principaux quand c'est cohérent.`
+    : ''
+
   const prompt = bloc === 'sexual'
     ? `Tu es le Dr Lo, médecin IA spécialisé en santé sexuelle sur la plateforme Health-e, sensible au contexte africain francophone.
 RÈGLE ABSOLUE : tu parles EXCLUSIVEMENT de santé sexuelle dans ce message. Ne mentionne JAMAIS l'anxiété, la dépression, l'humeur, le stress, la résilience, la santé mentale ou émotionnelle. Ces sujets n'existent pas dans ce message.
@@ -66,7 +71,7 @@ ${genre ? `Genre : ${genre}.` : ''} ${age ? `Âge : ${age}.` : ''} ${situation_r
 
 ${prenom} a complété ${nombre_items_faits} évaluation(s) de santé sexuelle :
 ${itemsText}
-
+${bonusText}
 Génère une synthèse qui :
 1. Commence par une accroche personnalisée avec le prénom
 2. Fait une lecture croisée des résultats de santé sexuelle uniquement (désir, satisfaction, fonctionnement, identité sexuelle)
@@ -82,7 +87,7 @@ ${genre ? `Genre : ${genre}.` : ''} ${age ? `Âge : ${age}.` : ''} ${situation_r
 
 ${prenom} a complété ${nombre_items_faits} évaluation(s) de santé mentale :
 ${itemsText}
-
+${bonusText}
 Génère une synthèse qui :
 1. Commence par une accroche personnalisée avec le prénom
 2. Fait une lecture croisée des résultats de santé mentale uniquement (anxiété, humeur, personnalité, attachement, estime de soi, résilience)

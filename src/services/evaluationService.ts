@@ -6,7 +6,7 @@ import { db } from '../utils/firebase';
 import type {
   UserAssessmentSession, ScaleResult, UserProfile, TriggeredAlert
 } from '../types/assessment';
-import { ALL_SCALES, MENTAL_HEALTH_SCALES, SEXUAL_HEALTH_SCALES } from '../data/scales';
+import { ALL_SCALES, MENTAL_HEALTH_SCALES, SEXUAL_HEALTH_SCALES, BONUS_SCALES } from '../data/scales';
 import { generateMentalCompatibilityId, generateSexualCompatibilityId } from '../utils/idGenerator';
 
 const SESSIONS_COL = 'assessmentSessions';
@@ -290,7 +290,8 @@ export async function resetUserProfile(userId: string): Promise<void> {
 
 export const TOTAL_MENTAL_SCALES = MENTAL_HEALTH_SCALES.length;
 export const TOTAL_SEXUAL_SCALES = SEXUAL_HEALTH_SCALES.length;
-export const TOTAL_SCALES = ALL_SCALES.length;
+// TOTAL_SCALES excludes bonus scales intentionally
+export const TOTAL_SCALES = MENTAL_HEALTH_SCALES.length + SEXUAL_HEALTH_SCALES.length;
 
 export async function saveScaleResultToProfile(
   userId: string,
@@ -343,6 +344,7 @@ export async function getProfileProgress(userId: string): Promise<{
   compatibilityIdSexual: string | null;
   mentalCompletedCount: number;
   sexualCompletedCount: number;
+  bonusCompletedCount: number;
   isMentalComplete: boolean;
   isSexualComplete: boolean;
   remaining: number;
@@ -365,6 +367,7 @@ export async function getProfileProgress(userId: string): Promise<{
       compatibilityIdSexual: null,
       mentalCompletedCount: 0,
       sexualCompletedCount: 0,
+      bonusCompletedCount: 0,
       isMentalComplete: false,
       isSexualComplete: false,
       remaining: TOTAL_SCALES,
@@ -378,9 +381,11 @@ export async function getProfileProgress(userId: string): Promise<{
   }
   const data = snap.data();
   const scaleResults: Record<string, ScaleResult> = data.scaleResults ?? {};
-  const completedCount = Object.keys(scaleResults).length;
   const mentalCompletedCount = MENTAL_HEALTH_SCALES.filter(s => !!scaleResults[s.id]).length;
   const sexualCompletedCount = SEXUAL_HEALTH_SCALES.filter(s => !!scaleResults[s.id]).length;
+  const bonusCompletedCount = BONUS_SCALES.filter(s => !!scaleResults[s.id]).length;
+  // completedCount only tracks mental + sexual (not bonus) so progress bars stay accurate
+  const completedCount = mentalCompletedCount + sexualCompletedCount;
   const isMentalComplete = mentalCompletedCount >= TOTAL_MENTAL_SCALES;
   const isSexualComplete = sexualCompletedCount >= TOTAL_SEXUAL_SCALES;
   const isComplete = isMentalComplete || isSexualComplete;
@@ -393,6 +398,7 @@ export async function getProfileProgress(userId: string): Promise<{
     compatibilityIdSexual: (data.compatibilityIdSexual as string | null) ?? null,
     mentalCompletedCount,
     sexualCompletedCount,
+    bonusCompletedCount,
     isMentalComplete,
     isSexualComplete,
     remaining: Math.max(0, TOTAL_SCALES - completedCount),

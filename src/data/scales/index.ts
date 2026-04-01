@@ -14,6 +14,13 @@ import { SOCIAL_PRESSURE } from './mentalHealth/socialPressure';
 import { RELIGIOUS_CULTURAL } from './mentalHealth/religiousCultural';
 import { ECONOMIC_STRESS } from './mentalHealth/economicStress';
 
+// Bonus
+import {
+  BONUS_NARCISSISME, BONUS_PERSONNALITE, BONUS_DEPENDANCE, BONUS_HSP,
+  BONUS_HPI, BONUS_TDAH, BONUS_MANIPULATION, BONUS_BURNOUT,
+  BONUS_JALOUSIE, BONUS_EQ, BONUS_CONFIANCE,
+} from './bonus';
+
 // Sexual health
 import { NSSS } from './sexualHealth/nsss';
 import { SDI2 } from './sexualHealth/sdi2';
@@ -40,13 +47,25 @@ export const SEXUAL_HEALTH_SCALES: AssessmentScale[] = [
   SOCIAL_PRESSURE_SEX, GRISS_BASE,
 ];
 
+export const BONUS_SCALES: AssessmentScale[] = [
+  // Phase 1 — Les 6 plus viraux
+  BONUS_DEPENDANCE, BONUS_NARCISSISME, BONUS_HSP, BONUS_TDAH, BONUS_HPI, BONUS_CONFIANCE,
+  // Phase 2 — Les 5 suivants
+  BONUS_PERSONNALITE, BONUS_MANIPULATION, BONUS_BURNOUT, BONUS_JALOUSIE, BONUS_EQ,
+];
+
 export const ALL_SCALES: AssessmentScale[] = [
   ...MENTAL_HEALTH_SCALES,
   ...SEXUAL_HEALTH_SCALES,
+  ...BONUS_SCALES,
 ];
 
 export function getScaleById(id: string): AssessmentScale | undefined {
   return ALL_SCALES.find(s => s.id === id);
+}
+
+export function getBonusScaleById(id: string): AssessmentScale | undefined {
+  return BONUS_SCALES.find(s => s.id === id);
 }
 
 export function getAdaptedScaleById(

@@ -6,12 +6,13 @@ import {
   saveDrLoSynthesis,
 } from '../services/evaluationService';
 import { buildDemographique, getOnboardingProfile } from './onboardingProfile';
-import { ALL_SCALES, MENTAL_HEALTH_SCALES, SEXUAL_HEALTH_SCALES } from '../data/scales';
+import { ALL_SCALES, MENTAL_HEALTH_SCALES, SEXUAL_HEALTH_SCALES, BONUS_SCALES } from '../data/scales';
 import { getScaleMeta } from './scaleMeta';
 
 /** IDs des scales par catégorie */
 const MENTAL_IDS = new Set(MENTAL_HEALTH_SCALES.map(s => s.id));
 const SEXUAL_IDS = new Set(SEXUAL_HEALTH_SCALES.map(s => s.id));
+const BONUS_IDS = new Set(BONUS_SCALES.map(s => s.id));
 
 /**
  * Résout le profil démographique de l'utilisateur.
@@ -40,6 +41,21 @@ function resolveProfile(
     };
   }
   return { prenom: '', age: '', genre: '', situation_relationnelle: '' };
+}
+
+/** Construit la liste des bonus tests complétés pour enrichir le contexte Dr Lo */
+function buildBonusCompletes(scaleResults: Record<string, { totalScore: number; interpretation?: { label?: string }; alertLevel?: number }>) {
+  return Object.entries(scaleResults)
+    .filter(([scaleId]) => BONUS_IDS.has(scaleId))
+    .map(([scaleId, result]) => {
+      const meta = getScaleMeta(scaleId);
+      const scale = ALL_SCALES.find(s => s.id === scaleId);
+      return {
+        nom: meta.label,
+        niveau: result.interpretation?.label || 'N/A',
+        score: `${result.totalScore}/${scale?.scoreRange.max ?? '?'}`,
+      };
+    });
 }
 
 // ── Analyse Santé Mentale ─────────────────────────────────────────────────────
@@ -77,6 +93,8 @@ export async function triggerDrLoMentalHealth(userId: string): Promise<void> {
     .filter(s => !completedMentalIds.has(s.id))
     .map(s => s.shortName);
 
+  const bonus_completes = buildBonusCompletes(progress.scaleResults);
+
   const response = await fetch('/.netlify/functions/dr-lo-analysis', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -90,6 +108,7 @@ export async function triggerDrLoMentalHealth(userId: string): Promise<void> {
       items_restants,
       nombre_items_faits: items_completes.length,
       nombre_items_total: MENTAL_HEALTH_SCALES.length,
+      bonus_completes,
     }),
   });
 
@@ -135,6 +154,8 @@ export async function triggerDrLoSexualHealth(userId: string): Promise<void> {
     .filter(s => !completedSexualIds.has(s.id))
     .map(s => s.shortName);
 
+  const bonus_completes = buildBonusCompletes(progress.scaleResults);
+
   const response = await fetch('/.netlify/functions/dr-lo-analysis', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -148,6 +169,7 @@ export async function triggerDrLoSexualHealth(userId: string): Promise<void> {
       items_restants,
       nombre_items_faits: items_completes.length,
       nombre_items_total: SEXUAL_HEALTH_SCALES.length,
+      bonus_completes,
     }),
   });
 
