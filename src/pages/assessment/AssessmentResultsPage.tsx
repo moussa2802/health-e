@@ -328,6 +328,10 @@ const AssessmentResultsPage: React.FC = () => {
     // Détermine la catégorie de l'échelle complétée pour lire le bon champ Dr Lo
     const completedScaleId = session.selectedScaleIds[0];
     const completedScale = getScaleById(completedScaleId);
+
+    // Les tests bonus n'ont pas d'analyse Dr Lo de profil — on n'affiche rien
+    if (completedScale?.category === 'bonus') return;
+
     const isMentalScale = completedScale?.category === 'mental_health';
 
     setDrLoLoading(true);
