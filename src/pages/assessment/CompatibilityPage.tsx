@@ -24,7 +24,8 @@ const CompatibilityPage: React.FC = () => {
   const [copiedMental, setCopiedMental] = useState(false);
   const [copiedSexual, setCopiedSexual] = useState(false);
 
-  const [partnerIdInput, setPartnerIdInput] = useState('');
+  const [partnerMentalId, setPartnerMentalId] = useState('');
+  const [partnerSexualId, setPartnerSexualId] = useState('');
   const [mainCategoryId, setMainCategoryId] = useState<string | null>(null);
   const [selectedSubTypeId, setSelectedSubTypeId] = useState<string | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
@@ -33,9 +34,21 @@ const CompatibilityPage: React.FC = () => {
   const [result, setResult] = useState<CompatibilityResult | null>(null);
 
   const selectedCategory = RELATIONSHIP_CATEGORIES.find(c => c.id === mainCategoryId) ?? null;
+  const isRomantic = mainCategoryId === 'amoureux';
+  const isFamilyOrOther = mainCategoryId !== null && !isRomantic;
+
+  // Bouton actif : relation choisie + sous-type + code mental rempli
+  const mentalTrimmed = partnerMentalId.trim().toUpperCase();
+  const sexualTrimmed = partnerSexualId.trim().toUpperCase();
+  const canSubmit = isAuthenticated && !!selectedSubTypeId && mentalTrimmed.length > 0;
 
   // Reset sub-type when main category changes
-  useEffect(() => { setSelectedSubTypeId(null); }, [mainCategoryId]);
+  useEffect(() => {
+    setSelectedSubTypeId(null);
+    setPartnerMentalId('');
+    setPartnerSexualId('');
+    setFormError(null);
+  }, [mainCategoryId]);
 
   useEffect(() => {
     if (isAuthenticated && currentUser) {
@@ -54,19 +67,26 @@ const CompatibilityPage: React.FC = () => {
 
   const handleCalculate = async () => {
     setFormError(null);
-    const trimmedId = partnerIdInput.trim().toUpperCase();
-    if (!trimmedId) { setFormError("Saisis le code de ton partenaire."); return; }
-    if (!selectedSubTypeId) { setFormError("Sélectionne le type de relation."); return; }
     if (!isAuthenticated || !currentUser) { setFormError("Tu dois être connecté(e)."); return; }
-    const isMental = /^SM-[A-Z0-9]{4}$/i.test(trimmedId);
-    const isSexual = /^SE-[A-Z0-9]{4}$/i.test(trimmedId);
-    if (!isMental && !isSexual) { setFormError("Format invalide — les codes font SM-XXXX (mental) ou SE-XXXX (sexuel)."); return; }
-    if (trimmedId === myIdMental || trimmedId === myIdSexual) { setFormError("Tu ne peux pas te comparer à toi-même 😄"); return; }
-    if (isMental && !myIdMental) { setFormError("Tu dois compléter toutes les évaluations mentales (SM) pour comparer ce type de profil."); return; }
-    if (isSexual && !myIdSexual) { setFormError("Tu dois compléter toutes les évaluations sexuelles (SE) pour comparer ce type de profil."); return; }
+    if (!selectedSubTypeId) { setFormError("Sélectionne le type de relation."); return; }
+    if (!mentalTrimmed) { setFormError("Saisis le code mental de ton/ta partenaire."); return; }
+
+    // Validation format nouveau : HE-MNT-YYYY-XXXX ou legacy SM-XXXX
+    const isMentalValid = /^HE-MNT-\d{4}-[A-Z0-9]{4}$/i.test(mentalTrimmed) || /^SM-[A-Z0-9]{4}$/i.test(mentalTrimmed);
+    if (!isMentalValid) { setFormError("Format invalide — le code mental doit être au format HE-MNT-2026-XXXX."); return; }
+    if (mentalTrimmed === myIdMental) { setFormError("Tu ne peux pas te comparer à toi-même 😄"); return; }
+    if (!myIdMental) { setFormError("Tu dois débloquer ton propre code mental avant de comparer."); return; }
+
+    // Validation code sexuel (optionnel, romantique uniquement)
+    if (isRomantic && sexualTrimmed) {
+      const isSexualValid = /^HE-SEX-\d{4}-[A-Z0-9]{4}$/i.test(sexualTrimmed) || /^SE-[A-Z0-9]{4}$/i.test(sexualTrimmed);
+      if (!isSexualValid) { setFormError("Format invalide — le code intime doit être au format HE-SEX-2026-XXXX."); return; }
+      if (sexualTrimmed === myIdSexual) { setFormError("Tu ne peux pas te comparer à toi-même 😄"); return; }
+    }
+
     setCalculating(true);
     try {
-      const req = await createCompatibilityRequest(currentUser.id, trimmedId, selectedSubTypeId);
+      const req = await createCompatibilityRequest(currentUser.id, mentalTrimmed, selectedSubTypeId);
       const res = await computeCompatibility(req.id);
       setResult(res);
     } catch (err: unknown) {
@@ -135,35 +155,49 @@ const CompatibilityPage: React.FC = () => {
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               {/* Mental */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '14px 16px', borderRadius: 14, background: 'linear-gradient(135deg, #EFF6FF, #F0F9FF)', border: '1.5px solid rgba(59,130,246,0.15)' }}>
-                <span style={{ fontSize: 22, flexShrink: 0 }}>🧠</span>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <p style={{ margin: '0 0 3px', fontSize: 11, fontWeight: 700, color: '#3B82F6', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Profil Mental</p>
-                  {myIdMental
-                    ? <code style={{ fontSize: 16, fontFamily: "'JetBrains Mono','Courier New',monospace", fontWeight: 800, color: '#1D4ED8', letterSpacing: '0.1em' }}>{myIdMental}</code>
-                    : <span style={{ fontSize: 12, color: '#94A3B8' }}>Complète toutes les évaluations mentales pour obtenir ce code</span>
-                  }
+              <div style={{ borderRadius: 14, background: 'linear-gradient(135deg, #EFF6FF, #F0F9FF)', border: '1.5px solid rgba(59,130,246,0.15)', overflow: 'hidden' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '14px 16px' }}>
+                  <span style={{ fontSize: 22, flexShrink: 0 }}>🧠</span>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <p style={{ margin: '0 0 3px', fontSize: 11, fontWeight: 700, color: '#3B82F6', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Profil Mental</p>
+                    {myIdMental
+                      ? <code style={{ fontSize: 15, fontFamily: "'JetBrains Mono','Courier New',monospace", fontWeight: 800, color: '#1D4ED8', letterSpacing: '0.08em' }}>{myIdMental}</code>
+                      : <span style={{ fontSize: 12, color: '#94A3B8' }}>Complète 5 évaluations obligatoires pour obtenir ce code</span>
+                    }
+                  </div>
+                  {myIdMental && (
+                    <button onClick={() => copy(myIdMental, setCopiedMental)} style={{ flexShrink: 0, display: 'flex', alignItems: 'center', gap: 5, padding: '7px 13px', borderRadius: 10, border: copiedMental ? '1.5px solid rgba(22,163,74,0.4)' : '1.5px solid rgba(59,130,246,0.25)', background: copiedMental ? '#F0FDF4' : '#fff', color: copiedMental ? '#16A34A' : '#3B82F6', fontSize: 12, fontWeight: 600, cursor: 'pointer', transition: 'all 0.15s' }}>
+                      {copiedMental ? '✅ Copié !' : '📋 Copier'}
+                    </button>
+                  )}
                 </div>
                 {myIdMental && (
-                  <button onClick={() => copy(myIdMental, setCopiedMental)} style={{ flexShrink: 0, display: 'flex', alignItems: 'center', gap: 5, padding: '7px 13px', borderRadius: 10, border: copiedMental ? '1.5px solid rgba(22,163,74,0.4)' : '1.5px solid rgba(59,130,246,0.25)', background: copiedMental ? '#F0FDF4' : '#fff', color: copiedMental ? '#16A34A' : '#3B82F6', fontSize: 12, fontWeight: 600, cursor: 'pointer', transition: 'all 0.15s' }}>
-                    {copiedMental ? '✅ Copié !' : '📋 Copier'}
-                  </button>
+                  <p style={{ margin: 0, padding: '0 16px 10px', fontSize: 10, color: '#94A3B8', fontStyle: 'italic' }}>
+                    🔒 Partage ce code uniquement avec la personne concernée
+                  </p>
                 )}
               </div>
-              {/* Sexual */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '14px 16px', borderRadius: 14, background: 'linear-gradient(135deg, #FFF0F9, #FDF4FF)', border: '1.5px solid rgba(192,38,211,0.15)' }}>
-                <span style={{ fontSize: 22, flexShrink: 0 }}>💋</span>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <p style={{ margin: '0 0 3px', fontSize: 11, fontWeight: 700, color: '#C026D3', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Profil Sexuel</p>
-                  {myIdSexual
-                    ? <code style={{ fontSize: 16, fontFamily: "'JetBrains Mono','Courier New',monospace", fontWeight: 800, color: '#7E22CE', letterSpacing: '0.1em' }}>{myIdSexual}</code>
-                    : <span style={{ fontSize: 12, color: '#94A3B8' }}>Complète toutes les évaluations sexuelles pour obtenir ce code</span>
-                  }
+              {/* Intime */}
+              <div style={{ borderRadius: 14, background: 'linear-gradient(135deg, #FFF0F9, #FDF4FF)', border: '1.5px solid rgba(192,38,211,0.15)', overflow: 'hidden' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '14px 16px' }}>
+                  <span style={{ fontSize: 22, flexShrink: 0 }}>💋</span>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <p style={{ margin: '0 0 3px', fontSize: 11, fontWeight: 700, color: '#C026D3', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Profil Intime</p>
+                    {myIdSexual
+                      ? <code style={{ fontSize: 15, fontFamily: "'JetBrains Mono','Courier New',monospace", fontWeight: 800, color: '#7E22CE', letterSpacing: '0.08em' }}>{myIdSexual}</code>
+                      : <span style={{ fontSize: 12, color: '#94A3B8' }}>Complète 3 évaluations obligatoires pour obtenir ce code</span>
+                    }
+                  </div>
+                  {myIdSexual && (
+                    <button onClick={() => copy(myIdSexual, setCopiedSexual)} style={{ flexShrink: 0, display: 'flex', alignItems: 'center', gap: 5, padding: '7px 13px', borderRadius: 10, border: copiedSexual ? '1.5px solid rgba(22,163,74,0.4)' : '1.5px solid rgba(192,38,211,0.25)', background: copiedSexual ? '#F0FDF4' : '#fff', color: copiedSexual ? '#16A34A' : '#C026D3', fontSize: 12, fontWeight: 600, cursor: 'pointer', transition: 'all 0.15s' }}>
+                      {copiedSexual ? '✅ Copié !' : '📋 Copier'}
+                    </button>
+                  )}
                 </div>
                 {myIdSexual && (
-                  <button onClick={() => copy(myIdSexual, setCopiedSexual)} style={{ flexShrink: 0, display: 'flex', alignItems: 'center', gap: 5, padding: '7px 13px', borderRadius: 10, border: copiedSexual ? '1.5px solid rgba(22,163,74,0.4)' : '1.5px solid rgba(192,38,211,0.25)', background: copiedSexual ? '#F0FDF4' : '#fff', color: copiedSexual ? '#16A34A' : '#C026D3', fontSize: 12, fontWeight: 600, cursor: 'pointer', transition: 'all 0.15s' }}>
-                    {copiedSexual ? '✅ Copié !' : '📋 Copier'}
-                  </button>
+                  <p style={{ margin: 0, padding: '0 16px 10px', fontSize: 10, color: '#94A3B8', fontStyle: 'italic' }}>
+                    🔒 Partage ce code uniquement avec la personne concernée
+                  </p>
                 )}
               </div>
             </div>
@@ -194,28 +228,7 @@ const CompatibilityPage: React.FC = () => {
               <h2 style={{ margin: 0, fontSize: 15, fontWeight: 800, color: '#0A2342' }}>Calculer la compatibilité</h2>
             </div>
 
-            {/* Input code partenaire */}
-            <div style={{ marginBottom: 24 }}>
-              <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#374151', marginBottom: 8 }}>
-                Code de ton partenaire
-                <span style={{ fontWeight: 400, color: '#94A3B8', marginLeft: 6 }}>SM-XXXX · SE-XXXX</span>
-              </label>
-              <div style={{ position: 'relative' }}>
-                <span style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)', fontSize: 16, pointerEvents: 'none' }}>🔍</span>
-                <input
-                  type="text"
-                  value={partnerIdInput}
-                  onChange={(e) => { setPartnerIdInput(e.target.value.toUpperCase()); setFormError(null); }}
-                  placeholder="SM-XXXX ou SE-XXXX"
-                  maxLength={7}
-                  style={{ width: '100%', boxSizing: 'border-box', paddingLeft: 48, paddingRight: 16, paddingTop: 13, paddingBottom: 13, border: '1.5px solid rgba(124,58,237,0.18)', borderRadius: 13, fontSize: 16, fontFamily: "'JetBrains Mono','Courier New',monospace", fontWeight: 700, color: '#0A2342', letterSpacing: '0.08em', background: '#FAFAFF', outline: 'none', transition: 'border-color 0.15s' }}
-                  onFocus={(e) => { e.target.style.borderColor = 'rgba(124,58,237,0.5)'; e.target.style.boxShadow = '0 0 0 3px rgba(124,58,237,0.08)'; }}
-                  onBlur={(e) => { e.target.style.borderColor = 'rgba(124,58,237,0.18)'; e.target.style.boxShadow = 'none'; }}
-                />
-              </div>
-            </div>
-
-            {/* ── Étape 1 — Type principal ── */}
+            {/* ── ÉTAPE 1 — Type de relation ── */}
             <div style={{ marginBottom: mainCategoryId ? 20 : 22 }}>
               <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#374151', marginBottom: 10 }}>
                 Avec qui fais-tu ce test ?
@@ -325,6 +338,59 @@ const CompatibilityPage: React.FC = () => {
               </div>
             )}
 
+            {/* ── ÉTAPE 2 — Champs de code (apparaissent après sélection du sous-type) ── */}
+            {selectedSubTypeId && (
+              <div style={{ marginBottom: 22, animation: 'slideDown 0.2s ease' }}>
+                <div style={{ height: 1, background: 'linear-gradient(90deg, transparent, rgba(124,58,237,0.12), transparent)', marginBottom: 18 }} />
+
+                {/* Code mental — toujours requis */}
+                <div style={{ marginBottom: isRomantic ? 14 : 0 }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, fontWeight: 600, color: '#374151', marginBottom: 8 }}>
+                    <span>🧠</span>
+                    {isRomantic ? 'Code Mental de ton/ta partenaire' : 'Code Mental de cette personne'}
+                    <span style={{ fontWeight: 400, color: '#DC2626', fontSize: 12 }}>*</span>
+                  </label>
+                  <div style={{ position: 'relative' }}>
+                    <input
+                      type="text"
+                      value={partnerMentalId}
+                      onChange={(e) => { setPartnerMentalId(e.target.value.toUpperCase()); setFormError(null); }}
+                      placeholder="HE-MNT-2026-XXXX"
+                      maxLength={16}
+                      style={{ width: '100%', boxSizing: 'border-box', padding: '13px 16px', border: '1.5px solid rgba(59,130,246,0.25)', borderRadius: 13, fontSize: 14, fontFamily: "'JetBrains Mono','Courier New',monospace", fontWeight: 700, color: '#0A2342', letterSpacing: '0.06em', background: '#F8FAFF', outline: 'none', transition: 'border-color 0.15s' }}
+                      onFocus={(e) => { e.target.style.borderColor = 'rgba(59,130,246,0.5)'; e.target.style.boxShadow = '0 0 0 3px rgba(59,130,246,0.08)'; }}
+                      onBlur={(e) => { e.target.style.borderColor = 'rgba(59,130,246,0.25)'; e.target.style.boxShadow = 'none'; }}
+                    />
+                  </div>
+                </div>
+
+                {/* Code intime — uniquement pour relations amoureuses, optionnel */}
+                {isRomantic && (
+                  <div>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, fontWeight: 600, color: '#374151', marginBottom: 8 }}>
+                      <span>💋</span> Code Intime de ton/ta partenaire
+                      <span style={{ fontWeight: 400, color: '#94A3B8', fontSize: 12 }}>optionnel</span>
+                    </label>
+                    <div style={{ position: 'relative' }}>
+                      <input
+                        type="text"
+                        value={partnerSexualId}
+                        onChange={(e) => { setPartnerSexualId(e.target.value.toUpperCase()); setFormError(null); }}
+                        placeholder="HE-SEX-2026-XXXX"
+                        maxLength={16}
+                        style={{ width: '100%', boxSizing: 'border-box', padding: '13px 16px', border: '1.5px solid rgba(192,38,211,0.2)', borderRadius: 13, fontSize: 14, fontFamily: "'JetBrains Mono','Courier New',monospace", fontWeight: 700, color: '#0A2342', letterSpacing: '0.06em', background: '#FDF4FF', outline: 'none', transition: 'border-color 0.15s' }}
+                        onFocus={(e) => { e.target.style.borderColor = 'rgba(192,38,211,0.45)'; e.target.style.boxShadow = '0 0 0 3px rgba(192,38,211,0.07)'; }}
+                        onBlur={(e) => { e.target.style.borderColor = 'rgba(192,38,211,0.2)'; e.target.style.boxShadow = 'none'; }}
+                      />
+                    </div>
+                    <p style={{ margin: '6px 0 0', fontSize: 11, color: '#94A3B8' }}>
+                      🔒 Ce code est partagé uniquement avec consentement mutuel
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* Erreur */}
             {formError && (
               <div style={{ background: '#FEF2F2', border: '1px solid rgba(220,38,38,0.2)', borderRadius: 12, padding: '11px 14px', marginBottom: 16, display: 'flex', alignItems: 'flex-start', gap: 8 }}>
@@ -336,14 +402,14 @@ const CompatibilityPage: React.FC = () => {
             {/* CTA */}
             <button
               onClick={handleCalculate}
-              disabled={calculating || !isAuthenticated || !selectedSubTypeId}
+              disabled={calculating || !canSubmit}
               style={{
                 width: '100%', padding: '15px 0', borderRadius: 14, border: 'none', fontSize: 15, fontWeight: 700,
-                background: !calculating && isAuthenticated && selectedSubTypeId ? 'linear-gradient(135deg, #7C3AED, #EC4899)' : '#F1F5F9',
-                color: !calculating && isAuthenticated && selectedSubTypeId ? '#fff' : '#94A3B8',
-                cursor: !calculating && isAuthenticated && selectedSubTypeId ? 'pointer' : 'not-allowed',
+                background: !calculating && canSubmit ? 'linear-gradient(135deg, #7C3AED, #EC4899)' : '#F1F5F9',
+                color: !calculating && canSubmit ? '#fff' : '#94A3B8',
+                cursor: !calculating && canSubmit ? 'pointer' : 'not-allowed',
                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-                boxShadow: !calculating && isAuthenticated && selectedSubTypeId ? '0 6px 24px rgba(124,58,237,0.35)' : 'none',
+                boxShadow: !calculating && canSubmit ? '0 6px 24px rgba(124,58,237,0.35)' : 'none',
                 transition: 'all 0.18s ease', letterSpacing: '0.01em',
               }}
             >
@@ -353,7 +419,7 @@ const CompatibilityPage: React.FC = () => {
                   Calcul en cours…
                 </>
               ) : (
-                <>Calculer ma compatibilité ✨</>
+                <>✨ Calculer notre compatibilité</>
               )}
             </button>
           </div>
@@ -468,7 +534,7 @@ const CompatibilityPage: React.FC = () => {
 
             {/* Nouveau calcul */}
             <button
-              onClick={() => { setResult(null); setPartnerIdInput(''); setFormError(null); setSelectedSubTypeId(null); setMainCategoryId(null); }}
+              onClick={() => { setResult(null); setPartnerMentalId(''); setPartnerSexualId(''); setFormError(null); setSelectedSubTypeId(null); setMainCategoryId(null); }}
               style={{ width: '100%', padding: '14px 0', borderRadius: 14, border: '1.5px solid rgba(124,58,237,0.18)', background: 'rgba(255,255,255,0.8)', color: '#7C3AED', fontSize: 14, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, transition: 'all 0.15s' }}
             >
               🔄 Nouveau calcul
