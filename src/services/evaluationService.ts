@@ -34,7 +34,8 @@ export async function getOrCreateUserProfile(uid: string, displayName: string): 
 }
 
 export async function getUserProfileByCompatibilityId(id: string): Promise<UserProfile | null> {
-  const field = id.startsWith('SM-') ? 'compatibilityIdMental' : 'compatibilityIdSexual';
+  const isMentalCode = id.startsWith('HE-MNT-') || id.startsWith('SM-');
+  const field = isMentalCode ? 'compatibilityIdMental' : 'compatibilityIdSexual';
   const q = query(collection(db, PROFILES_COL), where(field, '==', id));
   const snap = await getDocs(q);
   if (snap.empty) return null;

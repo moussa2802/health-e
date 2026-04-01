@@ -1,9 +1,65 @@
-import { collection, doc, setDoc, getDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, doc, setDoc, getDoc, updateDoc, serverTimestamp, getDocs, query, where, orderBy, limit } from 'firebase/firestore';
 import { db } from '../utils/firebase';
 import type { CompatibilityRequest, CompatibilityResult, UserAssessmentSession } from '../types/assessment';
 import { getUserProfileByCompatibilityId, getUserSessions } from './evaluationService';
 
 const COL = 'compatibilityRequests';
+const HISTORY_COL = 'compatibilityHistory';
+
+// ── Types ─────────────────────────────────────────────────────────────────────
+
+export interface CompatibilityHistoryEntry {
+  id: string;
+  userId: string;
+  relationshipType: string;
+  partnerCode: string;
+  codeType: 'mental' | 'sexual';
+  result: CompatibilityResult;
+  createdAt: Date;
+}
+
+// ── History ───────────────────────────────────────────────────────────────────
+
+export async function saveCompatibilityHistory(
+  userId: string,
+  relationshipType: string,
+  partnerCode: string,
+  codeType: 'mental' | 'sexual',
+  result: CompatibilityResult
+): Promise<void> {
+  const ref = doc(collection(db, HISTORY_COL));
+  await setDoc(ref, {
+    userId,
+    relationshipType,
+    partnerCode,
+    codeType,
+    result,
+    createdAt: serverTimestamp(),
+  });
+}
+
+export async function getCompatibilityHistory(userId: string): Promise<CompatibilityHistoryEntry[]> {
+  const q = query(
+    collection(db, HISTORY_COL),
+    where('userId', '==', userId),
+    orderBy('createdAt', 'desc'),
+    limit(20)
+  );
+  const snap = await getDocs(q);
+  return snap.docs.map(d => {
+    const data = d.data();
+    return {
+      id: d.id,
+      userId: data.userId,
+      relationshipType: data.relationshipType,
+      partnerCode: data.partnerCode,
+      codeType: data.codeType,
+      result: data.result,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      createdAt: (data.createdAt as any)?.toDate?.() ?? new Date(),
+    } as CompatibilityHistoryEntry;
+  });
+}
 
 function getCodeType(id: string): 'mental' | 'sexual' | null {
   // New format: HE-MNT-YYYY-XXXX / HE-SEX-YYYY-XXXX

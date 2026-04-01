@@ -5,9 +5,18 @@ import { getOrCreateUserProfile, getProfileProgress } from '../../services/evalu
 import {
   createCompatibilityRequest,
   computeCompatibility,
+  saveCompatibilityHistory,
+  getCompatibilityHistory,
+  type CompatibilityHistoryEntry,
 } from '../../services/compatibilityService';
 import type { CompatibilityResult } from '../../types/assessment';
 import { RELATIONSHIP_CATEGORIES, getRelationshipLabel } from '../../utils/relationshipTypes';
+
+interface ResultItem {
+  codeType: 'mental' | 'sexual';
+  partnerCode: string;
+  result: CompatibilityResult;
+}
 
 function scoreStyle(score: number) {
   if (score >= 75) return { color: '#16A34A', bg: 'rgba(22,163,74,0.1)', bar: 'linear-gradient(90deg, #16A34A, #4ADE80)', label: 'Très bonne compatibilité ✨' };
@@ -31,16 +40,22 @@ const CompatibilityPage: React.FC = () => {
   const [formError, setFormError] = useState<string | null>(null);
   const [calculating, setCalculating] = useState(false);
 
-  const [result, setResult] = useState<CompatibilityResult | null>(null);
+  const [resultItems, setResultItems] = useState<ResultItem[]>([]);
+  const [history, setHistory] = useState<CompatibilityHistoryEntry[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [expandedHistory, setExpandedHistory] = useState<string | null>(null);
 
   const selectedCategory = RELATIONSHIP_CATEGORIES.find(c => c.id === mainCategoryId) ?? null;
   const isRomantic = mainCategoryId === 'amoureux';
-  const isFamilyOrOther = mainCategoryId !== null && !isRomantic;
 
-  // Bouton actif : relation choisie + sous-type + code mental rempli
+  // Bouton actif : relation + sous-type + au moins un code pour romantique, mental requis sinon
   const mentalTrimmed = partnerMentalId.trim().toUpperCase();
   const sexualTrimmed = partnerSexualId.trim().toUpperCase();
-  const canSubmit = isAuthenticated && !!selectedSubTypeId && mentalTrimmed.length > 0;
+  const canSubmit = isAuthenticated && !!selectedSubTypeId && (
+    isRomantic
+      ? (mentalTrimmed.length > 0 || sexualTrimmed.length > 0)
+      : mentalTrimmed.length > 0
+  );
 
   // Reset sub-type when main category changes
   useEffect(() => {
@@ -58,6 +73,13 @@ const CompatibilityPage: React.FC = () => {
         .then((p) => { setMyIdMental(p.compatibilityIdMental); setMyIdSexual(p.compatibilityIdSexual); })
         .catch(() => {})
         .finally(() => setLoadingProfile(false));
+
+      // Charger l'historique des tests
+      setHistoryLoading(true);
+      getCompatibilityHistory(currentUser.id)
+        .then(setHistory)
+        .catch(() => {})
+        .finally(() => setHistoryLoading(false));
     }
   }, [isAuthenticated, currentUser]);
 
@@ -69,26 +91,35 @@ const CompatibilityPage: React.FC = () => {
     setFormError(null);
     if (!isAuthenticated || !currentUser) { setFormError("Tu dois être connecté(e)."); return; }
     if (!selectedSubTypeId) { setFormError("Sélectionne le type de relation."); return; }
-    if (!mentalTrimmed) { setFormError("Saisis le code mental de ton/ta partenaire."); return; }
 
-    // Validation format nouveau : HE-MNT-YYYY-XXXX ou legacy SM-XXXX
-    const isMentalValid = /^HE-MNT-\d{4}-[A-Z0-9]{4}$/i.test(mentalTrimmed) || /^SM-[A-Z0-9]{4}$/i.test(mentalTrimmed);
-    if (!isMentalValid) { setFormError("Format invalide — le code mental doit être au format HE-MNT-2026-XXXX."); return; }
-    if (mentalTrimmed === myIdMental) { setFormError("Tu ne peux pas te comparer à toi-même 😄"); return; }
-    if (!myIdMental) { setFormError("Tu dois débloquer ton propre code mental avant de comparer."); return; }
+    // Validation codes
+    const isMentalValid = (c: string) => /^HE-MNT-\d{4}-[A-Z0-9]{4}$/i.test(c) || /^SM-[A-Z0-9]{4}$/i.test(c);
+    const isSexualValid = (c: string) => /^HE-SEX-\d{4}-[A-Z0-9]{4}$/i.test(c) || /^SE-[A-Z0-9]{4}$/i.test(c);
 
-    // Validation code sexuel (optionnel, romantique uniquement)
-    if (isRomantic && sexualTrimmed) {
-      const isSexualValid = /^HE-SEX-\d{4}-[A-Z0-9]{4}$/i.test(sexualTrimmed) || /^SE-[A-Z0-9]{4}$/i.test(sexualTrimmed);
-      if (!isSexualValid) { setFormError("Format invalide — le code intime doit être au format HE-SEX-2026-XXXX."); return; }
-      if (sexualTrimmed === myIdSexual) { setFormError("Tu ne peux pas te comparer à toi-même 😄"); return; }
-    }
+    if (mentalTrimmed && !isMentalValid(mentalTrimmed)) { setFormError("Format invalide — code mental : HE-MNT-2026-XXXX."); return; }
+    if (sexualTrimmed && !isSexualValid(sexualTrimmed)) { setFormError("Format invalide — code intime : HE-SEX-2026-XXXX."); return; }
+    if (!mentalTrimmed && !sexualTrimmed) { setFormError("Saisis au moins un code."); return; }
+    if (!isRomantic && !mentalTrimmed) { setFormError("Saisis le code mental de cette personne."); return; }
+    if (mentalTrimmed === myIdMental || sexualTrimmed === myIdSexual) { setFormError("Tu ne peux pas te comparer à toi-même 😄"); return; }
+
+    // Construire la liste de comparaisons à effectuer
+    const tasks: Array<{ code: string; codeType: 'mental' | 'sexual' }> = [];
+    if (mentalTrimmed) tasks.push({ code: mentalTrimmed, codeType: 'mental' });
+    if (isRomantic && sexualTrimmed) tasks.push({ code: sexualTrimmed, codeType: 'sexual' });
 
     setCalculating(true);
     try {
-      const req = await createCompatibilityRequest(currentUser.id, mentalTrimmed, selectedSubTypeId);
-      const res = await computeCompatibility(req.id);
-      setResult(res);
+      const items: ResultItem[] = [];
+      for (const task of tasks) {
+        const req = await createCompatibilityRequest(currentUser.id, task.code, selectedSubTypeId);
+        const res = await computeCompatibility(req.id);
+        items.push({ codeType: task.codeType, partnerCode: task.code, result: res });
+        // Sauvegarder dans l'historique
+        await saveCompatibilityHistory(currentUser.id, selectedSubTypeId, task.code, task.codeType, res).catch(() => {});
+      }
+      setResultItems(items);
+      // Rafraîchir l'historique
+      getCompatibilityHistory(currentUser.id).then(setHistory).catch(() => {});
     } catch (err: unknown) {
       setFormError(err instanceof Error ? err.message : 'Erreur lors du calcul. Réessaie.');
     } finally {
@@ -96,7 +127,6 @@ const CompatibilityPage: React.FC = () => {
     }
   };
 
-  const globalStyle = result ? scoreStyle(result.globalScore) : null;
   const isFamilyCategory = mainCategoryId === 'famille';
 
   return (
@@ -221,7 +251,7 @@ const CompatibilityPage: React.FC = () => {
         )}
 
         {/* ── Formulaire ── */}
-        {!result && (
+        {resultItems.length === 0 && (
           <div style={{ background: 'rgba(255,255,255,0.88)', backdropFilter: 'blur(18px)', WebkitBackdropFilter: 'blur(18px)', border: '1.5px solid rgba(124,58,237,0.12)', borderRadius: 22, padding: '26px 24px', marginBottom: 18, boxShadow: '0 4px 28px rgba(124,58,237,0.07)' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 22 }}>
               <div style={{ width: 34, height: 34, borderRadius: 10, background: 'linear-gradient(135deg, #7C3AED, #EC4899)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, flexShrink: 0 }}>✨</div>
@@ -425,11 +455,11 @@ const CompatibilityPage: React.FC = () => {
           </div>
         )}
 
-        {/* ── Résultats ── */}
-        {result && globalStyle && (
+        {/* ── Résultats (un bloc par type de comparaison) ── */}
+        {resultItems.length > 0 && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16, animation: 'slideUp 0.35s ease' }}>
 
-            {/* Header résultat avec type de relation */}
+            {/* Header */}
             {selectedSubTypeId && (
               <div style={{ textAlign: 'center', padding: '0 0 4px' }}>
                 <span style={{ fontSize: 13, color: '#94A3B8', fontWeight: 500 }}>
@@ -438,107 +468,234 @@ const CompatibilityPage: React.FC = () => {
               </div>
             )}
 
-            {/* Score global */}
-            <div style={{ background: 'rgba(255,255,255,0.92)', backdropFilter: 'blur(18px)', border: '1.5px solid rgba(124,58,237,0.12)', borderRadius: 22, padding: '32px 24px', textAlign: 'center', boxShadow: '0 8px 40px rgba(124,58,237,0.08)' }}>
-              <p style={{ margin: '0 0 20px', fontSize: 13, fontWeight: 600, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Score de compatibilité</p>
+            {resultItems.map((item) => {
+              const gs = scoreStyle(item.result.globalScore);
+              const isMental = item.codeType === 'mental';
+              return (
+                <div key={item.codeType} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
 
-              <div style={{ position: 'relative', width: 140, height: 140, margin: '0 auto 20px' }}>
-                <svg width="140" height="140" viewBox="0 0 140 140" style={{ transform: 'rotate(-90deg)' }}>
-                  <circle cx="70" cy="70" r="58" fill="none" stroke={`${globalStyle.color}18`} strokeWidth="10" />
-                  <circle
-                    cx="70" cy="70" r="58" fill="none"
-                    stroke={globalStyle.color} strokeWidth="10"
-                    strokeLinecap="round"
-                    strokeDasharray={`${2 * Math.PI * 58}`}
-                    strokeDashoffset={`${2 * Math.PI * 58 * (1 - result.globalScore / 100)}`}
-                    style={{ transition: 'stroke-dashoffset 1.2s cubic-bezier(0.4,0,0.2,1)' }}
-                  />
-                </svg>
-                <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-                  <span style={{ fontSize: 36, fontWeight: 900, color: globalStyle.color, lineHeight: 1 }}>{result.globalScore}</span>
-                  <span style={{ fontSize: 12, fontWeight: 600, color: '#94A3B8' }}>/ 100</span>
-                </div>
-              </div>
-
-              <p style={{ margin: 0, fontSize: 16, fontWeight: 700, color: globalStyle.color }}>{globalStyle.label}</p>
-            </div>
-
-            {/* Dimensions */}
-            {Object.keys(result.dimensionScores).length > 0 && (
-              <div style={{ background: 'rgba(255,255,255,0.92)', backdropFilter: 'blur(18px)', border: '1.5px solid rgba(124,58,237,0.12)', borderRadius: 22, padding: '22px 24px', boxShadow: '0 4px 24px rgba(124,58,237,0.06)' }}>
-                <p style={{ margin: '0 0 18px', fontSize: 13, fontWeight: 700, color: '#0A2342', display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <span>📊</span> Compatibilité par dimension
-                </p>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-                  {Object.entries(result.dimensionScores).map(([dim, score]) => {
-                    const s = scoreStyle(score);
-                    return (
-                      <div key={dim}>
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
-                          <span style={{ fontSize: 13, fontWeight: 600, color: '#374151' }}>{dim}</span>
-                          <span style={{ fontSize: 13, fontWeight: 800, color: s.color }}>{score}</span>
-                        </div>
-                        <div style={{ height: 8, background: '#F1F5F9', borderRadius: 99, overflow: 'hidden' }}>
-                          <div style={{ height: '100%', width: `${score}%`, background: s.bar, borderRadius: 99, transition: 'width 1s cubic-bezier(0.4,0,0.2,1)' }} />
-                        </div>
+                  {/* Badge type */}
+                  {resultItems.length > 1 && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <div style={{
+                        display: 'inline-flex', alignItems: 'center', gap: 6,
+                        padding: '6px 14px', borderRadius: 99,
+                        background: isMental ? 'linear-gradient(135deg,#EFF6FF,#DBEAFE)' : 'linear-gradient(135deg,#FDF4FF,#FAE8FF)',
+                        border: isMental ? '1.5px solid rgba(59,130,246,0.2)' : '1.5px solid rgba(192,38,211,0.2)',
+                        fontSize: 12, fontWeight: 700,
+                        color: isMental ? '#1D4ED8' : '#7E22CE',
+                      }}>
+                        <span>{isMental ? '🧠' : '💋'}</span>
+                        {isMental ? 'Compatibilité Mentale' : 'Compatibilité Intime'}
                       </div>
-                    );
-                  })}
+                    </div>
+                  )}
+
+                  {/* Score global */}
+                  <div style={{ background: 'rgba(255,255,255,0.92)', backdropFilter: 'blur(18px)', border: '1.5px solid rgba(124,58,237,0.12)', borderRadius: 22, padding: '32px 24px', textAlign: 'center', boxShadow: '0 8px 40px rgba(124,58,237,0.08)' }}>
+                    <p style={{ margin: '0 0 20px', fontSize: 13, fontWeight: 600, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Score de compatibilité</p>
+                    <div style={{ position: 'relative', width: 140, height: 140, margin: '0 auto 20px' }}>
+                      <svg width="140" height="140" viewBox="0 0 140 140" style={{ transform: 'rotate(-90deg)' }}>
+                        <circle cx="70" cy="70" r="58" fill="none" stroke={`${gs.color}18`} strokeWidth="10" />
+                        <circle
+                          cx="70" cy="70" r="58" fill="none"
+                          stroke={gs.color} strokeWidth="10"
+                          strokeLinecap="round"
+                          strokeDasharray={`${2 * Math.PI * 58}`}
+                          strokeDashoffset={`${2 * Math.PI * 58 * (1 - item.result.globalScore / 100)}`}
+                          style={{ transition: 'stroke-dashoffset 1.2s cubic-bezier(0.4,0,0.2,1)' }}
+                        />
+                      </svg>
+                      <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                        <span style={{ fontSize: 36, fontWeight: 900, color: gs.color, lineHeight: 1 }}>{item.result.globalScore}</span>
+                        <span style={{ fontSize: 12, fontWeight: 600, color: '#94A3B8' }}>/ 100</span>
+                      </div>
+                    </div>
+                    <p style={{ margin: 0, fontSize: 16, fontWeight: 700, color: gs.color }}>{gs.label}</p>
+                  </div>
+
+                  {/* Dimensions */}
+                  {Object.keys(item.result.dimensionScores).length > 0 && (
+                    <div style={{ background: 'rgba(255,255,255,0.92)', backdropFilter: 'blur(18px)', border: '1.5px solid rgba(124,58,237,0.12)', borderRadius: 22, padding: '22px 24px', boxShadow: '0 4px 24px rgba(124,58,237,0.06)' }}>
+                      <p style={{ margin: '0 0 18px', fontSize: 13, fontWeight: 700, color: '#0A2342', display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <span>📊</span> Compatibilité par dimension
+                      </p>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                        {Object.entries(item.result.dimensionScores).map(([dim, score]) => {
+                          const s = scoreStyle(score);
+                          return (
+                            <div key={dim}>
+                              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+                                <span style={{ fontSize: 13, fontWeight: 600, color: '#374151' }}>{dim}</span>
+                                <span style={{ fontSize: 13, fontWeight: 800, color: s.color }}>{score}</span>
+                              </div>
+                              <div style={{ height: 8, background: '#F1F5F9', borderRadius: 99, overflow: 'hidden' }}>
+                                <div style={{ height: '100%', width: `${score}%`, background: s.bar, borderRadius: 99, transition: 'width 1s cubic-bezier(0.4,0,0.2,1)' }} />
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Points forts & tensions */}
+                  {(item.result.strengths.length > 0 || item.result.tensions.length > 0) && (
+                    <div style={{ display: 'grid', gridTemplateColumns: item.result.strengths.length > 0 && item.result.tensions.length > 0 ? '1fr 1fr' : '1fr', gap: 14 }}>
+                      {item.result.strengths.length > 0 && (
+                        <div style={{ background: 'rgba(240,253,244,0.95)', border: '1.5px solid rgba(22,163,74,0.2)', borderRadius: 18, padding: '18px 20px' }}>
+                          <p style={{ margin: '0 0 12px', fontSize: 13, fontWeight: 700, color: '#15803D', display: 'flex', alignItems: 'center', gap: 6 }}>
+                            <span>💚</span> Points forts
+                          </p>
+                          <ul style={{ margin: 0, padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 8 }}>
+                            {item.result.strengths.map((s, i) => (
+                              <li key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 8, fontSize: 13, color: '#166534', lineHeight: 1.5 }}>
+                                <span style={{ flexShrink: 0 }}>✓</span>{s}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                      {item.result.tensions.length > 0 && (
+                        <div style={{ background: 'rgba(255,247,237,0.95)', border: '1.5px solid rgba(234,88,12,0.2)', borderRadius: 18, padding: '18px 20px' }}>
+                          <p style={{ margin: '0 0 12px', fontSize: 13, fontWeight: 700, color: '#C2410C', display: 'flex', alignItems: 'center', gap: 6 }}>
+                            <span>🔶</span> Zones à explorer
+                          </p>
+                          <ul style={{ margin: 0, padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 8 }}>
+                            {item.result.tensions.map((t, i) => (
+                              <li key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 8, fontSize: 13, color: '#9A3412', lineHeight: 1.5 }}>
+                                <span style={{ flexShrink: 0 }}>◆</span>{t}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Narrative Dr Lo */}
+                  {item.result.claudeNarrative && (
+                    <div style={{ background: 'rgba(255,255,255,0.92)', backdropFilter: 'blur(18px)', border: '1.5px solid rgba(124,58,237,0.12)', borderRadius: 22, padding: '22px 24px' }}>
+                      <p style={{ margin: '0 0 12px', fontSize: 13, fontWeight: 700, color: '#7C3AED', display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <span>👨‍⚕️</span> Analyse du Dr Lo
+                      </p>
+                      <p style={{ margin: 0, fontSize: 14, color: '#374151', lineHeight: 1.75, whiteSpace: 'pre-wrap' }}>{item.result.claudeNarrative}</p>
+                    </div>
+                  )}
                 </div>
-              </div>
-            )}
-
-            {/* Points forts & tensions */}
-            {(result.strengths.length > 0 || result.tensions.length > 0) && (
-              <div style={{ display: 'grid', gridTemplateColumns: result.strengths.length > 0 && result.tensions.length > 0 ? '1fr 1fr' : '1fr', gap: 14 }}>
-                {result.strengths.length > 0 && (
-                  <div style={{ background: 'rgba(240,253,244,0.95)', border: '1.5px solid rgba(22,163,74,0.2)', borderRadius: 18, padding: '18px 20px' }}>
-                    <p style={{ margin: '0 0 12px', fontSize: 13, fontWeight: 700, color: '#15803D', display: 'flex', alignItems: 'center', gap: 6 }}>
-                      <span>💚</span> Points forts
-                    </p>
-                    <ul style={{ margin: 0, padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 8 }}>
-                      {result.strengths.map((s, i) => (
-                        <li key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 8, fontSize: 13, color: '#166534', lineHeight: 1.5 }}>
-                          <span style={{ flexShrink: 0 }}>✓</span>{s}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-                {result.tensions.length > 0 && (
-                  <div style={{ background: 'rgba(255,247,237,0.95)', border: '1.5px solid rgba(234,88,12,0.2)', borderRadius: 18, padding: '18px 20px' }}>
-                    <p style={{ margin: '0 0 12px', fontSize: 13, fontWeight: 700, color: '#C2410C', display: 'flex', alignItems: 'center', gap: 6 }}>
-                      <span>🔶</span> Zones à explorer
-                    </p>
-                    <ul style={{ margin: 0, padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 8 }}>
-                      {result.tensions.map((t, i) => (
-                        <li key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 8, fontSize: 13, color: '#9A3412', lineHeight: 1.5 }}>
-                          <span style={{ flexShrink: 0 }}>◆</span>{t}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Narrative Dr Lo */}
-            {result.claudeNarrative && (
-              <div style={{ background: 'rgba(255,255,255,0.92)', backdropFilter: 'blur(18px)', border: '1.5px solid rgba(124,58,237,0.12)', borderRadius: 22, padding: '22px 24px' }}>
-                <p style={{ margin: '0 0 12px', fontSize: 13, fontWeight: 700, color: '#7C3AED', display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <span>👨‍⚕️</span> Analyse du Dr Lo
-                </p>
-                <p style={{ margin: 0, fontSize: 14, color: '#374151', lineHeight: 1.75, whiteSpace: 'pre-wrap' }}>{result.claudeNarrative}</p>
-              </div>
-            )}
+              );
+            })}
 
             {/* Nouveau calcul */}
             <button
-              onClick={() => { setResult(null); setPartnerMentalId(''); setPartnerSexualId(''); setFormError(null); setSelectedSubTypeId(null); setMainCategoryId(null); }}
+              onClick={() => { setResultItems([]); setPartnerMentalId(''); setPartnerSexualId(''); setFormError(null); setSelectedSubTypeId(null); setMainCategoryId(null); }}
               style={{ width: '100%', padding: '14px 0', borderRadius: 14, border: '1.5px solid rgba(124,58,237,0.18)', background: 'rgba(255,255,255,0.8)', color: '#7C3AED', fontSize: 14, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, transition: 'all 0.15s' }}
             >
               🔄 Nouveau calcul
             </button>
+          </div>
+        )}
+
+        {/* ── Historique ── */}
+        {isAuthenticated && history.length > 0 && (
+          <div style={{ marginTop: 32, background: 'rgba(255,255,255,0.88)', backdropFilter: 'blur(18px)', WebkitBackdropFilter: 'blur(18px)', border: '1.5px solid rgba(124,58,237,0.12)', borderRadius: 22, padding: '22px 24px', boxShadow: '0 4px 28px rgba(124,58,237,0.07)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 18 }}>
+              <div style={{ width: 34, height: 34, borderRadius: 10, background: 'linear-gradient(135deg, #7C3AED, #EC4899)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, flexShrink: 0 }}>🕐</div>
+              <h2 style={{ margin: 0, fontSize: 15, fontWeight: 800, color: '#0A2342' }}>Historique des tests</h2>
+            </div>
+
+            {historyLoading ? (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, color: '#94A3B8', fontSize: 14 }}>
+                <div style={{ width: 18, height: 18, border: '2px solid #7C3AED', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+                Chargement…
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                {history.map((entry) => {
+                  const hs = scoreStyle(entry.result.globalScore);
+                  const isExpanded = expandedHistory === entry.id;
+                  const isMentalEntry = entry.codeType === 'mental';
+                  return (
+                    <div key={entry.id} style={{ borderRadius: 16, border: `1.5px solid ${isExpanded ? 'rgba(124,58,237,0.2)' : 'rgba(124,58,237,0.08)'}`, background: isExpanded ? 'rgba(248,245,255,0.8)' : '#fff', overflow: 'hidden', transition: 'all 0.2s' }}>
+                      {/* Row summary */}
+                      <button
+                        onClick={() => setExpandedHistory(isExpanded ? null : entry.id)}
+                        style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 12, padding: '14px 16px', background: 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left' }}
+                      >
+                        <span style={{ fontSize: 20, flexShrink: 0 }}>{isMentalEntry ? '🧠' : '💋'}</span>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <p style={{ margin: '0 0 2px', fontSize: 13, fontWeight: 700, color: '#0A2342', lineHeight: 1.3 }}>
+                            {getRelationshipLabel(entry.relationshipType)}
+                            <span style={{ marginLeft: 8, fontSize: 11, fontWeight: 500, color: '#94A3B8' }}>
+                              {isMentalEntry ? '· Mental' : '· Intime'}
+                            </span>
+                          </p>
+                          <p style={{ margin: 0, fontSize: 11, color: '#94A3B8' }}>
+                            {entry.createdAt.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}
+                            {' · '}
+                            <code style={{ fontSize: 11, fontFamily: 'monospace', color: '#6D28D9' }}>{entry.partnerCode}</code>
+                          </p>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+                          <span style={{ fontSize: 15, fontWeight: 900, color: hs.color }}>{entry.result.globalScore}</span>
+                          <span style={{ fontSize: 11, color: '#94A3B8', fontWeight: 600 }}>/100</span>
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" style={{ transform: isExpanded ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s', color: '#94A3B8' }}>
+                            <polyline points="6 9 12 15 18 9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                          </svg>
+                        </div>
+                      </button>
+
+                      {/* Expanded detail */}
+                      {isExpanded && (
+                        <div style={{ padding: '0 16px 16px', animation: 'slideDown 0.2s ease' }}>
+                          <div style={{ height: 1, background: 'linear-gradient(90deg, transparent, rgba(124,58,237,0.12), transparent)', marginBottom: 14 }} />
+
+                          {/* Barre de score */}
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 14 }}>
+                            <div style={{ flex: 1, height: 8, background: '#F1F5F9', borderRadius: 99, overflow: 'hidden' }}>
+                              <div style={{ height: '100%', width: `${entry.result.globalScore}%`, background: hs.bar, borderRadius: 99 }} />
+                            </div>
+                            <span style={{ fontSize: 13, fontWeight: 700, color: hs.color, flexShrink: 0 }}>{hs.label}</span>
+                          </div>
+
+                          {/* Dimensions */}
+                          {Object.keys(entry.result.dimensionScores).length > 0 && (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 14 }}>
+                              {Object.entries(entry.result.dimensionScores).map(([dim, score]) => {
+                                const ds = scoreStyle(score);
+                                return (
+                                  <div key={dim}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                                      <span style={{ fontSize: 12, color: '#374151', fontWeight: 600 }}>{dim}</span>
+                                      <span style={{ fontSize: 12, fontWeight: 800, color: ds.color }}>{score}</span>
+                                    </div>
+                                    <div style={{ height: 6, background: '#F1F5F9', borderRadius: 99, overflow: 'hidden' }}>
+                                      <div style={{ height: '100%', width: `${score}%`, background: ds.bar, borderRadius: 99 }} />
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          )}
+
+                          {/* Points forts & tensions */}
+                          {(entry.result.strengths.length > 0 || entry.result.tensions.length > 0) && (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                              {entry.result.strengths.map((s, i) => (
+                                <p key={i} style={{ margin: 0, fontSize: 12, color: '#166534', display: 'flex', gap: 6 }}><span>✓</span>{s}</p>
+                              ))}
+                              {entry.result.tensions.map((t, i) => (
+                                <p key={i} style={{ margin: 0, fontSize: 12, color: '#9A3412', display: 'flex', gap: 6 }}><span>◆</span>{t}</p>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
         )}
 
