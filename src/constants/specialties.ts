@@ -72,7 +72,7 @@ export const SPECIALTIES: Record<string, Specialty> = {
   "infirmier-sante-mentale": {
     key: "infirmier-sante-mentale",
     labels: {
-      fr: "Infirmier en santé mentale",
+      fr: "Infirmier en profil psychologique",
       en: "Mental Health Nurse",
     },
     category: "mental-health",
@@ -96,7 +96,7 @@ export const SPECIALTIES: Record<string, Specialty> = {
   "travailleur-social-sante-mentale": {
     key: "travailleur-social-sante-mentale",
     labels: {
-      fr: "Travailleur social en santé mentale",
+      fr: "Travailleur social en profil psychologique",
       en: "Mental Health Social Worker",
     },
     category: "mental-health",
@@ -194,7 +194,7 @@ export const SPECIALTIES: Record<string, Specialty> = {
   "educateur-sante-sexuelle": {
     key: "educateur-sante-sexuelle",
     labels: {
-      fr: "Éducateur en santé sexuelle",
+      fr: "Éducateur en vie intime",
       en: "Sexual Health Educator",
     },
     category: "sexual-health",
@@ -210,7 +210,7 @@ export const SPECIALTIES: Record<string, Specialty> = {
   "travailleur-social-sante-sexuelle": {
     key: "travailleur-social-sante-sexuelle",
     labels: {
-      fr: "Travailleur social en santé sexuelle",
+      fr: "Travailleur social en vie intime",
       en: "Sexual Health Social Worker",
     },
     category: "sexual-health",
@@ -249,8 +249,8 @@ export const getCategoryLabel = (
   language: "fr" | "en" = "fr"
 ): string => {
   const labels = {
-    "mental-health": { fr: "Santé mentale", en: "Mental Health" },
-    "sexual-health": { fr: "Santé sexuelle", en: "Sexual Health" },
+    "mental-health": { fr: "Profil psychologique", en: "Mental Health" },
+    "sexual-health": { fr: "Vie intime", en: "Sexual Health" },
   };
   return labels[category][language];
 };

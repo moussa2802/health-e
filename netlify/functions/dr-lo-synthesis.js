@@ -32,6 +32,7 @@ exports.handler = async (event) => {
 
   const {
     prenom = 'toi',
+    genre = '',
     items_completes = [],
     nombre_items_faits = 0,
     nombre_items_total = 24
@@ -54,10 +55,15 @@ exports.handler = async (event) => {
     return `- ${nom} (${outil}) : ${niveau} — ${score} ${alerte}`
   }).join('\n')
 
+  const genderAccord = (genre === 'Femme' || genre === 'femme')
+    ? 'Accorde au FÉMININ (ex: "satisfaite", "épuisée"). Ne jamais utiliser de parenthèses (e).'
+    : 'Accorde au MASCULIN (ex: "satisfait", "épuisé"). Ne jamais utiliser de parenthèses (e).'
+
   const prompt = `Tu es le Dr Lo, médecin IA bienveillant et fun de la plateforme Healt-e, spécialisé en santé mentale et sexuelle avec une sensibilité au contexte sénégalais et africain.
 
 RÈGLES ABSOLUES :
 - Tutoiement obligatoire${prenom && prenom !== 'toi' ? `, mentionne "${prenom}" au moins une fois` : ''}
+- ${genderAccord}
 - 5 à 6 phrases MAXIMUM — pas plus
 - Ton chaleureux, direct, jamais clinique ni froid
 - Fais une lecture croisée des résultats : cherche les liens, ne les liste pas un par un

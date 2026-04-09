@@ -38,7 +38,7 @@ const Terms: React.FC = () => {
                 <p>
                   Health-e est une plateforme de mise en relation qui permet aux
                   patients de consulter à distance des professionnels de santé
-                  qualifiés dans les domaines de la santé mentale et de la santé
+                  qualifiés dans les domaines du profil psychologique et de la vie
                   intime (psychologues, psychiatres, sexologues, gynécologues,
                   urologues).
                 </p>

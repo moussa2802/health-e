@@ -26,25 +26,40 @@ export function isSexualFilterComplete(): boolean {
 
 export function getHiddenSexualScaleIds(filter: SexualHealthFilter): string[] {
   const profile = filter.experienceProfile;
+  let hidden: string[] = [];
 
-  if (profile === 'full_experience') return [];
-
-  if (profile === 'no_experience') {
-    // Masquer tout ce qui suppose une activité sexuelle avec partenaire
-    return ['fsfi', 'iief', 'nsss', 'griss_base', 'pair'];
+  if (profile === 'no_experience' || profile === 'prefer_not_answer') {
+    hidden = ['fsfi', 'iief', 'nsss', 'griss_base', 'pair'];
+  } else if (profile === 'partial_experience') {
+    hidden = ['griss_base'];
   }
+  // full_experience: hidden stays []
 
+  return [...new Set(hidden)];
+}
+
+export function getSexualRequired(filter: SexualHealthFilter | null): Array<{ id: string; label: string }> {
+  const profile = filter?.experienceProfile;
+  if (profile === 'no_experience' || profile === 'prefer_not_answer') {
+    return [
+      { id: 'sdi2',    label: 'Désir sexuel' },
+      { id: 'sis_ses', label: 'Excitation & Inhibition' },
+      { id: 'sise',    label: 'Identité & Valeurs intimes' },
+    ];
+  }
   if (profile === 'partial_experience') {
-    // Masquer seulement ce qui suppose la pénétration ou une relation établie
-    return ['griss_base'];
+    return [
+      { id: 'nsss',    label: 'Satisfaction sexuelle' },
+      { id: 'sdi2',    label: 'Désir sexuel' },
+      { id: 'sis_ses', label: 'Excitation & Inhibition' },
+    ];
   }
-
-  if (profile === 'prefer_not_answer') {
-    // Garder seulement les scales les moins intrusives
-    return ['fsfi', 'iief', 'nsss', 'griss_base', 'pair'];
-  }
-
-  return [];
+  // full_experience or null
+  return [
+    { id: 'nsss', label: 'Satisfaction sexuelle' },
+    { id: 'sdi2', label: 'Désir sexuel' },
+    { id: 'pair', label: 'Intimité de couple' },
+  ];
 }
 
 // ── Scale adaptation ──────────────────────────────────────────────────────────

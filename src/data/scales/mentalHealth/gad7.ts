@@ -25,7 +25,7 @@ export const GAD7: AssessmentScale = {
   shortName: "GAD-7",
   category: 'mental_health',
   description: "Mesure la sévérité de l'anxiété généralisée au cours des 2 dernières semaines.",
-  instructions: "Ces 2 dernières semaines, dis-moi combien de fois ces situations t'ont concerné(e) :",
+  instructions: "Ces 2 dernières semaines, dis-moi combien de fois ces situations t'ont {{concerné|concernée}} :",
   timeEstimateMinutes: 3,
   reference: "Spitzer, R.L., Kroenke, K., Williams, J.B.W., & Löwe, B. (2006). A brief measure for assessing generalized anxiety disorder. Archives of Internal Medicine, 166(10), 1092–1097.",
   licenseNote: "Domaine public. Libre de droits.",
@@ -44,7 +44,7 @@ export const GAD7: AssessmentScale = {
   items: [
     {
       id: 1,
-      text: "T'arrive-t-il de te sentir comme une casserole sur le feu 🫧 — nerveux(se), tendu(e), à bout — sans vraiment savoir pourquoi ?",
+      text: "T'arrive-t-il de te sentir comme une casserole sur le feu 🫧 — {{nerveux|nerveuse}}, {{tendu|tendue}}, à bout — sans vraiment savoir pourquoi ?",
       type: 'frequency',
       options: opts,
     },
@@ -68,7 +68,7 @@ export const GAD7: AssessmentScale = {
     },
     {
       id: 5,
-      text: "Est-ce qu'il t'arrive d'être tellement agité(e) intérieurement que tu n'arrives pas à rester en place ?",
+      text: "Est-ce qu'il t'arrive d'être tellement {{agité|agitée}} intérieurement que tu n'arrives pas à rester en place ?",
       type: 'frequency',
       options: opts,
     },
@@ -98,36 +98,36 @@ export const GAD7: AssessmentScale = {
       min: 0,  max: 4,
       label: "Anxiété minimale",
       severity: 'minimal',
-      description: "Niveau d'anxiété faible, dans la norme. Peu ou pas de symptômes.",
+      description: "Ton niveau d'anxiété est bas — c'est plutôt rassurant. On est dans la zone normale, pas de signal d'alerte ici 😌",
       referralRequired: false,
-      recommendation: "Maintenez vos habitudes de bien-être et de gestion du stress."
+      recommendation: "Continue ce que tu fais déjà pour prendre soin de toi — tes habitudes de bien-être fonctionnent. Garde un œil dessus si ça change."
     },
     {
       min: 5,  max: 9,
       label: "Anxiété légère",
       severity: 'mild',
       alertLevel: 1,
-      description: "Présence de quelques symptômes anxieux pouvant affecter le quotidien.",
+      description: "Il y a un peu d'anxiété qui flotte — rien de dramatique, mais c'est assez présent pour que tu le ressentes au quotidien.",
       referralRequired: false,
-      recommendation: "Des techniques de relaxation, la pleine conscience et l'activité physique peuvent réduire ces symptômes."
+      recommendation: "Des choses simples peuvent vraiment aider : la respiration, la marche, la pleine conscience. Bouge ton corps, ça calme la tête 🚶‍♂️"
     },
     {
       min: 10, max: 14,
-      label: "Anxiété modérée",
+      label: "Stress bien présent",
       severity: 'moderate',
       alertLevel: 1,
-      description: "Symptômes anxieux significatifs impactant votre quotidien, travail et relations.",
+      description: "L'anxiété prend de la place dans ta vie — elle touche ton quotidien, ton travail, tes relations. C'est important de ne pas la laisser s'installer.",
       referralRequired: false,
-      recommendation: "Une consultation avec un professionnel de santé mentale (psychologue ou médecin) est conseillée."
+      recommendation: "Parler à un professionnel (psychologue ou médecin) pourrait vraiment t'aider à comprendre ce qui se passe et à retrouver du calme. Tu mérites ça 💛"
     },
     {
       min: 15, max: 21,
-      label: "Anxiété sévère",
+      label: "Anxiété forte",
       severity: 'severe',
       alertLevel: 2,
-      description: "Anxiété sévère nécessitant une attention professionnelle. Ces symptômes peuvent être significativement améliorés avec un accompagnement adapté.",
+      description: "Ce que tu vis est intense — et c'est normal que ça te pèse. L'anxiété à ce niveau peut vraiment épuiser, mais sache que ça se soigne bien quand on est {{accompagné|accompagnée}}.",
       referralRequired: true,
-      recommendation: "Consultation avec un médecin ou psychologue recommandée. Des traitements efficaces (thérapie, soutien) existent."
+      recommendation: "Prends rendez-vous avec un médecin ou un psychologue — il existe des approches qui marchent vraiment (thérapie, soutien, parfois un coup de pouce médical). Tu n'as pas à gérer ça {{seul|seule}} 🤝"
     },
   ],
 };

@@ -70,11 +70,11 @@ const FeaturedContentSection: React.FC = () => {
             type: "health-tip",
             title:
               language === "fr"
-                ? "Conseils pour une bonne santé mentale"
+                ? "Conseils pour un bon profil psychologique"
                 : "Tips for good mental health",
             description:
               language === "fr"
-                ? "Pratiquez la méditation quotidiennement, maintenez une activité physique régulière et assurez-vous de dormir suffisamment pour préserver votre santé mentale."
+                ? "Pratiquez la méditation quotidiennement, maintenez une activité physique régulière et assurez-vous de dormir suffisamment pour préserver votre profil psychologique."
                 : "Practice meditation daily, maintain regular physical activity, and ensure you get enough sleep to preserve your mental health.",
             author: "Dr. Moussa S.",
             role: language === "fr" ? "Psychologue" : "Psychologist",
@@ -93,7 +93,7 @@ const FeaturedContentSection: React.FC = () => {
                 : "Discreet consultation",
             description:
               language === "fr"
-                ? "Consultation discrète et efficace. Je recommande vivement cette plateforme pour tous ceux qui cherchent des conseils en santé sexuelle."
+                ? "Consultation discrète et efficace. Je recommande vivement cette plateforme pour tous ceux qui cherchent des conseils pour leur vie intime."
                 : "Discreet and effective consultation. I highly recommend this platform for anyone seeking sexual health advice.",
             author: "Fatou D.",
             role: language === "fr" ? "Patiente" : "Patient",

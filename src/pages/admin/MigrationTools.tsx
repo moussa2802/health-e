@@ -149,7 +149,7 @@ const MigrationTools: React.FC = () => {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
-            <h3 className="font-medium text-gray-900 mb-2">Santé Mentale</h3>
+            <h3 className="font-medium text-gray-900 mb-2">Profil psychologique</h3>
             <ul className="text-sm text-gray-600 space-y-1">
               <li>• Psychiatre</li>
               <li>• Psychologue clinicien</li>
@@ -158,16 +158,16 @@ const MigrationTools: React.FC = () => {
               <li>• Addictologue</li>
               <li>• Pédopsychiatre</li>
               <li>• Gérontopsychiatre</li>
-              <li>• Infirmier en santé mentale</li>
+              <li>• Infirmier en profil psychologique</li>
               <li>• Coach en développement personnel</li>
               <li>• Conseiller en orientation</li>
-              <li>• Travailleur social en santé mentale</li>
+              <li>• Travailleur social en profil psychologique</li>
               <li>• Pair-aidant</li>
             </ul>
           </div>
 
           <div>
-            <h3 className="font-medium text-gray-900 mb-2">Santé Sexuelle</h3>
+            <h3 className="font-medium text-gray-900 mb-2">Vie intime</h3>
             <ul className="text-sm text-gray-600 space-y-1">
               <li>• Gynécologue</li>
               <li>• Urologue</li>
@@ -176,11 +176,11 @@ const MigrationTools: React.FC = () => {
               <li>• Dermatologue-vénéréologue</li>
               <li>• Endocrinologue</li>
               <li>• Andrologue</li>
-              <li>• Médecin généraliste en santé sexuelle</li>
+              <li>• Médecin généraliste en vie intime</li>
               <li>• Conseiller en planning familial</li>
-              <li>• Éducateur en santé sexuelle</li>
+              <li>• Éducateur en vie intime</li>
               <li>• Psychologue en sexologie</li>
-              <li>• Travailleur social en santé sexuelle</li>
+              <li>• Travailleur social en vie intime</li>
               <li>• Médiateur familial</li>
             </ul>
           </div>

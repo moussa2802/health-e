@@ -20,6 +20,9 @@ import QuestionItem from '../../components/assessment/QuestionItem';
 import { triggerDrLoMentalHealth, triggerDrLoSexualHealth, triggerDrLoSynthesis } from '../../utils/drLoAnalysis';
 import { MENTAL_HEALTH_SCALES } from '../../data/scales';
 import { getSexualHealthFilter } from '../../utils/sexualHealthFilter';
+import { resolveScaleGender } from '../../utils/gender';
+import { getOnboardingProfile } from '../../utils/onboardingProfile';
+import { archiveCurrentResult } from '../../services/testManagementService';
 
 // ── Thème par catégorie ───────────────────────────────────────────────────────
 function getTheme(category?: string) {
@@ -33,7 +36,7 @@ function getTheme(category?: string) {
     cardBorder: isSexual ? 'rgba(192,38,211,0.12)' : 'rgba(59,130,246,0.12)',
     badgeBg: isSexual ? '#FFF0F9' : '#EFF6FF',
     badgeColor: isSexual ? '#C026D3' : '#3B82F6',
-    label: isSexual ? 'Santé sexuelle' : 'Santé mentale',
+    label: isSexual ? 'Vie intime' : 'Profil psychologique',
   };
 }
 
@@ -85,8 +88,12 @@ const AssessmentQuizPage: React.FC = () => {
       const s = guestToUserSession(guestSession);
       setSession(s);
       const sexProfile = getSexualHealthFilter()?.experienceProfile;
-      const scale = getAdaptedScaleById(guestSession.scaleId, sexProfile) ?? getScaleById(guestSession.scaleId);
-      if (scale) { setCurrentScale(scale); setLocalAnswers(guestSession.answers); }
+      const rawScale = getAdaptedScaleById(guestSession.scaleId, sexProfile) ?? getScaleById(guestSession.scaleId);
+      if (rawScale) {
+        const userGender = getOnboardingProfile()?.genre ?? 'homme';
+        setCurrentScale(resolveScaleGender(rawScale, userGender));
+        setLocalAnswers(guestSession.answers);
+      }
       setLoading(false);
       return;
     }
@@ -97,11 +104,12 @@ const AssessmentQuizPage: React.FC = () => {
         if (s.status === 'completed') { navigate(`/assessment/results/${sessionId}`, { replace: true }); return; }
         setSession(s);
         const sexProfile = getSexualHealthFilter()?.experienceProfile;
-        const scale = getAdaptedScaleById(s.selectedScaleIds[s.currentScaleIndex], sexProfile)
+        const rawScale = getAdaptedScaleById(s.selectedScaleIds[s.currentScaleIndex], sexProfile)
           ?? getScaleById(s.selectedScaleIds[s.currentScaleIndex]);
-        if (scale) {
-          setCurrentScale(scale);
-          setLocalAnswers(s.answers[scale.id] ?? {});
+        if (rawScale) {
+          const userGender = getOnboardingProfile()?.genre ?? 'homme';
+          setCurrentScale(resolveScaleGender(rawScale, userGender));
+          setLocalAnswers(s.answers[rawScale.id] ?? {});
         }
       })
       .catch(() => setError('Erreur lors du chargement de la session.'))
@@ -169,6 +177,10 @@ const AssessmentQuizPage: React.FC = () => {
           await finalizeSession(sessionId);
           if (session.userId) {
             try {
+              // Archive le résultat existant avant de sauvegarder le nouveau (si retake)
+              try {
+                await archiveCurrentResult(session.userId, currentScale.id, {});
+              } catch { /* Pas de résultat existant — premier passage */ }
               await saveScaleResultToProfile(session.userId, currentScale.id, scaleResult);
               const isMentalScale = MENTAL_HEALTH_SCALES.some(s => s.id === currentScale.id);
               if (isMentalScale) {
@@ -185,12 +197,13 @@ const AssessmentQuizPage: React.FC = () => {
           setTransitioning(true);
           setTimeout(() => {
             const nextScaleId = session.selectedScaleIds[nextScaleIndex];
-            const nextScale = getAdaptedScaleById(nextScaleId, getSexualHealthFilter()?.experienceProfile)
+            const rawNext = getAdaptedScaleById(nextScaleId, getSexualHealthFilter()?.experienceProfile)
               ?? getScaleById(nextScaleId);
-            if (nextScale) {
+            if (rawNext) {
+              const userGender = getOnboardingProfile()?.genre ?? 'homme';
               setSession({ ...session, currentScaleIndex: nextScaleIndex });
-              setCurrentScale(nextScale);
-              setLocalAnswers(session.answers[nextScale.id] ?? {});
+              setCurrentScale(resolveScaleGender(rawNext, userGender));
+              setLocalAnswers(session.answers[rawNext.id] ?? {});
               setCurrentItemIndex(0);
             }
             setTransitioning(false);

@@ -17,7 +17,7 @@ export const SCALE_META: Record<string, ScaleMeta> = {
   pg13:               { icon: '😢', label: 'Deuil & Pertes',                 description: 'Mesure comment tu traverses le deuil et les pertes importantes dans ta vie.' },
   ceca_q:             { icon: '👶', label: 'Carences affectives',            description: 'Explore les carences émotionnelles de l\'enfance et leur impact à l\'âge adulte.' },
   social_pressure:    { icon: '💍', label: 'Pression sociale & Mariage',    description: 'Évalue la pression familiale et sociale autour du mariage et des attentes relationnelles.' },
-  religious_cultural: { icon: '🕌', label: 'Impact religieux & Culturel',   description: 'Explore comment tes croyances et ta culture influencent ta santé mentale.' },
+  religious_cultural: { icon: '🕌', label: 'Impact religieux & Culturel',   description: 'Explore comment tes croyances et ta culture influencent ton profil psychologique.' },
   economic_stress:    { icon: '💸', label: 'Stress économique',              description: 'Mesure l\'impact du stress financier sur ton bien-être psychologique.' },
   nsss:               { icon: '❤️', label: 'Satisfaction sexuelle',          description: 'Évalue ta satisfaction globale dans ta vie intime et affective.' },
   sdi2:               { icon: '🔥', label: 'Désir sexuel',                   description: 'Mesure ton niveau de désir et ce qui l\'influence au quotidien.' },

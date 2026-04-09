@@ -53,7 +53,10 @@ import UserSupportTickets from "../../components/support/UserSupportTickets";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { Users } from "lucide-react";
-import { generateInvoicePDF, type InvoiceData } from "../../services/invoiceService";
+import {
+  generateInvoicePDF,
+  type InvoiceData,
+} from "../../services/invoiceService";
 
 async function convertImageUrlToBase64(url: string): Promise<string> {
   const response = await fetch(url);
@@ -104,7 +107,7 @@ const PatientDashboard: React.FC = () => {
   const [recordError, setRecordError] = useState<string | null>(null);
   const [showMedicalRecordModal, setShowMedicalRecordModal] = useState(false);
   const [selectedRecord, setSelectedRecord] = useState<MedicalRecord | null>(
-    null
+    null,
   );
   const [showEthicsReminder, setShowEthicsReminder] = useState(true);
   const [showSupport, setShowSupport] = useState(false);
@@ -134,7 +137,7 @@ const PatientDashboard: React.FC = () => {
     const q = query(
       collection(db, "patients", currentUser.id, "medicalRecords"),
       orderBy("consultationDate", "desc"),
-      limit(3)
+      limit(3),
     );
 
     const unsub = onSnapshot(
@@ -149,7 +152,7 @@ const PatientDashboard: React.FC = () => {
         console.error("❌ [DASHBOARD] Medical records error:", err);
         setRecordError("Impossible de charger vos dossiers médicaux.");
         setLoadingRecords(false);
-      }
+      },
     );
 
     return () => {
@@ -161,7 +164,7 @@ const PatientDashboard: React.FC = () => {
   // Check if ethics reminder should be shown
   useEffect(() => {
     const reminderDismissed = localStorage.getItem(
-      "health-e-ethics-reminder-dismissed"
+      "health-e-ethics-reminder-dismissed",
     );
     if (reminderDismissed) {
       setShowEthicsReminder(false);
@@ -238,7 +241,7 @@ const PatientDashboard: React.FC = () => {
       const q = query(
         collection(db, "patients", currentUser.id, "medicalRecords"),
         orderBy("consultationDate", "desc"),
-        limit(50)
+        limit(50),
       );
       const snap = await getDocs(q);
       const all = snap.docs.map((d) => ({
@@ -309,7 +312,7 @@ const PatientDashboard: React.FC = () => {
     } catch (e) {
       console.warn(
         "⚠️ [FONT DEBUG] Failed to load Inter fonts, using helvetica fallback:",
-        e
+        e,
       );
       _fontsLoaded = false;
     }
@@ -361,15 +364,14 @@ const PatientDashboard: React.FC = () => {
       // Essayer de récupérer le profil patient complet pour avoir la date de naissance
       let patientProfile = null;
       try {
-        const { getPatientProfile } = await import(
-          "../../services/profileService"
-        );
+        const { getPatientProfile } =
+          await import("../../services/profileService");
         patientProfile = await getPatientProfile(currentUser?.id || "");
         console.log("🔍 [PDF DEBUG] Profil patient récupéré:", patientProfile);
       } catch (e) {
         console.warn(
           "⚠️ [PDF DEBUG] Impossible de récupérer le profil patient:",
-          e
+          e,
         );
       }
 
@@ -398,7 +400,7 @@ const PatientDashboard: React.FC = () => {
       const proName = record.professionalName || "Professionnel";
       const proLines = [`Dr. ${proName}`, `Professionnel de santé`];
       proLines.forEach((t, i) =>
-        doc.text(t, page.w - page.margin - 40, y + 8 + i * 5)
+        doc.text(t, page.w - page.margin - 40, y + 8 + i * 5),
       );
 
       // trait
@@ -438,14 +440,14 @@ const PatientDashboard: React.FC = () => {
       doc.text(
         `Nom : ${currentUser?.name || "Patient"}`,
         page.margin + 5,
-        y + 14
+        y + 14,
       );
       doc.text(
         `Type de consultation : ${
           record.consultationType || "Vidéo"
         } • Consultation du ${dateFr}`,
         page.margin + 5,
-        y + 20
+        y + 20,
       );
 
       y += 30;
@@ -557,7 +559,7 @@ const PatientDashboard: React.FC = () => {
                 page.w - page.margin - 50,
                 signatureY + 7,
                 34,
-                34
+                34,
               );
             }
             if (record.signatureUrl) {
@@ -568,7 +570,7 @@ const PatientDashboard: React.FC = () => {
                 page.w - page.margin - 50,
                 signatureY + 32,
                 40,
-                15
+                15,
               );
             }
             doc.setFontSize(9);
@@ -576,7 +578,7 @@ const PatientDashboard: React.FC = () => {
             doc.text(
               "Document signé électroniquement conformément à la réglementation en vigueur.",
               page.margin + 2,
-              signatureY + 44
+              signatureY + 44,
             );
           } else {
             doc.setFontSize(9);
@@ -584,7 +586,7 @@ const PatientDashboard: React.FC = () => {
             doc.text(
               "Signature électronique non disponible",
               page.margin + 2,
-              signatureY + 16
+              signatureY + 16,
             );
           }
         } catch (e) {
@@ -593,7 +595,7 @@ const PatientDashboard: React.FC = () => {
           doc.text(
             "Signature électronique non disponible",
             page.margin + 2,
-            signatureY + 16
+            signatureY + 16,
           );
         }
 
@@ -610,7 +612,7 @@ const PatientDashboard: React.FC = () => {
             page.margin + 2,
             signatureY + 7,
             22,
-            22
+            22,
           );
           doc.setFontSize(8);
           doc.setTextColor(100, 100, 100);
@@ -632,7 +634,7 @@ const PatientDashboard: React.FC = () => {
     } catch (error) {
       console.error("❌ [PDF DEBUG] Error generating prescription:", error);
       alert(
-        "Erreur lors de la génération de l'ordonnance. Veuillez réessayer."
+        "Erreur lors de la génération de l'ordonnance. Veuillez réessayer.",
       );
     }
   };
@@ -684,7 +686,7 @@ const PatientDashboard: React.FC = () => {
       const proName = record.professionalName || "Professionnel";
       const proLines = [`Dr. ${proName}`, `Professionnel de santé`];
       proLines.forEach((t, i) =>
-        doc.text(t, page.w - page.margin - 40, y + 8 + i * 5)
+        doc.text(t, page.w - page.margin - 40, y + 8 + i * 5),
       );
 
       // trait
@@ -708,14 +710,13 @@ const PatientDashboard: React.FC = () => {
       // Récupérer la date de naissance du patient
       let patientProfile = null;
       try {
-        const { getPatientProfile } = await import(
-          "../../services/profileService"
-        );
+        const { getPatientProfile } =
+          await import("../../services/profileService");
         patientProfile = await getPatientProfile(currentUser?.id || "");
       } catch (e) {
         console.warn(
           "⚠️ [PDF DEBUG] Impossible de récupérer le profil patient:",
-          e
+          e,
         );
       }
 
@@ -738,7 +739,7 @@ const PatientDashboard: React.FC = () => {
             if (md < 0 || (md === 0 && today.getDate() < bd.getDate())) age--;
             ageTxt = ` (${age} ans)`;
             birthDateTxt = `Date de naissance : ${bd.toLocaleDateString(
-              "fr-FR"
+              "fr-FR",
             )}`;
           }
         } catch (e) {
@@ -846,7 +847,7 @@ const PatientDashboard: React.FC = () => {
           doc.text(
             record.nextAppointmentDate,
             page.margin + 5,
-            appointmentY + 10
+            appointmentY + 10,
           );
         }
 
@@ -875,7 +876,7 @@ const PatientDashboard: React.FC = () => {
                 page.w - page.margin - 50,
                 signatureY + 7,
                 34,
-                34
+                34,
               );
             }
             if (record.signatureUrl) {
@@ -886,7 +887,7 @@ const PatientDashboard: React.FC = () => {
                 page.w - page.margin - 50,
                 signatureY + 32,
                 40,
-                15
+                15,
               );
             }
             doc.setFontSize(9);
@@ -894,7 +895,7 @@ const PatientDashboard: React.FC = () => {
             doc.text(
               "Document signé électroniquement conformément à la réglementation en vigueur.",
               page.margin + 2,
-              signatureY + 44
+              signatureY + 44,
             );
           } else {
             doc.setFontSize(9);
@@ -902,7 +903,7 @@ const PatientDashboard: React.FC = () => {
             doc.text(
               "Signature électronique non disponible",
               page.margin + 2,
-              signatureY + 16
+              signatureY + 16,
             );
           }
         } catch (e) {
@@ -911,7 +912,7 @@ const PatientDashboard: React.FC = () => {
           doc.text(
             "Signature électronique non disponible",
             page.margin + 2,
-            signatureY + 16
+            signatureY + 16,
           );
         }
 
@@ -928,7 +929,7 @@ const PatientDashboard: React.FC = () => {
             page.margin + 2,
             signatureY + 7,
             22,
-            22
+            22,
           );
           doc.setFontSize(8);
           doc.setTextColor(100, 100, 100);
@@ -950,7 +951,7 @@ const PatientDashboard: React.FC = () => {
     } catch (error) {
       console.error("❌ [PDF DEBUG] Error generating recommendations:", error);
       alert(
-        "Erreur lors de la génération des recommandations. Veuillez réessayer."
+        "Erreur lors de la génération des recommandations. Veuillez réessayer.",
       );
     }
   };
@@ -1109,7 +1110,7 @@ const PatientDashboard: React.FC = () => {
       (booking.status === "en_attente" ||
         booking.status === "confirmé" ||
         booking.status === "confirmed") &&
-      !isDatePassed(booking.date)
+      !isDatePassed(booking.date),
   );
 
   const pastBookings = bookings.filter(
@@ -1117,7 +1118,7 @@ const PatientDashboard: React.FC = () => {
       booking.status === "terminé" ||
       booking.status === "completed" ||
       booking.status === "annulé" ||
-      isDatePassed(booking.date)
+      isDatePassed(booking.date),
   );
 
   const displayedBookings =
@@ -1219,7 +1220,7 @@ const PatientDashboard: React.FC = () => {
                     </div>
                     <div>
                       <span className="font-semibold text-gray-900">
-                        Consulter en santé mentale
+                        Consulter en profil psychologique
                       </span>
                       <p className="text-sm text-gray-600 mt-1">
                         Psychologues et psychiatres
@@ -1237,7 +1238,7 @@ const PatientDashboard: React.FC = () => {
                     </div>
                     <div>
                       <span className="font-semibold text-gray-900">
-                        Consulter en santé sexuelle
+                        Consulter en vie intime
                       </span>
                       <p className="text-sm text-gray-600 mt-1">
                         Gynécologues et sexologues
@@ -1284,7 +1285,7 @@ const PatientDashboard: React.FC = () => {
                       ? format(
                           new Date(session.date + "T00:00:00"),
                           "EEEE d MMMM yyyy",
-                          { locale: fr }
+                          { locale: fr },
                         )
                       : "";
                     const isFree = session.price === 0;
@@ -1442,7 +1443,7 @@ const PatientDashboard: React.FC = () => {
                           <span className="text-sm font-medium">
                             {formatDateTimeWithTimezone(
                               booking.date,
-                              booking.startTime
+                              booking.startTime,
                             )}
                           </span>
                         </div>
@@ -1462,7 +1463,7 @@ const PatientDashboard: React.FC = () => {
                                   booking.status === "confirmé" ||
                                   booking.status === "confirmed")
                                 ? "completed"
-                                : booking.status
+                                : booking.status,
                             )}`}
                           >
                             {getStatusLabel(
@@ -1473,7 +1474,7 @@ const PatientDashboard: React.FC = () => {
                                   booking.status === "confirmé" ||
                                   booking.status === "confirmed")
                                 ? "completed"
-                                : booking.status
+                                : booking.status,
                             )}
                           </span>
                         </div>
@@ -1630,8 +1631,8 @@ const PatientDashboard: React.FC = () => {
                                     record.consultationDate
                                       ? new Date(record.consultationDate)
                                       : record.createdAt?.toDate
-                                      ? record.createdAt.toDate()
-                                      : new Date()
+                                        ? record.createdAt.toDate()
+                                        : new Date(),
                                   )}
                                 </span>
                                 <span className="ml-3 px-2 py-0.5 bg-blue-100 text-blue-800 text-xs rounded-full font-medium">
@@ -1984,7 +1985,7 @@ const PatientDashboard: React.FC = () => {
                                   .catch((error) => {
                                     console.error("Retry failed:", error);
                                     setRecordError(
-                                      "Échec de la nouvelle tentative. Vérifiez votre connexion."
+                                      "Échec de la nouvelle tentative. Vérifiez votre connexion.",
                                     );
                                   })
                                   .finally(() => setLoadingRecords(false));

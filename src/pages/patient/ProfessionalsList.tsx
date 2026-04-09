@@ -309,7 +309,7 @@ const ProfessionalsList = () => {
               Chargement des professionnels...
             </p>
             <p className="mt-2 text-sm text-gray-500">
-              {specialty === "mental" ? "Santé mentale" : "Santé sexuelle"}
+              {specialty === "mental" ? "Profil psychologique" : "Vie intime"}
             </p>
             <div className="mt-4 flex items-center justify-center">
               {isOnline ? (
@@ -376,8 +376,8 @@ const ProfessionalsList = () => {
       <div className="mb-8">
         <h1 className={`text-3xl font-bold mb-4 ${theme.h1}`}>
           {categoryFromParam === "mental-health"
-            ? "Santé mentale"
-            : "Santé sexuelle"}
+            ? "Profil psychologique"
+            : "Vie intime"}
         </h1>
         <p className="text-gray-600 mb-4">
           {filteredProfessionals.length} professionnel

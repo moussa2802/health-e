@@ -1,3 +1,144 @@
+const SYSTEM_PROMPT = `Tu es Dr Lô, un médecin qui accompagne les utilisateurs sur leur profil psychologique et leur vie intime.
+
+Tu t’adresses à des jeunes adultes africains (Sénégal et diaspora).
+
+Ton ton doit toujours être :
+
+* bienveillant
+* simple
+* rassurant
+* professionnel mais accessible
+
+Tu parles comme un médecin proche, jamais comme un robot.
+
+Règles :
+
+* Ne jamais poser de diagnostic médical
+* Ne jamais utiliser de jargon complexe
+* Ne jamais être alarmant
+* Toujours normaliser (ex : "c’est fréquent", "beaucoup de personnes vivent cela")
+* Donner 1 à 2 conseils simples
+* Finir par une phrase encourageante
+* RÈGLE ABSOLUE SUR LES SCORES : Utilise TOUJOURS les scores dans leur format original (score/scoreMax). NE JAMAIS normaliser sur /100 sauf si le test est réellement noté sur 100. Exemples : "ton score de 40/50 au Big Five", "ton score de 12/27 au PHQ-9".
+
+Limiter à 120-150 mots maximum. NE JAMAIS dépasser 160 mots.
+
+La réponse NE DOIT PAS être un paragraphe long.
+
+Tu dois structurer la réponse avec des sections claires utilisant ces titres exacts :
+
+👋 [Salutation personnalisée avec le prénom]
+
+👁️ Ce que je vois
+[2-3 phrases sur les résultats observés]
+
+💪 Tes points forts
+• [point positif 1]
+• [point positif 2]
+
+⚠️ Ce qu’on doit surveiller
+• [point d’attention — jamais alarmiste]
+
+💡 Mes conseils
+• [conseil concret 1]
+• [conseil concret 2]
+
+🏥 Si ça persiste
+[Orientation professionnelle courte si score élevé]
+
+[Conclusion chaleureuse]
+
+— Dr Lô 🩺
+
+Signer obligatoirement "— Dr Lô 🩺" à la fin.`
+
+const FALLBACK_MESSAGE = `Salut 👋🏾
+J’ai regardé tes résultats.
+Tu sembles traverser une période un peu délicate, mais rien d’inhabituel.
+On peut améliorer ça progressivement. 🤝🏾`
+
+function averageScore(items) {
+  const scores = items
+    .map((item) => item.totalScore ?? item.score)
+    .filter((v) => typeof v === 'number' && !Number.isNaN(v))
+  if (scores.length === 0) return null
+  const avg = scores.reduce((sum, v) => sum + v, 0) / scores.length
+  return Math.round(avg)
+}
+
+function prepareStructuredAnalysis(items, bonusItems, bloc) {
+  const type = bloc === 'sexual' ? 'intime' : 'psychologique'
+  const score = averageScore(items)
+  const concerns = items
+    .filter((item) => (item.alertLevel ?? 0) >= 2)
+    .map((item) => `${item.scaleName ?? item.nom ?? 'Évaluation'} : ${item.label ?? item.niveau ?? 'N/A'}`)
+    .slice(0, 3)
+  const strengths = items
+    .filter((item) => (item.alertLevel ?? 0) <= 1)
+    .map((item) => `${item.scaleName ?? item.nom ?? 'Évaluation'} : ${item.label ?? item.niveau ?? 'N/A'}`)
+    .slice(0, 3)
+
+  const label = concerns.length > 0 ? 'Points à surveiller' : 'Profil global plutôt stable'
+
+  const bonusSummary = bonusItems
+    .map((item) => `${item.nom ?? item.scaleName ?? 'Bonus'} : ${item.niveau ?? item.label ?? 'N/A'}`)
+    .slice(0, 4)
+
+  const bonusHints = []
+  if (bonusItems.some((item) => /hypersensibil/i.test(String(item.nom ?? '')))) {
+    bonusHints.push('Hypersensibilité détectée : possible sensibilité émotionnelle plus marquée.')
+  }
+  if (bonusItems.some((item) => /personnalit/i.test(String(item.nom ?? '')))) {
+    bonusHints.push('Traits de personnalité détectés : possible influence sur tes relations ou comportements.')
+  }
+
+  return {
+    score,
+    label,
+    strengths,
+    concerns,
+    type,
+    bonusSummary,
+    bonusHints
+  }
+}
+
+function formatStructuredText(structured, items) {
+  const strengthsLine = structured.strengths.length > 0 ? structured.strengths.join(' | ') : 'À construire'
+  const concernsLine = structured.concerns.length > 0 ? structured.concerns.join(' | ') : 'Aucun signal majeur'
+  const bonusLine = structured.bonusSummary.length > 0 ? structured.bonusSummary.join(' | ') : 'Aucun'
+  const bonusHintsLine = structured.bonusHints.length > 0 ? structured.bonusHints.join(' ') : 'Aucun signal bonus notable.'
+
+  // Format each item with its real score/max
+  const detailLines = items.map((item) => {
+    const name = item.scaleName ?? item.nom ?? 'Évaluation'
+    const score = item.totalScore ?? item.score ?? '?'
+    const max = item.scoreMax ?? '?'
+    const label = item.label ?? item.niveau ?? 'N/A'
+    return `  - ${name} : ${score}/${max} (${label})`
+  })
+
+  return [
+    'Analyse du profil :',
+    '',
+    'Détail des scores :',
+    ...detailLines,
+    '',
+    `Niveau global : ${structured.label}`,
+    `Points forts : ${strengthsLine}`,
+    `Points à surveiller : ${concernsLine}`,
+    `Tests bonus : ${bonusLine}`,
+    `Notes bonus : ${bonusHintsLine}`,
+    '',
+    `Type : ${structured.type}`
+  ].join('\n')
+}
+
+function isTooLong(text) {
+  const words = text.trim().split(/\s+/).filter(Boolean)
+  return words.length > 160
+}
+
 exports.handler = async (event) => {
 
   const headers = {
@@ -40,7 +181,8 @@ exports.handler = async (event) => {
     nombre_items_faits = 0,
     nombre_items_total = 24,
     bloc = 'mental',
-    bonus_completes = []
+    bonus_completes = [],
+    experience_profile = null
   } = payload
 
   if (!items_completes || items_completes.length === 0) {
@@ -51,51 +193,40 @@ exports.handler = async (event) => {
     }
   }
 
-  const itemsText = items_completes.map(item => {
-    const score = item.totalScore ?? item.score ?? ''
-    const label = item.label ?? item.niveau ?? ''
-    const nom = item.scaleName ?? item.nom ?? ''
-    const alerte = (item.alertLevel > 1) ? '⚠️ ALERTE' : ''
-    return `- ${nom} : ${label} (score ${score}) ${alerte}`
-  }).join('\n')
+  const structured = prepareStructuredAnalysis(items_completes, bonus_completes, bloc)
+  const structuredText = formatStructuredText(structured, items_completes)
 
-  const bonusText = bonus_completes.length > 0
-    ? `\nTests bonus complétés par ${prenom} :\n${bonus_completes.map(t => `- ${t.nom} : ${t.niveau} (score ${t.score})`).join('\n')}\n\nIntègre ces résultats naturellement dans ton analyse si pertinent. Ne les liste pas mécaniquement — fais des liens avec les résultats principaux quand c'est cohérent.`
-    : ''
+  let typeInstruction = bloc === 'sexual'
+    ? 'Parle uniquement de la vie intime.'
+    : 'Parle uniquement du profil psychologique.'
 
-  const prompt = bloc === 'sexual'
-    ? `Tu es le Dr Lo, médecin IA spécialisé en santé sexuelle sur la plateforme Health-e, sensible au contexte africain francophone.
-RÈGLE ABSOLUE : tu parles EXCLUSIVEMENT de santé sexuelle dans ce message. Ne mentionne JAMAIS l'anxiété, la dépression, l'humeur, le stress, la résilience, la santé mentale ou émotionnelle. Ces sujets n'existent pas dans ce message.
-Tu tutoies toujours. Maximum 6 phrases. Tu signes "— Dr Lo 🩺". Tu ne poses jamais de diagnostic explicite. Ton ton est chaleureux, bienveillant, sans jugement.
-${genre ? `Genre : ${genre}.` : ''} ${age ? `Âge : ${age}.` : ''} ${situation_relationnelle ? `Situation : ${situation_relationnelle}.` : ''}
+  if (bloc === 'sexual' && experience_profile) {
+    if (experience_profile === 'no_experience') {
+      typeInstruction += " Cette personne n'a pas encore de vie sexuelle active. Ne mentionne jamais l'absence de vie sexuelle comme un problème ou quelque chose à corriger. Adapte ton analyse à son désir, ses attirances et son identité intime."
+    } else if (experience_profile === 'partial_experience') {
+      typeInstruction += " Cette personne a une expérience intime partielle. Adapte ton analyse à cette réalité sans supposer une vie sexuelle complète avec partenaire."
+    } else if (experience_profile === 'prefer_not_answer') {
+      typeInstruction += " Cette personne préfère ne pas préciser son expérience intime. Reste général, bienveillant et respectueux. Ne fais pas de suppositions."
+    }
+  }
 
-${prenom} a complété ${nombre_items_faits} évaluation(s) de santé sexuelle :
-${itemsText}
-${bonusText}
-Génère une synthèse qui :
-1. Commence par une accroche personnalisée avec le prénom
-2. Fait une lecture croisée des résultats de santé sexuelle uniquement (désir, satisfaction, fonctionnement, identité sexuelle)
-3. Identifie 1-2 points forts sur le plan sexuel
-4. Mentionne 1 zone d'attention si applicable
-5. Si alerte : oriente vers professionnel avec douceur
-6. Donne envie de continuer les évaluations
-7. Signe avec "— Dr Lo 🩺"`
-    : `Tu es le Dr Lo, médecin IA spécialisé en santé mentale sur la plateforme Health-e, sensible au contexte africain francophone.
-RÈGLE ABSOLUE : tu parles EXCLUSIVEMENT de santé mentale et émotionnelle dans ce message. Ne mentionne JAMAIS la vie sexuelle, l'intimité, le désir, la satisfaction sexuelle ou tout sujet d'ordre sexuel. Ces sujets n'existent pas dans ce message.
-Tu tutoies toujours. Maximum 6 phrases. Tu signes "— Dr Lo 🩺". Tu ne poses jamais de diagnostic explicite. Ton ton est chaleureux, bienveillant.
-${genre ? `Genre : ${genre}.` : ''} ${age ? `Âge : ${age}.` : ''} ${situation_relationnelle ? `Situation : ${situation_relationnelle}.` : ''}
-
-${prenom} a complété ${nombre_items_faits} évaluation(s) de santé mentale :
-${itemsText}
-${bonusText}
-Génère une synthèse qui :
-1. Commence par une accroche personnalisée avec le prénom
-2. Fait une lecture croisée des résultats de santé mentale uniquement (anxiété, humeur, personnalité, attachement, estime de soi, résilience)
-3. Identifie 1-2 points forts psychologiques
-4. Mentionne 1 zone d'attention si applicable
-5. Si alerte : oriente vers professionnel avec douceur
-6. Donne envie de continuer les évaluations
-7. Signe avec "— Dr Lo 🩺"`
+  const genderInstruction = genre === 'Femme' || genre === 'femme'
+    ? 'Tu parles à une femme. Accorde TOUS tes adjectifs et participes au féminin (ex: "Tu es satisfaite", "tu te sens seule"). Ne jamais utiliser de parenthèses (e) — accorder directement.'
+    : 'Tu parles à un homme. Accorde TOUS tes adjectifs et participes au masculin (ex: "Tu es satisfait", "tu te sens seul"). Ne jamais utiliser de parenthèses (e) — accorder directement.'
+  const system = `${SYSTEM_PROMPT}\n\n${typeInstruction}\n\n${genderInstruction}`
+  const bonusPrompt = bonus_completes.length > 0
+    ? `Prends en compte les éléments suivants issus des tests bonus : ${bonus_completes.map((t) => `${t.nom ?? 'Bonus'} : ${t.niveau ?? 'N/A'}`).join(' | ')}`
+    : 'Aucun test bonus disponible.'
+  const messageContent = [
+    `Prénom : ${prenom}.`,
+    genre ? `Genre : ${genre}.` : null,
+    age ? `Âge : ${age}.` : null,
+    situation_relationnelle ? `Situation : ${situation_relationnelle}.` : null,
+    '',
+    structuredText,
+    '',
+    bonusPrompt
+  ].filter(Boolean).join('\n')
 
   const ANTHROPIC_API_KEY = process.env.ANTHROPIC_KEY
 
@@ -119,10 +250,11 @@ Génère une synthèse qui :
         },
         body: JSON.stringify({
           model: 'claude-sonnet-4-20250514',
-          max_tokens: 600,
+          max_tokens: 350,
+          system,
           messages: [{
             role: 'user',
-            content: prompt
+            content: messageContent
           }]
         })
       }
@@ -142,12 +274,13 @@ Génère une synthèse qui :
     }
 
     const data = await response.json()
-    const analysis = data.content[0].text
+    const analysis = data?.content?.[0]?.text ?? ''
+    const finalText = (!analysis || isTooLong(analysis)) ? FALLBACK_MESSAGE : analysis
 
     return {
       statusCode: 200,
       headers,
-      body: JSON.stringify({ analysis })
+      body: JSON.stringify({ analysis: finalText })
     }
 
   } catch (e) {

@@ -139,7 +139,7 @@ const AssessmentSelectPage: React.FC = () => {
               <Brain size={18} className="text-sky-600" />
             </div>
             <div>
-              <h2 className="text-lg font-bold text-gray-900">Santé mentale</h2>
+              <h2 className="text-lg font-bold text-gray-900">Profil psychologique</h2>
               <p className="text-xs text-gray-500">{MENTAL_HEALTH_SCALES.length} évaluations disponibles</p>
             </div>
           </div>
@@ -163,7 +163,7 @@ const AssessmentSelectPage: React.FC = () => {
               <Heart size={18} className="text-violet-600" />
             </div>
             <div>
-              <h2 className="text-lg font-bold text-gray-900">Santé sexuelle</h2>
+              <h2 className="text-lg font-bold text-gray-900">Vie intime</h2>
               <p className="text-xs text-gray-500">{SEXUAL_HEALTH_SCALES.length} évaluations · espace privé et confidentiel</p>
             </div>
           </div>

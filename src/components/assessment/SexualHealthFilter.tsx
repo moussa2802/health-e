@@ -153,7 +153,7 @@ const SexualHealthFilterWizard: React.FC<Props> = ({ onComplete }) => {
               </div>
               <div>
                 <p style={{ margin: 0, fontSize: 11, fontWeight: 700, color: '#EC4899', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                  Santé sexuelle — Étape {currentVisible + 1}/{totalVisibleSteps}
+                  Vie intime — Étape {currentVisible + 1}/{totalVisibleSteps}
                 </p>
                 <h2 style={{ margin: 0, fontSize: 17, fontWeight: 800, color: '#0A2342', whiteSpace: 'pre-line' }}>
                   {getTitle()}

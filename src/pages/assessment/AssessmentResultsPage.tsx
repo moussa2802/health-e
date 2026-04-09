@@ -2,14 +2,22 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, useSearchParams, Link } from 'react-router-dom';
 import {
   AlertTriangle, CheckCircle, ArrowRight, Loader2, ChevronRight,
-  Phone, Heart, ShieldAlert,
+  Phone, Heart, ShieldAlert, RefreshCw, Trash2, Clock,
 } from 'lucide-react';
 import { getSession, getProfileProgress } from '../../services/evaluationService';
 import { useAuth } from '../../contexts/AuthContext';
 import { getGuestSession, guestToUserSession, getGuestCount, GUEST_MAX_TESTS } from '../../utils/guestSession';
 import { getScaleById } from '../../data/scales';
+import { resolveScaleGender } from '../../utils/gender';
+import { getOnboardingProfile } from '../../utils/onboardingProfile';
 import type { UserAssessmentSession, ScaleResult, TriggeredAlert } from '../../types/assessment';
+import { getJournalPrompt, savePendingPrompt } from '../../utils/journalPrompts';
+import { archiveCurrentResult, getTestHistory, deleteTestResult, deleteSpecificHistoryEntry, getAnswersFromSession } from '../../services/testManagementService';
+import type { ScaleResultHistoryEntry } from '../../services/testManagementService';
+import TestHistoryPanel from '../../components/assessment/TestHistoryPanel';
+import { createSession } from '../../services/evaluationService';
 import ScoreGauge from '../../components/assessment/ScoreGauge';
+import ConseilsCard from '../../components/assessment/ConseilsCard';
 
 // ── Severity helpers ─────────────────────────────────────────────────────────
 
@@ -202,7 +210,7 @@ const AlertLevel2Block: React.FC<{ message?: string }> = ({ message }) => (
           Consultation professionnelle recommandée
         </p>
         <p style={{ margin: '0 0 10px', fontSize: 13, color: '#C2410C', lineHeight: 1.5 }}>
-          {message ?? 'Tes résultats indiquent des symptômes qui méritent l\'attention d\'un professionnel de santé mentale.'}
+          {message ?? 'Ce que tu ressens mérite l\'attention d\'un professionnel de profil psychologique.'}
         </p>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
           {EMERGENCY_CONTACTS.slice(0, 2).map(c => c.number && (
@@ -291,11 +299,18 @@ const AssessmentResultsPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [criticalAlertDismissed, setCriticalAlertDismissed] = useState(false);
+  const journalPromptSavedRef = useRef(false);
 
   // ── Dr Lo analysis polling ──
   const [drLoNarrative, setDrLoNarrative] = useState<string | null>(null);
   const [drLoLoading, setDrLoLoading] = useState(false);
   const drLoPollingRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const [history, setHistory] = useState<ScaleResultHistoryEntry[]>([]);
+  const [showHistory, setShowHistory] = useState(false);
+  const [retaking, setRetaking] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const guestCount = isGuestMode ? getGuestCount() : 0;
   const isLastFreeTest = isGuestMode && guestCount >= GUEST_MAX_TESTS;
@@ -334,9 +349,14 @@ const AssessmentResultsPage: React.FC = () => {
 
     const isMentalScale = completedScale?.category === 'mental_health';
 
+    // Timestamp du début de session pour détecter les analyses obsolètes
+    const sessionStartedAt = session.startedAt instanceof Date
+      ? session.startedAt
+      : new Date(session.startedAt as unknown as string);
+
     setDrLoLoading(true);
     let attempts = 0;
-    const MAX_ATTEMPTS = 8;
+    const MAX_ATTEMPTS = 12;
 
     const poll = async () => {
       attempts++;
@@ -345,7 +365,12 @@ const AssessmentResultsPage: React.FC = () => {
         const analysis = isMentalScale
           ? progress.drLoMentalAnalysis
           : progress.drLoSexualAnalysis;
-        if (analysis) {
+        const updatedAt = isMentalScale
+          ? progress.drLoMentalUpdatedAt
+          : progress.drLoSexualUpdatedAt;
+
+        // Only accept the analysis if it's newer than the current session
+        if (analysis && updatedAt && updatedAt >= sessionStartedAt) {
           setDrLoNarrative(analysis);
           setDrLoLoading(false);
           return;
@@ -362,6 +387,77 @@ const AssessmentResultsPage: React.FC = () => {
     poll();
     return () => { if (drLoPollingRef.current) clearTimeout(drLoPollingRef.current); };
   }, [session, isGuestMode, isAuthenticated, currentUser]);
+
+  // ── Save journal prompt once after result loads ──
+  useEffect(() => {
+    if (!session || !currentUser || isGuestMode || journalPromptSavedRef.current) return;
+    journalPromptSavedRef.current = true;
+
+    const sid = session.selectedScaleIds[0];
+    const res = session.scores[sid];
+    if (!res) return;
+
+    const onboarding = getOnboardingProfile();
+    const prompt = getJournalPrompt(
+      sid,
+      res.totalScore,
+      res.interpretation.label,
+      res.subscaleScores,
+      onboarding?.genre
+    );
+    if (prompt && sessionId) {
+      savePendingPrompt(currentUser.id, sessionId, sid, prompt).catch(() => {});
+    }
+  }, [session, currentUser, isGuestMode, sessionId]);
+
+  // ── Load test history ──
+  useEffect(() => {
+    if (isGuestMode || !isAuthenticated || !currentUser || !session) return;
+    const sid = session.selectedScaleIds[0];
+    getTestHistory(currentUser.id, sid)
+      .then(h => setHistory(h))
+      .catch(() => {});
+  }, [session, isGuestMode, isAuthenticated, currentUser]);
+
+  const handleRetake = async () => {
+    if (!currentUser || !session || !scale || isGuestMode) return;
+    setRetaking(true);
+    try {
+      const sid = session.selectedScaleIds[0];
+      // Get answers from current session to archive them
+      const answers = await getAnswersFromSession(session.id, sid);
+      await archiveCurrentResult(currentUser.id, sid, answers ?? {});
+      // Create new session for the same scale
+      const newSession = await createSession(currentUser.id, [sid]);
+      navigate(`/assessment/quiz/${newSession.id}`);
+    } catch (err) {
+      console.error('Retake error:', err);
+      setRetaking(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!currentUser || !session || isGuestMode) return;
+    setDeleting(true);
+    try {
+      const sid = session.selectedScaleIds[0];
+      await deleteTestResult(currentUser.id, sid);
+      navigate('/assessment');
+    } catch (err) {
+      console.error('Delete error:', err);
+      setDeleting(false);
+    }
+  };
+
+  const handleDeleteHistoryEntry = async (entryId: string) => {
+    if (!currentUser) return;
+    try {
+      await deleteSpecificHistoryEntry(currentUser.id, entryId);
+      setHistory(prev => prev.filter(h => h.id !== entryId));
+    } catch (err) {
+      console.error('Delete history entry error:', err);
+    }
+  };
 
   // ── Loading ──
 
@@ -398,7 +494,9 @@ const AssessmentResultsPage: React.FC = () => {
 
   const scaleId = session.selectedScaleIds[0];
   const result: ScaleResult | undefined = session.scores[scaleId];
-  const scale = getScaleById(scaleId);
+  const rawScale = getScaleById(scaleId);
+  const userGender = getOnboardingProfile()?.genre ?? 'homme';
+  const scale = rawScale ? resolveScaleGender(rawScale, userGender) : null;
 
   if (!result || !scale) {
     return (
@@ -418,8 +516,16 @@ const AssessmentResultsPage: React.FC = () => {
     );
   }
 
-  const severity = result.interpretation.severity;
-  const categoryLabel = scale.category === 'mental_health' ? 'Santé mentale' : 'Santé sexuelle';
+  // Resolve gender placeholders in the stored interpretation
+  const rg = (t: string) => t.replace(/\{\{([^|]+)\|([^}]+)\}\}/g, (_, m, f) => userGender === 'homme' ? m : f);
+  const resolvedInterp = {
+    ...result.interpretation,
+    label: rg(result.interpretation.label),
+    description: rg(result.interpretation.description),
+    recommendation: rg(result.interpretation.recommendation),
+  };
+  const severity = resolvedInterp.severity;
+  const categoryLabel = scale.category === 'mental_health' ? 'Profil psychologique' : 'Vie intime';
   const bgCard = severityBg[severity] ?? severityBg.mild;
   const badge  = severityBadge[severity] ?? severityBadge.mild;
   const icon   = severityIcon[severity] ?? severityIcon.mild;
@@ -458,7 +564,7 @@ const AssessmentResultsPage: React.FC = () => {
             <div className="flex items-center justify-center mb-5">
               <span className={`inline-flex items-center gap-1.5 text-sm font-semibold px-3 py-1.5 rounded-full border ${badge}`}>
                 {icon}
-                {result.interpretation.label}
+                {resolvedInterp.label}
               </span>
             </div>
 
@@ -478,17 +584,17 @@ const AssessmentResultsPage: React.FC = () => {
                 min={scale.scoreRange.min}
                 max={scale.scoreRange.max}
                 severity={severity}
-                label={result.interpretation.label}
+                label={resolvedInterp.label}
               />
             </div>
 
             <p className="text-sm text-gray-700 leading-relaxed text-center mb-3">
-              {result.interpretation.description}
+              {resolvedInterp.description}
             </p>
 
-            {result.interpretation.recommendation && (
+            {resolvedInterp.recommendation && (
               <p className="text-xs text-gray-500 italic text-center border-t border-black/10 pt-3">
-                {result.interpretation.recommendation}
+                {resolvedInterp.recommendation}
               </p>
             )}
           </div>
@@ -508,7 +614,7 @@ const AssessmentResultsPage: React.FC = () => {
           {alertLevel === 1 && <AlertLevel1Block />}
 
           {/* ── Ancienne alerte consultation (fallback si pas d'alertLevel) ── */}
-          {result.interpretation.referralRequired && alertLevel === 0 && (
+          {resolvedInterp.referralRequired && alertLevel === 0 && (
             <div className="flex items-start gap-3 bg-orange-50 border border-orange-300 rounded-2xl p-4">
               <AlertTriangle size={18} className="text-orange-600 flex-shrink-0 mt-0.5" />
               <div>
@@ -621,6 +727,25 @@ const AssessmentResultsPage: React.FC = () => {
             </div>
           )}
 
+          {/* ── Conseils personnalisés Dr Lô ── */}
+          {!isGuestMode && isAuthenticated && currentUser && scale?.category !== 'bonus' && (() => {
+            const onboarding = getOnboardingProfile();
+            return (
+              <ConseilsCard
+                userId={currentUser.id}
+                scaleId={scale.id}
+                scaleName={scale.name}
+                score={result.totalScore}
+                scoreMax={scale.scoreRange.max}
+                niveau={resolvedInterp.label}
+                severity={resolvedInterp.severity}
+                prenom={onboarding?.prenom ?? undefined}
+                genre={onboarding?.genre ?? undefined}
+                interpretation={resolvedInterp.description}
+              />
+            );
+          })()}
+
           {/* ── Bannière inscription (mode invité) ── */}
           {isGuestMode && (
             <div
@@ -674,7 +799,121 @@ const AssessmentResultsPage: React.FC = () => {
             </div>
           )}
 
-          {/* ── Boutons d'action ── */}
+          {/* ── Boutons Refaire / Supprimer (utilisateurs connectés) ── */}
+          {!isGuestMode && isAuthenticated && (
+            <div style={{
+              display: 'flex', gap: 10, flexWrap: 'wrap',
+            }}>
+              <button
+                onClick={handleRetake}
+                disabled={retaking}
+                style={{
+                  flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                  background: 'linear-gradient(135deg, #3B82F6, #2DD4BF)',
+                  color: 'white', border: 'none', borderRadius: 12,
+                  padding: '12px 18px', fontSize: 14, fontWeight: 700,
+                  cursor: retaking ? 'not-allowed' : 'pointer',
+                  opacity: retaking ? 0.6 : 1,
+                }}
+              >
+                <RefreshCw size={16} />
+                {retaking ? 'Préparation…' : 'Refaire ce test'}
+              </button>
+              <button
+                onClick={() => setShowDeleteConfirm(true)}
+                disabled={deleting}
+                style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                  background: 'white', border: '1.5px solid #FCA5A5',
+                  borderRadius: 12, padding: '12px 16px', fontSize: 13, fontWeight: 600,
+                  color: '#DC2626', cursor: deleting ? 'not-allowed' : 'pointer',
+                  opacity: deleting ? 0.6 : 1,
+                }}
+              >
+                <Trash2 size={14} />
+                Supprimer
+              </button>
+            </div>
+          )}
+
+          {/* ── Confirmation suppression ── */}
+          {showDeleteConfirm && (
+            <div style={{
+              background: '#FEF2F2', border: '1.5px solid #FCA5A5',
+              borderRadius: 14, padding: 16,
+            }}>
+              <p style={{ margin: '0 0 10px', fontSize: 14, fontWeight: 700, color: '#991B1B' }}>
+                Supprimer ce résultat ?
+              </p>
+              <p style={{ margin: '0 0 14px', fontSize: 13, color: '#B91C1C', lineHeight: 1.5 }}>
+                Le test redeviendra "à faire" et tout l'historique sera supprimé. Cette action est irréversible.
+              </p>
+              <div style={{ display: 'flex', gap: 10 }}>
+                <button
+                  onClick={() => setShowDeleteConfirm(false)}
+                  style={{
+                    flex: 1, background: 'white', border: '1px solid #E5E7EB',
+                    borderRadius: 10, padding: '10px 14px', fontSize: 13,
+                    fontWeight: 600, color: '#374151', cursor: 'pointer',
+                  }}
+                >
+                  Annuler
+                </button>
+                <button
+                  onClick={handleDelete}
+                  disabled={deleting}
+                  style={{
+                    flex: 1, background: '#DC2626', border: 'none',
+                    borderRadius: 10, padding: '10px 14px', fontSize: 13,
+                    fontWeight: 700, color: 'white',
+                    cursor: deleting ? 'not-allowed' : 'pointer',
+                    opacity: deleting ? 0.6 : 1,
+                  }}
+                >
+                  {deleting ? 'Suppression…' : 'Confirmer la suppression'}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* ── Historique des tentatives ── */}
+          {!isGuestMode && history.length > 0 && scale && (
+            <>
+              <button
+                onClick={() => setShowHistory(!showHistory)}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 8, width: '100%',
+                  background: 'white', border: '1px solid #E5E7EB',
+                  borderRadius: 12, padding: '12px 16px', fontSize: 13,
+                  fontWeight: 600, color: '#475569', cursor: 'pointer',
+                }}
+              >
+                <Clock size={15} />
+                {showHistory ? 'Masquer l\'historique' : `Voir l'historique (${history.length} passage${history.length > 1 ? 's' : ''} précédent${history.length > 1 ? 's' : ''})`}
+              </button>
+              {showHistory && (
+                <TestHistoryPanel
+                  scaleId={scale.id}
+                  scaleName={scale.name}
+                  scoreMax={scale.scoreRange.max}
+                  currentScore={result.totalScore}
+                  currentLabel={resolvedInterp.label}
+                  currentSeverity={resolvedInterp.severity}
+                  currentDate={result.completedAt}
+                  history={history.map(h => ({
+                    id: h.id,
+                    attemptNumber: h.attemptNumber,
+                    totalScore: h.totalScore,
+                    interpretation: { label: h.interpretation.label, severity: h.interpretation.severity },
+                    completedAt: h.completedAt,
+                  }))}
+                  onDeleteEntry={handleDeleteHistoryEntry}
+                />
+              )}
+            </>
+          )}
+
+          {/* ── Boutons de navigation ── */}
           <div className="flex flex-col sm:flex-row gap-3 pt-1">
             {!isGuestMode && (
               <button
@@ -692,6 +931,30 @@ const AssessmentResultsPage: React.FC = () => {
               {isGuestMode ? 'Faire une autre évaluation' : 'Autre évaluation'}
             </button>
           </div>
+
+          {/* ── Lien Mon Espace (si prompt déclenché) ── */}
+          {!isGuestMode && isAuthenticated && (
+            <button
+              onClick={() => navigate('/mon-espace')}
+              style={{
+                width: '100%', padding: '14px 18px', borderRadius: 14, border: 'none',
+                background: 'linear-gradient(135deg,#065F46 0%,#1D4ED8 100%)',
+                color: '#fff', cursor: 'pointer', textAlign: 'left',
+                display: 'flex', alignItems: 'center', gap: 12,
+              }}
+            >
+              <span style={{ fontSize: 22 }}>📔</span>
+              <div style={{ flex: 1 }}>
+                <p style={{ margin: 0, fontSize: 13, fontWeight: 700 }}>
+                  En parler dans Mon Espace
+                </p>
+                <p style={{ margin: '2px 0 0', fontSize: 11, color: 'rgba(255,255,255,0.8)' }}>
+                  Dr Lo t'a préparé une invitation dans ton journal
+                </p>
+              </div>
+              <span style={{ fontSize: 16, opacity: 0.8 }}>→</span>
+            </button>
+          )}
 
           {/* ── Disclaimer ── */}
           <p className="text-xs text-gray-400 text-center leading-relaxed pb-4">

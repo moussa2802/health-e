@@ -103,7 +103,7 @@ export function computeScaleScore(
 
   const opts = scale.items[0]?.options ?? [];
   const maxPerItem = Math.max(...opts.map(o => o.value), 3);
-  const minPerItem = Math.min(...opts.map(o => o.value), 0);
+  const minPerItem = opts.length > 0 ? Math.min(...opts.map(o => o.value)) : 0;
   const reverseIds = new Set(scale.reverseIds ?? []);
 
   // ── Score total (items noScore=true exclus) ──
@@ -352,6 +352,8 @@ export async function getProfileProgress(userId: string): Promise<{
   drLoMentalAnalysis: string | null;
   drLoSexualAnalysis: string | null;
   drLoSynthesis: string | null;
+  drLoMentalUpdatedAt: Date | null;
+  drLoSexualUpdatedAt: Date | null;
   onboardingProfile: Record<string, string> | null;
   sexualHealthFilter: Record<string, unknown> | null;
 }> {
@@ -375,6 +377,8 @@ export async function getProfileProgress(userId: string): Promise<{
       drLoMentalAnalysis: null,
       drLoSexualAnalysis: null,
       drLoSynthesis: null,
+      drLoMentalUpdatedAt: null,
+      drLoSexualUpdatedAt: null,
       onboardingProfile: null,
       sexualHealthFilter: null,
     };
@@ -406,6 +410,8 @@ export async function getProfileProgress(userId: string): Promise<{
     drLoMentalAnalysis: (data.drLoMentalAnalysis as string | null) ?? null,
     drLoSexualAnalysis: (data.drLoSexualAnalysis as string | null) ?? null,
     drLoSynthesis: (data.drLoSynthesis as string | null) ?? null,
+    drLoMentalUpdatedAt: data.drLoMentalUpdatedAt instanceof Timestamp ? data.drLoMentalUpdatedAt.toDate() : null,
+    drLoSexualUpdatedAt: data.drLoSexualUpdatedAt instanceof Timestamp ? data.drLoSexualUpdatedAt.toDate() : null,
     onboardingProfile: (data.onboardingProfile as Record<string, string> | null) ?? null,
     sexualHealthFilter: (data.sexualHealthFilter as Record<string, unknown> | null) ?? null,
   };

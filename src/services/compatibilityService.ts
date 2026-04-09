@@ -1,7 +1,7 @@
-import { collection, doc, setDoc, getDoc, updateDoc, serverTimestamp, getDocs, query, where, orderBy, limit } from 'firebase/firestore';
+import { collection, doc, setDoc, getDoc, updateDoc, deleteDoc, serverTimestamp, getDocs, query, where, orderBy, limit } from 'firebase/firestore';
 import { db } from '../utils/firebase';
-import type { CompatibilityRequest, CompatibilityResult, UserAssessmentSession } from '../types/assessment';
-import { getUserProfileByCompatibilityId, getUserSessions } from './evaluationService';
+import type { CompatibilityRequest, CompatibilityResult, ScaleResult } from '../types/assessment';
+import { getUserProfileByCompatibilityId, getProfileProgress } from './evaluationService';
 
 const COL = 'compatibilityRequests';
 const HISTORY_COL = 'compatibilityHistory';
@@ -36,6 +36,10 @@ export async function saveCompatibilityHistory(
     result,
     createdAt: serverTimestamp(),
   });
+}
+
+export async function deleteCompatibilityHistory(entryId: string): Promise<void> {
+  await deleteDoc(doc(db, HISTORY_COL, entryId));
 }
 
 export async function getCompatibilityHistory(userId: string): Promise<CompatibilityHistoryEntry[]> {
@@ -91,8 +95,8 @@ export async function createCompatibilityRequest(
   if (!initiatorCode) {
     throw new Error(
       codeType === 'mental'
-        ? "Tu dois compléter toutes les évaluations de santé mentale avant de comparer un profil mental."
-        : "Tu dois compléter toutes les évaluations de santé sexuelle avant de comparer un profil sexuel."
+        ? "Tu dois compléter toutes les évaluations du profil psychologique avant de comparer."
+        : "Tu dois compléter toutes les évaluations de vie intime avant de comparer."
     );
   }
 
@@ -120,24 +124,75 @@ export async function computeCompatibility(requestId: string): Promise<Compatibi
   const partner = await getUserProfileByCompatibilityId(req.partnerCompatibilityId);
   if (!partner) throw new Error('Profil partenaire introuvable');
 
-  // Récupérer les dernières sessions complètes des deux utilisateurs
-  const [initiatorSessions, partnerSessions] = await Promise.all([
-    getUserSessions(req.initiatorUserId),
-    getUserSessions(partner.uid),
+  // Lire les profils complets des deux utilisateurs (userProfiles — pas les sessions)
+  const [initiatorProfile, partnerProfile] = await Promise.all([
+    getProfileProgress(req.initiatorUserId),
+    getProfileProgress(partner.uid),
   ]);
 
-  const lastInitiator = initiatorSessions.find(s => s.status === 'completed');
-  const lastPartner = partnerSessions.find(s => s.status === 'completed');
-
-  if (!lastInitiator || !lastPartner) {
+  if (!initiatorProfile || !partnerProfile) {
     throw new Error('Les deux profils doivent avoir complété au moins une évaluation.');
   }
 
   const codeType = getCodeType(req.partnerCompatibilityId) ?? 'mental';
-  const dimensionScores = computeDimensionScores(lastInitiator, lastPartner, codeType);
-  const globalScore = Math.round(
-    Object.values(dimensionScores).reduce((a, b) => a + b, 0) / Object.values(dimensionScores).length
-  );
+  const dimensionScores = computeDimensionScores(initiatorProfile.scaleResults, partnerProfile.scaleResults, codeType);
+  const globalScore = Object.keys(dimensionScores).length > 0
+    ? Math.round(Object.values(dimensionScores).reduce((a, b) => a + b, 0) / Object.values(dimensionScores).length)
+    : 0;
+
+  // Build scale results filtered to the relevant code type
+  const MENTAL_SCALE_IDS = ['ecr_r', 'rses', 'brs', 'big_five', 'pss10', 'gad7', 'phq9', 'ace', 'pcl5', 'ceca_q'];
+  const SEXUAL_SCALE_IDS = ['nsss', 'sdi2', 'sis_ses', 'fsfi', 'iief', 'griss_base', 'pair', 'sise', 'tsi_base', 'social_pressure_sex'];
+  const BONUS_SCALE_IDS = ['npi', 'daq', 'hsp', 'tdah', 'hpi', 'gse', 'pdq', 'mach', 'mbi', 'mjs', 'wleis'];
+
+  const relevantIds = codeType === 'mental' ? MENTAL_SCALE_IDS : SEXUAL_SCALE_IDS;
+
+  function filterScales(scaleResults: Record<string, unknown> | undefined, ids: string[]) {
+    if (!scaleResults) return {};
+    return Object.fromEntries(Object.entries(scaleResults).filter(([id]) => ids.includes(id)));
+  }
+  function extractBonus(scaleResults: Record<string, unknown> | undefined) {
+    if (!scaleResults) return [];
+    return Object.entries(scaleResults)
+      .filter(([id]) => BONUS_SCALE_IDS.includes(id))
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .map(([id, r]: [string, any]) => ({ id, nom: id, niveau: r?.interpretation?.label ?? r?.interpretation?.severity ?? 'N/A' }));
+  }
+
+  const scaleResults1 = filterScales(initiatorProfile.scaleResults, relevantIds);
+  const scaleResults2 = filterScales(partnerProfile.scaleResults, relevantIds);
+  const bonusResults1 = extractBonus(initiatorProfile.scaleResults);
+  const bonusResults2 = extractBonus(partnerProfile.scaleResults);
+
+  // Display names — already in userProfiles (onboardingProfile) or fallback
+  const prenom1: string = (initiatorProfile.onboardingProfile?.prenom as string | undefined) ?? 'Toi';
+  const prenom2: string = (partnerProfile.onboardingProfile?.prenom as string | undefined) ?? 'Partenaire';
+
+  let claudeNarrative = '';
+  try {
+    const aiResponse = await fetch('/.netlify/functions/compatibility-analysis', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        prenom1,
+        prenom2,
+        codeType,
+        relationshipType: req.relationshipType,
+        scaleResults1,
+        scaleResults2,
+        bonusResults1,
+        bonusResults2,
+        dimensionScores,
+        globalScore,
+      }),
+    });
+    if (aiResponse.ok) {
+      const aiData = await aiResponse.json();
+      claudeNarrative = aiData.narrative ?? '';
+    }
+  } catch {
+    // AI narrative is optional — proceed without it
+  }
 
   const result: CompatibilityResult = {
     globalScore,
@@ -145,7 +200,7 @@ export async function computeCompatibility(requestId: string): Promise<Compatibi
     strengths: extractStrengths(dimensionScores),
     tensions: extractTensions(dimensionScores),
     recommendations: [],
-    claudeNarrative: '',
+    claudeNarrative,
     computedAt: new Date(),
   };
 
@@ -174,8 +229,8 @@ const SEXUAL_DIMENSIONS: Record<string, string[]> = {
 };
 
 function computeDimensionScores(
-  s1: UserAssessmentSession,
-  s2: UserAssessmentSession,
+  s1: Record<string, ScaleResult>,
+  s2: Record<string, ScaleResult>,
   codeType: 'mental' | 'sexual'
 ): Record<string, number> {
   const dimensions = codeType === 'mental' ? MENTAL_DIMENSIONS : SEXUAL_DIMENSIONS;
@@ -183,14 +238,14 @@ function computeDimensionScores(
   const scores: Record<string, number> = {};
   for (const [dim, scaleIds] of Object.entries(dimensions)) {
     const commonScales = scaleIds.filter(
-      id => s1.scores[id] && s2.scores[id]
+      id => s1[id] && s2[id]
     );
     if (commonScales.length === 0) continue;
 
     let dimScore = 0;
     for (const scaleId of commonScales) {
-      const r1 = s1.scores[scaleId].interpretation.severity;
-      const r2 = s2.scores[scaleId].interpretation.severity;
+      const r1 = s1[scaleId].interpretation.severity;
+      const r2 = s2[scaleId].interpretation.severity;
       dimScore += severityCompatScore(r1, r2);
     }
     scores[dim] = Math.round(dimScore / commonScales.length);

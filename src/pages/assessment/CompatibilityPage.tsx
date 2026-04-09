@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
+import PageTooltips from '../../components/Onboarding/PageTooltips';
 import { getOrCreateUserProfile, getProfileProgress } from '../../services/evaluationService';
 import {
   createCompatibilityRequest,
   computeCompatibility,
   saveCompatibilityHistory,
   getCompatibilityHistory,
+  deleteCompatibilityHistory,
   type CompatibilityHistoryEntry,
 } from '../../services/compatibilityService';
 import type { CompatibilityResult } from '../../types/assessment';
@@ -44,6 +46,7 @@ const CompatibilityPage: React.FC = () => {
   const [history, setHistory] = useState<CompatibilityHistoryEntry[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [expandedHistory, setExpandedHistory] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const selectedCategory = RELATIONSHIP_CATEGORIES.find(c => c.id === mainCategoryId) ?? null;
   const isRomantic = mainCategoryId === 'amoureux';
@@ -68,11 +71,13 @@ const CompatibilityPage: React.FC = () => {
   useEffect(() => {
     if (isAuthenticated && currentUser) {
       setLoadingProfile(true);
+      // Timeout de sécurité : si Firestore ne répond pas en 8s, on arrête le spinner
+      const timeout = setTimeout(() => setLoadingProfile(false), 8000);
       getOrCreateUserProfile(currentUser.id, currentUser.name)
         .then(() => getProfileProgress(currentUser.id))
         .then((p) => { setMyIdMental(p.compatibilityIdMental); setMyIdSexual(p.compatibilityIdSexual); })
         .catch(() => {})
-        .finally(() => setLoadingProfile(false));
+        .finally(() => { clearTimeout(timeout); setLoadingProfile(false); });
 
       // Charger l'historique des tests
       setHistoryLoading(true);
@@ -189,7 +194,7 @@ const CompatibilityPage: React.FC = () => {
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '14px 16px' }}>
                   <span style={{ fontSize: 22, flexShrink: 0 }}>🧠</span>
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <p style={{ margin: '0 0 3px', fontSize: 11, fontWeight: 700, color: '#3B82F6', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Profil Mental</p>
+                    <p style={{ margin: '0 0 3px', fontSize: 11, fontWeight: 700, color: '#3B82F6', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Profil Psychologique</p>
                     {myIdMental
                       ? <code style={{ fontSize: 15, fontFamily: "'JetBrains Mono','Courier New',monospace", fontWeight: 800, color: '#1D4ED8', letterSpacing: '0.08em' }}>{myIdMental}</code>
                       : <span style={{ fontSize: 12, color: '#94A3B8' }}>Complète 5 évaluations obligatoires pour obtenir ce code</span>
@@ -212,7 +217,7 @@ const CompatibilityPage: React.FC = () => {
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '14px 16px' }}>
                   <span style={{ fontSize: 22, flexShrink: 0 }}>💋</span>
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <p style={{ margin: '0 0 3px', fontSize: 11, fontWeight: 700, color: '#C026D3', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Profil Intime</p>
+                    <p style={{ margin: '0 0 3px', fontSize: 11, fontWeight: 700, color: '#C026D3', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Vie intime</p>
                     {myIdSexual
                       ? <code style={{ fontSize: 15, fontFamily: "'JetBrains Mono','Courier New',monospace", fontWeight: 800, color: '#7E22CE', letterSpacing: '0.08em' }}>{myIdSexual}</code>
                       : <span style={{ fontSize: 12, color: '#94A3B8' }}>Complète 3 évaluations obligatoires pour obtenir ce code</span>
@@ -241,7 +246,7 @@ const CompatibilityPage: React.FC = () => {
             <div>
               <p style={{ margin: '0 0 4px', fontSize: 14, fontWeight: 700, color: '#92400E' }}>Test verrouillé — profil incomplet</p>
               <p style={{ margin: '0 0 10px', fontSize: 13, color: '#A16207', lineHeight: 1.5 }}>
-                Complète toutes les évaluations de santé mentale <strong>(SM)</strong> ou sexuelle <strong>(SE)</strong> pour débloquer le test.
+                Complète toutes les évaluations du profil psychologique <strong>(SM)</strong> ou de la vie intime <strong>(SE)</strong> pour débloquer le test.
               </p>
               <Link to="/assessment/profile" style={{ fontSize: 13, fontWeight: 700, color: '#92400E', textDecoration: 'none' }}>
                 Voir mon profil →
@@ -255,7 +260,7 @@ const CompatibilityPage: React.FC = () => {
           <div style={{ background: 'rgba(255,255,255,0.88)', backdropFilter: 'blur(18px)', WebkitBackdropFilter: 'blur(18px)', border: '1.5px solid rgba(124,58,237,0.12)', borderRadius: 22, padding: '26px 24px', marginBottom: 18, boxShadow: '0 4px 28px rgba(124,58,237,0.07)' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 22 }}>
               <div style={{ width: 34, height: 34, borderRadius: 10, background: 'linear-gradient(135deg, #7C3AED, #EC4899)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, flexShrink: 0 }}>✨</div>
-              <h2 style={{ margin: 0, fontSize: 15, fontWeight: 800, color: '#0A2342' }}>Calculer la compatibilité</h2>
+              <h2 style={{ margin: 0, fontSize: 15, fontWeight: 800, color: '#0A2342' }}>Découvrir notre compatibilité</h2>
             </div>
 
             {/* ── ÉTAPE 1 — Type de relation ── */}
@@ -263,7 +268,7 @@ const CompatibilityPage: React.FC = () => {
               <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#374151', marginBottom: 10 }}>
                 Avec qui fais-tu ce test ?
               </label>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 10 }}>
+              <div data-tooltip-id="relation-type-selector" style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 10 }}>
                 {RELATIONSHIP_CATEGORIES.map(cat => {
                   const isActive = mainCategoryId === cat.id;
                   return (
@@ -385,6 +390,7 @@ const CompatibilityPage: React.FC = () => {
                   </label>
                   <div style={{ position: 'relative' }}>
                     <input
+                      data-tooltip-id="partner-code-input"
                       type="text"
                       value={partnerMentalId}
                       onChange={(e) => { setPartnerMentalId(e.target.value.toUpperCase()); setFormError(null); }}
@@ -452,9 +458,14 @@ const CompatibilityPage: React.FC = () => {
                   Calcul en cours…
                 </>
               ) : (
-                <>✨ Calculer notre compatibilité</>
-              )}
+                <>❤️ Découvrir notre compatibilité</>
+)}
             </button>
+            {canSubmit && !calculating && (
+              <p style={{ margin: '8px 0 0', textAlign: 'center', fontSize: 11, color: '#94A3B8' }}>
+                Résultat instantané et confidentiel 🔒
+              </p>
+            )}
           </div>
         )}
 
@@ -489,7 +500,7 @@ const CompatibilityPage: React.FC = () => {
                         color: isMental ? '#1D4ED8' : '#7E22CE',
                       }}>
                         <span>{isMental ? '🧠' : '💋'}</span>
-                        {isMental ? 'Compatibilité Mentale' : 'Compatibilité Intime'}
+                        {isMental ? 'Compatibilité Psychologique' : 'Compatibilité Intime'}
                       </div>
                     </div>
                   )}
@@ -647,6 +658,42 @@ const CompatibilityPage: React.FC = () => {
                           </svg>
                         </div>
                       </button>
+                      {/* Bouton supprimer */}
+                      <div style={{ padding: '0 12px 10px', display: 'flex', justifyContent: 'flex-end' }}>
+                        <button
+                          onClick={async (e) => {
+                            e.stopPropagation();
+                            if (!window.confirm('Supprimer ce test de compatibilité ?')) return;
+                            setDeletingId(entry.id);
+                            try {
+                              await deleteCompatibilityHistory(entry.id);
+                              setHistory(h => h.filter(x => x.id !== entry.id));
+                              if (expandedHistory === entry.id) setExpandedHistory(null);
+                            } catch {
+                              // silently ignore
+                            } finally {
+                              setDeletingId(null);
+                            }
+                          }}
+                          disabled={deletingId === entry.id}
+                          style={{
+                            background: 'transparent', border: '1px solid rgba(220,38,38,0.2)',
+                            borderRadius: 8, padding: '4px 10px', cursor: 'pointer',
+                            display: 'flex', alignItems: 'center', gap: 5,
+                            fontSize: 11, fontWeight: 600, color: '#DC2626',
+                            opacity: deletingId === entry.id ? 0.5 : 1,
+                          }}
+                        >
+                          {deletingId === entry.id ? (
+                            <div style={{ width: 10, height: 10, border: '1.5px solid #DC2626', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+                          ) : (
+                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                              <polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14H6L5 6" /><path d="M10 11v6M14 11v6" /><path d="M9 6V4h6v2" />
+                            </svg>
+                          )}
+                          Supprimer
+                        </button>
+                      </div>
 
                       {/* Expanded detail */}
                       {isExpanded && (
@@ -683,13 +730,23 @@ const CompatibilityPage: React.FC = () => {
 
                           {/* Points forts & tensions */}
                           {(entry.result.strengths.length > 0 || entry.result.tensions.length > 0) && (
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: entry.result.claudeNarrative ? 14 : 0 }}>
                               {entry.result.strengths.map((s, i) => (
                                 <p key={i} style={{ margin: 0, fontSize: 12, color: '#166534', display: 'flex', gap: 6 }}><span>✓</span>{s}</p>
                               ))}
                               {entry.result.tensions.map((t, i) => (
                                 <p key={i} style={{ margin: 0, fontSize: 12, color: '#9A3412', display: 'flex', gap: 6 }}><span>◆</span>{t}</p>
                               ))}
+                            </div>
+                          )}
+
+                          {/* Narrative Dr Lô */}
+                          {entry.result.claudeNarrative && (
+                            <div style={{ background: 'rgba(248,245,255,0.95)', border: '1.5px solid rgba(124,58,237,0.15)', borderRadius: 16, padding: '16px 18px' }}>
+                              <p style={{ margin: '0 0 10px', fontSize: 12, fontWeight: 700, color: '#7C3AED', display: 'flex', alignItems: 'center', gap: 6 }}>
+                                <span>👨‍⚕️</span> Analyse du Dr Lô
+                              </p>
+                              <p style={{ margin: 0, fontSize: 13, color: '#374151', lineHeight: 1.75, whiteSpace: 'pre-wrap' }}>{entry.result.claudeNarrative}</p>
                             </div>
                           )}
                         </div>
@@ -712,6 +769,9 @@ const CompatibilityPage: React.FC = () => {
           </Link>
         </div>
       </div>
+
+      {/* Tooltips onboarding */}
+      <PageTooltips pageKey="compatibility" />
     </div>
   );
 };

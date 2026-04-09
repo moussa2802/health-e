@@ -15,8 +15,8 @@ const categoryColors: Record<string, string> = {
 };
 
 const categoryLabels: Record<string, string> = {
-  mental_health: 'Santé mentale',
-  sexual_health: 'Santé sexuelle',
+  mental_health: 'Profil psychologique',
+  sexual_health: 'Vie intime',
 };
 
 const ScaleCard: React.FC<ScaleCardProps> = ({ scale, selected, onToggle, disabled = false }) => {

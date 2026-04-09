@@ -28,7 +28,7 @@ const Privacy: React.FC = () => {
                   comment nous collectons, utilisons et protégeons vos
                   informations personnelles dans le cadre de l’utilisation de
                   notre plateforme de mise en relation pour la téléconsultation
-                  en santé mentale et santé intime.
+                  en profil psychologique et vie intime.
                 </p>
 
                 <h3>1. Informations que nous collectons</h3>

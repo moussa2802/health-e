@@ -15,7 +15,7 @@ const FAQ: React.FC = () => {
     {
       category: 'general',
       question: "Qu'est-ce que Health-e ?",
-      answer: "Health-e est une plateforme de téléconsultation qui met en relation les patients avec des professionnels de santé qualifiés pour des consultations en ligne. Nous nous spécialisons dans la santé mentale et sexuelle, offrant un accès facile et confidentiel aux soins de santé."
+      answer: "Health-e est une plateforme de téléconsultation qui met en relation les patients avec des professionnels de santé qualifiés pour des consultations en ligne. Nous nous spécialisons dans le profil psychologique et la vie intime, offrant un accès facile et confidentiel aux soins de santé."
     },
     {
       category: 'general',

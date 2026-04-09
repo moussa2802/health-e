@@ -293,13 +293,13 @@ const AdminStatistics: React.FC = () => {
             </h3>
             <div className="space-y-4">
               <div className="flex justify-between items-center">
-                <span className="text-gray-600">Santé mentale</span>
+                <span className="text-gray-600">Profil psychologique</span>
                 <span className="font-semibold">
                   {statistics.revenue.mentalHealth.toLocaleString()} XOF
                 </span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-gray-600">Santé sexuelle</span>
+                <span className="text-gray-600">Vie intime</span>
                 <span className="font-semibold">
                   {statistics.revenue.sexualHealth.toLocaleString()} XOF
                 </span>
@@ -400,8 +400,8 @@ const AdminStatistics: React.FC = () => {
                           }`}
                         >
                           {transaction.type === "mental"
-                            ? "Santé mentale"
-                            : "Santé sexuelle"}
+                            ? "Profil psychologique"
+                            : "Vie intime"}
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">

@@ -215,7 +215,7 @@ const OptimizedHomePage: React.FC = () => {
       icon: <Brain size={22} style={{ color: "#3B82F6" }} />,
       count: "14",
       label: "Évaluations",
-      sub: "Santé mentale",
+      sub: "Profil psychologique",
       accent: "rgba(59,130,246,0.1)",
       border: "rgba(59,130,246,0.18)",
     },
@@ -223,7 +223,7 @@ const OptimizedHomePage: React.FC = () => {
       icon: <Heart size={22} style={{ color: "#EC4899" }} />,
       count: "10",
       label: "Évaluations",
-      sub: "Santé sexuelle",
+      sub: "Vie intime",
       accent: "rgba(236,72,153,0.08)",
       border: "rgba(236,72,153,0.18)",
     },
@@ -403,14 +403,14 @@ const OptimizedHomePage: React.FC = () => {
               color: "#0A2342",
             }}
           >
-            Ton profil en{" "}
+            Ton profil{" "}
             <span style={{
               background: "linear-gradient(135deg, #3B82F6, #6366F1)",
               WebkitBackgroundClip: "text",
               WebkitTextFillColor: "transparent",
               backgroundClip: "text",
             }}>
-              santé mentale
+              psychologique
             </span>
             {" "}&amp;{" "}
             <span style={{
@@ -419,7 +419,7 @@ const OptimizedHomePage: React.FC = () => {
               WebkitTextFillColor: "transparent",
               backgroundClip: "text",
             }}>
-              sexuelle
+              ta vie intime
             </span>
             .
           </p>

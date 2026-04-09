@@ -112,9 +112,6 @@ export const useBookings = (
         listenerIdRef.current &&
         activeBookingListeners.has(listenerIdRef.current)
       ) {
-        console.log(
-          `🧹 Cleaning up booking listener: ${listenerIdRef.current}`
-        );
         const listener = activeBookingListeners.get(listenerIdRef.current);
         if (listener) {
           listener();
@@ -126,23 +123,16 @@ export const useBookings = (
 
   // Function to manually refresh data
   const refreshBookings = async () => {
-    console.log("🔄 Manually refreshing bookings...");
     setLoading(true);
     setError(null);
 
     try {
       // CRITICAL: Reset Firestore connection first
       await resetFirestoreConnection();
-      console.log("✅ Firestore connection reset before refresh");
-
-      // Then ensure it's ready
       await ensureFirestoreReady();
-      console.log("✅ Firestore ready before refresh");
 
-      // Check connection by ensuring Firestore is ready
       try {
         await ensureFirestoreReady();
-        console.log("✅ Firestore connection verified for refresh");
       } catch (connectionError) {
         console.warn(
           "⚠️ Firestore connection issue during refresh:",
@@ -174,10 +164,6 @@ export const useBookings = (
 
       // Force a complete reload by incrementing the counter
       bookingListenerIdCounter++;
-
-      console.log(
-        "✅ Booking refresh initiated, new subscription will be created"
-      );
     } catch (err) {
       console.error("❌ Failed to refresh bookings:", err);
       if (isMountedRef.current) {
@@ -192,11 +178,7 @@ export const useBookings = (
 
 // Utility function to clean up all booking listeners
 export const cleanupAllBookingListeners = () => {
-  console.log(
-    `🧹 Cleaning up all ${activeBookingListeners.size} booking listeners`
-  );
-  activeBookingListeners.forEach((unsubscribe, listenerId) => {
-    console.log("🧹 Cleaning up booking listener:", listenerId);
+  activeBookingListeners.forEach((unsubscribe) => {
     unsubscribe();
   });
   activeBookingListeners.clear();

@@ -184,13 +184,13 @@ const AdminDashboard = () => {
                   <p className="font-medium">
                     {statistics.revenue.mentalHealth.toLocaleString()} XOF
                   </p>
-                  <p className="text-gray-500">Santé mentale</p>
+                  <p className="text-gray-500">Profil psychologique</p>
                 </div>
                 <div>
                   <p className="font-medium">
                     {statistics.revenue.sexualHealth.toLocaleString()} XOF
                   </p>
-                  <p className="text-gray-500">Santé sexuelle</p>
+                  <p className="text-gray-500">Vie intime</p>
                 </div>
               </div>
             </div>
@@ -352,8 +352,8 @@ const AdminDashboard = () => {
                           }`}
                         >
                           {transaction.type === "mental"
-                            ? "Santé mentale"
-                            : "Santé sexuelle"}
+                            ? "Profil psychologique"
+                            : "Vie intime"}
                         </span>
                       </td>
                       <td className="py-3">{transaction.date}</td>
@@ -420,7 +420,7 @@ const AdminDashboard = () => {
               <div className="flex mb-2 items-center justify-between">
                 <div>
                   <span className="text-xs font-semibold inline-block py-1 px-2 uppercase rounded-full text-blue-600 bg-blue-200">
-                    Santé mentale
+                    Profil psychologique
                   </span>
                 </div>
                 <div className="text-right">
@@ -453,7 +453,7 @@ const AdminDashboard = () => {
               <div className="flex mb-2 items-center justify-between">
                 <div>
                   <span className="text-xs font-semibold inline-block py-1 px-2 uppercase rounded-full text-pink-600 bg-pink-200">
-                    Santé sexuelle
+                    Vie intime
                   </span>
                 </div>
                 <div className="text-right">
@@ -497,7 +497,7 @@ const AdminDashboard = () => {
                     <Users className="h-6 w-6 text-blue-500" />
                   </div>
                   <div>
-                    <p className="font-medium">Santé mentale</p>
+                    <p className="font-medium">Profil psychologique</p>
                     <p className="text-sm text-gray-500">
                       Psychologues, Psychiatres
                     </p>
@@ -514,7 +514,7 @@ const AdminDashboard = () => {
                     <Users className="h-6 w-6 text-pink-500" />
                   </div>
                   <div>
-                    <p className="font-medium">Santé sexuelle</p>
+                    <p className="font-medium">Vie intime</p>
                     <p className="text-sm text-gray-500">
                       Sexologues, Gynécologues, Urologues
                     </p>

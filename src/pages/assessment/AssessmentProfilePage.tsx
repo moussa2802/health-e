@@ -8,8 +8,9 @@ import {
   getOrCreateUserProfile,
   getProfileProgress,
   createSession,
-  resetUserProfile,
 } from '../../services/evaluationService';
+import ConfirmResetModal from '../../components/assessment/ConfirmResetModal';
+import { resetFullProfile } from '../../services/testManagementService';
 import { MENTAL_HEALTH_SCALES, SEXUAL_HEALTH_SCALES } from '../../data/scales';
 import type { ScaleResult } from '../../types/assessment';
 import type { AssessmentScale } from '../../types/assessment';
@@ -61,6 +62,13 @@ function getSeverityBg(severity: string): string {
   }
 }
 
+function getShortComment(result: ScaleResult): string {
+  const description = result.interpretation?.description ?? '';
+  const recommendation = result.interpretation?.recommendation ?? '';
+  if (description && recommendation) return `${description} ${recommendation}`;
+  return description || recommendation || '';
+}
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function formatDate(date: any): string {
   if (!date) return '';
@@ -91,6 +99,9 @@ interface ScaleRowProps {
 const ScaleRow: React.FC<ScaleRowProps> = ({ scale, result, onStart, loading }) => {
   const isCompleted = !!result;
   const icon = SCALE_ICONS[scale.id] ?? '📋';
+  const [showAnalysis, setShowAnalysis] = React.useState(false);
+  const description = result?.interpretation?.description ?? '';
+  const recommendation = result?.interpretation?.recommendation ?? '';
 
   return (
     <div
@@ -147,29 +158,50 @@ const ScaleRow: React.FC<ScaleRowProps> = ({ scale, result, onStart, loading }) 
         </p>
 
         {isCompleted && result ? (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4, flexWrap: 'wrap' }}>
-            <span
-              style={{
-                display: 'inline-block',
-                padding: '2px 10px',
-                borderRadius: 20,
-                fontSize: 11,
-                fontWeight: 700,
-                background: getSeverityBg(result.interpretation.severity),
-                color: getSeverityColor(result.interpretation.severity),
-              }}
-            >
-              {result.interpretation.label}
-            </span>
-            <span style={{ fontSize: 11, color: '#94A3B8' }}>
-              Score : {result.totalScore}
-            </span>
-            {result.completedAt && (
-              <span style={{ fontSize: 11, color: '#CBD5E1' }}>
-                {formatDate(result.completedAt)}
+          <>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4, flexWrap: 'wrap' }}>
+              <span
+                style={{
+                  display: 'inline-block',
+                  padding: '2px 10px',
+                  borderRadius: 20,
+                  fontSize: 11,
+                  fontWeight: 700,
+                  background: getSeverityBg(result.interpretation.severity),
+                  color: getSeverityColor(result.interpretation.severity),
+                }}
+              >
+                {result.interpretation.label}
               </span>
+              <span style={{ fontSize: 11, color: '#94A3B8' }}>
+                Score : {result.totalScore}
+              </span>
+              {result.completedAt && (
+                <span style={{ fontSize: 11, color: '#CBD5E1' }}>
+                  {formatDate(result.completedAt)}
+                </span>
+              )}
+            </div>
+            {(description || recommendation) && (
+              <>
+                <button
+                  onClick={() => setShowAnalysis(v => !v)}
+                  style={{
+                    background: 'none', border: 'none', padding: '4px 0 0', cursor: 'pointer',
+                    fontSize: 11, fontWeight: 600, color: '#3B82F6', display: 'flex', alignItems: 'center', gap: 4,
+                  }}
+                >
+                  {showAnalysis ? '▲ Masquer' : '💬 Voir mon analyse'}
+                </button>
+                {showAnalysis && (
+                  <div style={{ marginTop: 6, padding: '10px 12px', background: '#F0F9FF', borderRadius: 8, border: '1px solid rgba(59,130,246,0.15)' }}>
+                    {description && <p style={{ margin: 0, fontSize: 11, color: '#374151', lineHeight: 1.5 }}>{description}</p>}
+                    {recommendation && <p style={{ margin: description ? '6px 0 0' : 0, fontSize: 11, color: '#64748B', lineHeight: 1.5, fontStyle: 'italic' }}>💡 {recommendation}</p>}
+                  </div>
+                )}
+              </>
             )}
-          </div>
+          </>
         ) : (
           <span style={{ fontSize: 11, color: '#94A3B8', marginTop: 2, display: 'block' }}>
             À faire · {scale.timeEstimateMinutes} min
@@ -261,55 +293,63 @@ const DrLoPanel: React.FC<{
   analysis: string | null;
   completedCount: number;
 }> = ({ bloc, analysis, completedCount }) => {
+  const [open, setOpen] = React.useState(false);
   if (completedCount === 0) return null;
   const isMental    = bloc === 'mental';
   const accentColor = isMental ? '#3B82F6' : '#C026D3';
-  const title       = isMental ? '🧠 Dr Lô — Santé Mentale' : '💋 Dr Lô — Santé Sexuelle';
+  const title       = isMental ? '🧠 Dr Lô — Profil psychologique' : '💋 Dr Lô — Vie intime';
 
   return (
     <div style={{
       background: isMental ? 'linear-gradient(135deg,#EFF6FF,#F0FDFA)' : 'linear-gradient(135deg,#FDF4FF,#FFF0F9)',
       border: `1.5px solid ${accentColor}25`,
       borderRadius: 14,
-      padding: '16px 18px',
-      marginBottom: 14,
+      overflow: 'hidden',
+      marginTop: 8,
     }}>
-      {/* En-tête */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+      {/* En-tête cliquable */}
+      <button
+        onClick={() => setOpen(v => !v)}
+        style={{
+          width: '100%', display: 'flex', alignItems: 'center', gap: 10,
+          padding: '16px 18px', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left',
+        }}
+      >
         <div style={{
-          width: 40, height: 40, borderRadius: '50%', overflow: 'hidden', flexShrink: 0,
+          width: 36, height: 36, borderRadius: '50%', overflow: 'hidden', flexShrink: 0,
           border: `2px solid ${accentColor}40`,
         }}>
           <img src="/dr-lo.png" alt="Dr. Lô"
             style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'top center' }} />
         </div>
-        <div>
+        <div style={{ flex: 1 }}>
           <p style={{ margin: 0, fontSize: 13, fontWeight: 800, color: '#0A2342' }}>{title}</p>
           <p style={{ margin: 0, fontSize: 10, color: '#94A3B8', fontWeight: 600, letterSpacing: '0.03em' }}>
-            IA ÉVOLUTIVE · Mise à jour après chaque évaluation
+            {open ? 'Masquer l\'analyse' : 'Afficher mon analyse'}
           </p>
         </div>
-        <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 4 }}>
-          <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#22C55E', display: 'inline-block' }} />
-          <span style={{ fontSize: 10, fontWeight: 700, color: '#16A34A' }}>En ligne</span>
-        </div>
-      </div>
+        <span style={{ fontSize: 14, color: accentColor, fontWeight: 700 }}>{open ? '▲' : '▼'}</span>
+      </button>
 
-      {/* Contenu */}
-      {analysis ? (
-        <div style={{ fontSize: 13, color: '#374151', lineHeight: 1.7, whiteSpace: 'pre-line' }}>
-          {analysis}
-        </div>
-      ) : (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <div style={{
-            width: 18, height: 18, border: `2px solid ${accentColor}`,
-            borderTopColor: 'transparent', borderRadius: '50%',
-            animation: 'spin 0.8s linear infinite', flexShrink: 0,
-          }} />
-          <p style={{ margin: 0, fontSize: 13, color: '#64748B', fontStyle: 'italic' }}>
-            Dr. Lô prépare ton analyse… reviens dans quelques secondes 🔄
-          </p>
+      {/* Contenu collapsible */}
+      {open && (
+        <div style={{ padding: '0 18px 16px' }}>
+          {analysis ? (
+            <div style={{ fontSize: 13, color: '#374151', lineHeight: 1.7, whiteSpace: 'pre-line' }}>
+              {analysis}
+            </div>
+          ) : (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <div style={{
+                width: 16, height: 16, border: `2px solid ${accentColor}`,
+                borderTopColor: 'transparent', borderRadius: '50%',
+                animation: 'spin 0.8s linear infinite', flexShrink: 0,
+              }} />
+              <p style={{ margin: 0, fontSize: 13, color: '#64748B', fontStyle: 'italic' }}>
+                Dr. Lô prépare ton analyse… reviens dans quelques secondes 🔄
+              </p>
+            </div>
+          )}
         </div>
       )}
     </div>
@@ -502,17 +542,17 @@ const AssessmentProfilePage: React.FC = () => {
   const onboardingProfile = getOnboardingProfile();
   const prenom = onboardingProfile?.prenom || '';
   const [resetting, setResetting] = useState(false);
+  const [showResetModal, setShowResetModal] = useState(false);
 
   const handleReset = async () => {
     if (!currentUser) return;
-    if (!window.confirm('Supprimer tous tes résultats et recommencer à zéro ?')) return;
     setResetting(true);
     try {
-      await resetUserProfile(currentUser.id);
-      localStorage.removeItem('he_onboarding_profile');
+      await resetFullProfile(currentUser.id);
       window.location.reload();
     } catch {
       setResetting(false);
+      setShowResetModal(false);
     }
   };
 
@@ -529,6 +569,7 @@ const AssessmentProfilePage: React.FC = () => {
     setLoadingProfile(true);
     setErrorMsg(null);
 
+    const timeout = setTimeout(() => setLoadingProfile(false), 8000);
     getOrCreateUserProfile(currentUser.id, currentUser.name)
       .then(() => getProfileProgress(currentUser.id))
       .then(progress => {
@@ -542,10 +583,8 @@ const AssessmentProfilePage: React.FC = () => {
         setMentalCompletedCount(progress.mentalCompletedCount);
         setSexualCompletedCount(progress.sexualCompletedCount);
       })
-      .catch(() => {
-        // Erreurs Firestore transitoires (offline, permission temporaire) → silencieux
-      })
-      .finally(() => setLoadingProfile(false));
+      .catch(() => {})
+      .finally(() => { clearTimeout(timeout); setLoadingProfile(false); });
   }, [isAuthenticated, currentUser]);
 
   // onSnapshot : mise à jour temps réel des analyses Dr Lo
@@ -760,7 +799,7 @@ const AssessmentProfilePage: React.FC = () => {
           <CompatibilityCodeCard
             type="mental"
             icon="🧠"
-            label="Profil Mental"
+            label="Profil Psychologique"
             accentColor="#3B82F6"
             accentBg="#EFF6FF"
             isComplete={isMentalComplete}
@@ -774,7 +813,7 @@ const AssessmentProfilePage: React.FC = () => {
           <CompatibilityCodeCard
             type="sexual"
             icon="💋"
-            label="Profil Sexuel"
+            label="Profil Intime"
             accentColor="#C026D3"
             accentBg="#FDF4FF"
             isComplete={isSexualComplete}
@@ -786,7 +825,7 @@ const AssessmentProfilePage: React.FC = () => {
           />
         </div>
 
-        {/* ── Section Santé Mentale ─────────────────────────────────── */}
+        {/* ── Section Profil psychologique ───────────────────────────── */}
         <section style={{ marginBottom: 32 }}>
           <div
             style={{
@@ -798,7 +837,7 @@ const AssessmentProfilePage: React.FC = () => {
           >
             <span style={{ fontSize: 22 }}>🧠</span>
             <h2 style={{ margin: 0, fontSize: 17, fontWeight: 800, color: '#0A2342' }}>
-              Santé Mentale
+              Profil psychologique
             </h2>
             <span
               style={{
@@ -816,13 +855,6 @@ const AssessmentProfilePage: React.FC = () => {
             </span>
           </div>
 
-          {/* Bulle Dr Lô Santé Mentale */}
-          <DrLoPanel
-            bloc="mental"
-            analysis={drLoMentalAnalysis}
-            completedCount={mentalCompletedCount}
-          />
-
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {MENTAL_HEALTH_SCALES.map(scale => (
               <ScaleRow
@@ -834,9 +866,16 @@ const AssessmentProfilePage: React.FC = () => {
               />
             ))}
           </div>
+
+          {/* Bulle Dr Lô Profil psychologique — collapsée par défaut */}
+          <DrLoPanel
+            bloc="mental"
+            analysis={drLoMentalAnalysis}
+            completedCount={mentalCompletedCount}
+          />
         </section>
 
-        {/* ── Section Santé Sexuelle ────────────────────────────────── */}
+        {/* ── Section Vie intime ─────────────────────────────────────── */}
         <section style={{ marginBottom: 32 }}>
           <div
             style={{
@@ -848,7 +887,7 @@ const AssessmentProfilePage: React.FC = () => {
           >
             <span style={{ fontSize: 22 }}>💋</span>
             <h2 style={{ margin: 0, fontSize: 17, fontWeight: 800, color: '#0A2342' }}>
-              Santé Sexuelle
+              Vie intime
             </h2>
             <span
               style={{
@@ -879,13 +918,6 @@ const AssessmentProfilePage: React.FC = () => {
             </span>
           </div>
 
-          {/* Bulle Dr Lô Santé Sexuelle */}
-          <DrLoPanel
-            bloc="sexual"
-            analysis={drLoSexualAnalysis}
-            completedCount={sexualCompletedCount}
-          />
-
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {SEXUAL_HEALTH_SCALES.map(scale => (
               <ScaleRow
@@ -897,6 +929,13 @@ const AssessmentProfilePage: React.FC = () => {
               />
             ))}
           </div>
+
+          {/* Bulle Dr Lô Vie intime — collapsée par défaut */}
+          <DrLoPanel
+            bloc="sexual"
+            analysis={drLoSexualAnalysis}
+            completedCount={sexualCompletedCount}
+          />
         </section>
 
         {/* ── Disclaimer ────────────────────────────────────────────── */}
@@ -920,26 +959,38 @@ const AssessmentProfilePage: React.FC = () => {
           </p>
         </div>
 
-        {/* ── Reset ─────────────────────────────────────────────────── */}
-        <div style={{ textAlign: 'center', marginTop: 24 }}>
+        {/* ── Zone sensible — Réinitialisation ─────────────────────── */}
+        <div style={{
+          marginTop: 32, background: '#FEF2F2', border: '1.5px solid #FECACA',
+          borderRadius: 16, padding: '18px 20px',
+        }}>
+          <p style={{ margin: '0 0 4px', fontSize: 14, fontWeight: 700, color: '#991B1B' }}>
+            ⚠️ Zone sensible
+          </p>
+          <p style={{ margin: '0 0 14px', fontSize: 13, color: '#B91C1C', lineHeight: 1.5 }}>
+            Supprime tous tes résultats de tests et synthèses Dr Lô.
+            Ton compte et tes préférences sont conservés. Cette action est irréversible.
+          </p>
           <button
-            onClick={handleReset}
-            disabled={resetting}
+            onClick={() => setShowResetModal(true)}
             style={{
-              background: 'none',
-              border: 'none',
-              color: '#94A3B8',
-              fontSize: 12,
-              cursor: resetting ? 'not-allowed' : 'pointer',
-              textDecoration: 'underline',
-              textDecorationStyle: 'dotted',
-              padding: '4px 8px',
-              opacity: resetting ? 0.5 : 1,
+              background: 'white', border: '1.5px solid #FCA5A5',
+              borderRadius: 10, padding: '10px 18px',
+              fontSize: 13, fontWeight: 700, color: '#DC2626',
+              cursor: 'pointer',
+              display: 'flex', alignItems: 'center', gap: 8,
             }}
           >
-            {resetting ? 'Réinitialisation…' : 'Réinitialiser mon profil'}
+            🔄 Réinitialiser mon profil
           </button>
         </div>
+
+        <ConfirmResetModal
+          isOpen={showResetModal}
+          onClose={() => setShowResetModal(false)}
+          onConfirm={handleReset}
+          loading={resetting}
+        />
       </div>
     </div>
   );

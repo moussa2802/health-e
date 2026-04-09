@@ -80,6 +80,7 @@ export async function triggerDrLoMentalHealth(userId: string): Promise<void> {
         scaleId,
         scaleName: scale?.shortName || scaleId.toUpperCase(),
         totalScore: result.totalScore,
+        scoreMax: scale?.scoreRange.max ?? null,
         label: result.interpretation?.label || 'N/A',
         severity: result.interpretation?.severity || '',
         alertLevel: result.alertLevel ?? 0,
@@ -141,6 +142,7 @@ export async function triggerDrLoSexualHealth(userId: string): Promise<void> {
         scaleId,
         scaleName: scale?.shortName || scaleId.toUpperCase(),
         totalScore: result.totalScore,
+        scoreMax: scale?.scoreRange.max ?? null,
         label: result.interpretation?.label || 'N/A',
         severity: result.interpretation?.severity || '',
         alertLevel: result.alertLevel ?? 0,
@@ -165,6 +167,7 @@ export async function triggerDrLoSexualHealth(userId: string): Promise<void> {
       genre,
       situation_relationnelle,
       bloc: 'sexual',
+      experience_profile: (progress.sexualHealthFilter?.experienceProfile as string | undefined) ?? null,
       items_completes,
       items_restants,
       nombre_items_faits: items_completes.length,
@@ -190,7 +193,7 @@ export async function triggerDrLoSynthesis(userId: string): Promise<void> {
   const progress = await getProfileProgress(userId);
   if (progress.completedCount === 0) return;
 
-  const { prenom } = resolveProfile(progress.onboardingProfile);
+  const { prenom, genre } = resolveProfile(progress.onboardingProfile);
 
   const items_completes = Object.entries(progress.scaleResults).map(([scaleId, result]) => {
     const scale = ALL_SCALES.find(s => s.id === scaleId);
@@ -211,6 +214,7 @@ export async function triggerDrLoSynthesis(userId: string): Promise<void> {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       prenom,
+      genre,
       items_completes,
       nombre_items_faits: progress.completedCount,
       nombre_items_total: progress.totalCount,
@@ -244,6 +248,7 @@ export async function triggerDrLoAnalysis(userId: string): Promise<void> {
       scaleId,
       scaleName: scale?.shortName || scaleId.toUpperCase(),
       totalScore: result.totalScore,
+      scoreMax: scale?.scoreRange.max ?? null,
       label: result.interpretation?.label || 'N/A',
       severity: result.interpretation?.severity || '',
       alertLevel: result.alertLevel ?? 0,

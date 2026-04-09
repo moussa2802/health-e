@@ -50,6 +50,15 @@ export interface AlertItem {
   message: string;
 }
 
+export interface ContextQuestion {
+  id: number;
+  text: string;
+  options: AnswerOption[];
+  noScore: true;
+  /** Si réponse <= threshold → utiliser resolvedInterpretation */
+  resolvedThreshold: number;
+}
+
 export interface AssessmentScale {
   id: string;
   name: string;
@@ -64,6 +73,8 @@ export interface AssessmentScale {
   scoreRange: { min: number; max: number };
   scoringMode?: 'sum' | 'mean';       // default 'sum'
   interpretation: InterpretationRange[];
+  resolvedInterpretation?: InterpretationRange[];  // interprétations alternatives quand trauma/expérience résolu(e)
+  contextQuestion?: ContextQuestion;               // question contextuelle post-test (ex: "ça t'affecte encore ?")
   alertItems?: AlertItem[];           // alertes déclenchées par un item spécifique
   reference: string;
   licenseNote: string;

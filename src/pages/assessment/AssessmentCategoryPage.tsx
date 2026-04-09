@@ -25,11 +25,18 @@ import {
   saveSexualHealthFilter,
   isSexualFilterComplete,
   getHiddenSexualScaleIds,
+  getSexualRequired,
 } from '../../utils/sexualHealthFilter';
 import SexualHealthFilterWizard from '../../components/assessment/SexualHealthFilter';
-import { MENTAL_HEALTH_SCALES, SEXUAL_HEALTH_SCALES } from '../../data/scales';
+import SexualAccessGate from '../../components/assessment/SexualAccessGate';
+import { MENTAL_HEALTH_SCALES, SEXUAL_HEALTH_SCALES, BONUS_SCALES } from '../../data/scales';
 import { triggerDrLoMentalHealth, triggerDrLoSexualHealth } from '../../utils/drLoAnalysis';
 import { getScaleMeta } from '../../utils/scaleMeta';
+import PageTooltips from '../../components/Onboarding/PageTooltips';
+import { getAllTestAttemptCounts, deleteTestResult, resetFullProfile } from '../../services/testManagementService';
+import { generateProfilePDF } from '../../services/pdfProfileService';
+import type { ProfilePDFData } from '../../services/pdfProfileService';
+import ConfirmResetModal from '../../components/assessment/ConfirmResetModal';
 import type { ScaleResult, AssessmentScale } from '../../types/assessment';
 import type { SexualHealthFilter } from '../../types/onboarding';
 
@@ -51,6 +58,64 @@ function getSeverityBg(severity: string): string {
   }
 }
 
+function getShortComment(result: ScaleResult): string {
+  const description = result.interpretation?.description ?? '';
+  const recommendation = result.interpretation?.recommendation ?? '';
+  if (description && recommendation) return `${description} ${recommendation}`;
+  return description || recommendation || '';
+}
+
+function getAdviceForLabel(label: string): string[] {
+  const normalized = label.toLowerCase();
+  if (normalized.includes('stress')) {
+    return [
+      'Prends 5 minutes pour respirer calmement',
+      'Essaie de réduire les sources de stress',
+      'Parle à quelqu’un de confiance',
+    ];
+  }
+  if (normalized.includes('baisse de moral') || normalized.includes('dépression')) {
+    return [
+      'Essaie de garder une routine quotidienne',
+      'Fais une activité que tu aimes',
+      'Ne reste pas seul avec tes pensées',
+    ];
+  }
+  if (normalized.includes('profil équilibré') || normalized.includes('équilibré')) {
+    return [
+      'Continue tes bonnes habitudes',
+      'Garde du temps pour toi',
+      'Reste à l’écoute de tes émotions',
+    ];
+  }
+  if (normalized.includes('anxiété')) {
+    return [
+      'Respire lentement quand la tension monte',
+      'Réduis les stimulants (café, écrans tard)',
+      'Parle de ce que tu ressens',
+    ];
+  }
+  if (normalized.includes('résilience') || normalized.includes('résil')) {
+    return [
+      'Appuie-toi sur ce qui t’aide déjà',
+      'Note tes petites victoires',
+      'Garde un rythme régulier',
+    ];
+  }
+  if (normalized.includes('estime')) {
+    return [
+      'Reconnais tes efforts, même petits',
+      'Entoure-toi de personnes bienveillantes',
+      'Prends soin de toi au quotidien',
+    ];
+  }
+  return [
+    'Prends un moment pour toi chaque jour',
+    'Parle à quelqu’un de confiance',
+    'Garde un rythme de vie régulier',
+  ];
+}
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function formatDate(date: any): string {
   if (!date) return '';
@@ -70,10 +135,21 @@ const ScaleRow: React.FC<{
   scale: AssessmentScale;
   result?: ScaleResult;
   onStart: (scaleId: string) => void;
+  onDelete: (scaleId: string) => void;
+  deleteConfirm?: boolean;
   loading: boolean;
-}> = ({ scale, result, onStart, loading }) => {
+  expandedTestId: string | null;
+  onToggle: (scaleId: string) => void;
+  expandedAdviceId: string | null;
+  onToggleAdvice: (scaleId: string) => void;
+  attemptCount?: number;
+}> = ({ scale, result, onStart, onDelete, deleteConfirm, loading, expandedTestId, onToggle, expandedAdviceId, onToggleAdvice, attemptCount }) => {
   const isCompleted = !!result;
   const meta = getScaleMeta(scale.id);
+  const fullComment = result ? getShortComment(result) : '';
+  const isExpanded = expandedTestId === scale.id;
+  const adviceItems = result ? getAdviceForLabel(result.interpretation.label) : [];
+  const isAdviceExpanded = expandedAdviceId === scale.id;
 
   return (
     <div style={{
@@ -91,46 +167,149 @@ const ScaleRow: React.FC<{
         {meta.icon}
       </div>
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2, flexWrap: 'wrap' }}>
           <span style={{ fontSize: 11, fontWeight: 700, color: '#64748B' }}>{scale.shortName}</span>
+          {scale.targetGender === 'female' && (
+            <span style={{ fontSize: 10, fontWeight: 700, color: '#DB2777', background: 'rgba(219,39,119,0.08)', border: '1px solid rgba(219,39,119,0.2)', borderRadius: 20, padding: '1px 7px' }}>
+              Pour les femmes
+            </span>
+          )}
+          {scale.targetGender === 'male' && (
+            <span style={{ fontSize: 10, fontWeight: 700, color: '#2563EB', background: 'rgba(37,99,235,0.08)', border: '1px solid rgba(37,99,235,0.2)', borderRadius: 20, padding: '1px 7px' }}>
+              Pour les hommes
+            </span>
+          )}
           {isCompleted && <span style={{ fontSize: 11 }}>✅</span>}
+          {isCompleted && attemptCount && attemptCount > 1 && (
+            <span style={{ fontSize: 10, fontWeight: 600, color: '#6B7280', background: '#F3F4F6', borderRadius: 20, padding: '1px 7px' }}>
+              Passé {attemptCount} fois
+            </span>
+          )}
         </div>
         <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: '#0A2342', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
           {meta.label}
         </p>
         {isCompleted && result ? (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4, flexWrap: 'wrap' }}>
-            <span style={{
-              display: 'inline-block', padding: '2px 10px', borderRadius: 20,
-              fontSize: 11, fontWeight: 700,
-              background: getSeverityBg(result.interpretation.severity),
-              color: getSeverityColor(result.interpretation.severity),
-            }}>
-              {result.interpretation.label}
-            </span>
-            <span style={{ fontSize: 11, color: '#94A3B8' }}>Score : {result.totalScore}</span>
-            {result.completedAt && (
-              <span style={{ fontSize: 11, color: '#CBD5E1' }}>{formatDate(result.completedAt)}</span>
+          <>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4, flexWrap: 'wrap' }}>
+              <span style={{
+                display: 'inline-block', padding: '2px 10px', borderRadius: 20,
+                fontSize: 11, fontWeight: 700,
+                background: getSeverityBg(result.interpretation.severity),
+                color: getSeverityColor(result.interpretation.severity),
+              }}>
+                {result.interpretation.label}
+              </span>
+              <span style={{ fontSize: 11, color: '#94A3B8' }}>Score : {result.totalScore}</span>
+              {result.completedAt && (
+                <span style={{ fontSize: 11, color: '#CBD5E1' }}>{formatDate(result.completedAt)}</span>
+              )}
+            </div>
+            {fullComment && (
+              <div style={{ marginTop: 6 }}>
+                <button
+                  type="button"
+                  onClick={() => onToggle(scale.id)}
+                  style={{
+                    background: 'transparent',
+                    border: 'none',
+                    padding: 0,
+                    fontSize: 11,
+                    fontWeight: 700,
+                    color: '#3B82F6',
+                    cursor: 'pointer',
+                  }}
+                >
+                  {isExpanded ? 'Masquer' : 'Voir mon analyse'}
+                </button>
+                {isExpanded && (
+                  <div style={{
+                    marginTop: 8,
+                    background: '#F8FAFF',
+                    border: '1px solid rgba(59,130,246,0.12)',
+                    borderRadius: 10,
+                    padding: '10px 12px',
+                    fontSize: 12,
+                    color: '#374151',
+                    lineHeight: 1.55,
+                  }}>
+                    {fullComment}
+                  </div>
+                )}
+              </div>
             )}
-          </div>
+            {adviceItems.length > 0 && (
+              <div style={{ marginTop: 8 }}>
+                <button
+                  type="button"
+                  onClick={() => onToggleAdvice(scale.id)}
+                  style={{
+                    background: 'transparent',
+                    border: 'none',
+                    padding: 0,
+                    fontSize: 11,
+                    fontWeight: 700,
+                    color: '#0EA5E9',
+                    cursor: 'pointer',
+                  }}
+                >
+                  {isAdviceExpanded ? 'Masquer' : '💡 Voir mes conseils'}
+                </button>
+                {isAdviceExpanded && (
+                  <div style={{
+                    marginTop: 8,
+                    background: '#F0F9FF',
+                    border: '1px solid rgba(14,165,233,0.18)',
+                    borderRadius: 10,
+                    padding: '10px 12px',
+                    fontSize: 12,
+                    color: '#0A2342',
+                    lineHeight: 1.55,
+                  }}>
+                    <div style={{ fontWeight: 700, marginBottom: 6 }}>💡 Conseils</div>
+                    <div>
+                      {adviceItems.slice(0, 3).map((tip, idx) => (
+                        <div key={idx} style={{ display: 'flex', gap: 6 }}>
+                          <span>•</span>
+                          <span>{tip}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </>
         ) : (
           <span style={{ fontSize: 11, color: '#94A3B8', marginTop: 2, display: 'block' }}>
             À faire · {scale.timeEstimateMinutes} min
           </span>
         )}
       </div>
-      <div style={{ flexShrink: 0 }}>
+      <div style={{ flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'flex-end' }}>
         {isCompleted ? (
-          <button onClick={() => onStart(scale.id)} disabled={loading} style={{
-            background: 'transparent', border: '1.5px solid rgba(34,197,94,0.4)',
-            borderRadius: 18, padding: '5px 12px', fontSize: 11, fontWeight: 600,
-            color: '#16A34A', cursor: 'pointer', display: 'flex', alignItems: 'center',
-            gap: 4, opacity: loading ? 0.6 : 1,
-          }}>
-            {loading
-              ? <div style={{ width: 12, height: 12, border: '1.5px solid #16A34A', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
-              : 'Refaire'}
-          </button>
+          <>
+            <button onClick={() => onStart(scale.id)} disabled={loading} style={{
+              background: 'transparent', border: '1.5px solid rgba(34,197,94,0.4)',
+              borderRadius: 18, padding: '5px 12px', fontSize: 11, fontWeight: 600,
+              color: '#16A34A', cursor: 'pointer', display: 'flex', alignItems: 'center',
+              gap: 4, opacity: loading ? 0.6 : 1,
+            }}>
+              {loading
+                ? <div style={{ width: 12, height: 12, border: '1.5px solid #16A34A', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
+                : 'Refaire'}
+            </button>
+            <button onClick={() => onDelete(scale.id)} style={{
+              background: deleteConfirm ? '#FEE2E2' : 'transparent',
+              border: deleteConfirm ? '1px solid #FCA5A5' : 'none',
+              borderRadius: 12,
+              padding: '2px 8px', fontSize: 10, fontWeight: 600,
+              color: '#DC2626', cursor: 'pointer',
+              opacity: deleteConfirm ? 1 : 0.6,
+            }}>
+              {deleteConfirm ? 'Confirmer ?' : 'Supprimer'}
+            </button>
+          </>
         ) : (
           <button onClick={() => onStart(scale.id)} disabled={loading} style={{
             background: 'linear-gradient(135deg,#3B82F6,#2DD4BF)', border: 'none',
@@ -195,7 +374,8 @@ const ProfileCard: React.FC<{
   compatibilityId: string | null;
   isAuthenticated: boolean;
   cardRef: React.RefObject<HTMLDivElement>;
-}> = ({ isMental, prenom, profileResults, scales, allScalesForCategory, drLoAnalysis, compatibilityId, isAuthenticated, cardRef }) => {
+  sexualFilter?: SexualHealthFilter | null;
+}> = ({ isMental, prenom, profileResults, scales, allScalesForCategory, drLoAnalysis, compatibilityId, isAuthenticated, cardRef, sexualFilter }) => {
 
   const accentColor = isMental ? '#1E40AF' : '#7C3AED';
   const gradientBg = isMental
@@ -225,7 +405,7 @@ const ProfileCard: React.FC<{
     : null;
 
   // Compatibility lock status
-  const required = isMental ? MENTAL_REQUIRED : SEXUAL_REQUIRED;
+  const required = isMental ? MENTAL_REQUIRED : getSexualRequired(sexualFilter ?? null);
   const doneRequired = required.filter(r => profileResults[r.id]).length;
   const totalRequired = required.length;
   const isUnlocked = !!compatibilityId;
@@ -275,7 +455,7 @@ const ProfileCard: React.FC<{
             background: 'rgba(255,255,255,0.15)', padding: '3px 10px', borderRadius: 20,
             letterSpacing: '1px',
           }}>
-            {isMental ? 'SANTÉ MENTALE' : 'SANTÉ SEXUELLE'}
+            {isMental ? 'PROFIL PSYCHOLOGIQUE' : 'VIE INTIME'}
           </span>
         </div>
 
@@ -552,12 +732,19 @@ const AssessmentCategoryPage: React.FC = () => {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [showLoginWall, setShowLoginWall] = useState(false);
   const [guestCount, setGuestCount] = useState(0);
+  const [expandedTestId, setExpandedTestId] = useState<string | null>(null);
+  const [expandedAdviceId, setExpandedAdviceId] = useState<string | null>(null);
+  const [attemptCounts, setAttemptCounts] = useState<Record<string, number>>({});
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [showResetModal, setShowResetModal] = useState(false);
+  const [resetting, setResetting] = useState(false);
   const [sexualFilter, setSexualFilter] = useState<SexualHealthFilter | null>(
     () => getSexualHealthFilter()
   );
   const [showSexualFilter, setShowSexualFilter] = useState(
     !isMental && !isSexualFilterComplete()
   );
+  const [sexualAccessGranted, setSexualAccessGranted] = useState(isMental);
 
   const onboardingProfile = getOnboardingProfile();
   const hiddenIds = onboardingProfile ? getHiddenScaleIds(onboardingProfile) : [];
@@ -565,6 +752,7 @@ const AssessmentCategoryPage: React.FC = () => {
   const allScales = isMental ? MENTAL_HEALTH_SCALES : SEXUAL_HEALTH_SCALES;
   const scales = allScales.filter(s => !hiddenIds.includes(s.id) && !hiddenSexualIds.includes(s.id));
   const completedCount = scales.filter(s => profileResults[s.id]).length;
+  const bonusCompleted = isMental ? BONUS_SCALES.filter(s => profileResults[s.id]).length : 0;
 
   // Redirect si catégorie invalide
   useEffect(() => {
@@ -592,6 +780,10 @@ const AssessmentCategoryPage: React.FC = () => {
           setShowSexualFilter(false);
         }
       })
+      .catch(() => {});
+    // Charger les compteurs de tentatives
+    getAllTestAttemptCounts(currentUser.id)
+      .then(counts => setAttemptCounts(counts))
       .catch(() => {});
   }, [isAuthenticated, currentUser?.id, isValidCategory]);
 
@@ -652,40 +844,127 @@ const AssessmentCategoryPage: React.FC = () => {
     }
   };
 
+  const handleDeleteScale = async (scaleId: string) => {
+    if (!currentUser) return;
+    if (deleteConfirmId === scaleId) {
+      try {
+        await deleteTestResult(currentUser.id, scaleId);
+        setProfileResults(prev => { const copy = { ...prev }; delete copy[scaleId]; return copy; });
+        setDeleteConfirmId(null);
+      } catch {
+        setErrorMsg('Erreur lors de la suppression.');
+      }
+    } else {
+      setDeleteConfirmId(scaleId);
+      setTimeout(() => setDeleteConfirmId(null), 5000);
+    }
+  };
+
+  const handleResetProfile = async () => {
+    if (!currentUser) return;
+    setResetting(true);
+    try {
+      await resetFullProfile(currentUser.id);
+      window.location.reload();
+    } catch {
+      setResetting(false);
+      setShowResetModal(false);
+    }
+  };
+
   const switchTab = (tab: 'evaluations' | 'profil') => {
     setActiveTab(tab);
     setSearchParams({ tab });
   };
 
+  const toggleAnalysis = (scaleId: string) => {
+    setExpandedTestId(prev => (prev === scaleId ? null : scaleId));
+  };
+
+  const toggleAdvice = (scaleId: string) => {
+    setExpandedAdviceId(prev => (prev === scaleId ? null : scaleId));
+  };
+
   const shareProfile = async () => {
-    if (!cardRef.current || isCapturing) return;
+    if (isCapturing) return;
     setIsCapturing(true);
     try {
-      const html2canvas = (await import('html2canvas')).default;
-      const canvas = await html2canvas(cardRef.current, {
-        scale: 2,
-        useCORS: true,
-        backgroundColor: '#FFFFFF',
-      });
-      const dataUrl = canvas.toDataURL('image/png');
-      // Try Web Share API (mobile)
-      canvas.toBlob(async (blob) => {
-        if (blob && navigator.share) {
+      const userName = onboardingProfile?.prenom ?? currentUser?.name ?? 'Utilisateur';
+      const profileLabel = isMental ? 'Sante mentale' : 'Vie intime';
+      const profileType = isMental ? 'mental_health' : 'sexual_health';
+
+      // Build completed tests data
+      const completedTests = scales
+        .filter(s => profileResults[s.id])
+        .map(s => {
+          const r = profileResults[s.id];
+          const meta = getScaleMeta(s.id);
+          return {
+            name: s.title,
+            icon: s.icon ?? '',
+            resultLabel: r.interpretation?.label ?? '',
+            severity: r.interpretation?.severity ?? 'none',
+            score: r.totalScore,
+            maxScore: meta?.scoreMax ?? 100,
+          };
+        });
+
+      // Build bonus tests data (only for mental health)
+      const bonusTests = isMental
+        ? BONUS_SCALES
+            .filter(s => profileResults[s.id])
+            .map(s => {
+              const r = profileResults[s.id];
+              return {
+                name: s.title,
+                icon: s.icon ?? '',
+                resultLabel: r.interpretation?.label ?? '',
+                severity: r.interpretation?.severity ?? 'none',
+              };
+            })
+        : undefined;
+
+      // Evaluation date
+      const latestDate = scales
+        .filter(s => profileResults[s.id])
+        .reduce<Date | null>((best, s) => {
+          const r = profileResults[s.id];
+          if (!r?.completedAt) return best;
           try {
-            const file = new File([blob], `health-e-profil-${onboardingProfile?.prenom ?? 'moi'}.png`, { type: 'image/png' });
-            if (navigator.canShare?.({ files: [file] })) {
-              await navigator.share({ files: [file], title: 'Mon profil Health-e' });
-              return;
+            let d: Date;
+            if (typeof (r.completedAt as { toDate?: () => Date }).toDate === 'function') {
+              d = (r.completedAt as { toDate: () => Date }).toDate();
+            } else {
+              d = new Date(r.completedAt as string);
             }
-          } catch { /* fall through to download */ }
-        }
-        // Fallback: download
-        const link = document.createElement('a');
-        link.download = `health-e-profil-${onboardingProfile?.prenom ?? 'moi'}.png`;
-        link.href = dataUrl;
-        link.click();
-      });
-    } catch { /* silent */ } finally {
+            if (isNaN(d.getTime())) return best;
+            return !best || d > best ? d : best;
+          } catch { return best; }
+        }, null);
+
+      const evalDate = latestDate
+        ? latestDate.toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' })
+        : new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });
+
+      const pdfData: ProfilePDFData = {
+        userName,
+        profileType: profileType as 'mental_health' | 'sexual_health',
+        profileLabel,
+        drLoAnalysis,
+        completedTests,
+        bonusTests,
+        completedCount,
+        totalCount: scales.length,
+        bonusCount: isMental ? bonusCompleted : undefined,
+        bonusTotalCount: isMental ? BONUS_SCALES.length : undefined,
+        compatibilityCode: compatibilityId,
+        evaluationDate: evalDate,
+      };
+
+      await generateProfilePDF(pdfData);
+    } catch (err) {
+      console.error('PDF generation error:', err);
+    } finally {
       setIsCapturing(false);
     }
   };
@@ -697,6 +976,15 @@ const AssessmentCategoryPage: React.FC = () => {
       setTimeout(() => setCopyMsg(null), 2000);
     });
   };
+
+  if (!isMental && !sexualAccessGranted) {
+    return (
+      <SexualAccessGate
+        userId={isAuthenticated && currentUser ? currentUser.id : null}
+        onGranted={() => setSexualAccessGranted(true)}
+      />
+    );
+  }
 
   if (showSexualFilter) {
     return (
@@ -741,7 +1029,7 @@ const AssessmentCategoryPage: React.FC = () => {
             ←
           </button>
           <h1 style={{ margin: 0, fontSize: 18, fontWeight: 800, color: '#0A2342', flex: 1 }}>
-            {isMental ? '🧠 Santé Mentale' : '💋 Santé Sexuelle'}
+            {isMental ? '🧠 Profil psychologique' : '💋 Vie intime'}
           </h1>
           <span style={{
             background: `${accentColor}18`, color: accentColor,
@@ -823,14 +1111,22 @@ const AssessmentCategoryPage: React.FC = () => {
         {/* Onglet Évaluations */}
         {activeTab === 'evaluations' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {scales.map(scale => (
-              <ScaleRow
-                key={scale.id}
-                scale={scale}
-                result={profileResults[scale.id]}
-                onStart={startScale}
-                loading={loadingCard === scale.id}
-              />
+            {scales.map((scale, idx) => (
+              <div key={scale.id} {...(idx === 0 ? { 'data-tooltip-id': 'first-item-card' } : {})}>
+                <ScaleRow
+                  scale={scale}
+                  result={profileResults[scale.id]}
+                  onStart={startScale}
+                  onDelete={handleDeleteScale}
+                  deleteConfirm={deleteConfirmId === scale.id}
+                  loading={loadingCard === scale.id}
+                  expandedTestId={expandedTestId}
+                  onToggle={toggleAnalysis}
+                  expandedAdviceId={expandedAdviceId}
+                  onToggleAdvice={toggleAdvice}
+                  attemptCount={attemptCounts[scale.id]}
+                />
+              </div>
             ))}
             <div style={{
               marginTop: 12,
@@ -844,6 +1140,51 @@ const AssessmentCategoryPage: React.FC = () => {
                 En cas de détresse, consultez immédiatement un spécialiste qualifié.
               </p>
             </div>
+
+            {/* ── Sous-section Tests Bonus (mental uniquement) ── */}
+            {isMental && (
+              <div style={{ marginTop: 20 }}>
+                <div style={{
+                  background: 'linear-gradient(135deg,#1E0442 0%,#2D0A5A 60%,#1E0442 100%)',
+                  borderRadius: 16, padding: '16px 18px', marginBottom: 14,
+                  position: 'relative', overflow: 'hidden',
+                }}>
+                  <div style={{ position: 'absolute', top: -15, right: -15, width: 90, height: 90, borderRadius: '50%', background: 'radial-gradient(circle, rgba(167,139,250,0.2) 0%, transparent 70%)' }} />
+                  <div style={{ position: 'relative', zIndex: 1, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <div>
+                      <p style={{ margin: '0 0 3px', fontSize: 15, fontWeight: 800, color: '#fff' }}>✨ Tests Bonus</p>
+                      <p style={{ margin: 0, fontSize: 11, color: 'rgba(255,255,255,0.6)', lineHeight: 1.4 }}>
+                        Ces tests enrichissent ton profil — très populaires 🔥
+                      </p>
+                    </div>
+                    <span style={{
+                      background: 'rgba(167,139,250,0.25)', color: '#C4B5FD',
+                      fontSize: 11, fontWeight: 700, padding: '3px 10px', borderRadius: 20,
+                      border: '1px solid rgba(167,139,250,0.3)', whiteSpace: 'nowrap',
+                    }}>
+                      {bonusCompleted}/{BONUS_SCALES.length}
+                    </span>
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  {BONUS_SCALES.map(scale => (
+                    <ScaleRow
+                      key={scale.id}
+                      scale={scale}
+                      result={profileResults[scale.id]}
+                      onStart={startScale}
+                      loading={loadingCard === scale.id}
+                      expandedTestId={expandedTestId}
+                      onToggle={toggleAnalysis}
+                      expandedAdviceId={expandedAdviceId}
+                      onToggleAdvice={toggleAdvice}
+                      attemptCount={attemptCounts[scale.id]}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         )}
 
@@ -860,7 +1201,57 @@ const AssessmentCategoryPage: React.FC = () => {
               compatibilityId={compatibilityId}
               isAuthenticated={isAuthenticated}
               cardRef={cardRef}
+              sexualFilter={sexualFilter}
             />
+
+            {/* ── Résultats Tests Bonus (mental uniquement) ── */}
+            {isMental && bonusCompleted > 0 && (
+              <div style={{
+                background: '#fff',
+                border: '1.5px solid rgba(124,58,237,0.15)',
+                borderRadius: 16, padding: '16px 18px',
+                boxShadow: '0 2px 12px rgba(124,58,237,0.06)',
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+                  <span style={{ fontSize: 12, fontWeight: 800, color: '#5B21B6', letterSpacing: '0.5px' }}>
+                    ✨ TESTS BONUS
+                  </span>
+                  <span style={{ fontSize: 12, fontWeight: 700, color: '#7C3AED' }}>
+                    {bonusCompleted}/{BONUS_SCALES.length}
+                  </span>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  {BONUS_SCALES.filter(s => profileResults[s.id]).map(scale => {
+                    const result = profileResults[scale.id];
+                    const meta = getScaleMeta(scale.id);
+                    const sev = result.interpretation.severity;
+                    const dotColor = getSeverityDot(sev);
+                    const emoji = getSeverityEmoji(sev);
+                    return (
+                      <div key={scale.id} style={{
+                        display: 'flex', alignItems: 'center', gap: 8,
+                        padding: '7px 10px', borderRadius: 10, background: '#F5F3FF',
+                      }}>
+                        <span style={{ fontSize: 14, width: 20, textAlign: 'center', flexShrink: 0 }}>{meta.icon}</span>
+                        <span style={{ fontSize: 11, fontWeight: 600, color: '#0A2342', flex: 1, minWidth: 0 }}>
+                          {meta.label}
+                        </span>
+                        <span style={{
+                          display: 'inline-flex', alignItems: 'center', gap: 3,
+                          background: `${dotColor}18`, color: dotColor,
+                          fontSize: 10, fontWeight: 700,
+                          padding: '2px 8px', borderRadius: 18,
+                          border: `1px solid ${dotColor}30`,
+                          whiteSpace: 'nowrap', flexShrink: 0,
+                        }}>
+                          {emoji} {result.interpretation.label}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
 
             {/* Action buttons */}
             <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
@@ -884,8 +1275,8 @@ const AssessmentCategoryPage: React.FC = () => {
                 }}
               >
                 {isCapturing
-                  ? <><div style={{ width: 14, height: 14, border: '2px solid #94A3B8', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} /> Capture…</>
-                  : <>📸 Télécharger mon profil</>
+                  ? <><div style={{ width: 14, height: 14, border: '2px solid #94A3B8', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} /> Génération…</>
+                  : <>📄 Télécharger (PDF)</>
                 }
               </button>
 
@@ -913,9 +1304,46 @@ const AssessmentCategoryPage: React.FC = () => {
                 Complète au moins une évaluation pour télécharger ton profil
               </p>
             )}
+
+            {/* ── Réinitialiser ── */}
+            {isAuthenticated && currentUser && (
+              <div style={{
+                marginTop: 20, padding: '14px 16px',
+                background: '#FEF2F2', border: '1px solid #FECACA',
+                borderRadius: 12,
+                display: 'flex', alignItems: 'center', gap: 12,
+              }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <p style={{ margin: 0, fontSize: 12, fontWeight: 600, color: '#991B1B' }}>
+                    Réinitialiser mon profil
+                  </p>
+                  <p style={{ margin: '3px 0 0', fontSize: 11, color: '#B91C1C', lineHeight: 1.4 }}>
+                    Supprime tous tes résultats et synthèses Dr Lô. Ton compte et préférences sont conservés.
+                  </p>
+                </div>
+                <button
+                  onClick={() => setShowResetModal(true)}
+                  style={{
+                    background: 'white', border: '1px solid #FCA5A5',
+                    borderRadius: 8, padding: '7px 14px',
+                    fontSize: 11, fontWeight: 700, color: '#DC2626',
+                    cursor: 'pointer', flexShrink: 0, whiteSpace: 'nowrap' as const,
+                  }}
+                >
+                  Réinitialiser
+                </button>
+              </div>
+            )}
           </div>
         )}
       </div>
+
+      <ConfirmResetModal
+        isOpen={showResetModal}
+        onClose={() => setShowResetModal(false)}
+        onConfirm={handleResetProfile}
+        loading={resetting}
+      />
 
       {/* ── Modale login wall ──────────────────────────────────────────────── */}
       {showLoginWall && (
@@ -944,7 +1372,7 @@ const AssessmentCategoryPage: React.FC = () => {
             <ul style={{ textAlign: 'left', margin: '0 0 20px', padding: '0 0 0 20px', fontSize: 12, color: '#475569', lineHeight: 1.9 }}>
               <li>✅ Accéder aux 24 évaluations sans limite</li>
               <li>✅ Sauvegarder et suivre ta progression</li>
-              <li>✅ Obtenir ton profil Dr Lô en santé mentale &amp; sexuelle</li>
+              <li>✅ Obtenir ton profil Dr Lô en profil psychologique &amp; vie intime</li>
               <li>✅ Tester ta compatibilité avec un proche</li>
             </ul>
             <Link to="/patient/access" style={{
@@ -964,6 +1392,8 @@ const AssessmentCategoryPage: React.FC = () => {
           </div>
         </div>
       )}
+      {/* Tooltips onboarding */}
+      <PageTooltips pageKey={category === 'sexual' ? 'sexual' : 'mental'} />
     </div>
   );
 };

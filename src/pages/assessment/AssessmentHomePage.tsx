@@ -6,7 +6,6 @@ import {
   getProfileProgress,
   saveOnboardingToProfile,
   resetUserProfile,
-  createSession,
 } from '../../services/evaluationService';
 import {
   getGuestCount,
@@ -19,32 +18,11 @@ import {
   saveOnboardingProfile,
 } from '../../utils/onboardingProfile';
 import OnboardingProfile from '../../components/assessment/OnboardingProfile';
+import PageTooltips from '../../components/Onboarding/PageTooltips';
 import { MENTAL_HEALTH_SCALES, SEXUAL_HEALTH_SCALES, BONUS_SCALES } from '../../data/scales';
 import type { ScaleResult } from '../../types/assessment';
 import type { OnboardingProfile as OnboardingProfileType } from '../../types/onboarding';
 
-interface BonusCard {
-  id: string;
-  emoji: string;
-  name: string;
-  hook: string;
-  duration: number;
-  scaleId: string;
-}
-
-const BONUS_CARDS: BonusCard[] = [
-  { id: 'dependance',   emoji: '💔', name: 'Dépendance affective',          hook: 'Aimes-tu trop ou juste assez ?',                        duration: 5,  scaleId: 'bonus_dependance'   },
-  { id: 'narcissisme',  emoji: '🎭', name: 'Pervers narcissique',           hook: 'Es-tu vraiment toxique ou juste incompris(e) ?',        duration: 5,  scaleId: 'bonus_narcissisme'  },
-  { id: 'hsp',          emoji: '🌊', name: 'Hypersensibilité (HSP)',        hook: 'Ressens-tu plus que les autres ?',                      duration: 5,  scaleId: 'bonus_hsp'          },
-  { id: 'tdah',         emoji: '🔄', name: 'TDAH Adulte',                   hook: 'Ton cerveau est-il toujours en mode turbo ?',           duration: 7,  scaleId: 'bonus_tdah'         },
-  { id: 'hpi',          emoji: '⚡', name: 'Haut Potentiel Intellectuel',   hook: 'Ton cerveau tourne-t-il à une vitesse différente ?',    duration: 5,  scaleId: 'bonus_hpi'          },
-  { id: 'confiance',    emoji: '🦁', name: 'Confiance en soi',              hook: 'À quel point crois-tu vraiment en toi ?',               duration: 5,  scaleId: 'bonus_confiance'    },
-  { id: 'personnalite', emoji: '🌪️', name: 'Trouble de personnalité',      hook: 'Est-ce que ton caractère cache quelque chose ?',        duration: 5,  scaleId: 'bonus_personnalite' },
-  { id: 'manipulation', emoji: '🎭', name: 'Manipulation & Toxicité',      hook: 'Es-tu plus manipulateur(rice) que tu ne le crois ?',    duration: 7,  scaleId: 'bonus_manipulation' },
-  { id: 'burnout',      emoji: '🔥', name: 'Burnout professionnel',         hook: 'Ton corps te dit-il d\'arrêter ?',                      duration: 4,  scaleId: 'bonus_burnout'      },
-  { id: 'jalousie',     emoji: '😤', name: 'Jalousie',                      hook: 'La jalousie te contrôle-t-elle ?',                      duration: 5,  scaleId: 'bonus_jalousie'     },
-  { id: 'eq',           emoji: '💚', name: 'Intelligence émotionnelle',     hook: 'Quel est ton vrai QE émotionnel ?',                     duration: 6,  scaleId: 'bonus_eq'           },
-];
 
 const AssessmentHomePage: React.FC = () => {
   const navigate = useNavigate();
@@ -62,8 +40,6 @@ const AssessmentHomePage: React.FC = () => {
   const [bonusCompleted, setBonusCompleted] = useState(0);
   const [guestCount, setGuestCount] = useState(0);
   const [loadRetry, setLoadRetry] = useState(0);
-  const [showAuthModal, setShowAuthModal] = useState(false);
-  const [startingBonus, setStartingBonus] = useState<string | null>(null);
 
   // Invité : lire les résultats locaux
   useEffect(() => {
@@ -129,18 +105,8 @@ const AssessmentHomePage: React.FC = () => {
   const sexualTotal = SEXUAL_HEALTH_SCALES.length;
   const bonusTotal = BONUS_SCALES.length;
 
-  const startBonusTest = async (scaleId: string) => {
-    if (!isAuthenticated || !currentUser) { setShowAuthModal(true); return; }
-    setStartingBonus(scaleId);
-    try {
-      const session = await createSession(currentUser.id, [scaleId]);
-      navigate(`/assessment/quiz/${session.id}`);
-    } catch { /* silencieux */ } finally {
-      setStartingBonus(null);
-    }
-  };
-
   return (
+    <>
     <div style={{ minHeight: '100vh', background: '#F8FAFF', fontFamily: "'Inter',-apple-system,sans-serif" }}>
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
 
@@ -215,8 +181,9 @@ const AssessmentHomePage: React.FC = () => {
           Sélectionne un domaine pour commencer ou voir tes résultats :
         </p>
 
-        {/* ── Carte Santé Mentale ── */}
+        {/* ── Carte Profil psychologique ── */}
         <button
+          data-tooltip-id="card-mental-health"
           onClick={() => navigate('/assessment/mental')}
           style={{
             width: '100%', marginBottom: 14,
@@ -233,7 +200,7 @@ const AssessmentHomePage: React.FC = () => {
               <span style={{ fontSize: 34 }}>🧠</span>
               <div>
                 <p style={{ margin: 0, fontSize: 17, fontWeight: 800, color: '#0A2342' }}>
-                  Santé Mentale
+                  Profil psychologique
                 </p>
                 <p style={{ margin: '2px 0 0', fontSize: 12, color: '#64748B' }}>
                   Anxiété, humeur, personnalité, attachement…
@@ -244,7 +211,12 @@ const AssessmentHomePage: React.FC = () => {
           </div>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
             <span style={{ fontSize: 12, color: '#0A2342', fontWeight: 600 }}>
-              {mentalCompleted}/{mentalTotal} évaluations
+              {mentalCompleted}/{mentalTotal} principales
+              {bonusCompleted > 0 && (
+                <span style={{ marginLeft: 6, color: '#7C3AED', fontWeight: 700 }}>
+                  · {bonusCompleted}/{bonusTotal} bonus
+                </span>
+              )}
             </span>
             <span style={{ fontSize: 12, fontWeight: 700, color: '#3B82F6' }}>
               {Math.round((mentalCompleted / mentalTotal) * 100)}%
@@ -261,8 +233,9 @@ const AssessmentHomePage: React.FC = () => {
           </div>
         </button>
 
-        {/* ── Carte Santé Sexuelle ── */}
+        {/* ── Carte Vie intime ── */}
         <button
+          data-tooltip-id="card-intimate-life"
           onClick={() => navigate('/assessment/sexual')}
           style={{
             width: '100%',
@@ -279,7 +252,7 @@ const AssessmentHomePage: React.FC = () => {
               <span style={{ fontSize: 34 }}>💋</span>
               <div>
                 <p style={{ margin: 0, fontSize: 17, fontWeight: 800, color: '#0A2342' }}>
-                  Santé Sexuelle
+                  Vie intime
                 </p>
                 <p style={{ margin: '2px 0 0', fontSize: 12, color: '#64748B' }}>
                   Désir, satisfaction, intimité, identité…
@@ -317,134 +290,39 @@ const AssessmentHomePage: React.FC = () => {
           </div>
         </button>
 
-        {/* ── Section Tests Bonus ── */}
-        <div style={{ marginTop: 28 }}>
-          {/* Header bonus */}
-          <div style={{
-            background: 'linear-gradient(135deg, #1A0533 0%, #2D0A5A 50%, #1A0533 100%)',
-            borderRadius: 18, padding: '20px 22px', marginBottom: 16,
-            position: 'relative', overflow: 'hidden',
-          }}>
-            <div style={{ position: 'absolute', top: -20, right: -20, width: 120, height: 120, borderRadius: '50%', background: 'radial-gradient(circle, rgba(167,139,250,0.2) 0%, transparent 70%)' }} />
-            <div style={{ position: 'relative', zIndex: 1 }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <span style={{ fontSize: 22 }}>✨</span>
-                  <p style={{ margin: 0, fontSize: 17, fontWeight: 800, color: '#fff' }}>Tests Bonus</p>
-                </div>
-                <span style={{
-                  background: 'rgba(167,139,250,0.25)', color: '#C4B5FD',
-                  fontSize: 11, fontWeight: 700, padding: '3px 10px', borderRadius: 20,
-                  border: '1px solid rgba(167,139,250,0.3)',
-                }}>
-                  {bonusCompleted}/{bonusTotal} complétés
-                </span>
-              </div>
-              <p style={{ margin: 0, fontSize: 12, color: 'rgba(255,255,255,0.65)', lineHeight: 1.5 }}>
-                Explore des profils qui font le buzz — réservés aux membres
+        {/* Mon Espace */}
+        <button
+          data-tooltip-id="btn-mon-espace"
+          onClick={() => navigate('/mon-espace')}
+          style={{
+            width: '100%', padding: '18px 20px', borderRadius: 18, border: 'none',
+            marginTop: 20,
+            background: 'linear-gradient(135deg,#065F46 0%,#1D4ED8 100%)',
+            color: '#fff', cursor: 'pointer', textAlign: 'left',
+            boxShadow: '0 4px 20px rgba(6,95,70,0.25)',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div style={{ display: 'flex', gap: -4 }}>
+              <span style={{ fontSize: 26 }}>📔</span>
+              <span style={{ fontSize: 26, marginLeft: -4 }}>💬</span>
+            </div>
+            <div>
+              <p style={{ margin: 0, fontSize: 16, fontWeight: 800 }}>🌿 Mon Espace</p>
+              <p style={{ margin: '2px 0 0', fontSize: 12, color: 'rgba(255,255,255,0.8)' }}>
+                Ton journal &amp; Dr Lo rien que pour toi
               </p>
             </div>
+            <span style={{ marginLeft: 'auto', fontSize: 18, opacity: 0.8 }}>→</span>
           </div>
+        </button>
 
-          {/* Grille des cards bonus */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 12 }}>
-            {BONUS_CARDS.map((card) => {
-              const isDone = !!profileResults[card.scaleId];
-              const isLoading = startingBonus === card.scaleId;
-              return (
-                <div
-                  key={card.id}
-                  style={{
-                    background: '#fff',
-                    border: isDone ? '2px solid rgba(124,58,237,0.25)' : '2px solid rgba(124,58,237,0.08)',
-                    borderRadius: 16, padding: '16px 14px',
-                    display: 'flex', flexDirection: 'column', gap: 10,
-                    boxShadow: '0 2px 12px rgba(124,58,237,0.06)',
-                    position: 'relative', overflow: 'hidden',
-                  }}
-                >
-                  {isDone && (
-                    <div style={{ position: 'absolute', top: 10, right: 10, width: 20, height: 20, borderRadius: '50%', background: 'linear-gradient(135deg,#7C3AED,#EC4899)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10 }}>✓</div>
-                  )}
-                  <span style={{ fontSize: 28 }}>{card.emoji}</span>
-                  <div style={{ flex: 1 }}>
-                    <p style={{ margin: '0 0 4px', fontSize: 13, fontWeight: 800, color: '#0A2342', lineHeight: 1.3 }}>{card.name}</p>
-                    <p style={{ margin: 0, fontSize: 11, color: '#64748B', fontStyle: 'italic', lineHeight: 1.4 }}>"{card.hook}"</p>
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <span style={{ fontSize: 10, color: '#94A3B8' }}>⏱ {card.duration} min</span>
-                      <span style={{ fontSize: 10, fontWeight: 700, color: '#7C3AED', background: 'rgba(124,58,237,0.08)', padding: '1px 6px', borderRadius: 8 }}>✨ Bonus</span>
-                    </div>
-                  </div>
-                  <button
-                    onClick={() => startBonusTest(card.scaleId)}
-                    disabled={isLoading}
-                    style={{
-                      width: '100%', padding: '9px 0', borderRadius: 10, border: 'none',
-                      background: isDone
-                        ? 'rgba(124,58,237,0.08)'
-                        : 'linear-gradient(135deg,#7C3AED,#EC4899)',
-                      color: isDone ? '#7C3AED' : '#fff',
-                      fontSize: 12, fontWeight: 700, cursor: isLoading ? 'wait' : 'pointer',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5,
-                    }}
-                  >
-                    {isLoading ? (
-                      <>
-                        <div style={{ width: 12, height: 12, border: '2px solid rgba(255,255,255,0.4)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
-                        Chargement…
-                      </>
-                    ) : isDone ? '🔄 Refaire' : 'Faire ce test →'}
-                  </button>
-                </div>
-              );
-            })}
-          </div>
-        </div>
       </div>
-
-      {/* ── Modal auth pour tests bonus ── */}
-      {showAuthModal && (
-        <div
-          style={{ position: 'fixed', inset: 0, zIndex: 9000, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}
-          onClick={() => setShowAuthModal(false)}
-        >
-          <div
-            style={{ background: '#fff', borderRadius: 22, maxWidth: 380, width: '100%', padding: '32px 28px', textAlign: 'center', boxShadow: '0 20px 60px rgba(0,0,0,0.3)' }}
-            onClick={e => e.stopPropagation()}
-          >
-            <div style={{ fontSize: 48, marginBottom: 16 }}>🔒</div>
-            <h2 style={{ margin: '0 0 10px', fontSize: 20, fontWeight: 800, color: '#0A2342' }}>Tests bonus — membres uniquement</h2>
-            <p style={{ margin: '0 0 24px', fontSize: 14, color: '#64748B', lineHeight: 1.6 }}>
-              Les tests bonus sont réservés aux membres Healt-e. Crée ton compte gratuitement pour accéder à tous les tests et construire ton profil complet.
-            </p>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              <Link
-                to="/patient/access?mode=register"
-                style={{ display: 'block', padding: '13px 0', borderRadius: 14, background: 'linear-gradient(135deg,#7C3AED,#EC4899)', color: '#fff', fontSize: 14, fontWeight: 700, textDecoration: 'none' }}
-                onClick={() => setShowAuthModal(false)}
-              >
-                Créer mon compte
-              </Link>
-              <Link
-                to="/patient/access"
-                style={{ display: 'block', padding: '12px 0', borderRadius: 14, border: '1.5px solid rgba(124,58,237,0.2)', color: '#7C3AED', fontSize: 14, fontWeight: 700, textDecoration: 'none' }}
-                onClick={() => setShowAuthModal(false)}
-              >
-                Me connecter
-              </Link>
-              <button
-                onClick={() => setShowAuthModal(false)}
-                style={{ background: 'none', border: 'none', color: '#94A3B8', fontSize: 13, cursor: 'pointer', padding: '4px 0' }}
-              >
-                Plus tard
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
+
+    {/* Tooltips onboarding */}
+    <PageTooltips pageKey="home" />
+    </>
   );
 };
 

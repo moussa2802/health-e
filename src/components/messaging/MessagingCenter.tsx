@@ -66,19 +66,7 @@ const MessagingCenter: React.FC = () => {
     const handleOnline = () => {
       setIsOnline(true);
       setError(null);
-      console.log("🌐 Connection restored");
-
-      // Ensure Firestore is ready when connection is restored
-      ensureFirestoreReady()
-        .then(() => {
-          console.log("✅ Firestore ready after connection restored");
-        })
-        .catch((error) => {
-          console.warn(
-            "⚠️ Failed to ensure Firestore is ready after connection restored:",
-            error
-          );
-        });
+      ensureFirestoreReady().catch(() => {});
     };
 
     const handleOffline = () => {
@@ -86,7 +74,6 @@ const MessagingCenter: React.FC = () => {
       setError(
         "Connexion internet perdue. Reconnexion automatique en cours..."
       );
-      console.log("📡 Connection lost");
     };
 
     window.addEventListener("online", handleOnline);
@@ -105,34 +92,23 @@ const MessagingCenter: React.FC = () => {
       return;
     }
 
-    console.log("🔔 Setting up conversations subscription...");
     setLoading(true);
     setError(null);
 
     // Clean up any existing subscription
     if (unsubscribeConversations.current) {
-      console.log("🧹 Cleaning up existing conversations subscription");
       unsubscribeConversations.current();
       unsubscribeConversations.current = null;
     }
 
     // CRITICAL: Ensure Firestore is ready before setting up subscription
     ensureFirestoreReady()
-      .then(() => {
-        console.log("✅ Firestore ready for conversations subscription");
-      })
-      .catch((error) => {
-        console.warn(
-          "⚠️ Failed to ensure Firestore is ready before conversations subscription:",
-          error
-        );
-      })
+      .catch(() => {})
       .finally(() => {
         try {
           const unsubscribe = subscribeToConversations(
             currentUser.id,
             (conversations) => {
-              console.log("✅ Received conversations:", conversations.length);
               setConversations(conversations);
               setLoading(false);
               setError(null);
@@ -154,9 +130,6 @@ const MessagingCenter: React.FC = () => {
   // Écouter les événements de message envoyé depuis d'autres composants
   useEffect(() => {
     const handleMessageSent = (event: CustomEvent) => {
-      console.log(
-        "📨 Message sent event received, refreshing conversations..."
-      );
       // Forcer le rafraîchissement des conversations
       if (unsubscribeConversations.current) {
         unsubscribeConversations.current();
@@ -168,10 +141,6 @@ const MessagingCenter: React.FC = () => {
         const unsubscribe = subscribeToConversations(
           currentUser.id,
           (conversations) => {
-            console.log(
-              "✅ Refreshed conversations after message sent:",
-              conversations.length
-            );
             setConversations(conversations);
           }
         );
@@ -195,14 +164,7 @@ const MessagingCenter: React.FC = () => {
       return;
     }
 
-    console.log(
-      "🔔 Setting up messages subscription for conversation:",
-      selectedConversation.id
-    );
-
-    // Clean up any existing subscription
     if (unsubscribeMessages.current) {
-      console.log("🧹 Cleaning up existing messages subscription");
       unsubscribeMessages.current();
       unsubscribeMessages.current = null;
     }
@@ -211,7 +173,6 @@ const MessagingCenter: React.FC = () => {
       const unsubscribe = subscribeToMessages(
         selectedConversation.id,
         (messages) => {
-          console.log("✅ Received messages:", messages.length);
           setMessages(messages);
 
           // Marquer les messages comme lus
@@ -286,16 +247,10 @@ const MessagingCenter: React.FC = () => {
 
     try {
       await resetFirestoreConnection();
-      console.log("✅ Firestore connection reset");
-
-      // Clear existing data
       setConversations([]);
       setMessages([]);
       setSelectedConversation(null);
-
-      // Clear caches
       await clearMessageCaches();
-      console.log("✅ Message caches cleared");
 
       // Force re-subscription by updating currentUser dependency
       // This will trigger the useEffect that sets up conversations subscription

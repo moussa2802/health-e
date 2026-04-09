@@ -334,13 +334,13 @@ const ProfessionalProfile: React.FC = () => {
                 className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition-colors inline-flex items-center"
               >
                 <ArrowLeft className="h-4 w-4 mr-2" />
-                Voir les professionnels en santé mentale
+                Voir les professionnels en profil psychologique
               </Link>
               <Link
                 to="/professionals/sexual"
                 className="bg-pink-500 text-white px-4 py-2 rounded hover:bg-pink-600 transition-colors"
               >
-                Voir les professionnels en santé sexuelle
+                Voir les professionnels en vie intime
               </Link>
             </div>
           </div>

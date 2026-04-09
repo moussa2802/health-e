@@ -19,7 +19,7 @@ const translationSets: Record<Language, Record<string, string>> = {
   fr: {
     // Common
     'app.name': 'Health-e',
-    'app.tagline': 'Consultations en santé mentale et sexuelle',
+    'app.tagline': 'Consultations en profil psychologique et vie intime',
     
     // Navigation
     'nav.home': 'Accueil',
@@ -32,8 +32,8 @@ const translationSets: Record<Language, Record<string, string>> = {
     // Home page
     'home.title': 'Consultez des professionnels de santé en ligne',
     'home.subtitle': 'Rapide, confidentiel et adapté à vos besoins',
-    'home.mentalHealth': 'Santé mentale',
-    'home.sexualHealth': 'Santé sexuelle',
+    'home.mentalHealth': 'Profil psychologique',
+    'home.sexualHealth': 'Vie intime',
     'home.getStarted': 'Commencer',
     
     // Mental health descriptions
@@ -41,7 +41,7 @@ const translationSets: Record<Language, Record<string, string>> = {
     'mental.professionals': 'Psychologues, Psychiatres',
     
     // Sexual health descriptions
-    'sexual.description': 'Consultez des sexologues, gynécologues et urologues pour votre santé sexuelle',
+    'sexual.description': 'Consultez des sexologues, gynécologues et urologues pour votre vie intime',
     'sexual.professionals': 'Sexologues, Gynécologues, Urologues',
     
     // Professional listing

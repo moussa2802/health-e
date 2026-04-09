@@ -25,6 +25,10 @@ import Footer from "./components/layout/Footer";
 import LoadingSpinner from "./components/ui/LoadingSpinner";
 import ErrorBoundary from "./components/ui/ErrorBoundary";
 import ScrollToTop from "./components/utils/ScrollToTop";
+import FloatingChat from "./components/DrLoChat/FloatingChat";
+import WelcomeFlow from "./components/Onboarding/WelcomeFlow";
+import HelpButton from "./components/Onboarding/HelpButton";
+import { useAuth } from "./contexts/AuthContext";
 import { cleanupAllProfessionalsListeners } from "./hooks/useProfessionals";
 import { cleanupAllBookingListeners } from "./hooks/useBookings";
 import {
@@ -114,6 +118,12 @@ const Ethics = lazy(() => import("./pages/Ethics"));
 const VerifyEmail = lazy(() => import("./pages/VerifyEmail"));
 const Join = lazy(() => import("./pages/Join"));
 
+// Journal pages
+const JournalPage = lazy(() => import("./pages/Journal/JournalPage"));
+const NewEntry = lazy(() => import("./pages/Journal/NewEntry"));
+const JournalEntryView = lazy(() => import("./pages/Journal/JournalEntryView"));
+const MonEspacePage = lazy(() => import("./pages/MonEspace/MonEspacePage"));
+
 // Assessment pages
 const AssessmentHomePage = lazy(() => import("./pages/assessment/AssessmentHomePage"));
 const AssessmentCategoryPage = lazy(() => import("./pages/assessment/AssessmentCategoryPage"));
@@ -136,6 +146,8 @@ const PageLoader = () => (
 const AppChrome: React.FC = () => {
   const { pathname } = useLocation();
   const isAdminRoute = pathname.startsWith("/admin");
+  const { currentUser } = useAuth();
+  const userId = currentUser?.id ?? null;
 
   return (
     <>
@@ -409,6 +421,14 @@ const AppChrome: React.FC = () => {
               }
             />
 
+            {/* Journal Routes */}
+            <Route path="/journal" element={<JournalPage userId={userId} />} />
+            <Route path="/journal/new" element={<NewEntry userId={userId} />} />
+            <Route path="/journal/:id" element={<JournalEntryView userId={userId} />} />
+
+            {/* Mon Espace */}
+            <Route path="/mon-espace" element={<MonEspacePage userId={userId} />} />
+
             {/* Assessment Routes */}
             <Route path="/assessment" element={<AssessmentHomePage />} />
             <Route path="/assessment/select" element={<AssessmentSelectPage />} />
@@ -424,6 +444,9 @@ const AppChrome: React.FC = () => {
         </Suspense>
       </main>
       {!isAdminRoute && <Footer />}
+      {!isAdminRoute && <FloatingChat userId={userId} />}
+      <WelcomeFlow />
+      <HelpButton />
     </>
   );
 };

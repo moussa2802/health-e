@@ -7,11 +7,11 @@ import type { AssessmentScale } from '../../../types/assessment';
 // Seuils : 1–2.99 faible | 3–4.30 normale | 4.31–5 élevée
 
 const opts = [
-  { value: 1, label: "Pas du tout d'accord" },
-  { value: 2, label: "Plutôt pas d'accord" },
-  { value: 3, label: "Neutre" },
-  { value: 4, label: "Plutôt d'accord" },
-  { value: 5, label: "Tout à fait d'accord" },
+  { value: 1, label: "Pas du tout" },
+  { value: 2, label: "Pas vraiment" },
+  { value: 3, label: "Plus ou moins" },
+  { value: 4, label: "Plutôt oui" },
+  { value: 5, label: "Tout à fait" },
 ];
 
 export const BRS: AssessmentScale = {
@@ -20,48 +20,48 @@ export const BRS: AssessmentScale = {
   shortName: "BRS",
   category: 'mental_health',
   description: "Mesure la capacité à rebondir après le stress et les difficultés.",
-  instructions: "Indiquez dans quelle mesure vous êtes d'accord avec chacune des affirmations suivantes.",
+  instructions: "Ces questions portent sur ta façon de réagir face aux épreuves de la vie. Réponds spontanément 💪",
   timeEstimateMinutes: 2,
   reference: "Smith, B.W., et al. (2008). The brief resilience scale. International Journal of Behavioral Medicine, 15(3), 194–200.",
   licenseNote: "Libre pour usage clinique et de recherche.",
-  warningMessage: "Ces résultats ne remplacent pas une consultation avec un professionnel de santé.",
+  warningMessage: "Ces résultats sont un premier éclairage, pas un diagnostic — si tu ressens le besoin d'en parler, un professionnel de santé sera toujours le meilleur allié 🤝",
   scoreRange: { min: 1, max: 5 },  // score = moyenne
   scoringMode: 'mean',
   // reverseIds utilisé pour le totalScore (= la moyenne calculée sur toutes items après inversions)
   reverseIds: [2, 4, 6],
   items: [
-    { id: 1, text: "J'arrive à rebondir rapidement après des moments difficiles",                  type: 'likert', options: opts },
-    { id: 2, text: "J'ai du mal à surmonter les événements difficiles",                            type: 'likert', options: opts, reversed: true },
-    { id: 3, text: "Je me remets assez vite après des épreuves ou des maladies",                   type: 'likert', options: opts },
-    { id: 4, text: "Il m'est difficile de récupérer quand quelque chose de grave m'arrive",        type: 'likert', options: opts, reversed: true },
-    { id: 5, text: "Je suis généralement capable de passer à travers les périodes difficiles",     type: 'likert', options: opts },
-    { id: 6, text: "Je mets beaucoup de temps à me remettre d'un contretemps",                    type: 'likert', options: opts, reversed: true },
+    { id: 1, text: "Quand tu traverses un moment difficile, tu arrives à rebondir assez vite ?",                    type: 'likert', options: opts },
+    { id: 2, text: "Quand quelque chose de dur t'arrive, tu as du mal à t'en remettre ?",                           type: 'likert', options: opts, reversed: true },
+    { id: 3, text: "Après une épreuve ou une maladie, tu te remets sur pied plutôt rapidement ?",                   type: 'likert', options: opts },
+    { id: 4, text: "Quand un coup dur te tombe dessus, tu as du mal à récupérer ?",                                 type: 'likert', options: opts, reversed: true },
+    { id: 5, text: "En général, tu arrives à traverser les périodes difficiles sans trop couler ?",                  type: 'likert', options: opts },
+    { id: 6, text: "Après un contretemps, tu mets beaucoup de temps avant de remonter la pente ?",                  type: 'likert', options: opts, reversed: true },
   ],
   interpretation: [
     {
       min: 1, max: 2.99,
-      label: "Résilience faible",
+      label: "Ta résilience est fragile en ce moment",
       severity: 'moderate',
       alertLevel: 1,
-      description: "Difficulté à récupérer des situations stressantes. Cette vulnérabilité peut impacter votre bien-être émotionnel.",
+      description: "Les coups durs te touchent fort et tu as du mal à remonter la pente — c'est comme encaisser vague après vague sans avoir le temps de reprendre ton souffle 🌊",
       referralRequired: false,
-      recommendation: "Des techniques de gestion du stress, un soutien social renforcé et éventuellement un accompagnement professionnel peuvent renforcer votre résilience."
+      recommendation: "C'est pas une fatalité : apprendre des techniques de gestion du stress, s'appuyer sur des proches de confiance, ou échanger avec un professionnel peut vraiment t'aider à renforcer ta capacité à rebondir."
     },
     {
       min: 3, max: 4.30,
-      label: "Résilience normale",
+      label: "Ta résilience est dans la moyenne",
       severity: 'minimal',
-      description: "Capacité de récupération dans la moyenne. Vous faites généralement face aux défis de manière satisfaisante.",
+      description: "Tu arrives globalement à encaisser les difficultés et à te relever — tu plies mais tu ne casses pas, et c'est déjà beaucoup 🌱",
       referralRequired: false,
-      recommendation: "Continuez à développer vos stratégies d'adaptation et cultivez votre réseau de soutien."
+      recommendation: "Continue à cultiver ce qui te fait du bien : tes stratégies marchent. Tu peux aussi renforcer ton réseau de soutien pour les jours où c'est plus compliqué."
     },
     {
       min: 4.31, max: 5,
-      label: "Résilience élevée",
+      label: "Ta résilience est solide 💪",
       severity: 'positive',
-      description: "Grande capacité à rebondir face aux adversités. Ressource psychologique précieuse.",
+      description: "Tu as une vraie capacité à rebondir face aux galères — c'est une force précieuse, comme un ressort intérieur qui ne lâche pas.",
       referralRequired: false,
-      recommendation: "Votre résilience est un atout remarquable. Vous pouvez aussi soutenir les autres dans leur développement."
+      recommendation: "Belle ressource ! Tu peux aussi la mettre au service des autres en les soutenant dans leurs moments difficiles — ta solidité peut inspirer."
     },
   ],
 };

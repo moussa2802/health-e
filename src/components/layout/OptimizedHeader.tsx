@@ -101,6 +101,16 @@ const OptimizedHeader: React.FC = memo(() => {
                   Évaluations
                 </Link>
 
+                <Link
+                  to="/mon-espace"
+                  className="text-sm font-medium transition-colors"
+                  style={{ color: "#475569", textDecoration: "none" }}
+                  onMouseEnter={e => (e.currentTarget.style.color = "#065F46")}
+                  onMouseLeave={e => (e.currentTarget.style.color = "#475569")}
+                >
+                  🌿 Mon Espace
+                </Link>
+
                 {/* User avatar + name */}
                 <div className="flex items-center gap-2">
                   {currentUser.profileImage ? (
@@ -219,6 +229,14 @@ const OptimizedHeader: React.FC = memo(() => {
                   onClick={() => setIsMenuOpen(false)}
                 >
                   Évaluations
+                </Link>
+                <Link
+                  to="/mon-espace"
+                  className="py-2 px-3 rounded-xl text-sm font-medium"
+                  style={{ color: "#065F46", textDecoration: "none" }}
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  🌿 Mon Espace
                 </Link>
                 <button
                   onClick={() => { handleLogout(); setIsMenuOpen(false); }}
