@@ -34,6 +34,7 @@ import { triggerDrLoMentalHealth, triggerDrLoSexualHealth } from '../../utils/dr
 import { getScaleMeta } from '../../utils/scaleMeta';
 import PageTooltips from '../../components/Onboarding/PageTooltips';
 import { getAllTestAttemptCounts, deleteTestResult, resetFullProfile } from '../../services/testManagementService';
+import { getCachedConseils, type CachedConseils } from '../../services/conseilsService';
 import { generateProfilePDF } from '../../services/pdfProfileService';
 import type { ProfilePDFData } from '../../services/pdfProfileService';
 import ConfirmResetModal from '../../components/assessment/ConfirmResetModal';
@@ -65,56 +66,7 @@ function getShortComment(result: ScaleResult): string {
   return description || recommendation || '';
 }
 
-function getAdviceForLabel(label: string): string[] {
-  const normalized = label.toLowerCase();
-  if (normalized.includes('stress')) {
-    return [
-      'Prends 5 minutes pour respirer calmement',
-      'Essaie de réduire les sources de stress',
-      'Parle à quelqu’un de confiance',
-    ];
-  }
-  if (normalized.includes('baisse de moral') || normalized.includes('dépression')) {
-    return [
-      'Essaie de garder une routine quotidienne',
-      'Fais une activité que tu aimes',
-      'Ne reste pas seul avec tes pensées',
-    ];
-  }
-  if (normalized.includes('profil équilibré') || normalized.includes('équilibré')) {
-    return [
-      'Continue tes bonnes habitudes',
-      'Garde du temps pour toi',
-      'Reste à l’écoute de tes émotions',
-    ];
-  }
-  if (normalized.includes('anxiété')) {
-    return [
-      'Respire lentement quand la tension monte',
-      'Réduis les stimulants (café, écrans tard)',
-      'Parle de ce que tu ressens',
-    ];
-  }
-  if (normalized.includes('résilience') || normalized.includes('résil')) {
-    return [
-      'Appuie-toi sur ce qui t’aide déjà',
-      'Note tes petites victoires',
-      'Garde un rythme régulier',
-    ];
-  }
-  if (normalized.includes('estime')) {
-    return [
-      'Reconnais tes efforts, même petits',
-      'Entoure-toi de personnes bienveillantes',
-      'Prends soin de toi au quotidien',
-    ];
-  }
-  return [
-    'Prends un moment pour toi chaque jour',
-    'Parle à quelqu’un de confiance',
-    'Garde un rythme de vie régulier',
-  ];
-}
+// getAdviceForLabel removed — replaced by AI-cached conseils from Firestore
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function formatDate(date: any): string {
@@ -143,13 +95,15 @@ const ScaleRow: React.FC<{
   expandedAdviceId: string | null;
   onToggleAdvice: (scaleId: string) => void;
   attemptCount?: number;
-}> = ({ scale, result, onStart, onDelete, deleteConfirm, loading, expandedTestId, onToggle, expandedAdviceId, onToggleAdvice, attemptCount }) => {
+  cachedConseils?: CachedConseils | null;
+  conseilsLoading?: boolean;
+}> = ({ scale, result, onStart, onDelete, deleteConfirm, loading, expandedTestId, onToggle, expandedAdviceId, onToggleAdvice, attemptCount, cachedConseils, conseilsLoading }) => {
   const isCompleted = !!result;
   const meta = getScaleMeta(scale.id);
   const fullComment = result ? getShortComment(result) : '';
   const isExpanded = expandedTestId === scale.id;
-  const adviceItems = result ? getAdviceForLabel(result.interpretation.label) : [];
   const isAdviceExpanded = expandedAdviceId === scale.id;
+  const hasConseils = cachedConseils && cachedConseils.conseils && cachedConseils.conseils.length > 0;
 
   return (
     <div style={{
@@ -238,7 +192,7 @@ const ScaleRow: React.FC<{
                 )}
               </div>
             )}
-            {adviceItems.length > 0 && (
+            {isCompleted && (
               <div style={{ marginTop: 8 }}>
                 <button
                   type="button"
@@ -251,31 +205,95 @@ const ScaleRow: React.FC<{
                     fontWeight: 700,
                     color: '#0EA5E9',
                     cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 4,
                   }}
                 >
-                  {isAdviceExpanded ? 'Masquer' : '💡 Voir mes conseils'}
+                  {conseilsLoading ? (
+                    <><div style={{ width: 10, height: 10, border: '1.5px solid #0EA5E9', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} /> Chargement…</>
+                  ) : isAdviceExpanded ? 'Masquer' : '💡 Voir mes conseils'}
                 </button>
-                {isAdviceExpanded && (
-                  <div style={{
-                    marginTop: 8,
-                    background: '#F0F9FF',
-                    border: '1px solid rgba(14,165,233,0.18)',
-                    borderRadius: 10,
-                    padding: '10px 12px',
-                    fontSize: 12,
-                    color: '#0A2342',
-                    lineHeight: 1.55,
-                  }}>
-                    <div style={{ fontWeight: 700, marginBottom: 6 }}>💡 Conseils</div>
-                    <div>
-                      {adviceItems.slice(0, 3).map((tip, idx) => (
-                        <div key={idx} style={{ display: 'flex', gap: 6 }}>
-                          <span>•</span>
-                          <span>{tip}</span>
+                {isAdviceExpanded && !conseilsLoading && (
+                  hasConseils ? (
+                    <div style={{
+                      marginTop: 8,
+                      background: 'linear-gradient(135deg, #F0FDF4, #EFF6FF)',
+                      border: '1px solid rgba(16,185,129,0.18)',
+                      borderRadius: 12,
+                      padding: '12px 14px',
+                      fontSize: 12,
+                      color: '#0A2342',
+                      lineHeight: 1.55,
+                    }}>
+                      {/* Signification */}
+                      {cachedConseils!.signification && (
+                        <div style={{
+                          background: '#F0FDF4',
+                          borderRadius: 8, padding: '8px 10px', marginBottom: 10,
+                          border: '1px solid rgba(16,185,129,0.15)',
+                        }}>
+                          <div style={{ fontSize: 10, fontWeight: 700, color: '#16A34A', textTransform: 'uppercase', marginBottom: 4, letterSpacing: '0.04em' }}>
+                            📌 Ce que ça veut dire
+                          </div>
+                          <div style={{ fontSize: 12, color: '#374151', lineHeight: 1.6 }}>
+                            {cachedConseils!.signification}
+                          </div>
                         </div>
-                      ))}
+                      )}
+                      {/* 3 Conseils */}
+                      <div style={{ fontSize: 10, fontWeight: 700, color: '#3B82F6', textTransform: 'uppercase', marginBottom: 6, letterSpacing: '0.04em' }}>
+                        ✅ Mes 3 conseils
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                        {cachedConseils!.conseils.map((c, i) => (
+                          <div key={i} style={{
+                            background: '#F8FAFF', borderRadius: 8, padding: '8px 10px',
+                            borderLeft: '3px solid #3B82F6',
+                          }}>
+                            <div style={{ fontSize: 12, fontWeight: 700, color: '#0A2342', marginBottom: 2 }}>{c.titre}</div>
+                            <div style={{ fontSize: 12, color: '#374151', lineHeight: 1.55 }}>{c.texte}</div>
+                          </div>
+                        ))}
+                      </div>
+                      {/* Exercice */}
+                      {cachedConseils!.exercice && (
+                        <div style={{
+                          marginTop: 10, background: 'linear-gradient(135deg, #EFF6FF, #F0FDFA)',
+                          borderRadius: 8, padding: '8px 10px',
+                          border: '1px solid rgba(59,130,246,0.15)',
+                        }}>
+                          <div style={{ fontSize: 10, fontWeight: 700, color: '#3B82F6', textTransform: 'uppercase', marginBottom: 4, letterSpacing: '0.04em' }}>
+                            🏋️ Exercice de la semaine
+                          </div>
+                          <div style={{ fontSize: 12, fontWeight: 700, color: '#0A2342', marginBottom: 2 }}>{cachedConseils!.exercice.titre}</div>
+                          <div style={{ fontSize: 12, color: '#374151', lineHeight: 1.55 }}>{cachedConseils!.exercice.description}</div>
+                        </div>
+                      )}
+                      {/* Avis pro */}
+                      {cachedConseils!.avis_pro && (
+                        <div style={{
+                          marginTop: 10, background: '#FFF7ED', borderRadius: 8, padding: '8px 10px',
+                          border: '1px solid rgba(249,115,22,0.2)',
+                        }}>
+                          <div style={{ fontSize: 10, fontWeight: 700, color: '#EA580C', textTransform: 'uppercase', marginBottom: 4 }}>⚕️ Avis du Dr Lô</div>
+                          <div style={{ fontSize: 12, color: '#9A3412', lineHeight: 1.55 }}>{cachedConseils!.avis_pro}</div>
+                        </div>
+                      )}
                     </div>
-                  </div>
+                  ) : (
+                    <div style={{
+                      marginTop: 8,
+                      background: '#F8FAFF',
+                      border: '1px solid rgba(59,130,246,0.12)',
+                      borderRadius: 10,
+                      padding: '10px 12px',
+                      fontSize: 12,
+                      color: '#64748B',
+                    }}>
+                      Aucun conseil sauvegardé. Ouvre ton résultat pour générer tes conseils personnalisés.
+                    </div>
+                  )
                 )}
               </div>
             )}
@@ -734,6 +752,8 @@ const AssessmentCategoryPage: React.FC = () => {
   const [guestCount, setGuestCount] = useState(0);
   const [expandedTestId, setExpandedTestId] = useState<string | null>(null);
   const [expandedAdviceId, setExpandedAdviceId] = useState<string | null>(null);
+  const [cachedConseilsMap, setCachedConseilsMap] = useState<Record<string, CachedConseils | null>>({});
+  const [conseilsLoadingId, setConseilsLoadingId] = useState<string | null>(null);
   const [attemptCounts, setAttemptCounts] = useState<Record<string, number>>({});
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [showResetModal, setShowResetModal] = useState(false);
@@ -881,8 +901,22 @@ const AssessmentCategoryPage: React.FC = () => {
     setExpandedTestId(prev => (prev === scaleId ? null : scaleId));
   };
 
-  const toggleAdvice = (scaleId: string) => {
+  const toggleAdvice = async (scaleId: string) => {
+    const isCollapsing = expandedAdviceId === scaleId;
     setExpandedAdviceId(prev => (prev === scaleId ? null : scaleId));
+
+    // If expanding and we haven't loaded cached conseils yet, load from Firestore
+    if (!isCollapsing && !(scaleId in cachedConseilsMap) && isAuthenticated && currentUser) {
+      setConseilsLoadingId(scaleId);
+      try {
+        const cached = await getCachedConseils(currentUser.id, scaleId);
+        setCachedConseilsMap(prev => ({ ...prev, [scaleId]: cached }));
+      } catch {
+        setCachedConseilsMap(prev => ({ ...prev, [scaleId]: null }));
+      } finally {
+        setConseilsLoadingId(null);
+      }
+    }
   };
 
   const shareProfile = async () => {
@@ -1125,6 +1159,8 @@ const AssessmentCategoryPage: React.FC = () => {
                   expandedAdviceId={expandedAdviceId}
                   onToggleAdvice={toggleAdvice}
                   attemptCount={attemptCounts[scale.id]}
+                  cachedConseils={cachedConseilsMap[scale.id]}
+                  conseilsLoading={conseilsLoadingId === scale.id}
                 />
               </div>
             ))}
@@ -1180,6 +1216,8 @@ const AssessmentCategoryPage: React.FC = () => {
                       expandedAdviceId={expandedAdviceId}
                       onToggleAdvice={toggleAdvice}
                       attemptCount={attemptCounts[scale.id]}
+                      cachedConseils={cachedConseilsMap[scale.id]}
+                      conseilsLoading={conseilsLoadingId === scale.id}
                     />
                   ))}
                 </div>

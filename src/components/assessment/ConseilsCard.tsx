@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { getOrGenerateConseils, type CachedConseils, type GenerateConseilsParams } from '../../services/conseilsService';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -16,6 +16,7 @@ interface ConseilsCardProps {
   prenom?: string;
   genre?: string;
   interpretation?: string;
+  autoLoad?: boolean;
 }
 
 // ── Helper: format relative date ──────────────────────────────────────────────
@@ -48,10 +49,12 @@ const ConseilsCard: React.FC<ConseilsCardProps> = ({
   prenom,
   genre,
   interpretation,
+  autoLoad = false,
 }) => {
-  const [state, setState] = useState<CardState>('idle');
+  const [state, setState] = useState<CardState>(autoLoad ? 'loading' : 'idle');
   const [data, setData] = useState<CachedConseils | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const autoLoaded = useRef(false);
 
   const load = useCallback(async (forceRefresh = false) => {
     setState('loading');
@@ -78,6 +81,14 @@ const ConseilsCard: React.FC<ConseilsCardProps> = ({
       setState('error');
     }
   }, [userId, scaleId, scaleName, score, scoreMax, niveau, severity, prenom, genre, interpretation]);
+
+  // Auto-load on mount if autoLoad prop is set
+  useEffect(() => {
+    if (autoLoad && !autoLoaded.current) {
+      autoLoaded.current = true;
+      load(false);
+    }
+  }, [autoLoad, load]);
 
   // ── IDLE — button to trigger ──
   if (state === 'idle') {

@@ -680,55 +680,8 @@ const AssessmentResultsPage: React.FC = () => {
             </div>
           )}
 
-          {/* ── Carte Dr Lo (utilisateurs connectés uniquement) ── */}
-          {!isGuestMode && (drLoLoading || drLoNarrative) && (
-            <div
-              style={{
-                background: 'rgba(255,255,255,0.95)',
-                border: '1.5px solid rgba(59,130,246,0.18)',
-                borderRadius: 20,
-                padding: '20px 22px',
-                boxShadow: '0 4px 20px rgba(59,130,246,0.08)',
-                position: 'relative',
-                overflow: 'hidden',
-              }}
-            >
-              {/* Blob décoratif */}
-              <div style={{ position: 'absolute', top: -20, left: -20, width: 90, height: 90, borderRadius: '50%', background: 'radial-gradient(circle, rgba(59,130,246,0.08) 0%, transparent 70%)', pointerEvents: 'none' }} />
-
-              {/* Header */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
-                <div style={{ width: 40, height: 40, borderRadius: '50%', background: 'linear-gradient(135deg, #3B82F6, #2DD4BF)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, flexShrink: 0, boxShadow: '0 2px 8px rgba(59,130,246,0.25)' }}>
-                  🩺
-                </div>
-                <div style={{ flex: 1 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
-                    <span style={{ fontSize: 14, fontWeight: 800, color: '#0A2342' }}>Dr. Lô</span>
-                    <span style={{ background: 'linear-gradient(135deg, #EFF6FF, #F0FDFA)', border: '1px solid rgba(59,130,246,0.2)', borderRadius: 20, padding: '1px 8px', fontSize: 10, fontWeight: 700, color: '#3B82F6', letterSpacing: '0.05em' }}>
-                      IA ÉVOLUTIVE
-                    </span>
-                  </div>
-                  <p style={{ margin: 0, fontSize: 11, color: '#94A3B8' }}>Analyse de ton profil global — mise à jour automatique</p>
-                </div>
-                {drLoLoading && (
-                  <div style={{ width: 16, height: 16, border: '2px solid #3B82F6', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite', flexShrink: 0 }} />
-                )}
-              </div>
-
-              {/* Content */}
-              {drLoLoading && !drLoNarrative ? (
-                <div style={{ background: '#F8FAFF', borderRadius: 12, padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <div style={{ width: 18, height: 18, border: '2px solid #3B82F6', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite', flexShrink: 0 }} />
-                  <p style={{ margin: 0, fontSize: 13, color: '#64748B' }}>Dr. Lô met à jour ton analyse… 🔄</p>
-                </div>
-              ) : drLoNarrative ? (
-                <div>{renderAnalysis(drLoNarrative)}</div>
-              ) : null}
-            </div>
-          )}
-
-          {/* ── Conseils personnalisés Dr Lô ── */}
-          {!isGuestMode && isAuthenticated && currentUser && scale?.category !== 'bonus' && (() => {
+          {/* ── Conseils personnalisés Dr Lô (auto-chargé) ── */}
+          {!isGuestMode && isAuthenticated && currentUser && (() => {
             const onboarding = getOnboardingProfile();
             return (
               <ConseilsCard
@@ -742,9 +695,52 @@ const AssessmentResultsPage: React.FC = () => {
                 prenom={onboarding?.prenom ?? undefined}
                 genre={onboarding?.genre ?? undefined}
                 interpretation={resolvedInterp.description}
+                autoLoad
               />
             );
           })()}
+
+          {/* ── Bouton vers l'analyse complète Dr Lô ── */}
+          {!isGuestMode && isAuthenticated && (
+            <button
+              onClick={() => {
+                const cat = scale.category === 'mental_health' || scale.category === 'bonus' ? 'mental' : 'sexual';
+                navigate(`/assessment/${cat}?tab=profil`);
+              }}
+              style={{
+                width: '100%',
+                background: 'linear-gradient(135deg, #EFF6FF, #F0FDFA)',
+                border: '1.5px solid rgba(59,130,246,0.2)',
+                borderRadius: 16,
+                padding: '16px 20px',
+                cursor: 'pointer',
+                textAlign: 'left',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 12,
+                boxShadow: '0 2px 12px rgba(59,130,246,0.06)',
+              }}
+            >
+              <div style={{
+                width: 40, height: 40, borderRadius: '50%',
+                background: 'linear-gradient(135deg, #3B82F6, #2DD4BF)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: 18, flexShrink: 0,
+                boxShadow: '0 2px 8px rgba(59,130,246,0.25)',
+              }}>
+                🩺
+              </div>
+              <div style={{ flex: 1 }}>
+                <p style={{ margin: 0, fontSize: 14, fontWeight: 700, color: '#0A2342' }}>
+                  Voir l'analyse complète Dr Lô
+                </p>
+                <p style={{ margin: '2px 0 0', fontSize: 12, color: '#64748B' }}>
+                  Synthèse globale de ton profil {scale.category === 'mental_health' || scale.category === 'bonus' ? 'psychologique' : 'intime'}
+                </p>
+              </div>
+              <ArrowRight size={18} style={{ color: '#3B82F6', flexShrink: 0 }} />
+            </button>
+          )}
 
           {/* ── Bannière inscription (mode invité) ── */}
           {isGuestMode && (

@@ -47,6 +47,25 @@ function cacheDocId(scaleId: string): string {
   return scaleId;
 }
 
+// ── Read cached conseils (no generation) ────────────────────────────────────
+
+export async function getCachedConseils(
+  userId: string,
+  scaleId: string
+): Promise<CachedConseils | null> {
+  try {
+    const cacheRef = doc(db, 'users', userId, 'conseils_cache', cacheDocId(scaleId));
+    const cached = await getDoc(cacheRef);
+    if (cached.exists()) {
+      const data = cached.data() as Omit<CachedConseils, 'fromCache'>;
+      return { ...data, fromCache: true };
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
 // ── Main service function ─────────────────────────────────────────────────────
 
 export async function getOrGenerateConseils(
