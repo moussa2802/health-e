@@ -30,7 +30,7 @@ import {
 import SexualHealthFilterWizard from '../../components/assessment/SexualHealthFilter';
 import SexualAccessGate from '../../components/assessment/SexualAccessGate';
 import { MENTAL_HEALTH_SCALES, SEXUAL_HEALTH_SCALES, BONUS_SCALES } from '../../data/scales';
-import { triggerDrLoMentalHealth, triggerDrLoSexualHealth } from '../../utils/drLoAnalysis';
+import { triggerDrLoMentalHealth, triggerDrLoSexualHealth, triggerDrLoSynthesis } from '../../utils/drLoAnalysis';
 import { getScaleMeta } from '../../utils/scaleMeta';
 import PageTooltips from '../../components/Onboarding/PageTooltips';
 import { getAllTestAttemptCounts, deleteTestResult, resetFullProfile } from '../../services/testManagementService';
@@ -392,11 +392,14 @@ const ProfileCard: React.FC<{
   scales: AssessmentScale[];
   allScalesForCategory: AssessmentScale[];
   drLoAnalysis: string | null;
+  drLoUpdatedAt: Date | null;
+  drLoUpdating: boolean;
+  onUpdateDrLo: () => void;
   compatibilityId: string | null;
   isAuthenticated: boolean;
   cardRef: React.RefObject<HTMLDivElement>;
   sexualFilter?: SexualHealthFilter | null;
-}> = ({ isMental, prenom, profileResults, scales, allScalesForCategory, drLoAnalysis, compatibilityId, isAuthenticated, cardRef, sexualFilter }) => {
+}> = ({ isMental, prenom, profileResults, scales, allScalesForCategory, drLoAnalysis, drLoUpdatedAt, drLoUpdating, onUpdateDrLo, compatibilityId, isAuthenticated, cardRef, sexualFilter }) => {
 
   const accentColor = isMental ? '#1E40AF' : '#7C3AED';
   const gradientBg = isMental
@@ -423,6 +426,19 @@ const ProfileCard: React.FC<{
 
   const dateStr = latestDate
     ? latestDate.toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' })
+    : null;
+
+  // Dr Lô outdated check: if latest test is newer than last Dr Lô update
+  const isOutdated = (() => {
+    if (!drLoAnalysis) return completedCount > 0; // No analysis yet but tests done
+    if (!drLoUpdatedAt) return true; // Has analysis but no timestamp
+    if (!latestDate) return false;
+    return latestDate.getTime() > drLoUpdatedAt.getTime();
+  })();
+
+  const drLoDateStr = drLoUpdatedAt
+    ? drLoUpdatedAt.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' })
+      + ' à ' + drLoUpdatedAt.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
     : null;
 
   // Compatibility lock status
@@ -548,20 +564,72 @@ const ProfileCard: React.FC<{
               <p style={{ margin: 0, fontSize: 13, color: '#94A3B8', lineHeight: 1.65, fontStyle: 'italic' }}>
                 Lance ta première évaluation pour que Dr Lô commence son analyse personnalisée. — Dr Lo 🩺
               </p>
-            ) : drLoAnalysis ? (
-              <p style={{ margin: 0, fontSize: 13, color: '#374151', lineHeight: 1.8, whiteSpace: 'pre-line' }}>
-                {drLoAnalysis}
-              </p>
-            ) : (
+            ) : drLoUpdating ? (
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                 <div style={{
                   width: 16, height: 16, border: `2px solid ${accentColor}`,
                   borderTopColor: 'transparent', borderRadius: '50%',
                   animation: 'spin 0.8s linear infinite', flexShrink: 0,
                 }} />
-                <p style={{ margin: 0, fontSize: 12, color: '#94A3B8', fontStyle: 'italic' }}>
-                  Dr. Lô prépare ton analyse…
+                <p style={{ margin: 0, fontSize: 12, color: '#64748B' }}>
+                  Dr. Lô met à jour ton analyse… Cela peut prendre quelques secondes.
                 </p>
+              </div>
+            ) : drLoAnalysis ? (
+              <>
+                <p style={{ margin: 0, fontSize: 13, color: '#374151', lineHeight: 1.8, whiteSpace: 'pre-line' }}>
+                  {drLoAnalysis}
+                </p>
+                {/* Status + update button */}
+                <div style={{
+                  marginTop: 12, paddingTop: 10, borderTop: '1px solid rgba(0,0,0,0.06)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                  flexWrap: 'wrap', gap: 8,
+                }}>
+                  {isOutdated ? (
+                    <>
+                      <p style={{ margin: 0, fontSize: 11, color: '#D97706', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4 }}>
+                        <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#F59E0B', display: 'inline-block' }} />
+                        Profil modifié depuis la dernière analyse
+                      </p>
+                      <button
+                        onClick={onUpdateDrLo}
+                        style={{
+                          background: `linear-gradient(135deg,${accentColor},${isMental ? '#0891B2' : '#BE185D'})`,
+                          color: 'white', border: 'none', borderRadius: 10,
+                          padding: '7px 14px', fontSize: 11, fontWeight: 700,
+                          cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5,
+                        }}
+                      >
+                        🔄 Mettre à jour l'analyse
+                      </button>
+                    </>
+                  ) : (
+                    <p style={{ margin: 0, fontSize: 11, color: '#16A34A', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4 }}>
+                      <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#22C55E', display: 'inline-block' }} />
+                      Profil à jour {drLoDateStr ? `· ${drLoDateStr}` : ''}
+                    </p>
+                  )}
+                </div>
+              </>
+            ) : (
+              /* No analysis yet, but tests completed — show generate button */
+              <div style={{ textAlign: 'center', padding: '6px 0' }}>
+                <p style={{ margin: '0 0 10px', fontSize: 13, color: '#64748B', lineHeight: 1.6 }}>
+                  Tu as {completedCount} évaluation{completedCount > 1 ? 's' : ''}. Génère ton analyse personnalisée Dr Lô.
+                </p>
+                <button
+                  onClick={onUpdateDrLo}
+                  style={{
+                    background: `linear-gradient(135deg,${accentColor},${isMental ? '#0891B2' : '#BE185D'})`,
+                    color: 'white', border: 'none', borderRadius: 12,
+                    padding: '10px 20px', fontSize: 13, fontWeight: 700,
+                    cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 6,
+                    boxShadow: '0 2px 10px rgba(0,0,0,0.15)',
+                  }}
+                >
+                  🩺 Générer l'analyse Dr Lô
+                </button>
               </div>
             )}
           </div>
@@ -745,6 +813,8 @@ const AssessmentCategoryPage: React.FC = () => {
   );
   const [profileResults, setProfileResults] = useState<Record<string, ScaleResult>>({});
   const [drLoAnalysis, setDrLoAnalysis] = useState<string | null>(null);
+  const [drLoUpdatedAt, setDrLoUpdatedAt] = useState<Date | null>(null);
+  const [drLoUpdating, setDrLoUpdating] = useState(false);
   const [compatibilityId, setCompatibilityId] = useState<string | null>(null);
   const [isCapturing, setIsCapturing] = useState(false);
   const [copyMsg, setCopyMsg] = useState<string | null>(null);
@@ -836,23 +906,21 @@ const AssessmentCategoryPage: React.FC = () => {
       const data = snap.data();
       const drField = isMental ? 'drLoMentalAnalysis' : 'drLoSexualAnalysis';
       if (data[drField]) setDrLoAnalysis(data[drField] as string);
+      const tsField = isMental ? 'drLoMentalUpdatedAt' : 'drLoSexualUpdatedAt';
+      if (data[tsField]) {
+        const ts = data[tsField];
+        if (typeof ts?.toDate === 'function') setDrLoUpdatedAt(ts.toDate());
+        else if (ts) setDrLoUpdatedAt(new Date(ts));
+      }
       const codeField = isMental ? 'compatibilityIdMental' : 'compatibilityIdSexual';
       if (data[codeField]) setCompatibilityId(data[codeField] as string);
+      // Stop updating spinner when new analysis arrives
+      setDrLoUpdating(false);
     }, () => {});
     return () => unsubscribe();
   }, [isAuthenticated, currentUser?.id, isMental, isValidCategory]);
 
-  // Déclenche la génération Dr Lo si absente
-  useEffect(() => {
-    if (!isValidCategory || !isAuthenticated || !currentUser) return;
-    if (drLoAnalysis) return;
-    if (completedCount === 0) return;
-    if (isMental) {
-      triggerDrLoMentalHealth(currentUser.id).catch(() => {});
-    } else {
-      triggerDrLoSexualHealth(currentUser.id).catch(() => {});
-    }
-  }, [isAuthenticated, currentUser?.id, drLoAnalysis, completedCount, isMental, isValidCategory]);
+  // Dr Lô analysis is now triggered manually via "Mettre à jour" button in ProfileCard
 
   // ── Early returns APRÈS tous les hooks ────────────────────────────────────
 
@@ -915,6 +983,23 @@ const AssessmentCategoryPage: React.FC = () => {
     } catch {
       setResetting(false);
       setShowResetModal(false);
+    }
+  };
+
+  const handleUpdateDrLo = async () => {
+    if (!currentUser || drLoUpdating) return;
+    setDrLoUpdating(true);
+    try {
+      if (isMental) {
+        await triggerDrLoMentalHealth(currentUser.id);
+      } else {
+        await triggerDrLoSexualHealth(currentUser.id);
+      }
+      triggerDrLoSynthesis(currentUser.id).catch(() => {});
+      // onSnapshot will update drLoAnalysis, drLoUpdatedAt and reset drLoUpdating
+    } catch (err) {
+      console.error('Dr Lô update error:', err);
+      setDrLoUpdating(false);
     }
   };
 
@@ -1291,6 +1376,9 @@ const AssessmentCategoryPage: React.FC = () => {
               scales={scales}
               allScalesForCategory={allScales}
               drLoAnalysis={drLoAnalysis}
+              drLoUpdatedAt={drLoUpdatedAt}
+              drLoUpdating={drLoUpdating}
+              onUpdateDrLo={handleUpdateDrLo}
               compatibilityId={compatibilityId}
               isAuthenticated={isAuthenticated}
               cardRef={cardRef}

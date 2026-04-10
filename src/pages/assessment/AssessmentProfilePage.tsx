@@ -3,7 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { doc, onSnapshot } from 'firebase/firestore';
 import { db } from '../../utils/firebase';
 import { useAuth } from '../../contexts/AuthContext';
-import { triggerDrLoMentalHealth, triggerDrLoSexualHealth } from '../../utils/drLoAnalysis';
+// Dr Lô auto-trigger removed — now manual from AssessmentCategoryPage
 import {
   getOrCreateUserProfile,
   getProfileProgress,
@@ -600,21 +600,7 @@ const AssessmentProfilePage: React.FC = () => {
     return () => unsubscribe();
   }, [isAuthenticated, currentUser?.id]);
 
-  // Déclenche la génération si l'analyse mentale est absente
-  useEffect(() => {
-    if (!isAuthenticated || !currentUser) return;
-    if (drLoMentalAnalysis) return;
-    if (mentalCompletedCount === 0) return;
-    triggerDrLoMentalHealth(currentUser.id).catch(() => {});
-  }, [isAuthenticated, currentUser?.id, drLoMentalAnalysis, mentalCompletedCount]);
-
-  // Déclenche la génération si l'analyse sexuelle est absente
-  useEffect(() => {
-    if (!isAuthenticated || !currentUser) return;
-    if (drLoSexualAnalysis) return;
-    if (sexualCompletedCount === 0) return;
-    triggerDrLoSexualHealth(currentUser.id).catch(() => {});
-  }, [isAuthenticated, currentUser?.id, drLoSexualAnalysis, sexualCompletedCount]);
+  // Dr Lô analysis is now triggered manually from Mon Profil tab in AssessmentCategoryPage
 
   // Démarrer une scale
   const startScale = async (scaleId: string) => {

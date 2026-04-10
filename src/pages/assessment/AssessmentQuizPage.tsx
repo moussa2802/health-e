@@ -17,8 +17,8 @@ import {
 import { getScaleById, getAdaptedScaleById } from '../../data/scales';
 import type { UserAssessmentSession, AssessmentScale } from '../../types/assessment';
 import QuestionItem from '../../components/assessment/QuestionItem';
-import { triggerDrLoMentalHealth, triggerDrLoSexualHealth, triggerDrLoSynthesis } from '../../utils/drLoAnalysis';
-import { MENTAL_HEALTH_SCALES } from '../../data/scales';
+// Dr Lô analysis is now triggered manually from Mon Profil
+// MENTAL_HEALTH_SCALES removed — Dr Lô auto-trigger disabled
 import { getSexualHealthFilter } from '../../utils/sexualHealthFilter';
 import { resolveScaleGender } from '../../utils/gender';
 import { getOnboardingProfile } from '../../utils/onboardingProfile';
@@ -182,13 +182,8 @@ const AssessmentQuizPage: React.FC = () => {
                 await archiveCurrentResult(session.userId, currentScale.id, {});
               } catch { /* Pas de résultat existant — premier passage */ }
               await saveScaleResultToProfile(session.userId, currentScale.id, scaleResult);
-              const isMentalScale = MENTAL_HEALTH_SCALES.some(s => s.id === currentScale.id);
-              if (isMentalScale) {
-                triggerDrLoMentalHealth(session.userId).catch((e) => console.error('[DrLo mental]', e));
-              } else {
-                triggerDrLoSexualHealth(session.userId).catch((e) => console.error('[DrLo sexual]', e));
-              }
-              triggerDrLoSynthesis(session.userId).catch((e) => console.error('[DrLo synthesis]', e));
+              // Dr Lô analysis is now triggered manually from Mon Profil
+              // (no auto-trigger after each test)
             } catch { /* silencieux */ }
           }
           navigate(`/assessment/results/${sessionId}`);
