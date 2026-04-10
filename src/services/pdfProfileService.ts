@@ -33,7 +33,8 @@ export interface ProfilePDFData {
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
 /** Strip emojis — jsPDF can't render them */
-function strip(text: string): string {
+function strip(text: string | undefined | null): string {
+  if (!text) return '';
   return text
     .replace(/[\u{1F600}-\u{1F64F}]/gu, '')
     .replace(/[\u{1F300}-\u{1F5FF}]/gu, '')

@@ -87,7 +87,7 @@ const ScaleRow: React.FC<{
   scale: AssessmentScale;
   result?: ScaleResult;
   onStart: (scaleId: string) => void;
-  onDelete: (scaleId: string) => void;
+  onDelete?: (scaleId: string) => void;
   deleteConfirm?: boolean;
   loading: boolean;
   expandedTestId: string | null;
@@ -318,16 +318,18 @@ const ScaleRow: React.FC<{
                 ? <div style={{ width: 12, height: 12, border: '1.5px solid #16A34A', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
                 : 'Refaire'}
             </button>
-            <button onClick={() => onDelete(scale.id)} style={{
-              background: deleteConfirm ? '#FEE2E2' : 'transparent',
-              border: deleteConfirm ? '1px solid #FCA5A5' : 'none',
-              borderRadius: 12,
-              padding: '2px 8px', fontSize: 10, fontWeight: 600,
-              color: '#DC2626', cursor: 'pointer',
-              opacity: deleteConfirm ? 1 : 0.6,
-            }}>
-              {deleteConfirm ? 'Confirmer ?' : 'Supprimer'}
-            </button>
+            {onDelete && (
+              <button onClick={() => onDelete(scale.id)} style={{
+                background: deleteConfirm ? '#FEE2E2' : 'transparent',
+                border: deleteConfirm ? '1px solid #FCA5A5' : 'none',
+                borderRadius: 12,
+                padding: '2px 8px', fontSize: 10, fontWeight: 600,
+                color: '#DC2626', cursor: 'pointer',
+                opacity: deleteConfirm ? 1 : 0.6,
+              }}>
+                {deleteConfirm ? 'Confirmer ?' : 'Supprimer'}
+              </button>
+            )}
           </>
         ) : (
           <button onClick={() => onStart(scale.id)} disabled={loading} style={{
@@ -978,12 +980,12 @@ const AssessmentCategoryPage: React.FC = () => {
           const r = profileResults[s.id];
           const meta = getScaleMeta(s.id);
           return {
-            name: s.title,
-            icon: s.icon ?? '',
-            resultLabel: r.interpretation?.label ?? '',
-            severity: r.interpretation?.severity ?? 'none',
-            score: r.totalScore,
-            maxScore: meta?.scoreMax ?? 100,
+            name: meta?.label ?? s.name ?? s.shortName ?? '',
+            icon: meta?.icon ?? '',
+            resultLabel: r?.interpretation?.label ?? '',
+            severity: r?.interpretation?.severity ?? 'none',
+            score: r?.totalScore ?? 0,
+            maxScore: meta?.scoreMax ?? s.scoreRange?.max ?? 100,
           };
         });
 
@@ -993,11 +995,12 @@ const AssessmentCategoryPage: React.FC = () => {
             .filter(s => profileResults[s.id])
             .map(s => {
               const r = profileResults[s.id];
+              const meta = getScaleMeta(s.id);
               return {
-                name: s.title,
-                icon: s.icon ?? '',
-                resultLabel: r.interpretation?.label ?? '',
-                severity: r.interpretation?.severity ?? 'none',
+                name: meta?.label ?? s.name ?? s.shortName ?? '',
+                icon: meta?.icon ?? '',
+                resultLabel: r?.interpretation?.label ?? '',
+                severity: r?.interpretation?.severity ?? 'none',
               };
             })
         : undefined;
@@ -1358,7 +1361,7 @@ const AssessmentCategoryPage: React.FC = () => {
               >
                 {isCapturing
                   ? <><div style={{ width: 14, height: 14, border: '2px solid #94A3B8', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} /> Génération…</>
-                  : <>📄 Télécharger (PDF)</>
+                  : <>📄 Télécharger mon profil</>
                 }
               </button>
 
