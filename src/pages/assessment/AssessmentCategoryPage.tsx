@@ -887,16 +887,22 @@ const AssessmentCategoryPage: React.FC = () => {
   const handleDeleteScale = async (scaleId: string) => {
     if (!currentUser) return;
     if (deleteConfirmId === scaleId) {
+      // Second click — actually delete
       try {
         await deleteTestResult(currentUser.id, scaleId);
         setProfileResults(prev => { const copy = { ...prev }; delete copy[scaleId]; return copy; });
+        setAttemptCounts(prev => { const copy = { ...prev }; delete copy[scaleId]; return copy; });
+        setCachedConseilsMap(prev => { const copy = { ...prev }; delete copy[scaleId]; return copy; });
         setDeleteConfirmId(null);
-      } catch {
+      } catch (err) {
+        console.error('Delete scale error:', err);
         setErrorMsg('Erreur lors de la suppression.');
+        setDeleteConfirmId(null);
       }
     } else {
+      // First click — show confirm
       setDeleteConfirmId(scaleId);
-      setTimeout(() => setDeleteConfirmId(null), 5000);
+      setTimeout(() => setDeleteConfirmId(prev => prev === scaleId ? null : prev), 5000);
     }
   };
 
