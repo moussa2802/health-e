@@ -1257,6 +1257,8 @@ const AssessmentCategoryPage: React.FC = () => {
                       scale={scale}
                       result={profileResults[scale.id]}
                       onStart={startScale}
+                      onDelete={handleDeleteScale}
+                      deleteConfirm={deleteConfirmId === scale.id}
                       loading={loadingCard === scale.id}
                       expandedTestId={expandedTestId}
                       onToggle={toggleAnalysis}
