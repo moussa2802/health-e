@@ -34,7 +34,7 @@ import { triggerDrLoMentalHealth, triggerDrLoSexualHealth } from '../../utils/dr
 import { getScaleMeta } from '../../utils/scaleMeta';
 import PageTooltips from '../../components/Onboarding/PageTooltips';
 import { getAllTestAttemptCounts, deleteTestResult, resetFullProfile } from '../../services/testManagementService';
-import { getCachedConseils, type CachedConseils } from '../../services/conseilsService';
+import { getCachedConseils, getOrGenerateConseils, type CachedConseils } from '../../services/conseilsService';
 import { generateProfilePDF } from '../../services/pdfProfileService';
 import type { ProfilePDFData } from '../../services/pdfProfileService';
 import ConfirmResetModal from '../../components/assessment/ConfirmResetModal';
@@ -211,8 +211,8 @@ const ScaleRow: React.FC<{
                   }}
                 >
                   {conseilsLoading ? (
-                    <><div style={{ width: 10, height: 10, border: '1.5px solid #0EA5E9', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} /> Chargement…</>
-                  ) : isAdviceExpanded ? 'Masquer' : '💡 Voir mes conseils'}
+                    <><div style={{ width: 10, height: 10, border: '1.5px solid #0EA5E9', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} /> Génération en cours…</>
+                  ) : isAdviceExpanded ? 'Masquer' : hasConseils ? '💡 Voir mes conseils' : '✨ Générer mes conseils'}
                 </button>
                 {isAdviceExpanded && !conseilsLoading && (
                   hasConseils ? (
@@ -284,14 +284,15 @@ const ScaleRow: React.FC<{
                   ) : (
                     <div style={{
                       marginTop: 8,
-                      background: '#F8FAFF',
-                      border: '1px solid rgba(59,130,246,0.12)',
+                      background: '#FFF7ED',
+                      border: '1px solid rgba(249,115,22,0.15)',
                       borderRadius: 10,
                       padding: '10px 12px',
                       fontSize: 12,
-                      color: '#64748B',
+                      color: '#9A3412',
+                      display: 'flex', alignItems: 'center', gap: 6,
                     }}>
-                      Aucun conseil sauvegardé. Ouvre ton résultat pour générer tes conseils personnalisés.
+                      <span>⚠️</span> La génération a échoué. Réessaie en appuyant à nouveau.
                     </div>
                   )
                 )}
@@ -799,6 +800,23 @@ const AssessmentCategoryPage: React.FC = () => {
           setSexualFilter(p.sexualHealthFilter as SexualHealthFilter);
           setShowSexualFilter(false);
         }
+        // Pré-charger le statut des conseils en cache pour les tests complétés
+        const completedIds = Object.keys(p.scaleResults);
+        if (completedIds.length > 0) {
+          Promise.all(
+            completedIds.map(sid =>
+              getCachedConseils(currentUser!.id, sid)
+                .then(c => [sid, c] as const)
+                .catch(() => [sid, null] as const)
+            )
+          ).then(entries => {
+            const map: Record<string, CachedConseils | null> = {};
+            for (const [sid, c] of entries) {
+              if (c) map[sid] = c;
+            }
+            setCachedConseilsMap(prev => ({ ...prev, ...map }));
+          });
+        }
       })
       .catch(() => {});
     // Charger les compteurs de tentatives
@@ -905,12 +923,38 @@ const AssessmentCategoryPage: React.FC = () => {
     const isCollapsing = expandedAdviceId === scaleId;
     setExpandedAdviceId(prev => (prev === scaleId ? null : scaleId));
 
-    // If expanding and we haven't loaded cached conseils yet, load from Firestore
-    if (!isCollapsing && !(scaleId in cachedConseilsMap) && isAuthenticated && currentUser) {
+    // If expanding and we haven't loaded/generated conseils yet (or previous attempt failed)
+    const needsLoad = !(scaleId in cachedConseilsMap) || cachedConseilsMap[scaleId] === null;
+    if (!isCollapsing && needsLoad && isAuthenticated && currentUser) {
       setConseilsLoadingId(scaleId);
       try {
+        // First try cache
         const cached = await getCachedConseils(currentUser.id, scaleId);
-        setCachedConseilsMap(prev => ({ ...prev, [scaleId]: cached }));
+        if (cached) {
+          setCachedConseilsMap(prev => ({ ...prev, [scaleId]: cached }));
+        } else {
+          // No cache — generate via AI
+          const result = profileResults[scaleId];
+          if (result) {
+            const scaleObj = [...scales, ...BONUS_SCALES].find(s => s.id === scaleId);
+            const scaleMeta = getScaleMeta(scaleId);
+            const generated = await getOrGenerateConseils({
+              userId: currentUser.id,
+              scaleId,
+              scaleName: scaleObj?.name ?? scaleMeta.label,
+              score: result.totalScore,
+              scoreMax: scaleMeta.scoreMax ?? 100,
+              niveau: result.interpretation?.label ?? '',
+              severity: result.interpretation?.severity ?? 'none',
+              prenom: onboardingProfile?.prenom ?? '',
+              genre: onboardingProfile?.genre ?? '',
+              interpretation: result.interpretation?.description ?? '',
+            });
+            setCachedConseilsMap(prev => ({ ...prev, [scaleId]: generated }));
+          } else {
+            setCachedConseilsMap(prev => ({ ...prev, [scaleId]: null }));
+          }
+        }
       } catch {
         setCachedConseilsMap(prev => ({ ...prev, [scaleId]: null }));
       } finally {
