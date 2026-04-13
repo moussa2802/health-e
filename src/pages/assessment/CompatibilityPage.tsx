@@ -608,7 +608,17 @@ const CompatibilityPage: React.FC = () => {
                   Calcul en cours…
                 </>
               ) : (
-                <>❤️ Découvrir notre compatibilité</>
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                  ❤️ Découvrir notre compatibilité
+                  <span style={{
+                    display: 'inline-flex', alignItems: 'center', gap: 3,
+                    background: 'rgba(255,255,255,0.2)', padding: '2px 8px', borderRadius: 10,
+                    fontSize: 11, fontWeight: 800,
+                  }}>
+                    <img src="/kori.png" alt="" style={{ width: 13, height: 13, borderRadius: '50%', objectFit: 'cover' }} />
+                    {KORIS_COSTS.compatibility}
+                  </span>
+                </span>
 )}
             </button>
             {canSubmit && !calculating && (

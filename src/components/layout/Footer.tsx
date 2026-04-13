@@ -7,7 +7,6 @@ const Footer: React.FC = () => {
 
   const links = [
     { to: "/assessment",     label: language === "fr" ? "Évaluations"      : "Assessments" },
-    { to: "/assessment/compatibility", label: language === "fr" ? "Compatibilité"    : "Compatibility" },
     { to: "/admin/login",     label: "Administration" },
     { to: "/confidentialite",label: language === "fr" ? "Confidentialité"  : "Privacy" },
     { to: "/contact",        label: "Contact" },

@@ -22,11 +22,14 @@ import PageTooltips from '../../components/Onboarding/PageTooltips';
 import { MENTAL_HEALTH_SCALES, SEXUAL_HEALTH_SCALES, BONUS_SCALES } from '../../data/scales';
 import type { ScaleResult } from '../../types/assessment';
 import type { OnboardingProfile as OnboardingProfileType } from '../../types/onboarding';
+import { useKoris } from '../../contexts/KorisContext';
+import { KORIS_COSTS } from '../../services/korisService';
 
 
 const AssessmentHomePage: React.FC = () => {
   const navigate = useNavigate();
   const { currentUser, isAuthenticated } = useAuth();
+  const { canAfford } = useKoris();
 
   // Pour les utilisateurs authentifiés, on attend la confirmation Firestore avant d'afficher l'onboarding
   // Pour les invités, on lit localStorage immédiatement (pas de Firestore)
@@ -302,6 +305,70 @@ const AssessmentHomePage: React.FC = () => {
             </span>
           </div>
         </button>
+
+        {/* ── Séparateur + Compatibilité ── */}
+        {isAuthenticated && (() => {
+          const mainCompleted = mentalCompleted + sexualCompleted;
+          const mainTotal = mentalTotal + sexualTotal;
+          const isUnlocked = mainCompleted >= mainTotal;
+          const compatCost = KORIS_COSTS.compatibility;
+          const hasKoris = canAfford('compatibility');
+
+          return (
+            <div style={{ marginTop: 20 }}>
+              <div style={{ height: 1, background: 'rgba(99,102,241,0.12)', marginBottom: 20 }} />
+              <div style={{
+                background: 'white',
+                border: `2px solid ${isUnlocked ? 'rgba(236,72,153,0.2)' : 'rgba(148,163,184,0.2)'}`,
+                borderRadius: 18, padding: '20px 24px',
+                opacity: isUnlocked ? 1 : 0.7,
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 10 }}>
+                  <span style={{ fontSize: 28 }}>💑</span>
+                  <div>
+                    <p style={{ margin: 0, fontSize: 16, fontWeight: 800, color: '#0A2342' }}>Compatibilité</p>
+                    <p style={{ margin: '2px 0 0', fontSize: 12, color: '#64748B' }}>
+                      Compare ton profil avec celui de ton/ta partenaire
+                    </p>
+                  </div>
+                </div>
+
+                {isUnlocked ? (
+                  <button
+                    onClick={() => navigate('/assessment/compatibility')}
+                    style={{
+                      width: '100%', padding: '12px 20px', borderRadius: 14, border: 'none',
+                      background: hasKoris
+                        ? 'linear-gradient(135deg, #EC4899, #8B5CF6)'
+                        : 'linear-gradient(135deg, #94A3B8, #CBD5E1)',
+                      color: '#fff', fontSize: 14, fontWeight: 700, cursor: 'pointer',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                      boxShadow: hasKoris ? '0 4px 16px rgba(236,72,153,0.25)' : 'none',
+                    }}
+                  >
+                    💑 Tester la compatibilité
+                    <span style={{
+                      display: 'inline-flex', alignItems: 'center', gap: 3,
+                      background: 'rgba(255,255,255,0.2)', padding: '2px 8px', borderRadius: 10,
+                      fontSize: 12, fontWeight: 800,
+                    }}>
+                      <img src="/kori.png" alt="" style={{ width: 14, height: 14, borderRadius: '50%', objectFit: 'cover' }} />
+                      {compatCost}
+                    </span>
+                  </button>
+                ) : (
+                  <div style={{
+                    width: '100%', padding: '12px 20px', borderRadius: 14,
+                    background: '#F1F5F9', textAlign: 'center',
+                    fontSize: 12, color: '#64748B', fontWeight: 600,
+                  }}>
+                    🔒 Complète tes {mainTotal} évaluations pour débloquer ({mainCompleted}/{mainTotal})
+                  </div>
+                )}
+              </div>
+            </div>
+          );
+        })()}
 
         {/* Mon Espace */}
         <button
