@@ -60,36 +60,47 @@ RÈGLES :
 - Sensibilité culturelle africaine (contexte sénégalais)
 - Jamais minimiser ce que la personne ressent`;
 
-  try {
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
-      },
-      body: JSON.stringify({
-        model: 'claude-haiku-4-5-20251001',
-        max_tokens: 250,
-        messages: [{ role: 'user', content: prompt }],
-      }),
-    });
+  const MODELS = [
+    'claude-haiku-4-5-20251001',
+    'claude-3-5-haiku-20241022',
+    'claude-3-haiku-20240307',
+  ];
 
-    if (!response.ok) {
+  for (let attempt = 0; attempt < MODELS.length; attempt++) {
+    const model = MODELS[attempt];
+    try {
+      const response = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': apiKey,
+          'anthropic-version': '2023-06-01',
+        },
+        body: JSON.stringify({ model, max_tokens: 250, messages: [{ role: 'user', content: prompt }] }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        console.log(`dr-lo-journal OK with model ${model}`);
+        return { statusCode: 200, headers, body: JSON.stringify({ response: data?.content?.[0]?.text ?? '', koris_consumed: 0 }) };
+      }
+
       const err = await response.text();
-      return { statusCode: 502, headers, body: JSON.stringify({ error: 'Erreur API Claude', detail: err }) };
-    }
+      const isOverloaded = err.includes('overloaded') || response.status === 529;
+      console.warn(`dr-lo-journal model ${model} failed (${response.status}): ${err.substring(0, 200)}`);
 
-    const data = await response.json();
-    return {
-      statusCode: 200,
-      headers,
-      body: JSON.stringify({
-        response: data?.content?.[0]?.text ?? '',
-        koris_consumed: 0,
-      }),
-    };
-  } catch (e) {
-    return { statusCode: 500, headers, body: JSON.stringify({ error: e.message }) };
+      if (!isOverloaded) {
+        return { statusCode: 502, headers, body: JSON.stringify({ error: 'Erreur API Claude', detail: err }) };
+      }
+
+      if (attempt < MODELS.length - 1) await new Promise(r => setTimeout(r, 1000));
+    } catch (e) {
+      console.error(`dr-lo-journal fetch error (model ${model}):`, e.message);
+      if (attempt === MODELS.length - 1) {
+        return { statusCode: 500, headers, body: JSON.stringify({ error: e.message }) };
+      }
+    }
   }
+
+  return { statusCode: 500, headers, body: JSON.stringify({ error: 'Tous les modèles sont indisponibles' }) };
 };

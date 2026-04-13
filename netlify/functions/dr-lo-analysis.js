@@ -228,9 +228,9 @@ exports.handler = async (event) => {
     bonusPrompt
   ].filter(Boolean).join('\n')
 
-  const ANTHROPIC_API_KEY = process.env.ANTHROPIC_KEY
+  const apiKey = process.env.ANTHROPIC_KEY || process.env.ANTHROPIC_API_KEY
 
-  if (!ANTHROPIC_API_KEY) {
+  if (!apiKey) {
     return {
       statusCode: 500,
       headers,
@@ -238,57 +238,66 @@ exports.handler = async (event) => {
     }
   }
 
-  try {
-    const response = await fetch(
-      'https://api.anthropic.com/v1/messages',
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': ANTHROPIC_API_KEY,
-          'anthropic-version': '2023-06-01'
-        },
-        body: JSON.stringify({
-          model: 'claude-haiku-4-5-20251001',
-          max_tokens: 350,
-          system,
-          messages: [{
-            role: 'user',
-            content: messageContent
-          }]
-        })
-      }
-    )
+  const MODELS = [
+    'claude-haiku-4-5-20251001',
+    'claude-3-5-haiku-20241022',
+    'claude-3-haiku-20240307',
+  ]
 
-    if (!response.ok) {
+  for (let attempt = 0; attempt < MODELS.length; attempt++) {
+    const model = MODELS[attempt]
+    try {
+      const response = await fetch(
+        'https://api.anthropic.com/v1/messages',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-api-key': apiKey,
+            'anthropic-version': '2023-06-01'
+          },
+          body: JSON.stringify({
+            model,
+            max_tokens: 350,
+            system,
+            messages: [{
+              role: 'user',
+              content: messageContent
+            }]
+          })
+        }
+      )
+
+      if (response.ok) {
+        const data = await response.json()
+        const analysis = data?.content?.[0]?.text ?? ''
+        const finalText = (!analysis || isTooLong(analysis)) ? FALLBACK_MESSAGE : analysis
+        console.log(`dr-lo-analysis OK with model ${model}`)
+        return {
+          statusCode: 200,
+          headers,
+          body: JSON.stringify({ analysis: finalText })
+        }
+      }
+
       const errText = await response.text()
-      console.error('Erreur Anthropic:', errText)
-      return {
-        statusCode: 500,
-        headers,
-        body: JSON.stringify({
-          error: 'Erreur API Anthropic',
-          detail: errText
-        })
+      const isOverloaded = errText.includes('overloaded') || response.status === 529
+      console.warn(`dr-lo-analysis model ${model} failed (${response.status}): ${errText.substring(0, 200)}`)
+
+      if (!isOverloaded) {
+        return { statusCode: 500, headers, body: JSON.stringify({ error: 'Erreur API Anthropic', detail: errText }) }
       }
-    }
 
-    const data = await response.json()
-    const analysis = data?.content?.[0]?.text ?? ''
-    const finalText = (!analysis || isTooLong(analysis)) ? FALLBACK_MESSAGE : analysis
-
-    return {
-      statusCode: 200,
-      headers,
-      body: JSON.stringify({ analysis: finalText })
-    }
-
-  } catch (e) {
-    console.error('Erreur fetch:', e.message)
-    return {
-      statusCode: 500,
-      headers,
-      body: JSON.stringify({ error: e.message })
+      if (attempt < MODELS.length - 1) {
+        await new Promise(r => setTimeout(r, 1000))
+      }
+    } catch (e) {
+      console.error(`dr-lo-analysis fetch error (model ${model}):`, e.message)
+      if (attempt === MODELS.length - 1) {
+        return { statusCode: 500, headers, body: JSON.stringify({ error: e.message }) }
+      }
     }
   }
+
+  return { statusCode: 500, headers, body: JSON.stringify({ error: 'Tous les modèles sont indisponibles' }) }
 }

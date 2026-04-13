@@ -214,47 +214,54 @@ exports.handler = async (event) => {
     return { statusCode: 500, headers, body: JSON.stringify({ error: 'Clé API manquante' }) };
   }
 
-  try {
-    const prompt = buildPrompt(context, message, historique);
+  const prompt = buildPrompt(context, message, historique);
+  const messages = [
+    ...historique.map(m => ({ role: m.role, content: m.content })),
+    { role: 'user', content: prompt },
+  ];
 
-    // Historique : on envoie l'historique RÉEL comme messages séparés,
-    // plus le message actuel avec le prompt complet (contexte + question)
-    const messages = [
-      ...historique.map(m => ({ role: m.role, content: m.content })),
-      { role: 'user', content: prompt },
-    ];
+  const MODELS = [
+    'claude-haiku-4-5-20251001',
+    'claude-3-5-haiku-20241022',
+    'claude-3-haiku-20240307',
+  ];
 
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
-      },
-      body: JSON.stringify({
-        model: 'claude-haiku-4-5-20251001',
-        max_tokens: 500,
-        messages,
-      }),
-    });
+  for (let attempt = 0; attempt < MODELS.length; attempt++) {
+    const model = MODELS[attempt];
+    try {
+      const response = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': apiKey,
+          'anthropic-version': '2023-06-01',
+        },
+        body: JSON.stringify({ model, max_tokens: 500, messages }),
+      });
 
-    if (!response.ok) {
+      if (response.ok) {
+        const data = await response.json();
+        const text = data?.content?.[0]?.text ?? '';
+        console.log(`dr-lo-chat OK with model ${model}`);
+        return { statusCode: 200, headers, body: JSON.stringify({ response: text, koris_consumed: 0 }) };
+      }
+
       const err = await response.text();
-      return { statusCode: 502, headers, body: JSON.stringify({ error: 'Erreur API Claude', detail: err }) };
+      const isOverloaded = err.includes('overloaded') || response.status === 529;
+      console.warn(`dr-lo-chat model ${model} failed (${response.status}): ${err.substring(0, 200)}`);
+
+      if (!isOverloaded) {
+        return { statusCode: 502, headers, body: JSON.stringify({ error: 'Erreur API Claude', detail: err }) };
+      }
+
+      if (attempt < MODELS.length - 1) await new Promise(r => setTimeout(r, 1000));
+    } catch (e) {
+      console.error(`dr-lo-chat fetch error (model ${model}):`, e.message);
+      if (attempt === MODELS.length - 1) {
+        return { statusCode: 500, headers, body: JSON.stringify({ error: e.message }) };
+      }
     }
-
-    const data = await response.json();
-    const text = data?.content?.[0]?.text ?? '';
-
-    return {
-      statusCode: 200,
-      headers,
-      body: JSON.stringify({
-        response: text,
-        koris_consumed: 0,
-      }),
-    };
-  } catch (e) {
-    return { statusCode: 500, headers, body: JSON.stringify({ error: e.message }) };
   }
+
+  return { statusCode: 500, headers, body: JSON.stringify({ error: 'Tous les modèles sont indisponibles' }) };
 };

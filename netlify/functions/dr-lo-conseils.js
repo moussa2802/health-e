@@ -109,58 +109,70 @@ exports.handler = async (event) => {
     return { statusCode: 500, headers, body: JSON.stringify({ error: 'Clé API manquante' }) };
   }
 
-  try {
-    const prompt = buildConseilsPrompt({ scaleName, score, scoreMax, niveau, severity, prenom, genre, interpretation });
+  const prompt = buildConseilsPrompt({ scaleName, score, scoreMax, niveau, severity, prenom, genre, interpretation });
 
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
-      },
-      body: JSON.stringify({
-        model: 'claude-haiku-4-5-20251001',
-        max_tokens: 700,
-        messages: [{ role: 'user', content: prompt }],
-      }),
-    });
+  const MODELS = [
+    'claude-haiku-4-5-20251001',
+    'claude-3-5-haiku-20241022',
+    'claude-3-haiku-20240307',
+  ];
 
-    if (!response.ok) {
-      const err = await response.text();
-      return { statusCode: 502, headers, body: JSON.stringify({ error: 'Erreur API Claude', detail: err }) };
-    }
-
-    const data = await response.json();
-    const text = data?.content?.[0]?.text ?? '';
-
-    // Extract JSON between delimiters
-    const match = text.match(/---DEBUT_CONSEILS---\s*([\s\S]*?)\s*---FIN_CONSEILS---/);
-    if (!match) {
-      console.error('Réponse brute sans délimiteurs:', text.substring(0, 500));
-      return { statusCode: 500, headers, body: JSON.stringify({ error: 'Format de réponse invalide — délimiteurs manquants' }) };
-    }
-
-    let conseils;
+  for (let attempt = 0; attempt < MODELS.length; attempt++) {
+    const model = MODELS[attempt];
     try {
-      conseils = JSON.parse(match[1].trim());
-    } catch (parseErr) {
-      console.error('JSON invalide extrait:', match[1].substring(0, 500));
-      return { statusCode: 500, headers, body: JSON.stringify({ error: 'JSON invalide dans la réponse IA' }) };
-    }
+      const response = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': apiKey,
+          'anthropic-version': '2023-06-01',
+        },
+        body: JSON.stringify({ model, max_tokens: 700, messages: [{ role: 'user', content: prompt }] }),
+      });
 
-    // Basic validation
-    if (!conseils.signification || !Array.isArray(conseils.conseils) || conseils.conseils.length < 3 || !conseils.exercice) {
-      return { statusCode: 500, headers, body: JSON.stringify({ error: 'Structure JSON incomplète' }) };
-    }
+      if (response.ok) {
+        const data = await response.json();
+        const text = data?.content?.[0]?.text ?? '';
 
-    return {
-      statusCode: 200,
-      headers,
-      body: JSON.stringify(conseils),
-    };
-  } catch (e) {
-    console.error('Erreur handler:', e.message);
-    return { statusCode: 500, headers, body: JSON.stringify({ error: e.message }) };
+        // Extract JSON between delimiters
+        const match = text.match(/---DEBUT_CONSEILS---\s*([\s\S]*?)\s*---FIN_CONSEILS---/);
+        if (!match) {
+          console.error('Réponse brute sans délimiteurs:', text.substring(0, 500));
+          return { statusCode: 500, headers, body: JSON.stringify({ error: 'Format de réponse invalide — délimiteurs manquants' }) };
+        }
+
+        let conseils;
+        try {
+          conseils = JSON.parse(match[1].trim());
+        } catch (parseErr) {
+          console.error('JSON invalide extrait:', match[1].substring(0, 500));
+          return { statusCode: 500, headers, body: JSON.stringify({ error: 'JSON invalide dans la réponse IA' }) };
+        }
+
+        if (!conseils.signification || !Array.isArray(conseils.conseils) || conseils.conseils.length < 3 || !conseils.exercice) {
+          return { statusCode: 500, headers, body: JSON.stringify({ error: 'Structure JSON incomplète' }) };
+        }
+
+        console.log(`dr-lo-conseils OK with model ${model}`);
+        return { statusCode: 200, headers, body: JSON.stringify(conseils) };
+      }
+
+      const err = await response.text();
+      const isOverloaded = err.includes('overloaded') || response.status === 529;
+      console.warn(`dr-lo-conseils model ${model} failed (${response.status}): ${err.substring(0, 200)}`);
+
+      if (!isOverloaded) {
+        return { statusCode: 502, headers, body: JSON.stringify({ error: 'Erreur API Claude', detail: err }) };
+      }
+
+      if (attempt < MODELS.length - 1) await new Promise(r => setTimeout(r, 1000));
+    } catch (e) {
+      console.error(`dr-lo-conseils fetch error (model ${model}):`, e.message);
+      if (attempt === MODELS.length - 1) {
+        return { statusCode: 500, headers, body: JSON.stringify({ error: e.message }) };
+      }
+    }
   }
+
+  return { statusCode: 500, headers, body: JSON.stringify({ error: 'Tous les modèles sont indisponibles' }) };
 };

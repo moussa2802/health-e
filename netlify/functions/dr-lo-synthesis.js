@@ -76,9 +76,9 @@ ${itemsText}
 
 Génère UNIQUEMENT la synthèse courte (5-6 phrases max). Commence directement par l'accroche personnalisée, sans titre ni section.`
 
-  const ANTHROPIC_API_KEY = process.env.ANTHROPIC_KEY
+  const apiKey = process.env.ANTHROPIC_KEY || process.env.ANTHROPIC_API_KEY
 
-  if (!ANTHROPIC_API_KEY) {
+  if (!apiKey) {
     return {
       statusCode: 500,
       headers,
@@ -86,55 +86,57 @@ Génère UNIQUEMENT la synthèse courte (5-6 phrases max). Commence directement 
     }
   }
 
-  try {
-    const response = await fetch(
-      'https://api.anthropic.com/v1/messages',
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': ANTHROPIC_API_KEY,
-          'anthropic-version': '2023-06-01'
-        },
-        body: JSON.stringify({
-          model: 'claude-sonnet-4-20250514',
-          max_tokens: 450,
-          messages: [{
-            role: 'user',
-            content: prompt
-          }]
-        })
-      }
-    )
+  const MODELS = [
+    'claude-sonnet-4-20250514',
+    'claude-3-5-sonnet-20241022',
+    'claude-haiku-4-5-20251001',
+  ]
 
-    if (!response.ok) {
+  for (let attempt = 0; attempt < MODELS.length; attempt++) {
+    const model = MODELS[attempt]
+    try {
+      const response = await fetch(
+        'https://api.anthropic.com/v1/messages',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-api-key': apiKey,
+            'anthropic-version': '2023-06-01'
+          },
+          body: JSON.stringify({
+            model,
+            max_tokens: 450,
+            messages: [{ role: 'user', content: prompt }]
+          })
+        }
+      )
+
+      if (response.ok) {
+        const data = await response.json()
+        const synthesis = data?.content?.[0]?.text ?? ''
+        console.log(`dr-lo-synthesis OK with model ${model}`)
+        return { statusCode: 200, headers, body: JSON.stringify({ synthesis }) }
+      }
+
       const errText = await response.text()
-      console.error('Erreur Anthropic:', errText)
-      return {
-        statusCode: 500,
-        headers,
-        body: JSON.stringify({
-          error: 'Erreur API Anthropic',
-          detail: errText
-        })
+      const isOverloaded = errText.includes('overloaded') || response.status === 529
+      console.warn(`dr-lo-synthesis model ${model} failed (${response.status}): ${errText.substring(0, 200)}`)
+
+      if (!isOverloaded) {
+        return { statusCode: 500, headers, body: JSON.stringify({ error: 'Erreur API Anthropic', detail: errText }) }
       }
-    }
 
-    const data = await response.json()
-    const synthesis = data.content[0].text
-
-    return {
-      statusCode: 200,
-      headers,
-      body: JSON.stringify({ synthesis })
-    }
-
-  } catch (e) {
-    console.error('Erreur fetch:', e.message)
-    return {
-      statusCode: 500,
-      headers,
-      body: JSON.stringify({ error: e.message })
+      if (attempt < MODELS.length - 1) {
+        await new Promise(r => setTimeout(r, 1000))
+      }
+    } catch (e) {
+      console.error(`dr-lo-synthesis fetch error (model ${model}):`, e.message)
+      if (attempt === MODELS.length - 1) {
+        return { statusCode: 500, headers, body: JSON.stringify({ error: e.message }) }
+      }
     }
   }
+
+  return { statusCode: 500, headers, body: JSON.stringify({ error: 'Tous les modèles sont indisponibles' }) }
 }
