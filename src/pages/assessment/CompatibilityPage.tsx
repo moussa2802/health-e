@@ -15,6 +15,8 @@ import {
 } from '../../services/compatibilityService';
 import type { CompatibilityResult } from '../../types/assessment';
 import { RELATIONSHIP_CATEGORIES, getRelationshipLabel } from '../../utils/relationshipTypes';
+import { useKoris } from '../../contexts/KorisContext';
+import { KORIS_COSTS } from '../../services/korisService';
 
 interface ResultItem {
   codeType: 'mental' | 'sexual';
@@ -30,6 +32,7 @@ function scoreStyle(score: number) {
 
 const CompatibilityPage: React.FC = () => {
   const { currentUser, isAuthenticated } = useAuth();
+  const { spend, canAfford, refund } = useKoris();
 
   const [myIdMental, setMyIdMental] = useState<string | null>(null);
   const [myIdSexual, setMyIdSexual] = useState<string | null>(null);
@@ -144,10 +147,21 @@ const CompatibilityPage: React.FC = () => {
 
   const handleRecalculate = async (entry: CompatibilityHistoryEntry) => {
     if (!isAuthenticated || !currentUser || recalculatingId) return;
+
+    // Dépenser des Koris pour le recalcul
+    const spendResult = await spend('compatibility', `Recalcul compatibilité ${entry.codeType} — ${entry.partnerCode}`);
+    if (!spendResult.allowed) return;
+
     setRecalculatingId(entry.id);
     try {
       const req = await createCompatibilityRequest(currentUser.id, entry.partnerCode, entry.relationshipType);
-      const res = await computeCompatibility(req.id);
+      let res;
+      try {
+        res = await computeCompatibility(req.id);
+      } catch (computeErr) {
+        await refund('compatibility');
+        throw computeErr;
+      }
       await saveCompatibilityHistory(currentUser.id, entry.relationshipType, entry.partnerCode, entry.codeType, res, entry.partnerPrenom).catch(() => {});
       // Rafraîchir l'historique
       const updated = await getCompatibilityHistory(currentUser.id);
@@ -191,8 +205,19 @@ const CompatibilityPage: React.FC = () => {
     try {
       const items: ResultItem[] = [];
       for (const task of tasks) {
+        // Dépenser des Koris pour l'analyse IA
+        const spendResult = await spend('compatibility', `Compatibilité ${task.codeType} — ${task.code}`);
+        if (!spendResult.allowed) return; // NoKorisModal s'affiche automatiquement
+
         const req = await createCompatibilityRequest(currentUser.id, task.code, selectedSubTypeId);
-        const res = await computeCompatibility(req.id);
+        let res;
+        try {
+          res = await computeCompatibility(req.id);
+        } catch (computeErr) {
+          // Rembourser si l'analyse échoue
+          await refund('compatibility');
+          throw computeErr;
+        }
         items.push({ codeType: task.codeType, partnerCode: task.code, result: res });
         // Sauvegarder dans l'historique avec le prénom
         await saveCompatibilityHistory(currentUser.id, selectedSubTypeId, task.code, task.codeType, res, task.partnerPrenom).catch(() => {});

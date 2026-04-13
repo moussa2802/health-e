@@ -41,6 +41,7 @@ export const KORIS_COSTS = {
   synthesis: 3,        // Synthèse Dr Lô
   refresh_synthesis: 2,// Rafraîchir la synthèse
   conseils: 1,         // Génération conseils personnalisés
+  compatibility: 2,    // Analyse compatibilité IA
   test: 0,             // Tests gratuits
 } as const;
 
@@ -628,6 +629,7 @@ export function getFeatureLabel(feature: string): string {
     synthesis: 'Synthèse Dr Lô',
     refresh_synthesis: 'Rafraîchir synthèse',
     conseils: 'Conseils personnalisés',
+    compatibility: 'Compatibilité IA',
     test: 'Test (gratuit)',
     daily_reset: 'Reset quotidien',
     daily_refill: 'Recharge quotidienne',
