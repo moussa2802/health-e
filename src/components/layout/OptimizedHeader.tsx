@@ -1,10 +1,11 @@
 import React, { useState, useEffect, memo, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Menu, X, Globe, User } from "lucide-react";
+import { Menu, X, Globe, User, HelpCircle } from "lucide-react";
 import { useAuth } from "../../contexts/AuthContext";
 import { useLanguage } from "../../contexts/LanguageContext";
 import { useDebounce } from "../../hooks/useDebounce";
 import LanguageSelector from "./LanguageSelector";
+import KoriBalance from "../koris/KoriBalance";
 
 const OptimizedHeader: React.FC = memo(() => {
   const [isMenuOpen, setIsMenuOpen]         = useState(false);
@@ -111,6 +112,11 @@ const OptimizedHeader: React.FC = memo(() => {
                   🌿 Mon Espace
                 </Link>
 
+                {/* Koris Balance */}
+                <div style={{ position: 'relative' }}>
+                  <KoriBalance />
+                </div>
+
                 {/* User avatar + name */}
                 <div className="flex items-center gap-2">
                   {currentUser.profileImage ? (
@@ -143,6 +149,17 @@ const OptimizedHeader: React.FC = memo(() => {
                 >
                   {t("nav.logout")}
                 </button>
+
+                <Link
+                  to="/faq"
+                  className="flex items-center p-1.5 rounded-lg transition"
+                  style={{ color: "#64748B", textDecoration: "none" }}
+                  title="Aide"
+                  onMouseEnter={e => (e.currentTarget.style.color = "#3B82F6")}
+                  onMouseLeave={e => (e.currentTarget.style.color = "#64748B")}
+                >
+                  <HelpCircle className="w-4 h-4" />
+                </Link>
               </>
             ) : (
               <div className="flex items-center gap-3">
@@ -222,6 +239,10 @@ const OptimizedHeader: React.FC = memo(() => {
           >
             {isAuthenticated && currentUser ? (
               <>
+                {/* Koris balance mobile */}
+                <div className="py-2 px-3" style={{ position: 'relative' }}>
+                  <KoriBalance />
+                </div>
                 <Link
                   to="/assessment"
                   className="py-2 px-3 rounded-xl text-sm font-medium"
@@ -237,6 +258,14 @@ const OptimizedHeader: React.FC = memo(() => {
                   onClick={() => setIsMenuOpen(false)}
                 >
                   🌿 Mon Espace
+                </Link>
+                <Link
+                  to="/faq"
+                  className="py-2 px-3 rounded-xl text-sm font-medium"
+                  style={{ color: "#64748B", textDecoration: "none" }}
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  ❓ Aide
                 </Link>
                 <button
                   onClick={() => { handleLogout(); setIsMenuOpen(false); }}

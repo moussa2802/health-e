@@ -20,6 +20,7 @@ declare global {
     __heRecaptchaInitInProgress?: boolean;
   }
 }
+import { KorisProvider } from "./contexts/KorisContext";
 import OptimizedHeader from "./components/layout/OptimizedHeader";
 import Footer from "./components/layout/Footer";
 import LoadingSpinner from "./components/ui/LoadingSpinner";
@@ -28,6 +29,9 @@ import ScrollToTop from "./components/utils/ScrollToTop";
 import FloatingChat from "./components/DrLoChat/FloatingChat";
 import WelcomeFlow from "./components/Onboarding/WelcomeFlow";
 import HelpButton from "./components/Onboarding/HelpButton";
+import NoKorisModal from "./components/koris/NoKorisModal";
+import KorisWelcome from "./components/koris/KorisWelcome";
+import FloatingKori from "./components/koris/FloatingKori";
 import { useAuth } from "./contexts/AuthContext";
 import { cleanupAllProfessionalsListeners } from "./hooks/useProfessionals";
 import { cleanupAllBookingListeners } from "./hooks/useBookings";
@@ -109,6 +113,9 @@ const AdminNotifications = lazy(
 );
 const AdminGroupTherapy = lazy(
   () => import("./pages/admin/AdminGroupTherapy")
+);
+const AdminEvaluations = lazy(
+  () => import("./pages/admin/AdminEvaluations")
 );
 const FAQ = lazy(() => import("./pages/FAQ"));
 const Contact = lazy(() => import("./pages/Contact"));
@@ -410,6 +417,14 @@ const AppChrome: React.FC = () => {
                 </ProtectedRoute>
               }
             />
+            <Route
+              path="/admin/evaluations"
+              element={
+                <ProtectedRoute userType="admin">
+                  <AdminEvaluations />
+                </ProtectedRoute>
+              }
+            />
 
             {/* Consultation Room */}
             <Route
@@ -445,8 +460,10 @@ const AppChrome: React.FC = () => {
       </main>
       {!isAdminRoute && <Footer />}
       {!isAdminRoute && <FloatingChat userId={userId} />}
+      {!isAdminRoute && !!currentUser && <FloatingKori />}
+      <NoKorisModal />
+      <KorisWelcome />
       <WelcomeFlow />
-      <HelpButton />
     </>
   );
 };
@@ -610,6 +627,7 @@ function App() {
     <ErrorBoundary>
       <Router>
         <AuthProvider>
+          <KorisProvider>
           <LanguageProvider>
             <TermsProvider>
               <ScrollToTop />
@@ -629,6 +647,7 @@ function App() {
               </div>
             </TermsProvider>
           </LanguageProvider>
+          </KorisProvider>
         </AuthProvider>
       </Router>
     </ErrorBoundary>

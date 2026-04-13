@@ -1,11 +1,11 @@
 import type { AssessmentScale } from '../../../types/assessment';
 
 const opts = [
-  { value: 0, label: "Pas du tout" },
-  { value: 1, label: "Un peu" },
-  { value: 2, label: "Modérément" },
-  { value: 3, label: "Beaucoup" },
-  { value: 4, label: "Extrêmement" },
+  { value: 0, label: "Pas du tout", subtitle: "Aucun impact" },
+  { value: 1, label: "Un peu", subtitle: "Légèrement" },
+  { value: 2, label: "Modérément", subtitle: "De façon notable" },
+  { value: 3, label: "Beaucoup", subtitle: "De façon importante" },
+  { value: 4, label: "Extrêmement", subtitle: "Ça me submerge" },
 ];
 
 export const PCL5: AssessmentScale = {
@@ -60,10 +60,10 @@ export const PCL5: AssessmentScale = {
     id: 21,
     text: "L'événement difficile auquel tu penses en répondant à ces questions, c'est quelque chose de... ?",
     options: [
-      { value: 1, label: "Lointain — ça remonte à plusieurs années et je m'en suis {{remis|remise}}" },
-      { value: 2, label: "Passé mais encore un peu présent dans ma tête" },
-      { value: 3, label: "Relativement récent — quelques mois" },
-      { value: 4, label: "Récent ou toujours en cours" },
+      { value: 1, label: "Lointain — ça remonte à plusieurs années et je m'en suis {{remis|remise}}", subtitle: "J'ai fait le chemin" },
+      { value: 2, label: "Passé mais encore un peu présent dans ma tête", subtitle: "Quelques traces persistent" },
+      { value: 3, label: "Relativement récent — quelques mois", subtitle: "C'est encore assez frais" },
+      { value: 4, label: "Récent ou toujours en cours", subtitle: "Je suis encore dedans" },
     ],
     noScore: true as const,
     resolvedThreshold: 2,

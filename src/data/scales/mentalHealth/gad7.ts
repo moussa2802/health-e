@@ -6,17 +6,17 @@ import type { AssessmentScale } from '../../../types/assessment';
 // Alerte item 7 uniquement si "Presque tous les jours" (valeur 3)
 
 const opts = [
-  { value: 0, label: "Jamais" },
-  { value: 1, label: "Plusieurs jours" },
-  { value: 2, label: "Plus de la moitié du temps" },
-  { value: 3, label: "Presque tous les jours" },
+  { value: 0, label: "Jamais", subtitle: "Pas une seule fois" },
+  { value: 1, label: "Plusieurs jours", subtitle: "Quelques jours sur les 14" },
+  { value: 2, label: "Plus de la moitié du temps", subtitle: "7 jours ou plus" },
+  { value: 3, label: "Presque tous les jours", subtitle: "Quasiment en permanence" },
 ];
 
 const functionalOpts = [
-  { value: 1, label: "Pas du tout difficile" },
-  { value: 2, label: "Un peu difficile" },
-  { value: 3, label: "Assez difficile" },
-  { value: 4, label: "Extrêmement difficile" },
+  { value: 1, label: "Pas du tout difficile", subtitle: "Aucun impact sur mon quotidien" },
+  { value: 2, label: "Un peu difficile", subtitle: "Ça complique un peu les choses" },
+  { value: 3, label: "Assez difficile", subtitle: "Ça me gêne vraiment" },
+  { value: 4, label: "Extrêmement difficile", subtitle: "Je n'arrive presque plus à fonctionner" },
 ];
 
 export const GAD7: AssessmentScale = {

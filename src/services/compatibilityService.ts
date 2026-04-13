@@ -13,9 +13,18 @@ export interface CompatibilityHistoryEntry {
   userId: string;
   relationshipType: string;
   partnerCode: string;
+  partnerPrenom?: string;
   codeType: 'mental' | 'sexual';
   result: CompatibilityResult;
   createdAt: Date;
+}
+
+export interface CodeValidationResult {
+  valid: boolean;
+  error?: string;
+  prenom?: string;
+  genre?: string;
+  uid?: string;
 }
 
 // ── History ───────────────────────────────────────────────────────────────────
@@ -25,13 +34,15 @@ export async function saveCompatibilityHistory(
   relationshipType: string,
   partnerCode: string,
   codeType: 'mental' | 'sexual',
-  result: CompatibilityResult
+  result: CompatibilityResult,
+  partnerPrenom?: string
 ): Promise<void> {
   const ref = doc(collection(db, HISTORY_COL));
   await setDoc(ref, {
     userId,
     relationshipType,
     partnerCode,
+    partnerPrenom: partnerPrenom ?? null,
     codeType,
     result,
     createdAt: serverTimestamp(),
@@ -57,12 +68,53 @@ export async function getCompatibilityHistory(userId: string): Promise<Compatibi
       userId: data.userId,
       relationshipType: data.relationshipType,
       partnerCode: data.partnerCode,
+      partnerPrenom: data.partnerPrenom ?? undefined,
       codeType: data.codeType,
       result: data.result,
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       createdAt: (data.createdAt as any)?.toDate?.() ?? new Date(),
     } as CompatibilityHistoryEntry;
   });
+}
+
+// ── Validation de code en temps réel ──────────────────────────────────────────
+
+export async function validateCompatibilityCode(
+  code: string,
+  ownUserId: string
+): Promise<CodeValidationResult> {
+  const trimmed = code.trim().toUpperCase();
+  if (!trimmed) return { valid: false };
+
+  // 1. Vérifier le format
+  const isMentalValid = /^HE-MNT-\d{4}-[A-Z0-9]{4}$/i.test(trimmed) || /^SM-[A-Z0-9]{4}$/i.test(trimmed);
+  const isSexualValid = /^HE-SEX-\d{4}-[A-Z0-9]{4}$/i.test(trimmed) || /^SE-[A-Z0-9]{4}$/i.test(trimmed);
+  if (!isMentalValid && !isSexualValid) {
+    return { valid: false, error: 'Format invalide' };
+  }
+
+  // 2. Vérifier que ce n'est pas son propre code
+  const ownSnap = await getDoc(doc(db, 'userProfiles', ownUserId));
+  if (ownSnap.exists()) {
+    const ownData = ownSnap.data();
+    if (trimmed === ownData.compatibilityIdMental || trimmed === ownData.compatibilityIdSexual) {
+      return { valid: false, error: 'C\'est ton propre code 😄' };
+    }
+  }
+
+  // 3. Chercher le profil dans la base
+  const partner = await getUserProfileByCompatibilityId(trimmed);
+  if (!partner) {
+    return { valid: false, error: 'Aucun profil trouvé pour ce code' };
+  }
+
+  // 4. Extraire prénom et genre
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const onboarding = (partner as any).onboardingProfile as Record<string, string> | undefined;
+  const prenom = onboarding?.prenom || partner.displayName || 'Utilisateur';
+  const genre = onboarding?.genre || undefined;
+
+  return { valid: true, prenom, genre, uid: partner.uid };
 }
 
 function getCodeType(id: string): 'mental' | 'sexual' | null {
@@ -164,9 +216,11 @@ export async function computeCompatibility(requestId: string): Promise<Compatibi
   const bonusResults1 = extractBonus(initiatorProfile.scaleResults);
   const bonusResults2 = extractBonus(partnerProfile.scaleResults);
 
-  // Display names — already in userProfiles (onboardingProfile) or fallback
+  // Display names and gender — already in userProfiles (onboardingProfile) or fallback
   const prenom1: string = (initiatorProfile.onboardingProfile?.prenom as string | undefined) ?? 'Toi';
   const prenom2: string = (partnerProfile.onboardingProfile?.prenom as string | undefined) ?? 'Partenaire';
+  const genre1: string = (initiatorProfile.onboardingProfile?.genre as string | undefined) ?? '';
+  const genre2: string = (partnerProfile.onboardingProfile?.genre as string | undefined) ?? '';
 
   let claudeNarrative = '';
   try {
@@ -176,6 +230,8 @@ export async function computeCompatibility(requestId: string): Promise<Compatibi
       body: JSON.stringify({
         prenom1,
         prenom2,
+        genre1,
+        genre2,
         codeType,
         relationshipType: req.relationshipType,
         scaleResults1,

@@ -1,19 +1,19 @@
 import type { AssessmentScale } from '../../../types/assessment';
 
 const freqOpts = [
-  { value: 0, label: "Jamais" },
-  { value: 2, label: "Rarement" },
-  { value: 4, label: "Parfois" },
-  { value: 6, label: "Souvent" },
-  { value: 8, label: "Très souvent" },
+  { value: 0, label: "Jamais", subtitle: "Ça ne m'arrive pas" },
+  { value: 2, label: "Rarement", subtitle: "Quelques fois ces derniers mois" },
+  { value: 4, label: "Parfois", subtitle: "De temps en temps" },
+  { value: 6, label: "Souvent", subtitle: "Régulièrement" },
+  { value: 8, label: "Très souvent", subtitle: "Quasiment tous les jours" },
 ];
 
 const intensOpts = [
-  { value: 1, label: "Très faible" },
-  { value: 3, label: "Faible" },
-  { value: 5, label: "Modérée" },
-  { value: 7, label: "Forte" },
-  { value: 9, label: "Très forte" },
+  { value: 1, label: "Très faible", subtitle: "À peine perceptible" },
+  { value: 3, label: "Faible", subtitle: "Légèrement présent" },
+  { value: 5, label: "Modérée", subtitle: "Notable" },
+  { value: 7, label: "Forte", subtitle: "Bien présente" },
+  { value: 9, label: "Très forte", subtitle: "Intense, impossible à ignorer" },
 ];
 
 export const SDI2: AssessmentScale = {
@@ -33,7 +33,7 @@ export const SDI2: AssessmentScale = {
     { id: 2,  text: "L'envie d'avoir des activités sexuelles avec quelqu'un — elle est forte comment en ce moment ?",               type: 'likert', options: intensOpts, subscale: 'dyadic' },
     { id: 3,  text: "À quel point tu as envie de prendre l'initiative sexuellement avec ton/ta partenaire ?",                       type: 'likert', options: intensOpts, subscale: 'dyadic' },
     { id: 4,  text: "Si ton/ta partenaire prenait l'initiative d'un rapport sexuel, tu serais plutôt {{réceptif|réceptive}} ?",              type: 'likert', options: intensOpts, subscale: 'dyadic' },
-    { id: 5,  text: "Dans l'idéal, combien de fois par semaine tu aimerais avoir des rapports sexuels ?",    type: 'likert', options: [{ value: 0, label: "Jamais" }, { value: 2, label: "Moins d'une fois" }, { value: 4, label: "1 à 2 fois" }, { value: 6, label: "3 à 4 fois" }, { value: 8, label: "5 fois ou plus" }], subscale: 'dyadic' },
+    { id: 5,  text: "Dans l'idéal, combien de fois par semaine tu aimerais avoir des rapports sexuels ?",    type: 'likert', options: [{ value: 0, label: "Jamais", subtitle: "Pas d'envie particulière" }, { value: 2, label: "Moins d'une fois", subtitle: "Très occasionnellement" }, { value: 4, label: "1 à 2 fois", subtitle: "Un rythme tranquille" }, { value: 6, label: "3 à 4 fois", subtitle: "Régulièrement" }, { value: 8, label: "5 fois ou plus", subtitle: "Très fréquemment" }], subscale: 'dyadic' },
     { id: 6,  text: "Ton niveau de désir sexuel envers {{un|une}} partenaire en ce moment — tu le situes où ?",                        type: 'likert', options: intensOpts, subscale: 'dyadic' },
     { id: 7,  text: "À quelle fréquence tu as des pensées ou fantasmes sexuels impliquant quelqu'un ?",               type: 'likert', options: freqOpts, subscale: 'dyadic' },
     { id: 8,  text: "À quel point tu es {{attiré|attirée}} sexuellement par ton/ta partenaire en ce moment ?",                     type: 'likert', options: intensOpts, subscale: 'dyadic' },

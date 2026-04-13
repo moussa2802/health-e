@@ -7,6 +7,7 @@ export type AnswerType = 'likert' | 'frequency' | 'boolean' | 'multiple_choice' 
 export interface AnswerOption {
   value: number;
   label: string;
+  subtitle?: string;  // sous-texte explicatif affiché sous le label
 }
 
 export interface ScaleItem {

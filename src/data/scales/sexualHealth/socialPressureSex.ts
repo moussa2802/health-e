@@ -1,11 +1,11 @@
 import type { AssessmentScale } from '../../../types/assessment';
 
 const opts = [
-  { value: 1, label: "Jamais / Pas du tout" },
-  { value: 2, label: "Rarement" },
-  { value: 3, label: "Parfois" },
-  { value: 4, label: "Souvent" },
-  { value: 5, label: "Toujours / Tout à fait" },
+  { value: 1, label: "Jamais / Pas du tout", subtitle: "Ça ne me concerne pas" },
+  { value: 2, label: "Rarement", subtitle: "Quelques fois par an" },
+  { value: 3, label: "Parfois", subtitle: "De temps en temps" },
+  { value: 4, label: "Souvent", subtitle: "Régulièrement" },
+  { value: 5, label: "Toujours / Tout à fait", subtitle: "C'est constant dans ma vie" },
 ];
 
 export const SOCIAL_PRESSURE_SEX: AssessmentScale = {

@@ -4,7 +4,8 @@ import { collection, addDoc } from 'firebase/firestore';
 import { db } from '../../utils/firebase';
 import { getOnboardingProfile } from '../../utils/onboardingProfile';
 import { getProfileProgress } from '../../services/evaluationService';
-import { KORIS_CONFIG } from '../../utils/korisConfig';
+import { useKoris } from '../../contexts/KorisContext';
+import { KORIS_COSTS } from '../../services/korisService';
 
 const HUMEURS = [
   { emoji: '😊', label: 'Heureux(se)' },
@@ -23,6 +24,7 @@ interface Props {
 
 const NewEntry: React.FC<Props> = ({ userId }) => {
   const navigate = useNavigate();
+  const { spend, refund } = useKoris();
   const onboarding = getOnboardingProfile();
   const prenom = onboarding?.prenom ?? '';
 
@@ -73,6 +75,10 @@ const NewEntry: React.FC<Props> = ({ userId }) => {
   const handleAskDrLo = async () => {
     if (!contenu.trim()) { setError("Écris quelque chose d'abord."); return; }
 
+    // Koris check
+    const spendResult = await spend('journal', 'Avis Dr Lô (journal)');
+    if (!spendResult.allowed) return;
+
     setAskingDrLo(true);
     setError(null);
     try {
@@ -114,6 +120,7 @@ const NewEntry: React.FC<Props> = ({ userId }) => {
       setDrLoResponse(data.response ?? "Je n'ai pas pu répondre. Réessaie dans un instant.");
     } catch {
       setError("Erreur lors de la demande à Dr Lô.");
+      await refund('journal');
     } finally {
       setAskingDrLo(false);
     }

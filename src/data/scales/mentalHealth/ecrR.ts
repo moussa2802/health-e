@@ -8,13 +8,13 @@ import type { AssessmentScale } from '../../../types/assessment';
 // Quadrants : Sécure (<3.5//<3.5) | Préoccupé (≥3.5//<3.5) | Détaché (<3.5//≥3.5) | Craintif (≥3.5//≥3.5)
 
 const opts = [
-  { value: 1, label: "Pas du tout d'accord" },
-  { value: 2, label: "Plutôt en désaccord" },
-  { value: 3, label: "Légèrement en désaccord" },
-  { value: 4, label: "Neutre" },
-  { value: 5, label: "Légèrement d'accord" },
-  { value: 6, label: "Plutôt d'accord" },
-  { value: 7, label: "Tout à fait d'accord" },
+  { value: 1, label: "Pas du tout", subtitle: "Ça ne me correspond vraiment pas" },
+  { value: 2, label: "Très peu", subtitle: "Presque pas" },
+  { value: 3, label: "Un peu", subtitle: "Légèrement" },
+  { value: 4, label: "Moyennement", subtitle: "Ni oui ni non" },
+  { value: 5, label: "Assez", subtitle: "Plutôt oui" },
+  { value: 6, label: "Beaucoup", subtitle: "Oui, clairement" },
+  { value: 7, label: "Totalement", subtitle: "C'est tout à fait moi" },
 ];
 
 export const ECR_R: AssessmentScale = {
@@ -55,23 +55,23 @@ export const ECR_R: AssessmentScale = {
     { id: 35, text: "Parfois, tu as l'impression de devoir « pousser » tes partenaires pour qu'ils montrent plus d'engagement ? 🫧",      type: 'likert', options: opts, subscale: 'anxiety' },
     // ── Évitement (items pairs) ──
     { id: 2,  text: "Tu préfères garder pour toi ce que tu ressens vraiment, plutôt que de le montrer à ton/ta partenaire ?",             type: 'likert', options: opts, subscale: 'avoidance' },
-    { id: 4,  text: "Te rapprocher émotionnellement de ton/ta partenaire, c'est quelque chose qui te vient assez naturellement ?",        type: 'likert', options: opts, subscale: 'avoidance', reversed: true },
+    { id: 4,  text: "Te rapprocher émotionnellement de ton/ta partenaire, c'est quelque chose qui te vient assez naturellement ?",        type: 'likert', options: opts, subscale: 'avoidance' },
     { id: 6,  text: "T'ouvrir vraiment à tes partenaires amoureux, c'est quelque chose qui te met mal à l'aise ?",                       type: 'likert', options: opts, subscale: 'avoidance' },
     { id: 8,  text: "Tu préfères garder une certaine distance avec tes partenaires, ne pas être trop proche ?",                           type: 'likert', options: opts, subscale: 'avoidance' },
     { id: 10, text: "Quand ton/ta partenaire veut beaucoup de proximité, ça te met un peu mal à l'aise ?",                               type: 'likert', options: opts, subscale: 'avoidance' },
     { id: 12, text: "Tu voudrais te rapprocher de ton/ta partenaire, mais tu finis toujours par reculer un peu ? 🐚",                     type: 'likert', options: opts, subscale: 'avoidance' },
     { id: 14, text: "Tu te sens un peu {{nerveux|nerveuse}} quand tes partenaires s'approchent trop près émotionnellement ?",                      type: 'likert', options: opts, subscale: 'avoidance' },
-    { id: 16, text: "Tu sens que ton/ta partenaire te comprend vraiment et comprend tes besoins ?",                                       type: 'likert', options: opts, subscale: 'avoidance', reversed: true },
-    { id: 18, text: "D'habitude, tu parles de tes soucis et de ce qui te préoccupe avec ton/ta partenaire ?",                            type: 'likert', options: opts, subscale: 'avoidance', reversed: true },
+    { id: 16, text: "Tu sens que ton/ta partenaire te comprend vraiment et comprend tes besoins ?",                                       type: 'likert', options: opts, subscale: 'avoidance' },
+    { id: 18, text: "D'habitude, tu parles de tes soucis et de ce qui te préoccupe avec ton/ta partenaire ?",                            type: 'likert', options: opts, subscale: 'avoidance' },
     { id: 20, text: "Compter sur tes partenaires amoureux, c'est quelque chose qui ne te met pas très à l'aise ?",                       type: 'likert', options: opts, subscale: 'avoidance' },
-    { id: 22, text: "L'idée que ton/ta partenaire puisse te quitter, c'est un truc qui ne t'inquiète pas trop ?",                        type: 'likert', options: opts, subscale: 'avoidance', reversed: true },
+    { id: 22, text: "L'idée que ton/ta partenaire puisse te quitter, c'est un truc qui ne t'inquiète pas trop ?",                        type: 'likert', options: opts, subscale: 'avoidance' },
     { id: 24, text: "Tu essaies d'éviter de trop te rapprocher émotionnellement de ton/ta partenaire ?",                                  type: 'likert', options: opts, subscale: 'avoidance' },
-    { id: 26, text: "Dans les moments difficiles, te tourner vers ton/ta partenaire ça te réconforte ? 🤲",                               type: 'likert', options: opts, subscale: 'avoidance', reversed: true },
-    { id: 28, text: "Tu dirais que tu racontes à peu près tout à ton/ta partenaire ?",                                                   type: 'likert', options: opts, subscale: 'avoidance', reversed: true },
-    { id: 30, text: "Quand quelque chose te tracasse, tu en parles avec ton/ta partenaire ?",                                            type: 'likert', options: opts, subscale: 'avoidance', reversed: true },
+    { id: 26, text: "Dans les moments difficiles, te tourner vers ton/ta partenaire ça te réconforte ? 🤲",                               type: 'likert', options: opts, subscale: 'avoidance' },
+    { id: 28, text: "Tu dirais que tu racontes à peu près tout à ton/ta partenaire ?",                                                   type: 'likert', options: opts, subscale: 'avoidance' },
+    { id: 30, text: "Quand quelque chose te tracasse, tu en parles avec ton/ta partenaire ?",                                            type: 'likert', options: opts, subscale: 'avoidance' },
     { id: 32, text: "Être proche des gens, ça te met un peu mal à l'aise au fond ?",                                                     type: 'likert', options: opts, subscale: 'avoidance' },
-    { id: 34, text: "Compter sur tes partenaires amoureux, c'est quelque chose qui te vient facilement ?",                                type: 'likert', options: opts, subscale: 'avoidance', reversed: true },
-    { id: 36, text: "Être {{affectueux|affectueuse}} avec ton/ta partenaire, c'est naturel pour toi ? 💛",                                            type: 'likert', options: opts, subscale: 'avoidance', reversed: true },
+    { id: 34, text: "Compter sur tes partenaires amoureux, c'est quelque chose qui te vient facilement ?",                                type: 'likert', options: opts, subscale: 'avoidance' },
+    { id: 36, text: "Être {{affectueux|affectueuse}} avec ton/ta partenaire, c'est naturel pour toi ? 💛",                                            type: 'likert', options: opts, subscale: 'avoidance' },
   ],
   subscales: [
     {

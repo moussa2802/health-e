@@ -504,7 +504,7 @@ export async function createDefaultPatientProfile(
 
     // Use retry mechanism for patient document creation
     await retryFirestoreOperation(async () => {
-      await setDoc(patientRef, patientData);
+      await setDoc(patientRef, patientData, { merge: true });
     });
 
     // Also create/update a user document with retry mechanism

@@ -2,10 +2,10 @@ import type { AssessmentScale } from '../../../types/assessment';
 
 // Échelle de Likert 1-4 conforme à la version originale de Rosenberg (1965)
 const opts = [
-  { value: 4, label: "Tout à fait d'accord" },
-  { value: 3, label: "D'accord" },
-  { value: 2, label: "Pas d'accord" },
-  { value: 1, label: "Pas du tout d'accord" },
+  { value: 4, label: "Oui, tout à fait", subtitle: "C'est exactement ça" },
+  { value: 3, label: "Plutôt oui", subtitle: "Ça me correspond assez" },
+  { value: 2, label: "Pas vraiment", subtitle: "Ça ne me correspond pas trop" },
+  { value: 1, label: "Pas du tout", subtitle: "Ce n'est vraiment pas moi" },
 ];
 
 export const RSES: AssessmentScale = {

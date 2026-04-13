@@ -1,11 +1,11 @@
 import type { AssessmentScale } from '../../../types/assessment';
 
 const agree5 = [
-  { value: 1, label: "Pas du tout" },
-  { value: 2, label: "Un peu" },
-  { value: 3, label: "Moyennement" },
-  { value: 4, label: "Beaucoup" },
-  { value: 5, label: "Totalement" },
+  { value: 1, label: "Pas du tout", subtitle: "Ça ne me concerne pas" },
+  { value: 2, label: "Un peu", subtitle: "Légèrement" },
+  { value: 3, label: "Moyennement", subtitle: "De façon notable" },
+  { value: 4, label: "Beaucoup", subtitle: "C'est assez présent" },
+  { value: 5, label: "Totalement", subtitle: "C'est très fort dans ma vie" },
 ];
 
 export const RELIGIOUS_CULTURAL: AssessmentScale = {

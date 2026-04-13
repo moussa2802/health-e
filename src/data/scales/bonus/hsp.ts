@@ -6,11 +6,11 @@ import type { AssessmentScale } from '../../../types/assessment';
 // Aron, E.N. & Aron, A. (1997). Sensory-processing sensitivity and its relation to introversion and emotionality.
 
 const opts = [
-  { value: 0, label: 'Pas du tout' },
-  { value: 1, label: 'Un peu' },
-  { value: 2, label: 'Modérément' },
-  { value: 3, label: 'Beaucoup' },
-  { value: 4, label: 'Extrêmement' },
+  { value: 0, label: 'Pas du tout', subtitle: "Je ne ressens pas ça du tout" },
+  { value: 1, label: 'Un peu', subtitle: "Très légèrement" },
+  { value: 2, label: 'Modérément', subtitle: "De façon notable" },
+  { value: 3, label: 'Beaucoup', subtitle: "Fortement, c'est marqué" },
+  { value: 4, label: 'Extrêmement', subtitle: "C'est très intense, ça me submerge" },
 ];
 
 export const BONUS_HSP: AssessmentScale = {

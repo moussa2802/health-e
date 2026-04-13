@@ -1,11 +1,11 @@
 import type { AssessmentScale } from '../../../types/assessment';
 
 const opts = [
-  { value: 1, label: "Pas du tout {{satisfait|satisfaite}}" },
-  { value: 2, label: "Un peu {{satisfait|satisfaite}}" },
-  { value: 3, label: "Modérément {{satisfait|satisfaite}}" },
-  { value: 4, label: "Très {{satisfait|satisfaite}}" },
-  { value: 5, label: "Extrêmement {{satisfait|satisfaite}}" },
+  { value: 1, label: "Pas du tout {{satisfait|satisfaite}}", subtitle: "Ça ne me convient pas du tout" },
+  { value: 2, label: "Un peu {{satisfait|satisfaite}}", subtitle: "Bof, ça pourrait être mieux" },
+  { value: 3, label: "Moyennement {{satisfait|satisfaite}}", subtitle: "Ça va, sans plus" },
+  { value: 4, label: "Très {{satisfait|satisfaite}}", subtitle: "Oui, ça me plaît" },
+  { value: 5, label: "Totalement {{satisfait|satisfaite}}", subtitle: "C'est exactement ce qu'il me faut" },
 ];
 
 export const NSSS: AssessmentScale = {

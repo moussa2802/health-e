@@ -1,11 +1,11 @@
 import type { AssessmentScale } from '../../../types/assessment';
 
 const opts = [
-  { value: 1, label: "Jamais" },
-  { value: 2, label: "Rarement" },
-  { value: 3, label: "Parfois" },
-  { value: 4, label: "Souvent" },
-  { value: 5, label: "Toujours" },
+  { value: 1, label: "Jamais", subtitle: "Ça n'arrive pas" },
+  { value: 2, label: "Rarement", subtitle: "Quelques fois par an" },
+  { value: 3, label: "Parfois", subtitle: "De temps en temps" },
+  { value: 4, label: "Souvent", subtitle: "Régulièrement" },
+  { value: 5, label: "Toujours", subtitle: "Systématiquement" },
 ];
 
 export const GRISS_BASE: AssessmentScale = {
@@ -22,19 +22,19 @@ export const GRISS_BASE: AssessmentScale = {
   scoreRange: { min: 16, max: 80 },
   reverseIds: [1, 3, 7, 9, 13],
   items: [
-    { id: 1,  text: "Votre vie sexuelle est satisfaisante pour vous deux ?",                                                             type: 'likert', options: opts, subscale: 'satisfaction', reversed: true },
+    { id: 1,  text: "Votre vie sexuelle est satisfaisante pour vous deux ?",                                                             type: 'likert', options: opts, subscale: 'satisfaction' },
     { id: 2,  text: "Tu trouves que votre vie sexuelle manque de qualité ?",                                                             type: 'likert', options: opts, subscale: 'satisfaction' },
-    { id: 3,  text: "Vous avez des rapports sexuels à une fréquence qui vous convient à tous les deux ?",                                type: 'likert', options: opts, subscale: 'frequency', reversed: true },
+    { id: 3,  text: "Vous avez des rapports sexuels à une fréquence qui vous convient à tous les deux ?",                                type: 'likert', options: opts, subscale: 'frequency' },
     { id: 4,  text: "Tu aimerais que vous ayez des rapports sexuels plus souvent ?",                                                     type: 'likert', options: opts, subscale: 'frequency' },
     { id: 5,  text: "Ton/ta partenaire et toi, vous évitez les contacts physiques ou les situations qui pourraient mener au sexe ?",     type: 'likert', options: opts, subscale: 'avoidance' },
     { id: 6,  text: "Il vous arrive d'éviter les conversations sur votre sexualité ?",                                                   type: 'likert', options: opts, subscale: 'avoidance' },
-    { id: 7,  text: "Vous arrivez à parler librement et ouvertement de sexualité ensemble ?",                                           type: 'likert', options: opts, subscale: 'communication', reversed: true },
+    { id: 7,  text: "Vous arrivez à parler librement et ouvertement de sexualité ensemble ?",                                           type: 'likert', options: opts, subscale: 'communication' },
     { id: 8,  text: "C'est difficile pour toi de dire à ton/ta partenaire ce que tu aimes ou ce que tu n'aimes pas au lit ?",            type: 'likert', options: opts, subscale: 'communication' },
-    { id: 9,  text: "Vous prenez le temps de vous connecter physiquement avant les rapports ?",                                          type: 'likert', options: opts, subscale: 'sensuality', reversed: true },
+    { id: 9,  text: "Vous prenez le temps de vous connecter physiquement avant les rapports ?",                                          type: 'likert', options: opts, subscale: 'sensuality' },
     { id: 10, text: "Tu trouves que la sensualité et les préliminaires sont insuffisants dans votre relation ?",                         type: 'likert', options: opts, subscale: 'sensuality' },
     { id: 11, text: "Il t'arrive de ressentir de la douleur ou de l'inconfort pendant les rapports ?",                                  type: 'likert', options: opts, subscale: 'pain' },
     { id: 12, text: "Des difficultés physiques — douleur, sécheresse, tension — affectent votre vie sexuelle ?",                         type: 'likert', options: opts, subscale: 'pain' },
-    { id: 13, text: "Vous arrivez à atteindre l'orgasme ensemble ou l'un après l'autre ?",                                              type: 'likert', options: opts, subscale: 'orgasm', reversed: true },
+    { id: 13, text: "Vous arrivez à atteindre l'orgasme ensemble ou l'un après l'autre ?",                                              type: 'likert', options: opts, subscale: 'orgasm' },
     { id: 14, text: "L'un de vous deux a souvent des difficultés à atteindre l'orgasme ?",                                              type: 'likert', options: opts, subscale: 'orgasm' },
     { id: 15, text: "Des préoccupations psychologiques — anxiété, stress, honte — interfèrent avec votre vie sexuelle ?",               type: 'likert', options: opts, subscale: 'psychological' },
     { id: 16, text: "Des tensions non résolues dans votre relation affectent votre intimité sexuelle ?",                                 type: 'likert', options: opts, subscale: 'psychological' },

@@ -1,10 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { collection, query, orderBy, getDocs, doc, setDoc, limit } from 'firebase/firestore';
+import { collection, query, orderBy, getDocs, doc, setDoc, getDoc, limit } from 'firebase/firestore';
 import { db } from '../../utils/firebase';
 import { getOnboardingProfile } from '../../utils/onboardingProfile';
 import { getProfileProgress } from '../../services/evaluationService';
 import { getCompatibilityHistory } from '../../services/compatibilityService';
+import { useKoris } from '../../contexts/KorisContext';
+import { KORIS_COSTS } from '../../services/korisService';
 import { KORIS_CONFIG } from '../../utils/korisConfig';
+
+const DAILY_MESSAGE_LIMIT = 10;
 
 const DR_LO_PHOTO = '/dr-lo.png';
 
@@ -152,12 +156,30 @@ const FloatingChat: React.FC<Props> = ({ userId }) => {
   const [conversations, setConversations] = useState<SavedConversation[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
   const [selectedConv, setSelectedConv] = useState<SavedConversation | null>(null);
+  const [dailyCount, setDailyCount] = useState(0);
+  const [limitReached, setLimitReached] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const conversationId = useRef<string>(`conv_${Date.now()}`);
+  const { spend, refund, canAfford, balance } = useKoris();
 
   const onboarding = getOnboardingProfile();
   const prenom = onboarding?.prenom ?? '';
+
+  // Load daily message count from Firestore
+  useEffect(() => {
+    if (!userId) return;
+    const today = new Date().toISOString().split('T')[0];
+    getDoc(doc(db, 'users', userId)).then(snap => {
+      if (!snap.exists()) return;
+      const data = snap.data();
+      if (data.chatLastDate === today) {
+        const count = data.chatDailyCount ?? 0;
+        setDailyCount(count);
+        if (count >= DAILY_MESSAGE_LIMIT) setLimitReached(true);
+      }
+    }).catch(() => {});
+  }, [userId]);
 
   // Message de bienvenue
   useEffect(() => {
@@ -201,6 +223,13 @@ const FloatingChat: React.FC<Props> = ({ userId }) => {
     const text = input.trim();
     if (!text || loading) return;
 
+    // Daily message limit check
+    if (limitReached) return;
+
+    // Koris check — spend before API call
+    const spendResult = await spend('chat', 'Message Dr Lô');
+    if (!spendResult.allowed) return; // NoKorisModal shown by context
+
     const userMsg: ChatMessage = { role: 'user', content: text, timestamp: new Date().toISOString() };
     const newMessages = [...messages, userMsg];
     setMessages(newMessages);
@@ -210,10 +239,11 @@ const FloatingChat: React.FC<Props> = ({ userId }) => {
     try {
       const context = await buildFullContext(userId);
 
-      // Historique: on exclut le message de bienvenue (index 0) et on n'inclut pas le dernier user qu'on vient d'ajouter
-      const historique = messages
+      // Historique: exclure le welcome message (index 0), garder seulement les 5 derniers échanges (10 messages)
+      const allHistory = messages
         .filter((_, i) => i > 0)
         .map(m => ({ role: m.role, content: m.content }));
+      const historique = allHistory.slice(-10); // Last 5 exchanges (user+assistant pairs)
 
       const res = await fetch('/.netlify/functions/dr-lo-chat', {
         method: 'POST',
@@ -221,17 +251,35 @@ const FloatingChat: React.FC<Props> = ({ userId }) => {
         body: JSON.stringify({ message: text, historique, context }),
       });
 
+      if (!res.ok) {
+        // Refund on API failure
+        await refund('chat');
+        throw new Error('API error');
+      }
+
       const data = await res.json();
       const assistantMsg: ChatMessage = {
         role: 'assistant',
         content: data.response ?? "Je n'ai pas pu répondre. Réessaie dans un instant.",
         timestamp: new Date().toISOString(),
-        koris_consumed: data.koris_consumed ?? 0,
+        koris_consumed: KORIS_COSTS.chat,
       };
 
       const finalMessages = [...newMessages, assistantMsg];
       setMessages(finalMessages);
       if (!open) setUnread(n => n + 1);
+
+      // Update daily message counter
+      const newCount = dailyCount + 1;
+      setDailyCount(newCount);
+      if (newCount >= DAILY_MESSAGE_LIMIT) setLimitReached(true);
+      if (userId) {
+        const today = new Date().toISOString().split('T')[0];
+        setDoc(doc(db, 'users', userId), {
+          chatDailyCount: newCount,
+          chatLastDate: today,
+        }, { merge: true }).catch(() => {});
+      }
 
       // Persister dans Firestore
       if (userId) {
@@ -249,6 +297,7 @@ const FloatingChat: React.FC<Props> = ({ userId }) => {
         ).catch(() => {});
       }
     } catch {
+      // Refund already handled above for API errors
       setMessages(prev => [...prev, {
         role: 'assistant',
         content: "Une erreur s'est produite. Vérifie ta connexion et réessaie.",
@@ -397,37 +446,48 @@ const FloatingChat: React.FC<Props> = ({ userId }) => {
                 </div>
               )}
 
-              <div style={{ padding: '8px 10px 12px', borderTop: '1px solid #F1F5F9', display: 'flex', gap: 7, alignItems: 'flex-end', flexShrink: 0 }}>
-                <textarea
-                  ref={inputRef}
-                  className="chat-input-area"
-                  value={input}
-                  onChange={e => setInput(e.target.value)}
-                  onKeyDown={handleKeyDown}
-                  placeholder="Écrire un message…"
-                  rows={1}
-                  disabled={loading}
-                  style={{
-                    flex: 1, resize: 'none', border: '1.5px solid #E2E8F0',
-                    borderRadius: 12, padding: '8px 11px', fontSize: 13,
-                    fontFamily: 'inherit', background: '#F8FAFF', color: '#0A2342',
-                    lineHeight: '20px', overflowY: 'auto',
-                    minHeight: 36, maxHeight: 116,
-                    transition: 'height 0.1s ease',
-                  }}
-                />
-                <button
-                  onClick={sendMessage}
-                  disabled={loading || !input.trim()}
-                  style={{
-                    width: 36, height: 36, borderRadius: 10, border: 'none',
-                    background: loading || !input.trim() ? '#E2E8F0' : 'linear-gradient(135deg,#3B82F6,#6366F1)',
-                    color: '#fff', fontSize: 15, cursor: loading || !input.trim() ? 'default' : 'pointer',
-                    flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    transition: 'background 0.15s',
-                  }}
-                >→</button>
-              </div>
+              {limitReached ? (
+                <div style={{
+                  padding: '12px 16px', borderTop: '1px solid #F1F5F9',
+                  textAlign: 'center', flexShrink: 0,
+                }}>
+                  <p style={{ margin: 0, fontSize: 13, color: '#64748B', lineHeight: 1.5 }}>
+                    Tu as atteint la limite de messages pour aujourd'hui. Reviens demain pour continuer avec Dr Lo 🤍
+                  </p>
+                </div>
+              ) : (
+                <div style={{ padding: '8px 10px 12px', borderTop: '1px solid #F1F5F9', display: 'flex', gap: 7, alignItems: 'flex-end', flexShrink: 0 }}>
+                  <textarea
+                    ref={inputRef}
+                    className="chat-input-area"
+                    value={input}
+                    onChange={e => setInput(e.target.value)}
+                    onKeyDown={handleKeyDown}
+                    placeholder={`Ecrire un message... (◉${KORIS_COSTS.chat}/msg • ${DAILY_MESSAGE_LIMIT - dailyCount} restants)`}
+                    rows={1}
+                    disabled={loading}
+                    style={{
+                      flex: 1, resize: 'none', border: '1.5px solid #E2E8F0',
+                      borderRadius: 12, padding: '8px 11px', fontSize: 13,
+                      fontFamily: 'inherit', background: '#F8FAFF', color: '#0A2342',
+                      lineHeight: '20px', overflowY: 'auto',
+                      minHeight: 36, maxHeight: 116,
+                      transition: 'height 0.1s ease',
+                    }}
+                  />
+                  <button
+                    onClick={sendMessage}
+                    disabled={loading || !input.trim()}
+                    style={{
+                      width: 36, height: 36, borderRadius: 10, border: 'none',
+                      background: loading || !input.trim() ? '#E2E8F0' : 'linear-gradient(135deg,#3B82F6,#6366F1)',
+                      color: '#fff', fontSize: 15, cursor: loading || !input.trim() ? 'default' : 'pointer',
+                      flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      transition: 'background 0.15s',
+                    }}
+                  >→</button>
+                </div>
+              )}
             </>
           )}
 

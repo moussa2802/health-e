@@ -6,13 +6,13 @@ import type { AssessmentScale } from '../../../types/assessment';
 // Maslach, C., Jackson, S.E., & Leiter, M.P. (1996)
 
 const opts = [
-  { value: 0, label: 'Jamais' },
-  { value: 1, label: 'Quelques fois par an' },
-  { value: 2, label: 'Une fois par mois' },
-  { value: 3, label: 'Quelques fois par mois' },
-  { value: 4, label: 'Une fois par semaine' },
-  { value: 5, label: 'Plusieurs fois par semaine' },
-  { value: 6, label: 'Tous les jours' },
+  { value: 0, label: 'Jamais', subtitle: "Ça ne m'arrive pas" },
+  { value: 1, label: 'Quelques fois par an', subtitle: "C'est vraiment rare" },
+  { value: 2, label: 'Une fois par mois', subtitle: "Environ 1 fois par mois" },
+  { value: 3, label: 'Quelques fois par mois', subtitle: "2-3 fois par mois" },
+  { value: 4, label: 'Une fois par semaine', subtitle: "Environ 1 fois par semaine" },
+  { value: 5, label: 'Plusieurs fois par semaine', subtitle: "Quasiment un jour sur deux" },
+  { value: 6, label: 'Tous les jours', subtitle: "Chaque jour ou presque" },
 ];
 
 export const BONUS_BURNOUT: AssessmentScale = {

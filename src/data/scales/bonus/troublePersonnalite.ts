@@ -5,8 +5,8 @@ import type { AssessmentScale } from '../../../types/assessment';
 // Hyler et al. (1994) PDQ-4 adapté ; APA DSM-5 PID-5 short form
 
 const opts = [
-  { value: 0, label: 'Faux — Ce n\'est pas moi' },
-  { value: 1, label: 'Vrai — Je me reconnais' },
+  { value: 0, label: 'Non, pas moi', subtitle: "Je ne me reconnais pas du tout là-dedans" },
+  { value: 1, label: 'Oui, c\'est moi', subtitle: "Je me reconnais dans cette description" },
 ];
 
 export const BONUS_PERSONNALITE: AssessmentScale = {

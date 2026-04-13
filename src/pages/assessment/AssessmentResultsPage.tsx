@@ -695,7 +695,6 @@ const AssessmentResultsPage: React.FC = () => {
                 prenom={onboarding?.prenom ?? undefined}
                 genre={onboarding?.genre ?? undefined}
                 interpretation={resolvedInterp.description}
-                autoLoad
               />
             );
           })()}

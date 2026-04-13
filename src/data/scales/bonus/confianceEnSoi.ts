@@ -5,10 +5,10 @@ import type { AssessmentScale } from '../../../types/assessment';
 // Score total : 0-45  |  Seuils : 0-15 faible / 16-28 modérée / 29-38 bonne / 39-45 très haute
 
 const opts = [
-  { value: 0, label: 'Pas du tout vrai' },
-  { value: 1, label: 'À peine vrai' },
-  { value: 2, label: 'Plutôt vrai' },
-  { value: 3, label: 'Tout à fait vrai' },
+  { value: 0, label: 'Pas du tout', subtitle: "Ce n'est vraiment pas mon cas" },
+  { value: 1, label: 'Un peu', subtitle: "Ça m'arrive mais c'est rare" },
+  { value: 2, label: 'Plutôt oui', subtitle: "Je m'en sens assez capable" },
+  { value: 3, label: 'Tout à fait', subtitle: "C'est clairement une force chez moi" },
 ];
 
 export const BONUS_CONFIANCE: AssessmentScale = {

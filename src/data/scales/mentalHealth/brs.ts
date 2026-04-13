@@ -7,11 +7,11 @@ import type { AssessmentScale } from '../../../types/assessment';
 // Seuils : 1–2.99 faible | 3–4.30 normale | 4.31–5 élevée
 
 const opts = [
-  { value: 1, label: "Pas du tout" },
-  { value: 2, label: "Pas vraiment" },
-  { value: 3, label: "Plus ou moins" },
-  { value: 4, label: "Plutôt oui" },
-  { value: 5, label: "Tout à fait" },
+  { value: 1, label: "Pas du tout", subtitle: "Non, c'est très difficile" },
+  { value: 2, label: "Pas vraiment", subtitle: "J'ai souvent du mal" },
+  { value: 3, label: "Plus ou moins", subtitle: "Ça dépend" },
+  { value: 4, label: "Plutôt oui", subtitle: "La plupart du temps" },
+  { value: 5, label: "Tout à fait", subtitle: "Oui, sans problème" },
 ];
 
 export const BRS: AssessmentScale = {
@@ -31,11 +31,11 @@ export const BRS: AssessmentScale = {
   reverseIds: [2, 4, 6],
   items: [
     { id: 1, text: "Quand tu traverses un moment difficile, tu arrives à rebondir assez vite ?",                    type: 'likert', options: opts },
-    { id: 2, text: "Quand quelque chose de dur t'arrive, tu as du mal à t'en remettre ?",                           type: 'likert', options: opts, reversed: true },
+    { id: 2, text: "Quand quelque chose de dur t'arrive, tu as du mal à t'en remettre ?",                           type: 'likert', options: opts },
     { id: 3, text: "Après une épreuve ou une maladie, tu te remets sur pied plutôt rapidement ?",                   type: 'likert', options: opts },
-    { id: 4, text: "Quand un coup dur te tombe dessus, tu as du mal à récupérer ?",                                 type: 'likert', options: opts, reversed: true },
+    { id: 4, text: "Quand un coup dur te tombe dessus, tu as du mal à récupérer ?",                                 type: 'likert', options: opts },
     { id: 5, text: "En général, tu arrives à traverser les périodes difficiles sans trop couler ?",                  type: 'likert', options: opts },
-    { id: 6, text: "Après un contretemps, tu mets beaucoup de temps avant de remonter la pente ?",                  type: 'likert', options: opts, reversed: true },
+    { id: 6, text: "Après un contretemps, tu mets beaucoup de temps avant de remonter la pente ?",                  type: 'likert', options: opts },
   ],
   interpretation: [
     {

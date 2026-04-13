@@ -1,10 +1,10 @@
 import type { AssessmentScale } from '../../../types/assessment';
 
 const opts = [
-  { value: 1, label: "Pas du tout d'accord" },
-  { value: 2, label: "Plutôt pas d'accord" },
-  { value: 3, label: "Plutôt d'accord" },
-  { value: 4, label: "Tout à fait d'accord" },
+  { value: 1, label: "Pas du tout", subtitle: "Ça ne me correspond pas" },
+  { value: 2, label: "Pas vraiment", subtitle: "Rarement" },
+  { value: 3, label: "Plutôt oui", subtitle: "Assez souvent" },
+  { value: 4, label: "Tout à fait", subtitle: "Oui, clairement" },
 ];
 
 export const SIS_SES: AssessmentScale = {

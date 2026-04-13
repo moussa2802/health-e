@@ -1,10 +1,10 @@
 import type { AssessmentScale } from '../../../types/assessment';
 
 const opts = [
-  { value: 0, label: "Jamais" },
-  { value: 1, label: "Plusieurs jours" },
-  { value: 2, label: "Plus de la moitié du temps" },
-  { value: 3, label: "Presque tous les jours" },
+  { value: 0, label: "Jamais", subtitle: "Pas une seule fois" },
+  { value: 1, label: "Plusieurs jours", subtitle: "Quelques jours sur les 14" },
+  { value: 2, label: "Plus de la moitié du temps", subtitle: "7 jours ou plus" },
+  { value: 3, label: "Presque tous les jours", subtitle: "Quasiment en permanence" },
 ];
 
 export const PHQ9: AssessmentScale = {

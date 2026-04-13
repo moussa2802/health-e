@@ -1,11 +1,11 @@
 import type { AssessmentScale } from '../../../types/assessment';
 
 const opts = [
-  { value: 1, label: "Pas du tout d'accord" },
-  { value: 2, label: "Plutôt pas d'accord" },
-  { value: 3, label: "Neutre" },
-  { value: 4, label: "Plutôt d'accord" },
-  { value: 5, label: "Tout à fait d'accord" },
+  { value: 1, label: "Pas du tout", subtitle: "Ce n'est vraiment pas notre cas" },
+  { value: 2, label: "Pas vraiment", subtitle: "C'est rare entre nous" },
+  { value: 3, label: "Plus ou moins", subtitle: "Ça dépend des moments" },
+  { value: 4, label: "Plutôt oui", subtitle: "C'est souvent le cas" },
+  { value: 5, label: "Tout à fait", subtitle: "Oui, c'est vraiment nous" },
 ];
 
 export const PAIR: AssessmentScale = {

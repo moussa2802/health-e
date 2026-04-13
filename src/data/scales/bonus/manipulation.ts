@@ -5,11 +5,11 @@ import type { AssessmentScale } from '../../../types/assessment';
 // Christie, R. & Geis, F.L. (1970). Studies in Machiavellianism. Academic Press.
 
 const opts = [
-  { value: 0, label: 'Pas du tout d\'accord' },
-  { value: 1, label: 'Plutôt pas d\'accord' },
-  { value: 2, label: 'Neutre' },
-  { value: 3, label: 'Plutôt d\'accord' },
-  { value: 4, label: 'Tout à fait d\'accord' },
+  { value: 0, label: "Pas du tout d'accord", subtitle: "Je rejette complètement cette idée" },
+  { value: 1, label: "Plutôt pas d'accord", subtitle: "Je n'y adhère pas vraiment" },
+  { value: 2, label: 'Neutre', subtitle: "Je n'ai pas d'avis tranché" },
+  { value: 3, label: "Plutôt d'accord", subtitle: "Ça correspond assez à ce que je pense" },
+  { value: 4, label: "Tout à fait d'accord", subtitle: "Je suis totalement de cet avis" },
 ];
 
 export const BONUS_MANIPULATION: AssessmentScale = {

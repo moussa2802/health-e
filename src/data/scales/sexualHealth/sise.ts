@@ -1,11 +1,11 @@
 import type { AssessmentScale } from '../../../types/assessment';
 
 const opts = [
-  { value: 1, label: "Pas du tout d'accord" },
-  { value: 2, label: "Plutôt pas d'accord" },
-  { value: 3, label: "Neutre" },
-  { value: 4, label: "Plutôt d'accord" },
-  { value: 5, label: "Tout à fait d'accord" },
+  { value: 1, label: "Pas du tout", subtitle: "Ce n'est vraiment pas mon cas" },
+  { value: 2, label: "Pas vraiment", subtitle: "Ça ne me correspond pas trop" },
+  { value: 3, label: "Moyennement", subtitle: "Ça dépend" },
+  { value: 4, label: "Plutôt oui", subtitle: "Ça me correspond assez" },
+  { value: 5, label: "Tout à fait", subtitle: "C'est exactement mon cas" },
 ];
 
 export const SISE: AssessmentScale = {
@@ -25,15 +25,15 @@ export const SISE: AssessmentScale = {
     { id: 1,  text: "Tu as une idée claire de qui tu es sur le plan sexuel ?",                                                                type: 'likert', options: opts, subscale: 'clarity' },
     { id: 2,  text: "Tu comprends bien tes désirs et tes besoins sexuels ?",                                                                  type: 'likert', options: opts, subscale: 'clarity' },
     { id: 3,  text: "Ton identité sexuelle, tu la sens stable et cohérente ?",                                                                type: 'likert', options: opts, subscale: 'clarity' },
-    { id: 4,  text: "Il t'arrive d'être {{confus|confuse}} sur ton identité ou ton orientation sexuelle ?",                                            type: 'likert', options: opts, subscale: 'clarity', reversed: true },
+    { id: 4,  text: "Il t'arrive d'être {{confus|confuse}} sur ton identité ou ton orientation sexuelle ?",                                            type: 'likert', options: opts, subscale: 'clarity' },
     { id: 5,  text: "Tu es à l'aise avec ton orientation sexuelle ou ton identité de genre ?",                                                type: 'likert', options: opts, subscale: 'satisfaction' },
     { id: 6,  text: "Tu es {{satisfait|satisfaite}} de ta vie sexuelle en général ?",                                                                     type: 'likert', options: opts, subscale: 'satisfaction' },
-    { id: 7,  text: "Tu souhaiterais être {{différent|différente}} sur le plan sexuel ?",                                                                 type: 'likert', options: opts, subscale: 'satisfaction', reversed: true },
-    { id: 8,  text: "Il y a des aspects de ta sexualité qui te mettent mal à l'aise ?",                                                       type: 'likert', options: opts, subscale: 'satisfaction', reversed: true },
+    { id: 7,  text: "Tu souhaiterais être {{différent|différente}} sur le plan sexuel ?",                                                                 type: 'likert', options: opts, subscale: 'satisfaction' },
+    { id: 8,  text: "Il y a des aspects de ta sexualité qui te mettent mal à l'aise ?",                                                       type: 'likert', options: opts, subscale: 'satisfaction' },
     { id: 9,  text: "Tes comportements sexuels sont alignés avec tes valeurs et tes envies ?",                                                type: 'likert', options: opts, subscale: 'congruence' },
-    { id: 10, text: "Il y a souvent un écart entre ce que tu veux sexuellement et ce que tu fais vraiment ?",                                 type: 'likert', options: opts, subscale: 'congruence', reversed: true },
-    { id: 11, text: "La honte ou la culpabilité liée à ta sexualité t'empêche de vivre pleinement ?",                                        type: 'likert', options: opts, subscale: 'shame', reversed: true },
-    { id: 12, text: "Les normes de ta culture ou de ta religion créent une tension avec ta sexualité ?",                                      type: 'likert', options: opts, subscale: 'shame', reversed: true },
+    { id: 10, text: "Il y a souvent un écart entre ce que tu veux sexuellement et ce que tu fais vraiment ?",                                 type: 'likert', options: opts, subscale: 'congruence' },
+    { id: 11, text: "La honte ou la culpabilité liée à ta sexualité t'empêche de vivre pleinement ?",                                        type: 'likert', options: opts, subscale: 'shame' },
+    { id: 12, text: "Les normes de ta culture ou de ta religion créent une tension avec ta sexualité ?",                                      type: 'likert', options: opts, subscale: 'shame' },
     { id: 13, text: "Tu peux t'exprimer sexuellement sans craindre le jugement de ton entourage ?",                                          type: 'likert', options: opts, subscale: 'expression' },
     { id: 14, text: "Tu vis dans un environnement où tu peux être honnête sur ta sexualité ?",                                               type: 'likert', options: opts, subscale: 'expression' },
     { id: 15, text: "Tu t'acceptes {{tel|telle}} que tu es sur le plan sexuel ?",                                                                   type: 'likert', options: opts, subscale: 'acceptance' },

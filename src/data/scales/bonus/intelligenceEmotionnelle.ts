@@ -6,13 +6,13 @@ import type { AssessmentScale } from '../../../types/assessment';
 // Wong, C.S. & Law, K.S. (2002). The effects of leader and follower emotional intelligence.
 
 const opts = [
-  { value: 1, label: 'Pas du tout d\'accord' },
-  { value: 2, label: 'Très peu d\'accord' },
-  { value: 3, label: 'Peu d\'accord' },
-  { value: 4, label: 'Neutre' },
-  { value: 5, label: 'Plutôt d\'accord' },
-  { value: 6, label: 'D\'accord' },
-  { value: 7, label: 'Tout à fait d\'accord' },
+  { value: 1, label: 'Pas du tout', subtitle: "Ce n'est vraiment pas moi" },
+  { value: 2, label: 'Très peu', subtitle: "À peine, très rarement" },
+  { value: 3, label: 'Un peu', subtitle: "Parfois, dans certaines situations" },
+  { value: 4, label: 'Moyennement', subtitle: "Ça dépend du contexte" },
+  { value: 5, label: 'Plutôt bien', subtitle: "Assez souvent, je m'en sors bien" },
+  { value: 6, label: 'Bien', subtitle: "C'est naturel pour moi" },
+  { value: 7, label: 'Tout à fait', subtitle: "C'est une vraie force chez moi" },
 ];
 
 export const BONUS_EQ: AssessmentScale = {

@@ -1,10 +1,10 @@
 import type { AssessmentScale } from '../../../types/assessment';
 
 const opts = [
-  { value: 0, label: "Jamais" },
-  { value: 1, label: "Rarement" },
-  { value: 2, label: "Parfois" },
-  { value: 3, label: "Souvent" },
+  { value: 0, label: "Jamais", subtitle: "Ça ne m'arrive pas" },
+  { value: 1, label: "Rarement", subtitle: "Quelques fois par an" },
+  { value: 2, label: "Parfois", subtitle: "De temps en temps" },
+  { value: 3, label: "Souvent", subtitle: "Régulièrement" },
 ];
 
 export const TSI_BASE: AssessmentScale = {
@@ -75,10 +75,10 @@ export const TSI_BASE: AssessmentScale = {
     id: 17,
     text: "Les expériences sexuelles difficiles que tu as vécues, c'est quelque chose qui... ?",
     options: [
-      { value: 1, label: "Appartient au passé — j'ai fait un vrai travail de guérison" },
-      { value: 2, label: "Est plutôt derrière moi, même si ça me touche encore un peu" },
-      { value: 3, label: "M'affecte encore régulièrement dans ma vie" },
-      { value: 4, label: "Est récent ou toujours très présent et douloureux" },
+      { value: 1, label: "Appartient au passé — j'ai fait un vrai travail de guérison", subtitle: "C'est derrière moi" },
+      { value: 2, label: "Est plutôt derrière moi, même si ça me touche encore un peu", subtitle: "J'ai avancé" },
+      { value: 3, label: "M'affecte encore régulièrement dans ma vie", subtitle: "Ça pèse sur moi" },
+      { value: 4, label: "Est récent ou toujours très présent et douloureux", subtitle: "C'est encore très vif" },
     ],
     noScore: true as const,
     resolvedThreshold: 2,

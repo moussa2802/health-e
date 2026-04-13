@@ -15,6 +15,10 @@ import {
   sendEmailVerification,
   createUserWithEmailAndPassword,
   sendPasswordResetEmail,
+  signInWithRedirect,
+  linkWithRedirect,
+  getRedirectResult,
+  GoogleAuthProvider,
   User as FirebaseUser,
 } from "firebase/auth";
 import { FirebaseError } from "firebase/app";
@@ -73,6 +77,9 @@ interface AuthContextType {
   ) => Promise<void>;
   loginWithPhone: (userId: string, phoneNumber: string) => Promise<void>;
   verifyPhoneCode: (verificationId: string, code: string) => Promise<void>;
+  signInWithGoogle: () => Promise<void>;
+  linkGoogleAccount: () => Promise<void>;
+  isPhoneOnlyUser: () => boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -83,6 +90,11 @@ type AuthProviderProps = {
 
 // Initialize Firebase Auth
 const auth = getAuth(app);
+
+// Google Auth provider
+const googleProvider = new GoogleAuthProvider();
+googleProvider.addScope("email");
+googleProvider.addScope("profile");
 
 
 // Helper function to check if error is a Firestore internal error
@@ -104,6 +116,90 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const resetAttemptedRef = useRef<number>(0);
   const registrationInProgressRef = useRef<boolean>(false);
   const RESET_COOLDOWN_MS = 5000; // 5 seconds cooldown between resets
+  const redirectProcessedRef = useRef<boolean>(false);
+
+  // ── Process Google redirect result (sign-in or link) ──
+  const processGoogleRedirectResult = async (): Promise<void> => {
+    if (redirectProcessedRef.current) return;
+    redirectProcessedRef.current = true;
+
+    try {
+      const result = await getRedirectResult(auth);
+      if (!result) return; // No redirect pending — normal page load
+
+      const firebaseUser = result.user;
+      const redirectType = localStorage.getItem("he_google_redirect_type");
+      localStorage.removeItem("he_google_redirect_type");
+
+      await ensureFirestoreReady();
+      const db = getFirestoreInstance();
+      if (!db) return;
+
+      if (redirectType === "link") {
+        // ── Returning from linkWithRedirect ──
+        const email = firebaseUser.email || "";
+        const photoURL = firebaseUser.photoURL || "";
+
+        await setDoc(
+          doc(db, "users", firebaseUser.uid),
+          {
+            email: email,
+            profileImage: photoURL || null,
+            googleLinked: true,
+            googleLinkedAt: serverTimestamp(),
+            updatedAt: serverTimestamp(),
+          },
+          { merge: true }
+        );
+
+        await setDoc(
+          doc(db, "patients", firebaseUser.uid),
+          {
+            email: email,
+            profileImage: photoURL || null,
+            updatedAt: serverTimestamp(),
+          },
+          { merge: true }
+        );
+
+        console.log("✅ [GOOGLE] Compte Google associé après redirect");
+      } else {
+        // ── Returning from signInWithRedirect ──
+        const email = firebaseUser.email || "";
+        const displayName = firebaseUser.displayName || "";
+        const photoURL = firebaseUser.photoURL || "";
+
+        const userDoc = await getDoc(doc(db, "users", firebaseUser.uid));
+
+        if (userDoc.exists()) {
+          // Existing user — onAuthStateChanged will handle login via fetchUserDataWithRetry
+          console.log("✅ [GOOGLE] Utilisateur existant connecté après redirect");
+        } else {
+          // New user — create patient profile
+          const newUser = {
+            id: firebaseUser.uid,
+            name: displayName,
+            email: email,
+            type: "patient",
+            isActive: true,
+            profileImage: photoURL,
+            authProvider: "google",
+            createdAt: serverTimestamp(),
+            updatedAt: serverTimestamp(),
+          };
+
+          await setDoc(doc(db, "users", firebaseUser.uid), newUser);
+          await createDefaultPatientProfile(firebaseUser.uid, displayName, email, "");
+          localStorage.setItem("he_new_account", "true");
+          console.log("✅ [GOOGLE] Nouveau compte créé après redirect");
+        }
+      }
+    } catch (error: any) {
+      // auth/account-exists-with-different-credential, etc.
+      console.error("❌ [GOOGLE] Erreur traitement redirect:", error?.code, error?.message);
+      localStorage.removeItem("he_google_redirect_type");
+    }
+  };
 
   // Function to fetch user data with retry mechanism
   const fetchUserDataWithRetry = async (
@@ -175,36 +271,43 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     }
   };
 
-  // Listen for auth state changes
+  // Listen for auth state changes + process Google redirect on app load
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(
-      auth,
-      async (firebaseUser: FirebaseUser | null) => {
-        setAuthReady(true);
+    // Process any pending Google redirect BEFORE listening for auth state
+    // This ensures Firestore docs are created before onAuthStateChanged fires
+    processGoogleRedirectResult().finally(() => {
+      const unsubscribeRef = { current: () => {} };
 
-        if (firebaseUser) {
-          setLoadingUserData(true);
-          try {
-            // User is signed in, get their data from Firestore with retry mechanism
-            await fetchUserDataWithRetry(firebaseUser);
-          } catch (error) {
+      unsubscribeRef.current = onAuthStateChanged(
+        auth,
+        async (firebaseUser: FirebaseUser | null) => {
+          setAuthReady(true);
+
+          if (firebaseUser) {
+            setLoadingUserData(true);
+            try {
+              // User is signed in, get their data from Firestore with retry mechanism
+              await fetchUserDataWithRetry(firebaseUser);
+            } catch (error) {
+              setCurrentUser(null);
+            } finally {
+              setLoadingUserData(false);
+            }
+          } else {
+            // User is signed out
             setCurrentUser(null);
-          } finally {
             setLoadingUserData(false);
           }
-        } else {
-          // User is signed out
-          setCurrentUser(null);
-          setLoadingUserData(false);
+          setLoading(false);
         }
-        setLoading(false);
-      }
-    );
+      );
 
-    // ⚠️ Supprimé le bloc localStorage pour éviter les conflits avec la garde
-    // La garde doit attendre que Firebase ET Firestore soient prêts
+      // Store unsubscribe for cleanup
+      cleanupRef.current = unsubscribeRef.current;
+    });
 
-    return () => unsubscribe();
+    const cleanupRef = { current: () => {} };
+    return () => cleanupRef.current();
   }, []);
 
   // ✅ SYNC: Listen for real-time name updates from profile changes
@@ -430,6 +533,45 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       console.error("Login with phone error:", error);
       throw error;
     }
+  };
+
+  // ── Google Sign-In (redirect mode — avoids COOP issues on mobile) ──
+  const signInWithGoogleHandler = async (): Promise<void> => {
+    try {
+      localStorage.setItem("he_google_redirect_type", "signin");
+      await signInWithRedirect(auth, googleProvider);
+      // The page will redirect — execution stops here.
+      // On return, processGoogleRedirectResult() handles the rest.
+    } catch (error: any) {
+      console.error("Google sign-in redirect error:", error);
+      localStorage.removeItem("he_google_redirect_type");
+      throw new Error("Erreur lors de la connexion Google. Veuillez réessayer.");
+    }
+  };
+
+  // ── Link Google to existing phone-only account (redirect mode) ──
+  const linkGoogleAccount = async (): Promise<void> => {
+    const firebaseUser = auth.currentUser;
+    if (!firebaseUser) throw new Error("Vous devez être connecté pour associer un compte Google.");
+
+    try {
+      localStorage.setItem("he_google_redirect_type", "link");
+      await linkWithRedirect(firebaseUser, googleProvider);
+      // The page will redirect — execution stops here.
+      // On return, processGoogleRedirectResult() handles the Firestore update.
+    } catch (error: any) {
+      console.error("Google link redirect error:", error);
+      localStorage.removeItem("he_google_redirect_type");
+      throw new Error("Erreur lors de l'association du compte Google. Veuillez réessayer.");
+    }
+  };
+
+  // ── Check if current user is phone-only ──
+  const isPhoneOnlyUser = (): boolean => {
+    const firebaseUser = auth.currentUser;
+    if (!firebaseUser) return false;
+    const providers = firebaseUser.providerData.map((p) => p.providerId);
+    return providers.includes("phone") && !providers.includes("google.com") && !providers.includes("password");
   };
 
   const register = async (
@@ -787,11 +929,11 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       createUserWithPhone,
       loginWithPhone,
       verifyPhoneCode: () => {
-        // This function is not implemented in the original file,
-        // but it's part of the AuthContextType.
-        // For now, we'll return a placeholder.
         console.warn("verifyPhoneCode not implemented yet.");
       },
+      signInWithGoogle: signInWithGoogleHandler,
+      linkGoogleAccount,
+      isPhoneOnlyUser,
     }),
     [
       currentUser,

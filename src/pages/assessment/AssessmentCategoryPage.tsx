@@ -38,6 +38,9 @@ import { getCachedConseils, getOrGenerateConseils, type CachedConseils } from '.
 import { generateProfilePDF } from '../../services/pdfProfileService';
 import type { ProfilePDFData } from '../../services/pdfProfileService';
 import ConfirmResetModal from '../../components/assessment/ConfirmResetModal';
+import GoogleLinkBanner from '../../components/auth/GoogleLinkBanner';
+import { useKoris } from '../../contexts/KorisContext';
+import KorisCostBadge from '../../components/koris/KorisCostBadge';
 import type { ScaleResult, AssessmentScale } from '../../types/assessment';
 import type { SexualHealthFilter } from '../../types/onboarding';
 
@@ -410,9 +413,8 @@ const ProfileCard: React.FC<{
   const completedCount = completedScales.length;
   const totalCount = scales.length;
 
-  // Most recent evaluation date
-  const latestDate = completedScales.reduce<Date | null>((best, s) => {
-    const r = profileResults[s.id];
+  // Most recent evaluation date — includes ALL results (main + bonus)
+  const latestDate = Object.values(profileResults).reduce<Date | null>((best, r) => {
     if (!r?.completedAt) return best;
     let d: Date;
     try {
@@ -429,8 +431,9 @@ const ProfileCard: React.FC<{
     : null;
 
   // Dr Lô outdated check: if latest test is newer than last Dr Lô update
+  const totalCompletedResults = Object.keys(profileResults).length;
   const isOutdated = (() => {
-    if (!drLoAnalysis) return completedCount > 0; // No analysis yet but tests done
+    if (!drLoAnalysis) return totalCompletedResults > 0; // No analysis yet but tests done
     if (!drLoUpdatedAt) return true; // Has analysis but no timestamp
     if (!latestDate) return false;
     return latestDate.getTime() > drLoUpdatedAt.getTime();
@@ -798,6 +801,7 @@ const AssessmentCategoryPage: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
   const { currentUser, isAuthenticated } = useAuth();
+  const { spend, refund } = useKoris();
 
   const isMental = category === 'mental';
   const isValidCategory = category === 'mental' || category === 'sexual';
@@ -988,6 +992,18 @@ const AssessmentCategoryPage: React.FC = () => {
 
   const handleUpdateDrLo = async () => {
     if (!currentUser || drLoUpdating) return;
+
+    // Spend Koris for analysis (1) + synthesis (3) = 4 total
+    const analysisSpend = await spend('analysis', `Analyse ${isMental ? 'mentale' : 'sexuelle'}`);
+    if (!analysisSpend.allowed) return;
+
+    const synthesisSpend = await spend('synthesis', 'Synthèse Dr Lô');
+    if (!synthesisSpend.allowed) {
+      // Refund the analysis if synthesis can't be afforded
+      await refund('analysis');
+      return;
+    }
+
     setDrLoUpdating(true);
     try {
       if (isMental) {
@@ -995,10 +1011,16 @@ const AssessmentCategoryPage: React.FC = () => {
       } else {
         await triggerDrLoSexualHealth(currentUser.id);
       }
-      triggerDrLoSynthesis(currentUser.id).catch(() => {});
+      triggerDrLoSynthesis(currentUser.id).catch(async () => {
+        // Refund synthesis on failure
+        await refund('synthesis');
+      });
       // onSnapshot will update drLoAnalysis, drLoUpdatedAt and reset drLoUpdating
     } catch (err) {
       console.error('Dr Lô update error:', err);
+      // Refund both on failure
+      await refund('analysis');
+      await refund('synthesis');
       setDrLoUpdating(false);
     }
   };
@@ -1026,7 +1048,12 @@ const AssessmentCategoryPage: React.FC = () => {
         if (cached) {
           setCachedConseilsMap(prev => ({ ...prev, [scaleId]: cached }));
         } else {
-          // No cache — generate via AI
+          // No cache — generate via AI (costs Koris)
+          const conseilsSpend = await spend('conseils', 'Conseils personnalisés');
+          if (!conseilsSpend.allowed) {
+            setConseilsLoadingId(null);
+            return;
+          }
           const result = profileResults[scaleId];
           if (result) {
             const scaleObj = [...scales, ...BONUS_SCALES].find(s => s.id === scaleId);
@@ -1050,6 +1077,8 @@ const AssessmentCategoryPage: React.FC = () => {
         }
       } catch {
         setCachedConseilsMap(prev => ({ ...prev, [scaleId]: null }));
+        // Refund conseils on failure (only if not from cache)
+        await refund('conseils');
       } finally {
         setConseilsLoadingId(null);
       }
@@ -1274,6 +1303,13 @@ const AssessmentCategoryPage: React.FC = () => {
               {guestCount >= GUEST_MAX_TESTS ? 'Créer un compte' : 'Se connecter'}
             </Link>
           </div>
+        </div>
+      )}
+
+      {/* ── Google Link Banner (phone-only users) ── */}
+      {isAuthenticated && (
+        <div style={{ maxWidth: 600, margin: '0 auto', padding: '0 20px' }}>
+          <GoogleLinkBanner />
         </div>
       )}
 

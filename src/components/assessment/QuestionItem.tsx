@@ -24,8 +24,8 @@ const QuestionItem: React.FC<QuestionItemProps> = ({
   const options = item.options;
   const letters = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'];
 
-  // Calculer si des hints existent pour cet ensemble d'options
-  const hasHints = options.some(opt => getOptionHint(opt.label, scaleId) !== null);
+  // Calculer si des hints/subtitles existent pour cet ensemble d'options
+  const hasHints = options.some(opt => opt.subtitle || getOptionHint(opt.label, scaleId) !== null);
 
   // Layout horizontal uniquement si 2 options ET pas de hints (ex: Oui/Non)
   const isHorizontal = options.length === 2 && !hasHints;
@@ -56,7 +56,7 @@ const QuestionItem: React.FC<QuestionItemProps> = ({
       >
         {options.map((option, index) => {
           const isSelected = value === option.value;
-          const hint = getOptionHint(option.label, scaleId);
+          const hint = option.subtitle || getOptionHint(option.label, scaleId);
           const letter = letters[index] ?? String(index + 1);
 
           return (

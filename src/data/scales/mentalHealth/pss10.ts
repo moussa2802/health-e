@@ -1,11 +1,11 @@
 import type { AssessmentScale } from '../../../types/assessment';
 
 const opts = [
-  { value: 0, label: "Jamais" },
-  { value: 1, label: "Presque jamais" },
-  { value: 2, label: "Parfois" },
-  { value: 3, label: "Assez souvent" },
-  { value: 4, label: "Très souvent" },
+  { value: 0, label: "Jamais", subtitle: "Ça ne m'est pas arrivé" },
+  { value: 1, label: "Presque jamais", subtitle: "De temps en temps" },
+  { value: 2, label: "Parfois", subtitle: "Ça arrive régulièrement" },
+  { value: 3, label: "Assez souvent", subtitle: "C'est fréquent" },
+  { value: 4, label: "Très souvent", subtitle: "Presque tout le temps" },
 ];
 
 export const PSS10: AssessmentScale = {
@@ -25,11 +25,11 @@ export const PSS10: AssessmentScale = {
     { id: 1,  text: "Il t'est arrivé d'être {{pris|prise}} de court par quelque chose d'inattendu qui t'a {{bouleversé|bouleversée}} ?",         type: 'frequency', options: opts },
     { id: 2,  text: "Tu as eu l'impression de ne plus avoir le contrôle sur les choses importantes de ta vie ?",              type: 'frequency', options: opts },
     { id: 3,  text: "Tu t'es {{senti|sentie}} {{nerveux|nerveuse}} ou {{stressé|stressée}} ?",                                                          type: 'frequency', options: opts },
-    { id: 4,  text: "Tu t'es {{senti|sentie}} capable de gérer tes problèmes personnels par toi-même ?",                             type: 'frequency', options: opts, reversed: true },
-    { id: 5,  text: "Tu as senti que les choses allaient dans le bon sens pour toi ?",                                        type: 'frequency', options: opts, reversed: true },
+    { id: 4,  text: "Tu t'es {{senti|sentie}} capable de gérer tes problèmes personnels par toi-même ?",                             type: 'frequency', options: opts },
+    { id: 5,  text: "Tu as senti que les choses allaient dans le bon sens pour toi ?",                                        type: 'frequency', options: opts },
     { id: 6,  text: "Tu as eu l'impression de ne pas arriver à tout gérer, comme si ta to-do list débordait de partout ?",    type: 'frequency', options: opts },
-    { id: 7,  text: "Tu as réussi à garder ton calme face aux petites irritations du quotidien ?",                            type: 'frequency', options: opts, reversed: true },
-    { id: 8,  text: "Tu t'es {{senti|sentie}} maître de la situation, comme aux commandes de ta vie ?",                               type: 'frequency', options: opts, reversed: true },
+    { id: 7,  text: "Tu as réussi à garder ton calme face aux petites irritations du quotidien ?",                            type: 'frequency', options: opts },
+    { id: 8,  text: "Tu t'es {{senti|sentie}} maître de la situation, comme aux commandes de ta vie ?",                               type: 'frequency', options: opts },
     { id: 9,  text: "Tu t'es {{mis|mise}} en colère à cause de choses sur lesquelles tu n'avais aucun contrôle ?",                 type: 'frequency', options: opts },
     { id: 10, text: "Tu as eu l'impression que les problèmes s'empilaient au point de ne plus pouvoir gérer ? 🧱",            type: 'frequency', options: opts },
   ],

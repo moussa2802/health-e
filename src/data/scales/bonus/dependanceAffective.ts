@@ -5,11 +5,11 @@ import type { AssessmentScale } from '../../../types/assessment';
 // Inspiré du Dependent Personality Questionnaire et de l'échelle de Livesley
 
 const opts = [
-  { value: 0, label: 'Pas du tout moi' },
-  { value: 1, label: 'Un peu moi' },
-  { value: 2, label: 'Moyennement moi' },
-  { value: 3, label: 'Beaucoup moi' },
-  { value: 4, label: 'Tout à fait moi' },
+  { value: 0, label: 'Pas du tout moi', subtitle: "Ça ne me correspond vraiment pas" },
+  { value: 1, label: 'Un peu moi', subtitle: "Ça me ressemble vaguement" },
+  { value: 2, label: 'Moyennement moi', subtitle: "Ça dépend des moments" },
+  { value: 3, label: 'Beaucoup moi', subtitle: "Ça me correspond bien" },
+  { value: 4, label: 'Tout à fait moi', subtitle: "C'est exactement moi" },
 ];
 
 export const BONUS_DEPENDANCE: AssessmentScale = {

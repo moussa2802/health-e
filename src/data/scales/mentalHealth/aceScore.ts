@@ -1,8 +1,8 @@
 import type { AssessmentScale } from '../../../types/assessment';
 
 const yesNo = [
-  { value: 0, label: "Non" },
-  { value: 1, label: "Oui" },
+  { value: 0, label: "Non", subtitle: "Ça ne m'est pas arrivé" },
+  { value: 1, label: "Oui", subtitle: "Ça m'est arrivé" },
 ];
 
 export const ACE: AssessmentScale = {
@@ -70,10 +70,10 @@ export const ACE: AssessmentScale = {
     id: 11,
     text: "Aujourd'hui, quand tu repenses à ces expériences, dans quelle mesure est-ce que ça affecte encore ta vie au quotidien ?",
     options: [
-      { value: 1, label: "Plus du tout — j'ai fait la paix avec ça" },
-      { value: 2, label: "Un peu — ça me revient parfois" },
-      { value: 3, label: "Assez — ça pèse encore régulièrement" },
-      { value: 4, label: "Beaucoup — c'est encore très présent et douloureux" },
+      { value: 1, label: "Plus du tout — j'ai fait la paix avec ça", subtitle: "Ces souvenirs ne me pèsent plus" },
+      { value: 2, label: "Un peu — ça me revient parfois", subtitle: "Quelques traces de temps en temps" },
+      { value: 3, label: "Assez — ça pèse encore régulièrement", subtitle: "Ça influence encore ma vie" },
+      { value: 4, label: "Beaucoup — c'est encore très présent et douloureux", subtitle: "C'est un poids au quotidien" },
     ],
     noScore: true as const,
     resolvedThreshold: 2,

@@ -333,6 +333,26 @@ export async function saveScaleResultToProfile(
   }
 
   await updateDoc(ref, updateData);
+
+  // Update completedTestsCount + lastActivityAt on patients/{userId} (non-blocking)
+  try {
+    const patientRef = doc(db, 'patients', userId);
+    const { increment: firestoreIncrement, serverTimestamp: srvTs } = await import('firebase/firestore');
+    updateDoc(patientRef, {
+      completedTestsCount: firestoreIncrement(1),
+      lastActivityAt: srvTs(),
+    }).catch(() => {});
+  } catch {
+    // Non-critical
+  }
+
+  // Update aggregated evaluation stats (non-blocking)
+  try {
+    const { incrementTestStat } = await import('./evaluationStatsService');
+    incrementTestStat(scaleId, result.alertLevel ?? 0).catch(() => {});
+  } catch {
+    // Stats update is non-critical
+  }
 }
 
 export async function getProfileProgress(userId: string): Promise<{

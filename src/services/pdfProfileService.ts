@@ -227,9 +227,8 @@ export async function generateProfilePDF(data: ProfilePDFData): Promise<void> {
 
     y += 6;
 
-    // Background box
-    const analysisText = strip(data.drLoAnalysis);
-    const parsed = parseDrLoText(analysisText);
+    // Parse raw text (with emojis) to detect structure, then strip in parser
+    const parsed = parseDrLoText(data.drLoAnalysis);
 
     // Draw analysis content
     const boxX = MARGIN;
@@ -485,41 +484,51 @@ interface TextBlock {
   content: string;
 }
 
-function parseDrLoText(text: string): TextBlock[] {
-  const lines = text.split('\n').filter(l => l.trim());
+function parseDrLoText(rawText: string): TextBlock[] {
+  // Work on raw text WITH emojis to detect structure, then strip emojis from output
+  const lines = rawText.split('\n').filter(l => l.trim());
   const parsed: TextBlock[] = [];
+
+  // Common Dr Lô heading emoji patterns
+  const HEADING_EMOJIS = /^[\u{1F44B}\u{1F441}\u{1F4AA}\u{26A0}\u{1F4A1}\u{1F31F}\u{2728}\u{1F91D}\u{1F3AF}\u{1F49A}\u{1F496}\u{1F4AC}\u{1F9E0}\u{2764}\u{1F525}\u{1F6E1}\u{1F310}\u{1F331}\u{270C}\u{1F64F}\u{1F490}\u{1F91E}\u{1F4AB}\u{1F48E}\u{1F4DD}\u{1FA7A}\u{1F491}\u{1F46B}\u{1F468}][\u{FE0F}\u{200D}]?\s*/u;
 
   for (const line of lines) {
     const trimmed = line.trim();
 
-    // Signature line "— Dr Lo"
-    if (/^[-—]\s*Dr\s*L/i.test(trimmed)) {
-      parsed.push({ type: 'signature', content: trimmed });
+    // Signature line "— Dr Lo" / "— Dr Lô 🩺"
+    if (/[-—]\s*Dr\s*L[oô]/i.test(trimmed)) {
+      parsed.push({ type: 'signature', content: strip(trimmed) });
       continue;
     }
 
-    // Bold headings: **Text** or text ending with : that's short
+    // Emoji-prefixed headings (💪 Tes points forts, ⚠️ Ce qu'on doit surveiller, etc.)
+    if (HEADING_EMOJIS.test(trimmed) && trimmed.length < 80) {
+      parsed.push({ type: 'heading', content: strip(trimmed) });
+      continue;
+    }
+
+    // Bold headings: **Text**
     if (/^\*\*[^*]+\*\*$/.test(trimmed)) {
-      parsed.push({ type: 'heading', content: trimmed.replace(/\*\*/g, '') });
+      parsed.push({ type: 'heading', content: strip(trimmed.replace(/\*\*/g, '')) });
       continue;
     }
 
     // Inline bold at the start of a line
     const boldMatch = trimmed.match(/^\*\*([^*]+)\*\*(.*)/);
     if (boldMatch && boldMatch[2].trim().length === 0) {
-      parsed.push({ type: 'heading', content: boldMatch[1] });
+      parsed.push({ type: 'heading', content: strip(boldMatch[1]) });
       continue;
     }
 
-    // Bullet points
+    // Bullet points: • - ▸ or emoji bullet
     if (/^[•\-▸]\s/.test(trimmed)) {
-      parsed.push({ type: 'bullet', content: trimmed.replace(/^[•\-▸]\s*/, '') });
+      parsed.push({ type: 'bullet', content: strip(trimmed.replace(/^[•\-▸]\s*/, '')) });
       continue;
     }
 
-    // Regular paragraph — also strip inline bold markers
+    // Regular paragraph — strip inline bold markers and emojis
     const cleaned = trimmed.replace(/\*\*([^*]+)\*\*/g, '$1');
-    parsed.push({ type: 'paragraph', content: cleaned });
+    parsed.push({ type: 'paragraph', content: strip(cleaned) });
   }
 
   return parsed;

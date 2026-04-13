@@ -1,11 +1,11 @@
 import type { AssessmentScale } from '../../../types/assessment';
 
 const agree5 = [
-  { value: 1, label: "Jamais / Pas du tout" },
-  { value: 2, label: "Rarement" },
-  { value: 3, label: "Parfois" },
-  { value: 4, label: "Souvent" },
-  { value: 5, label: "Toujours / Tout à fait" },
+  { value: 1, label: "Jamais / Pas du tout", subtitle: "Ça ne me concerne pas" },
+  { value: 2, label: "Rarement", subtitle: "De temps en temps" },
+  { value: 3, label: "Parfois", subtitle: "Ça arrive régulièrement" },
+  { value: 4, label: "Souvent", subtitle: "C'est fréquent" },
+  { value: 5, label: "Toujours / Tout à fait", subtitle: "C'est omniprésent" },
 ];
 
 export const SOCIAL_PRESSURE: AssessmentScale = {

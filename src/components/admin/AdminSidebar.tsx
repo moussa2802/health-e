@@ -13,6 +13,7 @@ import {
   DollarSign,
   Bell,
   UsersRound,
+  ClipboardCheck,
 } from "lucide-react";
 import { useLanguage } from "../../contexts/LanguageContext";
 
@@ -56,6 +57,11 @@ const AdminSidebar = () => {
       path: "/admin/statistics",
       icon: BarChart2,
       label: language === "fr" ? "Statistiques" : "Statistics",
+    },
+    {
+      path: "/admin/evaluations",
+      icon: ClipboardCheck,
+      label: language === "fr" ? "Evaluations" : "Evaluations",
     },
     {
       path: "/admin/content",

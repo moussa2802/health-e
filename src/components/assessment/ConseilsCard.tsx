@@ -1,5 +1,6 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { getOrGenerateConseils, type CachedConseils, type GenerateConseilsParams } from '../../services/conseilsService';
+import { useKoris } from '../../contexts/KorisContext';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -55,6 +56,8 @@ const ConseilsCard: React.FC<ConseilsCardProps> = ({
   const [data, setData] = useState<CachedConseils | null>(null);
   const [error, setError] = useState<string | null>(null);
   const autoLoaded = useRef(false);
+  const { spend, canAfford, getCost } = useKoris();
+  const conseilsCost = getCost('conseils');
 
   const load = useCallback(async (forceRefresh = false) => {
     setState('loading');
@@ -90,37 +93,52 @@ const ConseilsCard: React.FC<ConseilsCardProps> = ({
     }
   }, [autoLoad, load]);
 
+  const handleGenerateConseils = async () => {
+    if (conseilsCost > 0) {
+      const spendResult = await spend('conseils', `Conseils: ${scaleName}`);
+      if (!spendResult.allowed) return;
+    }
+    load(false);
+  };
+
   // ── IDLE — button to trigger ──
   if (state === 'idle') {
+    const affordable = canAfford('conseils');
     return (
       <button
-        onClick={() => load(false)}
+        onClick={handleGenerateConseils}
+        disabled={!affordable}
         style={{
           width: '100%',
-          background: 'linear-gradient(135deg, #F0FDF4, #EFF6FF)',
-          border: '1.5px solid rgba(59,130,246,0.2)',
+          background: affordable
+            ? 'linear-gradient(135deg, #F0FDF4, #EFF6FF)'
+            : '#F8FAFC',
+          border: `1.5px solid ${affordable ? 'rgba(59,130,246,0.2)' : 'rgba(148,163,184,0.2)'}`,
           borderRadius: 18,
           padding: '18px 22px',
-          cursor: 'pointer',
+          cursor: affordable ? 'pointer' : 'not-allowed',
           textAlign: 'left',
           display: 'flex',
           alignItems: 'center',
           gap: 14,
           transition: 'border-color 0.15s, box-shadow 0.15s',
           boxShadow: '0 2px 12px rgba(59,130,246,0.06)',
+          opacity: affordable ? 1 : 0.65,
         }}
       >
         <div style={{
           width: 44, height: 44, borderRadius: '50%',
-          background: 'linear-gradient(135deg, #3B82F6, #10B981)',
+          background: affordable
+            ? 'linear-gradient(135deg, #3B82F6, #10B981)'
+            : '#CBD5E1',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           fontSize: 20, flexShrink: 0,
-          boxShadow: '0 2px 8px rgba(59,130,246,0.25)',
+          boxShadow: affordable ? '0 2px 8px rgba(59,130,246,0.25)' : 'none',
         }}>
           💡
         </div>
         <div style={{ flex: 1 }}>
-          <p style={{ margin: 0, fontSize: 15, fontWeight: 800, color: '#0A2342' }}>
+          <p style={{ margin: 0, fontSize: 15, fontWeight: 800, color: affordable ? '#0A2342' : '#94A3B8' }}>
             Mes conseils personnalisés
           </p>
           <p style={{ margin: '2px 0 0', fontSize: 12, color: '#64748B' }}>
@@ -128,12 +146,23 @@ const ConseilsCard: React.FC<ConseilsCardProps> = ({
           </p>
         </div>
         <div style={{
-          background: 'linear-gradient(135deg,#3B82F6,#10B981)',
-          color: 'white', borderRadius: 10,
-          padding: '7px 14px', fontSize: 12, fontWeight: 700,
+          display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3,
           flexShrink: 0,
         }}>
-          Voir →
+          <div style={{
+            background: affordable
+              ? 'linear-gradient(135deg,#3B82F6,#10B981)'
+              : '#CBD5E1',
+            color: 'white', borderRadius: 10,
+            padding: '7px 14px', fontSize: 12, fontWeight: 700,
+          }}>
+            Générer →
+          </div>
+          {conseilsCost > 0 && (
+            <span style={{ fontSize: 10, fontWeight: 700, color: affordable ? '#0D9488' : '#94A3B8' }}>
+              ⚡ {conseilsCost} Kori{conseilsCost > 1 ? 's' : ''}
+            </span>
+          )}
         </div>
       </button>
     );

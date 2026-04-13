@@ -4,7 +4,7 @@ import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { db } from '../../utils/firebase';
 import { getOnboardingProfile } from '../../utils/onboardingProfile';
 import { getProfileProgress } from '../../services/evaluationService';
-import { KORIS_CONFIG } from '../../utils/korisConfig';
+import { useKoris } from '../../contexts/KorisContext';
 import type { JournalEntry } from './JournalPage';
 
 interface Props {
@@ -18,6 +18,7 @@ function formatDate(iso: string) {
 }
 
 const JournalEntryView: React.FC<Props> = ({ userId }) => {
+  const { spend, refund } = useKoris();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const onboarding = getOnboardingProfile();
@@ -40,6 +41,11 @@ const JournalEntryView: React.FC<Props> = ({ userId }) => {
 
   const handleAskDrLo = async () => {
     if (!entry || !userId) return;
+
+    // Koris check
+    const spendResult = await spend('journal', 'Avis Dr Lô (journal)');
+    if (!spendResult.allowed) return;
+
     setAskingDrLo(true);
     setError(null);
 
@@ -89,6 +95,7 @@ const JournalEntryView: React.FC<Props> = ({ userId }) => {
       setEntry(prev => prev ? { ...prev, dr_lo_response: response, dr_lo_requested_at: now } : prev);
     } catch {
       setError("Erreur lors de la demande à Dr Lô.");
+      await refund('journal');
     } finally {
       setAskingDrLo(false);
     }

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import PageTooltips from '../../components/Onboarding/PageTooltips';
@@ -9,7 +9,9 @@ import {
   saveCompatibilityHistory,
   getCompatibilityHistory,
   deleteCompatibilityHistory,
+  validateCompatibilityCode,
   type CompatibilityHistoryEntry,
+  type CodeValidationResult,
 } from '../../services/compatibilityService';
 import type { CompatibilityResult } from '../../types/assessment';
 import { RELATIONSHIP_CATEGORIES, getRelationshipLabel } from '../../utils/relationshipTypes';
@@ -48,6 +50,16 @@ const CompatibilityPage: React.FC = () => {
   const [expandedHistory, setExpandedHistory] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
+  // Code validation state
+  const [mentalValidation, setMentalValidation] = useState<CodeValidationResult | null>(null);
+  const [sexualValidation, setSexualValidation] = useState<CodeValidationResult | null>(null);
+  const [mentalValidating, setMentalValidating] = useState(false);
+  const [sexualValidating, setSexualValidating] = useState(false);
+  const mentalDebounceRef = useRef<ReturnType<typeof setTimeout>>();
+  const sexualDebounceRef = useRef<ReturnType<typeof setTimeout>>();
+  const skipResetRef = useRef(false);
+  const formRef = useRef<HTMLDivElement>(null);
+
   const selectedCategory = RELATIONSHIP_CATEGORIES.find(c => c.id === mainCategoryId) ?? null;
   const isRomantic = mainCategoryId === 'amoureux';
 
@@ -60,12 +72,47 @@ const CompatibilityPage: React.FC = () => {
       : mentalTrimmed.length > 0
   );
 
-  // Reset sub-type when main category changes
+  // Debounced code validation
+  const validateCode = useCallback((code: string, type: 'mental' | 'sexual') => {
+    const setValidation = type === 'mental' ? setMentalValidation : setSexualValidation;
+    const setValidating = type === 'mental' ? setMentalValidating : setSexualValidating;
+    const debounceRef = type === 'mental' ? mentalDebounceRef : sexualDebounceRef;
+
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+
+    const trimmed = code.trim().toUpperCase();
+    if (!trimmed) { setValidation(null); setValidating(false); return; }
+
+    // Check minimum format length before calling API
+    const minLen = trimmed.startsWith('HE-') ? 16 : 7;
+    if (trimmed.length < minLen) { setValidation(null); setValidating(false); return; }
+
+    setValidating(true);
+    debounceRef.current = setTimeout(async () => {
+      if (!currentUser) { setValidating(false); return; }
+      try {
+        const result = await validateCompatibilityCode(trimmed, currentUser.id);
+        setValidation(result);
+      } catch {
+        setValidation({ valid: false, error: 'Erreur de vérification' });
+      } finally {
+        setValidating(false);
+      }
+    }, 600);
+  }, [currentUser]);
+
+  // Reset sub-type when main category changes (skip during recalculate)
   useEffect(() => {
+    if (skipResetRef.current) {
+      skipResetRef.current = false;
+      return;
+    }
     setSelectedSubTypeId(null);
     setPartnerMentalId('');
     setPartnerSexualId('');
     setFormError(null);
+    setMentalValidation(null);
+    setSexualValidation(null);
   }, [mainCategoryId]);
 
   useEffect(() => {
@@ -92,25 +139,53 @@ const CompatibilityPage: React.FC = () => {
     try { await navigator.clipboard.writeText(text); setCopied(true); setTimeout(() => setCopied(false), 2000); } catch { /* silencieux */ }
   };
 
+  // Recalculate directly from history — no scroll, just compute
+  const [recalculatingId, setRecalculatingId] = useState<string | null>(null);
+
+  const handleRecalculate = async (entry: CompatibilityHistoryEntry) => {
+    if (!isAuthenticated || !currentUser || recalculatingId) return;
+    setRecalculatingId(entry.id);
+    try {
+      const req = await createCompatibilityRequest(currentUser.id, entry.partnerCode, entry.relationshipType);
+      const res = await computeCompatibility(req.id);
+      await saveCompatibilityHistory(currentUser.id, entry.relationshipType, entry.partnerCode, entry.codeType, res, entry.partnerPrenom).catch(() => {});
+      // Rafraîchir l'historique
+      const updated = await getCompatibilityHistory(currentUser.id);
+      setHistory(updated);
+    } catch (err: unknown) {
+      alert(err instanceof Error ? err.message : 'Erreur lors du recalcul.');
+    } finally {
+      setRecalculatingId(null);
+    }
+  };
+
   const handleCalculate = async () => {
     setFormError(null);
     if (!isAuthenticated || !currentUser) { setFormError("Tu dois être connecté(e)."); return; }
     if (!selectedSubTypeId) { setFormError("Sélectionne le type de relation."); return; }
 
-    // Validation codes
-    const isMentalValid = (c: string) => /^HE-MNT-\d{4}-[A-Z0-9]{4}$/i.test(c) || /^SM-[A-Z0-9]{4}$/i.test(c);
-    const isSexualValid = (c: string) => /^HE-SEX-\d{4}-[A-Z0-9]{4}$/i.test(c) || /^SE-[A-Z0-9]{4}$/i.test(c);
+    // Use validation results if available
+    if (mentalTrimmed && mentalValidation && !mentalValidation.valid) {
+      setFormError(mentalValidation.error || "Code mental invalide."); return;
+    }
+    if (sexualTrimmed && sexualValidation && !sexualValidation.valid) {
+      setFormError(sexualValidation.error || "Code intime invalide."); return;
+    }
 
-    if (mentalTrimmed && !isMentalValid(mentalTrimmed)) { setFormError("Format invalide — code mental : HE-MNT-2026-XXXX."); return; }
-    if (sexualTrimmed && !isSexualValid(sexualTrimmed)) { setFormError("Format invalide — code intime : HE-SEX-2026-XXXX."); return; }
+    // Fallback format validation
+    const isMentalFmt = (c: string) => /^HE-MNT-\d{4}-[A-Z0-9]{4}$/i.test(c) || /^SM-[A-Z0-9]{4}$/i.test(c);
+    const isSexualFmt = (c: string) => /^HE-SEX-\d{4}-[A-Z0-9]{4}$/i.test(c) || /^SE-[A-Z0-9]{4}$/i.test(c);
+
+    if (mentalTrimmed && !isMentalFmt(mentalTrimmed)) { setFormError("Format invalide — code mental : HE-MNT-2026-XXXX."); return; }
+    if (sexualTrimmed && !isSexualFmt(sexualTrimmed)) { setFormError("Format invalide — code intime : HE-SEX-2026-XXXX."); return; }
     if (!mentalTrimmed && !sexualTrimmed) { setFormError("Saisis au moins un code."); return; }
     if (!isRomantic && !mentalTrimmed) { setFormError("Saisis le code mental de cette personne."); return; }
     if (mentalTrimmed === myIdMental || sexualTrimmed === myIdSexual) { setFormError("Tu ne peux pas te comparer à toi-même 😄"); return; }
 
     // Construire la liste de comparaisons à effectuer
-    const tasks: Array<{ code: string; codeType: 'mental' | 'sexual' }> = [];
-    if (mentalTrimmed) tasks.push({ code: mentalTrimmed, codeType: 'mental' });
-    if (isRomantic && sexualTrimmed) tasks.push({ code: sexualTrimmed, codeType: 'sexual' });
+    const tasks: Array<{ code: string; codeType: 'mental' | 'sexual'; partnerPrenom?: string }> = [];
+    if (mentalTrimmed) tasks.push({ code: mentalTrimmed, codeType: 'mental', partnerPrenom: mentalValidation?.prenom });
+    if (isRomantic && sexualTrimmed) tasks.push({ code: sexualTrimmed, codeType: 'sexual', partnerPrenom: sexualValidation?.prenom });
 
     setCalculating(true);
     try {
@@ -119,8 +194,8 @@ const CompatibilityPage: React.FC = () => {
         const req = await createCompatibilityRequest(currentUser.id, task.code, selectedSubTypeId);
         const res = await computeCompatibility(req.id);
         items.push({ codeType: task.codeType, partnerCode: task.code, result: res });
-        // Sauvegarder dans l'historique
-        await saveCompatibilityHistory(currentUser.id, selectedSubTypeId, task.code, task.codeType, res).catch(() => {});
+        // Sauvegarder dans l'historique avec le prénom
+        await saveCompatibilityHistory(currentUser.id, selectedSubTypeId, task.code, task.codeType, res, task.partnerPrenom).catch(() => {});
       }
       setResultItems(items);
       // Rafraîchir l'historique
@@ -257,7 +332,7 @@ const CompatibilityPage: React.FC = () => {
 
         {/* ── Formulaire ── */}
         {resultItems.length === 0 && (
-          <div style={{ background: 'rgba(255,255,255,0.88)', backdropFilter: 'blur(18px)', WebkitBackdropFilter: 'blur(18px)', border: '1.5px solid rgba(124,58,237,0.12)', borderRadius: 22, padding: '26px 24px', marginBottom: 18, boxShadow: '0 4px 28px rgba(124,58,237,0.07)' }}>
+          <div ref={formRef} style={{ background: 'rgba(255,255,255,0.88)', backdropFilter: 'blur(18px)', WebkitBackdropFilter: 'blur(18px)', border: '1.5px solid rgba(124,58,237,0.12)', borderRadius: 22, padding: '26px 24px', marginBottom: 18, boxShadow: '0 4px 28px rgba(124,58,237,0.07)' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 22 }}>
               <div style={{ width: 34, height: 34, borderRadius: 10, background: 'linear-gradient(135deg, #7C3AED, #EC4899)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, flexShrink: 0 }}>✨</div>
               <h2 style={{ margin: 0, fontSize: 15, fontWeight: 800, color: '#0A2342' }}>Découvrir notre compatibilité</h2>
@@ -382,7 +457,7 @@ const CompatibilityPage: React.FC = () => {
                 <div style={{ marginBottom: 14 }}>
                   <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, fontWeight: 600, color: '#374151', marginBottom: 8 }}>
                     <span>🧠</span>
-                    {isRomantic ? 'Code Mental de ton/ta partenaire' : 'Code Mental de cette personne'}
+                    Code Mental de cette personne
                     {isRomantic
                       ? <span style={{ fontWeight: 400, color: '#94A3B8', fontSize: 12 }}>optionnel</span>
                       : <span style={{ fontWeight: 400, color: '#DC2626', fontSize: 12 }}>*</span>
@@ -393,35 +468,85 @@ const CompatibilityPage: React.FC = () => {
                       data-tooltip-id="partner-code-input"
                       type="text"
                       value={partnerMentalId}
-                      onChange={(e) => { setPartnerMentalId(e.target.value.toUpperCase()); setFormError(null); }}
+                      onChange={(e) => {
+                        const val = e.target.value.toUpperCase();
+                        setPartnerMentalId(val);
+                        setFormError(null);
+                        validateCode(val, 'mental');
+                      }}
                       placeholder="HE-MNT-2026-XXXX"
                       maxLength={16}
-                      style={{ width: '100%', boxSizing: 'border-box', padding: '13px 16px', border: '1.5px solid rgba(59,130,246,0.25)', borderRadius: 13, fontSize: 14, fontFamily: "'JetBrains Mono','Courier New',monospace", fontWeight: 700, color: '#0A2342', letterSpacing: '0.06em', background: '#F8FAFF', outline: 'none', transition: 'border-color 0.15s' }}
-                      onFocus={(e) => { e.target.style.borderColor = 'rgba(59,130,246,0.5)'; e.target.style.boxShadow = '0 0 0 3px rgba(59,130,246,0.08)'; }}
-                      onBlur={(e) => { e.target.style.borderColor = 'rgba(59,130,246,0.25)'; e.target.style.boxShadow = 'none'; }}
+                      style={{
+                        width: '100%', boxSizing: 'border-box', padding: '13px 16px',
+                        border: `1.5px solid ${mentalValidation ? (mentalValidation.valid ? 'rgba(22,163,74,0.5)' : 'rgba(220,38,38,0.4)') : 'rgba(59,130,246,0.25)'}`,
+                        borderRadius: 13, fontSize: 14, fontFamily: "'JetBrains Mono','Courier New',monospace", fontWeight: 700, color: '#0A2342', letterSpacing: '0.06em', background: '#F8FAFF', outline: 'none', transition: 'border-color 0.15s'
+                      }}
+                      onFocus={(e) => { e.target.style.boxShadow = '0 0 0 3px rgba(59,130,246,0.08)'; }}
+                      onBlur={(e) => { e.target.style.boxShadow = 'none'; }}
                     />
+                    {mentalValidating && (
+                      <div style={{ position: 'absolute', right: 14, top: '50%', transform: 'translateY(-50%)', width: 16, height: 16, border: '2px solid #7C3AED', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+                    )}
                   </div>
+                  {/* Validation feedback */}
+                  {mentalValidation && (
+                    <div style={{ marginTop: 6, display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, animation: 'slideDown 0.2s ease' }}>
+                      {mentalValidation.valid ? (
+                        <>
+                          <span style={{ color: '#16A34A', fontWeight: 600 }}>✅ {mentalValidation.prenom}</span>
+                          <span style={{ color: '#94A3B8' }}>trouvé(e)</span>
+                        </>
+                      ) : (
+                        <span style={{ color: '#DC2626', fontWeight: 500 }}>❌ {mentalValidation.error}</span>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 {/* Code intime — uniquement pour relations amoureuses, optionnel */}
                 {isRomantic && (
                   <div>
                     <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, fontWeight: 600, color: '#374151', marginBottom: 8 }}>
-                      <span>💋</span> Code Intime de ton/ta partenaire
+                      <span>💋</span> Code Intime de cette personne
                       <span style={{ fontWeight: 400, color: '#94A3B8', fontSize: 12 }}>optionnel</span>
                     </label>
                     <div style={{ position: 'relative' }}>
                       <input
                         type="text"
                         value={partnerSexualId}
-                        onChange={(e) => { setPartnerSexualId(e.target.value.toUpperCase()); setFormError(null); }}
+                        onChange={(e) => {
+                          const val = e.target.value.toUpperCase();
+                          setPartnerSexualId(val);
+                          setFormError(null);
+                          validateCode(val, 'sexual');
+                        }}
                         placeholder="HE-SEX-2026-XXXX"
                         maxLength={16}
-                        style={{ width: '100%', boxSizing: 'border-box', padding: '13px 16px', border: '1.5px solid rgba(192,38,211,0.2)', borderRadius: 13, fontSize: 14, fontFamily: "'JetBrains Mono','Courier New',monospace", fontWeight: 700, color: '#0A2342', letterSpacing: '0.06em', background: '#FDF4FF', outline: 'none', transition: 'border-color 0.15s' }}
-                        onFocus={(e) => { e.target.style.borderColor = 'rgba(192,38,211,0.45)'; e.target.style.boxShadow = '0 0 0 3px rgba(192,38,211,0.07)'; }}
-                        onBlur={(e) => { e.target.style.borderColor = 'rgba(192,38,211,0.2)'; e.target.style.boxShadow = 'none'; }}
+                        style={{
+                          width: '100%', boxSizing: 'border-box', padding: '13px 16px',
+                          border: `1.5px solid ${sexualValidation ? (sexualValidation.valid ? 'rgba(22,163,74,0.5)' : 'rgba(220,38,38,0.4)') : 'rgba(192,38,211,0.2)'}`,
+                          borderRadius: 13, fontSize: 14, fontFamily: "'JetBrains Mono','Courier New',monospace", fontWeight: 700, color: '#0A2342', letterSpacing: '0.06em', background: '#FDF4FF', outline: 'none', transition: 'border-color 0.15s'
+                        }}
+                        onFocus={(e) => { e.target.style.boxShadow = '0 0 0 3px rgba(192,38,211,0.07)'; }}
+                        onBlur={(e) => { e.target.style.boxShadow = 'none'; }}
                       />
+                      {sexualValidating && (
+                        <div style={{ position: 'absolute', right: 14, top: '50%', transform: 'translateY(-50%)', width: 16, height: 16, border: '2px solid #C026D3', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+                      )}
                     </div>
+                    {/* Validation feedback */}
+                    {sexualValidation && (
+                      <div style={{ marginTop: 6, display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, animation: 'slideDown 0.2s ease' }}>
+                        {sexualValidation.valid ? (
+                          <>
+                            <span style={{ color: '#16A34A', fontWeight: 600 }}>✅ {sexualValidation.prenom}</span>
+                            <span style={{ color: '#94A3B8' }}>trouvé(e)</span>
+                          </>
+                        ) : (
+                          <span style={{ color: '#DC2626', fontWeight: 500 }}>❌ {sexualValidation.error}</span>
+                        )}
+                      </div>
+                    )}
                     <p style={{ margin: '6px 0 0', fontSize: 11, color: '#94A3B8' }}>
                       🔒 Ce code est partagé uniquement avec consentement mutuel
                     </p>
@@ -629,6 +754,15 @@ const CompatibilityPage: React.FC = () => {
                   const hs = scoreStyle(entry.result.globalScore);
                   const isExpanded = expandedHistory === entry.id;
                   const isMentalEntry = entry.codeType === 'mental';
+
+                  // Check evolution: find previous entries with same partnerCode
+                  const samePartnerEntries = history.filter(h => h.partnerCode === entry.partnerCode && h.codeType === entry.codeType);
+                  const prevEntry = samePartnerEntries.find((h, i) => {
+                    const currentIdx = samePartnerEntries.indexOf(entry);
+                    return i === currentIdx + 1; // next in desc order = previous in time
+                  });
+                  const evolution = prevEntry ? entry.result.globalScore - prevEntry.result.globalScore : null;
+
                   return (
                     <div key={entry.id} style={{ borderRadius: 16, border: `1.5px solid ${isExpanded ? 'rgba(124,58,237,0.2)' : 'rgba(124,58,237,0.08)'}`, background: isExpanded ? 'rgba(248,245,255,0.8)' : '#fff', overflow: 'hidden', transition: 'all 0.2s' }}>
                       {/* Row summary */}
@@ -639,6 +773,10 @@ const CompatibilityPage: React.FC = () => {
                         <span style={{ fontSize: 20, flexShrink: 0 }}>{isMentalEntry ? '🧠' : '💋'}</span>
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <p style={{ margin: '0 0 2px', fontSize: 13, fontWeight: 700, color: '#0A2342', lineHeight: 1.3 }}>
+                            {entry.partnerPrenom ? (
+                              <span style={{ color: '#7C3AED' }}>{entry.partnerPrenom}</span>
+                            ) : null}
+                            {entry.partnerPrenom ? ' · ' : ''}
                             {getRelationshipLabel(entry.relationshipType)}
                             <span style={{ marginLeft: 8, fontSize: 11, fontWeight: 500, color: '#94A3B8' }}>
                               {isMentalEntry ? '· Mental' : '· Intime'}
@@ -651,15 +789,47 @@ const CompatibilityPage: React.FC = () => {
                           </p>
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
-                          <span style={{ fontSize: 15, fontWeight: 900, color: hs.color }}>{entry.result.globalScore}</span>
-                          <span style={{ fontSize: 11, color: '#94A3B8', fontWeight: 600 }}>/100</span>
+                          <div style={{ textAlign: 'right' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                              <span style={{ fontSize: 15, fontWeight: 900, color: hs.color }}>{entry.result.globalScore}</span>
+                              <span style={{ fontSize: 11, color: '#94A3B8', fontWeight: 600 }}>/100</span>
+                            </div>
+                            {evolution !== null && evolution !== 0 && (
+                              <span style={{ fontSize: 10, fontWeight: 700, color: evolution > 0 ? '#16A34A' : '#DC2626' }}>
+                                {evolution > 0 ? `↑ +${evolution}` : `↓ ${evolution}`}
+                              </span>
+                            )}
+                          </div>
                           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" style={{ transform: isExpanded ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s', color: '#94A3B8' }}>
                             <polyline points="6 9 12 15 18 9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                           </svg>
                         </div>
                       </button>
-                      {/* Bouton supprimer */}
-                      <div style={{ padding: '0 12px 10px', display: 'flex', justifyContent: 'flex-end' }}>
+                      {/* Action buttons */}
+                      <div style={{ padding: '0 12px 10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        {/* Recalculate */}
+                        <button
+                          onClick={(e) => { e.stopPropagation(); handleRecalculate(entry); }}
+                          disabled={recalculatingId === entry.id}
+                          style={{
+                            background: 'linear-gradient(135deg, rgba(124,58,237,0.08), rgba(236,72,153,0.08))',
+                            border: '1px solid rgba(124,58,237,0.2)', borderRadius: 8,
+                            padding: '4px 10px', cursor: recalculatingId === entry.id ? 'wait' : 'pointer',
+                            display: 'flex', alignItems: 'center', gap: 5,
+                            fontSize: 11, fontWeight: 600, color: '#7C3AED',
+                            opacity: recalculatingId === entry.id ? 0.7 : 1,
+                          }}
+                        >
+                          {recalculatingId === entry.id ? (
+                            <>
+                              <div style={{ width: 10, height: 10, border: '1.5px solid #7C3AED', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+                              Calcul…
+                            </>
+                          ) : (
+                            <>🔄 Recalculer</>
+                          )}
+                        </button>
+                        {/* Delete */}
                         <button
                           onClick={async (e) => {
                             e.stopPropagation();

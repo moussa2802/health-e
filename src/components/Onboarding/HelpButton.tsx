@@ -35,15 +35,15 @@ const HelpButton: React.FC = () => {
         onClick={() => setOpen(o => !o)}
         title="Aide"
         style={{
-          position: 'fixed', bottom: 24, left: 20, zIndex: 8000,
-          width: 42, height: 42, borderRadius: '50%',
+          position: 'fixed', bottom: 32, left: 88, zIndex: 8000,
+          width: 34, height: 34, borderRadius: '50%',
           background: open
             ? 'linear-gradient(135deg, #3B82F6, #10B981)'
             : 'rgba(255,255,255,0.92)',
           border: '1.5px solid rgba(59,130,246,0.25)',
           boxShadow: '0 4px 16px rgba(0,0,0,0.12)',
           color: open ? 'white' : '#64748B',
-          fontSize: 17, fontWeight: 800, cursor: 'pointer',
+          fontSize: 14, fontWeight: 800, cursor: 'pointer',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           backdropFilter: 'blur(8px)',
           transition: 'background 0.2s, color 0.2s, transform 0.15s',

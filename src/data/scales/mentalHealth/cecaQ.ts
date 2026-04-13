@@ -1,15 +1,15 @@
 import type { AssessmentScale } from '../../../types/assessment';
 
 const freq = [
-  { value: 1, label: "Jamais" },
-  { value: 2, label: "Rarement" },
-  { value: 3, label: "Parfois" },
-  { value: 4, label: "Souvent" },
+  { value: 1, label: "Jamais", subtitle: "Ça ne m'est pas arrivé" },
+  { value: 2, label: "Rarement", subtitle: "De temps en temps" },
+  { value: 3, label: "Parfois", subtitle: "Ça arrivait régulièrement" },
+  { value: 4, label: "Souvent", subtitle: "C'était fréquent" },
 ];
 
 const yesNoSexual = [
-  { value: 1, label: "Non" },
-  { value: 4, label: "Oui" },
+  { value: 1, label: "Non", subtitle: "Ça ne m'est pas arrivé" },
+  { value: 4, label: "Oui", subtitle: "Ça m'est arrivé" },
 ];
 
 export const CECA_Q: AssessmentScale = {
@@ -41,7 +41,7 @@ export const CECA_Q: AssessmentScale = {
     { id: 14, text: "Tu as été {{contraint|contrainte}} ou {{manipulé|manipulée}} pour faire ou voir des choses de nature sexuelle ?",                    type: 'likert', options: yesNoSexual, subscale: 'sexual_abuse' },
     { id: 15, text: "Ces expériences t'ont-elles été imposées par un membre de la famille ou une personne proche ?",              type: 'likert', options: yesNoSexual, subscale: 'sexual_abuse' },
     { id: 16, text: "Avec le recul, est-ce que ces expériences d'enfance ont eu un impact durable sur ta vie d'adulte ?",
-      type: 'likert', options: [{ value: 1, label: "Aucun impact" }, { value: 2, label: "Peu d'impact" }, { value: 3, label: "Assez important" }, { value: 4, label: "Très important" }] },
+      type: 'likert', options: [{ value: 1, label: "Aucun impact", subtitle: "Ça ne m'affecte pas" }, { value: 2, label: "Peu d'impact", subtitle: "Quelques traces légères" }, { value: 3, label: "Assez important", subtitle: "Ça a laissé des marques" }, { value: 4, label: "Très important", subtitle: "Ça m'affecte encore beaucoup" }] },
   ],
   subscales: [
     { key: 'maternal_care',      label: "Soins et affection",       itemIds: [1,2,3],    reverseIds: [1,2,3], range: { min: 3, max: 12 } },
@@ -82,10 +82,10 @@ export const CECA_Q: AssessmentScale = {
     id: 17,
     text: "Avec le recul, dans quelle mesure est-ce que ces expériences d'enfance continuent d'affecter ta vie aujourd'hui ?",
     options: [
-      { value: 1, label: "Plus du tout — j'ai avancé" },
-      { value: 2, label: "Un peu — quelques traces" },
-      { value: 3, label: "Assez — ça influence encore mes relations ou mon humeur" },
-      { value: 4, label: "Beaucoup — c'est encore très présent" },
+      { value: 1, label: "Plus du tout — j'ai avancé", subtitle: "Ces souvenirs ne me pèsent plus" },
+      { value: 2, label: "Un peu — quelques traces", subtitle: "De temps en temps" },
+      { value: 3, label: "Assez — ça influence encore mes relations ou mon humeur", subtitle: "C'est encore présent" },
+      { value: 4, label: "Beaucoup — c'est encore très présent", subtitle: "Ça pèse au quotidien" },
     ],
     noScore: true as const,
     resolvedThreshold: 2,

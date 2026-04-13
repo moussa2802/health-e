@@ -130,6 +130,19 @@ const AssessmentHomePage: React.FC = () => {
               24 outils cliniquement validés
             </p>
           </div>
+          {currentUser?.type === 'admin' && (
+            <Link
+              to="/admin/evaluations"
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: 5,
+                padding: '6px 12px', borderRadius: 10,
+                background: 'rgba(59,130,246,0.08)', border: '1px solid rgba(59,130,246,0.2)',
+                color: '#3B82F6', fontSize: 12, fontWeight: 600, textDecoration: 'none',
+              }}
+            >
+              📊 Dashboard
+            </Link>
+          )}
           {!isAuthenticated && (
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
               {Array.from({ length: GUEST_MAX_TESTS }).map((_, i) => (

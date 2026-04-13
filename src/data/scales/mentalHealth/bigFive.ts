@@ -1,11 +1,11 @@
 import type { AssessmentScale } from '../../../types/assessment';
 
 const opts = [
-  { value: 1, label: "Pas du tout d'accord" },
-  { value: 2, label: "Plutôt pas d'accord" },
-  { value: 3, label: "Neutre" },
-  { value: 4, label: "Plutôt d'accord" },
-  { value: 5, label: "Tout à fait d'accord" },
+  { value: 1, label: "Pas du tout moi", subtitle: "Je ne me reconnais pas du tout" },
+  { value: 2, label: "Pas trop moi", subtitle: "Ça ne me ressemble pas vraiment" },
+  { value: 3, label: "Plus ou moins", subtitle: "Ça dépend des situations" },
+  { value: 4, label: "Plutôt moi", subtitle: "Ça me ressemble" },
+  { value: 5, label: "Tout à fait moi", subtitle: "Je me reconnais complètement" },
 ];
 
 export const BIG_FIVE: AssessmentScale = {
@@ -23,15 +23,15 @@ export const BIG_FIVE: AssessmentScale = {
   reverseIds: [2, 4, 6, 8, 10],
   items: [
     { id: 1,  text: "Tu te vois plutôt comme quelqu'un d'{{extraverti|extravertie}}, {{plein|pleine}} d'énergie ?",                    type: 'likert', options: opts, subscale: 'extraversion' },
-    { id: 2,  text: "Tu dirais que tu as parfois tendance à juger ou critiquer les autres ?",                      type: 'likert', options: opts, subscale: 'agreeableness', reversed: true },
+    { id: 2,  text: "Tu dirais que tu as parfois tendance à juger ou critiquer les autres ?",                      type: 'likert', options: opts, subscale: 'agreeableness' },
     { id: 3,  text: "Tu te considères comme quelqu'un de fiable, sur qui on peut compter ?",                       type: 'likert', options: opts, subscale: 'conscientiousness' },
-    { id: 4,  text: "Tu dirais que tu es quelqu'un qui se fait facilement du souci, qui s'inquiète souvent ?",     type: 'likert', options: opts, subscale: 'neuroticism', reversed: true },
+    { id: 4,  text: "Tu dirais que tu es quelqu'un qui se fait facilement du souci, qui s'inquiète souvent ?",     type: 'likert', options: opts, subscale: 'neuroticism' },
     { id: 5,  text: "Tu te vois comme quelqu'un de curieux, {{ouvert|ouverte}} à plein de choses différentes ?",            type: 'likert', options: opts, subscale: 'openness' },
-    { id: 6,  text: "Tu dirais que tu es plutôt {{réservé|réservée}}, quelqu'un qui reste dans son coin ?",                  type: 'likert', options: opts, subscale: 'extraversion', reversed: true },
+    { id: 6,  text: "Tu dirais que tu es plutôt {{réservé|réservée}}, quelqu'un qui reste dans son coin ?",                  type: 'likert', options: opts, subscale: 'extraversion' },
     { id: 7,  text: "Tu te vois comme quelqu'un de serviable, qui fait attention aux autres ?",                    type: 'likert', options: opts, subscale: 'agreeableness' },
-    { id: 8,  text: "Il t'arrive d'être un peu {{négligent|négligente}} ou de laisser traîner les choses ?",                   type: 'likert', options: opts, subscale: 'conscientiousness', reversed: true },
+    { id: 8,  text: "Il t'arrive d'être un peu {{négligent|négligente}} ou de laisser traîner les choses ?",                   type: 'likert', options: opts, subscale: 'conscientiousness' },
     { id: 9,  text: "Tu te vois comme quelqu'un de calme, qui gère bien ses émotions ?",                           type: 'likert', options: opts, subscale: 'neuroticism' },
-    { id: 10, text: "Tu dirais que l'imagination et la créativité, ce n'est pas trop ton truc ?",                  type: 'likert', options: opts, subscale: 'openness', reversed: true },
+    { id: 10, text: "Tu dirais que l'imagination et la créativité, ce n'est pas trop ton truc ?",                  type: 'likert', options: opts, subscale: 'openness' },
   ],
   subscales: [
     { key: 'extraversion',      label: "Extraversion",      itemIds: [1, 6], reverseIds: [6], range: { min: 2, max: 10 } },

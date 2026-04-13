@@ -9,6 +9,8 @@ import { getOnboardingProfile } from '../../utils/onboardingProfile';
 import { getProfileProgress } from '../../services/evaluationService';
 import { getCompatibilityHistory } from '../../services/compatibilityService';
 import { getScaleById } from '../../data/scales';
+import { useKoris } from '../../contexts/KorisContext';
+import { KORIS_COSTS } from '../../services/korisService';
 import { KORIS_CONFIG } from '../../utils/korisConfig';
 import { loadPendingPrompts, ignorePrompt, type PendingPrompt } from '../../utils/journalPrompts';
 import PageTooltips from '../../components/Onboarding/PageTooltips';
@@ -302,6 +304,7 @@ async function loadConversations(userId: string): Promise<SavedConversation[]> {
 
 const MonEspacePage: React.FC<Props> = ({ userId }) => {
   const navigate = useNavigate();
+  const { spend, refund } = useKoris();
   const [tab, setTab] = useState<Tab>('journal');
   const [drLoPreFill, setDrLoPreFill] = useState<string>('');
 
@@ -528,6 +531,10 @@ const MonEspacePage: React.FC<Props> = ({ userId }) => {
     const msgText = (text ?? chatInput).trim();
     if (!msgText || chatLoading) return;
 
+    // Koris check
+    const spendResult = await spend('chat', 'Message Dr Lô');
+    if (!spendResult.allowed) return;
+
     const userMsg: ChatMessage = { role: 'user', content: msgText, timestamp: new Date().toISOString() };
     const newMessages = [...messages, userMsg];
     setMessages(newMessages);
@@ -546,12 +553,17 @@ const MonEspacePage: React.FC<Props> = ({ userId }) => {
         body: JSON.stringify({ message: msgText, historique, context }),
       });
 
+      if (!res.ok) {
+        await refund('chat');
+        throw new Error('API error');
+      }
+
       const data = await res.json();
       const assistantMsg: ChatMessage = {
         role: 'assistant',
         content: data.response ?? "Je n'ai pas pu repondre. Reessaie dans un instant.",
         timestamp: new Date().toISOString(),
-        koris_consumed: data.koris_consumed ?? 0,
+        koris_consumed: KORIS_COSTS.chat,
       };
 
       const finalMessages = [...newMessages, assistantMsg];
@@ -770,7 +782,7 @@ const MonEspacePage: React.FC<Props> = ({ userId }) => {
                               transition: 'background 0.15s',
                             }}
                           >
-                            ✦ {q}
+                            ◉ {q}
                           </button>
                         ))}
                       </div>
@@ -848,7 +860,7 @@ const MonEspacePage: React.FC<Props> = ({ userId }) => {
                     {activePromptHint.titre}
                   </p>
                   <p style={{ margin: 0, fontSize: 12, color: '#64748B', fontStyle: 'italic' }}>
-                    ✦ {activePromptHint.question}
+                    ◉ {activePromptHint.question}
                   </p>
                 </div>
                 <button

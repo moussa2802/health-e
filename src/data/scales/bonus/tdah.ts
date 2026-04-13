@@ -6,11 +6,11 @@ import type { AssessmentScale } from '../../../types/assessment';
 // Kessler et al. (2005) — Échelle validée par l'OMS pour le dépistage du TDAH adulte
 
 const opts = [
-  { value: 0, label: 'Jamais' },
-  { value: 1, label: 'Rarement' },
-  { value: 2, label: 'Parfois' },
-  { value: 3, label: 'Souvent' },
-  { value: 4, label: 'Très souvent' },
+  { value: 0, label: 'Jamais', subtitle: "Ça ne m'arrive pas" },
+  { value: 1, label: 'Rarement', subtitle: "Quelques fois par an tout au plus" },
+  { value: 2, label: 'Parfois', subtitle: "De temps en temps" },
+  { value: 3, label: 'Souvent', subtitle: "Régulièrement, plusieurs fois par semaine" },
+  { value: 4, label: 'Très souvent', subtitle: "Quasiment tous les jours" },
 ];
 
 export const BONUS_TDAH: AssessmentScale = {

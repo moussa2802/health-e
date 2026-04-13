@@ -1,11 +1,11 @@
 import type { AssessmentScale } from '../../../types/assessment';
 
 const freq5 = [
-  { value: 0, label: "Jamais" },
-  { value: 1, label: "Presque jamais" },
-  { value: 2, label: "Parfois" },
-  { value: 3, label: "Assez souvent" },
-  { value: 4, label: "Très souvent" },
+  { value: 0, label: "Jamais", subtitle: "Ça ne m'est pas arrivé" },
+  { value: 1, label: "Presque jamais", subtitle: "De temps en temps" },
+  { value: 2, label: "Parfois", subtitle: "Ça arrive régulièrement" },
+  { value: 3, label: "Assez souvent", subtitle: "C'est fréquent" },
+  { value: 4, label: "Très souvent", subtitle: "Presque tout le temps" },
 ];
 
 export const ECONOMIC_STRESS: AssessmentScale = {
@@ -30,8 +30,8 @@ export const ECONOMIC_STRESS: AssessmentScale = {
     { id: 6,  text: "Le manque d'argent a touché ta confiance en toi ou ton image aux yeux des autres ?",                                             type: 'frequency', options: freq5 },
     { id: 7,  text: "Tu as ressenti du stress à cause de dettes ou de remboursements qui traînent ?",                                                 type: 'frequency', options: freq5 },
     { id: 8,  text: "Tu as eu du mal à assurer ta part dans les cérémonies, baptêmes, funérailles ou tontines ?",                                     type: 'frequency', options: freq5 },
-    { id: 9,  text: "Malgré les galères, tu as réussi à garder ta dignité et ton estime de toi 💪",                                                   type: 'frequency', options: freq5, reversed: true },
-    { id: 10, text: "Tu as trouvé des solutions créatives pour t'en sortir malgré les contraintes financières ?",                                     type: 'frequency', options: freq5, reversed: true },
+    { id: 9,  text: "Malgré les galères, tu as réussi à garder ta dignité et ton estime de toi 💪",                                                   type: 'frequency', options: freq5 },
+    { id: 10, text: "Tu as trouvé des solutions créatives pour t'en sortir malgré les contraintes financières ?",                                     type: 'frequency', options: freq5 },
   ],
   interpretation: [
     { min: 0,  max: 13, label: "Stress économique faible",   severity: 'minimal',  description: "Ton niveau de stress lié à l'argent est plutôt bas — c'est une bonne nouvelle.", referralRequired: false, recommendation: "Continue comme ça ! Tes stratégies pour gérer les finances semblent fonctionner. Garde le cap 🙏" },

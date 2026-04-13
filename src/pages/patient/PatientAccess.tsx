@@ -26,7 +26,7 @@ const PatientAccess: React.FC = () => {
   const [hasProcessedPendingRegistration, setHasProcessedPendingRegistration] =
     useState(false);
 
-  const { isAuthenticated, currentUser, createUserWithPhone, loginWithPhone } =
+  const { isAuthenticated, currentUser, createUserWithPhone, loginWithPhone, signInWithGoogle } =
     useAuth();
   const { hasAgreedToTerms, setShowTermsModal } = useTerms();
 
@@ -43,6 +43,8 @@ const PatientAccess: React.FC = () => {
   const [step, setStep] = useState<Step>("enterPhone");
   const [phone, setPhone] = useState<string>("");
   const [code, setCode] = useState<string>("");
+  const [showSmsForm, setShowSmsForm] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
 
   // Profil (si nécessaire)
   const [fullName, setFullName] = useState<string>("");
@@ -149,6 +151,9 @@ const PatientAccess: React.FC = () => {
   // Gérer l'affichage si l'utilisateur est déjà authentifié
   useEffect(() => {
     const pendingSessionId = getPendingGroupTherapySessionId();
+    // Also check for group therapy session saved before Google redirect
+    const googlePendingGroup = localStorage.getItem("he_google_pending_group_session");
+
     if (
       isAuthenticated &&
       currentUser &&
@@ -159,6 +164,16 @@ const PatientAccess: React.FC = () => {
       setStep("alreadyAuthenticated");
     } else if (
       isAuthenticated &&
+      currentUser &&
+      googlePendingGroup &&
+      !hasProcessedPendingRegistration
+    ) {
+      // Returning from Google redirect with a pending group therapy session
+      localStorage.removeItem("he_google_pending_group_session");
+      setHasProcessedPendingRegistration(true);
+      handlePostAuthGroupTherapyRegistration(googlePendingGroup);
+    } else if (
+      isAuthenticated &&
       currentUser?.type === "patient" &&
       !pendingSessionId
     ) {
@@ -166,6 +181,24 @@ const PatientAccess: React.FC = () => {
       navigate("/assessment");
     }
   }, [isAuthenticated, currentUser, step, navigate]);
+
+  // ---- Google Sign-In (redirect — page will reload after Google auth) ----
+  const onGoogleSignIn = async () => {
+    setErr("");
+    setGoogleLoading(true);
+    try {
+      // Store pending group therapy info so it survives the redirect
+      const pendingSessionId = getPendingGroupTherapySessionId();
+      if (pendingSessionId) {
+        localStorage.setItem("he_google_pending_group_session", pendingSessionId);
+      }
+      await signInWithGoogle();
+      // signInWithRedirect navigates away — code below won't execute
+    } catch (e: any) {
+      setErr(e?.message || "Erreur lors de la connexion Google.");
+      setGoogleLoading(false);
+    }
+  };
 
   // ---- Étape 1: envoi du SMS ----
   const onSubmitPhone = async (e: React.FormEvent) => {
@@ -504,7 +537,7 @@ const PatientAccess: React.FC = () => {
               Espace Patient
             </h1>
             <p className="text-sm text-gray-500 mt-1 text-center">
-              {step === "enterPhone" && "Connexion par code SMS — rapide et sécurisée."}
+              {step === "enterPhone" && "Connectez-vous en un clic avec Google ou par SMS."}
               {step === "verify" && "Entrez le code reçu par SMS."}
               {step === "completeProfile" && "Finalisez votre inscription."}
               {step === "alreadyAuthenticated" && "Vous êtes déjà connecté(e)."}
@@ -540,42 +573,96 @@ const PatientAccess: React.FC = () => {
             </div>
           )}
 
-          {/* ── STEP 1: téléphone ── */}
+          {/* ── STEP 1: Google + téléphone ── */}
           {step === "enterPhone" && (
-            <form onSubmit={onSubmitPhone} className="space-y-5">
-              <div>
-                <label className="block text-sm font-medium text-gray-600 mb-1.5">
-                  Numéro de téléphone
-                </label>
-                <PhoneInput
-                  international
-                  defaultCountry="SN"
-                  value={phone}
-                  onChange={(v) => setPhone(v || "")}
-                  className="w-full rounded-xl border border-white/40 bg-white/60 px-3 py-3 focus:border-blue-400 focus:ring-blue-200"
-                  placeholder="Ex: +221 77 123 45 67"
-                />
-                <p className="text-xs text-gray-400 mt-1.5">
-                  Format international requis (ex: +221…).
-                </p>
+            <div className="space-y-5">
+              {/* ── Google Sign-In (Primary) ── */}
+              <button
+                type="button"
+                onClick={onGoogleSignIn}
+                disabled={googleLoading || loading || phoneLoading}
+                className="w-full flex items-center justify-center gap-3 px-4 py-3.5 rounded-xl font-semibold text-sm transition-all"
+                style={{
+                  background: "white",
+                  border: "1.5px solid rgba(0,0,0,0.12)",
+                  color: "#1E293B",
+                  boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
+                  opacity: googleLoading ? 0.6 : 1,
+                  cursor: googleLoading ? "not-allowed" : "pointer",
+                }}
+              >
+                {googleLoading ? (
+                  <span>Connexion Google...</span>
+                ) : (
+                  <>
+                    <svg width="20" height="20" viewBox="0 0 48 48">
+                      <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z" />
+                      <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z" />
+                      <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z" />
+                      <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z" />
+                    </svg>
+                    <span>Continuer avec Google</span>
+                  </>
+                )}
+              </button>
+
+              {/* ── Divider ── */}
+              <div className="flex items-center gap-3">
+                <div className="flex-1 h-px" style={{ background: "rgba(0,0,0,0.10)" }} />
+                <span className="text-xs text-gray-400 font-medium">ou</span>
+                <div className="flex-1 h-px" style={{ background: "rgba(0,0,0,0.10)" }} />
               </div>
 
-              <button
-                type="submit"
-                disabled={
-                  loading || phoneLoading || !phone ||
-                  !isValidPhoneNumber(toE164(phone)) || isInCooldown
-                }
-                className={gradientBtn}
-                style={{ background: "linear-gradient(135deg,#3B82F6,#2DD4BF)" }}
-              >
-                {loading || phoneLoading
-                  ? "Envoi du code…"
-                  : isInCooldown
-                  ? `Réessayez dans ${cooldownTime}s`
-                  : "Recevoir le code →"}
-              </button>
-            </form>
+              {/* ── SMS toggle / form ── */}
+              {!showSmsForm ? (
+                <button
+                  type="button"
+                  onClick={() => setShowSmsForm(true)}
+                  className="w-full text-sm text-gray-500 hover:text-gray-700 font-medium py-2.5 rounded-xl transition-colors"
+                  style={{
+                    background: "rgba(0,0,0,0.03)",
+                    border: "1px solid rgba(0,0,0,0.07)",
+                  }}
+                >
+                  Continuer par SMS
+                </button>
+              ) : (
+                <form onSubmit={onSubmitPhone} className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-600 mb-1.5">
+                      Numero de telephone
+                    </label>
+                    <PhoneInput
+                      international
+                      defaultCountry="SN"
+                      value={phone}
+                      onChange={(v) => setPhone(v || "")}
+                      className="w-full rounded-xl border border-white/40 bg-white/60 px-3 py-3 focus:border-blue-400 focus:ring-blue-200"
+                      placeholder="Ex: +221 77 123 45 67"
+                    />
+                    <p className="text-xs text-gray-400 mt-1.5">
+                      Format international requis (ex: +221...).
+                    </p>
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={
+                      loading || phoneLoading || !phone ||
+                      !isValidPhoneNumber(toE164(phone)) || isInCooldown
+                    }
+                    className={gradientBtn}
+                    style={{ background: "linear-gradient(135deg,#3B82F6,#2DD4BF)" }}
+                  >
+                    {loading || phoneLoading
+                      ? "Envoi du code..."
+                      : isInCooldown
+                      ? `Reessayez dans ${cooldownTime}s`
+                      : "Recevoir le code"}
+                  </button>
+                </form>
+              )}
+            </div>
           )}
 
           {/* ── STEP 2: vérification du code ── */}
