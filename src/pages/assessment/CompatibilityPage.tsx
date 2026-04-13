@@ -4,12 +4,14 @@ import { useAuth } from '../../contexts/AuthContext';
 import PageTooltips from '../../components/Onboarding/PageTooltips';
 import { getOrCreateUserProfile, getProfileProgress } from '../../services/evaluationService';
 import {
-  createCompatibilityRequest,
   computeCompatibility,
+  computeMergedCompatibility,
+  createCompatibilityRequest,
   saveCompatibilityHistory,
   getCompatibilityHistory,
   deleteCompatibilityHistory,
   validateCompatibilityCode,
+  migrateExistingCompatibilityHistory,
   type CompatibilityHistoryEntry,
   type CodeValidationResult,
 } from '../../services/compatibilityService';
@@ -17,12 +19,6 @@ import type { CompatibilityResult } from '../../types/assessment';
 import { RELATIONSHIP_CATEGORIES, getRelationshipLabel } from '../../utils/relationshipTypes';
 import { useKoris } from '../../contexts/KorisContext';
 import { KORIS_COSTS } from '../../services/korisService';
-
-interface ResultItem {
-  codeType: 'mental' | 'sexual';
-  partnerCode: string;
-  result: CompatibilityResult;
-}
 
 function scoreStyle(score: number) {
   if (score >= 75) return { color: '#16A34A', bg: 'rgba(22,163,74,0.1)', bar: 'linear-gradient(90deg, #16A34A, #4ADE80)', label: 'Très bonne compatibilité ✨' };
@@ -47,7 +43,8 @@ const CompatibilityPage: React.FC = () => {
   const [formError, setFormError] = useState<string | null>(null);
   const [calculating, setCalculating] = useState(false);
 
-  const [resultItems, setResultItems] = useState<ResultItem[]>([]);
+  const [currentResult, setCurrentResult] = useState<CompatibilityResult | null>(null);
+  const [currentPartnerPrenom, setCurrentPartnerPrenom] = useState<string>('');
   const [history, setHistory] = useState<CompatibilityHistoryEntry[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [expandedHistory, setExpandedHistory] = useState<string | null>(null);
@@ -66,7 +63,6 @@ const CompatibilityPage: React.FC = () => {
   const selectedCategory = RELATIONSHIP_CATEGORIES.find(c => c.id === mainCategoryId) ?? null;
   const isRomantic = mainCategoryId === 'amoureux';
 
-  // Bouton actif : relation + sous-type + au moins un code pour romantique, mental requis sinon
   const mentalTrimmed = partnerMentalId.trim().toUpperCase();
   const sexualTrimmed = partnerSexualId.trim().toUpperCase();
   const canSubmit = isAuthenticated && !!selectedSubTypeId && (
@@ -86,7 +82,6 @@ const CompatibilityPage: React.FC = () => {
     const trimmed = code.trim().toUpperCase();
     if (!trimmed) { setValidation(null); setValidating(false); return; }
 
-    // Check minimum format length before calling API
     const minLen = trimmed.startsWith('HE-') ? 16 : 7;
     if (trimmed.length < minLen) { setValidation(null); setValidating(false); return; }
 
@@ -104,7 +99,7 @@ const CompatibilityPage: React.FC = () => {
     }, 600);
   }, [currentUser]);
 
-  // Reset sub-type when main category changes (skip during recalculate)
+  // Reset sub-type when main category changes
   useEffect(() => {
     if (skipResetRef.current) {
       skipResetRef.current = false;
@@ -121,7 +116,6 @@ const CompatibilityPage: React.FC = () => {
   useEffect(() => {
     if (isAuthenticated && currentUser) {
       setLoadingProfile(true);
-      // Timeout de sécurité : si Firestore ne répond pas en 8s, on arrête le spinner
       const timeout = setTimeout(() => setLoadingProfile(false), 8000);
       getOrCreateUserProfile(currentUser.id, currentUser.name)
         .then(() => getProfileProgress(currentUser.id))
@@ -129,12 +123,16 @@ const CompatibilityPage: React.FC = () => {
         .catch(() => {})
         .finally(() => { clearTimeout(timeout); setLoadingProfile(false); });
 
-      // Charger l'historique des tests
+      // Load history + migrate existing separate entries
       setHistoryLoading(true);
-      getCompatibilityHistory(currentUser.id)
-        .then(setHistory)
+      migrateExistingCompatibilityHistory(currentUser.id)
         .catch(() => {})
-        .finally(() => setHistoryLoading(false));
+        .finally(() => {
+          getCompatibilityHistory(currentUser.id)
+            .then(setHistory)
+            .catch(() => {})
+            .finally(() => setHistoryLoading(false));
+        });
     }
   }, [isAuthenticated, currentUser]);
 
@@ -142,28 +140,40 @@ const CompatibilityPage: React.FC = () => {
     try { await navigator.clipboard.writeText(text); setCopied(true); setTimeout(() => setCopied(false), 2000); } catch { /* silencieux */ }
   };
 
-  // Recalculate directly from history — no scroll, just compute
+  // Recalculate from history
   const [recalculatingId, setRecalculatingId] = useState<string | null>(null);
 
   const handleRecalculate = async (entry: CompatibilityHistoryEntry) => {
     if (!isAuthenticated || !currentUser || recalculatingId) return;
 
-    // Dépenser des Koris pour le recalcul
-    const spendResult = await spend('compatibility', `Recalcul compatibilité ${entry.codeType} — ${entry.partnerCode}`);
+    const spendResult = await spend('compatibility', `Recalcul compatibilité — ${entry.partnerPrenom || entry.partnerCode}`);
     if (!spendResult.allowed) return;
 
     setRecalculatingId(entry.id);
     try {
-      const req = await createCompatibilityRequest(currentUser.id, entry.partnerCode, entry.relationshipType);
-      let res;
-      try {
-        res = await computeCompatibility(req.id);
-      } catch (computeErr) {
-        await refund('compatibility');
-        throw computeErr;
+      let res: CompatibilityResult;
+
+      if (entry.codeType === 'merged' && entry.mentalCode && entry.intimateCode) {
+        // Merged recalculation
+        try {
+          res = await computeMergedCompatibility(currentUser.id, entry.relationshipType, entry.mentalCode, entry.intimateCode);
+        } catch (computeErr) {
+          await refund('compatibility');
+          throw computeErr;
+        }
+        await saveCompatibilityHistory(currentUser.id, entry.relationshipType, entry.mentalCode, 'merged', res, entry.partnerPrenom, entry.mentalCode, entry.intimateCode).catch(() => {});
+      } else {
+        // Single code recalculation
+        const req = await createCompatibilityRequest(currentUser.id, entry.partnerCode, entry.relationshipType);
+        try {
+          res = await computeCompatibility(req.id);
+        } catch (computeErr) {
+          await refund('compatibility');
+          throw computeErr;
+        }
+        await saveCompatibilityHistory(currentUser.id, entry.relationshipType, entry.partnerCode, entry.codeType === 'merged' ? 'mental' : entry.codeType, res, entry.partnerPrenom).catch(() => {});
       }
-      await saveCompatibilityHistory(currentUser.id, entry.relationshipType, entry.partnerCode, entry.codeType, res, entry.partnerPrenom).catch(() => {});
-      // Rafraîchir l'historique
+
       const updated = await getCompatibilityHistory(currentUser.id);
       setHistory(updated);
     } catch (err: unknown) {
@@ -178,7 +188,6 @@ const CompatibilityPage: React.FC = () => {
     if (!isAuthenticated || !currentUser) { setFormError("Tu dois être connecté(e)."); return; }
     if (!selectedSubTypeId) { setFormError("Sélectionne le type de relation."); return; }
 
-    // Use validation results if available
     if (mentalTrimmed && mentalValidation && !mentalValidation.valid) {
       setFormError(mentalValidation.error || "Code mental invalide."); return;
     }
@@ -186,7 +195,6 @@ const CompatibilityPage: React.FC = () => {
       setFormError(sexualValidation.error || "Code intime invalide."); return;
     }
 
-    // Fallback format validation
     const isMentalFmt = (c: string) => /^HE-MNT-\d{4}-[A-Z0-9]{4}$/i.test(c) || /^SM-[A-Z0-9]{4}$/i.test(c);
     const isSexualFmt = (c: string) => /^HE-SEX-\d{4}-[A-Z0-9]{4}$/i.test(c) || /^SE-[A-Z0-9]{4}$/i.test(c);
 
@@ -196,34 +204,50 @@ const CompatibilityPage: React.FC = () => {
     if (!isRomantic && !mentalTrimmed) { setFormError("Saisis le code mental de cette personne."); return; }
     if (mentalTrimmed === myIdMental || sexualTrimmed === myIdSexual) { setFormError("Tu ne peux pas te comparer à toi-même 😄"); return; }
 
-    // Construire la liste de comparaisons à effectuer
-    const tasks: Array<{ code: string; codeType: 'mental' | 'sexual'; partnerPrenom?: string }> = [];
-    if (mentalTrimmed) tasks.push({ code: mentalTrimmed, codeType: 'mental', partnerPrenom: mentalValidation?.prenom });
-    if (isRomantic && sexualTrimmed) tasks.push({ code: sexualTrimmed, codeType: 'sexual', partnerPrenom: sexualValidation?.prenom });
+    // Check Koris — ONE spend for the whole analysis (3 Koris)
+    const spendResult = await spend('compatibility', `Compatibilité${isRomantic && mentalTrimmed && sexualTrimmed ? ' fusionnée' : ''} — ${mentalValidation?.prenom || sexualValidation?.prenom || 'partenaire'}`);
+    if (!spendResult.allowed) return;
 
     setCalculating(true);
     try {
-      const items: ResultItem[] = [];
-      for (const task of tasks) {
-        // Dépenser des Koris pour l'analyse IA
-        const spendResult = await spend('compatibility', `Compatibilité ${task.codeType} — ${task.code}`);
-        if (!spendResult.allowed) return; // NoKorisModal s'affiche automatiquement
+      let result: CompatibilityResult;
+      const partnerPrenom = mentalValidation?.prenom || sexualValidation?.prenom;
 
-        const req = await createCompatibilityRequest(currentUser.id, task.code, selectedSubTypeId);
-        let res;
+      if (isRomantic && (mentalTrimmed || sexualTrimmed)) {
+        // Romantic: use merged computation (handles 1 or 2 codes)
         try {
-          res = await computeCompatibility(req.id);
+          result = await computeMergedCompatibility(
+            currentUser.id,
+            selectedSubTypeId,
+            mentalTrimmed || null,
+            sexualTrimmed || null,
+          );
         } catch (computeErr) {
-          // Rembourser si l'analyse échoue
           await refund('compatibility');
           throw computeErr;
         }
-        items.push({ codeType: task.codeType, partnerCode: task.code, result: res });
-        // Sauvegarder dans l'historique avec le prénom
-        await saveCompatibilityHistory(currentUser.id, selectedSubTypeId, task.code, task.codeType, res, task.partnerPrenom).catch(() => {});
+
+        const codeType: 'merged' | 'mental' | 'sexual' = (mentalTrimmed && sexualTrimmed) ? 'merged' : (mentalTrimmed ? 'mental' : 'sexual');
+        await saveCompatibilityHistory(
+          currentUser.id, selectedSubTypeId,
+          mentalTrimmed || sexualTrimmed,
+          codeType, result, partnerPrenom,
+          mentalTrimmed || undefined, sexualTrimmed || undefined,
+        ).catch(() => {});
+      } else {
+        // Non-romantic: mental only
+        const req = await createCompatibilityRequest(currentUser.id, mentalTrimmed, selectedSubTypeId);
+        try {
+          result = await computeCompatibility(req.id);
+        } catch (computeErr) {
+          await refund('compatibility');
+          throw computeErr;
+        }
+        await saveCompatibilityHistory(currentUser.id, selectedSubTypeId, mentalTrimmed, 'mental', result, partnerPrenom).catch(() => {});
       }
-      setResultItems(items);
-      // Rafraîchir l'historique
+
+      setCurrentResult(result);
+      setCurrentPartnerPrenom(partnerPrenom || '');
       getCompatibilityHistory(currentUser.id).then(setHistory).catch(() => {});
     } catch (err: unknown) {
       setFormError(err instanceof Error ? err.message : 'Erreur lors du calcul. Réessaie.');
@@ -233,6 +257,203 @@ const CompatibilityPage: React.FC = () => {
   };
 
   const isFamilyCategory = mainCategoryId === 'famille';
+
+  // ── Render helpers ──
+
+  const renderMergedResult = (result: CompatibilityResult, partnerPrenom: string, showActions?: boolean) => {
+    const gs = scoreStyle(result.globalScore);
+    const hasMental = result.mentalScore !== undefined && result.mentalScore !== null;
+    const hasIntimate = result.intimateScore !== undefined && result.intimateScore !== null;
+    const isMerged = hasMental && hasIntimate;
+
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 14, animation: 'slideUp 0.35s ease' }}>
+
+        {/* Header with partner name + relationship type */}
+        {selectedSubTypeId && !showActions && (
+          <div style={{ textAlign: 'center', padding: '0 0 4px' }}>
+            <span style={{ fontSize: 13, color: '#94A3B8', fontWeight: 500 }}>
+              {partnerPrenom && <><span style={{ fontSize: 16 }}>💑</span> <strong style={{ color: '#7C3AED' }}>{partnerPrenom}</strong> · </>}
+              <strong style={{ color: '#7C3AED' }}>{getRelationshipLabel(selectedSubTypeId)}</strong>
+            </span>
+          </div>
+        )}
+
+        {/* Partial result banner */}
+        {result.isPartialResult && (
+          <div style={{ background: 'rgba(255,251,235,0.95)', border: '1.5px solid rgba(234,179,8,0.25)', borderRadius: 16, padding: '14px 18px', display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+            <span style={{ fontSize: 18, flexShrink: 0 }}>⚡</span>
+            <div>
+              <p style={{ margin: '0 0 2px', fontSize: 13, fontWeight: 700, color: '#92400E' }}>Analyse partielle</p>
+              <p style={{ margin: 0, fontSize: 12, color: '#A16207', lineHeight: 1.5 }}>
+                {hasMental ? 'Le profil intime' : 'Le profil psychologique'} n'est pas encore disponible. Pour une compatibilité complète, ton/ta partenaire doit aussi compléter {hasMental ? 'les évaluations de vie intime' : 'les évaluations psychologiques'}.
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* Global score card */}
+        <div style={{ background: 'rgba(255,255,255,0.92)', backdropFilter: 'blur(18px)', border: '1.5px solid rgba(124,58,237,0.12)', borderRadius: 22, padding: '32px 24px', textAlign: 'center', boxShadow: '0 8px 40px rgba(124,58,237,0.08)' }}>
+          <p style={{ margin: '0 0 20px', fontSize: 13, fontWeight: 600, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+            Score de compatibilité {isMerged ? 'global' : ''}
+          </p>
+          <div style={{ position: 'relative', width: 140, height: 140, margin: '0 auto 20px' }}>
+            <svg width="140" height="140" viewBox="0 0 140 140" style={{ transform: 'rotate(-90deg)' }}>
+              <circle cx="70" cy="70" r="58" fill="none" stroke={`${gs.color}18`} strokeWidth="10" />
+              <circle
+                cx="70" cy="70" r="58" fill="none"
+                stroke={gs.color} strokeWidth="10"
+                strokeLinecap="round"
+                strokeDasharray={`${2 * Math.PI * 58}`}
+                strokeDashoffset={`${2 * Math.PI * 58 * (1 - result.globalScore / 100)}`}
+                style={{ transition: 'stroke-dashoffset 1.2s cubic-bezier(0.4,0,0.2,1)' }}
+              />
+            </svg>
+            <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+              <span style={{ fontSize: 36, fontWeight: 900, color: gs.color, lineHeight: 1 }}>{result.globalScore}</span>
+              <span style={{ fontSize: 12, fontWeight: 600, color: '#94A3B8' }}>/ 100</span>
+            </div>
+          </div>
+          <p style={{ margin: '0 0 20px', fontSize: 16, fontWeight: 700, color: gs.color }}>{gs.label}</p>
+
+          {/* Sub-scores (mental + intimate) */}
+          {isMerged && (
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, maxWidth: 320, margin: '0 auto' }}>
+              <div style={{ background: 'linear-gradient(135deg, #EFF6FF, #F0F9FF)', border: '1.5px solid rgba(59,130,246,0.15)', borderRadius: 14, padding: '14px 12px', textAlign: 'center' }}>
+                <span style={{ fontSize: 18, display: 'block', marginBottom: 4 }}>🧠</span>
+                <p style={{ margin: '0 0 2px', fontSize: 11, fontWeight: 700, color: '#3B82F6', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Mental</p>
+                <p style={{ margin: 0, fontSize: 22, fontWeight: 900, color: scoreStyle(result.mentalScore!).color }}>{result.mentalScore}<span style={{ fontSize: 12, fontWeight: 600, color: '#94A3B8' }}>/100</span></p>
+              </div>
+              <div style={{ background: 'linear-gradient(135deg, #FDF4FF, #FAE8FF)', border: '1.5px solid rgba(192,38,211,0.15)', borderRadius: 14, padding: '14px 12px', textAlign: 'center' }}>
+                <span style={{ fontSize: 18, display: 'block', marginBottom: 4 }}>💜</span>
+                <p style={{ margin: '0 0 2px', fontSize: 11, fontWeight: 700, color: '#C026D3', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Intime</p>
+                <p style={{ margin: 0, fontSize: 22, fontWeight: 900, color: scoreStyle(result.intimateScore!).color }}>{result.intimateScore}<span style={{ fontSize: 12, fontWeight: 600, color: '#94A3B8' }}>/100</span></p>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Dimensions */}
+        {Object.keys(result.dimensionScores).length > 0 && (
+          <div style={{ background: 'rgba(255,255,255,0.92)', backdropFilter: 'blur(18px)', border: '1.5px solid rgba(124,58,237,0.12)', borderRadius: 22, padding: '22px 24px', boxShadow: '0 4px 24px rgba(124,58,237,0.06)' }}>
+            <p style={{ margin: '0 0 18px', fontSize: 13, fontWeight: 700, color: '#0A2342', display: 'flex', alignItems: 'center', gap: 6 }}>
+              <span>📊</span> Compatibilité par dimension
+            </p>
+
+            {/* Mental dimensions */}
+            {result.mentalDimensionScores && Object.keys(result.mentalDimensionScores).length > 0 && (
+              <>
+                {isMerged && <p style={{ margin: '0 0 10px', fontSize: 11, fontWeight: 700, color: '#3B82F6', textTransform: 'uppercase', letterSpacing: '0.06em' }}>🧠 Psychologique</p>}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: result.intimateDimensionScores && Object.keys(result.intimateDimensionScores).length > 0 ? 18 : 0 }}>
+                  {Object.entries(result.mentalDimensionScores).map(([dim, score]) => {
+                    const s = scoreStyle(score);
+                    return (
+                      <div key={dim}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+                          <span style={{ fontSize: 13, fontWeight: 600, color: '#374151' }}>{dim}</span>
+                          <span style={{ fontSize: 13, fontWeight: 800, color: s.color }}>{score}</span>
+                        </div>
+                        <div style={{ height: 8, background: '#F1F5F9', borderRadius: 99, overflow: 'hidden' }}>
+                          <div style={{ height: '100%', width: `${score}%`, background: s.bar, borderRadius: 99, transition: 'width 1s cubic-bezier(0.4,0,0.2,1)' }} />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </>
+            )}
+
+            {/* Intimate dimensions */}
+            {result.intimateDimensionScores && Object.keys(result.intimateDimensionScores).length > 0 && (
+              <>
+                {isMerged && <p style={{ margin: '0 0 10px', fontSize: 11, fontWeight: 700, color: '#C026D3', textTransform: 'uppercase', letterSpacing: '0.06em' }}>💜 Vie intime</p>}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                  {Object.entries(result.intimateDimensionScores).map(([dim, score]) => {
+                    const s = scoreStyle(score);
+                    return (
+                      <div key={dim}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+                          <span style={{ fontSize: 13, fontWeight: 600, color: '#374151' }}>{dim}</span>
+                          <span style={{ fontSize: 13, fontWeight: 800, color: s.color }}>{score}</span>
+                        </div>
+                        <div style={{ height: 8, background: '#F1F5F9', borderRadius: 99, overflow: 'hidden' }}>
+                          <div style={{ height: '100%', width: `${score}%`, background: s.bar, borderRadius: 99, transition: 'width 1s cubic-bezier(0.4,0,0.2,1)' }} />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </>
+            )}
+
+            {/* Fallback: show flat dimensionScores if no sub-breakdowns */}
+            {!result.mentalDimensionScores && !result.intimateDimensionScores && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                {Object.entries(result.dimensionScores).map(([dim, score]) => {
+                  const s = scoreStyle(score);
+                  return (
+                    <div key={dim}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+                        <span style={{ fontSize: 13, fontWeight: 600, color: '#374151' }}>{dim}</span>
+                        <span style={{ fontSize: 13, fontWeight: 800, color: s.color }}>{score}</span>
+                      </div>
+                      <div style={{ height: 8, background: '#F1F5F9', borderRadius: 99, overflow: 'hidden' }}>
+                        <div style={{ height: '100%', width: `${score}%`, background: s.bar, borderRadius: 99, transition: 'width 1s cubic-bezier(0.4,0,0.2,1)' }} />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Points forts & tensions */}
+        {(result.strengths.length > 0 || result.tensions.length > 0) && (
+          <div style={{ display: 'grid', gridTemplateColumns: result.strengths.length > 0 && result.tensions.length > 0 ? '1fr 1fr' : '1fr', gap: 14 }}>
+            {result.strengths.length > 0 && (
+              <div style={{ background: 'rgba(240,253,244,0.95)', border: '1.5px solid rgba(22,163,74,0.2)', borderRadius: 18, padding: '18px 20px' }}>
+                <p style={{ margin: '0 0 12px', fontSize: 13, fontWeight: 700, color: '#15803D', display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <span>💚</span> Points forts
+                </p>
+                <ul style={{ margin: 0, padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  {result.strengths.map((s, i) => (
+                    <li key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 8, fontSize: 13, color: '#166534', lineHeight: 1.5 }}>
+                      <span style={{ flexShrink: 0 }}>✓</span>{s}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            {result.tensions.length > 0 && (
+              <div style={{ background: 'rgba(255,247,237,0.95)', border: '1.5px solid rgba(234,88,12,0.2)', borderRadius: 18, padding: '18px 20px' }}>
+                <p style={{ margin: '0 0 12px', fontSize: 13, fontWeight: 700, color: '#C2410C', display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <span>🔶</span> Zones à explorer
+                </p>
+                <ul style={{ margin: 0, padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  {result.tensions.map((t, i) => (
+                    <li key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 8, fontSize: 13, color: '#9A3412', lineHeight: 1.5 }}>
+                      <span style={{ flexShrink: 0 }}>◆</span>{t}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Dr Lô narrative */}
+        {result.claudeNarrative && (
+          <div style={{ background: 'rgba(255,255,255,0.92)', backdropFilter: 'blur(18px)', border: '1.5px solid rgba(124,58,237,0.12)', borderRadius: 22, padding: '22px 24px' }}>
+            <p style={{ margin: '0 0 12px', fontSize: 13, fontWeight: 700, color: '#7C3AED', display: 'flex', alignItems: 'center', gap: 6 }}>
+              <span>👨‍⚕️</span> Analyse du Dr Lô
+            </p>
+            <p style={{ margin: 0, fontSize: 14, color: '#374151', lineHeight: 1.75, whiteSpace: 'pre-wrap' }}>{result.claudeNarrative}</p>
+          </div>
+        )}
+      </div>
+    );
+  };
 
   return (
     <div style={{ minHeight: '100vh', background: 'linear-gradient(160deg, #F5F0FF 0%, #FFF0F9 45%, #EFF6FF 100%)', fontFamily: "'Inter', -apple-system, sans-serif" }}>
@@ -297,7 +518,7 @@ const CompatibilityPage: React.FC = () => {
                     <p style={{ margin: '0 0 3px', fontSize: 11, fontWeight: 700, color: '#3B82F6', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Profil Psychologique</p>
                     {myIdMental
                       ? <code style={{ fontSize: 15, fontFamily: "'JetBrains Mono','Courier New',monospace", fontWeight: 800, color: '#1D4ED8', letterSpacing: '0.08em' }}>{myIdMental}</code>
-                      : <span style={{ fontSize: 12, color: '#94A3B8' }}>Complète 5 évaluations obligatoires pour obtenir ce code</span>
+                      : <span style={{ fontSize: 12, color: '#94A3B8' }}>Complète 8 évaluations pour obtenir ce code</span>
                     }
                   </div>
                   {myIdMental && (
@@ -320,7 +541,7 @@ const CompatibilityPage: React.FC = () => {
                     <p style={{ margin: '0 0 3px', fontSize: 11, fontWeight: 700, color: '#C026D3', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Vie intime</p>
                     {myIdSexual
                       ? <code style={{ fontSize: 15, fontFamily: "'JetBrains Mono','Courier New',monospace", fontWeight: 800, color: '#7E22CE', letterSpacing: '0.08em' }}>{myIdSexual}</code>
-                      : <span style={{ fontSize: 12, color: '#94A3B8' }}>Complète 3 évaluations obligatoires pour obtenir ce code</span>
+                      : <span style={{ fontSize: 12, color: '#94A3B8' }}>Complète 5 évaluations pour obtenir ce code</span>
                     }
                   </div>
                   {myIdSexual && (
@@ -346,7 +567,7 @@ const CompatibilityPage: React.FC = () => {
             <div>
               <p style={{ margin: '0 0 4px', fontSize: 14, fontWeight: 700, color: '#92400E' }}>Test verrouillé — profil incomplet</p>
               <p style={{ margin: '0 0 10px', fontSize: 13, color: '#A16207', lineHeight: 1.5 }}>
-                Complète toutes les évaluations du profil psychologique <strong>(SM)</strong> ou de la vie intime <strong>(SE)</strong> pour débloquer le test.
+                Complète au moins 8 évaluations psychologiques <strong>(MNT)</strong> ou 5 évaluations de vie intime <strong>(SEX)</strong> pour débloquer le test.
               </p>
               <Link to="/assessment/profile" style={{ fontSize: 13, fontWeight: 700, color: '#92400E', textDecoration: 'none' }}>
                 Voir mon profil →
@@ -356,7 +577,7 @@ const CompatibilityPage: React.FC = () => {
         )}
 
         {/* ── Formulaire ── */}
-        {resultItems.length === 0 && (
+        {!currentResult && (
           <div ref={formRef} style={{ background: 'rgba(255,255,255,0.88)', backdropFilter: 'blur(18px)', WebkitBackdropFilter: 'blur(18px)', border: '1.5px solid rgba(124,58,237,0.12)', borderRadius: 22, padding: '26px 24px', marginBottom: 18, boxShadow: '0 4px 28px rgba(124,58,237,0.07)' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 22 }}>
               <div style={{ width: 34, height: 34, borderRadius: 10, background: 'linear-gradient(135deg, #7C3AED, #EC4899)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, flexShrink: 0 }}>✨</div>
@@ -397,23 +618,18 @@ const CompatibilityPage: React.FC = () => {
             {/* ── Étape 2 — Sous-type ── */}
             {selectedCategory && (
               <div style={{ marginBottom: 22, animation: 'slideDown 0.2s ease' }}>
-                {/* Divider */}
                 <div style={{ height: 1, background: 'linear-gradient(90deg, transparent, rgba(124,58,237,0.12), transparent)', marginBottom: 18 }} />
 
                 <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#374151', marginBottom: 12 }}>
                   {selectedCategory.question}
                 </label>
 
-                {/* Grid compact pour famille (pas de descriptions) */}
                 {isFamilyCategory ? (
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
                     {selectedCategory.subTypes.map(sub => {
                       const isActive = selectedSubTypeId === sub.id;
                       return (
-                        <button
-                          key={sub.id}
-                          type="button"
-                          onClick={() => setSelectedSubTypeId(isActive ? null : sub.id)}
+                        <button key={sub.id} type="button" onClick={() => setSelectedSubTypeId(isActive ? null : sub.id)}
                           style={{
                             display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5,
                             padding: '12px 8px', borderRadius: 12,
@@ -431,15 +647,11 @@ const CompatibilityPage: React.FC = () => {
                     })}
                   </div>
                 ) : (
-                  /* Liste avec descriptions pour les autres catégories */
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                     {selectedCategory.subTypes.map(sub => {
                       const isActive = selectedSubTypeId === sub.id;
                       return (
-                        <button
-                          key={sub.id}
-                          type="button"
-                          onClick={() => setSelectedSubTypeId(isActive ? null : sub.id)}
+                        <button key={sub.id} type="button" onClick={() => setSelectedSubTypeId(isActive ? null : sub.id)}
                           style={{
                             display: 'flex', alignItems: sub.description ? 'flex-start' : 'center', gap: 12,
                             padding: '12px 14px', borderRadius: 13, textAlign: 'left',
@@ -473,12 +685,12 @@ const CompatibilityPage: React.FC = () => {
               </div>
             )}
 
-            {/* ── ÉTAPE 2 — Champs de code (apparaissent après sélection du sous-type) ── */}
+            {/* ── ÉTAPE 3 — Champs de code ── */}
             {selectedSubTypeId && (
               <div style={{ marginBottom: 22, animation: 'slideDown 0.2s ease' }}>
                 <div style={{ height: 1, background: 'linear-gradient(90deg, transparent, rgba(124,58,237,0.12), transparent)', marginBottom: 18 }} />
 
-                {/* Code mental — optionnel pour romantique, requis sinon */}
+                {/* Code mental */}
                 <div style={{ marginBottom: 14 }}>
                   <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, fontWeight: 600, color: '#374151', marginBottom: 8 }}>
                     <span>🧠</span>
@@ -513,7 +725,6 @@ const CompatibilityPage: React.FC = () => {
                       <div style={{ position: 'absolute', right: 14, top: '50%', transform: 'translateY(-50%)', width: 16, height: 16, border: '2px solid #7C3AED', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
                     )}
                   </div>
-                  {/* Validation feedback */}
                   {mentalValidation && (
                     <div style={{ marginTop: 6, display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, animation: 'slideDown 0.2s ease' }}>
                       {mentalValidation.valid ? (
@@ -528,7 +739,7 @@ const CompatibilityPage: React.FC = () => {
                   )}
                 </div>
 
-                {/* Code intime — uniquement pour relations amoureuses, optionnel */}
+                {/* Code intime — uniquement pour relations amoureuses */}
                 {isRomantic && (
                   <div>
                     <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, fontWeight: 600, color: '#374151', marginBottom: 8 }}>
@@ -559,7 +770,6 @@ const CompatibilityPage: React.FC = () => {
                         <div style={{ position: 'absolute', right: 14, top: '50%', transform: 'translateY(-50%)', width: 16, height: 16, border: '2px solid #C026D3', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
                       )}
                     </div>
-                    {/* Validation feedback */}
                     {sexualValidation && (
                       <div style={{ marginTop: 6, display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, animation: 'slideDown 0.2s ease' }}>
                         {sexualValidation.valid ? (
@@ -574,6 +784,16 @@ const CompatibilityPage: React.FC = () => {
                     )}
                     <p style={{ margin: '6px 0 0', fontSize: 11, color: '#94A3B8' }}>
                       🔒 Ce code est partagé uniquement avec consentement mutuel
+                    </p>
+                  </div>
+                )}
+
+                {/* Merged info badge */}
+                {isRomantic && mentalTrimmed && sexualTrimmed && mentalValidation?.valid && sexualValidation?.valid && (
+                  <div style={{ marginTop: 12, background: 'linear-gradient(135deg, rgba(124,58,237,0.06), rgba(236,72,153,0.06))', border: '1.5px solid rgba(124,58,237,0.15)', borderRadius: 12, padding: '10px 14px', display: 'flex', alignItems: 'center', gap: 8, animation: 'slideDown 0.2s ease' }}>
+                    <span style={{ fontSize: 16 }}>✨</span>
+                    <p style={{ margin: 0, fontSize: 12, color: '#6D28D9', fontWeight: 600, lineHeight: 1.4 }}>
+                      Analyse fusionnée — les deux profils (mental + intime) seront croisés dans une seule analyse complète
                     </p>
                   </div>
                 )}
@@ -619,7 +839,7 @@ const CompatibilityPage: React.FC = () => {
                     {KORIS_COSTS.compatibility}
                   </span>
                 </span>
-)}
+              )}
             </button>
             {canSubmit && !calculating && (
               <p style={{ margin: '8px 0 0', textAlign: 'center', fontSize: 11, color: '#94A3B8' }}>
@@ -629,145 +849,17 @@ const CompatibilityPage: React.FC = () => {
           </div>
         )}
 
-        {/* ── Résultats (un bloc par type de comparaison) ── */}
-        {resultItems.length > 0 && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 16, animation: 'slideUp 0.35s ease' }}>
-
-            {/* Header */}
-            {selectedSubTypeId && (
-              <div style={{ textAlign: 'center', padding: '0 0 4px' }}>
-                <span style={{ fontSize: 13, color: '#94A3B8', fontWeight: 500 }}>
-                  Analyse pour : <strong style={{ color: '#7C3AED' }}>{getRelationshipLabel(selectedSubTypeId)}</strong>
-                </span>
-              </div>
-            )}
-
-            {resultItems.map((item) => {
-              const gs = scoreStyle(item.result.globalScore);
-              const isMental = item.codeType === 'mental';
-              return (
-                <div key={item.codeType} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-
-                  {/* Badge type */}
-                  {resultItems.length > 1 && (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <div style={{
-                        display: 'inline-flex', alignItems: 'center', gap: 6,
-                        padding: '6px 14px', borderRadius: 99,
-                        background: isMental ? 'linear-gradient(135deg,#EFF6FF,#DBEAFE)' : 'linear-gradient(135deg,#FDF4FF,#FAE8FF)',
-                        border: isMental ? '1.5px solid rgba(59,130,246,0.2)' : '1.5px solid rgba(192,38,211,0.2)',
-                        fontSize: 12, fontWeight: 700,
-                        color: isMental ? '#1D4ED8' : '#7E22CE',
-                      }}>
-                        <span>{isMental ? '🧠' : '💋'}</span>
-                        {isMental ? 'Compatibilité Psychologique' : 'Compatibilité Intime'}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Score global */}
-                  <div style={{ background: 'rgba(255,255,255,0.92)', backdropFilter: 'blur(18px)', border: '1.5px solid rgba(124,58,237,0.12)', borderRadius: 22, padding: '32px 24px', textAlign: 'center', boxShadow: '0 8px 40px rgba(124,58,237,0.08)' }}>
-                    <p style={{ margin: '0 0 20px', fontSize: 13, fontWeight: 600, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Score de compatibilité</p>
-                    <div style={{ position: 'relative', width: 140, height: 140, margin: '0 auto 20px' }}>
-                      <svg width="140" height="140" viewBox="0 0 140 140" style={{ transform: 'rotate(-90deg)' }}>
-                        <circle cx="70" cy="70" r="58" fill="none" stroke={`${gs.color}18`} strokeWidth="10" />
-                        <circle
-                          cx="70" cy="70" r="58" fill="none"
-                          stroke={gs.color} strokeWidth="10"
-                          strokeLinecap="round"
-                          strokeDasharray={`${2 * Math.PI * 58}`}
-                          strokeDashoffset={`${2 * Math.PI * 58 * (1 - item.result.globalScore / 100)}`}
-                          style={{ transition: 'stroke-dashoffset 1.2s cubic-bezier(0.4,0,0.2,1)' }}
-                        />
-                      </svg>
-                      <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-                        <span style={{ fontSize: 36, fontWeight: 900, color: gs.color, lineHeight: 1 }}>{item.result.globalScore}</span>
-                        <span style={{ fontSize: 12, fontWeight: 600, color: '#94A3B8' }}>/ 100</span>
-                      </div>
-                    </div>
-                    <p style={{ margin: 0, fontSize: 16, fontWeight: 700, color: gs.color }}>{gs.label}</p>
-                  </div>
-
-                  {/* Dimensions */}
-                  {Object.keys(item.result.dimensionScores).length > 0 && (
-                    <div style={{ background: 'rgba(255,255,255,0.92)', backdropFilter: 'blur(18px)', border: '1.5px solid rgba(124,58,237,0.12)', borderRadius: 22, padding: '22px 24px', boxShadow: '0 4px 24px rgba(124,58,237,0.06)' }}>
-                      <p style={{ margin: '0 0 18px', fontSize: 13, fontWeight: 700, color: '#0A2342', display: 'flex', alignItems: 'center', gap: 6 }}>
-                        <span>📊</span> Compatibilité par dimension
-                      </p>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-                        {Object.entries(item.result.dimensionScores).map(([dim, score]) => {
-                          const s = scoreStyle(score);
-                          return (
-                            <div key={dim}>
-                              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
-                                <span style={{ fontSize: 13, fontWeight: 600, color: '#374151' }}>{dim}</span>
-                                <span style={{ fontSize: 13, fontWeight: 800, color: s.color }}>{score}</span>
-                              </div>
-                              <div style={{ height: 8, background: '#F1F5F9', borderRadius: 99, overflow: 'hidden' }}>
-                                <div style={{ height: '100%', width: `${score}%`, background: s.bar, borderRadius: 99, transition: 'width 1s cubic-bezier(0.4,0,0.2,1)' }} />
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Points forts & tensions */}
-                  {(item.result.strengths.length > 0 || item.result.tensions.length > 0) && (
-                    <div style={{ display: 'grid', gridTemplateColumns: item.result.strengths.length > 0 && item.result.tensions.length > 0 ? '1fr 1fr' : '1fr', gap: 14 }}>
-                      {item.result.strengths.length > 0 && (
-                        <div style={{ background: 'rgba(240,253,244,0.95)', border: '1.5px solid rgba(22,163,74,0.2)', borderRadius: 18, padding: '18px 20px' }}>
-                          <p style={{ margin: '0 0 12px', fontSize: 13, fontWeight: 700, color: '#15803D', display: 'flex', alignItems: 'center', gap: 6 }}>
-                            <span>💚</span> Points forts
-                          </p>
-                          <ul style={{ margin: 0, padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 8 }}>
-                            {item.result.strengths.map((s, i) => (
-                              <li key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 8, fontSize: 13, color: '#166534', lineHeight: 1.5 }}>
-                                <span style={{ flexShrink: 0 }}>✓</span>{s}
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                      )}
-                      {item.result.tensions.length > 0 && (
-                        <div style={{ background: 'rgba(255,247,237,0.95)', border: '1.5px solid rgba(234,88,12,0.2)', borderRadius: 18, padding: '18px 20px' }}>
-                          <p style={{ margin: '0 0 12px', fontSize: 13, fontWeight: 700, color: '#C2410C', display: 'flex', alignItems: 'center', gap: 6 }}>
-                            <span>🔶</span> Zones à explorer
-                          </p>
-                          <ul style={{ margin: 0, padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 8 }}>
-                            {item.result.tensions.map((t, i) => (
-                              <li key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 8, fontSize: 13, color: '#9A3412', lineHeight: 1.5 }}>
-                                <span style={{ flexShrink: 0 }}>◆</span>{t}
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                      )}
-                    </div>
-                  )}
-
-                  {/* Narrative Dr Lo */}
-                  {item.result.claudeNarrative && (
-                    <div style={{ background: 'rgba(255,255,255,0.92)', backdropFilter: 'blur(18px)', border: '1.5px solid rgba(124,58,237,0.12)', borderRadius: 22, padding: '22px 24px' }}>
-                      <p style={{ margin: '0 0 12px', fontSize: 13, fontWeight: 700, color: '#7C3AED', display: 'flex', alignItems: 'center', gap: 6 }}>
-                        <span>👨‍⚕️</span> Analyse du Dr Lo
-                      </p>
-                      <p style={{ margin: 0, fontSize: 14, color: '#374151', lineHeight: 1.75, whiteSpace: 'pre-wrap' }}>{item.result.claudeNarrative}</p>
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-
-            {/* Nouveau calcul */}
+        {/* ── Résultat fusionné ── */}
+        {currentResult && (
+          <>
+            {renderMergedResult(currentResult, currentPartnerPrenom)}
             <button
-              onClick={() => { setResultItems([]); setPartnerMentalId(''); setPartnerSexualId(''); setFormError(null); setSelectedSubTypeId(null); setMainCategoryId(null); }}
-              style={{ width: '100%', padding: '14px 0', borderRadius: 14, border: '1.5px solid rgba(124,58,237,0.18)', background: 'rgba(255,255,255,0.8)', color: '#7C3AED', fontSize: 14, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, transition: 'all 0.15s' }}
+              onClick={() => { setCurrentResult(null); setCurrentPartnerPrenom(''); setPartnerMentalId(''); setPartnerSexualId(''); setFormError(null); setSelectedSubTypeId(null); setMainCategoryId(null); }}
+              style={{ width: '100%', marginTop: 16, padding: '14px 0', borderRadius: 14, border: '1.5px solid rgba(124,58,237,0.18)', background: 'rgba(255,255,255,0.8)', color: '#7C3AED', fontSize: 14, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, transition: 'all 0.15s' }}
             >
               🔄 Nouveau calcul
             </button>
-          </div>
+          </>
         )}
 
         {/* ── Historique ── */}
@@ -788,13 +880,15 @@ const CompatibilityPage: React.FC = () => {
                 {history.map((entry) => {
                   const hs = scoreStyle(entry.result.globalScore);
                   const isExpanded = expandedHistory === entry.id;
-                  const isMentalEntry = entry.codeType === 'mental';
+                  const isMergedEntry = entry.codeType === 'merged';
+                  const hasMentalScore = entry.result.mentalScore !== undefined && entry.result.mentalScore !== null;
+                  const hasIntimateScore = entry.result.intimateScore !== undefined && entry.result.intimateScore !== null;
 
-                  // Check evolution: find previous entries with same partnerCode
+                  // Evolution
                   const samePartnerEntries = history.filter(h => h.partnerCode === entry.partnerCode && h.codeType === entry.codeType);
-                  const prevEntry = samePartnerEntries.find((h, i) => {
+                  const prevEntry = samePartnerEntries.find((_, i) => {
                     const currentIdx = samePartnerEntries.indexOf(entry);
-                    return i === currentIdx + 1; // next in desc order = previous in time
+                    return i === currentIdx + 1;
                   });
                   const evolution = prevEntry ? entry.result.globalScore - prevEntry.result.globalScore : null;
 
@@ -805,22 +899,18 @@ const CompatibilityPage: React.FC = () => {
                         onClick={() => setExpandedHistory(isExpanded ? null : entry.id)}
                         style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 12, padding: '14px 16px', background: 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left' }}
                       >
-                        <span style={{ fontSize: 20, flexShrink: 0 }}>{isMentalEntry ? '🧠' : '💋'}</span>
+                        <span style={{ fontSize: 20, flexShrink: 0 }}>{isMergedEntry ? '💑' : entry.codeType === 'mental' ? '🧠' : '💋'}</span>
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <p style={{ margin: '0 0 2px', fontSize: 13, fontWeight: 700, color: '#0A2342', lineHeight: 1.3 }}>
-                            {entry.partnerPrenom ? (
-                              <span style={{ color: '#7C3AED' }}>{entry.partnerPrenom}</span>
-                            ) : null}
+                            {entry.partnerPrenom && <span style={{ color: '#7C3AED' }}>{entry.partnerPrenom}</span>}
                             {entry.partnerPrenom ? ' · ' : ''}
                             {getRelationshipLabel(entry.relationshipType)}
                             <span style={{ marginLeft: 8, fontSize: 11, fontWeight: 500, color: '#94A3B8' }}>
-                              {isMentalEntry ? '· Mental' : '· Intime'}
+                              {isMergedEntry ? '· Fusionné' : entry.codeType === 'mental' ? '· Mental' : '· Intime'}
                             </span>
                           </p>
                           <p style={{ margin: 0, fontSize: 11, color: '#94A3B8' }}>
                             {entry.createdAt.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}
-                            {' · '}
-                            <code style={{ fontSize: 11, fontFamily: 'monospace', color: '#6D28D9' }}>{entry.partnerCode}</code>
                           </p>
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
@@ -840,9 +930,9 @@ const CompatibilityPage: React.FC = () => {
                           </svg>
                         </div>
                       </button>
+
                       {/* Action buttons */}
                       <div style={{ padding: '0 12px 10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        {/* Recalculate */}
                         <button
                           onClick={(e) => { e.stopPropagation(); handleRecalculate(entry); }}
                           disabled={recalculatingId === entry.id}
@@ -864,7 +954,6 @@ const CompatibilityPage: React.FC = () => {
                             <>🔄 Recalculer</>
                           )}
                         </button>
-                        {/* Delete */}
                         <button
                           onClick={async (e) => {
                             e.stopPropagation();
@@ -905,7 +994,21 @@ const CompatibilityPage: React.FC = () => {
                         <div style={{ padding: '0 16px 16px', animation: 'slideDown 0.2s ease' }}>
                           <div style={{ height: 1, background: 'linear-gradient(90deg, transparent, rgba(124,58,237,0.12), transparent)', marginBottom: 14 }} />
 
-                          {/* Barre de score */}
+                          {/* Sub-scores for merged */}
+                          {isMergedEntry && hasMentalScore && hasIntimateScore && (
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 14 }}>
+                              <div style={{ background: '#EFF6FF', borderRadius: 10, padding: '10px 12px', textAlign: 'center' }}>
+                                <span style={{ fontSize: 14 }}>🧠</span>
+                                <p style={{ margin: '2px 0 0', fontSize: 16, fontWeight: 900, color: scoreStyle(entry.result.mentalScore!).color }}>{entry.result.mentalScore}<span style={{ fontSize: 10, color: '#94A3B8' }}>/100</span></p>
+                              </div>
+                              <div style={{ background: '#FDF4FF', borderRadius: 10, padding: '10px 12px', textAlign: 'center' }}>
+                                <span style={{ fontSize: 14 }}>💜</span>
+                                <p style={{ margin: '2px 0 0', fontSize: 16, fontWeight: 900, color: scoreStyle(entry.result.intimateScore!).color }}>{entry.result.intimateScore}<span style={{ fontSize: 10, color: '#94A3B8' }}>/100</span></p>
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Score bar */}
                           <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 14 }}>
                             <div style={{ flex: 1, height: 8, background: '#F1F5F9', borderRadius: 99, overflow: 'hidden' }}>
                               <div style={{ height: '100%', width: `${entry.result.globalScore}%`, background: hs.bar, borderRadius: 99 }} />

@@ -451,21 +451,6 @@ const OptimizedHomePage: React.FC = () => {
               <ArrowRight size={20} />
             </button>
 
-            <Link
-              to="/assessment/compatibility"
-              className="he-btn-secondary flex items-center justify-center gap-2 px-7 py-4 rounded-2xl font-semibold w-full sm:w-auto"
-              style={{
-                background: "rgba(255,255,255,0.88)",
-                border: "2px solid rgba(45,212,191,0.45)",
-                color: "#0A2342",
-                backdropFilter: "blur(8px)",
-                textDecoration: "none",
-                minWidth: 210,
-              }}
-            >
-              <span style={{ fontSize: 18 }}>💑</span>
-              Tester ma compatibilité
-            </Link>
           </div>
 
           {/* Trust indicators */}

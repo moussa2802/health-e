@@ -133,6 +133,11 @@ export interface CompatibilityRequest {
 export interface CompatibilityResult {
   globalScore: number;
   dimensionScores: Record<string, number>;
+  mentalScore?: number;
+  intimateScore?: number;
+  mentalDimensionScores?: Record<string, number>;
+  intimateDimensionScores?: Record<string, number>;
+  isPartialResult?: boolean;
   strengths: string[];
   tensions: string[];
   recommendations: string[];
