@@ -308,11 +308,21 @@ const AssessmentHomePage: React.FC = () => {
 
         {/* ── Séparateur + Compatibilité ── */}
         {isAuthenticated && (() => {
-          const mainCompleted = mentalCompleted + sexualCompleted;
-          const mainTotal = mentalTotal + sexualTotal;
-          const isUnlocked = mainCompleted >= mainTotal;
+          const MENTAL_THRESHOLD = 8;
+          const SEXUAL_THRESHOLD = 5;
+          const mentalOk = mentalCompleted >= MENTAL_THRESHOLD;
+          const sexualOk = sexualCompleted >= SEXUAL_THRESHOLD;
+          const isUnlocked = mentalOk && sexualOk;
           const compatCost = KORIS_COSTS.compatibility;
           const hasKoris = canAfford('compatibility');
+
+          const mentalMissing = Math.max(0, MENTAL_THRESHOLD - mentalCompleted);
+          const sexualMissing = Math.max(0, SEXUAL_THRESHOLD - sexualCompleted);
+          const totalMissing = mentalMissing + sexualMissing;
+          const isClose = totalMissing > 0 && totalMissing <= 3;
+
+          // Which category needs the most work?
+          const worstCategory = mentalMissing >= sexualMissing ? '/assessment/mental' : '/assessment/sexual';
 
           return (
             <div style={{ marginTop: 20 }}>
@@ -321,9 +331,8 @@ const AssessmentHomePage: React.FC = () => {
                 background: 'white',
                 border: `2px solid ${isUnlocked ? 'rgba(236,72,153,0.2)' : 'rgba(148,163,184,0.2)'}`,
                 borderRadius: 18, padding: '20px 24px',
-                opacity: isUnlocked ? 1 : 0.7,
               }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 10 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 14 }}>
                   <span style={{ fontSize: 28 }}>💑</span>
                   <div>
                     <p style={{ margin: 0, fontSize: 16, fontWeight: 800, color: '#0A2342' }}>Compatibilité</p>
@@ -334,35 +343,107 @@ const AssessmentHomePage: React.FC = () => {
                 </div>
 
                 {isUnlocked ? (
-                  <button
-                    onClick={() => navigate('/assessment/compatibility')}
-                    style={{
-                      width: '100%', padding: '12px 20px', borderRadius: 14, border: 'none',
-                      background: hasKoris
-                        ? 'linear-gradient(135deg, #EC4899, #8B5CF6)'
-                        : 'linear-gradient(135deg, #94A3B8, #CBD5E1)',
-                      color: '#fff', fontSize: 14, fontWeight: 700, cursor: 'pointer',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-                      boxShadow: hasKoris ? '0 4px 16px rgba(236,72,153,0.25)' : 'none',
-                    }}
-                  >
-                    💑 Tester la compatibilité
-                    <span style={{
-                      display: 'inline-flex', alignItems: 'center', gap: 3,
-                      background: 'rgba(255,255,255,0.2)', padding: '2px 8px', borderRadius: 10,
-                      fontSize: 12, fontWeight: 800,
-                    }}>
-                      <img src="/kori.png" alt="" style={{ width: 14, height: 14, borderRadius: '50%', objectFit: 'cover' }} />
-                      {compatCost}
-                    </span>
-                  </button>
+                  <>
+                    <button
+                      onClick={() => navigate('/assessment/compatibility')}
+                      style={{
+                        width: '100%', padding: '12px 20px', borderRadius: 14, border: 'none',
+                        background: hasKoris
+                          ? 'linear-gradient(135deg, #EC4899, #8B5CF6)'
+                          : 'linear-gradient(135deg, #94A3B8, #CBD5E1)',
+                        color: '#fff', fontSize: 14, fontWeight: 700, cursor: 'pointer',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                        boxShadow: hasKoris ? '0 4px 16px rgba(236,72,153,0.25)' : 'none',
+                      }}
+                    >
+                      💑 Tester la compatibilité
+                      <span style={{
+                        display: 'inline-flex', alignItems: 'center', gap: 3,
+                        background: 'rgba(255,255,255,0.2)', padding: '2px 8px', borderRadius: 10,
+                        fontSize: 12, fontWeight: 800,
+                      }}>
+                        <img src="/kori.png" alt="" style={{ width: 14, height: 14, borderRadius: '50%', objectFit: 'cover' }} />
+                        {compatCost}
+                      </span>
+                    </button>
+                  </>
                 ) : (
-                  <div style={{
-                    width: '100%', padding: '12px 20px', borderRadius: 14,
-                    background: '#F1F5F9', textAlign: 'center',
-                    fontSize: 12, color: '#64748B', fontWeight: 600,
-                  }}>
-                    🔒 Complète tes {mainTotal} évaluations pour débloquer ({mainCompleted}/{mainTotal})
+                  <div>
+                    <p style={{ margin: '0 0 12px', fontSize: 12, fontWeight: 600, color: '#64748B' }}>
+                      🔒 Pour débloquer, il te faut :
+                    </p>
+
+                    {/* Mental progress */}
+                    <div style={{ marginBottom: 10 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+                        <span style={{ fontSize: 12, fontWeight: 600, color: '#374151' }}>
+                          🧠 Profil psychologique
+                        </span>
+                        <span style={{ fontSize: 11, fontWeight: 700, color: mentalOk ? '#059669' : '#94A3B8' }}>
+                          {mentalCompleted}/{MENTAL_THRESHOLD} min.
+                          {mentalOk && ' ✅'}
+                        </span>
+                      </div>
+                      <div style={{ height: 6, borderRadius: 3, background: '#F1F5F9', overflow: 'hidden' }}>
+                        <div style={{
+                          height: '100%',
+                          width: `${Math.min(100, (mentalCompleted / MENTAL_THRESHOLD) * 100)}%`,
+                          background: mentalOk ? '#059669' : 'linear-gradient(90deg,#3B82F6,#93C5FD)',
+                          borderRadius: 3, transition: 'width 0.3s',
+                        }} />
+                      </div>
+                      {!mentalOk && (
+                        <p style={{ margin: '3px 0 0', fontSize: 10, color: '#94A3B8' }}>
+                          encore {mentalMissing} test{mentalMissing > 1 ? 's' : ''}
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Sexual progress */}
+                    <div style={{ marginBottom: 12 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+                        <span style={{ fontSize: 12, fontWeight: 600, color: '#374151' }}>
+                          💋 Vie intime
+                        </span>
+                        <span style={{ fontSize: 11, fontWeight: 700, color: sexualOk ? '#059669' : '#94A3B8' }}>
+                          {sexualCompleted}/{SEXUAL_THRESHOLD} min.
+                          {sexualOk && ' ✅'}
+                        </span>
+                      </div>
+                      <div style={{ height: 6, borderRadius: 3, background: '#F1F5F9', overflow: 'hidden' }}>
+                        <div style={{
+                          height: '100%',
+                          width: `${Math.min(100, (sexualCompleted / SEXUAL_THRESHOLD) * 100)}%`,
+                          background: sexualOk ? '#059669' : 'linear-gradient(90deg,#C026D3,#F0ABFC)',
+                          borderRadius: 3, transition: 'width 0.3s',
+                        }} />
+                      </div>
+                      {!sexualOk && (
+                        <p style={{ margin: '3px 0 0', fontSize: 10, color: '#94A3B8' }}>
+                          encore {sexualMissing} test{sexualMissing > 1 ? 's' : ''}
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Encouragement message */}
+                    {isClose && (
+                      <p style={{ margin: '0 0 10px', fontSize: 12, fontWeight: 600, color: '#D97706', textAlign: 'center' }}>
+                        Plus que {totalMissing} test{totalMissing > 1 ? 's' : ''} et tu débloqueras la compatibilité ! 💪
+                      </p>
+                    )}
+
+                    {/* CTA to continue */}
+                    <button
+                      onClick={() => navigate(worstCategory)}
+                      style={{
+                        width: '100%', padding: '10px 16px', borderRadius: 12, border: 'none',
+                        background: 'linear-gradient(135deg, #EFF6FF, #F0FDF4)',
+                        color: '#1E40AF', fontSize: 13, fontWeight: 600, cursor: 'pointer',
+                        border: '1px solid rgba(59,130,246,0.15)',
+                      } as React.CSSProperties}
+                    >
+                      Continuer mes évaluations →
+                    </button>
                   </div>
                 )}
               </div>
