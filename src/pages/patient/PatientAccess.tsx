@@ -182,18 +182,19 @@ const PatientAccess: React.FC = () => {
     }
   }, [isAuthenticated, currentUser, step, navigate]);
 
-  // ---- Google Sign-In (redirect — page will reload after Google auth) ----
+  // ---- Google Sign-In (popup, with redirect fallback) ----
   const onGoogleSignIn = async () => {
     setErr("");
     setGoogleLoading(true);
     try {
-      // Store pending group therapy info so it survives the redirect
+      // Store pending group therapy info so it survives a possible redirect fallback
       const pendingSessionId = getPendingGroupTherapySessionId();
       if (pendingSessionId) {
         localStorage.setItem("he_google_pending_group_session", pendingSessionId);
       }
       await signInWithGoogle();
-      // signInWithRedirect navigates away — code below won't execute
+      // Popup succeeded — navigate directly to assessment
+      navigate("/assessment");
     } catch (e: any) {
       setErr(e?.message || "Erreur lors de la connexion Google.");
       setGoogleLoading(false);
