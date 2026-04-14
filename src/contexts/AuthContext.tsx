@@ -15,7 +15,9 @@ import {
   sendEmailVerification,
   createUserWithEmailAndPassword,
   sendPasswordResetEmail,
+  signInWithPopup,
   signInWithRedirect,
+  linkWithPopup,
   linkWithRedirect,
   getRedirectResult,
   GoogleAuthProvider,
@@ -215,25 +217,48 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
         if (userDoc.exists()) {
           const userData = userDoc.data();
-          // Ne récupérer serviceType et specialty que pour les professionnels
           const userType = userData.type || null;
           const userEmail = userData.email || firebaseUser.email || "";
 
-    
           setCurrentUser({
             id: firebaseUser.uid,
             name: userData.name || "",
             email: userEmail,
             type: userType,
             profileImage: userData.profileImage,
-            // Seuls les professionnels ont besoin de serviceType et specialty
             ...(userType === "professional" && {
               serviceType: userData.serviceType,
               specialty: userData.specialty,
             }),
           });
         } else {
-          setCurrentUser(null);
+          // Firestore doc missing — if Google user, auto-create patient profile
+          const isGoogleUser = firebaseUser.providerData.some(p => p.providerId === "google.com");
+          if (isGoogleUser) {
+            console.log("⚠️ [AUTH] Google user sans doc Firestore — création automatique");
+            const newUser = {
+              id: firebaseUser.uid,
+              name: firebaseUser.displayName || "",
+              email: firebaseUser.email || "",
+              type: "patient",
+              isActive: true,
+              profileImage: firebaseUser.photoURL || null,
+              authProvider: "google",
+              createdAt: serverTimestamp(),
+              updatedAt: serverTimestamp(),
+            };
+            await setDoc(doc(db, "users", firebaseUser.uid), newUser);
+            await createDefaultPatientProfile(firebaseUser.uid, firebaseUser.displayName || "", firebaseUser.email || "", "");
+            setCurrentUser({
+              id: firebaseUser.uid,
+              name: firebaseUser.displayName || "",
+              email: firebaseUser.email || "",
+              type: "patient",
+              profileImage: firebaseUser.photoURL || null,
+            });
+          } else {
+            setCurrentUser(null);
+          }
         }
       }
     } catch (firestoreError) {
@@ -535,33 +560,103 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     }
   };
 
-  // ── Google Sign-In (redirect mode — avoids COOP issues on mobile) ──
+  // ── Google Sign-In (popup first, redirect fallback for mobile COOP) ──
   const signInWithGoogleHandler = async (): Promise<void> => {
     try {
-      localStorage.setItem("he_google_redirect_type", "signin");
-      await signInWithRedirect(auth, googleProvider);
-      // The page will redirect — execution stops here.
-      // On return, processGoogleRedirectResult() handles the rest.
-    } catch (error: any) {
-      console.error("Google sign-in redirect error:", error);
-      localStorage.removeItem("he_google_redirect_type");
+      // Try popup first — immediate result, no page reload, works on most browsers
+      const result = await signInWithPopup(auth, googleProvider);
+      const firebaseUser = result.user;
+
+      // Create Firestore docs if new user
+      await ensureFirestoreReady();
+      const db = getFirestoreInstance();
+      if (db) {
+        const userDoc = await getDoc(doc(db, "users", firebaseUser.uid));
+        if (!userDoc.exists()) {
+          const newUser = {
+            id: firebaseUser.uid,
+            name: firebaseUser.displayName || "",
+            email: firebaseUser.email || "",
+            type: "patient",
+            isActive: true,
+            profileImage: firebaseUser.photoURL || null,
+            authProvider: "google",
+            createdAt: serverTimestamp(),
+            updatedAt: serverTimestamp(),
+          };
+          await setDoc(doc(db, "users", firebaseUser.uid), newUser);
+          await createDefaultPatientProfile(firebaseUser.uid, firebaseUser.displayName || "", firebaseUser.email || "", "");
+          localStorage.setItem("he_new_account", "true");
+          console.log("✅ [GOOGLE] Nouveau compte créé via popup");
+        } else {
+          console.log("✅ [GOOGLE] Utilisateur existant connecté via popup");
+        }
+      }
+    } catch (popupError: any) {
+      // Popup blocked or COOP error → fall back to redirect
+      if (
+        popupError?.code === "auth/popup-blocked" ||
+        popupError?.code === "auth/popup-closed-by-user" ||
+        popupError?.code === "auth/cancelled-popup-request" ||
+        popupError?.message?.includes("Cross-Origin-Opener-Policy")
+      ) {
+        console.log("⚠️ [GOOGLE] Popup bloqué, fallback redirect");
+        try {
+          localStorage.setItem("he_google_redirect_type", "signin");
+          await signInWithRedirect(auth, googleProvider);
+        } catch (redirectError: any) {
+          localStorage.removeItem("he_google_redirect_type");
+          throw new Error("Erreur lors de la connexion Google. Veuillez réessayer.");
+        }
+        return;
+      }
+      console.error("Google sign-in error:", popupError);
       throw new Error("Erreur lors de la connexion Google. Veuillez réessayer.");
     }
   };
 
-  // ── Link Google to existing phone-only account (redirect mode) ──
+  // ── Link Google to existing phone-only account (popup first, redirect fallback) ──
   const linkGoogleAccount = async (): Promise<void> => {
     const firebaseUser = auth.currentUser;
     if (!firebaseUser) throw new Error("Vous devez être connecté pour associer un compte Google.");
 
     try {
-      localStorage.setItem("he_google_redirect_type", "link");
-      await linkWithRedirect(firebaseUser, googleProvider);
-      // The page will redirect — execution stops here.
-      // On return, processGoogleRedirectResult() handles the Firestore update.
-    } catch (error: any) {
-      console.error("Google link redirect error:", error);
-      localStorage.removeItem("he_google_redirect_type");
+      // Try popup first
+      const result = await linkWithPopup(firebaseUser, googleProvider);
+      const linked = result.user;
+      const email = linked.email || "";
+      const photoURL = linked.photoURL || "";
+
+      await ensureFirestoreReady();
+      const db = getFirestoreInstance();
+      if (db) {
+        await setDoc(doc(db, "users", linked.uid), {
+          email, profileImage: photoURL || null, googleLinked: true,
+          googleLinkedAt: serverTimestamp(), updatedAt: serverTimestamp(),
+        }, { merge: true });
+        await setDoc(doc(db, "patients", linked.uid), {
+          email, profileImage: photoURL || null, updatedAt: serverTimestamp(),
+        }, { merge: true });
+      }
+      console.log("✅ [GOOGLE] Compte Google associé via popup");
+    } catch (popupError: any) {
+      if (
+        popupError?.code === "auth/popup-blocked" ||
+        popupError?.code === "auth/popup-closed-by-user" ||
+        popupError?.code === "auth/cancelled-popup-request" ||
+        popupError?.message?.includes("Cross-Origin-Opener-Policy")
+      ) {
+        console.log("⚠️ [GOOGLE] Popup bloqué, fallback redirect");
+        try {
+          localStorage.setItem("he_google_redirect_type", "link");
+          await linkWithRedirect(firebaseUser, googleProvider);
+        } catch (redirectError: any) {
+          localStorage.removeItem("he_google_redirect_type");
+          throw new Error("Erreur lors de l'association du compte Google. Veuillez réessayer.");
+        }
+        return;
+      }
+      console.error("Google link error:", popupError);
       throw new Error("Erreur lors de l'association du compte Google. Veuillez réessayer.");
     }
   };
