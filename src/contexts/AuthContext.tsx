@@ -174,7 +174,8 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         const userDoc = await getDoc(doc(db, "users", firebaseUser.uid));
 
         if (userDoc.exists()) {
-          // Existing user — onAuthStateChanged will handle login via fetchUserDataWithRetry
+          // Existing user — mark as Google in patients doc for admin stats
+          await setDoc(doc(db, "patients", firebaseUser.uid), { authProvider: "google", googleLinked: true }, { merge: true }).catch(() => {});
           console.log("✅ [GOOGLE] Utilisateur existant connecté après redirect");
         } else {
           // New user — create patient profile
@@ -192,6 +193,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
           await setDoc(doc(db, "users", firebaseUser.uid), newUser);
           await createDefaultPatientProfile(firebaseUser.uid, displayName, email, "");
+          await setDoc(doc(db, "patients", firebaseUser.uid), { authProvider: "google" }, { merge: true });
           localStorage.setItem("he_new_account", "true");
           console.log("✅ [GOOGLE] Nouveau compte créé après redirect");
         }
@@ -249,6 +251,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
             };
             await setDoc(doc(db, "users", firebaseUser.uid), newUser);
             await createDefaultPatientProfile(firebaseUser.uid, firebaseUser.displayName || "", firebaseUser.email || "", "");
+            await setDoc(doc(db, "patients", firebaseUser.uid), { authProvider: "google" }, { merge: true });
             setCurrentUser({
               id: firebaseUser.uid,
               name: firebaseUser.displayName || "",
@@ -586,9 +589,13 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
           };
           await setDoc(doc(db, "users", firebaseUser.uid), newUser);
           await createDefaultPatientProfile(firebaseUser.uid, firebaseUser.displayName || "", firebaseUser.email || "", "");
+          // Mark patient doc as Google auth for admin stats
+          await setDoc(doc(db, "patients", firebaseUser.uid), { authProvider: "google" }, { merge: true });
           localStorage.setItem("he_new_account", "true");
           console.log("✅ [GOOGLE] Nouveau compte créé via popup");
         } else {
+          // Ensure existing user has authProvider on patients doc
+          await setDoc(doc(db, "patients", firebaseUser.uid), { authProvider: "google", googleLinked: true }, { merge: true }).catch(() => {});
           console.log("✅ [GOOGLE] Utilisateur existant connecté via popup");
         }
       }
