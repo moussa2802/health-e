@@ -116,14 +116,24 @@ export async function getEvaluationStats(): Promise<EvaluationStats | null> {
 // ── Compute stats from raw Firestore data (full scan) ──
 
 export async function computeEvaluationStatsFromRaw(): Promise<EvaluationStats> {
-  // 1. Count patients and auth providers
+  // 1. Count patients and auth providers (cross-reference users collection for authProvider)
   const patientsSnap = await getDocs(collection(db, 'patients'));
+  const usersSnap = await getDocs(collection(db, 'users'));
+
+  // Build lookup: uid → authProvider from users collection (authoritative source)
+  const userAuthProviders = new Map<string, string>();
+  usersSnap.forEach(d => {
+    const data = d.data();
+    if (data.authProvider) userAuthProviders.set(d.id, data.authProvider);
+  });
+
   let googleUsers = 0;
   let phoneUsers = 0;
 
-  patientsSnap.forEach(doc => {
-    const data = doc.data();
-    if (data.googleLinked || data.authProvider === 'google') {
+  patientsSnap.forEach(d => {
+    const data = d.data();
+    const isGoogle = data.googleLinked || data.authProvider === 'google' || userAuthProviders.get(d.id) === 'google';
+    if (isGoogle) {
       googleUsers++;
     } else {
       phoneUsers++;
