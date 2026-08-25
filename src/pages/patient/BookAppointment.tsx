@@ -12,6 +12,7 @@ import {
   User,
   Info,
   Edit,
+  Loader2,
 } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -104,7 +105,7 @@ const BookAppointment: React.FC = () => {
   // Rediriger les utilisateurs non connectés vers la page de connexion
   useEffect(() => {
     if (!isAuthenticated) {
-      console.log("🔒 User not authenticated, redirecting to login");
+      console.log("User not authenticated, redirecting to login");
       navigate("/patient");
       return;
     }
@@ -125,7 +126,7 @@ const BookAppointment: React.FC = () => {
   const loadBookingToModify = async (bookingId: string) => {
     try {
       console.log(
-        "🔄 Mode modification activé pour le rendez-vous:",
+        "Mode modification activé pour le rendez-vous:",
         bookingId
       );
 
@@ -172,13 +173,13 @@ const BookAppointment: React.FC = () => {
           });
         }
 
-        console.log("✅ Données du rendez-vous chargées:", bookingData);
+        console.log("Données du rendez-vous chargées:", bookingData);
       } else {
         throw new Error("Rendez-vous introuvable");
       }
     } catch (error) {
       console.error(
-        "❌ Erreur lors du chargement du rendez-vous à modifier:",
+        "Erreur lors du chargement du rendez-vous à modifier:",
         error
       );
       setLocalError(
@@ -192,14 +193,14 @@ const BookAppointment: React.FC = () => {
       id: "mobile",
       name: "Mobile Money",
       type: "mobile",
-      icon: <Smartphone className="h-6 w-6 text-green-500" />,
+      icon: <Smartphone className="h-6 w-6 text-sage" />,
       description: "Paiement via mobile money (Wave, Orange Money, MTN, etc.)",
     },
     {
       id: "card",
       name: "Carte bancaire",
       type: "card",
-      icon: <CreditCard className="h-6 w-6 text-blue-500" />,
+      icon: <CreditCard className="h-6 w-6 text-accent" />,
       description: "Paiement sécurisé par carte bancaire",
     },
   ];
@@ -214,7 +215,7 @@ const BookAppointment: React.FC = () => {
         `professional_${professionalId}`
       );
       if (cachedData) {
-        console.log("📦 Loading professional from cache");
+        console.log("Loading professional from cache");
         const parsedData = JSON.parse(cachedData);
         setProfessional(parsedData);
 
@@ -272,7 +273,7 @@ const BookAppointment: React.FC = () => {
         );
 
         console.log(
-          `🔍 Chargement des jours disponibles du ${format(
+          `Chargement des jours disponibles du ${format(
             startOfCurrentMonth,
             "dd/MM/yyyy"
           )} au ${format(endOfNextMonth, "dd/MM/yyyy")}`
@@ -286,7 +287,7 @@ const BookAppointment: React.FC = () => {
         );
         setAvailableDays(days);
 
-        console.log(`✅ ${days.length} jours disponibles trouvés:`);
+        console.log(`${days.length} jours disponibles trouvés:`);
         days.forEach((day) => {
           console.log(
             `- ${format(day, "yyyy-MM-dd")} (${format(day, "EEEE", {
@@ -297,9 +298,9 @@ const BookAppointment: React.FC = () => {
 
         // Si aucun jour disponible n'est trouvé, afficher un message
         if (days.length === 0)
-          console.log("⚠️ Aucun jour disponible trouvé pour cette période");
+          console.log("Aucun jour disponible trouvé pour cette période");
       } catch (error) {
-        console.error("❌ Erreur lors du chargement des créneaux:", error);
+        console.error("Erreur lors du chargement des créneaux:", error);
       } finally {
         setLoading(false);
       }
@@ -315,12 +316,12 @@ const BookAppointment: React.FC = () => {
     const fetchAvailabilityData = async () => {
       try {
         console.log(
-          "🔍 Fetching availability data for professional:",
+          "Fetching availability data for professional:",
           professionalId
         );
         const data = await getProfessionalAvailabilityData(professionalId);
         setAvailabilityData(data);
-        console.log("✅ Availability data fetched successfully:", data);
+        console.log("Availability data fetched successfully:", data);
 
         // Initialize selected day if available
         if (data.length > 0) {
@@ -331,7 +332,7 @@ const BookAppointment: React.FC = () => {
           setAvailableSlots(firstDaySlots);
         }
       } catch (error) {
-        console.error("❌ Error fetching availability data:", error);
+        console.error("Error fetching availability data:", error);
       }
     };
 
@@ -343,17 +344,17 @@ const BookAppointment: React.FC = () => {
     if (!professionalId) return;
 
     if (professionals.length > 0) {
-      console.log("🔍 Looking for professional with ID:", professionalId);
+      console.log("Looking for professional with ID:", professionalId);
 
       const found = professionals.find((p) => p.id === professionalId);
       if (found) {
         if (!found.isActive || !found.isApproved) {
           // Vérifie si le professionnel est approuvé et actif
-          console.warn("⛔️ Ce professionnel est inactif ou non approuvé");
+          console.warn("Ce professionnel est inactif ou non approuvé");
           navigate("/"); // ou '/not-available' si tu veux une page personnalisée
           return;
         }
-        console.log("✅ Professional found:", found.name || "Unknown");
+        console.log("Professional found:", found.name || "Unknown");
         setProfessional(found);
         setLoading(false);
 
@@ -395,20 +396,20 @@ const BookAppointment: React.FC = () => {
   useEffect(() => {
     if (!professional || !selectedDay) return;
 
-    console.log(`📅 Day changed to: ${selectedDay}`);
+    console.log(`Day changed to: ${selectedDay}`);
 
     const dayAvailability = professional?.availability?.find(
       (avail: any) => avail?.day === selectedDay
     );
-    console.log("🔍 Found day availability:", dayAvailability);
+    console.log("Found day availability:", dayAvailability);
 
     // FIXED: Use slots directly from the availability data with safety checks
     const slots = dayAvailability?.slots || [];
     if (!Array.isArray(slots)) {
-      console.warn("⚠️ Slots is not an array:", slots);
+      console.warn("Slots is not an array:", slots);
       setAvailableSlots([]);
     } else {
-      console.log("🕐 Available slots from Firestore:", slots);
+      console.log("Available slots from Firestore:", slots);
       setAvailableSlots(slots);
     }
 
@@ -479,7 +480,7 @@ const BookAppointment: React.FC = () => {
     }
 
     if (!professional || !currentUser) {
-      console.error("❌ Professional or user data missing");
+      console.error("Professional or user data missing");
       return;
     }
 
@@ -496,12 +497,12 @@ const BookAppointment: React.FC = () => {
         currentUser.name || "Patient"
       );
 
-      console.log("✅ Instant consultation request created:", consultationId);
+      console.log("Instant consultation request created:", consultationId);
 
       // Navigate to the consultation room
       navigate(`/consultation/${consultationId}`);
     } catch (error) {
-      console.error("❌ Error in handleInstantConsultation:", error);
+      console.error("Error in handleInstantConsultation:", error);
       setIsRequestingInstant(false);
       alert("Une erreur est survenue. Veuillez réessayer.");
     }
@@ -542,7 +543,7 @@ const BookAppointment: React.FC = () => {
   const handlePayment = async () => {
     if (!currentUser || !professional) {
       setPaymentError("Informations utilisateur manquantes");
-      console.log("❌ Current user or professional missing");
+      console.log("Current user or professional missing");
       return;
     }
 
@@ -553,7 +554,7 @@ const BookAppointment: React.FC = () => {
       // Ensure Firestore is ready before operation
       await ensureFirestoreReady();
 
-      console.log("✅ Firestore ready for booking creation");
+      console.log("Firestore ready for booking creation");
 
       // For testing mode, use current date and time
       let dateString, startTime, endTime;
@@ -583,7 +584,7 @@ const BookAppointment: React.FC = () => {
         }
 
         dateString = format(dateObj, "yyyy-MM-dd");
-        console.log("📅 Using selected date from timeSlot:", dateString);
+        console.log("Using selected date from timeSlot:", dateString);
       } else {
         // Fallback au cas où selectedTimeSlot n'est pas disponible
         const today = new Date();
@@ -607,7 +608,7 @@ const BookAppointment: React.FC = () => {
           );
           dateString = format(targetDate, "yyyy-MM-dd");
           console.log(
-            "📅 Using calculated date from selectedDay:",
+            "Using calculated date from selectedDay:",
             dateString,
             "for day:",
             selectedDay
@@ -615,7 +616,7 @@ const BookAppointment: React.FC = () => {
         } else {
           // Fallback ultime : utiliser la date d'aujourd'hui
           dateString = format(today, "yyyy-MM-dd");
-          console.log("📅 Using fallback date (today):", dateString);
+          console.log("Using fallback date (today):", dateString);
         }
       }
 
@@ -627,7 +628,7 @@ const BookAppointment: React.FC = () => {
       }
 
       console.log(
-        "📅 Creating booking with date:",
+        "Creating booking with date:",
         dateString,
         "time:",
         startTime
@@ -635,7 +636,7 @@ const BookAppointment: React.FC = () => {
 
       // IMPORTANT: Vérifier que les heures sont correctes avant de créer la réservation
       console.log(
-        "⏰ Heures de réservation - Début:",
+        "Heures de réservation - Début:",
         startTime,
         "- Fin:",
         endTime
@@ -654,17 +655,17 @@ const BookAppointment: React.FC = () => {
         duration: 60, // 60 minutes par défaut
         price: professional.price || 0,
       };
-      console.log("🔍 Booking Data to be saved:", bookingData);
+      console.log("Booking Data to be saved:", bookingData);
       console.log(
-        "👤 Current User ID (should match patientId):",
+        "Current User ID (should match patientId):",
         currentUser.id
       );
-      console.log("🩺 Professional ID:", professional.id);
+      console.log("Professional ID:", professional.id);
 
       // Gérer la modification d'un rendez-vous existant
       if (isModifying && bookingToModify?.id) {
         console.log(
-          "🔄 Mode modification - Mise à jour du rendez-vous:",
+          "Mode modification - Mise à jour du rendez-vous:",
           bookingToModify.id
         );
 
@@ -681,11 +682,11 @@ const BookAppointment: React.FC = () => {
         .toString(36)
         .substr(2, 9)}`;
       console.log(
-        "🔔 [PAYMENT] Generated temporary booking ID:",
+        "[PAYMENT] Generated temporary booking ID:",
         tempBookingId
       );
 
-      // 📝 Écrire la réservation "pending" AVANT d'appeler PayTech
+      // Écrire la réservation "pending" AVANT d'appeler PayTech
       const db = getFirestoreInstance();
       // Calculer les bonnes valeurs de date et heure de fin
       const timeToUse = selectedTimeSlot?.time || selectedTime;
@@ -739,10 +740,10 @@ const BookAppointment: React.FC = () => {
       };
 
       await setDoc(doc(db, "bookings", tempBookingId), tempBookingData);
-      console.log("📝 [PAYMENT] Temporary booking created in database");
+      console.log("[PAYMENT] Temporary booking created in database");
 
       // Préparer les données de paiement
-      console.log("🔔 [PAYMENT] Preparing payment data for:", tempBookingId);
+      console.log("[PAYMENT] Preparing payment data for:", tempBookingId);
 
       // Initier le paiement PayTech
       try {
@@ -793,7 +794,7 @@ const BookAppointment: React.FC = () => {
           return;
         }
 
-        console.log("🔔 [PAYTECH] Initiating payment with data:", paymentData);
+        console.log("[PAYTECH] Initiating payment with data:", paymentData);
 
         // Valider les données de paiement
         if (!paytechService.validatePaymentData(paymentData)) {
@@ -803,18 +804,18 @@ const BookAppointment: React.FC = () => {
         // Initier le paiement
         const response = await paytechService.initiatePayment(paymentData);
 
-        console.log("✅ [PAYTECH] Payment initiated successfully:", response);
+        console.log("[PAYTECH] Payment initiated successfully:", response);
 
         // Rediriger vers PayTech
         paytechService.redirectToPayment(response.redirect_url);
       } catch (paymentError) {
-        console.error("❌ [PAYTECH] Payment error:", paymentError);
+        console.error("[PAYTECH] Payment error:", paymentError);
 
         // En cas d'erreur de paiement, rediriger vers la page de succès avec un message d'erreur
         navigate(`/appointment-success/${tempBookingId}?payment_error=true`);
       }
     } catch (error) {
-      console.error("❌ Error during booking creation:", error);
+      console.error("Error during booking creation:", error);
       setPaymentError(
         "Une erreur est survenue lors de la réservation. Veuillez réessayer."
       );
@@ -826,7 +827,7 @@ const BookAppointment: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    console.log("🔍 handleSubmit called with:", {
+    console.log("handleSubmit called with:", {
       selectedTimeSlot: selectedTimeSlot
         ? {
             id: selectedTimeSlot.id,
@@ -851,7 +852,7 @@ const BookAppointment: React.FC = () => {
 
     // Validation améliorée avec logs détaillés
     if (!selectedTimeSlot) {
-      console.log("❌ Validation failed: selectedTimeSlot is missing");
+      console.log("Validation failed: selectedTimeSlot is missing");
       alert("Veuillez sélectionner un créneau dans le calendrier");
       return;
     }
@@ -859,29 +860,29 @@ const BookAppointment: React.FC = () => {
     // Utiliser selectedTimeSlot.time si selectedTime est vide
     const timeToUse = selectedTime || selectedTimeSlot?.time;
     if (!timeToUse) {
-      console.log("❌ Validation failed: selectedTime is missing");
-      console.log("❌ selectedTime:", selectedTime);
-      console.log("❌ selectedTimeSlot.time:", selectedTimeSlot?.time);
+      console.log("Validation failed: selectedTime is missing");
+      console.log("selectedTime:", selectedTime);
+      console.log("selectedTimeSlot.time:", selectedTimeSlot?.time);
       alert("Veuillez sélectionner une heure");
       return;
     }
 
     // Mettre à jour selectedTime si nécessaire
     if (!selectedTime && selectedTimeSlot?.time) {
-      console.log("🔄 Updating selectedTime from selectedTimeSlot");
+      console.log("Updating selectedTime from selectedTimeSlot");
       setSelectedTime(selectedTimeSlot.time);
     }
 
     if (!consultationType) {
-      console.log("❌ Validation failed: consultationType is missing");
+      console.log("Validation failed: consultationType is missing");
       alert("Veuillez sélectionner un type de consultation");
       return;
     }
 
-    console.log("✅ All validations passed");
+    console.log("All validations passed");
 
     if (!isSlotAvailable && !selectedTimeSlot?.isBooked) {
-      console.log("❌ Slot not available");
+      console.log("Slot not available");
       alert("Ce créneau n'est plus disponible. Veuillez en choisir un autre.");
       return;
     }
@@ -889,13 +890,13 @@ const BookAppointment: React.FC = () => {
     // En mode modification, traiter directement la modification
     if (isModifying && bookingToModify?.id) {
       console.log(
-        "🔄 Mode modification - Traitement direct de la modification"
+        "Mode modification - Traitement direct de la modification"
       );
       await handleModification();
       return;
     }
 
-    console.log("🔄 Opening payment step");
+    console.log("Opening payment step");
     setShowPaymentStep(true);
   };
 
@@ -958,7 +959,7 @@ const BookAppointment: React.FC = () => {
       };
 
       console.log(
-        "🔄 Mise à jour du rendez-vous:",
+        "Mise à jour du rendez-vous:",
         bookingToModify.id,
         bookingData
       );
@@ -969,7 +970,7 @@ const BookAppointment: React.FC = () => {
       // Rediriger vers le tableau de bord avec un message de succès
       navigate("/patient/dashboard?message=appointment_updated");
     } catch (error) {
-      console.error("❌ Erreur lors de la modification:", error);
+      console.error("Erreur lors de la modification:", error);
       setLocalError(
         "Une erreur est survenue lors de la modification. Veuillez réessayer."
       );
@@ -981,10 +982,10 @@ const BookAppointment: React.FC = () => {
   // Ne pas afficher le composant si l'utilisateur n'est pas connecté
   if (!isAuthenticated) {
     return (
-      <div className="container mx-auto px-4 py-8">
+      <div className="min-h-screen bg-paper container mx-auto px-4 py-8">
         <div className="flex items-center justify-center h-64">
           <LoadingSpinner size="lg" />
-          <span className="ml-4 text-lg text-gray-600">
+          <span className="ml-4 text-lg text-ink-soft">
             Redirection en cours...
           </span>
         </div>
@@ -994,10 +995,10 @@ const BookAppointment: React.FC = () => {
 
   if (loading || professionalsLoading) {
     return (
-      <div className="container mx-auto px-4 py-8">
+      <div className="min-h-screen bg-paper container mx-auto px-4 py-8">
         <div className="flex items-center justify-center h-64">
           <LoadingSpinner size="lg" />
-          <span className="ml-4 text-lg text-gray-600">Chargement...</span>
+          <span className="ml-4 text-lg text-ink-soft">Chargement...</span>
         </div>
       </div>
     );
@@ -1005,10 +1006,13 @@ const BookAppointment: React.FC = () => {
 
   if (error || localError) {
     return (
-      <div className="container mx-auto px-4 py-8 text-center">
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative">
-          <strong className="font-bold">Erreur : </strong>
-          <span className="block sm:inline">{error || localError}</span>
+      <div className="min-h-screen bg-paper container mx-auto px-4 py-8 text-center">
+        <div className="flex items-center gap-2 justify-center bg-danger/10 border border-danger/20 text-danger px-4 py-3 rounded-card">
+          <AlertCircle className="h-5 w-5 flex-shrink-0" />
+          <span>
+            <strong className="font-semibold">Erreur : </strong>
+            {error || localError}
+          </span>
         </div>
       </div>
     );
@@ -1016,10 +1020,12 @@ const BookAppointment: React.FC = () => {
 
   if (!professional) {
     return (
-      <div className="container mx-auto px-4 py-8 text-center">
-        <div className="bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded relative">
-          <strong className="font-bold">Professionnel non trouvé</strong>
-          <p className="mt-2">
+      <div className="min-h-screen bg-paper container mx-auto px-4 py-8 text-center">
+        <div className="bg-gold-soft border border-gold/20 text-gold px-4 py-3 rounded-card">
+          <strong className="font-semibold block">
+            Professionnel non trouvé
+          </strong>
+          <p className="mt-2 text-ink-soft">
             Ce professionnel n'existe pas ou n'est plus disponible.
           </p>
         </div>
@@ -1040,23 +1046,27 @@ const BookAppointment: React.FC = () => {
 
   if (showPaymentStep) {
     return (
-      <div className="container mx-auto px-4 py-8">
-        <h1 className="text-3xl font-bold mb-8">Paiement</h1>
+      <div className="min-h-screen bg-paper container mx-auto px-4 py-8">
+        <h1 className="font-display text-3xl font-bold text-ink mb-8">
+          Paiement
+        </h1>
 
         <div className="max-w-2xl mx-auto">
           {/* Payment Summary */}
-          <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-            <h2 className="text-xl font-semibold mb-4">
+          <div className="bg-card rounded-block border border-line shadow-soft p-6 mb-6">
+            <h2 className="font-display text-xl font-semibold text-ink mb-4">
               Résumé de la consultation
             </h2>
             <div className="space-y-3">
               <div className="flex justify-between">
-                <span className="text-gray-600">Professionnel</span>
-                <span className="font-medium">{professionalName}</span>
+                <span className="text-ink-soft">Professionnel</span>
+                <span className="font-medium text-ink">
+                  {professionalName}
+                </span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-600">Date</span>
-                <span className="font-medium">
+                <span className="text-ink-soft">Date</span>
+                <span className="font-medium text-ink">
                   {selectedTimeSlot
                     ? format(
                         selectedTimeSlot.date instanceof Date
@@ -1071,23 +1081,23 @@ const BookAppointment: React.FC = () => {
                 </span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-600">Type</span>
-                <span className="font-medium capitalize">
+                <span className="text-ink-soft">Type</span>
+                <span className="font-medium text-ink capitalize">
                   {consultationType}
                 </span>
               </div>
-              <div className="pt-3 border-t">
+              <div className="pt-3 border-t border-line">
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Consultation</span>
-                  <span className="font-medium">
+                  <span className="text-ink-soft">Consultation</span>
+                  <span className="font-medium text-ink">
                     {professionalPrice === null
                       ? "Gratuit"
                       : `${professionalPrice.toLocaleString()} ${professionalCurrency}`}
                   </span>
                 </div>
-                <div className="flex justify-between mt-3 pt-3 border-t">
-                  <span className="font-semibold">Total</span>
-                  <span className="font-semibold">
+                <div className="flex justify-between mt-3 pt-3 border-t border-line">
+                  <span className="font-semibold text-ink">Total</span>
+                  <span className="font-semibold text-ink">
                     {totalAmount === 0
                       ? "Gratuit"
                       : `${totalAmount.toLocaleString()} ${professionalCurrency}`}
@@ -1098,12 +1108,14 @@ const BookAppointment: React.FC = () => {
           </div>
 
           {/* Payment Methods */}
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <h2 className="text-xl font-semibold mb-4">Méthode de paiement</h2>
+          <div className="bg-card rounded-block border border-line shadow-soft p-6">
+            <h2 className="font-display text-xl font-semibold text-ink mb-4">
+              Méthode de paiement
+            </h2>
 
             {paymentError && (
-              <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded-lg flex items-center">
-                <AlertCircle className="h-5 w-5 mr-2" />
+              <div className="mb-4 p-3 bg-danger/10 border border-danger/20 text-danger rounded-card flex items-center">
+                <AlertCircle className="h-5 w-5 mr-2 flex-shrink-0" />
                 {paymentError}
               </div>
             )}
@@ -1113,17 +1125,17 @@ const BookAppointment: React.FC = () => {
                 <button
                   key={method.id}
                   onClick={() => setSelectedPaymentMethod(method.id)}
-                  className={`w-full flex items-center p-4 rounded-lg border-2 transition-colors ${
+                  className={`w-full flex items-center p-4 rounded-card border-2 transition-colors ${
                     selectedPaymentMethod === method.id
-                      ? "border-blue-500 bg-blue-50"
-                      : "border-gray-200 hover:border-blue-200"
+                      ? "border-accent bg-accent-soft"
+                      : "border-line hover:border-accent-light"
                   }`}
                 >
                   <div className="flex items-center flex-1">
                     <div className="mr-4">{method.icon}</div>
                     <div className="text-left">
-                      <h3 className="font-medium">{method.name}</h3>
-                      <p className="text-sm text-gray-500">
+                      <h3 className="font-medium text-ink">{method.name}</h3>
+                      <p className="text-sm text-muted">
                         {method.description}
                       </p>
                     </div>
@@ -1131,8 +1143,8 @@ const BookAppointment: React.FC = () => {
                   <ChevronRight
                     className={`h-5 w-5 ${
                       selectedPaymentMethod === method.id
-                        ? "text-blue-500"
-                        : "text-gray-400"
+                        ? "text-accent"
+                        : "text-muted"
                     }`}
                   />
                 </button>
@@ -1140,16 +1152,18 @@ const BookAppointment: React.FC = () => {
             </div>
 
             {selectedPaymentMethod && (
-              <div className="mt-6 pt-6 border-t">
-                <h3 className="font-medium mb-4">Informations de paiement</h3>
+              <div className="mt-6 pt-6 border-t border-line">
+                <h3 className="font-medium text-ink mb-4">
+                  Informations de paiement
+                </h3>
 
                 {selectedPaymentMethod === "mobile" && (
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-ink-soft mb-1">
                       Numéro de téléphone
                     </label>
                     <div className="flex">
-                      <span className="inline-flex items-center px-3 rounded-l-md border border-r-0 border-gray-300 bg-gray-50 text-gray-500 sm:text-sm">
+                      <span className="inline-flex items-center px-3 rounded-l-xl border border-r-0 border-line bg-paper text-ink-soft sm:text-sm">
                         +221
                       </span>
                       <input
@@ -1161,10 +1175,10 @@ const BookAppointment: React.FC = () => {
                           )
                         }
                         placeholder="77 123 45 67"
-                        className="flex-1 min-w-0 block w-full px-3 py-2 rounded-none rounded-r-md border-gray-300 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                        className="flex-1 min-w-0 block w-full px-3 py-2 rounded-none rounded-r-xl border border-line bg-card focus:outline-none focus:border-accent sm:text-sm"
                       />
                     </div>
-                    <p className="mt-2 text-sm text-gray-500">
+                    <p className="mt-2 text-sm text-muted">
                       Vous recevrez une demande de paiement sur votre téléphone
                     </p>
                   </div>
@@ -1173,7 +1187,7 @@ const BookAppointment: React.FC = () => {
                 {selectedPaymentMethod === "card" && (
                   <div className="space-y-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                      <label className="block text-sm font-medium text-ink-soft mb-1">
                         Numéro de carte
                       </label>
                       <input
@@ -1185,13 +1199,13 @@ const BookAppointment: React.FC = () => {
                           )
                         }
                         placeholder="1234 5678 9012 3456"
-                        className="block w-full px-3 py-2 rounded-md border-gray-300 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                        className="block w-full px-3 py-2 rounded-xl border border-line bg-card focus:outline-none focus:border-accent sm:text-sm"
                       />
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                        <label className="block text-sm font-medium text-ink-soft mb-1">
                           Date d'expiration
                         </label>
                         <input
@@ -1206,12 +1220,12 @@ const BookAppointment: React.FC = () => {
                             setExpiryDate(value);
                           }}
                           placeholder="MM/YY"
-                          className="block w-full px-3 py-2 rounded-md border-gray-300 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                          className="block w-full px-3 py-2 rounded-xl border border-line bg-card focus:outline-none focus:border-accent sm:text-sm"
                         />
                       </div>
 
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                        <label className="block text-sm font-medium text-ink-soft mb-1">
                           CVV
                         </label>
                         <input
@@ -1223,7 +1237,7 @@ const BookAppointment: React.FC = () => {
                             )
                           }
                           placeholder="123"
-                          className="block w-full px-3 py-2 rounded-md border-gray-300 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                          className="block w-full px-3 py-2 rounded-xl border border-line bg-card focus:outline-none focus:border-accent sm:text-sm"
                         />
                       </div>
                     </div>
@@ -1232,10 +1246,10 @@ const BookAppointment: React.FC = () => {
               </div>
             )}
 
-            <div className="mt-6 flex justify-between">
+            <div className="mt-6 flex justify-between items-center">
               <button
                 onClick={() => setShowPaymentStep(false)}
-                className="px-4 py-2 text-gray-600 hover:text-gray-800"
+                className="px-4 py-2 text-ink-soft hover:text-ink transition-colors"
               >
                 Retour
               </button>
@@ -1245,13 +1259,16 @@ const BookAppointment: React.FC = () => {
                   isSubmitting ||
                   (selectedPaymentMethod === "mobile" && !phoneNumber.trim())
                 }
-                className={`px-6 py-2 rounded-lg transition-colors flex items-center ${
+                className={`px-6 py-2.5 rounded-pill font-semibold transition-colors flex items-center gap-2 ${
                   isSubmitting ||
                   (selectedPaymentMethod === "mobile" && !phoneNumber.trim())
-                    ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-                    : "bg-blue-500 text-white hover:bg-blue-600"
+                    ? "bg-line text-muted cursor-not-allowed"
+                    : "bg-accent text-white hover:bg-accent/90"
                 }`}
               >
+                {isSubmitting && (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                )}
                 {isSubmitting
                   ? "Traitement..."
                   : selectedPaymentMethod === "mobile" && !phoneNumber.trim()
@@ -1266,32 +1283,34 @@ const BookAppointment: React.FC = () => {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold mb-8">
+    <div className="min-h-screen bg-paper container mx-auto px-4 py-8">
+      <h1 className="font-display text-3xl font-bold text-ink mb-8">
         {isModifying ? "Modifier le rendez-vous" : "Prendre rendez-vous"}
       </h1>
 
-      <div className="bg-white rounded-lg shadow-md overflow-hidden">
+      <div className="bg-card rounded-block border border-line shadow-soft overflow-hidden">
         {/* Professional info */}
-        <div className="bg-gray-50 border-b border-gray-200 p-6">
+        <div className="bg-paper border-b border-line p-6">
           <div className="flex items-center">
             {professional?.profileImage ? (
               <img
                 src={professional.profileImage}
                 alt={professionalName}
-                className="w-16 h-16 rounded-full object-cover mr-4"
+                className="w-16 h-16 rounded-full object-cover mr-4 border-2 border-line"
               />
             ) : (
-              <div className="w-16 h-16 rounded-full bg-gray-200 flex items-center justify-center mr-4">
-                <User className="h-8 w-8 text-gray-400" />
+              <div className="w-16 h-16 rounded-full bg-ink flex items-center justify-center mr-4">
+                <User className="h-8 w-8 text-white" />
               </div>
             )}
             <div>
-              <h2 className="text-xl font-bold">{professionalName}</h2>
-              <p className="text-gray-600">{professionalSpecialty}</p>
+              <h2 className="font-display text-xl font-bold text-ink">
+                {professionalName}
+              </h2>
+              <p className="text-ink-soft">{professionalSpecialty}</p>
               {isAvailableNow && (
-                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 mt-2">
-                  <span className="w-2 h-2 bg-green-400 rounded-full mr-2"></span>
+                <span className="inline-flex items-center px-2.5 py-0.5 rounded-pill text-xs font-medium bg-sage-soft text-sage mt-2">
+                  <span className="w-2 h-2 bg-sage rounded-full mr-2"></span>
                   Disponible maintenant
                 </span>
               )}
@@ -1300,13 +1319,13 @@ const BookAppointment: React.FC = () => {
         </div>
 
         {isAvailableNow && (
-          <div className="p-6 bg-green-50 border-b border-green-100">
+          <div className="p-6 bg-sage-soft border-b border-sage/10">
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="text-lg font-semibold text-green-800">
+                <h3 className="font-display text-lg font-semibold text-sage">
                   Consultation immédiate disponible
                 </h3>
-                <p className="text-green-600 mt-1">
+                <p className="text-sage/80 mt-1">
                   Ce professionnel est disponible pour une consultation
                   maintenant
                 </p>
@@ -1314,11 +1333,15 @@ const BookAppointment: React.FC = () => {
               <button
                 onClick={handleInstantConsultation}
                 disabled={isRequestingInstant}
-                className={`px-6 py-3 bg-green-500 text-white font-semibold rounded-lg hover:bg-green-600 transition-colors flex items-center ${
+                className={`px-6 py-3 bg-sage text-white font-semibold rounded-pill hover:bg-sage/90 transition-colors flex items-center gap-2 ${
                   isRequestingInstant ? "opacity-75 cursor-not-allowed" : ""
                 }`}
               >
-                <Video className="h-5 w-5 mr-2" />
+                {isRequestingInstant ? (
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                ) : (
+                  <Video className="h-5 w-5" />
+                )}
                 {isRequestingInstant ? "Connexion..." : "Démarrer maintenant"}
               </button>
             </div>
@@ -1359,7 +1382,7 @@ const BookAppointment: React.FC = () => {
                   setSelectedDay(realDate);
                   setSelectedTime(slot.time || "");
 
-                  console.log("🎯 Slot selected and state updated:", {
+                  console.log("Slot selected and state updated:", {
                     slot,
                     dayName,
                     realDate,
@@ -1367,12 +1390,12 @@ const BookAppointment: React.FC = () => {
                     selectedTimeSlot: slot,
                     selectedTime: slot.time,
                   });
-                  console.log("🎯 Slot selected:", slot);
+                  console.log("Slot selected:", slot);
                 } else {
                   // Si le slot est null (désélection), réinitialiser les valeurs
                   setSelectedDay("");
                   setSelectedTime("");
-                  console.log("🔄 Slot deselected, state reset");
+                  console.log("Slot deselected, state reset");
                 }
 
                 // Check availability
@@ -1381,7 +1404,7 @@ const BookAppointment: React.FC = () => {
                 }
               } catch (error) {
                 console.error(
-                  "❌ Erreur lors de la sélection du créneau:",
+                  "Erreur lors de la sélection du créneau:",
                   error
                 );
                 setSelectedDay("");
@@ -1398,7 +1421,7 @@ const BookAppointment: React.FC = () => {
             <div className="space-y-6">
               {/* Consultation type */}
               <section>
-                <h3 className="text-lg font-semibold mb-4">
+                <h3 className="font-display text-lg font-semibold text-ink mb-4">
                   Type de consultation
                 </h3>
 
@@ -1406,22 +1429,24 @@ const BookAppointment: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => setConsultationType("video")}
-                    className={`w-full flex items-center p-4 rounded-md transition-colors ${
+                    className={`w-full flex items-center p-4 rounded-card transition-colors ${
                       consultationType === "video"
-                        ? "bg-blue-50 border-2 border-blue-500 text-blue-700"
-                        : "bg-white border border-gray-200 text-gray-700 hover:bg-gray-50"
+                        ? "bg-accent-soft border-2 border-accent text-accent"
+                        : "bg-card border border-line text-ink-soft hover:border-accent"
                     }`}
                   >
                     <Video
                       className={`h-6 w-6 mr-3 ${
                         consultationType === "video"
-                          ? "text-blue-500"
-                          : "text-gray-500"
+                          ? "text-accent"
+                          : "text-muted"
                       }`}
                     />
                     <div className="text-left">
-                      <span className="font-medium block">Vidéo</span>
-                      <span className="text-sm text-gray-500">
+                      <span className="font-medium block text-ink">
+                        Vidéo
+                      </span>
+                      <span className="text-sm text-muted">
                         Face-à-face virtuel avec le professionnel
                       </span>
                     </div>
@@ -1430,22 +1455,24 @@ const BookAppointment: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => setConsultationType("audio")}
-                    className={`w-full flex items-center p-4 rounded-md transition-colors ${
+                    className={`w-full flex items-center p-4 rounded-card transition-colors ${
                       consultationType === "audio"
-                        ? "bg-blue-50 border-2 border-blue-500 text-blue-700"
-                        : "bg-white border border-gray-200 text-gray-700 hover:bg-gray-50"
+                        ? "bg-accent-soft border-2 border-accent text-accent"
+                        : "bg-card border border-line text-ink-soft hover:border-accent"
                     }`}
                   >
                     <PhoneCall
                       className={`h-6 w-6 mr-3 ${
                         consultationType === "audio"
-                          ? "text-blue-500"
-                          : "text-gray-500"
+                          ? "text-accent"
+                          : "text-muted"
                       }`}
                     />
                     <div className="text-left">
-                      <span className="font-medium block">Audio</span>
-                      <span className="text-sm text-gray-500">
+                      <span className="font-medium block text-ink">
+                        Audio
+                      </span>
+                      <span className="text-sm text-muted">
                         Consultation téléphonique
                       </span>
                     </div>
@@ -1455,13 +1482,13 @@ const BookAppointment: React.FC = () => {
 
               {/* Selected slot info */}
               {selectedTimeSlot && (
-                <section className="bg-blue-50 p-4 rounded-lg">
-                  <h3 className="text-md font-semibold mb-2 text-blue-700">
+                <section className="bg-accent-soft p-4 rounded-card">
+                  <h3 className="text-md font-semibold mb-2 text-accent">
                     {isModifying
                       ? "Nouveau créneau sélectionné"
                       : "Créneau sélectionné"}
                   </h3>
-                  <div className="flex items-center text-blue-600 mb-1">
+                  <div className="flex items-center text-accent mb-1">
                     <Calendar className="h-4 w-4 mr-2" />
                     <span>
                       {(() => {
@@ -1488,7 +1515,7 @@ const BookAppointment: React.FC = () => {
                       })()}
                     </span>
                   </div>
-                  <div className="flex items-center text-blue-600">
+                  <div className="flex items-center text-accent">
                     <Clock className="h-4 w-4 mr-2" />
                     <span>
                       {selectedTimeSlot.time || "Heure non disponible"}
@@ -1499,22 +1526,24 @@ const BookAppointment: React.FC = () => {
 
               {/* Payment summary - masqué en mode modification */}
               {!isModifying && (
-                <section className="bg-gray-50 rounded-lg p-6">
-                  <h3 className="text-lg font-semibold mb-4">Résumé</h3>
+                <section className="bg-paper rounded-card p-6">
+                  <h3 className="font-display text-lg font-semibold text-ink mb-4">
+                    Résumé
+                  </h3>
 
                   <div className="space-y-3">
                     <div className="flex justify-between">
-                      <span className="text-gray-600">Consultation</span>
-                      <span className="font-medium">
+                      <span className="text-ink-soft">Consultation</span>
+                      <span className="font-medium text-ink">
                         {professionalPrice === null
                           ? "Gratuit"
                           : `${professionalPrice.toLocaleString()} ${professionalCurrency}`}
                       </span>
                     </div>
-                    <div className="pt-3 border-t">
+                    <div className="pt-3 border-t border-line">
                       <div className="flex justify-between">
-                        <span className="font-semibold">Total</span>
-                        <span className="font-semibold">
+                        <span className="font-semibold text-ink">Total</span>
+                        <span className="font-semibold text-ink">
                           {professionalPrice === null || professionalPrice === 0
                             ? "Gratuit"
                             : `${professionalPrice.toLocaleString()} ${professionalCurrency}`}
@@ -1534,19 +1563,19 @@ const BookAppointment: React.FC = () => {
                     isSubmitting ||
                     !isSlotAvailable)
                 }
-                className={`w-full py-3 rounded-md font-semibold mt-4 transition-all duration-200 flex items-center justify-center shadow-md hover:shadow-lg ${
+                className={`w-full py-3 rounded-pill font-semibold mt-4 transition-all duration-200 flex items-center justify-center gap-2 shadow-soft hover:shadow-lift ${
                   !isTesting &&
                   (!selectedTimeSlot ||
                     !consultationType ||
                     isSubmitting ||
                     !isSlotAvailable)
-                    ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-                    : "bg-green-600 text-white hover:bg-green-700 transform hover:-translate-y-0.5"
+                    ? "bg-line text-muted cursor-not-allowed"
+                    : "bg-ink text-white hover:bg-ink/90"
                 }`}
               >
                 {isSubmitting ? (
                   <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    <Loader2 className="h-4 w-4 animate-spin" />
                     {isModifying
                       ? "Modification en cours..."
                       : "Création de la facture..."}
@@ -1555,12 +1584,12 @@ const BookAppointment: React.FC = () => {
                   <>
                     {isModifying ? (
                       <>
-                        <Edit className="h-5 w-5 mr-2" />
+                        <Edit className="h-5 w-5" />
                         Modifier le rendez-vous
                       </>
                     ) : (
                       <>
-                        <CreditCard className="h-5 w-5 mr-2" />
+                        <CreditCard className="h-5 w-5" />
                         Payer avec PayTech
                       </>
                     )}

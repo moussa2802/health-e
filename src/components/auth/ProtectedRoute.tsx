@@ -22,7 +22,7 @@ export default function ProtectedRoute({ children, userType }: Props) {
   // 1) Tant que l'auth OU le user Firestore n'est pas stabilisé -> aucun redirect
   if (!authReady || loadingUserData) {
     return (
-      <div className="min-h-[40vh] flex items-center justify-center">
+      <div className="min-h-[40vh] flex items-center justify-center bg-paper">
         <LoadingSpinner size="lg" />
       </div>
     );

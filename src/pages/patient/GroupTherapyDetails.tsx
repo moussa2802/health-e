@@ -9,6 +9,8 @@ import {
   ArrowLeft,
   ArrowRight,
   Clock,
+  CheckCircle2,
+  Shield,
 } from "lucide-react";
 import {
   getGroupTherapySession,
@@ -126,11 +128,11 @@ const GroupTherapyDetails: React.FC = () => {
         setCheckingRegistration(true);
         const result = await registerUserToSession(session.id, currentUser.id);
         if (result.status === "alreadyRegistered") {
-          alert("Vous êtes déjà inscrit à cette session ✅");
+          alert("Vous êtes déjà inscrit à cette session");
           setIsRegistered(true);
         } else {
           setIsRegistered(true);
-          alert("Inscription réussie ! ✅");
+          alert("Inscription réussie !");
         }
       } catch (error) {
         console.error("Error registering:", error);
@@ -177,7 +179,7 @@ const GroupTherapyDetails: React.FC = () => {
       };
 
       console.log(
-        "🔔 [PAYTECH] Initiating payment for group therapy:",
+        "[PAYTECH] Initiating payment for group therapy:",
         paymentData
       );
 
@@ -190,14 +192,14 @@ const GroupTherapyDetails: React.FC = () => {
       const response = await paytechService.initiatePayment(paymentData);
 
       console.log(
-        "✅ [PAYTECH] Payment initiated, redirecting to:",
+        "[PAYTECH] Payment initiated, redirecting to:",
         response.redirect_url
       );
 
       // Rediriger vers la page de paiement PayTech
       paytechService.redirectToPayment(response.redirect_url);
     } catch (error) {
-      console.error("❌ [PAYTECH] Payment error:", error);
+      console.error("[PAYTECH] Payment error:", error);
       setPaymentError(
         error instanceof Error
           ? error.message
@@ -209,7 +211,7 @@ const GroupTherapyDetails: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen bg-paper flex items-center justify-center">
         <LoadingSpinner size="lg" />
       </div>
     );
@@ -237,19 +239,21 @@ const GroupTherapyDetails: React.FC = () => {
       .filter(Boolean) || [];
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-paper">
       {/* Header */}
-      <div className="bg-gradient-to-r from-purple-600 via-pink-600 to-orange-500 text-white py-12">
+      <div className="bg-ink text-white py-12">
         <div className="container mx-auto px-4">
           <button
             onClick={() => navigate("/")}
-            className="mb-4 flex items-center text-white hover:text-gray-200 transition-colors"
+            className="mb-4 flex items-center text-white/80 hover:text-white transition-colors"
           >
             <ArrowLeft className="h-5 w-5 mr-2" />
             Retour à l'accueil
           </button>
-          <h1 className="text-4xl font-bold mb-4">{session.title}</h1>
-          <div className="flex flex-wrap items-center gap-4 text-sm">
+          <h1 className="font-display text-4xl font-bold mb-4">
+            {session.title}
+          </h1>
+          <div className="flex flex-wrap items-center gap-4 text-sm text-white/90">
             {session.date && (
               <div className="flex items-center">
                 <Calendar className="h-5 w-5 mr-2" />
@@ -274,7 +278,9 @@ const GroupTherapyDetails: React.FC = () => {
                 <span>Gratuit</span>
               </div>
             ) : (
-              <div className="text-lg font-semibold">{session.price} XOF</div>
+              <div className="text-lg font-semibold text-white">
+                {session.price} XOF
+              </div>
             )}
           </div>
         </div>
@@ -283,22 +289,26 @@ const GroupTherapyDetails: React.FC = () => {
       {/* Content */}
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-4xl mx-auto">
-          <div className="bg-white rounded-xl shadow-lg p-8 mb-6">
-            <h2 className="text-2xl font-bold mb-4">Description</h2>
-            <p className="text-gray-700 leading-relaxed whitespace-pre-line">
+          <div className="bg-card border border-line rounded-card shadow-soft p-8 mb-6">
+            <h2 className="font-display text-2xl font-bold text-ink mb-4">
+              Description
+            </h2>
+            <p className="text-ink-soft leading-relaxed whitespace-pre-line">
               {session.description}
             </p>
           </div>
 
           {/* Hôtes */}
           {(primaryHost || secondaryHosts.length > 0) && (
-            <div className="bg-white rounded-xl shadow-lg p-8 mb-6">
-              <h2 className="text-2xl font-bold mb-4">Hôte(s)</h2>
+            <div className="bg-card border border-line rounded-card shadow-soft p-8 mb-6">
+              <h2 className="font-display text-2xl font-bold text-ink mb-4">
+                Hôte(s)
+              </h2>
               <div className="space-y-4">
                 {primaryHost && (
                   <Link
                     to={`/professional/${session.primaryHostId}`}
-                    className="flex items-center space-x-4 p-4 rounded-lg hover:bg-gray-50 transition-colors group"
+                    className="flex items-center space-x-4 p-4 rounded-card hover:bg-paper transition-colors group"
                   >
                     {primaryHost.profileImage ? (
                       <img
@@ -307,21 +317,21 @@ const GroupTherapyDetails: React.FC = () => {
                         className="w-16 h-16 rounded-full object-cover"
                       />
                     ) : (
-                      <div className="w-16 h-16 rounded-full bg-purple-100 flex items-center justify-center">
-                        <User className="h-8 w-8 text-purple-600" />
+                      <div className="w-16 h-16 rounded-full bg-sage-soft flex items-center justify-center">
+                        <User className="h-8 w-8 text-sage" />
                       </div>
                     )}
                     <div className="flex-1">
                       <div className="flex items-center space-x-2">
-                        <h3 className="text-lg font-semibold group-hover:text-purple-600 transition-colors">
+                        <h3 className="text-lg font-semibold text-ink group-hover:text-accent transition-colors">
                           {primaryHost.name}
                         </h3>
-                        <span className="bg-purple-100 text-purple-800 px-3 py-1 rounded-full text-xs font-semibold">
+                        <span className="bg-accent-soft text-accent px-3 py-1 rounded-pill text-xs font-semibold">
                           Principal
                         </span>
                       </div>
                       {primaryHost.specialty && (
-                        <p className="text-gray-600 mt-1">
+                        <p className="text-ink-soft mt-1">
                           {primaryHost.specialty}
                         </p>
                       )}
@@ -334,7 +344,7 @@ const GroupTherapyDetails: React.FC = () => {
                     <Link
                       key={idx}
                       to={`/professional/${hostId}`}
-                      className="flex items-center space-x-4 p-4 rounded-lg hover:bg-gray-50 transition-colors group"
+                      className="flex items-center space-x-4 p-4 rounded-card hover:bg-paper transition-colors group"
                     >
                       {host.profileImage ? (
                         <img
@@ -343,16 +353,16 @@ const GroupTherapyDetails: React.FC = () => {
                           className="w-16 h-16 rounded-full object-cover"
                         />
                       ) : (
-                        <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center">
-                          <User className="h-8 w-8 text-gray-600" />
+                        <div className="w-16 h-16 rounded-full bg-paper-dark flex items-center justify-center">
+                          <User className="h-8 w-8 text-ink-soft" />
                         </div>
                       )}
                       <div className="flex-1">
-                        <h3 className="text-lg font-semibold group-hover:text-purple-600 transition-colors">
+                        <h3 className="text-lg font-semibold text-ink group-hover:text-accent transition-colors">
                           {host.name}
                         </h3>
                         {host.specialty && (
-                          <p className="text-gray-600 mt-1">{host.specialty}</p>
+                          <p className="text-ink-soft mt-1">{host.specialty}</p>
                         )}
                       </div>
                     </Link>
@@ -363,68 +373,80 @@ const GroupTherapyDetails: React.FC = () => {
           )}
 
           {/* Informations supplémentaires */}
-          <div className="bg-white rounded-xl shadow-lg p-8 mb-6">
-            <h2 className="text-2xl font-bold mb-4">Informations</h2>
+          <div className="bg-card border border-line rounded-card shadow-soft p-8 mb-6">
+            <h2 className="font-display text-2xl font-bold text-ink mb-4">
+              Informations
+            </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <p className="text-sm text-gray-600 mb-1">Capacité</p>
-                <p className="text-lg font-semibold">
-                  {session.capacity} participants maximum
-                </p>
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-sage-soft flex items-center justify-center flex-shrink-0">
+                  <Users className="h-5 w-5 text-sage" />
+                </div>
+                <div>
+                  <p className="text-sm text-muted mb-0.5">Capacité</p>
+                  <p className="text-lg font-semibold text-ink">
+                    {session.capacity} participants maximum
+                  </p>
+                </div>
               </div>
-              <div>
-                <p className="text-sm text-gray-600 mb-1">Places disponibles</p>
-                <p className="text-lg font-semibold">
-                  {session.capacity - registrationsCount} places restantes
-                </p>
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-sage-soft flex items-center justify-center flex-shrink-0">
+                  <CheckCircle2 className="h-5 w-5 text-sage" />
+                </div>
+                <div>
+                  <p className="text-sm text-muted mb-0.5">
+                    Places disponibles
+                  </p>
+                  <p className="text-lg font-semibold text-ink">
+                    {session.capacity - registrationsCount} places restantes
+                  </p>
+                </div>
               </div>
-              <div>
-                <p className="text-sm text-gray-600 mb-1">Prix</p>
-                <p className="text-lg font-semibold">
-                  {isFree ? "Gratuit" : `${session.price} XOF`}
-                </p>
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-gold-soft flex items-center justify-center flex-shrink-0">
+                  <CreditCard className="h-5 w-5 text-gold" />
+                </div>
+                <div>
+                  <p className="text-sm text-muted mb-0.5">Prix</p>
+                  <p className="text-lg font-semibold text-ink">
+                    {isFree ? "Gratuit" : `${session.price} XOF`}
+                  </p>
+                </div>
               </div>
-              <div>
-                <p className="text-sm text-gray-600 mb-1">Statut</p>
-                <p className="text-lg font-semibold">
-                  {session.isActive
-                    ? isFull
-                      ? "Complet"
-                      : "Ouvert aux inscriptions"
-                    : "Fermé"}
-                </p>
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-sage-soft flex items-center justify-center flex-shrink-0">
+                  <Shield className="h-5 w-5 text-sage" />
+                </div>
+                <div>
+                  <p className="text-sm text-muted mb-0.5">Statut</p>
+                  <p className="text-lg font-semibold text-ink">
+                    {session.isActive
+                      ? isFull
+                        ? "Complet"
+                        : "Ouvert aux inscriptions"
+                      : "Fermé"}
+                  </p>
+                </div>
               </div>
             </div>
           </div>
 
           {/* Bouton d'inscription */}
-          <div className="bg-white rounded-xl shadow-lg p-8">
+          <div className="bg-card border border-line rounded-card shadow-soft p-8">
             {isRegistered ? (
               <div className="text-center">
-                <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-green-100 mb-4">
-                  <svg
-                    className="w-8 h-8 text-green-600"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M5 13l4 4L19 7"
-                    />
-                  </svg>
+                <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-ok/10 mb-4">
+                  <CheckCircle2 className="w-8 h-8 text-ok" />
                 </div>
-                <h3 className="text-xl font-bold text-gray-900 mb-2">
-                  Vous êtes inscrit à cette session ✅
+                <h3 className="text-xl font-bold text-ink mb-2">
+                  Vous êtes inscrit à cette session
                 </h3>
-                <p className="text-gray-600 mb-4">
+                <p className="text-ink-soft mb-4">
                   Cliquez sur le bouton ci-dessous pour rejoindre la réunion.
                 </p>
                 <Link
                   to={`/group-therapy/${session.id}/meeting`}
-                  className="inline-flex items-center justify-center w-full py-3 rounded-xl font-semibold transition-all duration-200 bg-gradient-to-r from-purple-500 to-pink-600 text-white hover:from-purple-600 hover:to-pink-700 shadow-md hover:shadow-lg"
+                  className="inline-flex items-center justify-center w-full py-3 rounded-pill font-semibold transition-colors bg-accent text-white hover:bg-accent/90 shadow-soft"
                 >
                   <Video className="h-5 w-5 mr-2" />
                   Rejoindre la réunion
@@ -432,20 +454,20 @@ const GroupTherapyDetails: React.FC = () => {
               </div>
             ) : isFull ? (
               <div className="text-center">
-                <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gray-100 mb-4">
-                  <Users className="w-8 h-8 text-gray-600" />
+                <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-paper-dark mb-4">
+                  <Users className="w-8 h-8 text-ink-soft" />
                 </div>
-                <h3 className="text-xl font-bold text-gray-900 mb-2">
+                <h3 className="text-xl font-bold text-ink mb-2">
                   Session complète
                 </h3>
-                <p className="text-gray-600">
+                <p className="text-ink-soft">
                   Toutes les places ont été réservées pour cette session.
                 </p>
               </div>
             ) : (
               <div>
                 {paymentError && (
-                  <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+                  <div className="bg-danger/10 border border-danger/20 text-danger px-4 py-3 rounded-card mb-4">
                     {paymentError}
                   </div>
                 )}
@@ -456,12 +478,12 @@ const GroupTherapyDetails: React.FC = () => {
                     isProcessingPayment ||
                     !session.isActive
                   }
-                  className={`w-full py-4 rounded-xl font-semibold transition-all duration-200 flex items-center justify-center text-lg ${
+                  className={`w-full py-4 rounded-pill font-semibold transition-colors flex items-center justify-center text-lg ${
                     !session.isActive ||
                     checkingRegistration ||
                     isProcessingPayment
-                      ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-                      : "bg-gradient-to-r from-purple-500 to-pink-600 text-white hover:from-purple-600 hover:to-pink-700 shadow-md hover:shadow-lg"
+                      ? "bg-line text-muted cursor-not-allowed"
+                      : "bg-accent text-white hover:bg-accent/90 shadow-soft"
                   }`}
                 >
                   {checkingRegistration || isProcessingPayment ? (

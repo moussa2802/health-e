@@ -95,7 +95,7 @@ function normalizeProfile(p: any, currentUser?: any) {
 
 const PatientProfile: React.FC = () => {
   const { currentUser } = useAuth();
-  console.log("🔎 currentUser:", currentUser);
+  console.log("currentUser:", currentUser);
   const navigate = useNavigate();
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -111,7 +111,7 @@ const PatientProfile: React.FC = () => {
   );
   const [isLocalEnvironment, setIsLocalEnvironment] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
-  const [retryCount, setRetryCount] = useState(0); // ✅ Added retry counter
+  const [retryCount, setRetryCount] = useState(0); // Added retry counter
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const isMountedRef = useRef(true);
@@ -195,11 +195,11 @@ const PatientProfile: React.FC = () => {
     };
   }, []);
 
-  // ✅ FIXED: Added retry mechanism and better error handling
+  // FIXED: Added retry mechanism and better error handling
   useEffect(() => {
     const loadProfile = async () => {
       if (!currentUser?.id) {
-        setLoading(false); // ✅ FIXED: Set loading to false when no user
+        setLoading(false); // FIXED: Set loading to false when no user
         return;
       }
 
@@ -213,7 +213,7 @@ const PatientProfile: React.FC = () => {
         if (!hasLoadedRef.current) setLoading(true);
         setErrorMessage("");
 
-        // ✅ FIXED: Direct document access by userId
+        // FIXED: Direct document access by userId
         const profile = await withTimeout(
           getPatientProfile(currentUser.id),
           8000,
@@ -265,9 +265,9 @@ const PatientProfile: React.FC = () => {
           }
         }
 
-        // ❌ Abonnement déplacé dans un useEffect séparé pour éviter les conflits
+        // Abonnement déplacé dans un useEffect séparé pour éviter les conflits
       } catch (error) {
-        console.error("❌ Error loading profile:", error);
+        console.error("Error loading profile:", error);
 
         // Détecter les timeouts et afficher un message approprié
         if ((error as Error)?.message?.includes("Timeout")) {
@@ -313,7 +313,7 @@ const PatientProfile: React.FC = () => {
           );
         }
 
-        // ✅ FIXED: Set loading to false on error
+        // FIXED: Set loading to false on error
         if (isMountedRef.current) {
           setLoading(false);
         }
@@ -329,7 +329,7 @@ const PatientProfile: React.FC = () => {
         unsubscribeRef.current = null;
       }
     };
-  }, [currentUser?.id, isLocalEnvironment, retryCount]); // ✅ FIXED: Stable ID dependency
+  }, [currentUser?.id, isLocalEnvironment, retryCount]); // FIXED: Stable ID dependency
 
   // Abonnement Firestore séparé pour éviter les conflits
   useEffect(() => {
@@ -360,10 +360,10 @@ const PatientProfile: React.FC = () => {
 
       setConnectionStatus(getFirestoreConnectionStatus());
 
-      // ✅ FIXED: Trigger a retry by incrementing retryCount
+      // FIXED: Trigger a retry by incrementing retryCount
       setRetryCount((prev) => prev + 1);
     } catch (error) {
-      console.error("❌ Error retrying profile load:", error);
+      console.error("Error retrying profile load:", error);
 
       if (isLocalEnvironment) {
         setErrorMessage(
@@ -436,7 +436,7 @@ const PatientProfile: React.FC = () => {
         }, 3000);
       }
     } catch (error) {
-      console.error("❌ Error uploading image:", error);
+      console.error("Error uploading image:", error);
       setErrorMessage(
         error instanceof Error ? error.message : "Erreur lors du téléchargement"
       );
@@ -470,7 +470,7 @@ const PatientProfile: React.FC = () => {
     setIsSaving(true);
 
     try {
-      // ✅ FIXED: Direct document update by userId
+      // FIXED: Direct document update by userId
       await updatePatientProfile(currentUser.id, patientInfo);
 
       setSaveSuccess(true);
@@ -487,7 +487,7 @@ const PatientProfile: React.FC = () => {
         }
       } catch (reloadError) {
         console.error(
-          "❌ Erreur lors du rechargement des données:",
+          "Erreur lors du rechargement des données:",
           reloadError
         );
       }
@@ -521,7 +521,7 @@ const PatientProfile: React.FC = () => {
         }, 500);
       }
     } catch (error) {
-      console.error("❌ Error saving profile:", error);
+      console.error("Error saving profile:", error);
 
       if (isLocalEnvironment) {
         setErrorMessage(
@@ -701,14 +701,14 @@ const PatientProfile: React.FC = () => {
             <div className="flex items-center">
               <CheckCircle className="h-5 w-5 mr-2" />
               <span className="font-medium" translate="no">
-                ✅ Vos modifications ont été enregistrées avec succès !
+                Vos modifications ont été enregistrées avec succès !
               </span>
             </div>
             {redirecting && (
               <div className="mt-3 flex items-center text-green-600">
                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-green-500 mr-2"></div>
                 <span translate="no">
-                  🔄 Redirection vers le tableau de bord...
+                  Redirection vers le tableau de bord...
                 </span>
               </div>
             )}

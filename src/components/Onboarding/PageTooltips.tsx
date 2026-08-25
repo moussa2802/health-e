@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { Check, ArrowRight } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import {
   getOnboardingState, markPageVisited, resetPageVisited,
@@ -128,62 +129,42 @@ const TooltipBubble: React.FC<{
 
   return (
     <div
-      style={{
-        ...posStyle,
-        zIndex: 10001,
-        width: 280,
-        background: 'white',
-        borderRadius: 16,
-        padding: '16px 18px',
-        boxShadow: '0 8px 40px rgba(0,0,0,0.2)',
-        fontFamily: "'Inter', -apple-system, sans-serif",
-        pointerEvents: 'all',
-      }}
+      style={{ ...posStyle, zIndex: 10001, pointerEvents: 'all' }}
+      className="w-[280px] bg-card rounded-block px-4.5 py-4 shadow-lift"
       onClick={e => e.stopPropagation()}
     >
       {showArrowUp && <ArrowUp />}
       {showArrowDown && <ArrowDown />}
 
       {/* Badge numéro */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-        <span style={{
-          background: 'linear-gradient(135deg, #3B82F6, #10B981)',
-          color: 'white', fontSize: 10, fontWeight: 700,
-          padding: '2px 8px', borderRadius: 20,
-        }}>
+      <div className="flex items-center justify-between mb-2.5">
+        <span className="bg-sage text-white text-[10px] font-bold px-2 py-0.5 rounded-pill">
           {current} / {total}
         </span>
         <button
           onClick={onSkip}
-          style={{
-            background: 'none', border: 'none',
-            color: '#94A3B8', fontSize: 11, cursor: 'pointer', fontWeight: 600,
-          }}
+          className="bg-transparent border-0 text-muted text-[11px] cursor-pointer font-semibold hover:text-ink-soft transition-colors"
         >
           Passer tout
         </button>
       </div>
 
       {/* Titre */}
-      <p style={{ margin: '0 0 6px', fontSize: 14, fontWeight: 800, color: '#0A2342' }}>
+      <p className="m-0 mb-1.5 text-sm font-extrabold text-ink">
         {tooltip.titre}
       </p>
 
       {/* Texte */}
-      <p style={{ margin: '0 0 14px', fontSize: 13, color: '#374151', lineHeight: 1.6 }}>
+      <p className="m-0 mb-3.5 text-[13px] text-ink-soft leading-relaxed">
         {tooltip.texte}
       </p>
 
       {/* Bouton Compris */}
       <button
         onClick={onNext}
-        style={{
-          width: '100%', padding: '9px', borderRadius: 10, border: 'none',
-          background: 'linear-gradient(135deg, #3B82F6, #10B981)',
-          color: 'white', fontSize: 13, fontWeight: 700, cursor: 'pointer',
-        }}
+        className="w-full py-2.5 rounded-xl border-0 bg-sage text-white text-[13px] font-bold cursor-pointer flex items-center justify-center gap-1.5 hover:bg-sage/90 transition-colors"
       >
-        {current === total ? 'Terminé ✓' : 'Compris →'}
+        {current === total ? (<>Terminé <Check size={14} /></>) : (<>Compris <ArrowRight size={14} /></>)}
       </button>
     </div>
   );

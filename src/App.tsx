@@ -96,6 +96,7 @@ const FinancialDetails = lazy(
   () => import("./pages/professional/FinancialDetails")
 );
 const ProtectedRoute = lazy(() => import("./components/auth/ProtectedRoute"));
+const CompanionApp = lazy(() => import("./companion/CompanionApp"));
 const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard"));
 const AdminUsers = lazy(() => import("./pages/admin/AdminUsers"));
 const AdminProfessionals = lazy(
@@ -138,6 +139,8 @@ const AssessmentSelectPage = lazy(() => import("./pages/assessment/AssessmentSel
 const AssessmentQuizPage = lazy(() => import("./pages/assessment/AssessmentQuizPage"));
 const AssessmentResultsPage = lazy(() => import("./pages/assessment/AssessmentResultsPage"));
 const CompatibilityPage = lazy(() => import("./pages/assessment/CompatibilityPage"));
+const TestDetailPage = lazy(() => import("./pages/assessment/TestDetailPage"));
+const AssessmentProfilePage = lazy(() => import("./pages/assessment/AssessmentProfilePage"));
 
 // Loading fallback component
 const PageLoader = () => (
@@ -153,16 +156,28 @@ const PageLoader = () => (
 const AppChrome: React.FC = () => {
   const { pathname } = useLocation();
   const isAdminRoute = pathname.startsWith("/admin");
+  const isAppRoute = pathname.startsWith("/app");
+  const isChromeless = isAdminRoute || isAppRoute;
   const { currentUser } = useAuth();
   const userId = currentUser?.id ?? null;
 
   return (
     <>
-      {!isAdminRoute && <OptimizedHeader />}
+      {!isChromeless && <OptimizedHeader />}
       <main className="flex-1">
         <Suspense fallback={<PageLoader />}>
           <Routes>
             <Route path="/" element={<HomePage />} />
+
+            {/* Companion app — layout mobile plein écran, distinct du site */}
+            <Route
+              path="/app"
+              element={
+                <ProtectedRoute userType="patient">
+                  <CompanionApp />
+                </ProtectedRoute>
+              }
+            />
 
             <Route path="/patient" element={<PatientAccess />} />
             <Route path="/patient/access" element={<PatientAccess />} />
@@ -450,7 +465,8 @@ const AppChrome: React.FC = () => {
             <Route path="/assessment/quiz/:sessionId" element={<AssessmentQuizPage />} />
             <Route path="/assessment/results/:sessionId" element={<AssessmentResultsPage />} />
             <Route path="/assessment/compatibility" element={<CompatibilityPage />} />
-            <Route path="/assessment/profile" element={<Navigate to="/assessment" replace />} />
+            <Route path="/assessment/test/:scaleId" element={<TestDetailPage />} />
+            <Route path="/assessment/profile" element={<AssessmentProfilePage />} />
             <Route path="/assessment/:category" element={<AssessmentCategoryPage />} />
 
             {/* Fallback route - évite les 404 "profonds" */}
@@ -458,12 +474,12 @@ const AppChrome: React.FC = () => {
           </Routes>
         </Suspense>
       </main>
-      {!isAdminRoute && <Footer />}
-      {!isAdminRoute && <FloatingChat userId={userId} />}
-      {!isAdminRoute && !!currentUser && <FloatingKori />}
-      <NoKorisModal />
-      <KorisWelcome />
-      <WelcomeFlow />
+      {!isChromeless && <Footer />}
+      {!isChromeless && <FloatingChat userId={userId} />}
+      {!isChromeless && !!currentUser && <FloatingKori />}
+      {!isChromeless && <NoKorisModal />}
+      {!isChromeless && <KorisWelcome />}
+      {!isChromeless && <WelcomeFlow />}
     </>
   );
 };

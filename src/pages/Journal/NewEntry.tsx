@@ -1,19 +1,21 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { collection, addDoc } from 'firebase/firestore';
+import { ArrowLeft, BookOpen, Calendar, Sun, Tag, Save, Stethoscope, RefreshCw, Zap, Loader2, Smile, Meh, Frown, Annoyed, Angry, Heart } from 'lucide-react';
 import { db } from '../../utils/firebase';
 import { getOnboardingProfile } from '../../utils/onboardingProfile';
 import { getProfileProgress } from '../../services/evaluationService';
 import { useKoris } from '../../contexts/KorisContext';
 import { KORIS_COSTS } from '../../services/korisService';
+import { KORIS_CONFIG } from '../../utils/korisConfig';
 
 const HUMEURS = [
-  { emoji: '😊', label: 'Heureux(se)' },
-  { emoji: '😐', label: 'Neutre' },
-  { emoji: '😔', label: 'Triste' },
-  { emoji: '😰', label: 'Anxieux(se)' },
-  { emoji: '😡', label: 'En colère' },
-  { emoji: '🥰', label: 'Amoureux(se)' },
+  { emoji: '😊', label: 'Heureux(se)', icon: Smile },
+  { emoji: '😐', label: 'Neutre', icon: Meh },
+  { emoji: '😔', label: 'Triste', icon: Frown },
+  { emoji: '😰', label: 'Anxieux(se)', icon: Annoyed },
+  { emoji: '😡', label: 'En colère', icon: Angry },
+  { emoji: '🥰', label: 'Amoureux(se)', icon: Heart },
 ];
 
 const THEMES = ['Relations', 'Travail', 'Famille', 'Santé', 'Émotions', 'Autre'];
@@ -127,88 +129,71 @@ const NewEntry: React.FC<Props> = ({ userId }) => {
   };
 
   return (
-    <div style={{ minHeight: '100vh', background: '#F8FAFF', fontFamily: "'Inter',-apple-system,sans-serif", paddingBottom: 40 }}>
+    <div className="min-h-screen bg-paper pb-10">
       {/* Header */}
-      <div style={{
-        background: 'linear-gradient(135deg,#1E0442 0%,#3730A3 100%)',
-        padding: '20px 16px',
-        display: 'flex', alignItems: 'center', gap: 12, color: '#fff',
-      }}>
+      <div className="bg-ink px-4 py-5 flex items-center gap-3 text-white">
         <button
           onClick={() => navigate('/journal')}
-          style={{ background: 'rgba(255,255,255,0.15)', border: 'none', color: '#fff', borderRadius: 10, padding: '6px 12px', cursor: 'pointer', fontSize: 13, fontWeight: 600 }}
+          className="inline-flex items-center gap-1.5 bg-white/15 text-white rounded-pill px-3 py-1.5 text-[13px] font-semibold hover:bg-white/25 transition-colors"
         >
-          ← Retour
+          <ArrowLeft size={14} /> Retour
         </button>
-        <h1 style={{ margin: 0, fontSize: 18, fontWeight: 800 }}>📔 Nouvelle entrée</h1>
+        <h1 className="font-display m-0 text-lg font-semibold flex items-center gap-2">
+          <BookOpen size={18} /> Nouvelle entrée
+        </h1>
       </div>
 
-      <div style={{ maxWidth: 600, margin: '0 auto', padding: '20px 16px' }}>
+      <div className="max-w-xl mx-auto px-4 py-5">
         {/* Date */}
-        <p style={{ margin: '0 0 20px', fontSize: 13, color: '#64748B', fontWeight: 500 }}>
-          📅 {today}
+        <p className="m-0 mb-5 text-[13px] text-ink-soft font-medium flex items-center gap-1.5">
+          <Calendar size={14} /> {today}
         </p>
 
         {/* Humeur */}
-        <div style={{ marginBottom: 20 }}>
-          <p style={{ margin: '0 0 10px', fontSize: 14, fontWeight: 600, color: '#374151' }}>
-            🌤️ Comment tu te sens ?
+        <div className="mb-5">
+          <p className="m-0 mb-2.5 text-sm font-semibold text-ink-soft flex items-center gap-1.5">
+            <Sun size={15} /> Comment tu te sens ?
           </p>
-          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+          <div className="flex gap-2.5 flex-wrap">
             {HUMEURS.map(h => (
               <button
                 key={h.emoji}
                 onClick={() => setHumeur(h.emoji === humeur ? '' : h.emoji)}
                 title={h.label}
-                style={{
-                  width: 44, height: 44, borderRadius: 12, border: 'none',
-                  background: humeur === h.emoji ? 'rgba(99,102,241,0.15)' : '#fff',
-                  outline: humeur === h.emoji ? '2px solid #6366F1' : '1px solid #E2E8F0',
-                  fontSize: 22, cursor: 'pointer',
-                  transition: 'all 0.15s',
-                }}
+                className={`w-11 h-11 rounded-xl border-0 flex items-center justify-center transition-all ${
+                  humeur === h.emoji ? 'bg-accent-soft ring-2 ring-accent text-accent' : 'bg-card ring-1 ring-line text-ink-soft'
+                }`}
               >
-                {h.emoji}
+                <h.icon size={20} />
               </button>
             ))}
           </div>
         </div>
 
         {/* Zone de texte */}
-        <div style={{ marginBottom: 20 }}>
+        <div className="mb-5">
           <textarea
             value={contenu}
             onChange={e => setContenu(e.target.value)}
             placeholder="Écris ce que tu ressens aujourd'hui…"
             rows={8}
-            style={{
-              width: '100%', padding: '14px 16px', borderRadius: 14,
-              border: '1.5px solid rgba(99,102,241,0.2)',
-              fontSize: 14, fontFamily: 'inherit', background: '#fff',
-              color: '#0A2342', lineHeight: 1.65, resize: 'vertical',
-              boxSizing: 'border-box', outline: 'none',
-            }}
+            className="w-full px-4 py-3.5 rounded-2xl border-[1.5px] border-accent/20 text-sm font-sans bg-card text-ink leading-relaxed resize-y outline-none box-border focus:border-accent/50 transition-colors"
           />
         </div>
 
         {/* Thèmes */}
-        <div style={{ marginBottom: 24 }}>
-          <p style={{ margin: '0 0 10px', fontSize: 14, fontWeight: 600, color: '#374151' }}>
-            🏷️ Thèmes (optionnel)
+        <div className="mb-6">
+          <p className="m-0 mb-2.5 text-sm font-semibold text-ink-soft flex items-center gap-1.5">
+            <Tag size={15} /> Thèmes (optionnel)
           </p>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+          <div className="flex flex-wrap gap-2">
             {THEMES.map(t => (
               <button
                 key={t}
                 onClick={() => toggleTheme(t)}
-                style={{
-                  padding: '6px 14px', borderRadius: 20, border: 'none',
-                  background: themes.includes(t) ? 'linear-gradient(135deg,#6366F1,#8B5CF6)' : '#fff',
-                  color: themes.includes(t) ? '#fff' : '#64748B',
-                  outline: themes.includes(t) ? 'none' : '1px solid #E2E8F0',
-                  fontSize: 12, fontWeight: 600, cursor: 'pointer',
-                  transition: 'all 0.15s',
-                }}
+                className={`px-3.5 py-1.5 rounded-pill border-0 text-xs font-semibold transition-colors ${
+                  themes.includes(t) ? 'bg-accent text-white' : 'bg-card text-ink-soft ring-1 ring-line'
+                }`}
               >
                 {t}
               </button>
@@ -217,7 +202,7 @@ const NewEntry: React.FC<Props> = ({ userId }) => {
         </div>
 
         {error && (
-          <p style={{ margin: '0 0 16px', fontSize: 13, color: '#DC2626', background: '#FEF2F2', padding: '10px 14px', borderRadius: 10 }}>
+          <p className="mb-4 text-[13px] text-danger bg-danger/10 px-3.5 py-2.5 rounded-xl">
             {error}
           </p>
         )}
@@ -226,40 +211,35 @@ const NewEntry: React.FC<Props> = ({ userId }) => {
         <button
           onClick={handleSave}
           disabled={saving}
-          style={{
-            width: '100%', padding: '14px', borderRadius: 14, border: 'none',
-            background: saving ? '#E2E8F0' : 'linear-gradient(135deg,#3B82F6,#6366F1)',
-            color: '#fff', fontSize: 15, fontWeight: 700, cursor: saving ? 'default' : 'pointer',
-            marginBottom: 16,
-          }}
+          className={`w-full py-3.5 rounded-2xl border-0 text-[15px] font-bold mb-4 flex items-center justify-center gap-2 transition-colors ${
+            saving ? 'bg-line text-muted cursor-default' : 'bg-accent text-white cursor-pointer hover:bg-accent/90'
+          }`}
         >
-          {saving ? 'Sauvegarde…' : '💾 Sauvegarder'}
+          {saving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
+          {saving ? 'Sauvegarde…' : 'Sauvegarder'}
         </button>
 
         {/* Séparateur */}
-        <div style={{ borderTop: '1px solid #E2E8F0', margin: '8px 0 20px' }} />
+        <div className="border-t border-line my-2 mb-5" />
 
         {/* Dr Lô */}
-        <div style={{
-          background: '#fff', borderRadius: 16, padding: '20px',
-          border: '1px solid rgba(99,102,241,0.15)',
-        }}>
-          <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, marginBottom: 14 }}>
-            <span style={{ fontSize: 28 }}>🩺</span>
+        <div className="bg-card rounded-block px-5 py-5 border border-sage/20">
+          <div className="flex items-start gap-3 mb-3.5">
+            <Stethoscope size={26} className="text-sage flex-shrink-0" />
             <div>
-              <p style={{ margin: '0 0 4px', fontSize: 14, fontWeight: 700, color: '#0A2342' }}>
+              <p className="m-0 mb-1 text-sm font-bold text-ink">
                 Demander l'avis de Dr Lô
               </p>
-              <p style={{ margin: 0, fontSize: 12, color: '#64748B', lineHeight: 1.5 }}>
+              <p className="m-0 text-xs text-muted leading-snug">
                 Il lira ton entrée et te donnera un retour personnalisé
               </p>
             </div>
           </div>
 
           {drLoResponse ? (
-            <div style={{ background: '#F0F9FF', borderRadius: 12, padding: '14px 16px', marginBottom: 14 }}>
-              <p style={{ margin: '0 0 6px', fontSize: 11, fontWeight: 700, color: '#0369A1' }}>Dr Lô :</p>
-              <p style={{ margin: 0, fontSize: 13, color: '#0A2342', lineHeight: 1.65, whiteSpace: 'pre-line' }}>
+            <div className="bg-sage-soft rounded-xl px-4 py-3.5 mb-3.5">
+              <p className="m-0 mb-1.5 text-[11px] font-bold text-sage">Dr Lô :</p>
+              <p className="m-0 text-[13px] text-ink leading-relaxed whitespace-pre-line">
                 {drLoResponse}
               </p>
             </div>
@@ -268,21 +248,21 @@ const NewEntry: React.FC<Props> = ({ userId }) => {
           <button
             onClick={handleAskDrLo}
             disabled={askingDrLo || !contenu.trim()}
-            style={{
-              width: '100%', padding: '12px', borderRadius: 12, border: 'none',
-              background: askingDrLo || !contenu.trim()
-                ? '#E2E8F0'
-                : 'linear-gradient(135deg,#8B5CF6,#6366F1)',
-              color: '#fff', fontSize: 13, fontWeight: 700,
-              cursor: askingDrLo || !contenu.trim() ? 'default' : 'pointer',
-              marginBottom: 8,
-            }}
+            className={`w-full py-3 rounded-xl border-0 text-[13px] font-bold mb-2 flex items-center justify-center gap-2 transition-colors ${
+              askingDrLo || !contenu.trim() ? 'bg-line text-muted cursor-default' : 'bg-sage text-white cursor-pointer hover:bg-sage/90'
+            }`}
           >
-            {askingDrLo ? 'Dr Lô réfléchit…' : drLoResponse ? '🔄 Redemander l\'avis' : '🩺 Demander l\'avis de Dr Lô'}
+            {askingDrLo ? (
+              <><Loader2 size={14} className="animate-spin" /> Dr Lô réfléchit…</>
+            ) : drLoResponse ? (
+              <><RefreshCw size={14} /> Redemander l'avis</>
+            ) : (
+              <><Stethoscope size={14} /> Demander l'avis de Dr Lô</>
+            )}
           </button>
 
-          <p style={{ margin: 0, fontSize: 11, color: '#94A3B8', textAlign: 'center' }}>
-            ⚡ {KORIS_CONFIG.active ? `Utilise ${KORIS_CONFIG.costs.journal_dr_lo_response} Koris` : 'Utilisera des Koris (bientôt disponible)'}
+          <p className="m-0 text-[11px] text-muted text-center flex items-center justify-center gap-1">
+            <Zap size={11} /> {KORIS_CONFIG.active ? `Utilise ${KORIS_CONFIG.costs.journal_dr_lo_response} Koris` : 'Utilisera des Koris (bientôt disponible)'}
           </p>
         </div>
       </div>

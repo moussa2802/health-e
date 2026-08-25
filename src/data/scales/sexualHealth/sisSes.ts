@@ -13,7 +13,7 @@ export const SIS_SES: AssessmentScale = {
   shortName: "SIS/SES",
   category: 'sexual_health',
   description: "Évalue ce qui t'excite et ce qui te freine dans ta réponse sexuelle.",
-  instructions: "Ces questions portent sur ce qui t'excite et ce qui te freine sexuellement. Pas de tabou ici — sois honnête avec toi-même 🔓",
+  instructions: "Ces questions portent sur ce qui t'excite et ce qui te freine sexuellement. Pas de tabou ici — sois honnête avec toi-même",
   timeEstimateMinutes: 12,
   reference: "Janssen, E., Vorst, H., Finn, P., & Bancroft, J. (2002). The Sexual Inhibition and Sexual Excitation Scales. Journal of Sex Research, 39(2), 114–126.",
   licenseNote: "Kinsey Institute. Libre pour usage clinique et de recherche.",

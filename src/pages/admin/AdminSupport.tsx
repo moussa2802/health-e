@@ -151,21 +151,21 @@ const AdminSupport: React.FC = () => {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'open': return 'bg-yellow-100 text-yellow-800';
-      case 'in_progress': return 'bg-blue-100 text-blue-800';
-      case 'resolved': return 'bg-green-100 text-green-800';
-      case 'closed': return 'bg-gray-100 text-gray-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case 'open': return 'bg-gold-soft text-gold';
+      case 'in_progress': return 'bg-sage-soft text-sage';
+      case 'resolved': return 'bg-ok/15 text-ok';
+      case 'closed': return 'bg-paper text-ink-soft';
+      default: return 'bg-paper text-ink-soft';
     }
   };
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
-      case 'urgent': return 'bg-red-100 text-red-800';
-      case 'high': return 'bg-orange-100 text-orange-800';
-      case 'medium': return 'bg-yellow-100 text-yellow-800';
-      case 'low': return 'bg-green-100 text-green-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case 'urgent': return 'bg-danger/10 text-danger';
+      case 'high': return 'bg-accent-soft text-accent';
+      case 'medium': return 'bg-gold-soft text-gold';
+      case 'low': return 'bg-ok/15 text-ok';
+      default: return 'bg-paper text-ink-soft';
     }
   };
 
@@ -207,45 +207,45 @@ const AdminSupport: React.FC = () => {
         {/* Statistiques */}
         {statistics && (
           <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
-            <div className="bg-white rounded-lg shadow p-4 text-center">
-              <div className="text-2xl font-bold text-gray-900">{statistics.total}</div>
-              <div className="text-sm text-gray-600">Total</div>
+            <div className="bg-card rounded-card shadow-soft p-4 text-center">
+              <div className="font-display text-2xl font-bold text-ink">{statistics.total}</div>
+              <div className="text-sm text-ink-soft">Total</div>
             </div>
-            <div className="bg-white rounded-lg shadow p-4 text-center">
-              <div className="text-2xl font-bold text-yellow-600">{statistics.open}</div>
-              <div className="text-sm text-gray-600">Ouverts</div>
+            <div className="bg-card rounded-card shadow-soft p-4 text-center">
+              <div className="font-display text-2xl font-bold text-gold">{statistics.open}</div>
+              <div className="text-sm text-ink-soft">Ouverts</div>
             </div>
-            <div className="bg-white rounded-lg shadow p-4 text-center">
-              <div className="text-2xl font-bold text-blue-600">{statistics.inProgress}</div>
-              <div className="text-sm text-gray-600">En cours</div>
+            <div className="bg-card rounded-card shadow-soft p-4 text-center">
+              <div className="font-display text-2xl font-bold text-sage">{statistics.inProgress}</div>
+              <div className="text-sm text-ink-soft">En cours</div>
             </div>
-            <div className="bg-white rounded-lg shadow p-4 text-center">
-              <div className="text-2xl font-bold text-green-600">{statistics.resolved}</div>
-              <div className="text-sm text-gray-600">Résolus</div>
+            <div className="bg-card rounded-card shadow-soft p-4 text-center">
+              <div className="font-display text-2xl font-bold text-ok">{statistics.resolved}</div>
+              <div className="text-sm text-ink-soft">Résolus</div>
             </div>
-            <div className="bg-white rounded-lg shadow p-4 text-center">
-              <div className="text-2xl font-bold text-gray-600">{statistics.closed}</div>
-              <div className="text-sm text-gray-600">Fermés</div>
+            <div className="bg-card rounded-card shadow-soft p-4 text-center">
+              <div className="font-display text-2xl font-bold text-muted">{statistics.closed}</div>
+              <div className="text-sm text-ink-soft">Fermés</div>
             </div>
-            <div className="bg-white rounded-lg shadow p-4 text-center">
-              <div className="text-2xl font-bold text-red-600">{statistics.urgent}</div>
-              <div className="text-sm text-gray-600">Urgents</div>
+            <div className="bg-card rounded-card shadow-soft p-4 text-center">
+              <div className="font-display text-2xl font-bold text-danger">{statistics.urgent}</div>
+              <div className="text-sm text-ink-soft">Urgents</div>
             </div>
           </div>
         )}
 
         {/* Filtres */}
-        <div className="bg-white rounded-lg shadow p-4">
+        <div className="bg-card rounded-card shadow-soft p-4">
           <div className="flex flex-wrap gap-4 items-center">
             <div className="flex items-center gap-2">
-              <Filter className="h-4 w-4 text-gray-500" />
-              <span className="text-sm font-medium text-gray-700">Filtres:</span>
+              <Filter className="h-4 w-4 text-muted" />
+              <span className="text-sm font-medium text-ink-soft">Filtres:</span>
             </div>
-            
+
             <select
               value={filters.status}
               onChange={(e) => setFilters(prev => ({ ...prev, status: e.target.value }))}
-              className="px-3 py-2 border border-gray-300 rounded-md text-sm"
+              className="px-3 py-2 border border-line rounded-card text-sm bg-card text-ink-soft"
             >
               <option value="all">Tous les statuts</option>
               <option value="open">Ouverts</option>
@@ -257,7 +257,7 @@ const AdminSupport: React.FC = () => {
             <select
               value={filters.priority}
               onChange={(e) => setFilters(prev => ({ ...prev, priority: e.target.value }))}
-              className="px-3 py-2 border border-gray-300 rounded-md text-sm"
+              className="px-3 py-2 border border-line rounded-card text-sm bg-card text-ink-soft"
             >
               <option value="all">Toutes priorités</option>
               <option value="urgent">Urgente</option>
@@ -269,7 +269,7 @@ const AdminSupport: React.FC = () => {
             <select
               value={filters.category}
               onChange={(e) => setFilters(prev => ({ ...prev, category: e.target.value }))}
-              className="px-3 py-2 border border-gray-300 rounded-md text-sm"
+              className="px-3 py-2 border border-line rounded-card text-sm bg-card text-ink-soft"
             >
               <option value="all">Toutes catégories</option>
               <option value="technical">Technique</option>
@@ -280,13 +280,13 @@ const AdminSupport: React.FC = () => {
             </select>
 
             <div className="flex items-center gap-2 flex-1 max-w-md">
-              <Search className="h-4 w-4 text-gray-500" />
+              <Search className="h-4 w-4 text-muted" />
               <input
                 type="text"
                 placeholder="Rechercher..."
                 value={filters.search}
                 onChange={(e) => setFilters(prev => ({ ...prev, search: e.target.value }))}
-                className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm"
+                className="flex-1 px-3 py-2 border border-line rounded-card text-sm bg-card text-ink"
               />
             </div>
           </div>
@@ -294,65 +294,65 @@ const AdminSupport: React.FC = () => {
 
         <div className="flex gap-6 h-[600px]">
           {/* Liste des tickets */}
-          <div className="w-1/3 bg-white rounded-lg shadow overflow-hidden">
-            <div className="p-4 border-b border-gray-200 bg-gray-50">
-              <h3 className="font-semibold text-gray-900">
+          <div className="w-1/3 bg-card rounded-block shadow-soft overflow-hidden">
+            <div className="p-4 border-b border-line bg-paper">
+              <h3 className="font-semibold text-ink">
                 Tickets ({filteredTickets.length})
               </h3>
             </div>
-            
+
             <div className="overflow-y-auto h-full">
               {filteredTickets.length === 0 ? (
-                <div className="p-6 text-center text-gray-500">
-                  <MessageCircle className="h-12 w-12 mx-auto mb-3 text-gray-300" />
+                <div className="p-6 text-center text-muted">
+                  <MessageCircle className="h-12 w-12 mx-auto mb-3 text-line" />
                   <p>Aucun ticket trouvé</p>
                 </div>
               ) : (
-                <div className="divide-y divide-gray-200">
+                <div className="divide-y divide-line">
                   {filteredTickets.map((ticket) => (
                     <div
                       key={ticket.id}
                       onClick={() => handleTicketSelect(ticket)}
-                      className={`p-4 cursor-pointer hover:bg-gray-50 transition-colors ${
-                        selectedTicket?.id === ticket.id ? 'bg-blue-50 border-r-2 border-blue-500' : ''
+                      className={`p-4 cursor-pointer hover:bg-paper transition-colors ${
+                        selectedTicket?.id === ticket.id ? 'bg-accent-soft border-r-2 border-accent' : ''
                       }`}
                     >
                       <div className="flex items-start justify-between mb-2">
-                        <h4 className="font-medium text-gray-900 text-sm line-clamp-1">
+                        <h4 className="font-medium text-ink text-sm line-clamp-1">
                           {ticket.subject}
                         </h4>
                         <div className="flex items-center gap-1">
                           {getStatusIcon(ticket.status)}
-                          <span className={`px-2 py-1 text-xs rounded-full ${getStatusColor(ticket.status)}`}>
+                          <span className={`px-2 py-1 text-xs rounded-pill ${getStatusColor(ticket.status)}`}>
                             {ticket.status === 'open' ? 'Ouvert' :
                              ticket.status === 'in_progress' ? 'En cours' :
                              ticket.status === 'resolved' ? 'Résolu' : 'Fermé'}
                           </span>
                         </div>
                       </div>
-                      
+
                       <div className="flex items-center gap-2 mb-2">
-                        <span className={`px-2 py-1 text-xs rounded-full ${getPriorityColor(ticket.priority)}`}>
+                        <span className={`px-2 py-1 text-xs rounded-pill ${getPriorityColor(ticket.priority)}`}>
                           {ticket.priority === 'urgent' ? 'Urgent' :
                            ticket.priority === 'high' ? 'Élevée' :
                            ticket.priority === 'medium' ? 'Moyenne' : 'Faible'}
                         </span>
-                        <span className="text-xs text-gray-500">
+                        <span className="text-xs text-muted">
                           {ticket.category === 'technical' ? 'Technique' :
                            ticket.category === 'billing' ? 'Facturation' :
                            ticket.category === 'account' ? 'Compte' :
                            ticket.category === 'consultation' ? 'Consultation' : 'Autre'}
                         </span>
                       </div>
-                      
-                      <div className="flex items-center gap-2 text-xs text-gray-500 mb-2">
+
+                      <div className="flex items-center gap-2 text-xs text-muted mb-2">
                         <User className="h-3 w-3" />
                         <span>{ticket.userName}</span>
                         <span>•</span>
                         <span>{ticket.userType === 'patient' ? 'Patient' : 'Professionnel'}</span>
                       </div>
-                      
-                      <p className="text-xs text-gray-500">
+
+                      <p className="text-xs text-muted">
                         {formatDate(ticket.createdAt)}
                       </p>
                     </div>
@@ -363,17 +363,17 @@ const AdminSupport: React.FC = () => {
           </div>
 
           {/* Détails du ticket et messages */}
-          <div className="flex-1 bg-white rounded-lg shadow overflow-hidden">
+          <div className="flex-1 bg-card rounded-block shadow-soft overflow-hidden">
             {selectedTicket ? (
               <>
                 {/* Header du ticket */}
-                <div className="p-4 border-b border-gray-200 bg-gray-50">
+                <div className="p-4 border-b border-line bg-paper">
                   <div className="flex items-start justify-between mb-3">
                     <div>
-                      <h3 className="text-lg font-semibold text-gray-900 mb-1">
+                      <h3 className="font-display text-lg font-semibold text-ink mb-1">
                         {selectedTicket.subject}
                       </h3>
-                      <div className="flex items-center gap-4 text-sm text-gray-600">
+                      <div className="flex items-center gap-4 text-sm text-ink-soft">
                         <span className="flex items-center gap-1">
                           <User className="h-4 w-4" />
                           {selectedTicket.userName} ({selectedTicket.userType === 'patient' ? 'Patient' : 'Professionnel'})
@@ -388,13 +388,13 @@ const AdminSupport: React.FC = () => {
                         </span>
                       </div>
                     </div>
-                    
+
                     <div className="flex items-center gap-2">
                       <select
                         value={selectedTicket.status}
                         onChange={(e) => handleStatusUpdate(selectedTicket.id, e.target.value)}
                         disabled={updatingStatus}
-                        className="px-3 py-2 border border-gray-300 rounded-md text-sm"
+                        className="px-3 py-2 border border-line rounded-card text-sm bg-card text-ink-soft"
                       >
                         <option value="open">Ouvert</option>
                         <option value="in_progress">En cours</option>
@@ -403,19 +403,19 @@ const AdminSupport: React.FC = () => {
                       </select>
                     </div>
                   </div>
-                  
+
                   <div className="flex items-center gap-4">
-                    <span className={`px-3 py-1 text-sm rounded-full ${getPriorityColor(selectedTicket.priority)}`}>
+                    <span className={`px-3 py-1 text-sm rounded-pill ${getPriorityColor(selectedTicket.priority)}`}>
                       Priorité: {selectedTicket.priority === 'urgent' ? 'Urgente' :
                                 selectedTicket.priority === 'high' ? 'Élevée' :
                                 selectedTicket.priority === 'medium' ? 'Moyenne' : 'Faible'}
                     </span>
-                    <span className={`px-3 py-1 text-sm rounded-full ${getStatusColor(selectedTicket.status)}`}>
+                    <span className={`px-3 py-1 text-sm rounded-pill ${getStatusColor(selectedTicket.status)}`}>
                       Statut: {selectedTicket.status === 'open' ? 'Ouvert' :
                                selectedTicket.status === 'in_progress' ? 'En cours' :
                                selectedTicket.status === 'resolved' ? 'Résolu' : 'Fermé'}
                     </span>
-                    <span className="px-3 py-1 text-sm bg-gray-100 text-gray-800 rounded-full">
+                    <span className="px-3 py-1 text-sm bg-paper text-ink-soft rounded-pill">
                       <Tag className="h-3 w-3 inline mr-1" />
                       {selectedTicket.category === 'technical' ? 'Technique' :
                        selectedTicket.category === 'billing' ? 'Facturation' :
@@ -423,10 +423,10 @@ const AdminSupport: React.FC = () => {
                        selectedTicket.category === 'consultation' ? 'Consultation' : 'Autre'}
                     </span>
                   </div>
-                  
+
                   {selectedTicket.description && (
-                    <div className="mt-3 p-3 bg-gray-50 rounded-md">
-                      <p className="text-sm text-gray-700">{selectedTicket.description}</p>
+                    <div className="mt-3 p-3 bg-paper rounded-card">
+                      <p className="text-sm text-ink-soft">{selectedTicket.description}</p>
                     </div>
                   )}
                 </div>
@@ -440,10 +440,10 @@ const AdminSupport: React.FC = () => {
                         className={`flex ${message.senderType === 'admin' ? 'justify-end' : 'justify-start'}`}
                       >
                         <div
-                          className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
+                          className={`max-w-xs lg:max-w-md px-4 py-2 rounded-card ${
                             message.senderType === 'admin'
-                              ? 'bg-blue-600 text-white'
-                              : 'bg-gray-100 text-gray-900'
+                              ? 'bg-ink text-white'
+                              : 'bg-paper text-ink'
                           }`}
                         >
                           <div className="text-xs opacity-75 mb-1">
@@ -461,20 +461,20 @@ const AdminSupport: React.FC = () => {
                 </div>
 
                 {/* Input pour nouveau message */}
-                <div className="p-4 border-t border-gray-200">
+                <div className="p-4 border-t border-line">
                   <div className="flex gap-2">
                     <input
                       type="text"
                       value={newMessage}
                       onChange={(e) => setNewMessage(e.target.value)}
                       placeholder="Tapez votre réponse..."
-                      className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="flex-1 px-3 py-2 border border-line rounded-card focus:outline-none focus:ring-2 focus:ring-accent"
                       onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
                     />
                     <button
                       onClick={handleSendMessage}
                       disabled={!newMessage.trim() || sendingMessage}
-                      className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                      className="px-4 py-2 bg-accent text-white rounded-card hover:bg-accent/90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                     >
                       <Reply className="h-4 w-4" />
                       {sendingMessage ? 'Envoi...' : 'Répondre'}
@@ -483,9 +483,9 @@ const AdminSupport: React.FC = () => {
                 </div>
               </>
             ) : (
-              <div className="flex items-center justify-center h-full text-gray-500">
+              <div className="flex items-center justify-center h-full text-muted">
                 <div className="text-center">
-                  <MessageCircle className="h-12 w-12 mx-auto mb-3 text-gray-300" />
+                  <MessageCircle className="h-12 w-12 mx-auto mb-3 text-line" />
                   <p>Sélectionnez un ticket pour voir les détails</p>
                 </div>
               </div>

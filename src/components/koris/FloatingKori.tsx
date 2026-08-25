@@ -9,6 +9,11 @@ import KorisFloatingPanel from './KorisFloatingPanel';
 
 const KORI_IMG = '/kori.png';
 
+const DANGER = '#B23A3A';
+const WARN = '#B5732A';
+const GOLD = '#8F6A1F';
+const OK = '#3C7A5A';
+
 const FloatingKori: React.FC = () => {
   const { balance, loading, spendTick, lastSpentCost, dailyRefillAmount, walletInitialized } = useKoris();
   const [panelOpen, setPanelOpen] = useState(false);
@@ -22,7 +27,7 @@ const FloatingKori: React.FC = () => {
   useEffect(() => {
     if (spendTick > prevSpendTick.current && lastSpentCost > 0) {
       setShaking(true);
-      setFloatAnim({ text: `-${lastSpentCost}`, color: '#DC2626' });
+      setFloatAnim({ text: `-${lastSpentCost}`, color: DANGER });
       const t1 = setTimeout(() => setShaking(false), 500);
       const t2 = setTimeout(() => setFloatAnim(null), 1200);
       return () => { clearTimeout(t1); clearTimeout(t2); };
@@ -40,7 +45,7 @@ const FloatingKori: React.FC = () => {
         // Daily reset: show "10 ✓" (not "+10" since it's a reset, not an addition)
         // Welcome bonus: show "+25"
         const text = walletInitialized ? `+${amount}` : `${amount} ✓`;
-        setFloatAnim({ text, color: '#059669' });
+        setFloatAnim({ text, color: OK });
         setTimeout(() => setPulseGreen(false), 800);
         setTimeout(() => setFloatAnim(null), 1500);
       }, 1200);
@@ -50,36 +55,21 @@ const FloatingKori: React.FC = () => {
 
   if (loading) return null;
 
-  const badgeColor = balance === 0 ? '#DC2626' : balance <= 3 ? '#D97706' : '#0D9488';
+  const badgeColor = balance === 0 ? DANGER : balance <= 3 ? WARN : GOLD;
 
   return (
     <>
       {/* Floating button */}
-      <div
-        style={{
-          position: 'fixed',
-          bottom: 80,
-          left: 20,
-          zIndex: 50,
-        }}
-      >
+      <div className="fixed bottom-20 left-5 z-50">
         {/* Float animation text */}
         {floatAnim && (
           <div
             key={`${floatAnim.text}-${Date.now()}`}
+            className="absolute -top-2 left-1/2 -translate-x-1/2 text-sm font-extrabold pointer-events-none whitespace-nowrap font-sans"
             style={{
-              position: 'absolute',
-              top: -8,
-              left: '50%',
-              transform: 'translateX(-50%)',
-              fontSize: 14,
-              fontWeight: 800,
               color: floatAnim.color,
-              pointerEvents: 'none',
               animation: 'koriFloatUp 1.2s ease-out forwards',
-              fontFamily: "'Inter', -apple-system, sans-serif",
               textShadow: '0 1px 4px rgba(0,0,0,0.15)',
-              whiteSpace: 'nowrap',
             }}
           >
             {floatAnim.text}
@@ -89,57 +79,25 @@ const FloatingKori: React.FC = () => {
         <button
           data-kori-float-btn
           onClick={() => setPanelOpen(!panelOpen)}
+          className="w-14 h-14 rounded-full border-0 p-0 cursor-pointer relative overflow-visible bg-transparent transition-shadow duration-300"
           style={{
-            width: 56,
-            height: 56,
-            borderRadius: '50%',
-            border: 'none',
-            padding: 0,
-            cursor: 'pointer',
-            position: 'relative',
-            overflow: 'visible',
-            background: 'transparent',
             boxShadow: pulseGreen
-              ? '0 0 0 6px rgba(5,150,105,0.3), 0 4px 16px rgba(0,0,0,0.15)'
+              ? `0 0 0 6px ${OK}4D, 0 4px 16px rgba(0,0,0,0.15)`
               : '0 4px 16px rgba(0,0,0,0.15)',
             animation: shaking ? 'koriShake 0.4s ease-in-out' : undefined,
-            transition: 'box-shadow 0.3s',
           }}
         >
           {/* Kori image */}
           <img
             src={KORI_IMG}
             alt="Kori"
-            style={{
-              width: 56,
-              height: 56,
-              borderRadius: '50%',
-              objectFit: 'cover',
-              display: 'block',
-            }}
+            className="w-14 h-14 rounded-full object-cover block"
           />
 
           {/* Balance badge */}
           <div
-            style={{
-              position: 'absolute',
-              top: -4,
-              right: -4,
-              minWidth: 22,
-              height: 22,
-              borderRadius: 11,
-              background: badgeColor,
-              color: 'white',
-              fontSize: 11,
-              fontWeight: 800,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              padding: '0 5px',
-              boxShadow: '0 2px 6px rgba(0,0,0,0.2)',
-              fontFamily: "'Inter', -apple-system, sans-serif",
-              border: '2px solid white',
-            }}
+            className="absolute -top-1 -right-1 min-w-[22px] h-[22px] rounded-full text-white text-[11px] font-extrabold flex items-center justify-center px-1.5 border-2 border-white font-sans"
+            style={{ background: badgeColor, boxShadow: '0 2px 6px rgba(0,0,0,0.2)' }}
           >
             {balance}
           </div>

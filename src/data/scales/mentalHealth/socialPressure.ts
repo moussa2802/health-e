@@ -14,7 +14,7 @@ export const SOCIAL_PRESSURE: AssessmentScale = {
   shortName: "Pression Sociale",
   category: 'mental_health',
   description: "Évalue l'impact des pressions sociales liées au mariage, aux rôles de genre et aux attentes de l'entourage.",
-  instructions: "Ces questions portent sur les pressions que tu peux ressentir de la part de ton entourage et de ta société. Réponds franchement 💬",
+  instructions: "Ces questions portent sur les pressions que tu peux ressentir de la part de ton entourage et de ta société. Réponds franchement",
   timeEstimateMinutes: 5,
   reference: "Questionnaire Healt-e (2026). Développé en collaboration avec des professionnels du profil psychologique au Sénégal.",
   licenseNote: "Questionnaire original Healt-e. Tous droits réservés.",
@@ -42,8 +42,8 @@ export const SOCIAL_PRESSURE: AssessmentScale = {
     { key: 'conformity',        label: "Conformité vs authenticité", itemIds: [11,12],   range: { min: 2, max: 10 } },
   ],
   interpretation: [
-    { min: 12, max: 24, label: "Pression sociale faible",    severity: 'positive', description: "Tu sembles assez libre par rapport aux pressions de ton entourage — c'est une vraie force.", referralRequired: false, recommendation: "Continue à cultiver cette authenticité, elle te protège 🌟" },
+    { min: 12, max: 24, label: "Pression sociale faible",    severity: 'positive', description: "Tu sembles assez libre par rapport aux pressions de ton entourage — c'est une vraie force.", referralRequired: false, recommendation: "Continue à cultiver cette authenticité, elle te protège" },
     { min: 25, max: 42, label: "Pression sociale modérée",   severity: 'mild',     description: "Tu ressens une pression sociale notable qui peut parfois limiter ta liberté de choix.", referralRequired: false, recommendation: "Essaie d'identifier les pressions qui te pèsent le plus — les nommer, c'est déjà un premier pas pour s'en libérer." },
-    { min: 43, max: 60, label: "Pression sociale élevée",    severity: 'moderate', description: "La pression de ton entourage et de ta société pèse vraiment sur tes choix et ton bien-être au quotidien.", referralRequired: false, recommendation: "Tu mérites de vivre selon tes propres valeurs. Un accompagnement pour t'aider à affirmer qui tu es vraiment pourrait te faire beaucoup de bien 💛" },
+    { min: 43, max: 60, label: "Pression sociale élevée",    severity: 'moderate', description: "La pression de ton entourage et de ta société pèse vraiment sur tes choix et ton bien-être au quotidien.", referralRequired: false, recommendation: "Tu mérites de vivre selon tes propres valeurs. Un accompagnement pour t'aider à affirmer qui tu es vraiment pourrait te faire beaucoup de bien" },
   ],
 };

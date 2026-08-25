@@ -6,6 +6,12 @@ import type { AssessmentScale } from '../../../types/assessment';
 // Items inversés Évitement : 4, 16, 18, 22, 26, 28, 30, 34, 36 (formulation positive)
 // Score : moyenne par sous-échelle (1–7), non une somme
 // Quadrants : Sécure (<3.5//<3.5) | Préoccupé (≥3.5//<3.5) | Détaché (<3.5//≥3.5) | Craintif (≥3.5//≥3.5)
+//
+// PSYCHOMETRIC DRIFT NOTE
+// Les items sont adaptés en français tutoiement depuis l'original anglais.
+// Le contenu sémantique, l'ordre, le nombre d'items, les reverseIds et le scoring sont fidèles à l'original.
+// Seuls des ajustements cosmétiques ont été faits : tutoiement, formulations inclusives {{m|f}}, suppression d'emojis.
+// Toute modification du texte d'un item doit préserver sa valence et sa cible psychologique.
 
 const opts = [
   { value: 1, label: "Pas du tout", subtitle: "Ça ne me correspond vraiment pas" },
@@ -23,7 +29,7 @@ export const ECR_R: AssessmentScale = {
   shortName: "ECR-R",
   category: 'mental_health',
   description: "Évalue le style d'attachement adulte selon deux dimensions : l'anxiété d'abandon et l'évitement de l'intimité. Identifie les quatre styles d'attachement (sécure, préoccupé, détaché, craintif).",
-  instructions: "Ces affirmations concernent ta façon de vivre tes relations amoureuses. Il n'y a pas de bonne ou mauvaise réponse — fais confiance à ton ressenti 💛",
+  instructions: "Ces affirmations concernent ta façon de vivre tes relations amoureuses. Il n'y a pas de bonne ou mauvaise réponse — fais confiance à ton ressenti.",
   timeEstimateMinutes: 10,
   reference: "Fraley, R.C., Waller, N.G., & Brennan, K.A. (2000). An item response theory analysis of self-report measures of adult attachment. Journal of Personality and Social Psychology, 78(2), 350–365.",
   licenseNote: "Libre pour usage clinique et de recherche.",
@@ -39,7 +45,7 @@ export const ECR_R: AssessmentScale = {
     { id: 3,  text: "Tu te surprends parfois à t'inquiéter que ton/ta partenaire ne veuille plus rester avec toi ?",                     type: 'likert', options: opts, subscale: 'anxiety' },
     { id: 5,  text: "Tu aimerais que ton/ta partenaire ressente des choses aussi fortes que ce que tu ressens pour lui/elle ?",            type: 'likert', options: opts, subscale: 'anxiety' },
     { id: 7,  text: "Tes relations amoureuses, c'est un sujet qui t'occupe beaucoup la tête ?",                                          type: 'likert', options: opts, subscale: 'anxiety' },
-    { id: 9,  text: "La peur d'être {{abandonné|abandonnée}}, c'est quelque chose qui te parle ? 🌧️",                                               type: 'likert', options: opts, subscale: 'anxiety' },
+    { id: 9,  text: "La peur d'être {{abandonné|abandonnée}}, c'est quelque chose qui te parle ?",                                                    type: 'likert', options: opts, subscale: 'anxiety' },
     { id: 11, text: "Tu as l'impression que ton besoin d'être proche fait parfois fuir les gens autour de toi ?",                         type: 'likert', options: opts, subscale: 'anxiety' },
     { id: 13, text: "Tu as peur que si ton/ta partenaire te découvrait vraiment — avec tes zones d'ombre — il/elle ne t'aimerait plus ?", type: 'likert', options: opts, subscale: 'anxiety' },
     { id: 15, text: "Ça te frustre de ne pas recevoir autant d'affection et de soutien que ce dont tu aurais besoin ?",                   type: 'likert', options: opts, subscale: 'anxiety' },
@@ -52,26 +58,26 @@ export const ECR_R: AssessmentScale = {
     { id: 29, text: "Tu as l'impression que ton/ta partenaire ne te remarque que quand tu es en colère ou que ça ne va pas ?",            type: 'likert', options: opts, subscale: 'anxiety' },
     { id: 31, text: "Il t'arrive de te demander ce que ton/ta partenaire ressent vraiment pour toi ?",                                   type: 'likert', options: opts, subscale: 'anxiety' },
     { id: 33, text: "Tu as le sentiment que tes partenaires ne veulent pas se rapprocher autant que toi tu le voudrais ?",                type: 'likert', options: opts, subscale: 'anxiety' },
-    { id: 35, text: "Parfois, tu as l'impression de devoir « pousser » tes partenaires pour qu'ils montrent plus d'engagement ? 🫧",      type: 'likert', options: opts, subscale: 'anxiety' },
+    { id: 35, text: "Parfois, tu as l'impression de devoir « pousser » tes partenaires pour qu'ils montrent plus d'engagement ?",           type: 'likert', options: opts, subscale: 'anxiety' },
     // ── Évitement (items pairs) ──
     { id: 2,  text: "Tu préfères garder pour toi ce que tu ressens vraiment, plutôt que de le montrer à ton/ta partenaire ?",             type: 'likert', options: opts, subscale: 'avoidance' },
     { id: 4,  text: "Te rapprocher émotionnellement de ton/ta partenaire, c'est quelque chose qui te vient assez naturellement ?",        type: 'likert', options: opts, subscale: 'avoidance' },
     { id: 6,  text: "T'ouvrir vraiment à tes partenaires amoureux, c'est quelque chose qui te met mal à l'aise ?",                       type: 'likert', options: opts, subscale: 'avoidance' },
     { id: 8,  text: "Tu préfères garder une certaine distance avec tes partenaires, ne pas être trop proche ?",                           type: 'likert', options: opts, subscale: 'avoidance' },
     { id: 10, text: "Quand ton/ta partenaire veut beaucoup de proximité, ça te met un peu mal à l'aise ?",                               type: 'likert', options: opts, subscale: 'avoidance' },
-    { id: 12, text: "Tu voudrais te rapprocher de ton/ta partenaire, mais tu finis toujours par reculer un peu ? 🐚",                     type: 'likert', options: opts, subscale: 'avoidance' },
+    { id: 12, text: "Tu voudrais te rapprocher de ton/ta partenaire, mais tu finis toujours par reculer un peu ?",                          type: 'likert', options: opts, subscale: 'avoidance' },
     { id: 14, text: "Tu te sens un peu {{nerveux|nerveuse}} quand tes partenaires s'approchent trop près émotionnellement ?",                      type: 'likert', options: opts, subscale: 'avoidance' },
     { id: 16, text: "Tu sens que ton/ta partenaire te comprend vraiment et comprend tes besoins ?",                                       type: 'likert', options: opts, subscale: 'avoidance' },
     { id: 18, text: "D'habitude, tu parles de tes soucis et de ce qui te préoccupe avec ton/ta partenaire ?",                            type: 'likert', options: opts, subscale: 'avoidance' },
     { id: 20, text: "Compter sur tes partenaires amoureux, c'est quelque chose qui ne te met pas très à l'aise ?",                       type: 'likert', options: opts, subscale: 'avoidance' },
     { id: 22, text: "L'idée que ton/ta partenaire puisse te quitter, c'est un truc qui ne t'inquiète pas trop ?",                        type: 'likert', options: opts, subscale: 'avoidance' },
     { id: 24, text: "Tu essaies d'éviter de trop te rapprocher émotionnellement de ton/ta partenaire ?",                                  type: 'likert', options: opts, subscale: 'avoidance' },
-    { id: 26, text: "Dans les moments difficiles, te tourner vers ton/ta partenaire ça te réconforte ? 🤲",                               type: 'likert', options: opts, subscale: 'avoidance' },
+    { id: 26, text: "Dans les moments difficiles, te tourner vers ton/ta partenaire ça te réconforte ?",                                    type: 'likert', options: opts, subscale: 'avoidance' },
     { id: 28, text: "Tu dirais que tu racontes à peu près tout à ton/ta partenaire ?",                                                   type: 'likert', options: opts, subscale: 'avoidance' },
     { id: 30, text: "Quand quelque chose te tracasse, tu en parles avec ton/ta partenaire ?",                                            type: 'likert', options: opts, subscale: 'avoidance' },
     { id: 32, text: "Être proche des gens, ça te met un peu mal à l'aise au fond ?",                                                     type: 'likert', options: opts, subscale: 'avoidance' },
     { id: 34, text: "Compter sur tes partenaires amoureux, c'est quelque chose qui te vient facilement ?",                                type: 'likert', options: opts, subscale: 'avoidance' },
-    { id: 36, text: "Être {{affectueux|affectueuse}} avec ton/ta partenaire, c'est naturel pour toi ? 💛",                                            type: 'likert', options: opts, subscale: 'avoidance' },
+    { id: 36, text: "Être {{affectueux|affectueuse}} avec ton/ta partenaire, c'est naturel pour toi ?",                                                 type: 'likert', options: opts, subscale: 'avoidance' },
   ],
   subscales: [
     {
@@ -96,7 +102,7 @@ export const ECR_R: AssessmentScale = {
       min: 36, max: 107,
       label: "Attachement sécure — tu es à l'aise dans tes liens",
       severity: 'positive',
-      description: "Ton profil montre un bel équilibre : tu n'as pas vraiment peur d'être {{abandonné|abandonnée}}, et tu te sens à l'aise avec l'intimité et la confiance mutuelle. C'est une vraie force dans tes relations — tu arrives à être proche de l'autre tout en gardant ta propre assise 🌿",
+      description: "Ton profil montre un bel équilibre : tu n'as pas vraiment peur d'être {{abandonné|abandonnée}}, et tu te sens à l'aise avec l'intimité et la confiance mutuelle. C'est une vraie force dans tes relations — tu arrives à être proche de l'autre tout en gardant ta propre assise.",
       referralRequired: false,
       recommendation: "Continue à nourrir tes relations comme tu le fais déjà : par l'écoute, la communication ouverte et la confiance. Si tu veux aller encore plus loin, explorer ta propre histoire d'attachement peut t'aider à comprendre d'où vient cette sécurité — et à la transmettre autour de toi."
     },
@@ -106,7 +112,7 @@ export const ECR_R: AssessmentScale = {
       severity: 'mild',
       description: "Tes résultats montrent un niveau modéré d'anxiété ou de distance dans tes relations. Concrètement, ça peut vouloir dire que tu oscilles entre le besoin d'être {{rassuré|rassurée}} et l'envie de garder un peu de distance. C'est très courant et ça ne définit pas qui tu es — ça raconte simplement comment tu te protèges en amour.",
       referralRequired: false,
-      recommendation: "Regarde de plus près tes deux sous-scores (anxiété et évitement) pour mieux comprendre ta tendance. Un travail avec un professionnel — même quelques séances — peut t'aider à repérer tes schémas relationnels et à te sentir plus {{serein|sereine}} dans tes liens 💛"
+      recommendation: "Regarde de plus près tes deux sous-scores (anxiété et évitement) pour mieux comprendre ta tendance. Un travail avec un professionnel — même quelques séances — peut t'aider à repérer tes schémas relationnels et à te sentir plus {{serein|sereine}} dans tes liens."
     },
     {
       min: 163, max: 252,
@@ -114,7 +120,7 @@ export const ECR_R: AssessmentScale = {
       severity: 'moderate',
       description: "Tes résultats révèlent une anxiété et une distance élevées dans tes relations. Ça peut ressembler à un tiraillement douloureux : vouloir l'amour et la proximité tout en ayant peur d'être {{blessé|blessée}} si tu te montres vulnérable. Ce n'est pas une fatalité — c'est souvent le reflet d'expériences passées qui ont marqué ta façon de t'attacher.",
       referralRequired: true,
-      recommendation: "Un accompagnement psychologique centré sur l'attachement peut vraiment changer les choses. Des approches comme la thérapie centrée sur les émotions (EFT) ou la thérapie des schémas sont particulièrement adaptées. Tu mérites des liens où tu te sens en sécurité — et c'est tout à fait possible d'y arriver avec un bon soutien 🌱"
+      recommendation: "Un accompagnement psychologique centré sur l'attachement peut vraiment changer les choses. Des approches comme la thérapie centrée sur les émotions (EFT) ou la thérapie des schémas sont particulièrement adaptées. Tu mérites des liens où tu te sens en sécurité — et c'est tout à fait possible d'y arriver avec un bon soutien."
     },
   ],
 };

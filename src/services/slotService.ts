@@ -21,11 +21,11 @@ export const getAvailableTimeSlots = async (
   try {
     // Vérifier que les dates sont valides
     if (!isValid(startDate) || !isValid(endDate)) {
-      console.error('❌ Dates invalides:', { startDate, endDate });
+      console.error('Dates invalides:', { startDate, endDate });
       return [];
     }
     
-    console.log(`🔍 Recherche des créneaux disponibles du ${format(startDate, 'dd/MM/yyyy')} au ${format(endDate, 'dd/MM/yyyy')}`);
+    console.log(`Recherche des créneaux disponibles du ${format(startDate, 'dd/MM/yyyy')} au ${format(endDate, 'dd/MM/yyyy')}`);
     
     // Ensure Firestore is ready
     await ensureFirestoreReady();
@@ -42,7 +42,7 @@ export const getAvailableTimeSlots = async (
     );
 
     const snapshot = await getDocs(q);
-    console.log(`📊 Trouvé ${snapshot.docs.length} créneaux dans Firestore`);
+    console.log(`Trouvé ${snapshot.docs.length} créneaux dans Firestore`);
 
     // Convert to TimeSlot format
     const slots: TimeSlot[] = snapshot.docs.map(doc => {
@@ -53,7 +53,7 @@ export const getAvailableTimeSlots = async (
         // Gérer les formats de date potentiellement invalides
         start = data.start.toDate();
       } catch (err) {
-        console.error('❌ Error converting date:', err);
+        console.error('Error converting date:', err);
         return null;
       }
       
@@ -72,14 +72,14 @@ export const getAvailableTimeSlots = async (
     // Filtrer les créneaux réservés si nécessaire
     const filteredSlots = includeBooked ? slots : slots.filter(slot => !slot.isBooked);
     
-    console.log(`✅ Chargement réussi de ${filteredSlots.length} créneaux disponibles`);
+    console.log(`Chargement réussi de ${filteredSlots.length} créneaux disponibles`);
     return filteredSlots;
   } catch (error) {
-    console.error('❌ Erreur lors du chargement des créneaux disponibles:', error);
+    console.error('Erreur lors du chargement des créneaux disponibles:', error);
     
     // Essayer une approche alternative en cas d'erreur
     try {
-      console.log('🔄 Tentative avec une approche alternative...');
+      console.log('Tentative avec une approche alternative...');
       
       await ensureFirestoreReady();
       const db = getFirestoreInstance();
@@ -94,7 +94,7 @@ export const getAvailableTimeSlots = async (
       );
       
       const snapshot = await getDocs(q);
-      console.log(`📊 Trouvé ${snapshot.docs.length} créneaux (approche alternative)`);
+      console.log(`Trouvé ${snapshot.docs.length} créneaux (approche alternative)`);
       
       // Filtrer côté client
       const slots = snapshot.docs
@@ -126,13 +126,13 @@ export const getAvailableTimeSlots = async (
         return a.time.localeCompare(b.time);
       });
       
-      console.log(`✅ Chargement alternatif réussi: ${sortedSlots.length} créneaux`);
+      console.log(`Chargement alternatif réussi: ${sortedSlots.length} créneaux`);
       return sortedSlots;
     } catch (fallbackError) {
-      console.error('❌ Échec de l\'approche alternative:', fallbackError);
+      console.error('Échec de l\'approche alternative:', fallbackError);
     }
     
-    console.error('❌ Error loading available slots:', error);
+    console.error('Error loading available slots:', error);
     return [];
   }
 };
@@ -145,7 +145,7 @@ export const getAvailableDays = async (
   includeBooked: boolean = false
 ): Promise<Date[]> => {
   try {
-    console.log(`🔍 Recherche des jours disponibles du ${format(startDate, 'dd/MM/yyyy')} au ${format(endDate, 'dd/MM/yyyy')}`);
+    console.log(`Recherche des jours disponibles du ${format(startDate, 'dd/MM/yyyy')} au ${format(endDate, 'dd/MM/yyyy')}`);
     
     // Récupérer tous les créneaux disponibles
     const slots = await getAvailableTimeSlots(startDate, endDate, professionalId, includeBooked);
@@ -166,16 +166,16 @@ export const getAvailableDays = async (
     });
     
     const availableDays = Array.from(uniqueDays.values());
-    console.log(`✅ Trouvé ${availableDays.length} jours disponibles:`, 
+    console.log(`Trouvé ${availableDays.length} jours disponibles:`, 
       availableDays.map(d => format(d, 'yyyy-MM-dd')));
     
     return availableDays;
   } catch (error) {
-    console.error('❌ Erreur lors du chargement des créneaux disponibles:', error);
+    console.error('Erreur lors du chargement des créneaux disponibles:', error);
     
     // Essayer une approche alternative en cas d'erreur
     try {
-      console.log('🔄 Tentative avec une approche alternative...');
+      console.log('Tentative avec une approche alternative...');
       
       await ensureFirestoreReady();
       const db = getFirestoreInstance();
@@ -190,7 +190,7 @@ export const getAvailableDays = async (
       );
       
       const snapshot = await getDocs(q);
-      console.log(`📊 Trouvé ${snapshot.docs.length} créneaux (approche alternative)`);
+      console.log(`Trouvé ${snapshot.docs.length} créneaux (approche alternative)`);
       
       // Filtrer côté client
       const slots = snapshot.docs
@@ -222,13 +222,13 @@ export const getAvailableDays = async (
         return a.time.localeCompare(b.time);
       });
       
-      console.log(`✅ Chargement alternatif réussi: ${sortedSlots.length} créneaux`);
+      console.log(`Chargement alternatif réussi: ${sortedSlots.length} créneaux`);
       return sortedSlots;
     } catch (fallbackError) {
-      console.error('❌ Échec de l\'approche alternative:', fallbackError);
+      console.error('Échec de l\'approche alternative:', fallbackError);
     }
     
-    console.error('❌ Error loading available slots:', error);
+    console.error('Error loading available slots:', error);
     return [];
   }
 };

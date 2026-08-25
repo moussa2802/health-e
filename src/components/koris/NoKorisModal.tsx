@@ -24,43 +24,30 @@ const NoKorisModal: React.FC = () => {
 
   return (
     <div
-      style={{
-        position: 'fixed', inset: 0, zIndex: 9999,
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)', padding: 16,
-      }}
+      className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 p-4"
+      style={{ backdropFilter: 'blur(4px)' }}
       onClick={() => setShowNoKorisModal(false)}
     >
       <div
         onClick={e => e.stopPropagation()}
-        style={{
-          background: 'white', borderRadius: 20, padding: '32px 24px',
-          maxWidth: 380, width: '100%', textAlign: 'center',
-          fontFamily: "'Inter', -apple-system, sans-serif",
-          boxShadow: '0 16px 48px rgba(0,0,0,0.2)',
-        }}
+        className="bg-card rounded-block px-6 py-8 max-w-[380px] w-full text-center shadow-lift"
       >
         {/* Kori image */}
         <img
           src={KORI_IMG}
           alt="Kori"
-          style={{
-            width: 72, height: 72, borderRadius: '50%', objectFit: 'cover',
-            margin: '0 auto 16px', display: 'block',
-            border: '3px solid rgba(13,148,136,0.2)',
-            opacity: 0.6,
-            filter: 'grayscale(30%)',
-          }}
+          className="w-[72px] h-[72px] rounded-full object-cover mx-auto mb-4 block border-[3px] border-gold/20"
+          style={{ opacity: 0.6, filter: 'grayscale(30%)' }}
         />
 
-        <h3 style={{ fontSize: 18, fontWeight: 700, color: '#0A2342', margin: '0 0 8px' }}>
+        <h3 className="font-display text-lg font-semibold text-ink m-0 mb-2">
           Plus assez de Koris
         </h3>
 
-        <p style={{ fontSize: 14, color: '#64748B', margin: '0 0 20px', lineHeight: 1.5 }}>
+        <p className="text-sm text-ink-soft m-0 mb-5 leading-relaxed">
           Il te reste{' '}
-          <strong style={{ color: '#D97706', display: 'inline-flex', alignItems: 'center', gap: 3 }}>
-            <img src={KORI_IMG} alt="" style={{ width: 16, height: 16, borderRadius: '50%', objectFit: 'cover', verticalAlign: 'middle' }} />
+          <strong className="text-gold inline-flex items-center gap-1">
+            <img src={KORI_IMG} alt="" className="w-4 h-4 rounded-full object-cover align-middle" />
             {balance}
           </strong>{' '}
           Kori{balance !== 1 ? 's' : ''}.
@@ -72,31 +59,24 @@ const NoKorisModal: React.FC = () => {
 
         {/* Timer — only in daily phase */}
         {!welcomeBonusActive && (
-          <div style={{ background: '#F8FAFC', borderRadius: 12, padding: '12px 16px', marginBottom: 20 }}>
-            <div style={{ fontSize: 12, color: '#94A3B8', marginBottom: 4 }}>Prochaine recharge dans</div>
-            <div style={{ fontSize: 20, fontWeight: 700, color: '#059669' }}>~{hoursLeft}h</div>
-            <div style={{ fontSize: 11, color: '#94A3B8' }}>{KORIS_DAILY_AMOUNT} Koris à minuit</div>
+          <div className="bg-paper rounded-xl px-4 py-3 mb-5">
+            <div className="text-xs text-muted mb-1">Prochaine recharge dans</div>
+            <div className="text-xl font-bold text-ok">~{hoursLeft}h</div>
+            <div className="text-[11px] text-muted">{KORIS_DAILY_AMOUNT} Koris à minuit</div>
           </div>
         )}
 
         {/* Astuce */}
-        <div style={{
-          background: 'rgba(59,130,246,0.06)', borderRadius: 12, padding: '12px 16px',
-          marginBottom: 20, textAlign: 'left',
-        }}>
-          <div style={{ fontSize: 12, fontWeight: 600, color: '#3B82F6', marginBottom: 4 }}>Astuce</div>
-          <div style={{ fontSize: 12, color: '#475569', lineHeight: 1.5 }}>
+        <div className="bg-accent-soft rounded-xl px-4 py-3 mb-5 text-left">
+          <div className="text-xs font-semibold text-accent mb-1">Astuce</div>
+          <div className="text-xs text-ink-soft leading-relaxed">
             Les tests d'évaluation sont toujours gratuits. Tu peux continuer tes évaluations sans Koris.
           </div>
         </div>
 
         <button
           onClick={() => setShowNoKorisModal(false)}
-          style={{
-            width: '100%', padding: '12px 24px', borderRadius: 12, border: 'none',
-            background: 'linear-gradient(135deg, #0D9488, #059669)',
-            color: 'white', fontSize: 14, fontWeight: 600, cursor: 'pointer',
-          }}
+          className="w-full py-3 rounded-xl border-0 bg-gold text-white text-sm font-semibold cursor-pointer hover:bg-gold/90 transition-colors"
         >
           Compris
         </button>

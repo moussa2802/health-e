@@ -17,10 +17,10 @@ export const BONUS_CONFIANCE: AssessmentScale = {
   shortName: 'GSE + Confiance',
   category: 'bonus',
   description: 'Mesure ta confiance en tes capacités à faire face aux défis, à te respecter et à t\'affirmer dans ta vie.',
-  instructions: 'Ces questions portent sur ta confiance en toi — ta capacité à faire face aux défis et à t\'affirmer. Réponds selon comment tu es vraiment, pas comment tu voudrais être 💪',
+  instructions: 'Ces questions portent sur ta confiance en toi — ta capacité à faire face aux défis et à t\'affirmer. Réponds selon comment tu es vraiment, pas comment tu voudrais être',
   timeEstimateMinutes: 5,
   reference: 'Schwarzer, R., & Jerusalem, M. (1995). Generalized Self-Efficacy scale. Measures in health psychology: A user\'s portfolio.',
-  licenseNote: 'GSE © Ralf Schwarzer & Matthias Jerusalem, 1995. Adaptation française à usage d\'évaluation personnelle.',
+  licenseNote: 'GSE Ralf Schwarzer & Matthias Jerusalem, 1995. Adaptation française à usage d\'évaluation personnelle.',
   warningMessage: 'La confiance en soi est un trait qui évolue avec le temps, les expériences et l\'accompagnement.',
   scoreRange: { min: 0, max: 45 },
   items: [
@@ -47,7 +47,7 @@ export const BONUS_CONFIANCE: AssessmentScale = {
       severity: 'moderate',
       description: 'En ce moment, tu te fais peu confiance pour affronter les défis. Les situations difficiles peuvent te sembler très déstabilisantes — et c\'est probablement épuisant au quotidien.',
       referralRequired: false,
-      recommendation: 'La bonne nouvelle, c\'est que la confiance en soi se construit — avec du coaching, un suivi psychologique ou des petites victoires au quotidien. Tu n\'es pas "{{cassé|cassée}}", tu as juste besoin d\'outils 🛠️',
+      recommendation: 'La bonne nouvelle, c\'est que la confiance en soi se construit — avec du coaching, un suivi psychologique ou des petites victoires au quotidien. Tu n\'es pas "{{cassé|cassée}}", tu as juste besoin d\'outils',
     },
     {
       min: 16, max: 28,
@@ -55,7 +55,7 @@ export const BONUS_CONFIANCE: AssessmentScale = {
       severity: 'mild',
       description: 'Ta confiance en toi est variable — solide dans certains domaines, plus fragile dans d\'autres. Tu te remets parfois en question plus que nécessaire.',
       referralRequired: false,
-      recommendation: 'Regarde les domaines où tu te fais déjà confiance — ils existent ! Construis à partir de là pour renforcer les zones plus fragiles, petit à petit 🌱',
+      recommendation: 'Regarde les domaines où tu te fais déjà confiance — ils existent ! Construis à partir de là pour renforcer les zones plus fragiles, petit à petit',
     },
     {
       min: 29, max: 38,
@@ -63,7 +63,7 @@ export const BONUS_CONFIANCE: AssessmentScale = {
       severity: 'minimal',
       description: 'Tu as une belle confiance en tes capacités. Tu fais face aux défis avec sérénité et tu sais mobiliser tes ressources quand ça se complique.',
       referralRequired: false,
-      recommendation: 'Continue à t\'affirmer et à te faire confiance. Ta résilience est une vraie force — prends-en soin 💪',
+      recommendation: 'Continue à t\'affirmer et à te faire confiance. Ta résilience est une vraie force — prends-en soin',
     },
     {
       min: 39, max: 45,
@@ -71,7 +71,7 @@ export const BONUS_CONFIANCE: AssessmentScale = {
       severity: 'positive',
       description: 'Tu as une confiance en toi très solide. Tu te fais confiance naturellement, tu t\'affirmes sans hésitation et tu gères les imprévus avec calme. C\'est une vraie force.',
       referralRequired: false,
-      recommendation: 'Garde cette belle énergie — et veille à rester {{ouvert|ouverte}} à la remise en question constructive. La confiance est encore plus belle quand elle s\'accompagne d\'humilité 🌟',
+      recommendation: 'Garde cette belle énergie — et veille à rester {{ouvert|ouverte}} à la remise en question constructive. La confiance est encore plus belle quand elle s\'accompagne d\'humilité',
     },
   ],
 };

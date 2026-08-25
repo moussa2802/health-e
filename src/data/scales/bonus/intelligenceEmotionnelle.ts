@@ -21,10 +21,10 @@ export const BONUS_EQ: AssessmentScale = {
   shortName: 'WLEIS',
   category: 'bonus',
   description: 'Mesure ton intelligence émotionnelle selon 4 dimensions : compréhension de soi, compréhension des autres, utilisation des émotions et régulation émotionnelle.',
-  instructions: 'Ces questions portent sur ta façon de percevoir et gérer les émotions — les tiennes et celles des autres. Fais confiance à ton ressenti 🎯',
+  instructions: 'Ces questions portent sur ta façon de percevoir et gérer les émotions — les tiennes et celles des autres. Fais confiance à ton ressenti',
   timeEstimateMinutes: 6,
   reference: 'Wong, C.S. & Law, K.S. (2002). The effects of leader and follower emotional intelligence on performance and attitude. The Leadership Quarterly, 13(3), 243-274.',
-  licenseNote: 'WLEIS © Chi-Sum Wong & Kenneth S. Law. Adaptation française à usage d\'auto-évaluation.',
+  licenseNote: 'WLEIS Chi-Sum Wong & Kenneth S. Law. Adaptation française à usage d\'auto-évaluation.',
   warningMessage: 'L\'intelligence émotionnelle est une compétence qui se développe tout au long de la vie avec la pratique et la réflexion.',
   scoreRange: { min: 16, max: 112 },
   subscales: [

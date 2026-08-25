@@ -15,43 +15,24 @@ const KoriBalance: React.FC = () => {
 
   if (loading) return null;
 
+  const toneClass =
+    balance > 5
+      ? 'bg-gold-soft border-gold/25 text-gold'
+      : balance > 0
+        ? 'bg-warn/10 border-warn/25 text-warn'
+        : 'bg-danger/10 border-danger/25 text-danger';
+
   return (
     <>
       <button
         onClick={() => setShowPanel(!showPanel)}
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 4,
-          padding: '3px 9px 3px 4px',
-          borderRadius: 20,
-          border: '1px solid rgba(13,148,136,0.25)',
-          background: balance > 5
-            ? 'rgba(13,148,136,0.06)'
-            : balance > 0
-              ? 'rgba(217,119,6,0.08)'
-              : 'rgba(239,68,68,0.08)',
-          cursor: 'pointer',
-          transition: 'all 0.2s',
-          fontSize: 13,
-          fontWeight: 700,
-          color: balance > 5 ? '#0D9488' : balance > 0 ? '#D97706' : '#DC2626',
-          whiteSpace: 'nowrap',
-        }}
-        onMouseEnter={e => {
-          e.currentTarget.style.transform = 'scale(1.03)';
-          e.currentTarget.style.boxShadow = '0 2px 8px rgba(13,148,136,0.15)';
-        }}
-        onMouseLeave={e => {
-          e.currentTarget.style.transform = 'scale(1)';
-          e.currentTarget.style.boxShadow = 'none';
-        }}
+        className={`inline-flex items-center gap-1 pl-1 pr-2.5 py-1 rounded-pill border text-[13px] font-bold whitespace-nowrap transition-transform hover:scale-[1.03] ${toneClass}`}
         title="Mes Koris"
       >
         <img
           src={KORI_IMG}
           alt="Kori"
-          style={{ width: 24, height: 24, borderRadius: '50%', objectFit: 'cover' }}
+          className="w-6 h-6 rounded-full object-cover"
         />
         <span>{balance}</span>
       </button>

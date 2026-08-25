@@ -10,7 +10,7 @@ import {
   Timestamp, increment, collectionGroup,
 } from 'firebase/firestore';
 import { db } from '../utils/firebase';
-import { SCALE_META } from '../utils/scaleMeta';
+import { SCALE_META, getScaleEmoji } from '../utils/scaleMeta';
 
 // ── Types ──
 
@@ -271,7 +271,7 @@ export function getTestPopularity(testCounts: Record<string, number>): TestPopul
       return {
         scaleId,
         name: meta?.label ?? scaleId,
-        icon: meta?.icon ?? '📋',
+        icon: getScaleEmoji(scaleId),
         count,
       };
     })
@@ -316,7 +316,7 @@ export async function getAverageScores(): Promise<AverageScore[]> {
       return {
         scaleId,
         name: meta?.label ?? scaleId,
-        icon: meta?.icon ?? '📋',
+        icon: getScaleEmoji(scaleId),
         avgScore: Math.round((data.total / data.count) * 10) / 10,
         maxScore: data.maxScore,
         mostCommonSeverity,
@@ -343,7 +343,7 @@ export async function getRecentAlerts(maxAlerts: number = 20): Promise<Anonymous
         alerts.push({
           scaleId,
           scaleName: meta?.label ?? scaleId,
-          icon: meta?.icon ?? '📋',
+          icon: getScaleEmoji(scaleId),
           alertLevel,
           severity: result?.interpretation?.severity || 'unknown',
           date: date?.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' }) || '',

@@ -115,19 +115,19 @@ const UserListPage: React.FC<UserListPageProps> = ({
   return (
     <div className="space-y-6">
       {/* En-tête */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <h1 className="text-2xl font-bold text-gray-900 mb-4">{title}</h1>
-        
+      <div className="bg-card rounded-block shadow-soft p-6">
+        <h1 className="font-display text-2xl font-semibold text-ink mb-4">{title}</h1>
+
         {/* Barre de recherche */}
         <div className="mb-4">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted h-5 w-5" />
             <input
               type="text"
               placeholder="Rechercher par nom, email, téléphone..."
               value={searchTerm}
               onChange={(e) => handleSearchChange(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full pl-10 pr-4 py-2 border border-line rounded-card focus:ring-2 focus:ring-accent focus:border-transparent"
             />
           </div>
         </div>
@@ -140,7 +140,7 @@ const UserListPage: React.FC<UserListPageProps> = ({
                 key={filter.key}
                 value={activeFilters[filter.key] || "all"}
                 onChange={(e) => handleFilterChange(filter.key, e.target.value)}
-                className="border border-gray-300 rounded-md p-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="border border-line rounded-card p-2 focus:ring-2 focus:ring-accent focus:border-transparent"
               >
                 {filter.options.map((option) => (
                   <option key={option.value} value={option.value}>
@@ -154,27 +154,27 @@ const UserListPage: React.FC<UserListPageProps> = ({
       </div>
 
       {/* Liste des utilisateurs */}
-      <div className="bg-white rounded-lg shadow overflow-hidden">
+      <div className="bg-card rounded-block shadow-soft overflow-hidden">
         {filteredData.length > 0 ? (
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
+            <table className="min-w-full divide-y divide-line">
+              <thead className="bg-paper">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-muted uppercase tracking-wider">
                     Utilisateur
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-muted uppercase tracking-wider">
                     Contact
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-muted uppercase tracking-wider">
                     Statut
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-muted uppercase tracking-wider">
                     Actions
                   </th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+              <tbody className="bg-card divide-y divide-line">
                 {filteredData.map((user) => (
                   <React.Fragment key={user.id}>
                     {renderRow(user)}
@@ -184,7 +184,7 @@ const UserListPage: React.FC<UserListPageProps> = ({
             </table>
           </div>
         ) : (
-          <EmptyState 
+          <EmptyState
             hasActiveFilters={hasActiveFilters}
             emptyMessage={emptyMessage}
             searchTerm={searchTerm}
@@ -231,15 +231,15 @@ const EmptyState: React.FC<{
 
   return (
     <div className="text-center py-12">
-      <ShieldCheck className="mx-auto h-12 w-12 text-gray-400" />
-      <h3 className="mt-2 text-sm font-medium text-gray-900">
+      <ShieldCheck className="mx-auto h-12 w-12 text-muted" />
+      <h3 className="mt-2 text-sm font-medium text-ink">
         {hasActiveFilters ? "Aucun résultat trouvé" : "Aucun utilisateur trouvé"}
       </h3>
-      <p className="mt-1 text-sm text-gray-500">
+      <p className="mt-1 text-sm text-muted">
         {getMessage()}
       </p>
       {hasActiveFilters && (
-        <p className="mt-2 text-sm text-gray-400">
+        <p className="mt-2 text-sm text-muted">
           Essayez de modifier vos critères de recherche ou de filtrage.
         </p>
       )}

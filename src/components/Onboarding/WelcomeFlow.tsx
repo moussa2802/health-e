@@ -66,24 +66,12 @@ const WelcomeFlow: React.FC = () => {
   const prenom = onboarding?.prenom || currentUser?.name?.split(' ')[0] || '';
 
   return (
-    <div
-      style={{
-        position: 'fixed', inset: 0, zIndex: 9999,
-        background: 'linear-gradient(160deg, #F0FDF4 0%, #EFF6FF 50%, #FDF4FF 100%)',
-        display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-        padding: '24px 20px',
-        fontFamily: "'Inter', -apple-system, sans-serif",
-      }}
-    >
+    <div className="fixed inset-0 z-[9999] bg-paper flex flex-col items-center justify-center px-5 py-6">
       {/* Bouton Passer */}
       {slideIndex < WELCOME_SLIDES.length - 1 && (
         <button
           onClick={complete}
-          style={{
-            position: 'absolute', top: 20, right: 20,
-            background: 'transparent', border: 'none',
-            color: '#94A3B8', fontSize: 13, fontWeight: 600, cursor: 'pointer',
-          }}
+          className="absolute top-5 right-5 bg-transparent border-0 text-muted text-[13px] font-semibold cursor-pointer hover:text-ink-soft transition-colors"
         >
           Passer
         </button>
@@ -91,26 +79,19 @@ const WelcomeFlow: React.FC = () => {
 
       {/* Contenu slide */}
       <div
+        className="max-w-[400px] w-full text-center transition-all duration-200 ease-out"
         style={{
-          maxWidth: 400, width: '100%', textAlign: 'center',
           opacity: animating ? 0 : 1,
           transform: animating ? 'translateY(12px)' : 'translateY(0)',
-          transition: 'opacity 0.22s ease, transform 0.22s ease',
         }}
       >
         {/* Photo Dr Lô + illustration */}
-        <div style={{ position: 'relative', display: 'inline-block', marginBottom: 28 }}>
-          <div style={{
-            width: 100, height: 100, borderRadius: '50%',
-            background: 'linear-gradient(135deg, #3B82F6, #10B981)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: 42, boxShadow: '0 8px 32px rgba(59,130,246,0.25)',
-            margin: '0 auto',
-          }}>
+        <div className="relative inline-block mb-7">
+          <div className="w-[100px] h-[100px] rounded-full bg-sage flex items-center justify-center text-[42px] shadow-lift mx-auto">
             <img
               src={DR_LO_PHOTO}
               alt="Dr Lô"
-              style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }}
+              className="w-full h-full rounded-full object-cover"
               onError={e => {
                 (e.target as HTMLImageElement).style.display = 'none';
                 (e.target as HTMLImageElement).parentElement!.style.fontSize = '42px';
@@ -118,35 +99,21 @@ const WelcomeFlow: React.FC = () => {
               }}
             />
           </div>
-          <div style={{
-            position: 'absolute', bottom: -4, right: -4,
-            width: 36, height: 36, borderRadius: '50%',
-            background: 'white', boxShadow: '0 2px 12px rgba(0,0,0,0.12)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: 18,
-          }}>
+          <div className="absolute -bottom-1 -right-1 w-9 h-9 rounded-full bg-card shadow-lift flex items-center justify-center text-lg">
             {slide.illustration}
           </div>
         </div>
 
         {/* Titre */}
-        <h1 style={{
-          margin: '0 0 8px', fontSize: 26, fontWeight: 900, color: '#0A2342', lineHeight: 1.2,
-        }}>
-          {slideIndex === 0 && prenom ? `Bienvenue ${prenom} 👋` : slide.titre}
+        <h1 className="font-display m-0 mb-2 text-[26px] font-semibold text-ink leading-tight">
+          {slideIndex === 0 && prenom ? `Bienvenue ${prenom}` : slide.titre}
         </h1>
 
         {/* Points */}
         {slide.contenu && (
-          <div style={{
-            background: 'white', borderRadius: 16,
-            border: '1px solid rgba(59,130,246,0.12)',
-            padding: '14px 18px', marginBottom: 16,
-            boxShadow: '0 2px 12px rgba(59,130,246,0.07)',
-            textAlign: 'left',
-          }}>
+          <div className="bg-card rounded-block border border-line px-4.5 py-3.5 mb-4 shadow-soft text-left">
             {slide.contenu.map((line, i) => (
-              <p key={i} style={{ margin: i === 0 ? 0 : '8px 0 0', fontSize: 14, color: '#374151', fontWeight: 500 }}>
+              <p key={i} className={`text-sm text-ink-soft font-medium ${i === 0 ? 'm-0' : 'mt-2 mb-0'}`}>
                 {line}
               </p>
             ))}
@@ -154,72 +121,55 @@ const WelcomeFlow: React.FC = () => {
         )}
 
         {/* Citation Dr Lô */}
-        <div style={{
-          background: 'white', borderRadius: 16,
-          border: '1px solid rgba(59,130,246,0.12)',
-          padding: '14px 18px', marginBottom: 32,
-          boxShadow: '0 2px 12px rgba(59,130,246,0.07)',
-          position: 'relative',
-        }}>
+        <div className="bg-card rounded-block border border-line px-4.5 py-3.5 mb-8 shadow-soft relative">
           {/* Bulle de speech triangle */}
-          <div style={{
-            position: 'absolute', top: -8, left: 24,
-            width: 0, height: 0,
-            borderLeft: '8px solid transparent',
-            borderRight: '8px solid transparent',
-            borderBottom: '8px solid rgba(59,130,246,0.12)',
-          }} />
-          <div style={{
-            position: 'absolute', top: -6, left: 25,
-            width: 0, height: 0,
-            borderLeft: '7px solid transparent',
-            borderRight: '7px solid transparent',
-            borderBottom: '7px solid white',
-          }} />
-          <p style={{ margin: 0, fontSize: 14, color: '#374151', lineHeight: 1.65, fontStyle: 'italic' }}>
+          <div
+            className="absolute -top-2 left-6 w-0 h-0"
+            style={{
+              borderLeft: '8px solid transparent',
+              borderRight: '8px solid transparent',
+              borderBottom: '8px solid var(--tw-color-line, #E7E4DA)',
+            }}
+          />
+          <div
+            className="absolute -top-1.5 left-[25px] w-0 h-0"
+            style={{
+              borderLeft: '7px solid transparent',
+              borderRight: '7px solid transparent',
+              borderBottom: '7px solid white',
+            }}
+          />
+          <p className="m-0 text-sm text-ink-soft leading-relaxed italic">
             "{slide.description}"
           </p>
-          <p style={{ margin: '8px 0 0', fontSize: 12, fontWeight: 700, color: '#3B82F6' }}>
-            — Dr Lô 🩺
+          <p className="mt-2 mb-0 text-xs font-bold text-sage">
+            — Dr Lô
           </p>
         </div>
 
         {/* Bouton principal */}
         <button
           onClick={goNext}
-          style={{
-            width: '100%', padding: '15px 24px', borderRadius: 14, border: 'none',
-            background: 'linear-gradient(135deg, #3B82F6, #10B981)',
-            color: 'white', fontSize: 16, fontWeight: 800, cursor: 'pointer',
-            boxShadow: '0 4px 20px rgba(59,130,246,0.35)',
-            transition: 'transform 0.1s, box-shadow 0.1s',
-          }}
-          onMouseDown={e => (e.currentTarget.style.transform = 'scale(0.98)')}
-          onMouseUp={e => (e.currentTarget.style.transform = 'scale(1)')}
+          className="w-full py-4 px-6 rounded-2xl border-0 bg-sage text-white text-base font-extrabold cursor-pointer shadow-lift transition-transform active:scale-[0.98]"
         >
           {slide.bouton}
         </button>
       </div>
 
       {/* Indicateurs de progression */}
-      <div style={{ display: 'flex', gap: 8, marginTop: 28 }}>
+      <div className="flex gap-2 mt-7">
         {WELCOME_SLIDES.map((_, i) => (
           <div
             key={i}
-            style={{
-              width: i === slideIndex ? 24 : 8,
-              height: 8, borderRadius: 4,
-              background: i === slideIndex
-                ? 'linear-gradient(135deg, #3B82F6, #10B981)'
-                : 'rgba(59,130,246,0.2)',
-              transition: 'width 0.3s ease, background 0.3s ease',
-            }}
+            className={`h-2 rounded-full transition-all duration-300 ${
+              i === slideIndex ? 'w-6 bg-sage' : 'w-2 bg-sage/20'
+            }`}
           />
         ))}
       </div>
 
       {/* Numéro slide */}
-      <p style={{ marginTop: 12, fontSize: 11, color: '#94A3B8' }}>
+      <p className="mt-3 text-[11px] text-muted">
         {slideIndex + 1} / {WELCOME_SLIDES.length}
       </p>
     </div>

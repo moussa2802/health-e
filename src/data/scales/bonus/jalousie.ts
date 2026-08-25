@@ -18,7 +18,7 @@ export const BONUS_JALOUSIE: AssessmentScale = {
   shortName: 'MJS',
   category: 'bonus',
   description: 'Mesure l\'intensité et la fréquence des expériences de jalousie dans tes relations amoureuses ou proches.',
-  instructions: 'Ces questions portent sur ce que tu ressens dans tes relations proches ou amoureuses. Réponds honnêtement — selon comment tu es en général 💚',
+  instructions: 'Ces questions portent sur ce que tu ressens dans tes relations proches ou amoureuses. Réponds honnêtement — selon comment tu es en général',
   timeEstimateMinutes: 5,
   reference: 'Pfeiffer, S.M. & Wong, P.T.P. (1989). Multidimensional jealousy. Journal of Social and Personal Relationships, 6(2), 181-196.',
   licenseNote: 'Adaptation française de la MJS (Multidimensional Jealousy Scale) à usage d\'auto-évaluation.',

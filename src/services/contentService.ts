@@ -33,7 +33,7 @@ export interface ContentItem {
 // Get all content items
 export async function getAllContent(): Promise<ContentItem[]> {
   try {
-    console.log('📚 Fetching all content items...');
+    console.log('Fetching all content items...');
     
     // CRITICAL: Ensure Firestore is ready before fetching
     await ensureFirestoreReady();
@@ -63,10 +63,10 @@ export async function getAllContent(): Promise<ContentItem[]> {
       return bTime.getTime() - aTime.getTime();
     });
     
-    console.log(`✅ Fetched ${sortedItems.length} content items`);
+    console.log(`Fetched ${sortedItems.length} content items`);
     return sortedItems;
   } catch (error) {
-    console.error('❌ Error fetching content items:', error);
+    console.error('Error fetching content items:', error);
     throw new Error('Failed to fetch content items');
   }
 }
@@ -74,7 +74,7 @@ export async function getAllContent(): Promise<ContentItem[]> {
 // Get featured content items
 export async function getFeaturedContent(): Promise<ContentItem[]> {
   try {
-    console.log('🌟 Fetching featured content items...');
+    console.log('Fetching featured content items...');
     
     const db = getFirestoreInstance();
     if (!db) throw new Error('Firestore not available');
@@ -91,10 +91,10 @@ export async function getFeaturedContent(): Promise<ContentItem[]> {
     // Filter featured content on client side to avoid index issues
     const featuredItems = contentItems.filter(item => item.featured === true);
     
-    console.log(`✅ Fetched ${featuredItems.length} featured content items`);
+    console.log(`Fetched ${featuredItems.length} featured content items`);
     return featuredItems;
   } catch (error) {
-    console.error('❌ Error fetching featured content items:', error);
+    console.error('Error fetching featured content items:', error);
     // Return empty array instead of throwing to prevent app crash
     return [];
   }
@@ -103,7 +103,7 @@ export async function getFeaturedContent(): Promise<ContentItem[]> {
 // Get content by type
 export async function getContentByType(type: 'testimonial' | 'health-tip'): Promise<ContentItem[]> {
   try {
-    console.log(`🔍 Fetching content items of type: ${type}...`);
+    console.log(`Fetching content items of type: ${type}...`);
     
     // CRITICAL: Ensure Firestore is ready before fetching
     await ensureFirestoreReady();
@@ -126,10 +126,10 @@ export async function getContentByType(type: 'testimonial' | 'health-tip'): Prom
       ...doc.data()
     } as ContentItem));
     
-    console.log(`✅ Fetched ${contentItems.length} ${type} content items`);
+    console.log(`Fetched ${contentItems.length} ${type} content items`);
     return contentItems;
   } catch (error) {
-    console.error(`❌ Error fetching ${type} content items:`, error);
+    console.error(`Error fetching ${type} content items:`, error);
     throw new Error(`Failed to fetch ${type} content items`);
   }
 }
@@ -137,7 +137,7 @@ export async function getContentByType(type: 'testimonial' | 'health-tip'): Prom
 // Create a new content item
 export async function createContent(contentData: Omit<ContentItem, 'id' | 'createdAt' | 'updatedAt'>): Promise<string> {
   try {
-    console.log('📝 Creating new content item...');
+    console.log('Creating new content item...');
     
     // CRITICAL: Ensure Firestore is ready before creating
     await ensureFirestoreReady();
@@ -156,10 +156,10 @@ export async function createContent(contentData: Omit<ContentItem, 'id' | 'creat
       });
     });
     
-    console.log('✅ Content item created successfully:', result.id);
+    console.log('Content item created successfully:', result.id);
     return result.id;
   } catch (error) {
-    console.error('❌ Error creating content item:', error);
+    console.error('Error creating content item:', error);
     throw new Error('Failed to create content item');
   }
 }
@@ -167,7 +167,7 @@ export async function createContent(contentData: Omit<ContentItem, 'id' | 'creat
 // Update an existing content item
 export async function updateContent(id: string, updates: Partial<ContentItem>): Promise<void> {
   try {
-    console.log(`🔄 Updating content item: ${id}...`);
+    console.log(`Updating content item: ${id}...`);
     
     // CRITICAL: Ensure Firestore is ready before updating
     await ensureFirestoreReady();
@@ -186,9 +186,9 @@ export async function updateContent(id: string, updates: Partial<ContentItem>): 
       });
     });
     
-    console.log('✅ Content item updated successfully');
+    console.log('Content item updated successfully');
   } catch (error) {
-    console.error('❌ Error updating content item:', error);
+    console.error('Error updating content item:', error);
     throw new Error('Failed to update content item');
   }
 }
@@ -196,7 +196,7 @@ export async function updateContent(id: string, updates: Partial<ContentItem>): 
 // Delete a content item
 export async function deleteContent(id: string): Promise<void> {
   try {
-    console.log(`🗑️ Deleting content item: ${id}...`);
+    console.log(`Deleting content item: ${id}...`);
     
     // CRITICAL: Ensure Firestore is ready before deleting
     await ensureFirestoreReady();
@@ -212,9 +212,9 @@ export async function deleteContent(id: string): Promise<void> {
       await deleteDoc(contentDocRef);
     });
     
-    console.log('✅ Content item deleted successfully');
+    console.log('Content item deleted successfully');
   } catch (error) {
-    console.error('❌ Error deleting content item:', error);
+    console.error('Error deleting content item:', error);
     throw new Error('Failed to delete content item');
   }
 }

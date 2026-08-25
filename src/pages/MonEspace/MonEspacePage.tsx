@@ -4,6 +4,12 @@ import {
   collection, query, orderBy, onSnapshot, deleteDoc, doc,
   addDoc, updateDoc, getDocs, setDoc, limit,
 } from 'firebase/firestore';
+import {
+  ArrowLeft, Leaf, Lock, BookOpen, Stethoscope, Lightbulb, Pencil,
+  Flame, FileText, Smile, Tag, Save, Trash2, History, MessageCircle,
+  ArrowRight, Zap, ArrowUp, X, Loader2, Meh, Frown, Annoyed, Angry, Heart,
+  Calendar, Check,
+} from 'lucide-react';
 import { db } from '../../utils/firebase';
 import { getOnboardingProfile } from '../../utils/onboardingProfile';
 import { getProfileProgress } from '../../services/evaluationService';
@@ -19,12 +25,12 @@ import type { JournalEntry } from '../Journal/JournalPage';
 // ── Constants ─────────────────────────────────────────────────────────────────
 
 const HUMEURS = [
-  { emoji: '😊', label: 'Heureux(se)' },
-  { emoji: '😐', label: 'Neutre' },
-  { emoji: '😔', label: 'Triste' },
-  { emoji: '😰', label: 'Anxieux(se)' },
-  { emoji: '😡', label: 'En colere' },
-  { emoji: '🥰', label: 'Amoureux(se)' },
+  { emoji: '😊', label: 'Heureux(se)', icon: Smile },
+  { emoji: '😐', label: 'Neutre', icon: Meh },
+  { emoji: '😔', label: 'Triste', icon: Frown },
+  { emoji: '😰', label: 'Anxieux(se)', icon: Annoyed },
+  { emoji: '😡', label: 'En colere', icon: Angry },
+  { emoji: '🥰', label: 'Amoureux(se)', icon: Heart },
 ];
 
 const THEMES = ['Relations', 'Travail', 'Famille', 'Sante', 'Emotions', 'Autre'];
@@ -49,11 +55,11 @@ const PLACEHOLDERS_SOIR = [
 ];
 
 const ENCOURAGEMENTS = [
-  "Belle entree ! Continuer a ecrire est l'une des meilleures choses que tu puisses faire pour toi. 🌱",
-  "Tu t'es donne du temps, et c'est precieux. Reviens quand tu veux. 🤍",
-  "Ecrire, c'est deja agir. Bien joue ! ✨",
-  "Ton journal grandit avec toi. Continue comme ca ! 📔",
-  "Chaque mot compte. Tu fais du beau travail. 💙",
+  "Belle entree ! Continuer a ecrire est l'une des meilleures choses que tu puisses faire pour toi.",
+  "Tu t'es donne du temps, et c'est precieux. Reviens quand tu veux.",
+  "Ecrire, c'est deja agir. Bien joue !",
+  "Ton journal grandit avec toi. Continue comme ca !",
+  "Chaque mot compte. Tu fais du beau travail.",
 ];
 
 const DR_LO_PHOTO = '/dr-lo.png';
@@ -394,7 +400,7 @@ const MonEspacePage: React.FC<Props> = ({ userId }) => {
     if (tab === 'drlo' && messages.length === 0) {
       setMessages([{
         role: 'assistant',
-        content: `Salut ${prenom || 'toi'} ! 😊 Je suis Dr Lo, ton medecin IA. Comment puis-je t'aider aujourd'hui ?`,
+        content: `Salut ${prenom || 'toi'} ! Je suis Dr Lo, ton medecin IA. Comment puis-je t'aider aujourd'hui ?`,
         timestamp: new Date().toISOString(),
       }]);
     }
@@ -612,7 +618,7 @@ const MonEspacePage: React.FC<Props> = ({ userId }) => {
     conversationId.current = `conv_${Date.now()}`;
     setMessages([{
       role: 'assistant',
-      content: `Salut ${prenom || 'toi'} ! 😊 Nouvelle conversation, je t'ecoute !`,
+      content: `Salut ${prenom || 'toi'} ! Nouvelle conversation, je t'ecoute !`,
       timestamp: new Date().toISOString(),
     }]);
     setHistoryView(false);
@@ -646,168 +652,100 @@ const MonEspacePage: React.FC<Props> = ({ userId }) => {
   const groups = groupByPeriod(entries);
 
   return (
-    <div style={{
-      minHeight: '100vh',
-      background: '#F8FAFF',
-      fontFamily: "'Inter',-apple-system,sans-serif",
-      paddingBottom: 80,
-    }}>
-      <style>{`
-        @keyframes slideUp {
-          from { opacity: 0; transform: translateY(10px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-        @keyframes typingDot {
-          0%,100% { opacity: 0.3; transform: translateY(0); }
-          50% { opacity: 1; transform: translateY(-3px); }
-        }
-        .me-tab-btn { transition: all 0.18s ease; }
-        .me-tab-btn:hover { opacity: 0.85; }
-        .me-entry-card { transition: box-shadow 0.15s ease; }
-        .me-entry-card:hover { box-shadow: 0 4px 20px rgba(59,130,246,0.1); }
-        .me-suggestion:hover { background: rgba(99,102,241,0.08) !important; }
-        .chat-user-bubble { background: linear-gradient(135deg,#3B82F6,#6366F1); color:#fff; border-radius:16px 16px 4px 16px; }
-        .chat-bot-bubble  { background:#F1F5F9; color:#0A2342; border-radius:16px 16px 16px 4px; }
-        .chat-input-area:focus { outline:none; border-color:rgba(99,102,241,0.5) !important; }
-        .conv-item:hover { background:#F0F4FF; cursor:pointer; }
-      `}</style>
-
+    <div className="min-h-screen bg-paper pb-20">
       {/* ── Header ── */}
-      <div style={{
-        background: 'linear-gradient(135deg,#065F46 0%,#1D4ED8 100%)',
-        padding: '28px 20px 20px',
-        color: '#fff',
-      }}>
+      <div className="bg-sage text-white px-5 pt-7 pb-5">
         <button
           onClick={() => navigate(-1)}
-          style={{
-            background: 'rgba(255,255,255,0.15)', border: 'none', color: '#fff',
-            borderRadius: 10, padding: '6px 12px', cursor: 'pointer',
-            fontSize: 13, fontWeight: 600, marginBottom: 12,
-          }}
+          className="inline-flex items-center gap-1.5 bg-white/15 text-white rounded-pill px-3 py-1.5 text-[13px] font-semibold mb-3 hover:bg-white/25 transition-colors"
         >
-          ← Retour
+          <ArrowLeft size={14} /> Retour
         </button>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <span style={{ fontSize: 28 }}>🌿</span>
+        <div className="flex items-center gap-2.5">
+          <Leaf size={26} />
           <div>
-            <h1 style={{ margin: 0, fontSize: 22, fontWeight: 800 }}>Mon Espace</h1>
-            <p style={{ margin: '2px 0 0', fontSize: 12, color: 'rgba(255,255,255,0.75)' }}>
+            <h1 className="font-display m-0 text-[22px] font-semibold">Mon Espace</h1>
+            <p className="m-0 mt-0.5 text-xs text-white/75">
               {prenom ? `Ton espace prive, ${prenom}` : 'Ton espace prive et confidentiel'}
             </p>
           </div>
         </div>
 
         {/* Privacy notice */}
-        <div style={{
-          marginTop: 14,
-          background: 'rgba(255,255,255,0.1)',
-          borderRadius: 10, padding: '8px 14px',
-          display: 'flex', alignItems: 'center', gap: 8,
-        }}>
-          <span style={{ fontSize: 14 }}>🔒</span>
-          <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.9)' }}>
+        <div className="mt-3.5 bg-white/10 rounded-xl px-3.5 py-2 flex items-center gap-2">
+          <Lock size={14} />
+          <span className="text-xs text-white/90">
             Tout ce que tu ecris ici est strictement prive.
           </span>
         </div>
       </div>
 
       {/* ── Tab bar ── */}
-      <div style={{
-        display: 'flex', gap: 0,
-        background: '#fff',
-        borderBottom: '1px solid #E2E8F0',
-        position: 'sticky', top: 0, zIndex: 10,
-      }}>
+      <div className="flex bg-card border-b border-line sticky top-0 z-10">
         {(['journal', 'drlo'] as Tab[]).map(t => (
           <button
             key={t}
             data-tooltip-id={t === 'journal' ? 'tab-journal' : 'tab-dr-lo'}
-            className="me-tab-btn"
             onClick={() => setTab(t)}
-            style={{
-              flex: 1, padding: '14px 0',
-              border: 'none', cursor: 'pointer',
-              background: 'transparent',
-              fontSize: 14, fontWeight: 700,
-              color: tab === t ? '#6366F1' : '#94A3B8',
-              borderBottom: tab === t ? '2.5px solid #6366F1' : '2.5px solid transparent',
-            }}
+            className={`flex-1 py-3.5 border-0 border-b-[2.5px] bg-transparent text-sm font-bold flex items-center justify-center gap-1.5 transition-colors ${
+              tab === t ? 'text-accent border-accent' : 'text-muted border-transparent hover:opacity-80'
+            }`}
           >
-            {t === 'journal' ? '📔 Journal' : '🩺 Dr Lo'}
+            {t === 'journal' ? <BookOpen size={15} /> : <Stethoscope size={15} />}
+            {t === 'journal' ? 'Journal' : 'Dr Lo'}
           </button>
         ))}
       </div>
 
       {/* ── Journal Tab ── */}
       {tab === 'journal' && (
-        <div style={{ maxWidth: 640, margin: '0 auto', padding: '20px 16px' }}>
+        <div className="max-w-xl mx-auto px-4 py-5">
 
           {/* ── Prompt cards de Dr Lo ── */}
           {journalPrompts.length > 0 && (
-            <div style={{ marginBottom: 24 }}>
-              <p style={{ margin: '0 0 10px', fontSize: 11, fontWeight: 700, color: '#6366F1', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-                💡 Dr Lo te propose d'explorer...
+            <div className="mb-6">
+              <p className="m-0 mb-2.5 text-[11px] font-bold text-accent uppercase tracking-wide flex items-center gap-1">
+                <Lightbulb size={13} /> Dr Lo te propose d'explorer...
               </p>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              <div className="flex flex-col gap-3">
                 {journalPrompts.map(prompt => (
-                  <div key={prompt.id} style={{
-                    background: 'linear-gradient(135deg,rgba(99,102,241,0.04),rgba(139,92,246,0.04))',
-                    borderRadius: 16, border: '1.5px solid rgba(99,102,241,0.2)',
-                    padding: '16px 18px',
-                    animation: 'slideUp 0.3s ease',
-                  }}>
-                    <p style={{ margin: '0 0 8px', fontSize: 15, fontWeight: 800, color: '#0A2342' }}>
+                  <div key={prompt.id} className="bg-accent-soft rounded-block border border-accent/25 px-4.5 py-4 animate-fadeIn">
+                    <p className="m-0 mb-2 text-[15px] font-extrabold text-ink">
                       {prompt.titre}
                     </p>
-                    <p style={{ margin: '0 0 14px', fontSize: 13, color: '#374151', lineHeight: 1.65, whiteSpace: 'pre-line' }}>
+                    <p className="m-0 mb-3.5 text-[13px] text-ink-soft leading-relaxed whitespace-pre-line">
                       {prompt.invitation}
                     </p>
 
                     {/* Questions suggerees */}
-                    <div style={{ marginBottom: 14 }}>
-                      <p style={{ margin: '0 0 8px', fontSize: 11, fontWeight: 700, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                    <div className="mb-3.5">
+                      <p className="m-0 mb-2 text-[11px] font-bold text-ink-soft uppercase tracking-wide">
                         Questions pour t'inspirer :
                       </p>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                      <div className="flex flex-col gap-1.5">
                         {prompt.questions_suggerees.map(q => (
                           <button
                             key={q}
                             onClick={() => handlePromptQuestion(prompt, q)}
-                            style={{
-                              textAlign: 'left', padding: '8px 12px', borderRadius: 10,
-                              border: '1px solid rgba(99,102,241,0.25)',
-                              background: 'rgba(255,255,255,0.8)',
-                              color: '#4338CA', fontSize: 12, fontWeight: 600, cursor: 'pointer',
-                              transition: 'background 0.15s',
-                            }}
+                            className="text-left px-3 py-2 rounded-xl border border-accent/30 bg-card text-accent text-xs font-semibold hover:bg-accent-soft transition-colors"
                           >
-                            ◉ {q}
+                            • {q}
                           </button>
                         ))}
                       </div>
                     </div>
 
                     {/* Actions */}
-                    <div style={{ display: 'flex', gap: 8 }}>
+                    <div className="flex gap-2">
                       <button
                         onClick={() => handleAcceptPrompt(prompt)}
-                        style={{
-                          flex: 1, padding: '10px', borderRadius: 10, border: 'none',
-                          background: 'linear-gradient(135deg,#6366F1,#8B5CF6)',
-                          color: '#fff', fontSize: 13, fontWeight: 700, cursor: 'pointer',
-                        }}
+                        className="flex-1 py-2.5 rounded-xl border-0 bg-accent text-white text-[13px] font-bold flex items-center justify-center gap-1.5 hover:bg-accent/90 transition-colors"
                       >
-                        ✏️ J'ai envie d'en parler
+                        <Pencil size={13} /> J'ai envie d'en parler
                       </button>
                       <button
                         onClick={() => handleIgnorePrompt(prompt)}
-                        style={{
-                          padding: '10px 14px', borderRadius: 10,
-                          border: '1px solid rgba(99,102,241,0.2)',
-                          background: 'transparent', color: '#94A3B8',
-                          fontSize: 12, fontWeight: 600, cursor: 'pointer',
-                        }}
+                        className="px-3.5 py-2.5 rounded-xl border border-accent/25 bg-transparent text-muted text-xs font-semibold hover:bg-accent-soft/50 transition-colors"
                       >
                         Pas maintenant
                       </button>
@@ -820,105 +758,90 @@ const MonEspacePage: React.FC<Props> = ({ userId }) => {
 
           {/* Stats row */}
           {entries.length > 0 && (
-            <div style={{ display: 'flex', gap: 10, marginBottom: 20 }}>
+            <div className="flex gap-2.5 mb-5">
               {[
-                { icon: '🔥', label: streak > 0 ? `${streak}j de suite` : 'Commence !', color: '#F97316' },
-                { icon: '📝', label: `${entries.length} entree${entries.length > 1 ? 's' : ''}`, color: '#6366F1' },
-                { icon: '🩺', label: `${drLoCount} reponse${drLoCount > 1 ? 's' : ''} Dr Lo`, color: '#0EA5E9' },
+                { icon: Flame, label: streak > 0 ? `${streak}j de suite` : 'Commence !' },
+                { icon: FileText, label: `${entries.length} entree${entries.length > 1 ? 's' : ''}` },
+                { icon: Stethoscope, label: `${drLoCount} reponse${drLoCount > 1 ? 's' : ''} Dr Lo` },
               ].map((s, i) => (
-                <div key={i} style={{
-                  flex: 1, background: '#fff', borderRadius: 12, padding: '10px 12px',
-                  border: '1px solid rgba(99,102,241,0.1)',
-                  display: 'flex', alignItems: 'center', gap: 6,
-                }}>
-                  <span style={{ fontSize: 16 }}>{s.icon}</span>
-                  <span style={{ fontSize: 11, color: '#374151', fontWeight: 600, lineHeight: 1.3 }}>{s.label}</span>
+                <div key={i} className="flex-1 bg-card rounded-xl px-3 py-2.5 border border-line flex items-center gap-1.5">
+                  <s.icon size={15} className="text-accent flex-shrink-0" />
+                  <span className="text-[11px] text-ink-soft font-semibold leading-tight">{s.label}</span>
                 </div>
               ))}
             </div>
           )}
 
           {/* New entry form */}
-          <div ref={formRef} style={{
-            background: '#fff', borderRadius: 18,
-            border: activePromptHint
-              ? '1.5px solid rgba(99,102,241,0.4)'
-              : '1px solid rgba(99,102,241,0.15)',
-            padding: '20px', marginBottom: 24,
-            animation: 'slideUp 0.3s ease',
-          }}>
+          <div
+            ref={formRef}
+            className={`bg-card rounded-block px-5 py-5 mb-6 animate-fadeIn border ${
+              activePromptHint ? 'border-accent/40' : 'border-line'
+            }`}
+          >
             {/* Active prompt hint */}
             {activePromptHint && (
-              <div style={{
-                background: 'linear-gradient(135deg,rgba(99,102,241,0.06),rgba(139,92,246,0.06))',
-                borderRadius: 12, padding: '12px 14px', marginBottom: 16,
-                border: '1px solid rgba(99,102,241,0.15)',
-                display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10,
-              }}>
+              <div className="bg-accent-soft rounded-xl px-3.5 py-3 mb-4 border border-accent/15 flex items-start justify-between gap-2.5">
                 <div>
-                  <p style={{ margin: '0 0 2px', fontSize: 12, fontWeight: 700, color: '#6366F1' }}>
+                  <p className="m-0 mb-0.5 text-xs font-bold text-accent">
                     {activePromptHint.titre}
                   </p>
-                  <p style={{ margin: 0, fontSize: 12, color: '#64748B', fontStyle: 'italic' }}>
-                    ◉ {activePromptHint.question}
+                  <p className="m-0 text-xs text-ink-soft italic">
+                    • {activePromptHint.question}
                   </p>
                 </div>
                 <button
                   onClick={() => setActivePromptHint(null)}
-                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94A3B8', fontSize: 16, padding: 0, flexShrink: 0 }}
+                  className="bg-transparent border-0 cursor-pointer text-muted flex-shrink-0 p-0 hover:text-ink"
                 >
-                  ×
+                  <X size={16} />
                 </button>
               </div>
             )}
 
-            <p style={{ margin: '0 0 14px', fontSize: 13, fontWeight: 700, color: '#374151' }}>
-              ✏️ Nouvelle entree &nbsp;
-              <span style={{ fontSize: 11, color: '#94A3B8', fontWeight: 400 }}>
+            <p className="m-0 mb-3.5 text-[13px] font-bold text-ink-soft flex items-center gap-1.5 flex-wrap">
+              <Pencil size={13} /> Nouvelle entree
+              <span className="text-[11px] text-muted font-normal">
                 {new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })}
               </span>
             </p>
 
             {/* Humeur */}
-            <div style={{ marginBottom: 14 }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-                <p style={{ margin: 0, fontSize: 11, fontWeight: 700, color: '#6366F1', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                  😊 Comment tu te sens ?
+            <div className="mb-3.5">
+              <div className="flex items-center justify-between mb-2">
+                <p className="m-0 text-[11px] font-bold text-accent uppercase tracking-wide flex items-center gap-1">
+                  <Smile size={13} /> Comment tu te sens ?
                 </p>
                 {humeur && (
-                  <span style={{
-                    fontSize: 11, fontWeight: 700,
-                    color: '#6366F1',
-                    background: 'rgba(99,102,241,0.1)',
-                    padding: '2px 10px', borderRadius: 20,
-                  }}>
-                    {humeur} {HUMEURS.find(h => h.emoji === humeur)?.label}
+                  <span className="text-[11px] font-bold text-accent bg-accent-soft px-2.5 py-0.5 rounded-pill inline-flex items-center gap-1">
+                    {(() => {
+                      const selected = HUMEURS.find(h => h.emoji === humeur);
+                      if (!selected) return null;
+                      const SelectedIcon = selected.icon;
+                      return <><SelectedIcon size={12} /> {selected.label}</>;
+                    })()}
                   </span>
                 )}
                 {!humeur && (
-                  <span style={{ fontSize: 11, color: '#94A3B8' }}>Choisis une humeur</span>
+                  <span className="text-[11px] text-muted">Choisis une humeur</span>
                 )}
               </div>
-              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              <div className="flex gap-2 flex-wrap">
                 {HUMEURS.map(h => (
                   <button
                     key={h.emoji}
                     onClick={() => setHumeur(h.emoji === humeur ? '' : h.emoji)}
                     title={h.label}
-                    style={{
-                      display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3,
-                      width: 52, padding: '7px 4px', borderRadius: 12, border: 'none',
-                      background: humeur === h.emoji ? 'rgba(99,102,241,0.12)' : '#F8FAFF',
-                      outline: humeur === h.emoji ? '2px solid #6366F1' : '1px solid #E2E8F0',
-                      fontSize: 22, cursor: 'pointer', transition: 'all 0.15s',
-                    }}
+                    className={`flex flex-col items-center gap-0.5 w-[52px] px-1 py-1.5 rounded-xl border-0 transition-all ${
+                      humeur === h.emoji
+                        ? 'bg-accent-soft ring-2 ring-accent text-accent'
+                        : 'bg-paper ring-1 ring-line text-ink-soft'
+                    }`}
                   >
-                    {h.emoji}
-                    <span style={{
-                      fontSize: 8, fontWeight: 600, lineHeight: 1.2,
-                      color: humeur === h.emoji ? '#6366F1' : '#94A3B8',
-                      textAlign: 'center', whiteSpace: 'nowrap',
-                    }}>
+                    <h.icon size={20} />
+                    <span className={`text-[8px] font-semibold leading-tight text-center whitespace-nowrap ${
+                      humeur === h.emoji ? 'text-accent' : 'text-muted'
+                    }`}>
                       {h.label}
                     </span>
                   </button>
@@ -927,76 +850,59 @@ const MonEspacePage: React.FC<Props> = ({ userId }) => {
             </div>
 
             {/* Textarea */}
-            <div style={{ position: 'relative' }}>
+            <div className="relative">
               <textarea
                 value={contenu}
                 onChange={e => setContenu(e.target.value)}
                 placeholder={activePromptHint ? activePromptHint.question : placeholder}
                 rows={8}
-                style={{
-                  width: '100%', padding: '12px 14px', borderRadius: 12,
-                  border: '1.5px solid rgba(99,102,241,0.2)',
-                  fontSize: 14, fontFamily: 'inherit', background: '#FAFBFF',
-                  color: '#0A2342', lineHeight: 1.65, resize: 'vertical',
-                  boxSizing: 'border-box', outline: 'none',
-                  transition: 'border-color 0.15s', minHeight: 180,
-                }}
+                className="w-full px-3.5 py-3 rounded-xl border-[1.5px] border-accent/20 text-sm font-sans bg-paper text-ink leading-relaxed resize-y outline-none box-border min-h-[180px] focus:border-accent/50 transition-colors"
               />
               {contenu.trim() && (
-                <span style={{
-                  position: 'absolute', bottom: 10, right: 12,
-                  fontSize: 11, color: '#94A3B8',
-                }}>
+                <span className="absolute bottom-2.5 right-3 text-[11px] text-muted">
                   {wordCount} mot{wordCount > 1 ? 's' : ''}
                 </span>
               )}
             </div>
 
             {/* Themes */}
-            <div style={{ margin: '14px 0' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-                <p style={{ margin: 0, fontSize: 11, fontWeight: 700, color: '#6366F1', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                  🏷️ De quoi ça parle ?
+            <div className="my-3.5">
+              <div className="flex items-center justify-between mb-2">
+                <p className="m-0 text-[11px] font-bold text-accent uppercase tracking-wide flex items-center gap-1">
+                  <Tag size={13} /> De quoi ça parle ?
                 </p>
-                <span style={{ fontSize: 11, color: '#94A3B8' }}>
+                <span className="text-[11px] text-muted">
                   {themes.length === 0 ? 'Choisis un ou plusieurs sujets' : `${themes.length} sélectionné${themes.length > 1 ? 's' : ''}`}
                 </span>
               </div>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+              <div className="flex flex-wrap gap-1.5">
                 {THEMES.map(t => (
                   <button
                     key={t}
                     onClick={() => toggleTheme(t)}
-                    style={{
-                      padding: '5px 13px', borderRadius: 20, border: 'none',
-                      background: themes.includes(t) ? 'linear-gradient(135deg,#6366F1,#8B5CF6)' : '#F1F5F9',
-                      color: themes.includes(t) ? '#fff' : '#64748B',
-                      fontSize: 11, fontWeight: 600, cursor: 'pointer', transition: 'all 0.15s',
-                    }}
+                    className={`px-3.5 py-1.5 rounded-pill border-0 text-[11px] font-semibold transition-colors inline-flex items-center gap-1 ${
+                      themes.includes(t) ? 'bg-accent text-white' : 'bg-paper text-ink-soft'
+                    }`}
                   >
-                    {themes.includes(t) ? '✓ ' : ''}{t}
+                    {themes.includes(t) && <Check size={11} />}{t}
                   </button>
                 ))}
               </div>
               {themes.length === 0 && (
-                <p style={{ margin: '6px 0 0', fontSize: 11, color: '#CBD5E1', fontStyle: 'italic' }}>
+                <p className="mt-1.5 mb-0 text-[11px] text-muted italic">
                   Ces étiquettes t'aident à retrouver tes entrées et aident Dr Lô à mieux te comprendre.
                 </p>
               )}
             </div>
 
             {journalError && (
-              <p style={{ margin: '8px 0', fontSize: 12, color: '#DC2626', background: '#FEF2F2', padding: '8px 12px', borderRadius: 8 }}>
+              <p className="my-2 text-xs text-danger bg-danger/10 px-3 py-2 rounded-lg">
                 {journalError}
               </p>
             )}
 
             {savedMsg && (
-              <div style={{
-                margin: '8px 0', fontSize: 13, color: '#065F46',
-                background: '#ECFDF5', padding: '10px 14px', borderRadius: 10,
-                animation: 'slideUp 0.25s ease',
-              }}>
+              <div className="my-2 text-[13px] text-ok bg-sage-soft px-3.5 py-2.5 rounded-xl animate-fadeIn">
                 {savedMsg}
               </div>
             )}
@@ -1004,104 +910,85 @@ const MonEspacePage: React.FC<Props> = ({ userId }) => {
             <button
               onClick={handleSave}
               disabled={saving || !contenu.trim()}
-              style={{
-                width: '100%', padding: '12px', borderRadius: 12, border: 'none',
-                background: saving || !contenu.trim()
-                  ? '#E2E8F0'
-                  : 'linear-gradient(135deg,#3B82F6,#6366F1)',
-                color: saving || !contenu.trim() ? '#94A3B8' : '#fff',
-                fontSize: 14, fontWeight: 700,
-                cursor: saving || !contenu.trim() ? 'default' : 'pointer',
-                marginTop: 4,
-              }}
+              className={`w-full py-3 rounded-xl border-0 text-sm font-bold mt-1 flex items-center justify-center gap-2 transition-colors ${
+                saving || !contenu.trim()
+                  ? 'bg-line text-muted cursor-default'
+                  : 'bg-accent text-white cursor-pointer hover:bg-accent/90'
+              }`}
             >
-              {saving ? 'Sauvegarde...' : '💾 Sauvegarder'}
+              {saving ? <Loader2 size={15} className="animate-spin" /> : <Save size={15} />}
+              {saving ? 'Sauvegarde...' : 'Sauvegarder'}
             </button>
           </div>
 
           {/* Entries list */}
           {loadingEntries ? (
-            <div style={{ textAlign: 'center', padding: '32px 0', color: '#94A3B8', fontSize: 14 }}>
+            <div className="text-center py-8 text-muted text-sm">
               Chargement...
             </div>
           ) : !userId ? (
-            <div style={{ background: '#fff', borderRadius: 16, padding: '24px', textAlign: 'center', border: '1px solid rgba(99,102,241,0.1)' }}>
-              <p style={{ fontSize: 28, marginBottom: 8 }}>🔒</p>
-              <p style={{ fontSize: 14, color: '#374151', fontWeight: 600 }}>Connecte-toi pour acceder a ton journal</p>
+            <div className="bg-card rounded-block px-6 py-6 text-center border border-line">
+              <Lock size={28} className="mx-auto mb-2 text-muted" />
+              <p className="text-sm text-ink-soft font-semibold">Connecte-toi pour acceder a ton journal</p>
             </div>
           ) : entries.length === 0 ? (
-            <div style={{ background: '#fff', borderRadius: 16, padding: '28px 24px', textAlign: 'center', border: '1px solid rgba(99,102,241,0.1)' }}>
-              <p style={{ fontSize: 36, marginBottom: 10 }}>📔</p>
-              <p style={{ fontSize: 14, fontWeight: 700, color: '#0A2342', marginBottom: 6 }}>Ton journal est vide</p>
-              <p style={{ fontSize: 12, color: '#94A3B8', lineHeight: 1.6 }}>
+            <div className="bg-card rounded-block px-6 py-7 text-center border border-line">
+              <BookOpen size={36} className="mx-auto mb-2.5 text-muted" />
+              <p className="text-sm font-bold text-ink mb-1.5">Ton journal est vide</p>
+              <p className="text-xs text-muted leading-relaxed">
                 Ecris ta premiere entree ci-dessus.<br />Dis ce que tu ressens — c'est ton espace.
               </p>
             </div>
           ) : (
             groups.map(group => (
-              <div key={group.label} style={{ marginBottom: 24 }}>
-                <p style={{ margin: '0 0 10px', fontSize: 11, fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+              <div key={group.label} className="mb-6">
+                <p className="m-0 mb-2.5 text-[11px] font-bold text-muted uppercase tracking-wide">
                   {group.label}
                 </p>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                <div className="flex flex-col gap-2.5">
                   {group.entries.map(entry => (
                     <div
                       key={entry.id}
-                      className="me-entry-card"
-                      style={{
-                        background: '#fff', borderRadius: 14,
-                        border: '1px solid rgba(99,102,241,0.1)',
-                        padding: '14px 16px',
-                      }}
+                      className="bg-card rounded-card border border-line px-4 py-3.5 transition-shadow hover:shadow-soft"
                     >
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-                        <span style={{ fontSize: 18 }}>{entry.humeur || '📅'}</span>
-                        <span style={{ fontSize: 12, color: '#64748B', fontWeight: 500 }}>
+                      <div className="flex items-center gap-2 mb-1.5">
+                        {entry.humeur ? (
+                          <span className="text-lg leading-none">{entry.humeur}</span>
+                        ) : (
+                          <Calendar size={16} className="text-muted" />
+                        )}
+                        <span className="text-xs text-ink-soft font-medium">
                           {formatDate(entry.date)}
                         </span>
                         {(entry.dr_lo_response || entry.dr_lo_requested_at) && (
-                          <span style={{ marginLeft: 'auto', fontSize: 10, color: '#0EA5E9', fontWeight: 700, background: '#F0F9FF', borderRadius: 20, padding: '2px 8px' }}>
-                            🩺 Dr Lo
+                          <span className="ml-auto text-[10px] text-sage font-bold bg-sage-soft rounded-pill px-2 py-0.5 flex items-center gap-1">
+                            <Stethoscope size={10} /> Dr Lo
                           </span>
                         )}
                       </div>
 
                       {/* Mode edition inline */}
                       {editingEntry?.id === entry.id ? (
-                        <div style={{ marginBottom: 10 }}>
+                        <div className="mb-2.5">
                           <textarea
                             value={editingEntry.contenu}
                             onChange={e => setEditingEntry({ ...editingEntry, contenu: e.target.value })}
                             rows={6}
                             autoFocus
-                            style={{
-                              width: '100%', padding: '10px 12px', borderRadius: 10,
-                              border: '1.5px solid rgba(99,102,241,0.35)',
-                              fontSize: 13, fontFamily: 'inherit', color: '#0A2342',
-                              background: '#FAFBFF', lineHeight: 1.65, resize: 'vertical',
-                              boxSizing: 'border-box', outline: 'none', marginBottom: 8,
-                            }}
+                            className="w-full px-3 py-2.5 rounded-lg border-[1.5px] border-accent/35 text-[13px] font-sans text-ink bg-paper leading-relaxed resize-y outline-none box-border mb-2"
                           />
-                          <div style={{ display: 'flex', gap: 8 }}>
+                          <div className="flex gap-2">
                             <button
                               onClick={handleSaveEdit}
                               disabled={editSaving}
-                              style={{
-                                flex: 1, padding: '8px', borderRadius: 9, border: 'none',
-                                background: 'linear-gradient(135deg,#6366F1,#8B5CF6)',
-                                color: '#fff', fontSize: 12, fontWeight: 700, cursor: 'pointer',
-                              }}
+                              className="flex-1 py-2 rounded-lg border-0 bg-accent text-white text-xs font-bold flex items-center justify-center gap-1.5 hover:bg-accent/90 transition-colors"
                             >
-                              {editSaving ? 'Sauvegarde...' : '💾 Sauvegarder'}
+                              {editSaving ? <Loader2 size={12} className="animate-spin" /> : <Save size={12} />}
+                              {editSaving ? 'Sauvegarde...' : 'Sauvegarder'}
                             </button>
                             <button
                               onClick={() => setEditingEntry(null)}
-                              style={{
-                                padding: '8px 14px', borderRadius: 9,
-                                border: '1px solid #E2E8F0',
-                                background: 'transparent', color: '#94A3B8',
-                                fontSize: 12, fontWeight: 600, cursor: 'pointer',
-                              }}
+                              className="px-3.5 py-2 rounded-lg border border-line bg-transparent text-muted text-xs font-semibold hover:bg-paper transition-colors"
                             >
                               Annuler
                             </button>
@@ -1109,67 +996,43 @@ const MonEspacePage: React.FC<Props> = ({ userId }) => {
                         </div>
                       ) : (
                         <>
-                          <p style={{
-                            margin: '0 0 10px', fontSize: 13, color: '#374151', lineHeight: 1.55,
-                            overflow: 'hidden', display: '-webkit-box',
-                            WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as const,
-                          }}>
+                          <p className="m-0 mb-2.5 text-[13px] text-ink-soft leading-snug overflow-hidden line-clamp-2">
                             {entry.contenu || '(entree vide)'}
                           </p>
 
                           {entry.themes?.length > 0 && (
-                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 10 }}>
+                            <div className="flex flex-wrap gap-1.5 mb-2.5">
                               {entry.themes.map(t => (
-                                <span key={t} style={{ fontSize: 11, color: '#7C3AED', background: '#F5F3FF', borderRadius: 20, padding: '2px 8px' }}>{t}</span>
+                                <span key={t} className="text-[11px] text-accent bg-accent-soft rounded-pill px-2 py-0.5">{t}</span>
                               ))}
                             </div>
                           )}
 
-                          <div style={{ display: 'flex', gap: 8 }}>
+                          <div className="flex gap-2">
                             <button
                               onClick={() => navigate(`/journal/${entry.id}`)}
-                              style={{
-                                flex: 1, padding: '7px', borderRadius: 9,
-                                border: '1px solid rgba(99,102,241,0.2)',
-                                background: 'transparent', color: '#6366F1',
-                                fontSize: 12, fontWeight: 600, cursor: 'pointer',
-                              }}
+                              className="flex-1 py-1.5 rounded-lg border border-accent/20 bg-transparent text-accent text-xs font-semibold hover:bg-accent-soft/50 transition-colors"
                             >
                               Lire
                             </button>
                             <button
                               onClick={() => setEditingEntry({ id: entry.id, contenu: entry.contenu })}
-                              style={{
-                                flex: 1, padding: '7px', borderRadius: 9,
-                                border: '1px solid rgba(99,102,241,0.2)',
-                                background: 'transparent', color: '#6366F1',
-                                fontSize: 12, fontWeight: 600, cursor: 'pointer',
-                              }}
+                              className="flex-1 py-1.5 rounded-lg border border-accent/20 bg-transparent text-accent text-xs font-semibold flex items-center justify-center gap-1 hover:bg-accent-soft/50 transition-colors"
                             >
-                              ✏️ Modifier
+                              <Pencil size={11} /> Modifier
                             </button>
                             <button
                               onClick={() => handleAskDrLoAboutEntry(entry)}
-                              style={{
-                                flex: 1, padding: '7px', borderRadius: 9,
-                                border: '1px solid rgba(14,165,233,0.25)',
-                                background: 'transparent', color: '#0EA5E9',
-                                fontSize: 12, fontWeight: 600, cursor: 'pointer',
-                              }}
+                              className="flex-1 py-1.5 rounded-lg border border-sage/25 bg-transparent text-sage text-xs font-semibold flex items-center justify-center gap-1 hover:bg-sage-soft/50 transition-colors"
                             >
-                              🩺 Dr Lo
+                              <Stethoscope size={11} /> Dr Lo
                             </button>
                             <button
                               onClick={() => handleDelete(entry.id)}
                               disabled={deletingId === entry.id}
-                              style={{
-                                width: 34, height: 34, borderRadius: 9,
-                                border: '1px solid rgba(239,68,68,0.2)',
-                                background: 'transparent', color: '#EF4444',
-                                fontSize: 13, cursor: 'pointer',
-                              }}
+                              className="w-[34px] h-[34px] rounded-lg border border-danger/20 bg-transparent text-danger flex items-center justify-center hover:bg-danger/5 transition-colors"
                             >
-                              {deletingId === entry.id ? '...' : '🗑️'}
+                              {deletingId === entry.id ? <Loader2 size={13} className="animate-spin" /> : <Trash2 size={13} />}
                             </button>
                           </div>
                         </>
@@ -1185,52 +1048,36 @@ const MonEspacePage: React.FC<Props> = ({ userId }) => {
 
       {/* ── Dr Lo Tab ── */}
       {tab === 'drlo' && (
-        <div style={{ maxWidth: 640, margin: '0 auto', padding: '16px', display: 'flex', flexDirection: 'column' }}>
+        <div className="max-w-xl mx-auto px-4 py-4 flex flex-col">
 
           {/* Header Dr Lo */}
-          <div style={{
-            background: '#fff', borderRadius: 16,
-            border: '1px solid rgba(99,102,241,0.12)',
-            padding: '14px 16px', marginBottom: 12,
-            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div className="bg-card rounded-block border border-sage/20 px-4 py-3.5 mb-3 flex items-center justify-between">
+            <div className="flex items-center gap-2.5">
               <img
                 src={DR_LO_PHOTO}
                 alt="Dr Lo"
-                style={{ width: 40, height: 40, borderRadius: '50%', objectFit: 'cover', border: '2px solid #6366F1' }}
+                className="w-10 h-10 rounded-full object-cover border-2 border-sage"
                 onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
               />
               <div>
-                <p style={{ margin: 0, fontSize: 14, fontWeight: 700, color: '#0A2342' }}>Dr Lo</p>
-                <p style={{ margin: 0, fontSize: 11, color: '#16A34A' }}>● En ligne</p>
+                <p className="m-0 text-sm font-bold text-ink">Dr Lo</p>
+                <p className="m-0 text-[11px] text-ok flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-ok inline-block" /> En ligne
+                </p>
               </div>
             </div>
-            <div style={{ display: 'flex', gap: 8 }}>
+            <div className="flex gap-2">
               <button
                 onClick={() => setHistoryView(!historyView)}
-                style={{
-                  padding: '7px 14px', borderRadius: 10,
-                  border: 'none',
-                  background: historyView
-                    ? 'linear-gradient(135deg,#4F46E5,#7C3AED)'
-                    : 'linear-gradient(135deg,#6366F1,#818CF8)',
-                  color: '#fff', fontSize: 12, fontWeight: 700, cursor: 'pointer',
-                  boxShadow: '0 2px 8px rgba(99,102,241,0.35)',
-                  display: 'flex', alignItems: 'center', gap: 5,
-                }}
+                className={`px-3.5 py-1.5 rounded-xl border-0 text-white text-xs font-bold flex items-center gap-1.5 transition-colors ${
+                  historyView ? 'bg-sage' : 'bg-sage/85 hover:bg-sage'
+                }`}
               >
-                🕐 Historique
+                <History size={13} /> Historique
               </button>
               <button
                 onClick={startNewConversation}
-                style={{
-                  padding: '7px 14px', borderRadius: 10,
-                  border: '1.5px solid rgba(99,102,241,0.35)',
-                  background: 'white', color: '#6366F1',
-                  fontSize: 12, fontWeight: 700, cursor: 'pointer',
-                  display: 'flex', alignItems: 'center', gap: 4,
-                }}
+                className="px-3.5 py-1.5 rounded-xl border-[1.5px] border-sage/35 bg-card text-sage text-xs font-bold hover:bg-sage-soft transition-colors"
               >
                 + Nouveau
               </button>
@@ -1239,25 +1086,25 @@ const MonEspacePage: React.FC<Props> = ({ userId }) => {
 
           {/* Historique view */}
           {historyView ? (
-            <div style={{ maxHeight: '65vh', overflowY: 'auto' }}>
+            <div className="max-h-[65vh] overflow-y-auto">
               {loadingHistory ? (
-                <div style={{ textAlign: 'center', padding: '32px', color: '#94A3B8', fontSize: 13 }}>Chargement...</div>
+                <div className="text-center py-8 text-muted text-[13px]">Chargement...</div>
               ) : conversations.length === 0 ? (
-                <div style={{ textAlign: 'center', padding: '32px', color: '#94A3B8', fontSize: 13 }}>
-                  <p style={{ fontSize: 28 }}>💬</p>
+                <div className="text-center py-8 text-muted text-[13px]">
+                  <MessageCircle size={28} className="mx-auto mb-2" />
                   Aucune conversation sauvegardee.
                 </div>
               ) : selectedConv ? (
-                <div style={{ background: '#fff', borderRadius: 16, border: '1px solid rgba(99,102,241,0.12)', overflow: 'hidden' }}>
-                  <div style={{ padding: '12px 16px', borderBottom: '1px solid #F1F5F9', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <div className="bg-card rounded-block border border-sage/20 overflow-hidden">
+                  <div className="px-4 py-3 border-b border-line flex items-center justify-between">
+                    <div className="flex items-center gap-2.5">
                       <button
                         onClick={() => setSelectedConv(null)}
-                        style={{ background: 'none', border: 'none', color: '#6366F1', cursor: 'pointer', fontSize: 13, fontWeight: 600 }}
+                        className="bg-transparent border-0 text-sage cursor-pointer text-[13px] font-semibold flex items-center gap-1"
                       >
-                        ← Retour
+                        <ArrowLeft size={13} /> Retour
                       </button>
-                      <span style={{ fontSize: 12, color: '#94A3B8' }}>
+                      <span className="text-xs text-muted">
                         {new Date(selectedConv.updated_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' })}
                       </span>
                     </div>
@@ -1268,33 +1115,29 @@ const MonEspacePage: React.FC<Props> = ({ userId }) => {
                       }}
                       disabled={!!deletingConvId}
                       title="Supprimer cette conversation"
-                      style={{
-                        padding: '5px 10px', borderRadius: 8,
-                        border: '1px solid rgba(239,68,68,0.3)',
-                        background: 'rgba(239,68,68,0.06)',
-                        color: '#EF4444', fontSize: 11, fontWeight: 600,
-                        cursor: deletingConvId ? 'default' : 'pointer',
-                        display: 'flex', alignItems: 'center', gap: 4,
-                      }}
+                      className="px-2.5 py-1.5 rounded-lg border border-danger/30 bg-danger/5 text-danger text-[11px] font-semibold flex items-center gap-1"
                     >
-                      {deletingConvId === selectedConv.id ? '…' : '🗑️ Supprimer'}
+                      {deletingConvId === selectedConv.id ? <Loader2 size={11} className="animate-spin" /> : <Trash2 size={11} />} Supprimer
                     </button>
                   </div>
-                  <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  <div className="px-4 py-4 flex flex-col gap-2.5">
                     {selectedConv.messages.map((m, i) => (
-                      <div key={i} style={{ display: 'flex', justifyContent: m.role === 'user' ? 'flex-end' : 'flex-start', gap: 8 }}>
+                      <div key={i} className={`flex gap-2 ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                         {m.role === 'assistant' && (
-                          <img src={DR_LO_PHOTO} alt="" style={{ width: 28, height: 28, borderRadius: '50%', objectFit: 'cover', flexShrink: 0, marginTop: 4 }}
+                          <img src={DR_LO_PHOTO} alt="" className="w-7 h-7 rounded-full object-cover flex-shrink-0 mt-1"
                             onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
                         )}
-                        <div className={m.role === 'user' ? 'chat-user-bubble' : 'chat-bot-bubble'}
-                          style={{ maxWidth: '80%', padding: '10px 14px', fontSize: 13, lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>
+                        <div className={`max-w-[80%] px-3.5 py-2.5 text-[13px] leading-relaxed whitespace-pre-wrap ${
+                          m.role === 'user'
+                            ? 'bg-sage text-white rounded-2xl rounded-br-md'
+                            : 'bg-paper text-ink rounded-2xl rounded-bl-md'
+                        }`}>
                           {m.content}
                         </div>
                       </div>
                     ))}
                   </div>
-                  <div style={{ padding: '12px 16px', borderTop: '1px solid #F1F5F9' }}>
+                  <div className="px-4 py-3 border-t border-line">
                     <button
                       onClick={() => {
                         setMessages(selectedConv.messages);
@@ -1302,62 +1145,44 @@ const MonEspacePage: React.FC<Props> = ({ userId }) => {
                         setHistoryView(false);
                         setSelectedConv(null);
                       }}
-                      style={{
-                        width: '100%', padding: '10px', borderRadius: 10, border: 'none',
-                        background: 'linear-gradient(135deg,#6366F1,#8B5CF6)',
-                        color: '#fff', fontSize: 13, fontWeight: 700, cursor: 'pointer',
-                      }}
+                      className="w-full py-2.5 rounded-xl border-0 bg-sage text-white text-[13px] font-bold flex items-center justify-center gap-1.5 hover:bg-sage/90 transition-colors"
                     >
-                      Continuer avec Dr Lo →
+                      Continuer avec Dr Lo <ArrowRight size={14} />
                     </button>
                   </div>
                 </div>
               ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <div className="flex flex-col gap-2">
                   {conversations.map(conv => {
                     const lastUser = [...conv.messages].reverse().find(m => m.role === 'user');
                     const isDeleting = deletingConvId === conv.id;
                     return (
                       <div
                         key={conv.id}
-                        className="conv-item"
                         onClick={() => !isDeleting && setSelectedConv(conv)}
-                        style={{
-                          background: '#fff', borderRadius: 12,
-                          border: '1px solid rgba(99,102,241,0.1)',
-                          padding: '12px 16px',
-                          opacity: isDeleting ? 0.5 : 1,
-                          transition: 'opacity 0.15s',
-                          cursor: isDeleting ? 'default' : 'pointer',
-                        }}
+                        className={`bg-card rounded-xl border border-line px-4 py-3 transition-opacity ${
+                          isDeleting ? 'opacity-50 cursor-default' : 'opacity-100 cursor-pointer hover:bg-sage-soft/40'
+                        }`}
                       >
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
-                          <span style={{ fontSize: 12, fontWeight: 700, color: '#374151' }}>
-                            💬 {conv.messages.length} messages
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-xs font-bold text-ink-soft flex items-center gap-1.5">
+                            <MessageCircle size={12} /> {conv.messages.length} messages
                           </span>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                            <span style={{ fontSize: 11, color: '#94A3B8' }}>
+                          <div className="flex items-center gap-2">
+                            <span className="text-[11px] text-muted">
                               {new Date(conv.updated_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}
                             </span>
                             <button
                               onClick={e => handleDeleteConversation(e, conv.id)}
                               disabled={!!deletingConvId}
                               title="Supprimer cette conversation"
-                              style={{
-                                width: 28, height: 28, borderRadius: 8,
-                                border: '1px solid rgba(239,68,68,0.25)',
-                                background: 'rgba(239,68,68,0.05)',
-                                color: '#EF4444', fontSize: 12,
-                                cursor: deletingConvId ? 'default' : 'pointer',
-                                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                flexShrink: 0, transition: 'background 0.15s',
-                              }}
+                              className="w-7 h-7 rounded-lg border border-danger/25 bg-danger/5 text-danger flex items-center justify-center flex-shrink-0 hover:bg-danger/10 transition-colors"
                             >
-                              {isDeleting ? '…' : '🗑️'}
+                              {isDeleting ? <Loader2 size={12} className="animate-spin" /> : <Trash2 size={12} />}
                             </button>
                           </div>
                         </div>
-                        <p style={{ margin: 0, fontSize: 12, color: '#64748B', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>
+                        <p className="m-0 text-xs text-ink-soft overflow-hidden whitespace-nowrap text-ellipsis">
                           {lastUser?.content ?? '—'}
                         </p>
                       </div>
@@ -1370,20 +1195,13 @@ const MonEspacePage: React.FC<Props> = ({ userId }) => {
             <>
               {/* Suggestion chips */}
               {messages.length <= 1 && (
-                <div style={{ marginBottom: 12 }}>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                <div className="mb-3">
+                  <div className="flex flex-wrap gap-1.5">
                     {SUGGESTIONS_DR_LO.map(s => (
                       <button
                         key={s}
-                        className="me-suggestion"
                         onClick={() => sendMessage(s)}
-                        style={{
-                          padding: '6px 12px', borderRadius: 20,
-                          border: '1px solid rgba(99,102,241,0.25)',
-                          background: 'transparent', color: '#6366F1',
-                          fontSize: 11, fontWeight: 600, cursor: 'pointer',
-                          transition: 'background 0.15s',
-                        }}
+                        className="px-3 py-1.5 rounded-pill border border-sage/25 bg-transparent text-sage text-[11px] font-semibold hover:bg-sage-soft transition-colors"
                       >
                         {s}
                       </button>
@@ -1393,33 +1211,34 @@ const MonEspacePage: React.FC<Props> = ({ userId }) => {
               )}
 
               {/* Messages */}
-              <div style={{
-                maxHeight: '55vh', overflowY: 'auto', display: 'flex', flexDirection: 'column',
-                gap: 12, padding: '4px 0', marginBottom: 12,
-              }}>
+              <div className="max-h-[55vh] overflow-y-auto flex flex-col gap-3 py-1 mb-3">
                 {messages.map((m, i) => (
-                  <div key={i} style={{ display: 'flex', justifyContent: m.role === 'user' ? 'flex-end' : 'flex-start', gap: 8, alignItems: 'flex-end' }}>
+                  <div key={i} className={`flex gap-2 items-end ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                     {m.role === 'assistant' && (
-                      <img src={DR_LO_PHOTO} alt="Dr Lo" style={{ width: 28, height: 28, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }}
+                      <img src={DR_LO_PHOTO} alt="Dr Lo" className="w-7 h-7 rounded-full object-cover flex-shrink-0"
                         onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
                     )}
-                    <div className={m.role === 'user' ? 'chat-user-bubble' : 'chat-bot-bubble'}
-                      style={{ maxWidth: '82%', padding: '10px 14px', fontSize: 13, lineHeight: 1.65, whiteSpace: 'pre-wrap' }}>
+                    <div className={`max-w-[82%] px-3.5 py-2.5 text-[13px] leading-relaxed whitespace-pre-wrap ${
+                      m.role === 'user'
+                        ? 'bg-sage text-white rounded-2xl rounded-br-md'
+                        : 'bg-paper text-ink rounded-2xl rounded-bl-md'
+                    }`}>
                       {m.content}
                     </div>
                   </div>
                 ))}
 
                 {chatLoading && (
-                  <div style={{ display: 'flex', gap: 8, alignItems: 'flex-end' }}>
-                    <img src={DR_LO_PHOTO} alt="" style={{ width: 28, height: 28, borderRadius: '50%', objectFit: 'cover' }}
+                  <div className="flex gap-2 items-end">
+                    <img src={DR_LO_PHOTO} alt="" className="w-7 h-7 rounded-full object-cover"
                       onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
-                    <div className="chat-bot-bubble" style={{ padding: '10px 14px', display: 'flex', gap: 5 }}>
+                    <div className="bg-paper rounded-2xl rounded-bl-md px-3.5 py-2.5 flex gap-1.5">
                       {[0, 1, 2].map(d => (
-                        <span key={d} style={{
-                          width: 6, height: 6, borderRadius: '50%', background: '#94A3B8', display: 'inline-block',
-                          animation: `typingDot 1.2s ease ${d * 0.2}s infinite`,
-                        }} />
+                        <span
+                          key={d}
+                          className="w-1.5 h-1.5 rounded-full bg-muted inline-block animate-pulse"
+                          style={{ animationDelay: `${d * 0.2}s` }}
+                        />
                       ))}
                     </div>
                   </div>
@@ -1429,12 +1248,7 @@ const MonEspacePage: React.FC<Props> = ({ userId }) => {
               </div>
 
               {/* Input */}
-              <div style={{
-                background: '#fff', borderRadius: 14,
-                border: '1.5px solid rgba(99,102,241,0.2)',
-                padding: '10px 12px',
-                display: 'flex', alignItems: 'flex-end', gap: 10,
-              }}>
+              <div className="bg-card rounded-2xl border-[1.5px] border-sage/25 px-3 py-2.5 flex items-end gap-2.5">
                 <textarea
                   ref={chatInputRef}
                   value={chatInput}
@@ -1442,35 +1256,23 @@ const MonEspacePage: React.FC<Props> = ({ userId }) => {
                   onKeyDown={handleChatKeyDown}
                   placeholder="Ecris a Dr Lo..."
                   rows={1}
-                  className="chat-input-area"
-                  style={{
-                    flex: 1, border: 'none', resize: 'none',
-                    fontSize: 14, fontFamily: 'inherit', color: '#0A2342',
-                    background: 'transparent', lineHeight: '21px',
-                    minHeight: 37, maxHeight: 121,
-                    overflowY: 'auto', outline: 'none',
-                    transition: 'height 0.1s ease',
-                  }}
+                  className="flex-1 border-0 resize-none text-sm font-sans text-ink bg-transparent leading-[21px] min-h-[37px] max-h-[121px] overflow-y-auto outline-none"
                 />
                 <button
                   onClick={() => sendMessage()}
                   disabled={chatLoading || !chatInput.trim()}
-                  style={{
-                    width: 38, height: 38, borderRadius: 10, border: 'none', flexShrink: 0,
-                    background: chatLoading || !chatInput.trim()
-                      ? '#E2E8F0'
-                      : 'linear-gradient(135deg,#6366F1,#8B5CF6)',
-                    color: chatLoading || !chatInput.trim() ? '#94A3B8' : '#fff',
-                    fontSize: 16, cursor: chatLoading || !chatInput.trim() ? 'default' : 'pointer',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  }}
+                  className={`w-[38px] h-[38px] rounded-xl border-0 flex-shrink-0 flex items-center justify-center transition-colors ${
+                    chatLoading || !chatInput.trim()
+                      ? 'bg-line text-muted cursor-default'
+                      : 'bg-sage text-white cursor-pointer hover:bg-sage/90'
+                  }`}
                 >
-                  ↑
+                  <ArrowUp size={17} />
                 </button>
               </div>
 
-              <p style={{ margin: '8px 0 0', fontSize: 11, color: '#94A3B8', textAlign: 'center' }}>
-                ⚡ {KORIS_CONFIG.active ? `Utilise ${KORIS_CONFIG.costs.chat_dr_lo_message} Koris` : 'Utilisera des Koris (bientot disponible)'}
+              <p className="mt-2 mb-0 text-[11px] text-muted text-center flex items-center justify-center gap-1">
+                <Zap size={11} /> {KORIS_CONFIG.active ? `Utilise ${KORIS_CONFIG.costs.chat_dr_lo_message} Koris` : 'Utilisera des Koris (bientot disponible)'}
               </p>
             </>
           )}

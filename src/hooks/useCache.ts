@@ -139,7 +139,7 @@ export function useCache<T>(
              err.message.includes('internal assertion'))) {
           
           fetchAttemptRef.current++;
-          console.log(`🔄 Retrying fetch (attempt ${fetchAttemptRef.current}/${maxRetries})...`);
+          console.log(`Retrying fetch (attempt ${fetchAttemptRef.current}/${maxRetries})...`);
           
           // Exponential backoff
           const delay = Math.pow(2, fetchAttemptRef.current) * 1000;

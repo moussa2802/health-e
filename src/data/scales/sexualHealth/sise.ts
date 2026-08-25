@@ -14,7 +14,7 @@ export const SISE: AssessmentScale = {
   shortName: "SISE",
   category: 'sexual_health',
   description: "Évalue la clarté, la satisfaction et l'acceptation de l'identité sexuelle.",
-  instructions: "Ces questions portent sur ton identité sexuelle — comment tu te vois, ce que tu acceptes de toi. Pas de jugement ici 🌈",
+  instructions: "Ces questions portent sur ton identité sexuelle — comment tu te vois, ce que tu acceptes de toi. Pas de jugement ici",
   timeEstimateMinutes: 7,
   reference: "Schmitt, D.P. & Allik, J. (2005). Sexual Identity and Self-Esteem constructs. Adapté avec questions Healt-e (2026).",
   licenseNote: "Libre pour usage clinique et de recherche. Questions supplémentaires : Questionnaire Healt-e (2026).",

@@ -57,7 +57,7 @@ export async function updatePatientMedicalRecord(
   recordData: Omit<MedicalRecord, "id" | "patientId" | "createdAt">
 ): Promise<string> {
   try {
-    console.log("📝 Updating medical record for patient:", patientId);
+    console.log("Updating medical record for patient:", patientId);
 
     // CRITICAL: Ensure Firestore is ready before updating
     await ensureFirestoreReady();
@@ -71,7 +71,7 @@ export async function updatePatientMedicalRecord(
 
     if (!patientSnap.exists()) {
       console.log(
-        "🔍 [PATIENT SERVICE] Patient not found, creating new patient:",
+        "[PATIENT SERVICE] Patient not found, creating new patient:",
         patientId
       );
 
@@ -94,7 +94,7 @@ export async function updatePatientMedicalRecord(
         updatedAt: serverTimestamp(),
       });
 
-      console.log("✅ Created new patient:", patientId);
+      console.log("Created new patient:", patientId);
     }
 
     // Create medical records collection if it doesn't exist
@@ -149,10 +149,10 @@ export async function updatePatientMedicalRecord(
       updatedAt: serverTimestamp(),
     });
 
-    console.log("✅ Medical record updated successfully");
+    console.log("Medical record updated successfully");
     return recordRef.id;
   } catch (error) {
-    console.error("❌ Error updating medical record:", error);
+    console.error("Error updating medical record:", error);
     throw new Error("Failed to update medical record");
   }
 }
@@ -162,7 +162,7 @@ export async function getPatientMedicalRecords(
   patientId: string
 ): Promise<MedicalRecord[]> {
   try {
-    console.log("📚 Fetching medical records for patient:", patientId);
+    console.log("Fetching medical records for patient:", patientId);
 
     // CRITICAL: Ensure Firestore is ready before fetching
     await ensureFirestoreReady();
@@ -182,18 +182,18 @@ export async function getPatientMedicalRecords(
     const q = query(medicalRecordsRef, orderBy("createdAt", "desc"));
 
     console.log(
-      "🔍 [DEBUG] Executing query on collection:",
+      "[DEBUG] Executing query on collection:",
       medicalRecordsRef.path
     );
     const snapshot = await getDocs(q);
-    console.log("🔍 [DEBUG] Query snapshot:", {
+    console.log("[DEBUG] Query snapshot:", {
       empty: snapshot.empty,
       size: snapshot.size,
       docs: snapshot.docs.length,
     });
 
     if (snapshot.empty) {
-      console.log("⚠️ [DEBUG] Snapshot is empty - no documents found");
+      console.log("[DEBUG] Snapshot is empty - no documents found");
       return [];
     }
 
@@ -205,9 +205,9 @@ export async function getPatientMedicalRecords(
         } as MedicalRecord)
     );
 
-    console.log(`✅ Fetched ${records.length} medical records`);
+    console.log(`Fetched ${records.length} medical records`);
     console.log(
-      "🔍 [DEBUG] First record sample:",
+      "[DEBUG] First record sample:",
       records[0]
         ? {
             id: records[0].id,
@@ -218,7 +218,7 @@ export async function getPatientMedicalRecords(
     );
     return records;
   } catch (error) {
-    console.error("❌ Error fetching medical records:", error);
+    console.error("Error fetching medical records:", error);
     throw new Error("Failed to fetch medical records");
   }
 }
@@ -230,7 +230,7 @@ export async function getMedicalRecord(
 ): Promise<MedicalRecord | null> {
   try {
     console.log(
-      `📄 Fetching medical record ${recordId} for patient ${patientId}`
+      `Fetching medical record ${recordId} for patient ${patientId}`
     );
 
     // CRITICAL: Ensure Firestore is ready before fetching
@@ -250,7 +250,7 @@ export async function getMedicalRecord(
     const recordSnap = await getDoc(recordRef);
 
     if (!recordSnap.exists()) {
-      console.log("⚠️ Medical record not found");
+      console.log("Medical record not found");
       return null;
     }
 
@@ -259,10 +259,10 @@ export async function getMedicalRecord(
       ...recordSnap.data(),
     } as MedicalRecord;
 
-    console.log("✅ Medical record fetched successfully");
+    console.log("Medical record fetched successfully");
     return record;
   } catch (error) {
-    console.error("❌ Error fetching medical record:", error);
+    console.error("Error fetching medical record:", error);
     throw new Error("Failed to fetch medical record");
   }
 }
@@ -273,7 +273,7 @@ export async function getMedicalRecordsByProfessional(
 ): Promise<MedicalRecord[]> {
   try {
     console.log(
-      "📚 Fetching medical records for professional:",
+      "Fetching medical records for professional:",
       professionalId
     );
 
@@ -285,7 +285,7 @@ export async function getMedicalRecordsByProfessional(
 
     // Use collectionGroup to query across all patients' medical records
     console.log(
-      "🔍 [MEDICAL RECORDS DEBUG] Using collectionGroup query for professional:",
+      "[MEDICAL RECORDS DEBUG] Using collectionGroup query for professional:",
       professionalId
     );
 
@@ -298,7 +298,7 @@ export async function getMedicalRecordsByProfessional(
 
       const snapshot = await getDocs(q);
       console.log(
-        "🔍 [MEDICAL RECORDS DEBUG] CollectionGroup query result:",
+        "[MEDICAL RECORDS DEBUG] CollectionGroup query result:",
         snapshot.docs.length,
         "records"
       );
@@ -320,7 +320,7 @@ export async function getMedicalRecordsByProfessional(
           }
         } catch (error) {
           console.log(
-            `⚠️ Error fetching patient data for ${patientId}:`,
+            `Error fetching patient data for ${patientId}:`,
             error
           );
           patientName = `Patient ${patientId.substring(0, 8)}`;
@@ -337,15 +337,15 @@ export async function getMedicalRecordsByProfessional(
       // Wait for all async operations to complete
       const recordsWithNames = await Promise.all(records);
       console.log(
-        `✅ Fetched ${recordsWithNames.length} medical records for professional`
+        `Fetched ${recordsWithNames.length} medical records for professional`
       );
       return recordsWithNames;
     } catch (collectionGroupError) {
       console.log(
-        "🔄 [MEDICAL RECORDS DEBUG] CollectionGroup query failed, falling back to patient-by-patient approach"
+        "[MEDICAL RECORDS DEBUG] CollectionGroup query failed, falling back to patient-by-patient approach"
       );
       console.log(
-        "🔄 [MEDICAL RECORDS DEBUG] Error details:",
+        "[MEDICAL RECORDS DEBUG] Error details:",
         collectionGroupError
       );
 
@@ -384,7 +384,7 @@ export async function getMedicalRecordsByProfessional(
           });
         } catch (patientError) {
           console.log(
-            `⚠️ Error fetching records for patient ${patientId}:`,
+            `Error fetching records for patient ${patientId}:`,
             patientError
           );
           // Continue with other patients
@@ -392,12 +392,12 @@ export async function getMedicalRecordsByProfessional(
       }
 
       console.log(
-        `✅ Fetched ${allRecords.length} medical records for professional (fallback method)`
+        `Fetched ${allRecords.length} medical records for professional (fallback method)`
       );
       return allRecords;
     }
   } catch (error) {
-    console.error("❌ Error fetching medical records by professional:", error);
+    console.error("Error fetching medical records by professional:", error);
     throw new Error("Failed to fetch medical records by professional");
   }
 }
@@ -406,7 +406,7 @@ export async function getMedicalRecordsByProfessional(
 export function generatePrescriptionPDF(): string {
   // This function would normally generate and return a PDF URL
   // For now, we'll just return a placeholder
-  console.log("📄 Generating prescription PDF");
+  console.log("Generating prescription PDF");
   return "prescription.pdf";
 }
 
@@ -418,7 +418,7 @@ export async function archivePatient(
 ): Promise<void> {
   try {
     console.log(
-      `📦 [PATIENT SERVICE] ${archive ? "Archiving" : "Unarchiving"} patient:`,
+      `[PATIENT SERVICE] ${archive ? "Archiving" : "Unarchiving"} patient:`,
       patientId
     );
 
@@ -434,11 +434,11 @@ export async function archivePatient(
     });
 
     console.log(
-      `✅ Patient ${archive ? "archived" : "unarchived"} successfully:`,
+      `Patient ${archive ? "archived" : "unarchived"} successfully:`,
       patientId
     );
   } catch (error) {
-    console.error("❌ Error archiving patient:", error);
+    console.error("Error archiving patient:", error);
     throw new Error(`Failed to ${archive ? "archive" : "unarchive"} patient`);
   }
 }
@@ -449,7 +449,7 @@ export async function getArchivedPatients(
 ): Promise<Patient[]> {
   try {
     console.log(
-      "📦 [PATIENT SERVICE] Fetching archived patients for professional:",
+      "[PATIENT SERVICE] Fetching archived patients for professional:",
       professionalId
     );
 
@@ -466,10 +466,10 @@ export async function getArchivedPatients(
       ...doc.data(),
     })) as Patient[];
 
-    console.log(`✅ Found ${archivedPatients.length} archived patients`);
+    console.log(`Found ${archivedPatients.length} archived patients`);
     return archivedPatients;
   } catch (error) {
-    console.error("❌ Error fetching archived patients:", error);
+    console.error("Error fetching archived patients:", error);
     throw new Error("Failed to fetch archived patients");
   }
 }

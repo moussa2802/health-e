@@ -112,12 +112,12 @@ const FeaturedContentSection: React.FC = () => {
 
   return (
     <div className="container mx-auto px-4">
-      <h2 className="text-3xl font-bold text-center mb-4">
+      <h2 className="font-display text-3xl font-bold text-center mb-4 text-ink">
         {language === "fr"
           ? "Témoignages et conseils santé"
           : "Testimonials and Health Tips"}
       </h2>
-      <p className="text-gray-600 text-center mb-12 max-w-2xl mx-auto">
+      <p className="text-ink-soft text-center mb-12 max-w-2xl mx-auto">
         {language === "fr"
           ? "Découvrez les retours d'expérience de nos patients et les conseils de nos professionnels"
           : "Discover feedback from our patients and advice from our professionals"}

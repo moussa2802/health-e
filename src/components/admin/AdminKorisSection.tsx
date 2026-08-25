@@ -4,13 +4,14 @@
  */
 
 import React, { useState, useEffect } from 'react';
+import { Coins, Gift, RefreshCw, BarChart3 } from 'lucide-react';
 import { getGlobalKorisStats, getKorisPhaseStats, getFeatureLabel, KORIS_COSTS } from '../../services/korisService';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, Cell, PieChart, Pie,
 } from 'recharts';
 
-const COLORS = ['#F59E0B', '#3B82F6', '#059669', '#8B5CF6', '#EC4899', '#EF4444', '#14B8A6'];
+const COLORS = ['#8F6A1F', '#4A5D57', '#3C7A5A', '#B5522F', '#B23A3A', '#B5732A', '#6E7078'];
 
 const AdminKorisSection: React.FC = () => {
   const [stats, setStats] = useState<{
@@ -42,7 +43,7 @@ const AdminKorisSection: React.FC = () => {
 
   if (loading) {
     return (
-      <div style={{ padding: 24, textAlign: 'center', color: '#94A3B8' }}>
+      <div className="p-6 text-center text-muted">
         Chargement des stats Koris...
       </div>
     );
@@ -70,90 +71,61 @@ const AdminKorisSection: React.FC = () => {
 
   // Phase pie chart data
   const phaseData = phaseStats ? [
-    { name: 'Phase Bienvenue', value: phaseStats.welcomePhaseCount, color: '#D97706' },
-    { name: 'Phase Quotidienne', value: phaseStats.dailyPhaseCount, color: '#0D9488' },
+    { name: 'Phase Bienvenue', value: phaseStats.welcomePhaseCount, color: '#8F6A1F' },
+    { name: 'Phase Quotidienne', value: phaseStats.dailyPhaseCount, color: '#4A5D57' },
   ].filter(d => d.value > 0) : [];
 
   return (
-    <div style={{ fontFamily: "'Inter', -apple-system, sans-serif" }}>
+    <div>
       {/* Section Title */}
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: 8,
-        marginBottom: 20,
-        paddingBottom: 12,
-        borderBottom: '2px solid #F59E0B',
-      }}>
-        <span style={{ fontSize: 22 }}>◉</span>
-        <h2 style={{ fontSize: 18, fontWeight: 700, color: '#0A2342', margin: 0 }}>
+      <div className="flex items-center gap-2 mb-5 pb-3 border-b-2 border-gold">
+        <Coins className="h-5 w-5 text-gold" />
+        <h2 className="font-display text-lg font-bold text-ink m-0">
           Économie Koris
         </h2>
       </div>
 
       {/* KPI Cards */}
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
-        gap: 12,
-        marginBottom: 24,
-      }}>
+      <div
+        className="grid gap-3 mb-6"
+        style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))' }}
+      >
         {/* Total dépensés */}
-        <div style={{
-          background: 'linear-gradient(135deg, rgba(245,158,11,0.08), rgba(245,158,11,0.15))',
-          borderRadius: 12,
-          padding: '16px 14px',
-          border: '1px solid rgba(245,158,11,0.2)',
-        }}>
-          <div style={{ fontSize: 11, color: '#92400E', fontWeight: 600, textTransform: 'uppercase' }}>
+        <div className="bg-gold-soft rounded-card px-3.5 py-4 border border-gold/20">
+          <div className="text-xs text-gold font-semibold uppercase">
             Koris dépensés
           </div>
-          <div style={{ fontSize: 28, fontWeight: 800, color: '#D97706', marginTop: 4 }}>
+          <div className="font-display text-2xl font-extrabold text-gold mt-1">
             {stats.totalSpent.toLocaleString()}
           </div>
         </div>
 
         {/* Total rechargés */}
-        <div style={{
-          background: 'linear-gradient(135deg, rgba(5,150,105,0.08), rgba(5,150,105,0.15))',
-          borderRadius: 12,
-          padding: '16px 14px',
-          border: '1px solid rgba(5,150,105,0.2)',
-        }}>
-          <div style={{ fontSize: 11, color: '#065F46', fontWeight: 600, textTransform: 'uppercase' }}>
+        <div className="bg-ok/10 rounded-card px-3.5 py-4 border border-ok/20">
+          <div className="text-xs text-ok font-semibold uppercase">
             Koris distribués
           </div>
-          <div style={{ fontSize: 28, fontWeight: 800, color: '#059669', marginTop: 4 }}>
+          <div className="font-display text-2xl font-extrabold text-ok mt-1">
             {stats.totalRefilled.toLocaleString()}
           </div>
         </div>
 
         {/* Total transactions */}
-        <div style={{
-          background: 'linear-gradient(135deg, rgba(59,130,246,0.08), rgba(59,130,246,0.15))',
-          borderRadius: 12,
-          padding: '16px 14px',
-          border: '1px solid rgba(59,130,246,0.2)',
-        }}>
-          <div style={{ fontSize: 11, color: '#1E40AF', fontWeight: 600, textTransform: 'uppercase' }}>
+        <div className="bg-sage-soft rounded-card px-3.5 py-4 border border-sage/20">
+          <div className="text-xs text-sage font-semibold uppercase">
             Transactions
           </div>
-          <div style={{ fontSize: 28, fontWeight: 800, color: '#3B82F6', marginTop: 4 }}>
+          <div className="font-display text-2xl font-extrabold text-sage mt-1">
             {stats.totalTransactions.toLocaleString()}
           </div>
         </div>
 
         {/* Estimated API cost */}
-        <div style={{
-          background: 'linear-gradient(135deg, rgba(239,68,68,0.08), rgba(239,68,68,0.15))',
-          borderRadius: 12,
-          padding: '16px 14px',
-          border: '1px solid rgba(239,68,68,0.2)',
-        }}>
-          <div style={{ fontSize: 11, color: '#991B1B', fontWeight: 600, textTransform: 'uppercase' }}>
+        <div className="bg-danger/10 rounded-card px-3.5 py-4 border border-danger/20">
+          <div className="text-xs text-danger font-semibold uppercase">
             Coût API estimé
           </div>
-          <div style={{ fontSize: 28, fontWeight: 800, color: '#DC2626', marginTop: 4 }}>
+          <div className="font-display text-2xl font-extrabold text-danger mt-1">
             ${estimatedCost}
           </div>
         </div>
@@ -161,88 +133,59 @@ const AdminKorisSection: React.FC = () => {
 
       {/* Phase stats cards */}
       {phaseStats && phaseStats.totalWithWallet > 0 && (
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-          gap: 12,
-          marginBottom: 24,
-        }}>
+        <div
+          className="grid gap-3 mb-6"
+          style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))' }}
+        >
           {/* Phase Bienvenue */}
-          <div style={{
-            background: 'linear-gradient(135deg, rgba(217,119,6,0.06), rgba(245,158,11,0.12))',
-            borderRadius: 12,
-            padding: '14px 16px',
-            border: '1px solid rgba(217,119,6,0.15)',
-            display: 'flex', alignItems: 'center', gap: 12,
-          }}>
-            <div style={{
-              width: 40, height: 40, borderRadius: '50%',
-              background: 'rgba(217,119,6,0.15)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: 18, flexShrink: 0,
-            }}>🎁</div>
+          <div className="bg-gold-soft rounded-card px-4 py-3.5 border border-gold/15 flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-gold/15 flex items-center justify-center flex-shrink-0">
+              <Gift className="h-5 w-5 text-gold" />
+            </div>
             <div>
-              <div style={{ fontSize: 11, color: '#92400E', fontWeight: 600, textTransform: 'uppercase' }}>
+              <div className="text-xs text-gold font-semibold uppercase">
                 Phase Bienvenue
               </div>
-              <div style={{ fontSize: 24, fontWeight: 800, color: '#D97706' }}>
+              <div className="text-xl font-extrabold text-gold">
                 {phaseStats.welcomePhaseCount}
               </div>
-              <div style={{ fontSize: 11, color: '#94A3B8' }}>
+              <div className="text-xs text-muted">
                 utilisateurs avec bonus actif
               </div>
             </div>
           </div>
 
           {/* Phase Quotidienne */}
-          <div style={{
-            background: 'linear-gradient(135deg, rgba(13,148,136,0.06), rgba(5,150,105,0.12))',
-            borderRadius: 12,
-            padding: '14px 16px',
-            border: '1px solid rgba(13,148,136,0.15)',
-            display: 'flex', alignItems: 'center', gap: 12,
-          }}>
-            <div style={{
-              width: 40, height: 40, borderRadius: '50%',
-              background: 'rgba(13,148,136,0.15)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: 18, flexShrink: 0,
-            }}>🔄</div>
+          <div className="bg-sage-soft rounded-card px-4 py-3.5 border border-sage/15 flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-sage/15 flex items-center justify-center flex-shrink-0">
+              <RefreshCw className="h-5 w-5 text-sage" />
+            </div>
             <div>
-              <div style={{ fontSize: 11, color: '#065F46', fontWeight: 600, textTransform: 'uppercase' }}>
+              <div className="text-xs text-sage font-semibold uppercase">
                 Phase Quotidienne
               </div>
-              <div style={{ fontSize: 24, fontWeight: 800, color: '#0D9488' }}>
+              <div className="text-xl font-extrabold text-sage">
                 {phaseStats.dailyPhaseCount}
               </div>
-              <div style={{ fontSize: 11, color: '#94A3B8' }}>
+              <div className="text-xs text-muted">
                 utilisateurs en mode 10/jour
               </div>
             </div>
           </div>
 
           {/* Taux d'épuisement */}
-          <div style={{
-            background: 'linear-gradient(135deg, rgba(139,92,246,0.06), rgba(139,92,246,0.12))',
-            borderRadius: 12,
-            padding: '14px 16px',
-            border: '1px solid rgba(139,92,246,0.15)',
-            display: 'flex', alignItems: 'center', gap: 12,
-          }}>
-            <div style={{
-              width: 40, height: 40, borderRadius: '50%',
-              background: 'rgba(139,92,246,0.15)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: 18, flexShrink: 0,
-            }}>📊</div>
+          <div className="bg-accent-soft rounded-card px-4 py-3.5 border border-accent/15 flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-accent/15 flex items-center justify-center flex-shrink-0">
+              <BarChart3 className="h-5 w-5 text-accent" />
+            </div>
             <div>
-              <div style={{ fontSize: 11, color: '#5B21B6', fontWeight: 600, textTransform: 'uppercase' }}>
+              <div className="text-xs text-accent font-semibold uppercase">
                 Taux d'épuisement bonus
               </div>
-              <div style={{ fontSize: 24, fontWeight: 800, color: '#7C3AED' }}>
+              <div className="text-xl font-extrabold text-accent">
                 {phaseStats.bonusExhaustedRate}%
               </div>
-              <div style={{ fontSize: 11, color: '#94A3B8' }}>
+              <div className="text-xs text-muted">
                 ont fini leurs 25 Koris
               </div>
             </div>
@@ -252,24 +195,18 @@ const AdminKorisSection: React.FC = () => {
 
       {/* Spending by type chart */}
       {spendingData.length > 0 && (
-        <div style={{
-          background: 'white',
-          borderRadius: 12,
-          padding: 20,
-          border: '1px solid #E2E8F0',
-          marginBottom: 24,
-        }}>
-          <h3 style={{ fontSize: 14, fontWeight: 600, color: '#334155', margin: '0 0 16px' }}>
+        <div className="bg-card rounded-card p-5 border border-line mb-6">
+          <h3 className="text-sm font-semibold text-ink-soft mb-4">
             Répartition des dépenses Koris
           </h3>
           <ResponsiveContainer width="100%" height={250}>
             <BarChart data={spendingData} layout="vertical" margin={{ left: 120 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" />
-              <XAxis type="number" tick={{ fontSize: 11, fill: '#94A3B8' }} />
-              <YAxis type="category" dataKey="name" tick={{ fontSize: 11, fill: '#475569' }} width={110} />
+              <CartesianGrid strokeDasharray="3 3" stroke="#E7E4DA" />
+              <XAxis type="number" tick={{ fontSize: 11, fill: '#6E7078' }} />
+              <YAxis type="category" dataKey="name" tick={{ fontSize: 11, fill: '#4B4D55' }} width={110} />
               <Tooltip
                 formatter={(value: number) => [`${value} Koris`, 'Dépensés']}
-                contentStyle={{ borderRadius: 8, fontSize: 12 }}
+                contentStyle={{ borderRadius: 12, fontSize: 12 }}
               />
               <Bar dataKey="value" radius={[0, 6, 6, 0]}>
                 {spendingData.map((_, index) => (
@@ -282,35 +219,35 @@ const AdminKorisSection: React.FC = () => {
       )}
 
       {/* Tarification reference */}
-      <div style={{
-        background: '#F8FAFC',
-        borderRadius: 12,
-        padding: 16,
-        border: '1px solid #E2E8F0',
-      }}>
-        <h3 style={{ fontSize: 14, fontWeight: 600, color: '#334155', margin: '0 0 12px' }}>
+      <div className="bg-paper rounded-card p-4 border border-line">
+        <h3 className="text-sm font-semibold text-ink-soft mb-3">
           Grille tarifaire actuelle
         </h3>
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: '1fr auto',
-          gap: '6px 16px',
-          fontSize: 13,
-        }}>
+        <div
+          className="grid gap-x-4 gap-y-1.5 text-sm"
+          style={{ gridTemplateColumns: '1fr auto' }}
+        >
           {Object.entries(KORIS_COSTS).map(([feature, cost]) => (
             <React.Fragment key={feature}>
-              <span style={{ color: '#475569' }}>{getFeatureLabel(feature)}</span>
-              <span style={{
-                fontWeight: 600,
-                color: cost > 0 ? '#D97706' : '#059669',
-                textAlign: 'right',
-              }}>
-                {cost > 0 ? `◉ ${cost}` : 'Gratuit'}
+              <span className="text-ink-soft">{getFeatureLabel(feature)}</span>
+              <span
+                className={`font-semibold text-right ${
+                  cost > 0 ? 'text-gold' : 'text-ok'
+                }`}
+              >
+                {cost > 0 ? (
+                  <span className="inline-flex items-center gap-1 justify-end">
+                    <Coins className="h-3 w-3" />
+                    {cost}
+                  </span>
+                ) : (
+                  'Gratuit'
+                )}
               </span>
             </React.Fragment>
           ))}
         </div>
-        <div style={{ marginTop: 12, fontSize: 11, color: '#94A3B8' }}>
+        <div className="mt-3 text-xs text-muted">
           Phase Bienvenue: 25 Koris offerts • Phase Quotidienne: 10 Koris/jour (remis à 10 à minuit)
         </div>
       </div>

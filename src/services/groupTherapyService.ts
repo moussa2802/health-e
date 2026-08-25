@@ -116,13 +116,13 @@ export async function getActiveGroupTherapySessions(): Promise<
             const actualCount = registrationsSnapshot.docs.length;
             if (actualCount > 0) {
               console.warn(
-                `⚠️ [HOMEPAGE] Session ${sessionId} has registrationsCount=0 but ${actualCount} actual registrations. Using actual count.`
+                `[HOMEPAGE] Session ${sessionId} has registrationsCount=0 but ${actualCount} actual registrations. Using actual count.`
               );
               registrationsCount = actualCount;
             }
           } catch (error) {
             console.error(
-              `❌ [HOMEPAGE] Error counting registrations for session ${sessionId}:`,
+              `[HOMEPAGE] Error counting registrations for session ${sessionId}:`,
               error
             );
             // Continuer avec registrationsCount = 0 en cas d'erreur
@@ -160,10 +160,10 @@ export async function getActiveGroupTherapySessions(): Promise<
       (session) => !session.isCompleted
     ); // Filtrer les sessions terminées
 
-    console.log(`✅ [GROUP_THERAPY] Loaded ${sessions.length} active sessions`);
+    console.log(`[GROUP_THERAPY] Loaded ${sessions.length} active sessions`);
     return sessions;
   } catch (error) {
-    console.error("❌ Error fetching group therapy sessions:", error);
+    console.error("Error fetching group therapy sessions:", error);
     // Retourner un tableau vide plutôt que de lancer une erreur pour ne pas casser l'affichage
     return [];
   }
@@ -229,7 +229,7 @@ export async function getPatientGroupTherapySessions(
     if (!db) throw new Error("Firestore not available");
 
     console.log(
-      `🔄 [PATIENT_SESSIONS] Récupération des sessions pour userId=${userId}`
+      `[PATIENT_SESSIONS] Récupération des sessions pour userId=${userId}`
     );
 
     // a) Lire les sessions actives depuis group_therapy_sessions
@@ -242,7 +242,7 @@ export async function getPatientGroupTherapySessions(
 
     const sessionsSnapshot = await getDocs(q);
     console.log(
-      `📋 [PATIENT_SESSIONS] ${sessionsSnapshot.docs.length} sessions actives trouvées`
+      `[PATIENT_SESSIONS] ${sessionsSnapshot.docs.length} sessions actives trouvées`
     );
 
     if (sessionsSnapshot.docs.length === 0) {
@@ -297,7 +297,7 @@ export async function getPatientGroupTherapySessions(
         } as GroupTherapySession;
       } catch (error) {
         console.error(
-          `❌ [PATIENT_SESSIONS] Error checking registration for session ${sessionId}:`,
+          `[PATIENT_SESSIONS] Error checking registration for session ${sessionId}:`,
           error
         );
         return null;
@@ -313,7 +313,7 @@ export async function getPatientGroupTherapySessions(
       });
 
     console.log(
-      `✅ [PATIENT_SESSIONS] ${sessions.length} sessions chargées pour userId=${userId}`
+      `[PATIENT_SESSIONS] ${sessions.length} sessions chargées pour userId=${userId}`
     );
     return sessions;
   } catch (error) {
@@ -497,7 +497,7 @@ export async function createGroupTherapySession(
     });
 
     console.log(
-      "✅ Group therapy session created with private meeting doc:",
+      "Group therapy session created with private meeting doc:",
       sessionId
     );
     return sessionId;
@@ -547,7 +547,7 @@ export async function registerUserToSession(
     if (!db) throw new Error("Firestore not available");
 
     console.log(
-      `🔄 [REGISTRATION] Tentative d'inscription: sessionId=${sessionId}, userId=${userId}`
+      `[REGISTRATION] Tentative d'inscription: sessionId=${sessionId}, userId=${userId}`
     );
 
     // Références pour la transaction
@@ -593,7 +593,7 @@ export async function registerUserToSession(
       // f) Si registration existe déjà => retourner alreadyRegistered
       if (registrationDoc.exists()) {
         console.log(
-          `ℹ️ [REGISTRATION] User ${userId} already registered to session ${sessionId}`
+          `ℹ [REGISTRATION] User ${userId} already registered to session ${sessionId}`
         );
         return { status: "alreadyRegistered" as const };
       }
@@ -611,18 +611,18 @@ export async function registerUserToSession(
       });
 
       console.log(
-        `✅ [REGISTRATION] Transaction prepared: registration created, count will be incremented from ${currentCount}`
+        `[REGISTRATION] Transaction prepared: registration created, count will be incremented from ${currentCount}`
       );
       return { status: "registered" as const };
     });
 
     console.log(
-      `✅ [REGISTRATION] Transaction committed: status=${result.status}, sessionId=${sessionId}, userId=${userId}`
+      `[REGISTRATION] Transaction committed: status=${result.status}, sessionId=${sessionId}, userId=${userId}`
     );
     return result;
   } catch (error: unknown) {
     console.error(
-      `❌ [REGISTRATION] Error in transaction: sessionId=${sessionId}, userId=${userId}`,
+      `[REGISTRATION] Error in transaction: sessionId=${sessionId}, userId=${userId}`,
       error
     );
 
@@ -630,7 +630,7 @@ export async function registerUserToSession(
     const errorCode = (error as { code?: string })?.code;
     if (errorCode === "permission-denied") {
       console.error(
-        `❌ [REGISTRATION] Permission refusée - problème de règles Firestore ou d'authentification`
+        `[REGISTRATION] Permission refusée - problème de règles Firestore ou d'authentification`
       );
       throw error;
     }
@@ -651,7 +651,7 @@ export async function unregisterUserFromSession(
     if (!db) throw new Error("Firestore not available");
 
     console.log(
-      `🔄 [UNREGISTRATION] Tentative de désinscription: sessionId=${sessionId}, userId=${userId}`
+      `[UNREGISTRATION] Tentative de désinscription: sessionId=${sessionId}, userId=${userId}`
     );
 
     // Références pour la transaction
@@ -673,7 +673,7 @@ export async function unregisterUserFromSession(
       // b) Si registration n'existe pas => status "notRegistered"
       if (!registrationDoc.exists()) {
         console.log(
-          `ℹ️ [UNREGISTRATION] User ${userId} not registered to session ${sessionId}`
+          `ℹ [UNREGISTRATION] User ${userId} not registered to session ${sessionId}`
         );
         return { status: "notRegistered" as const };
       }
@@ -689,21 +689,21 @@ export async function unregisterUserFromSession(
       });
 
       console.log(
-        `✅ [UNREGISTRATION] Transaction prepared: registration deleted, count will be ${Math.max(
-          currentCount - 1,
-          0
-        )}`
+        `[UNREGISTRATION] Transaction prepared: registration deleted, count will be ${Math.max(
+ currentCount - 1,
+ 0
+ )}`
       );
       return { status: "unregistered" as const };
     });
 
     console.log(
-      `✅ [UNREGISTRATION] Transaction committed: status=${result.status}, sessionId=${sessionId}, userId=${userId}`
+      `[UNREGISTRATION] Transaction committed: status=${result.status}, sessionId=${sessionId}, userId=${userId}`
     );
     return result;
   } catch (error: unknown) {
     console.error(
-      `❌ [UNREGISTRATION] Error in transaction: sessionId=${sessionId}, userId=${userId}`,
+      `[UNREGISTRATION] Error in transaction: sessionId=${sessionId}, userId=${userId}`,
       error
     );
     throw error;
@@ -750,7 +750,7 @@ export async function updateSessionStatus(
       updatedAt: serverTimestamp(),
     });
 
-    console.log("✅ Session status updated:", sessionId);
+    console.log("Session status updated:", sessionId);
   } catch (error) {
     console.error("Error updating session status:", error);
     throw error;
@@ -770,7 +770,7 @@ export async function markSessionAsCompleted(sessionId: string): Promise<void> {
       updatedAt: serverTimestamp(),
     });
 
-    console.log("✅ Session marked as completed:", sessionId);
+    console.log("Session marked as completed:", sessionId);
   } catch (error) {
     console.error("Error marking session as completed:", error);
     throw error;
@@ -792,7 +792,7 @@ export async function markSessionAsNotCompleted(
       updatedAt: serverTimestamp(),
     });
 
-    console.log("✅ Session marked as not completed:", sessionId);
+    console.log("Session marked as not completed:", sessionId);
   } catch (error) {
     console.error("Error marking session as not completed:", error);
     throw error;
@@ -841,7 +841,7 @@ export async function updateGroupTherapySession(
 
     await updateDoc(sessionRef, updateData);
 
-    console.log("✅ Session updated:", sessionId);
+    console.log("Session updated:", sessionId);
   } catch (error) {
     console.error("Error updating session:", error);
     throw error;
@@ -977,7 +977,7 @@ export async function openGroupTherapyMeeting(
     }
 
     console.log(
-      "✅ Group therapy meeting opened:",
+      "Group therapy meeting opened:",
       sessionId,
       "by",
       professionalId,
@@ -1007,7 +1007,7 @@ export async function deleteGroupTherapySession(
       return await deleteDoc(sessionRef);
     });
 
-    console.log("✅ Session deleted:", sessionId);
+    console.log("Session deleted:", sessionId);
   } catch (error) {
     console.error("Error deleting session:", error);
     throw error;
@@ -1102,7 +1102,7 @@ export async function getGroupTherapyStatistics(): Promise<ParticipantStats[]> {
     statsArray.sort((a, b) => b.sessionCount - a.sessionCount);
 
     console.log(
-      "✅ Group therapy statistics retrieved:",
+      "Group therapy statistics retrieved:",
       statsArray.length,
       "participants"
     );
@@ -1172,7 +1172,7 @@ export async function backfillRegistrationsCountForSessions(): Promise<{
         }
       } catch (error) {
         console.error(
-          `[BACKFILL] ❌ Error processing session ${sessionId}:`,
+          `[BACKFILL] Error processing session ${sessionId}:`,
           error
         );
         // Continue avec les autres sessions même en cas d'erreur
@@ -1184,11 +1184,11 @@ export async function backfillRegistrationsCountForSessions(): Promise<{
     // L'admin peut utiliser cette fonction pour corriger les compteurs des sessions existantes.
 
     console.log(
-      `[BACKFILL] ✅ Backfill complete: ${updatedCount} sessions updated out of ${sessionsSnapshot.docs.length}`
+      `[BACKFILL] Backfill complete: ${updatedCount} sessions updated out of ${sessionsSnapshot.docs.length}`
     );
     return { updated: updatedCount };
   } catch (error) {
-    console.error("[BACKFILL] ❌ Error during backfill:", error);
+    console.error("[BACKFILL] Error during backfill:", error);
     throw error;
   }
 }

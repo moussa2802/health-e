@@ -309,7 +309,7 @@ export async function migrateSpecialties(): Promise<{
   };
 
   try {
-    console.log("🚀 Début de la migration des spécialités...");
+    console.log("Début de la migration des spécialités...");
 
     // Ensure Firestore is ready and get the instance
     await ensureFirestoreReady();
@@ -323,7 +323,7 @@ export async function migrateSpecialties(): Promise<{
     const snapshot = await getDocs(professionalsRef);
 
     results.total = snapshot.size;
-    console.log(`📊 ${results.total} professionnels trouvés`);
+    console.log(`${results.total} professionnels trouvés`);
 
     // Traiter par batch pour éviter les limites Firestore
     const batchSize = 100;
@@ -381,27 +381,27 @@ export async function migrateSpecialties(): Promise<{
       if (batchUpdates > 0) {
         await writeBatch.commit();
         console.log(
-          `✅ Batch ${batchIndex + 1}/${
-            batches.length
-          } traité: ${batchUpdates} mises à jour`
+          `Batch ${batchIndex + 1}/${
+ batches.length
+ } traité: ${batchUpdates} mises à jour`
         );
       } else {
         console.log(
-          `⏭️ Batch ${batchIndex + 1}/${
-            batches.length
-          } ignoré: aucune mise à jour`
+          `Batch ${batchIndex + 1}/${
+ batches.length
+ } ignoré: aucune mise à jour`
         );
       }
     }
 
-    console.log("🎉 Migration terminée!");
-    console.log(`📊 Résultats:`);
+    console.log("Migration terminée!");
+    console.log(`Résultats:`);
     console.log(`   - Total: ${results.total}`);
     console.log(`   - Migrés: ${results.migrated}`);
     console.log(`   - Ignorés: ${results.skipped}`);
     console.log(`   - Erreurs: ${results.errors}`);
   } catch (error) {
-    console.error("❌ Erreur lors de la migration:", error);
+    console.error("Erreur lors de la migration:", error);
     results.errors++;
     results.details.push(`❌ Erreur générale: ${error}`);
   }

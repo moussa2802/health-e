@@ -28,14 +28,14 @@ type Notification = {
 export async function getAdminNotifications(
   adminId: string
 ): Promise<Notification[]> {
-  console.log("🔍 getAdminNotifications appelée avec adminId:", adminId);
+  console.log("getAdminNotifications appelée avec adminId:", adminId);
 
   try {
     await ensureFirestoreReady();
 
     const db = getFirestoreInstance();
     if (!db) {
-      console.error("❌ Firestore non disponible");
+      console.error("Firestore non disponible");
       return [];
     }
 
@@ -53,14 +53,14 @@ export async function getAdminNotifications(
       return { id: doc.id, ...data };
     });
 
-    console.log(`✅ ${notifications.length} notifications récupérées`);
+    console.log(`${notifications.length} notifications récupérées`);
     return notifications;
   } catch (error: unknown) {
     if (error instanceof Error) {
-      console.error("❌ Erreur dans getAdminNotifications:", error.message);
-      console.error("❌ Stack:", error.stack);
+      console.error("Erreur dans getAdminNotifications:", error.message);
+      console.error("Stack:", error.stack);
     } else {
-      console.error("❌ Erreur inconnue dans getAdminNotifications:", error);
+      console.error("Erreur inconnue dans getAdminNotifications:", error);
     }
     return [];
   }

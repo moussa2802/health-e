@@ -17,18 +17,18 @@ const TestimonialsSection: React.FC = () => {
       try {
         setLoading(true);
         setError(null);
-        
+
         // Fetch only non-featured testimonials to avoid duplication
         const allContent = await getContentByType('testimonial');
-        
+
         // Filter out featured content to avoid duplication with FeaturedContentSection
         const nonFeaturedTestimonials = allContent.filter(item => !item.featured);
-        
+
         setTestimonials(nonFeaturedTestimonials);
       } catch (err) {
         console.error('Error fetching testimonials:', err);
-        setError(language === 'fr' 
-          ? 'Impossible de charger les témoignages' 
+        setError(language === 'fr'
+          ? 'Impossible de charger les témoignages'
           : 'Unable to load testimonials');
       } finally {
         setLoading(false);
@@ -48,7 +48,7 @@ const TestimonialsSection: React.FC = () => {
 
   if (error) {
     return (
-      <div className="text-center text-red-500 py-8">
+      <div className="text-center text-danger py-8">
         {error}
       </div>
     );
@@ -60,7 +60,7 @@ const TestimonialsSection: React.FC = () => {
       id: '1',
       type: 'testimonial',
       title: language === 'fr' ? "Mon expérience avec Health-e" : "My experience with Health-e",
-      description: language === 'fr' 
+      description: language === 'fr'
         ? "Health-e m'a permis de consulter un psychologue depuis chez moi. L'expérience a été excellente et très professionnelle."
         : "Health-e allowed me to consult a psychologist from home. The experience was excellent and very professional.",
       author: "Aminata K.",

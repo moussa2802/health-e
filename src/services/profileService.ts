@@ -65,6 +65,9 @@ export interface PatientProfile {
     phone: string;
     relationship: string;
   };
+  // Données de l'app compagnon (/app) — voir src/companion/types.ts et
+  // src/companion/services/companionService.ts pour la lecture/écriture.
+  companion?: import("../companion/types").CompanionData;
   createdAt: Timestamp;
   updatedAt: Timestamp;
 }
@@ -306,7 +309,7 @@ export async function isEmailAlreadyRegistered(
 
     return false;
   } catch (error) {
-    console.error("❌ Error checking if email exists:", error);
+    console.error("Error checking if email exists:", error);
     // In case of error, throw to let the caller handle it
     throw error;
   }
@@ -367,7 +370,7 @@ export async function isPhoneAlreadyRegistered(
 
     return false;
   } catch (error) {
-    console.error("❌ Error checking if phone exists:", error);
+    console.error("Error checking if phone exists:", error);
     // In case of error, throw to let the caller handle it
     throw error;
   }
@@ -418,7 +421,7 @@ export async function isNameAlreadyRegistered(
 
     return false;
   } catch (error) {
-    console.error("❌ Error checking if name exists:", error);
+    console.error("Error checking if name exists:", error);
     // In case of error, throw to let the caller handle it
     throw error;
   }
@@ -532,7 +535,7 @@ export async function createDefaultPatientProfile(
       ...patientData,
     } as PatientProfile;
   } catch (error) {
-    console.error("❌ Error creating default patient profile:", error);
+    console.error("Error creating default patient profile:", error);
     throw new Error(
       "Erreur lors de la création du profil patient: " +
         (error instanceof Error ? error.message : "Erreur inconnue")
@@ -685,7 +688,7 @@ export async function createDefaultProfessionalProfile(
       ...professionalData,
     } as ProfessionalProfile;
   } catch (error) {
-    console.error("❌ Error creating default professional profile:", error);
+    console.error("Error creating default professional profile:", error);
     throw new Error(
       "Erreur lors de la création du profil professionnel: " +
         (error instanceof Error ? error.message : "Erreur inconnue")
@@ -737,7 +740,7 @@ export function generateTimeSlots(
 
     return slots;
   } catch (error) {
-    console.error("❌ Error generating time slots:", error);
+    console.error("Error generating time slots:", error);
     return [];
   }
 }
@@ -791,7 +794,7 @@ export async function updatePatientProfile(
     }
 
   } catch (error) {
-    console.error("❌ Error updating patient profile:", error);
+    console.error("Error updating patient profile:", error);
     throw new Error(
       "Erreur lors de la mise à jour du profil: " +
         (error instanceof Error ? error.message : "Erreur inconnue")
@@ -854,7 +857,7 @@ export async function uploadProfileImage(
 
     return downloadURL;
   } catch (error) {
-    console.error("❌ Error uploading profile image:", error);
+    console.error("Error uploading profile image:", error);
     throw new Error(
       "Erreur lors du téléchargement de l'image: " +
         (error instanceof Error ? error.message : "Erreur inconnue")
@@ -918,7 +921,7 @@ export async function uploadSignatureImage(
 
     return downloadURL;
   } catch (error) {
-    console.error(`❌ Error uploading ${type} image:`, error);
+    console.error(`Error uploading ${type} image:`, error);
     throw new Error(
       `Erreur lors du téléchargement de l'image ${type}: ` +
         (error instanceof Error ? error.message : "Erreur inconnue")
@@ -961,7 +964,7 @@ export async function uploadAndSaveProfileImage(
 
     return downloadURL;
   } catch (error) {
-    console.error("❌ Error uploading and saving profile image:", error);
+    console.error("Error uploading and saving profile image:", error);
     throw new Error(
       "Erreur lors du téléchargement et de l'enregistrement de l'image: " +
         (error instanceof Error ? error.message : "Erreur inconnue")
@@ -996,7 +999,7 @@ export async function uploadAndSaveSignatureImage(
 
     return downloadURL;
   } catch (error) {
-    console.error(`❌ Error uploading and saving ${type} image:`, error);
+    console.error(`Error uploading and saving ${type} image:`, error);
     throw new Error(
       `Erreur lors du téléchargement et de l'enregistrement de l'image ${type}: ` +
         (error instanceof Error ? error.message : "Erreur inconnue")
@@ -1019,7 +1022,7 @@ export function migrateAvailabilityData(
         // Ensure slot has required fields
         if (!slot || !slot.day || !slot.startTime || !slot.endTime) {
           console.log(
-            "⚠️ Missing required fields in slot:",
+            "Missing required fields in slot:",
             JSON.stringify(slot)
           );
           return null;
@@ -1043,7 +1046,7 @@ export function migrateAvailabilityData(
       })
       .filter(Boolean) as AvailabilitySlot[];
   } catch (error) {
-    console.error("❌ Error migrating availability data:", error);
+    console.error("Error migrating availability data:", error);
     return [];
   }
 }
@@ -1076,7 +1079,7 @@ export async function getPatientProfile(
       ...patientData,
     };
   } catch (error) {
-    console.error("❌ Error getting patient profile:", error);
+    console.error("Error getting patient profile:", error);
     throw new Error(
       "Erreur lors de la récupération du profil: " +
         (error instanceof Error ? error.message : "Erreur inconnue")
@@ -1118,7 +1121,7 @@ export async function getOrCreatePatientProfile(
       userData.email || ""
     );
   } catch (error) {
-    console.error("❌ Error getting or creating patient profile:", error);
+    console.error("Error getting or creating patient profile:", error);
     throw new Error(
       "Erreur lors de la récupération ou création du profil: " +
         (error instanceof Error ? error.message : "Erreur inconnue")
@@ -1153,7 +1156,7 @@ export function subscribeToPatientProfile(
       }
     },
     (error) => {
-      console.error("❌ Error in patient profile subscription:", error);
+      console.error("Error in patient profile subscription:", error);
     }
   );
 
@@ -1203,7 +1206,7 @@ export async function getProfessionalProfile(
       specialties,
     };
   } catch (error) {
-    console.error("❌ Error getting professional profile:", error);
+    console.error("Error getting professional profile:", error);
     throw new Error(
       "Erreur lors de la récupération du profil: " +
         (error instanceof Error ? error.message : "Erreur inconnue")
@@ -1262,7 +1265,7 @@ export async function getOrCreateProfessionalProfile(
       userData.category // Use the category from user data
     );
   } catch (error) {
-    console.error("❌ Error getting or creating professional profile:", error);
+    console.error("Error getting or creating professional profile:", error);
     throw new Error(
       "Erreur lors de la récupération ou création du profil: " +
         (error instanceof Error ? error.message : "Erreur inconnue")
@@ -1297,7 +1300,7 @@ export function subscribeToProfessionalProfile(
       }
     },
     (error) => {
-      console.error("❌ Error in professional profile subscription:", error);
+      console.error("Error in professional profile subscription:", error);
     }
   );
 
@@ -1430,7 +1433,7 @@ export async function updateProfessionalProfile(
       const updatedDoc = await getDoc(professionalRef);
       if (updatedDoc.exists()) {
       } else {
-        console.error("❌ Document not found after update");
+        console.error("Document not found after update");
       }
     });
 
@@ -1471,7 +1474,7 @@ export async function updateProfessionalProfile(
     }
 
   } catch (error) {
-    console.error("❌ Error updating professional profile:", error);
+    console.error("Error updating professional profile:", error);
     throw new Error(
       "Erreur lors de la mise à jour du profil: " +
         (error instanceof Error ? error.message : "Erreur inconnue")
@@ -1602,9 +1605,9 @@ export async function migrateAllProfessionalsAvailability(): Promise<number> {
         const professionalId = docSnap.id;
 
         console.log(
-          `🔍 Checking professional ${professionalId} (${
-            professionalData.name || "Unknown"
-          })`
+          `Checking professional ${professionalId} (${
+ professionalData.name || "Unknown"
+ })`
         );
 
         // Check if availability needs migration
@@ -1642,13 +1645,13 @@ export async function migrateAllProfessionalsAvailability(): Promise<number> {
         // Small delay to avoid overwhelming Firestore
         await new Promise((resolve) => setTimeout(resolve, 100));
       } catch (error) {
-        console.error(`❌ Error migrating professional ${docSnap.id}:`, error);
+        console.error(`Error migrating professional ${docSnap.id}:`, error);
       }
     }
 
     return migratedCount;
   } catch (error) {
-    console.error("❌ Error during bulk migration:", error);
+    console.error("Error during bulk migration:", error);
     throw new Error("Erreur lors de la migration des données de disponibilité");
   }
 }

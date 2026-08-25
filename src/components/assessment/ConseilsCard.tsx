@@ -1,8 +1,7 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
+import { Lightbulb, RefreshCw, AlertTriangle, Loader2, Check, Dumbbell, Pin, Stethoscope } from 'lucide-react';
 import { getOrGenerateConseils, type CachedConseils, type GenerateConseilsParams } from '../../services/conseilsService';
 import { useKoris } from '../../contexts/KorisContext';
-
-// ── Types ─────────────────────────────────────────────────────────────────────
 
 type CardState = 'idle' | 'loading' | 'success' | 'error';
 
@@ -20,8 +19,6 @@ interface ConseilsCardProps {
   autoLoad?: boolean;
 }
 
-// ── Helper: format relative date ──────────────────────────────────────────────
-
 function formatRelativeDate(isoString: string): string {
   try {
     const diff = Date.now() - new Date(isoString).getTime();
@@ -37,19 +34,9 @@ function formatRelativeDate(isoString: string): string {
   }
 }
 
-// ── Component ─────────────────────────────────────────────────────────────────
-
 const ConseilsCard: React.FC<ConseilsCardProps> = ({
-  userId,
-  scaleId,
-  scaleName,
-  score,
-  scoreMax,
-  niveau,
-  severity,
-  prenom,
-  genre,
-  interpretation,
+  userId, scaleId, scaleName, score, scoreMax,
+  niveau, severity, prenom, genre, interpretation,
   autoLoad = false,
 }) => {
   const [state, setState] = useState<CardState>(autoLoad ? 'loading' : 'idle');
@@ -64,17 +51,8 @@ const ConseilsCard: React.FC<ConseilsCardProps> = ({
     setError(null);
     try {
       const params: GenerateConseilsParams = {
-        userId,
-        scaleId,
-        scaleName,
-        score,
-        scoreMax,
-        niveau,
-        severity,
-        prenom,
-        genre,
-        interpretation,
-        forceRefresh,
+        userId, scaleId, scaleName, score, scoreMax,
+        niveau, severity, prenom, genre, interpretation, forceRefresh,
       };
       const result = await getOrGenerateConseils(params);
       setData(result);
@@ -85,7 +63,6 @@ const ConseilsCard: React.FC<ConseilsCardProps> = ({
     }
   }, [userId, scaleId, scaleName, score, scoreMax, niveau, severity, prenom, genre, interpretation]);
 
-  // Auto-load on mount if autoLoad prop is set
   useEffect(() => {
     if (autoLoad && !autoLoaded.current) {
       autoLoaded.current = true;
@@ -101,66 +78,32 @@ const ConseilsCard: React.FC<ConseilsCardProps> = ({
     load(false);
   };
 
-  // ── IDLE — button to trigger ──
   if (state === 'idle') {
     const affordable = canAfford('conseils');
     return (
       <button
         onClick={handleGenerateConseils}
         disabled={!affordable}
-        style={{
-          width: '100%',
-          background: affordable
-            ? 'linear-gradient(135deg, #F0FDF4, #EFF6FF)'
-            : '#F8FAFC',
-          border: `1.5px solid ${affordable ? 'rgba(59,130,246,0.2)' : 'rgba(148,163,184,0.2)'}`,
-          borderRadius: 18,
-          padding: '18px 22px',
-          cursor: affordable ? 'pointer' : 'not-allowed',
-          textAlign: 'left',
-          display: 'flex',
-          alignItems: 'center',
-          gap: 14,
-          transition: 'border-color 0.15s, box-shadow 0.15s',
-          boxShadow: '0 2px 12px rgba(59,130,246,0.06)',
-          opacity: affordable ? 1 : 0.65,
-        }}
+        className={`w-full rounded-card border p-5 text-left flex items-center gap-4 transition-all duration-200 ${
+          affordable
+            ? 'bg-card border-line shadow-soft hover-lift cursor-pointer'
+            : 'bg-paper border-line opacity-60 cursor-not-allowed'
+        }`}
       >
-        <div style={{
-          width: 44, height: 44, borderRadius: '50%',
-          background: affordable
-            ? 'linear-gradient(135deg, #3B82F6, #10B981)'
-            : '#CBD5E1',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontSize: 20, flexShrink: 0,
-          boxShadow: affordable ? '0 2px 8px rgba(59,130,246,0.25)' : 'none',
-        }}>
-          💡
+        <div className={`w-11 h-11 rounded-full flex items-center justify-center flex-shrink-0 ${affordable ? 'bg-sage' : 'bg-muted'}`}>
+          <Lightbulb size={20} color="white" />
         </div>
-        <div style={{ flex: 1 }}>
-          <p style={{ margin: 0, fontSize: 15, fontWeight: 800, color: affordable ? '#0A2342' : '#94A3B8' }}>
-            Mes conseils personnalisés
-          </p>
-          <p style={{ margin: '2px 0 0', fontSize: 12, color: '#64748B' }}>
-            Dr Lô analyse ton résultat pour te donner 3 conseils concrets
-          </p>
+        <div className="flex-1 min-w-0">
+          <p className="text-[15px] font-bold text-ink">Mes conseils personnalisés</p>
+          <p className="text-xs text-muted mt-0.5">Dr Lô analyse ton résultat pour te donner 3 conseils concrets</p>
         </div>
-        <div style={{
-          display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3,
-          flexShrink: 0,
-        }}>
-          <div style={{
-            background: affordable
-              ? 'linear-gradient(135deg,#3B82F6,#10B981)'
-              : '#CBD5E1',
-            color: 'white', borderRadius: 10,
-            padding: '7px 14px', fontSize: 12, fontWeight: 700,
-          }}>
-            Générer →
-          </div>
+        <div className="flex flex-col items-center gap-1 flex-shrink-0">
+          <span className={`text-xs font-bold text-white px-3.5 py-1.5 rounded-xl ${affordable ? 'bg-sage' : 'bg-muted'}`}>
+            Générer
+          </span>
           {conseilsCost > 0 && (
-            <span style={{ fontSize: 10, fontWeight: 700, color: affordable ? '#0D9488' : '#94A3B8' }}>
-              ⚡ {conseilsCost} Kori{conseilsCost > 1 ? 's' : ''}
+            <span className={`text-[10px] font-bold ${affordable ? 'text-sage' : 'text-muted'}`}>
+              {conseilsCost} Kori{conseilsCost > 1 ? 's' : ''}
             </span>
           )}
         </div>
@@ -168,71 +111,39 @@ const ConseilsCard: React.FC<ConseilsCardProps> = ({
     );
   }
 
-  // ── LOADING ──
   if (state === 'loading') {
     return (
-      <div style={{
-        background: 'rgba(255,255,255,0.95)',
-        border: '1.5px solid rgba(59,130,246,0.18)',
-        borderRadius: 18,
-        padding: '20px 22px',
-        boxShadow: '0 4px 20px rgba(59,130,246,0.08)',
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 14 }}>
-          <div style={{
-            width: 40, height: 40, borderRadius: '50%',
-            background: 'linear-gradient(135deg, #3B82F6, #10B981)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: 18, flexShrink: 0,
-          }}>
-            💡
+      <div className="bg-card rounded-card border border-line p-5 shadow-soft">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="w-10 h-10 rounded-full bg-sage flex items-center justify-center flex-shrink-0">
+            <Lightbulb size={18} color="white" />
           </div>
-          <div style={{ flex: 1 }}>
-            <p style={{ margin: 0, fontSize: 14, fontWeight: 800, color: '#0A2342' }}>
-              Mes conseils personnalisés
-            </p>
-            <p style={{ margin: 0, fontSize: 11, color: '#94A3B8' }}>Génération en cours…</p>
+          <div className="flex-1">
+            <p className="text-sm font-bold text-ink">Mes conseils personnalisés</p>
+            <p className="text-xs text-muted">Génération en cours…</p>
           </div>
-          <div style={{
-            width: 18, height: 18,
-            border: '2.5px solid #3B82F6',
-            borderTopColor: 'transparent',
-            borderRadius: '50%',
-            animation: 'spin 0.8s linear infinite',
-            flexShrink: 0,
-          }} />
+          <Loader2 size={18} className="animate-spin text-sage flex-shrink-0" />
         </div>
-        <div style={{ background: '#F8FAFF', borderRadius: 12, padding: '14px 16px' }}>
-          <p style={{ margin: 0, fontSize: 13, color: '#64748B', lineHeight: 1.6 }}>
-            Dr Lô analyse ton résultat et prépare 3 conseils personnalisés… 🔄
+        <div className="bg-paper rounded-xl p-4">
+          <p className="text-[13px] text-muted leading-relaxed">
+            Dr Lô analyse ton résultat et prépare 3 conseils personnalisés…
           </p>
         </div>
       </div>
     );
   }
 
-  // ── ERROR ──
   if (state === 'error') {
     return (
-      <div style={{
-        background: '#FFF7ED', border: '1.5px solid rgba(249,115,22,0.3)',
-        borderRadius: 18, padding: '18px 22px',
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
-          <span style={{ fontSize: 20 }}>⚠️</span>
-          <p style={{ margin: 0, fontSize: 14, fontWeight: 700, color: '#9A3412' }}>
-            Impossible de générer les conseils
-          </p>
+      <div className="bg-accent-soft rounded-card border border-accent/20 p-5">
+        <div className="flex items-center gap-2.5 mb-2.5">
+          <AlertTriangle size={18} className="text-danger" />
+          <p className="text-sm font-bold text-danger">Impossible de générer les conseils</p>
         </div>
-        <p style={{ margin: '0 0 12px', fontSize: 13, color: '#C2410C' }}>{error}</p>
+        <p className="text-[13px] text-danger/80 mb-3">{error}</p>
         <button
           onClick={() => load(false)}
-          style={{
-            background: 'linear-gradient(135deg,#F97316,#EF4444)',
-            color: 'white', border: 'none',
-            padding: '8px 16px', borderRadius: 10,
-            fontSize: 12, fontWeight: 700, cursor: 'pointer',
-          }}
+          className="bg-accent text-white border-none px-4 py-2 rounded-xl text-xs font-bold cursor-pointer hover:bg-accent/90 transition-colors"
         >
           Réessayer
         </button>
@@ -240,151 +151,71 @@ const ConseilsCard: React.FC<ConseilsCardProps> = ({
     );
   }
 
-  // ── SUCCESS ──
   if (state === 'success' && data) {
     return (
-      <div style={{
-        background: 'rgba(255,255,255,0.98)',
-        border: '1.5px solid rgba(16,185,129,0.2)',
-        borderRadius: 18,
-        padding: '20px 22px',
-        boxShadow: '0 4px 20px rgba(16,185,129,0.08)',
-        position: 'relative',
-        overflow: 'hidden',
-      }}>
-        {/* Decorative blob */}
-        <div style={{
-          position: 'absolute', top: -20, right: -20,
-          width: 100, height: 100, borderRadius: '50%',
-          background: 'radial-gradient(circle, rgba(16,185,129,0.07) 0%, transparent 70%)',
-          pointerEvents: 'none',
-        }} />
-
-        {/* Header */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 18 }}>
-          <div style={{
-            width: 40, height: 40, borderRadius: '50%',
-            background: 'linear-gradient(135deg, #3B82F6, #10B981)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: 18, flexShrink: 0,
-            boxShadow: '0 2px 8px rgba(16,185,129,0.25)',
-          }}>
-            💡
+      <div className="bg-card rounded-card border border-sage/15 p-5 shadow-soft relative overflow-hidden">
+        <div className="flex items-center gap-2.5 mb-5">
+          <div className="w-10 h-10 rounded-full bg-sage flex items-center justify-center flex-shrink-0 shadow-soft">
+            <Lightbulb size={18} color="white" />
           </div>
-          <div style={{ flex: 1 }}>
-            <p style={{ margin: 0, fontSize: 14, fontWeight: 800, color: '#0A2342' }}>
-              Mes conseils personnalisés
-            </p>
-            <p style={{ margin: 0, fontSize: 11, color: '#94A3B8' }}>
-              Analyse Dr Lô · {niveau}
-            </p>
+          <div className="flex-1">
+            <p className="text-sm font-bold text-ink">Mes conseils personnalisés</p>
+            <p className="text-xs text-muted">Analyse Dr Lô · {niveau}</p>
           </div>
           {data.fromCache && (
-            <span style={{
-              background: '#F0FDF4', border: '1px solid rgba(16,185,129,0.3)',
-              color: '#16A34A', fontSize: 10, fontWeight: 700,
-              padding: '3px 8px', borderRadius: 8, flexShrink: 0,
-            }}>
-              ✓ Sauvegardé
+            <span className="bg-sage-soft text-ok text-[10px] font-bold px-2 py-1 rounded-lg flex-shrink-0 flex items-center gap-1">
+              <Check size={10} /> Sauvegardé
             </span>
           )}
         </div>
 
-        {/* Signification */}
-        <div style={{
-          background: 'linear-gradient(135deg, #F0FDF4, #EFF6FF)',
-          borderRadius: 12, padding: '14px 16px', marginBottom: 16,
-          border: '1px solid rgba(16,185,129,0.15)',
-        }}>
-          <p style={{ margin: '0 0 6px', fontSize: 11, fontWeight: 700, color: '#16A34A', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-            📌 Ce que ça veut dire
+        <div className="bg-sage-soft rounded-xl p-4 mb-4 border border-sage/10">
+          <p className="text-[11px] font-bold text-sage uppercase tracking-wide mb-1.5 flex items-center gap-1.5">
+            <Pin size={12} /> Ce que ça veut dire
           </p>
-          <p style={{ margin: 0, fontSize: 13, color: '#374151', lineHeight: 1.65 }}>
-            {data.signification}
-          </p>
+          <p className="text-[13px] text-ink-soft leading-relaxed">{data.signification}</p>
         </div>
 
-        {/* 3 conseils */}
-        <div style={{ marginBottom: 16 }}>
-          <p style={{ margin: '0 0 10px', fontSize: 11, fontWeight: 700, color: '#3B82F6', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-            ✅ Mes 3 conseils
+        <div className="mb-4">
+          <p className="text-[11px] font-bold text-accent uppercase tracking-wide mb-2.5 flex items-center gap-1.5">
+            <Check size={12} /> Mes 3 conseils
           </p>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <div className="flex flex-col gap-2.5">
             {data.conseils.map((conseil, i) => (
-              <div
-                key={i}
-                style={{
-                  background: '#F8FAFF',
-                  borderRadius: 12,
-                  padding: '12px 14px',
-                  borderLeft: '3px solid #3B82F6',
-                }}
-              >
-                <p style={{ margin: '0 0 4px', fontSize: 13, fontWeight: 700, color: '#0A2342' }}>
-                  {conseil.titre}
-                </p>
-                <p style={{ margin: 0, fontSize: 13, color: '#374151', lineHeight: 1.6 }}>
-                  {conseil.texte}
-                </p>
+              <div key={i} className="bg-paper rounded-xl p-3.5 border-l-[3px] border-accent">
+                <p className="text-[13px] font-bold text-ink mb-1">{conseil.titre}</p>
+                <p className="text-[13px] text-ink-soft leading-relaxed">{conseil.texte}</p>
               </div>
             ))}
           </div>
         </div>
 
-        {/* Exercice de la semaine */}
-        <div style={{
-          background: 'linear-gradient(135deg, #EFF6FF, #F0FDFA)',
-          borderRadius: 12, padding: '14px 16px',
-          border: '1px solid rgba(59,130,246,0.15)',
-          marginBottom: data.avis_pro ? 16 : 14,
-        }}>
-          <p style={{ margin: '0 0 6px', fontSize: 11, fontWeight: 700, color: '#3B82F6', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-            🏋️ Exercice de la semaine
+        <div className="bg-gold-soft rounded-xl p-4 border border-gold/10 mb-4">
+          <p className="text-[11px] font-bold text-gold uppercase tracking-wide mb-1.5 flex items-center gap-1.5">
+            <Dumbbell size={12} /> Exercice de la semaine
           </p>
-          <p style={{ margin: '0 0 6px', fontSize: 13, fontWeight: 700, color: '#0A2342' }}>
-            {data.exercice.titre}
-          </p>
-          <p style={{ margin: 0, fontSize: 13, color: '#374151', lineHeight: 1.65 }}>
-            {data.exercice.description}
-          </p>
+          <p className="text-[13px] font-bold text-ink mb-1">{data.exercice.titre}</p>
+          <p className="text-[13px] text-ink-soft leading-relaxed">{data.exercice.description}</p>
         </div>
 
-        {/* Avis pro (si score critique) */}
         {data.avis_pro && (
-          <div style={{
-            background: '#FFF7ED',
-            borderRadius: 12, padding: '12px 14px',
-            border: '1px solid rgba(249,115,22,0.2)',
-            marginBottom: 14,
-          }}>
-            <p style={{ margin: '0 0 4px', fontSize: 11, fontWeight: 700, color: '#EA580C', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-              ⚕️ Avis du Dr Lô
+          <div className="bg-accent-soft rounded-xl p-3.5 border border-accent/15 mb-4">
+            <p className="text-[11px] font-bold text-accent uppercase tracking-wide mb-1 flex items-center gap-1.5">
+              <Stethoscope size={12} /> Avis du Dr Lô
             </p>
-            <p style={{ margin: 0, fontSize: 13, color: '#9A3412', lineHeight: 1.6 }}>
-              {data.avis_pro}
-            </p>
+            <p className="text-[13px] text-accent leading-relaxed">{data.avis_pro}</p>
           </div>
         )}
 
-        {/* Footer */}
-        <div style={{
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          flexWrap: 'wrap', gap: 8,
-          borderTop: '1px solid rgba(0,0,0,0.06)', paddingTop: 12,
-        }}>
-          <p style={{ margin: 0, fontSize: 11, color: '#94A3B8' }}>
-            {data.fromCache ? `✓ Analyse sauvegardée · ${formatRelativeDate(data.generatedAt)}` : '✓ Analyse générée et sauvegardée'}
+        <div className="flex items-center justify-between flex-wrap gap-2 border-t border-line pt-3">
+          <p className="text-[11px] text-muted">
+            {data.fromCache ? `Analyse sauvegardée · ${formatRelativeDate(data.generatedAt)}` : 'Analyse générée et sauvegardée'}
           </p>
           <button
             onClick={() => load(true)}
-            style={{
-              background: 'transparent',
-              border: '1px solid rgba(59,130,246,0.3)',
-              color: '#3B82F6', fontSize: 11, fontWeight: 600,
-              padding: '5px 12px', borderRadius: 8, cursor: 'pointer',
-            }}
+            className="flex items-center gap-1.5 bg-transparent border border-sage/20 text-sage text-[11px] font-semibold px-3 py-1.5 rounded-lg cursor-pointer hover:bg-sage-soft transition-colors"
           >
-            🔄 Actualiser
+            <RefreshCw size={11} /> Actualiser
           </button>
         </div>
       </div>

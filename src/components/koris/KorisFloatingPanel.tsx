@@ -7,6 +7,7 @@
  */
 
 import React, { useEffect, useState } from 'react';
+import { Gift, Check } from 'lucide-react';
 import { useKoris } from '../../contexts/KorisContext';
 import { getKorisHistory, getFeatureLabel, KORIS_COSTS, KORIS_DAILY_AMOUNT, type KorisTransaction } from '../../services/korisService';
 import { useAuth } from '../../contexts/AuthContext';
@@ -39,13 +40,13 @@ const KorisFloatingPanel: React.FC<Props> = ({ onClose }) => {
   const hoursLeft = Math.floor(msLeft / (1000 * 60 * 60));
   const minsLeft = Math.floor((msLeft % (1000 * 60 * 60)) / (1000 * 60));
 
-  const typeColor = (type: string) => {
+  const typeTextClass = (type: string) => {
     switch (type) {
-      case 'spend': return '#DC2626';
-      case 'refill': case 'daily_reset': return '#059669';
-      case 'bonus': case 'phase_switch': return '#D97706';
-      case 'refund': return '#3B82F6';
-      default: return '#64748B';
+      case 'spend': return 'text-danger';
+      case 'refill': case 'daily_reset': return 'text-ok';
+      case 'bonus': case 'phase_switch': return 'text-gold';
+      case 'refund': return 'text-accent';
+      default: return 'text-muted';
     }
   };
 
@@ -53,80 +54,50 @@ const KorisFloatingPanel: React.FC<Props> = ({ onClose }) => {
     return type === 'spend' ? '−' : '+';
   };
 
+  const usageBarClass = todaySpent >= 8 ? 'bg-danger' : todaySpent >= 5 ? 'bg-warn' : 'bg-gold';
+
   return (
     <>
       {/* Backdrop */}
       <div
         onClick={onClose}
-        style={{
-          position: 'fixed',
-          inset: 0,
-          zIndex: 51,
-          background: 'rgba(0,0,0,0.25)',
-          backdropFilter: 'blur(2px)',
-        }}
+        className="fixed inset-0 z-[51] bg-black/25"
+        style={{ backdropFilter: 'blur(2px)' }}
       />
 
       {/* Panel */}
       <div
         data-koris-panel
-        style={{
-          position: 'fixed',
-          zIndex: 52,
-          bottom: 90,
-          left: 24,
-          width: 320,
-          maxHeight: 'calc(100vh - 120px)',
-          background: 'white',
-          borderRadius: 20,
-          boxShadow: '0 12px 40px rgba(0,0,0,0.18)',
-          border: '1px solid rgba(0,0,0,0.06)',
-          overflow: 'hidden',
-          fontFamily: "'Inter', -apple-system, sans-serif",
-          animation: 'koriPanelIn 0.25s ease-out',
-        }}
+        className="fixed z-[52] bottom-[90px] left-6 w-80 bg-card rounded-block shadow-lift border border-line overflow-hidden"
+        style={{ maxHeight: 'calc(100vh - 120px)', animation: 'koriPanelIn 0.25s ease-out' }}
       >
         {/* Header with Kori image + balance */}
-        <div style={{
-          background: 'linear-gradient(135deg, #0D9488, #059669)',
-          padding: '20px 16px',
-          display: 'flex',
-          alignItems: 'center',
-          gap: 14,
-          color: 'white',
-        }}>
+        <div className="bg-gold px-4 py-5 flex items-center gap-3.5 text-white">
           <img
             src={KORI_IMG}
             alt="Kori"
-            style={{
-              width: 48,
-              height: 48,
-              borderRadius: '50%',
-              objectFit: 'cover',
-              border: '3px solid rgba(255,255,255,0.3)',
-              flexShrink: 0,
-            }}
+            className="w-12 h-12 rounded-full object-cover border-[3px] border-white/30 flex-shrink-0"
           />
           <div>
-            <div style={{ fontSize: 11, opacity: 0.85 }}>Mon solde</div>
-            <div style={{ fontSize: 30, fontWeight: 800, letterSpacing: '-1px', lineHeight: 1.1 }}>
+            <div className="text-[11px] opacity-85">Mon solde</div>
+            <div className="text-[30px] font-extrabold tracking-tight leading-tight">
               {balance}
-              <span style={{ fontSize: 13, fontWeight: 500, marginLeft: 5, opacity: 0.85 }}>Koris</span>
+              <span className="text-[13px] font-medium ml-1 opacity-85">Koris</span>
             </div>
           </div>
         </div>
 
         {/* Phase-dependent section */}
-        <div style={{ padding: '12px 16px', borderBottom: '1px solid #F1F5F9' }}>
+        <div className="px-4 py-3 border-b border-line">
           {welcomeBonusActive ? (
             /* ── Phase Bienvenue ── */
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span style={{ fontSize: 16 }}>🎁</span>
+            <div className="flex items-center gap-2">
+              <Gift size={18} className="text-gold flex-shrink-0" />
               <div>
-                <div style={{ fontSize: 12, fontWeight: 700, color: '#D97706' }}>
+                <div className="text-xs font-bold text-gold">
                   Koris de bienvenue
                 </div>
-                <div style={{ fontSize: 11, color: '#94A3B8', marginTop: 1 }}>
+                <div className="text-[11px] text-muted mt-0.5">
                   Profite de tes Koris offerts — pas de limite journalière
                 </div>
               </div>
@@ -134,52 +105,51 @@ const KorisFloatingPanel: React.FC<Props> = ({ onClose }) => {
           ) : (
             /* ── Phase Quotidienne ── */
             <>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-                <span style={{ fontSize: 11, color: '#64748B', fontWeight: 600 }}>
+              <div className="flex justify-between items-center mb-1.5">
+                <span className="text-[11px] text-ink-soft font-semibold">
                   Utilisés : {todaySpent} / {KORIS_DAILY_AMOUNT}
                 </span>
-                <span style={{ fontSize: 11, color: '#059669', fontWeight: 600 }}>
+                <span className="text-[11px] text-ok font-semibold">
                   Recharge dans {hoursLeft}h{minsLeft > 0 ? ` ${minsLeft}min` : ''}
                 </span>
               </div>
-              <div style={{ height: 6, borderRadius: 3, background: '#F1F5F9', overflow: 'hidden' }}>
-                <div style={{
-                  height: '100%',
-                  width: `${Math.min(100, (todaySpent / KORIS_DAILY_AMOUNT) * 100)}%`,
-                  background: todaySpent >= 8 ? '#DC2626' : todaySpent >= 5 ? '#D97706' : '#0D9488',
-                  borderRadius: 3,
-                  transition: 'width 0.3s',
-                }} />
+              <div className="h-1.5 rounded-full bg-line overflow-hidden">
+                <div
+                  className={`h-full rounded-full transition-all duration-300 ${usageBarClass}`}
+                  style={{ width: `${Math.min(100, (todaySpent / KORIS_DAILY_AMOUNT) * 100)}%` }}
+                />
               </div>
             </>
           )}
         </div>
 
         {/* Recent transactions */}
-        <div style={{ padding: '10px 16px', borderBottom: '1px solid #F1F5F9', maxHeight: 160, overflowY: 'auto' }}>
-          <div style={{ fontSize: 10, fontWeight: 600, color: '#94A3B8', textTransform: 'uppercase', marginBottom: 6 }}>
+        <div className="px-4 py-2.5 border-b border-line max-h-40 overflow-y-auto">
+          <div className="text-[10px] font-semibold text-muted uppercase mb-1.5">
             Dernieres transactions
           </div>
           {loading ? (
-            <div style={{ fontSize: 11, color: '#94A3B8', textAlign: 'center', padding: 8 }}>...</div>
+            <div className="text-[11px] text-muted text-center py-2">...</div>
           ) : history.length === 0 ? (
-            <div style={{ fontSize: 11, color: '#94A3B8', textAlign: 'center', padding: 8 }}>Aucune transaction</div>
+            <div className="text-[11px] text-muted text-center py-2">Aucune transaction</div>
           ) : (
             history.map((tx, i) => (
-              <div key={tx.id ?? i} style={{
-                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                padding: '5px 0',
-                borderBottom: i < history.length - 1 ? '1px solid #FAFBFC' : 'none',
-              }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <div
+                key={tx.id ?? i}
+                className={`flex items-center justify-between py-1.5 ${
+                  i < history.length - 1 ? 'border-b border-line/50' : ''
+                }`}
+              >
+                <div className="flex items-center gap-1.5">
                   <img
                     src={KORI_IMG}
                     alt=""
-                    style={{ width: 16, height: 16, borderRadius: '50%', objectFit: 'cover', opacity: tx.type === 'spend' ? 0.5 : 1 }}
+                    className="w-4 h-4 rounded-full object-cover"
+                    style={{ opacity: tx.type === 'spend' ? 0.5 : 1 }}
                   />
-                  <span style={{ fontSize: 11, color: '#475569' }}>{getFeatureLabel(tx.feature)}</span>
+                  <span className="text-[11px] text-ink-soft">{getFeatureLabel(tx.feature)}</span>
                 </div>
-                <span style={{ fontSize: 12, fontWeight: 700, color: typeColor(tx.type) }}>
+                <span className={`text-xs font-bold ${typeTextClass(tx.type)}`}>
                   {typeSign(tx.type)}{tx.amount}
                 </span>
               </div>
@@ -188,24 +158,26 @@ const KorisFloatingPanel: React.FC<Props> = ({ onClose }) => {
         </div>
 
         {/* Cost grid */}
-        <div style={{ padding: '10px 16px 14px' }}>
-          <div style={{ fontSize: 10, fontWeight: 600, color: '#94A3B8', textTransform: 'uppercase', marginBottom: 6 }}>
+        <div className="px-4 pt-2.5 pb-3.5">
+          <div className="text-[10px] font-semibold text-muted uppercase mb-1.5">
             Couts
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '3px 10px', fontSize: 11 }}>
+          <div className="grid grid-cols-[1fr_auto] gap-x-2.5 gap-y-1 text-[11px]">
             {Object.entries(KORIS_COSTS)
               .filter(([, cost]) => cost > 0)
               .map(([feature, cost]) => (
                 <React.Fragment key={feature}>
-                  <span style={{ color: '#475569' }}>{getFeatureLabel(feature)}</span>
-                  <span style={{ display: 'flex', alignItems: 'center', gap: 3, fontWeight: 600, color: '#0D9488', justifyContent: 'flex-end' }}>
-                    <img src={KORI_IMG} alt="" style={{ width: 12, height: 12, borderRadius: '50%', objectFit: 'cover' }} />
+                  <span className="text-ink-soft">{getFeatureLabel(feature)}</span>
+                  <span className="flex items-center gap-1 font-semibold text-gold justify-end">
+                    <img src={KORI_IMG} alt="" className="w-3 h-3 rounded-full object-cover" />
                     {cost}
                   </span>
                 </React.Fragment>
               ))}
-            <span style={{ color: '#059669' }}>Tests d'evaluation</span>
-            <span style={{ fontWeight: 600, color: '#059669', textAlign: 'right' }}>Gratuit ✅</span>
+            <span className="text-ok">Tests d'evaluation</span>
+            <span className="font-semibold text-ok text-right flex items-center justify-end gap-1">
+              Gratuit <Check size={12} />
+            </span>
           </div>
         </div>
       </div>

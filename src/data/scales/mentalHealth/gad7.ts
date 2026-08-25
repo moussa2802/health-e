@@ -25,9 +25,10 @@ export const GAD7: AssessmentScale = {
   shortName: "GAD-7",
   category: 'mental_health',
   description: "Mesure la sévérité de l'anxiété généralisée au cours des 2 dernières semaines.",
-  instructions: "Ces 2 dernières semaines, dis-moi combien de fois ces situations t'ont {{concerné|concernée}} :",
+  instructions: "Au cours des 2 dernières semaines, à quelle fréquence as-tu été gêné(e) par les problèmes suivants :",
   timeEstimateMinutes: 3,
   reference: "Spitzer, R.L., Kroenke, K., Williams, J.B.W., & Löwe, B. (2006). A brief measure for assessing generalized anxiety disorder. Archives of Internal Medicine, 166(10), 1092–1097.",
+  adaptationNote: "Traduction validée FR, adaptée au tutoiement (registre uniquement). Aucun changement de contenu ni d'ordre des items.",
   licenseNote: "Domaine public. Libre de droits.",
   warningMessage: "Ces résultats ne remplacent pas une consultation avec un professionnel de santé.",
   scoreRange: { min: 0, max: 21 },
@@ -44,43 +45,43 @@ export const GAD7: AssessmentScale = {
   items: [
     {
       id: 1,
-      text: "T'arrive-t-il de te sentir comme une casserole sur le feu 🫧 — {{nerveux|nerveuse}}, {{tendu|tendue}}, à bout — sans vraiment savoir pourquoi ?",
+      text: "Un sentiment de nervosité, d'anxiété ou de tension",
       type: 'frequency',
       options: opts,
     },
     {
       id: 2,
-      text: "Tes inquiétudes ont-elles parfois tendance à tourner en boucle dans ta tête, comme une chanson qu'on n'arrive pas à enlever ? 🔄",
+      text: "Une incapacité à arrêter de s'inquiéter ou à contrôler ses inquiétudes",
       type: 'frequency',
       options: opts,
     },
     {
       id: 3,
-      text: "Est-ce que tu t'inquiètes souvent à propos de plein de choses différentes en même temps ?",
+      text: "Une inquiétude excessive à propos de différentes choses",
       type: 'frequency',
       options: opts,
     },
     {
       id: 4,
-      text: "Ton cerveau reste en mode 'on' même quand tu essaies de te reposer ?",
+      text: "Des difficultés à se détendre",
       type: 'frequency',
       options: opts,
     },
     {
       id: 5,
-      text: "Est-ce qu'il t'arrive d'être tellement {{agité|agitée}} intérieurement que tu n'arrives pas à rester en place ?",
+      text: "Une agitation telle qu'il est difficile de tenir en place",
       type: 'frequency',
       options: opts,
     },
     {
       id: 6,
-      text: "Tu t'emportes facilement ou tu t'irrites pour des petites choses ?",
+      text: "Une tendance à être facilement contrarié(e) ou irritable",
       type: 'frequency',
       options: opts,
     },
     {
       id: 7,
-      text: "As-tu parfois la peur qu'il t'arrive quelque chose de terrible — une catastrophe que tu ne peux pas contrôler ?",
+      text: "Un sentiment de peur comme si quelque chose de terrible risquait de se produire",
       type: 'frequency',
       options: opts,
     },
@@ -98,7 +99,7 @@ export const GAD7: AssessmentScale = {
       min: 0,  max: 4,
       label: "Anxiété minimale",
       severity: 'minimal',
-      description: "Ton niveau d'anxiété est bas — c'est plutôt rassurant. On est dans la zone normale, pas de signal d'alerte ici 😌",
+      description: "Ton niveau d'anxiété est bas — c'est plutôt rassurant. On est dans la zone normale, pas de signal d'alerte ici",
       referralRequired: false,
       recommendation: "Continue ce que tu fais déjà pour prendre soin de toi — tes habitudes de bien-être fonctionnent. Garde un œil dessus si ça change."
     },
@@ -109,7 +110,7 @@ export const GAD7: AssessmentScale = {
       alertLevel: 1,
       description: "Il y a un peu d'anxiété qui flotte — rien de dramatique, mais c'est assez présent pour que tu le ressentes au quotidien.",
       referralRequired: false,
-      recommendation: "Des choses simples peuvent vraiment aider : la respiration, la marche, la pleine conscience. Bouge ton corps, ça calme la tête 🚶‍♂️"
+      recommendation: "Des choses simples peuvent vraiment aider : la respiration, la marche, la pleine conscience. Bouge ton corps, ça calme la tête"
     },
     {
       min: 10, max: 14,
@@ -118,7 +119,7 @@ export const GAD7: AssessmentScale = {
       alertLevel: 1,
       description: "L'anxiété prend de la place dans ta vie — elle touche ton quotidien, ton travail, tes relations. C'est important de ne pas la laisser s'installer.",
       referralRequired: false,
-      recommendation: "Parler à un professionnel (psychologue ou médecin) pourrait vraiment t'aider à comprendre ce qui se passe et à retrouver du calme. Tu mérites ça 💛"
+      recommendation: "Parler à un professionnel (psychologue ou médecin) pourrait vraiment t'aider à comprendre ce qui se passe et à retrouver du calme. Tu mérites ça"
     },
     {
       min: 15, max: 21,
@@ -127,7 +128,7 @@ export const GAD7: AssessmentScale = {
       alertLevel: 2,
       description: "Ce que tu vis est intense — et c'est normal que ça te pèse. L'anxiété à ce niveau peut vraiment épuiser, mais sache que ça se soigne bien quand on est {{accompagné|accompagnée}}.",
       referralRequired: true,
-      recommendation: "Prends rendez-vous avec un médecin ou un psychologue — il existe des approches qui marchent vraiment (thérapie, soutien, parfois un coup de pouce médical). Tu n'as pas à gérer ça {{seul|seule}} 🤝"
+      recommendation: "Prends rendez-vous avec un médecin ou un psychologue — il existe des approches qui marchent vraiment (thérapie, soutien, parfois un coup de pouce médical). Tu n'as pas à gérer ça {{seul|seule}}"
     },
   ],
 };

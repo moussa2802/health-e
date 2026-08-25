@@ -14,7 +14,7 @@ export const GRISS_BASE: AssessmentScale = {
   shortName: "Communication Couple",
   category: 'sexual_health',
   description: "Évalue la communication sexuelle et la satisfaction dans la relation de couple. Basé sur les construits publiés par Golombok et Rust (1985).",
-  instructions: "Ces questions portent sur ta vie sexuelle en couple. Réponds honnêtement — c'est entre toi et Dr Lô 🔐",
+  instructions: "Ces questions portent sur ta vie sexuelle en couple. Réponds honnêtement — c'est entre toi et Dr Lô",
   timeEstimateMinutes: 7,
   reference: "Golombok, S. & Rust, J. (1985). The Golombok-Rust Inventory of Sexual Satisfaction. British Journal of Clinical Psychology, 24(1), 63–64.",
   licenseNote: "Basé sur les construits théoriques publiés de Golombok & Rust (1985). Ne constitue pas l'outil GRISS commercial (NFER-Nelson).",

@@ -18,7 +18,7 @@ export const BONUS_MANIPULATION: AssessmentScale = {
   shortName: 'MACH-IV',
   category: 'bonus',
   description: 'Mesure les tendances machiavéliques — la propension à manipuler les autres pour servir ses propres intérêts.',
-  instructions: 'Ces questions portent sur ta façon d\'interagir avec les autres et de voir les relations humaines. Pas de jugement — sois honnête 🎭',
+  instructions: 'Ces questions portent sur ta façon d\'interagir avec les autres et de voir les relations humaines. Pas de jugement — sois honnête',
   timeEstimateMinutes: 7,
   reference: 'Christie, R. & Geis, F.L. (1970). Studies in Machiavellianism. Academic Press.',
   licenseNote: 'Adaptation française du MACH-IV à usage d\'auto-évaluation psychologique.',
@@ -53,7 +53,7 @@ export const BONUS_MANIPULATION: AssessmentScale = {
       severity: 'minimal',
       description: 'Tu as très peu de tendances stratégiques dans tes relations. Tu penches naturellement vers l\'honnêteté, la transparence et la confiance — c\'est beau, vraiment.',
       referralRequired: false,
-      recommendation: 'Ton ouverture aux autres est une qualité précieuse. Veille juste à développer des limites saines pour ne pas te faire marcher dessus 💙',
+      recommendation: 'Ton ouverture aux autres est une qualité précieuse. Veille juste à développer des limites saines pour ne pas te faire marcher dessus',
     },
     {
       min: 21, max: 40,
@@ -61,7 +61,7 @@ export const BONUS_MANIPULATION: AssessmentScale = {
       severity: 'mild',
       description: 'Tu as quelques tendances pragmatiques dans tes relations, mais tu restes globalement {{ouvert|ouverte}} et sincère. Tu sais être stratégique quand il le faut — sans en faire un mode de vie.',
       referralRequired: false,
-      recommendation: 'Cet équilibre entre stratégie et authenticité est une vraie force dans la vie sociale et professionnelle. C\'est un bon dosage 👌',
+      recommendation: 'Cet équilibre entre stratégie et authenticité est une vraie force dans la vie sociale et professionnelle. C\'est un bon dosage',
     },
     {
       min: 41, max: 60,
@@ -77,7 +77,7 @@ export const BONUS_MANIPULATION: AssessmentScale = {
       severity: 'severe',
       description: 'Tu fonctionnes de manière très stratégique et pragmatique dans tes relations. Tu n\'hésites pas à manoeuvrer les situations à ton avantage — c\'est efficace, mais ça peut isoler.',
       referralRequired: false,
-      recommendation: 'Ce mode de fonctionnement peut être puissant à court terme, mais il a un coût sur les relations profondes et durables. Un accompagnement peut t\'aider à explorer ces dynamiques — et à trouver un équilibre qui te ressemble davantage 🤝',
+      recommendation: 'Ce mode de fonctionnement peut être puissant à court terme, mais il a un coût sur les relations profondes et durables. Un accompagnement peut t\'aider à explorer ces dynamiques — et à trouver un équilibre qui te ressemble davantage',
     },
   ],
 };

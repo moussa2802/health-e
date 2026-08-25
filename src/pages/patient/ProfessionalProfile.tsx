@@ -82,7 +82,7 @@ const ProfessionalProfile: React.FC = () => {
         );
 
         console.log(
-          `🔍 Chargement des jours disponibles du ${format(
+          `Chargement des jours disponibles du ${format(
             startOfCurrentMonth,
             "dd/MM/yyyy"
           )} au ${format(endOfNextMonth, "dd/MM/yyyy")}`
@@ -96,10 +96,10 @@ const ProfessionalProfile: React.FC = () => {
         );
         setAvailableDays(days);
 
-        console.log(`✅ ${days.length} jours disponibles trouvés`);
+        console.log(`${days.length} jours disponibles trouvés`);
       } catch (error) {
         console.error(
-          "❌ Erreur lors du chargement des jours disponibles:",
+          "Erreur lors du chargement des jours disponibles:",
           error
         );
       }
@@ -114,12 +114,12 @@ const ProfessionalProfile: React.FC = () => {
 
     const fetchAvailabilityData = async () => {
       try {
-        console.log("🔍 Fetching availability data for professional:", id);
+        console.log("Fetching availability data for professional:", id);
         const data = await getProfessionalAvailabilityData(id);
         setAvailabilityData(data);
-        console.log("✅ Availability data fetched successfully:", data);
+        console.log("Availability data fetched successfully:", data);
       } catch (error) {
-        console.error("❌ Error fetching availability data:", error);
+        console.error("Error fetching availability data:", error);
       }
     };
 
@@ -133,7 +133,7 @@ const ProfessionalProfile: React.FC = () => {
     try {
       const cachedData = sessionStorage.getItem(`professional_${id}`);
       if (cachedData) {
-        console.log("📦 Loading professional from cache");
+        console.log("Loading professional from cache");
         setLoadingFromCache(true);
         const parsedData = JSON.parse(cachedData);
         setProfessional(parsedData);
@@ -157,14 +157,14 @@ const ProfessionalProfile: React.FC = () => {
     if (!id) return;
 
     if (professionals.length > 0) {
-      console.log("🔍 Looking for professional with ID:", id);
+      console.log("Looking for professional with ID:", id);
 
       const found = professionals.find((p) => p.id === id);
       if (found) {
-        console.log("✅ Professional found:", found.name || "Unknown");
+        console.log("Professional found:", found.name || "Unknown");
         if (!found.isActive || !found.isApproved) {
           console.warn(
-            "⛔️ Professional is inactive or not approved, redirecting..."
+            "Professional is inactive or not approved, redirecting..."
           );
           navigate("/"); // ou vers une page "non disponible"
           return;
@@ -190,13 +190,13 @@ const ProfessionalProfile: React.FC = () => {
         }
       } else if (!loadingFromCache) {
         // Don't mark as not found if we have data from cache
-        console.warn("❌ Professional not found with ID:", id);
+        console.warn("Professional not found with ID:", id);
         setNotFound(true);
         setProfessional(null);
       }
     } else if (!loading && professionals.length === 0 && !loadingFromCache) {
       // If loading is complete and there are no professionals
-      console.warn("⚠️ No professionals available");
+      console.warn("No professionals available");
       setNotFound(true);
     }
   }, [id, professionals, loading, loadingFromCache]);
@@ -208,7 +208,7 @@ const ProfessionalProfile: React.FC = () => {
     }
 
     if (!professional) {
-      console.error("❌ No professional selected for instant consultation");
+      console.error("No professional selected for instant consultation");
       return;
     }
 

@@ -79,6 +79,7 @@ export interface AssessmentScale {
   alertItems?: AlertItem[];           // alertes déclenchées par un item spécifique
   reference: string;
   licenseNote: string;
+  adaptationNote?: string;
   targetGender?: 'all' | 'female' | 'male';
   warningMessage: string;
 }

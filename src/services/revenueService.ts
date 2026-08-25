@@ -92,7 +92,7 @@ export const createConsultationRevenue = async (
   consultationType: string
 ): Promise<string> => {
   try {
-    console.log("💰 [REVENUE] Creating consultation revenue:", {
+    console.log("[REVENUE] Creating consultation revenue:", {
       professionalId,
       bookingId,
       amount,
@@ -127,10 +127,10 @@ export const createConsultationRevenue = async (
       addDoc(transactionsRef, transaction)
     );
 
-    console.log("✅ [REVENUE] Consultation revenue created:", docRef.id);
+    console.log("[REVENUE] Consultation revenue created:", docRef.id);
     return docRef.id;
   } catch (error) {
-    console.error("❌ [REVENUE] Error creating consultation revenue:", error);
+    console.error("[REVENUE] Error creating consultation revenue:", error);
     throw new Error("Erreur lors de la création de la transaction de revenu");
   }
 };
@@ -144,7 +144,7 @@ export const createWithdrawalRequest = async (
   withdrawalData: Omit<WithdrawalRequest, "id" | "status" | "requestedAt">
 ): Promise<string> => {
   try {
-    console.log("💰 [REVENUE] Creating withdrawal request:", withdrawalData);
+    console.log("[REVENUE] Creating withdrawal request:", withdrawalData);
 
     // Récupérer le token Firebase
     const auth = getAuth();
@@ -168,7 +168,7 @@ export const createWithdrawalRequest = async (
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error("❌ [REVENUE] HTTP error:", response.status, errorText);
+      console.error("[REVENUE] HTTP error:", response.status, errorText);
 
       if (response.status === 401) {
         throw new Error("Token d'authentification invalide");
@@ -187,10 +187,10 @@ export const createWithdrawalRequest = async (
       throw new Error(result.error);
     }
 
-    console.log("✅ [REVENUE] Withdrawal request created:", result.id);
+    console.log("[REVENUE] Withdrawal request created:", result.id);
     return result.id;
   } catch (error) {
-    console.error("❌ [REVENUE] Error creating withdrawal request:", error);
+    console.error("[REVENUE] Error creating withdrawal request:", error);
     throw new Error("Erreur lors de la création de la demande de retrait");
   }
 };
@@ -205,7 +205,7 @@ export const calculateProfessionalRevenue = async (
 ): Promise<RevenueCalculation> => {
   try {
     console.log(
-      "💰 [REVENUE] Calculating revenue for professional:",
+      "[REVENUE] Calculating revenue for professional:",
       professionalId
     );
 
@@ -296,7 +296,7 @@ export const calculateProfessionalRevenue = async (
       error?.message?.includes("permissions")
     ) {
       console.log(
-        "ℹ️ [REVENUE] Collections not accessible yet, returning default values"
+        "ℹ [REVENUE] Collections not accessible yet, returning default values"
       );
       return {
         totalEarned: 0,
@@ -309,7 +309,7 @@ export const calculateProfessionalRevenue = async (
       };
     }
 
-    console.error("❌ [REVENUE] Error calculating revenue:", error);
+    console.error("[REVENUE] Error calculating revenue:", error);
     return {
       totalEarned: 0,
       available: 0,
@@ -397,7 +397,7 @@ export const getProfessionalTransactions = async (
 
     return sortedTransactions.slice(0, limit);
   } catch (error) {
-    console.error("❌ [REVENUE] Error getting transactions:", error);
+    console.error("[REVENUE] Error getting transactions:", error);
     return [];
   }
 };
@@ -429,12 +429,12 @@ export const updateWithdrawalStatus = async (
 
     await retryFirestoreOperation(() => updateDoc(withdrawalRef, updateData));
     console.log(
-      "💰 [REVENUE] Withdrawal status updated:",
+      "[REVENUE] Withdrawal status updated:",
       withdrawalId,
       status
     );
   } catch (error) {
-    console.error("❌ [REVENUE] Error updating withdrawal status:", error);
+    console.error("[REVENUE] Error updating withdrawal status:", error);
     throw error;
   }
 };

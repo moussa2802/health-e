@@ -7,7 +7,7 @@ export const FSFI: AssessmentScale = {
   category: 'sexual_health',
   targetGender: 'female',
   description: "Évalue le fonctionnement sexuel féminin sur 6 domaines. Note : les questions sur la douleur peuvent nécessiter adaptation pour les femmes ayant subi une MGF/excision.",
-  instructions: "Ces questions portent sur ton fonctionnement sexuel au cours des 4 dernières semaines. Réponds honnêtement — ces informations sont confidentielles et t'aideront à mieux te connaître 🌸",
+  instructions: "Ces questions portent sur ton fonctionnement sexuel au cours des 4 dernières semaines. Réponds honnêtement — ces informations sont confidentielles et t'aideront à mieux te connaître",
   timeEstimateMinutes: 8,
   reference: "Rosen, R., et al. (2000). The Female Sexual Function Index (FSFI). Journal of Sex & Marital Therapy, 26(2), 191–208.",
   licenseNote: "Usage clinique libre assumé. FSFI développé par Rosen et al. (2000). Pour usage commercial, contacter les auteurs.",

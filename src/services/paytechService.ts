@@ -59,7 +59,7 @@ class PayTechService {
   ): Promise<PaymentResponse> {
     try {
       console.log(
-        "🔔 [PAYTECH] Initiating payment for booking:",
+        "[PAYTECH] Initiating payment for booking:",
         paymentData.bookingId
       );
 
@@ -91,10 +91,10 @@ class PayTechService {
         throw new Error("Échec de l'initialisation du paiement");
       }
 
-      console.log("✅ [PAYTECH] Payment initiated successfully:", result);
+      console.log("[PAYTECH] Payment initiated successfully:", result);
       return result;
     } catch (error) {
-      console.error("❌ [PAYTECH] Error initiating payment:", error);
+      console.error("[PAYTECH] Error initiating payment:", error);
       throw new Error("Erreur lors de l'initialisation du paiement");
     }
   }
@@ -104,10 +104,10 @@ class PayTechService {
    */
   redirectToPayment(redirectUrl: string): void {
     try {
-      console.log("🔔 [PAYTECH] Redirecting to payment URL:", redirectUrl);
+      console.log("[PAYTECH] Redirecting to payment URL:", redirectUrl);
       window.location.href = redirectUrl;
     } catch (error) {
-      console.error("❌ [PAYTECH] Error redirecting to payment:", error);
+      console.error("[PAYTECH] Error redirecting to payment:", error);
       throw new Error("Erreur lors de la redirection vers le paiement");
     }
   }
@@ -123,7 +123,7 @@ class PayTechService {
         "Vérification du statut non implémentée - utilisez les webhooks IPN"
       );
     } catch (error) {
-      console.error("❌ [PAYTECH] Error checking payment status:", error);
+      console.error("[PAYTECH] Error checking payment status:", error);
       throw error;
     }
   }
@@ -158,8 +158,8 @@ class PayTechService {
 
       for (const field of requiredFields) {
         if (!legacyData[field as keyof PaymentData]) {
-          console.error(`❌ [PAYTECH] Missing required field: ${field}`);
-          console.error(`❌ [PAYTECH] Current data:`, {
+          console.error(`[PAYTECH] Missing required field: ${field}`);
+          console.error(`[PAYTECH] Current data:`, {
             amount: legacyData.amount,
             bookingId: legacyData.bookingId,
             customerEmail: legacyData.customerEmail,
@@ -178,7 +178,7 @@ class PayTechService {
         !this.isValidEmail(legacyData.customerEmail)
       ) {
         console.error(
-          "❌ [PAYTECH] Invalid email format:",
+          "[PAYTECH] Invalid email format:",
           legacyData.customerEmail
         );
         return false;
@@ -186,18 +186,18 @@ class PayTechService {
 
       // Le numéro de téléphone est optionnel, utiliser une valeur par défaut si manquant
       if (!legacyData.customerPhone) {
-        console.log("⚠️ [PAYTECH] No phone number provided, using default");
+        console.log("[PAYTECH] No phone number provided, using default");
         legacyData.customerPhone = "770000000"; // Numéro par défaut pour PayTech
       }
 
       if (legacyData.amount <= 0) {
-        console.error("❌ [PAYTECH] Invalid amount:", legacyData.amount);
+        console.error("[PAYTECH] Invalid amount:", legacyData.amount);
         return false;
       }
 
       return true;
     } catch (error) {
-      console.error("❌ [PAYTECH] Validation error:", error);
+      console.error("[PAYTECH] Validation error:", error);
       return false;
     }
   }
@@ -224,8 +224,8 @@ export function validatePaymentInit(d: PaymentInit): true {
   for (const k of baseRequired) {
     // @ts-ignore
     if (d[k] === undefined || d[k] === null || d[k] === "") {
-      console.error("❌ [PAYTECH] Missing required field:", k);
-      console.error("❌ [PAYTECH] Current data:", {
+      console.error("[PAYTECH] Missing required field:", k);
+      console.error("[PAYTECH] Current data:", {
         amount: d.amount,
         bookingId: d.bookingId,
         customerEmail: d.customerEmail ?? null,

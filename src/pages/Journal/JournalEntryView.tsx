@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
+import { ArrowLeft, BookOpen, Frown, Stethoscope, RefreshCw, Zap, Loader2, Calendar } from 'lucide-react';
 import { db } from '../../utils/firebase';
 import { getOnboardingProfile } from '../../utils/onboardingProfile';
 import { getProfileProgress } from '../../services/evaluationService';
 import { useKoris } from '../../contexts/KorisContext';
+import { KORIS_CONFIG } from '../../utils/korisConfig';
 import type { JournalEntry } from './JournalPage';
 
 interface Props {
@@ -103,7 +105,7 @@ const JournalEntryView: React.FC<Props> = ({ userId }) => {
 
   if (loading) {
     return (
-      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94A3B8', fontFamily: "'Inter',-apple-system,sans-serif" }}>
+      <div className="min-h-screen flex items-center justify-center text-muted bg-paper">
         Chargement…
       </div>
     );
@@ -111,69 +113,74 @@ const JournalEntryView: React.FC<Props> = ({ userId }) => {
 
   if (!entry) {
     return (
-      <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', fontFamily: "'Inter',-apple-system,sans-serif", gap: 12 }}>
-        <p style={{ fontSize: 32 }}>😕</p>
-        <p style={{ fontSize: 15, color: '#374151' }}>Entrée introuvable</p>
-        <button onClick={() => navigate('/journal')} style={{ padding: '10px 20px', borderRadius: 10, border: 'none', background: '#3B82F6', color: '#fff', cursor: 'pointer', fontWeight: 600 }}>
-          ← Retour au journal
+      <div className="min-h-screen flex flex-col items-center justify-center gap-3 bg-paper">
+        <Frown size={32} className="text-muted" />
+        <p className="text-[15px] text-ink-soft">Entrée introuvable</p>
+        <button
+          onClick={() => navigate('/journal')}
+          className="px-5 py-2.5 rounded-xl border-0 bg-accent text-white font-semibold flex items-center gap-1.5 hover:bg-accent/90 transition-colors"
+        >
+          <ArrowLeft size={15} /> Retour au journal
         </button>
       </div>
     );
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: '#F8FAFF', fontFamily: "'Inter',-apple-system,sans-serif", paddingBottom: 40 }}>
+    <div className="min-h-screen bg-paper pb-10">
       {/* Header */}
-      <div style={{
-        background: 'linear-gradient(135deg,#1E0442 0%,#3730A3 100%)',
-        padding: '20px 16px',
-        display: 'flex', alignItems: 'center', gap: 12, color: '#fff',
-      }}>
+      <div className="bg-ink px-4 py-5 flex items-center gap-3 text-white">
         <button
           onClick={() => navigate('/journal')}
-          style={{ background: 'rgba(255,255,255,0.15)', border: 'none', color: '#fff', borderRadius: 10, padding: '6px 12px', cursor: 'pointer', fontSize: 13, fontWeight: 600 }}
+          className="inline-flex items-center gap-1.5 bg-white/15 text-white rounded-pill px-3 py-1.5 text-[13px] font-semibold hover:bg-white/25 transition-colors"
         >
-          ← Retour
+          <ArrowLeft size={14} /> Retour
         </button>
-        <h1 style={{ margin: 0, fontSize: 18, fontWeight: 800 }}>📔 Mon entrée</h1>
+        <h1 className="font-display m-0 text-lg font-semibold flex items-center gap-2">
+          <BookOpen size={18} /> Mon entrée
+        </h1>
       </div>
 
-      <div style={{ maxWidth: 600, margin: '0 auto', padding: '20px 16px' }}>
+      <div className="max-w-xl mx-auto px-4 py-5">
         {/* Date + humeur */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
-          <span style={{ fontSize: 28 }}>{entry.humeur || '📅'}</span>
-          <p style={{ margin: 0, fontSize: 14, color: '#64748B', fontWeight: 500 }}>
+        <div className="flex items-center gap-2.5 mb-4">
+          {entry.humeur ? (
+            <span className="text-[28px] leading-none">{entry.humeur}</span>
+          ) : (
+            <Calendar size={24} className="text-muted" />
+          )}
+          <p className="m-0 text-sm text-ink-soft font-medium">
             {formatDate(entry.date)}
           </p>
         </div>
 
         {/* Thèmes */}
         {entry.themes?.length > 0 && (
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 16 }}>
+          <div className="flex flex-wrap gap-1.5 mb-4">
             {entry.themes.map(t => (
-              <span key={t} style={{ fontSize: 11, color: '#7C3AED', background: '#F5F3FF', borderRadius: 20, padding: '3px 10px', fontWeight: 600 }}>{t}</span>
+              <span key={t} className="text-[11px] text-sage bg-sage-soft rounded-pill px-2.5 py-1 font-semibold">{t}</span>
             ))}
           </div>
         )}
 
         {/* Contenu */}
-        <div style={{ background: '#fff', borderRadius: 16, padding: '20px', border: '1px solid rgba(59,130,246,0.1)', marginBottom: 20 }}>
-          <p style={{ margin: 0, fontSize: 14, color: '#374151', lineHeight: 1.75, whiteSpace: 'pre-wrap' }}>
+        <div className="bg-card rounded-block px-5 py-5 border border-line mb-5">
+          <p className="m-0 text-sm text-ink-soft leading-relaxed whitespace-pre-wrap">
             {entry.contenu}
           </p>
         </div>
 
         {/* Réponse Dr Lô existante */}
         {entry.dr_lo_response && (
-          <div style={{ background: '#F0F9FF', borderRadius: 16, padding: '20px', border: '1px solid rgba(14,165,233,0.2)', marginBottom: 20 }}>
-            <p style={{ margin: '0 0 10px', fontSize: 12, fontWeight: 700, color: '#0369A1', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-              🩺 Dr Lô a dit :
+          <div className="bg-sage-soft rounded-block px-5 py-5 border border-sage/20 mb-5">
+            <p className="m-0 mb-2.5 text-xs font-bold text-sage uppercase tracking-wide flex items-center gap-1.5">
+              <Stethoscope size={13} /> Dr Lô a dit :
             </p>
-            <p style={{ margin: 0, fontSize: 13, color: '#0A2342', lineHeight: 1.75, whiteSpace: 'pre-line' }}>
+            <p className="m-0 text-[13px] text-ink leading-relaxed whitespace-pre-line">
               {entry.dr_lo_response}
             </p>
             {entry.dr_lo_requested_at && (
-              <p style={{ margin: '10px 0 0', fontSize: 11, color: '#94A3B8' }}>
+              <p className="mt-2.5 mb-0 text-[11px] text-muted">
                 {formatDate(entry.dr_lo_requested_at)}
               </p>
             )}
@@ -181,28 +188,30 @@ const JournalEntryView: React.FC<Props> = ({ userId }) => {
         )}
 
         {error && (
-          <p style={{ margin: '0 0 16px', fontSize: 13, color: '#DC2626', background: '#FEF2F2', padding: '10px 14px', borderRadius: 10 }}>
+          <p className="mb-4 text-[13px] text-danger bg-danger/10 px-3.5 py-2.5 rounded-xl">
             {error}
           </p>
         )}
 
         {/* Bouton Dr Lô */}
-        <div style={{ background: '#fff', borderRadius: 16, padding: '18px', border: '1px solid rgba(99,102,241,0.15)' }}>
+        <div className="bg-card rounded-block px-4.5 py-4.5 border border-line">
           <button
             onClick={handleAskDrLo}
             disabled={askingDrLo}
-            style={{
-              width: '100%', padding: '12px', borderRadius: 12, border: 'none',
-              background: askingDrLo ? '#E2E8F0' : 'linear-gradient(135deg,#8B5CF6,#6366F1)',
-              color: '#fff', fontSize: 13, fontWeight: 700,
-              cursor: askingDrLo ? 'default' : 'pointer',
-              marginBottom: 8,
-            }}
+            className={`w-full py-3 rounded-xl border-0 text-[13px] font-bold mb-2 flex items-center justify-center gap-2 transition-colors ${
+              askingDrLo ? 'bg-line text-muted cursor-default' : 'bg-sage text-white cursor-pointer hover:bg-sage/90'
+            }`}
           >
-            {askingDrLo ? 'Dr Lô réfléchit…' : entry.dr_lo_response ? '🔄 Redemander l\'avis de Dr Lô' : '🩺 Demander l\'avis de Dr Lô'}
+            {askingDrLo ? (
+              <><Loader2 size={14} className="animate-spin" /> Dr Lô réfléchit…</>
+            ) : entry.dr_lo_response ? (
+              <><RefreshCw size={14} /> Redemander l'avis de Dr Lô</>
+            ) : (
+              <><Stethoscope size={14} /> Demander l'avis de Dr Lô</>
+            )}
           </button>
-          <p style={{ margin: 0, fontSize: 11, color: '#94A3B8', textAlign: 'center' }}>
-            ⚡ {KORIS_CONFIG.active ? `Utilise ${KORIS_CONFIG.costs.journal_dr_lo_response} Koris` : 'Utilisera des Koris (bientôt disponible)'}
+          <p className="m-0 text-[11px] text-muted text-center flex items-center justify-center gap-1">
+            <Zap size={11} /> {KORIS_CONFIG.active ? `Utilise ${KORIS_CONFIG.costs.journal_dr_lo_response} Koris` : 'Utilisera des Koris (bientôt disponible)'}
           </p>
         </div>
       </div>

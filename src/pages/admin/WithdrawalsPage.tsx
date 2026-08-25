@@ -57,7 +57,7 @@ const WithdrawalsPage: React.FC = () => {
 
       setWithdrawals(requests);
     } catch (error) {
-      console.error("❌ [ADMIN] Erreur chargement retraits:", error);
+      console.error("[ADMIN] Erreur chargement retraits:", error);
     } finally {
       setLoading(false);
     }
@@ -111,7 +111,7 @@ const WithdrawalsPage: React.FC = () => {
       setNote("");
       setTxId("");
     } catch (error) {
-      console.error("❌ [ADMIN] Erreur action retrait:", error);
+      console.error("[ADMIN] Erreur action retrait:", error);
       alert("Erreur lors de l'action");
     } finally {
       setProcessing(false);
@@ -132,30 +132,30 @@ const WithdrawalsPage: React.FC = () => {
   const getStatusIcon = (status: WithdrawalStatus) => {
     switch (status) {
       case "pending":
-        return <Clock className="h-4 w-4 text-yellow-500" />;
+        return <Clock className="h-4 w-4 text-gold" />;
       case "approved":
-        return <CheckCircle className="h-4 w-4 text-blue-500" />;
+        return <CheckCircle className="h-4 w-4 text-sage" />;
       case "rejected":
-        return <XCircle className="h-4 w-4 text-red-500" />;
+        return <XCircle className="h-4 w-4 text-danger" />;
       case "paid":
-        return <DollarSign className="h-4 w-4 text-green-500" />;
+        return <DollarSign className="h-4 w-4 text-ok" />;
       default:
-        return <AlertCircle className="h-4 w-4 text-gray-500" />;
+        return <AlertCircle className="h-4 w-4 text-muted" />;
     }
   };
 
   const getStatusColor = (status: WithdrawalStatus) => {
     switch (status) {
       case "pending":
-        return "bg-yellow-100 text-yellow-800";
+        return "bg-gold-soft text-gold";
       case "approved":
-        return "bg-blue-100 text-blue-800";
+        return "bg-sage-soft text-sage";
       case "rejected":
-        return "bg-red-100 text-red-800";
+        return "bg-danger/10 text-danger";
       case "paid":
-        return "bg-green-100 text-green-800";
+        return "bg-ok/15 text-ok";
       default:
-        return "bg-gray-100 text-gray-800";
+        return "bg-paper text-ink-soft";
     }
   };
 
@@ -206,47 +206,47 @@ const WithdrawalsPage: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-paper flex items-center justify-center">
         <LoadingSpinner />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-paper">
       <div className="max-w-7xl mx-auto px-4 py-8">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-4">
             <Link
               to="/admin/dashboard"
-              className="p-2 rounded-lg bg-white shadow-sm hover:shadow-md transition-shadow"
+              className="p-2 rounded-card bg-card shadow-soft hover:shadow-lift transition-shadow"
             >
-              <ArrowLeft className="h-5 w-5 text-gray-600" />
+              <ArrowLeft className="h-5 w-5 text-ink-soft" />
             </Link>
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">
+              <h1 className="font-display text-3xl font-bold text-ink">
                 Gestion des retraits
               </h1>
-              <p className="text-gray-600">
+              <p className="text-ink-soft">
                 Gérez les demandes de retrait des professionnels
               </p>
             </div>
           </div>
           <button
             onClick={loadWithdrawals}
-            className="flex items-center gap-2 px-4 py-2 bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow"
+            className="flex items-center gap-2 px-4 py-2 bg-card rounded-card shadow-soft hover:shadow-lift transition-shadow"
           >
-            <RefreshCw className="h-4 w-4 text-gray-600" />
+            <RefreshCw className="h-4 w-4 text-ink-soft" />
             Actualiser
           </button>
         </div>
 
         {/* Filtres */}
-        <div className="bg-white p-4 rounded-lg shadow-sm mb-6">
+        <div className="bg-card p-4 rounded-card shadow-soft mb-6">
           <div className="flex items-center gap-4">
-            <Filter className="h-5 w-5 text-gray-600" />
-            <span className="text-sm font-medium text-gray-700">
+            <Filter className="h-5 w-5 text-ink-soft" />
+            <span className="text-sm font-medium text-ink-soft">
               Filtrer par statut:
             </span>
             <select
@@ -254,7 +254,7 @@ const WithdrawalsPage: React.FC = () => {
               onChange={(e) =>
                 setFilter(e.target.value as WithdrawalStatus | "all")
               }
-              className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="px-3 py-2 border border-line rounded-card focus:ring-2 focus:ring-accent focus:border-accent bg-card text-ink-soft"
             >
               <option value="all">Tous</option>
               <option value="pending">En attente</option>
@@ -266,71 +266,71 @@ const WithdrawalsPage: React.FC = () => {
         </div>
 
         {/* Table */}
-        <div className="bg-white rounded-lg shadow-sm overflow-hidden">
+        <div className="bg-card rounded-card shadow-soft overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
+            <table className="min-w-full divide-y divide-line">
+              <thead className="bg-paper">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-muted uppercase tracking-wider">
                     Professionnel
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-muted uppercase tracking-wider">
                     Montant
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-muted uppercase tracking-wider">
                     Méthode
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-muted uppercase tracking-wider">
                     Compte
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-muted uppercase tracking-wider">
                     Date
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-muted uppercase tracking-wider">
                     Statut
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-muted uppercase tracking-wider">
                     Actions
                   </th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+              <tbody className="bg-card divide-y divide-line">
                 {filteredWithdrawals.map((withdrawal) => (
-                  <tr key={withdrawal.id} className="hover:bg-gray-50">
+                  <tr key={withdrawal.id} className="hover:bg-paper">
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900">
+                      <div className="text-sm font-medium text-ink">
                         {withdrawal.professionalName}
                       </div>
-                      <div className="text-sm text-gray-500">
+                      <div className="text-sm text-muted">
                         {withdrawal.professionalEmail}
                       </div>
-                      <div className="text-xs text-gray-400">
+                      <div className="text-xs text-muted">
                         {withdrawal.professionalSpecialty}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900">
+                      <div className="text-sm font-medium text-ink">
                         {withdrawal.amount.toLocaleString()} FCFA
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">
+                      <div className="text-sm text-ink">
                         {getMethodLabel(withdrawal.method)}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">
+                      <div className="text-sm text-ink">
                         {withdrawal.accountNumber}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">
+                      <div className="text-sm text-ink">
                         {formatDate(withdrawal.createdAt)}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span
-                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(
+                        className={`inline-flex items-center px-2.5 py-0.5 rounded-pill text-xs font-medium ${getStatusColor(
                           withdrawal.status
                         )}`}
                       >
@@ -348,7 +348,7 @@ const WithdrawalsPage: React.FC = () => {
                               onClick={() =>
                                 openActionModal(withdrawal, "approve")
                               }
-                              className="text-blue-600 hover:text-blue-900"
+                              className="text-sage hover:text-sage/80"
                             >
                               Approuver
                             </button>
@@ -356,7 +356,7 @@ const WithdrawalsPage: React.FC = () => {
                               onClick={() =>
                                 openActionModal(withdrawal, "reject")
                               }
-                              className="text-red-600 hover:text-red-900"
+                              className="text-danger hover:text-danger/80"
                             >
                               Rejeter
                             </button>
@@ -365,7 +365,7 @@ const WithdrawalsPage: React.FC = () => {
                         {withdrawal.status === "approved" && (
                           <button
                             onClick={() => openActionModal(withdrawal, "pay")}
-                            className="text-green-600 hover:text-green-900"
+                            className="text-ok hover:text-ok/80"
                           >
                             Marquer payé
                           </button>
@@ -375,7 +375,7 @@ const WithdrawalsPage: React.FC = () => {
                             setSelectedWithdrawal(withdrawal);
                             setShowActionModal(true);
                           }}
-                          className="text-gray-600 hover:text-gray-900"
+                          className="text-ink-soft hover:text-ink"
                         >
                           <Eye className="h-4 w-4" />
                         </button>
@@ -390,43 +390,43 @@ const WithdrawalsPage: React.FC = () => {
 
         {/* Action Modal */}
         {showActionModal && selectedWithdrawal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-xl p-6 w-full max-w-md mx-4">
+          <div className="fixed inset-0 bg-ink/50 flex items-center justify-center z-50">
+            <div className="bg-card rounded-block shadow-lift p-6 w-full max-w-md mx-4">
               <div className="flex items-center justify-between mb-6">
-                <h3 className="text-lg font-semibold text-gray-900">
+                <h3 className="text-lg font-semibold text-ink">
                   {actionType === "approve" && "Approuver le retrait"}
                   {actionType === "reject" && "Rejeter le retrait"}
                   {actionType === "pay" && "Marquer comme payé"}
                 </h3>
                 <button
                   onClick={() => setShowActionModal(false)}
-                  className="text-gray-400 hover:text-gray-600"
+                  className="text-muted hover:text-ink-soft"
                 >
                   <XCircle className="h-5 w-5" />
                 </button>
               </div>
 
-              <div className="mb-4 p-4 bg-gray-50 rounded-lg">
-                <p className="text-sm text-gray-600">
+              <div className="mb-4 p-4 bg-paper rounded-card">
+                <p className="text-sm text-ink-soft">
                   <strong>Professionnel:</strong>{" "}
                   {selectedWithdrawal.professionalName}
                 </p>
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-ink-soft">
                   <strong>Spécialité:</strong>{" "}
                   {selectedWithdrawal.professionalSpecialty}
                 </p>
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-ink-soft">
                   <strong>Email:</strong> {selectedWithdrawal.professionalEmail}
                 </p>
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-ink-soft">
                   <strong>Montant:</strong>{" "}
                   {selectedWithdrawal.amount.toLocaleString()} FCFA
                 </p>
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-ink-soft">
                   <strong>Méthode:</strong>{" "}
                   {getMethodLabel(selectedWithdrawal.method)}
                 </p>
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-ink-soft">
                   <strong>Compte:</strong> {selectedWithdrawal.accountNumber}
                 </p>
               </div>
@@ -434,7 +434,7 @@ const WithdrawalsPage: React.FC = () => {
               <form onSubmit={handleAction} className="space-y-4">
                 {actionType === "pay" && (
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-ink-soft mb-2">
                       ID de transaction *
                     </label>
                     <input
@@ -442,14 +442,14 @@ const WithdrawalsPage: React.FC = () => {
                       value={txId}
                       onChange={(e) => setTxId(e.target.value)}
                       placeholder="ID de la transaction externe"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      className="w-full px-3 py-2 border border-line rounded-card focus:ring-2 focus:ring-accent focus:border-accent"
                       required
                     />
                   </div>
                 )}
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-ink-soft mb-2">
                     Note {actionType === "reject" ? "*" : ""}
                   </label>
                   <textarea
@@ -462,7 +462,7 @@ const WithdrawalsPage: React.FC = () => {
                         ? "Raison du rejet (obligatoire)"
                         : "Note optionnelle de paiement"
                     }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-3 py-2 border border-line rounded-card focus:ring-2 focus:ring-accent focus:border-accent"
                     rows={3}
                     required={actionType === "reject"}
                   />
@@ -472,19 +472,19 @@ const WithdrawalsPage: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => setShowActionModal(false)}
-                    className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
+                    className="flex-1 px-4 py-2 border border-line text-ink-soft rounded-card hover:bg-paper"
                   >
                     Annuler
                   </button>
                   <button
                     type="submit"
                     disabled={processing}
-                    className={`flex-1 px-4 py-2 rounded-lg text-white ${
+                    className={`flex-1 px-4 py-2 rounded-card text-white ${
                       actionType === "approve"
-                        ? "bg-blue-500 hover:bg-blue-600"
+                        ? "bg-sage hover:bg-sage/90"
                         : actionType === "reject"
-                        ? "bg-red-500 hover:bg-red-600"
-                        : "bg-green-500 hover:bg-green-600"
+                        ? "bg-danger hover:bg-danger/90"
+                        : "bg-ok hover:bg-ok/90"
                     } disabled:opacity-50`}
                   >
                     {processing ? "Traitement..." : "Confirmer"}

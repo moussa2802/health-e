@@ -1,4 +1,24 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import {
+  Users,
+  ClipboardList,
+  Smartphone,
+  AlertTriangle,
+  AlertCircle,
+  TrendingUp,
+  Trophy,
+  Percent,
+  Moon,
+  Search,
+  User,
+  Phone,
+  Mail,
+  Calendar,
+  KeyRound,
+  Clock,
+  BarChart3,
+  ArrowLeft,
+} from 'lucide-react';
 import AdminLayout from '../../components/admin/AdminLayout';
 import AdminKorisSection from '../../components/admin/AdminKorisSection';
 import {
@@ -36,11 +56,11 @@ import {
 
 function severityColor(severity: string): string {
   switch (severity) {
-    case 'none': case 'minimal': case 'positive': return '#16A34A';
-    case 'mild': return '#D97706';
-    case 'moderate': return '#EA580C';
-    case 'severe': case 'alert': return '#DC2626';
-    default: return '#64748B';
+    case 'none': case 'minimal': case 'positive': return '#3C7A5A'; // ok
+    case 'mild': return '#8F6A1F'; // gold
+    case 'moderate': return '#B5732A'; // warn
+    case 'severe': case 'alert': return '#B23A3A'; // danger
+    default: return '#6E7078'; // muted
   }
 }
 
@@ -61,40 +81,39 @@ function severityLabel(severity: string): string {
 // SHARED UI COMPONENTS
 // ══════════════════════════════════════════════════════════════════════════════
 
+type Tone = 'ink' | 'accent' | 'sage' | 'gold' | 'ok' | 'warn' | 'danger' | 'muted';
+
+const TONE_TEXT: Record<Tone, string> = {
+  ink: 'text-ink',
+  accent: 'text-accent',
+  sage: 'text-sage',
+  gold: 'text-gold',
+  ok: 'text-ok',
+  warn: 'text-warn',
+  danger: 'text-danger',
+  muted: 'text-muted',
+};
+
 const KpiCard: React.FC<{
-  icon: string;
+  icon: React.ReactNode;
   value: string | number;
   label: string;
   sub?: string;
-  color?: string;
-}> = ({ icon, value, label, sub, color = '#3B82F6' }) => (
-  <div style={{
-    background: 'white',
-    borderRadius: 14,
-    padding: '16px 18px',
-    border: '1px solid rgba(0,0,0,0.06)',
-    boxShadow: '0 1px 8px rgba(0,0,0,0.03)',
-    flex: '1 1 160px',
-    minWidth: 150,
-  }}>
-    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-      <span style={{ fontSize: 18 }}>{icon}</span>
-      <span style={{ fontSize: 11, color: '#64748B', fontWeight: 600 }}>{label}</span>
+  tone?: Tone;
+}> = ({ icon, value, label, sub, tone = 'sage' }) => (
+  <div className="bg-card rounded-block px-[18px] py-4 border border-line shadow-soft flex-1 min-w-[150px]">
+    <div className="flex items-center gap-2 mb-2">
+      <span className={TONE_TEXT[tone]}>{icon}</span>
+      <span className="text-[11px] text-muted font-semibold">{label}</span>
     </div>
-    <p style={{ margin: 0, fontSize: 26, fontWeight: 800, color }}>{value}</p>
-    {sub && <p style={{ margin: '2px 0 0', fontSize: 11, color: '#94A3B8' }}>{sub}</p>}
+    <p className={`m-0 font-display text-2xl font-extrabold ${TONE_TEXT[tone]}`}>{value}</p>
+    {sub && <p className="mt-0.5 text-[11px] text-muted">{sub}</p>}
   </div>
 );
 
 const Section: React.FC<{ title: string; children: React.ReactNode }> = ({ title, children }) => (
-  <div style={{
-    background: 'white',
-    borderRadius: 14,
-    padding: '20px',
-    border: '1px solid rgba(0,0,0,0.06)',
-    boxShadow: '0 1px 8px rgba(0,0,0,0.03)',
-  }}>
-    <h3 style={{ margin: '0 0 14px', fontSize: 14, fontWeight: 700, color: '#0A2342' }}>{title}</h3>
+  <div className="bg-card rounded-block p-5 border border-line shadow-soft">
+    <h3 className="m-0 mb-3.5 font-display text-sm font-bold text-ink">{title}</h3>
     {children}
   </div>
 );
@@ -105,45 +124,30 @@ const Section: React.FC<{ title: string; children: React.ReactNode }> = ({ title
 
 type SubTab = 'overview' | 'tests' | 'alerts' | 'users';
 
-const SUB_TABS: { id: SubTab; label: string; icon: string }[] = [
-  { id: 'overview', label: "Vue d'ensemble", icon: '📊' },
-  { id: 'tests', label: 'Tests', icon: '📋' },
-  { id: 'alerts', label: 'Alertes', icon: '🚨' },
-  { id: 'users', label: 'Top Users', icon: '👥' },
+const SUB_TABS: { id: SubTab; label: string; icon: React.ElementType }[] = [
+  { id: 'overview', label: "Vue d'ensemble", icon: BarChart3 },
+  { id: 'tests', label: 'Tests', icon: ClipboardList },
+  { id: 'alerts', label: 'Alertes', icon: AlertTriangle },
+  { id: 'users', label: 'Top Users', icon: Users },
 ];
 
 const SubTabNav: React.FC<{ active: SubTab; onChange: (tab: SubTab) => void }> = ({ active, onChange }) => (
-  <div style={{
-    display: 'flex',
-    gap: 4,
-    background: '#F1F5F9',
-    padding: 4,
-    borderRadius: 12,
-    marginBottom: 20,
-  }}>
-    {SUB_TABS.map(tab => (
-      <button
-        key={tab.id}
-        onClick={() => onChange(tab.id)}
-        style={{
-          flex: 1,
-          padding: '8px 12px',
-          borderRadius: 9,
-          border: 'none',
-          fontSize: 12,
-          fontWeight: 600,
-          cursor: 'pointer',
-          transition: 'all 0.2s',
-          background: active === tab.id ? 'white' : 'transparent',
-          color: active === tab.id ? '#0D9488' : '#64748B',
-          boxShadow: active === tab.id ? '0 1px 4px rgba(0,0,0,0.08)' : 'none',
-          whiteSpace: 'nowrap',
-        }}
-      >
-        <span style={{ marginRight: 4 }}>{tab.icon}</span>
-        {tab.label}
-      </button>
-    ))}
+  <div className="flex gap-1 bg-paper p-1 rounded-card mb-5">
+    {SUB_TABS.map(tab => {
+      const Icon = tab.icon;
+      return (
+        <button
+          key={tab.id}
+          onClick={() => onChange(tab.id)}
+          className={`flex-1 px-3 py-2 rounded-card border-none text-xs font-semibold cursor-pointer transition-all whitespace-nowrap ${
+            active === tab.id ? 'bg-card text-accent shadow-soft' : 'bg-transparent text-ink-soft'
+          }`}
+        >
+          <Icon className="h-3.5 w-3.5 inline-block mr-1 -mt-0.5" />
+          {tab.label}
+        </button>
+      );
+    })}
   </div>
 );
 
@@ -163,77 +167,83 @@ const OverviewTab: React.FC<{
   const googlePct = stats.totalUsers > 0 ? Math.round((stats.googleUsers / stats.totalUsers) * 100) : 0;
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+    <div className="flex flex-col gap-4">
       {/* KPI row */}
-      <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-        <KpiCard icon="👥" value={stats.totalUsers?.toLocaleString('fr-FR') ?? '0'} label="Utilisateurs" />
-        <KpiCard icon="📊" value={stats.totalTests?.toLocaleString('fr-FR') ?? '0'} label="Tests faits" sub={`${Object.keys(stats.testCounts ?? {}).length} tests differents`} />
-        <KpiCard icon="📱" value={`${googlePct}% / ${100 - googlePct}%`} label="Google / SMS" color="#0D9488" />
-        <KpiCard icon="🚨" value={totalAlerts} label="Alertes 2-3" sub={`${stats.alertsLevel3 ?? 0} critiques`} color="#DC2626" />
+      <div className="flex gap-3 flex-wrap">
+        <KpiCard icon={<Users className="h-[18px] w-[18px]" />} value={stats.totalUsers?.toLocaleString('fr-FR') ?? '0'} label="Utilisateurs" />
+        <KpiCard icon={<ClipboardList className="h-[18px] w-[18px]" />} value={stats.totalTests?.toLocaleString('fr-FR') ?? '0'} label="Tests faits" sub={`${Object.keys(stats.testCounts ?? {}).length} tests differents`} />
+        <KpiCard icon={<Smartphone className="h-[18px] w-[18px]" />} value={`${googlePct}% / ${100 - googlePct}%`} label="Google / SMS" tone="accent" />
+        <KpiCard icon={<AlertTriangle className="h-[18px] w-[18px]" />} value={totalAlerts} label="Alertes 2-3" sub={`${stats.alertsLevel3 ?? 0} critiques`} tone="danger" />
       </div>
 
       {/* Sparkline charts */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 12 }}>
-        <div style={{ background: 'white', borderRadius: 14, padding: '14px 16px', border: '1px solid rgba(0,0,0,0.06)' }}>
-          <div style={{ fontSize: 12, fontWeight: 600, color: '#475569', marginBottom: 8 }}>📈 Inscriptions / semaine</div>
+      <div className="grid gap-3" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))' }}>
+        <div className="bg-card rounded-block px-4 py-3.5 border border-line">
+          <div className="flex items-center gap-1.5 text-xs font-semibold text-ink-soft mb-2">
+            <TrendingUp className="h-3.5 w-3.5" /> Inscriptions / semaine
+          </div>
           {weeklySignups.length > 0 ? (
             <ResponsiveContainer width="100%" height={130}>
               <LineChart data={weeklySignups}>
-                <XAxis dataKey="label" tick={{ fontSize: 9, fill: '#94A3B8' }} interval="preserveStartEnd" />
+                <XAxis dataKey="label" tick={{ fontSize: 9, fill: '#6E7078' }} interval="preserveStartEnd" />
                 <YAxis hide allowDecimals={false} />
                 <Tooltip contentStyle={{ borderRadius: 8, fontSize: 11 }} />
-                <Line type="monotone" dataKey="count" stroke="#0D9488" strokeWidth={2} dot={false} />
+                <Line type="monotone" dataKey="count" stroke="#B5522F" strokeWidth={2} dot={false} />
               </LineChart>
             </ResponsiveContainer>
-          ) : <p style={{ color: '#94A3B8', fontSize: 12 }}>Aucune donnee</p>}
+          ) : <p className="text-muted text-xs">Aucune donnee</p>}
         </div>
-        <div style={{ background: 'white', borderRadius: 14, padding: '14px 16px', border: '1px solid rgba(0,0,0,0.06)' }}>
-          <div style={{ fontSize: 12, fontWeight: 600, color: '#475569', marginBottom: 8 }}>📈 Tests / jour (30j)</div>
+        <div className="bg-card rounded-block px-4 py-3.5 border border-line">
+          <div className="flex items-center gap-1.5 text-xs font-semibold text-ink-soft mb-2">
+            <TrendingUp className="h-3.5 w-3.5" /> Tests / jour (30j)
+          </div>
           {dailyTests.length > 0 ? (
             <ResponsiveContainer width="100%" height={130}>
               <LineChart data={dailyTests}>
-                <XAxis dataKey="label" tick={{ fontSize: 9, fill: '#94A3B8' }} interval={6} />
+                <XAxis dataKey="label" tick={{ fontSize: 9, fill: '#6E7078' }} interval={6} />
                 <YAxis hide allowDecimals={false} />
                 <Tooltip contentStyle={{ borderRadius: 8, fontSize: 11 }} />
-                <Line type="monotone" dataKey="count" stroke="#3B82F6" strokeWidth={2} dot={false} />
+                <Line type="monotone" dataKey="count" stroke="#4A5D57" strokeWidth={2} dot={false} />
               </LineChart>
             </ResponsiveContainer>
-          ) : <p style={{ color: '#94A3B8', fontSize: 12 }}>Aucune donnee</p>}
+          ) : <p className="text-muted text-xs">Aucune donnee</p>}
         </div>
       </div>
 
       {/* Top 3 tests + Top 3 alerts */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 12 }}>
-        <div style={{ background: 'white', borderRadius: 14, padding: '16px', border: '1px solid rgba(0,0,0,0.06)' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-            <span style={{ fontSize: 13, fontWeight: 700, color: '#0A2342' }}>🏆 Tests les plus faits</span>
-            <button onClick={() => onNavigate('tests')} style={{ fontSize: 11, color: '#3B82F6', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 600 }}>Voir tout →</button>
+      <div className="grid gap-3" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))' }}>
+        <div className="bg-card rounded-block p-4 border border-line">
+          <div className="flex justify-between items-center mb-3">
+            <span className="text-[13px] font-bold text-ink flex items-center gap-1.5">
+              <Trophy className="h-4 w-4 text-gold" /> Tests les plus faits
+            </span>
+            <button onClick={() => onNavigate('tests')} className="text-[11px] text-accent bg-transparent border-none cursor-pointer font-semibold">Voir tout →</button>
           </div>
           {popularity.slice(0, 3).map((t, i) => (
-            <div key={t.scaleId} style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: i < 2 ? '1px solid #F8FAFC' : 'none' }}>
-              <span style={{ fontSize: 12, color: '#334155' }}><span style={{ marginRight: 6 }}>{t.icon}</span>{t.name}</span>
-              <span style={{ fontSize: 12, fontWeight: 700, color: '#0D9488' }}>{t.count}</span>
+            <div key={t.scaleId} className={`flex justify-between py-1.5 ${i < 2 ? 'border-b border-line' : ''}`}>
+              <span className="text-xs text-ink-soft"><span className="mr-1.5">{t.icon}</span>{t.name}</span>
+              <span className="text-xs font-bold text-sage">{t.count}</span>
             </div>
           ))}
         </div>
 
-        <div style={{ background: 'white', borderRadius: 14, padding: '16px', border: '1px solid rgba(0,0,0,0.06)' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-            <span style={{ fontSize: 13, fontWeight: 700, color: '#0A2342' }}>🚨 Alertes recentes</span>
-            <button onClick={() => onNavigate('alerts')} style={{ fontSize: 11, color: '#3B82F6', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 600 }}>Voir tout →</button>
+        <div className="bg-card rounded-block p-4 border border-line">
+          <div className="flex justify-between items-center mb-3">
+            <span className="text-[13px] font-bold text-ink flex items-center gap-1.5">
+              <AlertTriangle className="h-4 w-4 text-danger" /> Alertes recentes
+            </span>
+            <button onClick={() => onNavigate('alerts')} className="text-[11px] text-accent bg-transparent border-none cursor-pointer font-semibold">Voir tout →</button>
           </div>
           {alerts.length === 0
-            ? <p style={{ color: '#94A3B8', fontSize: 12 }}>Aucune alerte</p>
+            ? <p className="text-muted text-xs">Aucune alerte</p>
             : alerts.slice(0, 3).map((a, i) => (
-              <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 0', borderBottom: i < 2 ? '1px solid #F8FAFC' : 'none' }}>
-                <span style={{ fontSize: 12, color: '#334155' }}><span style={{ marginRight: 6 }}>{a.icon}</span>{a.scaleName}</span>
-                <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-                  <span style={{ fontSize: 10, color: '#94A3B8' }}>{a.date}</span>
-                  <span style={{
-                    fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 6,
-                    background: a.alertLevel >= 3 ? '#FEE2E2' : '#FFEDD5',
-                    color: a.alertLevel >= 3 ? '#DC2626' : '#EA580C',
-                  }}>Niv. {a.alertLevel}</span>
+              <div key={i} className={`flex justify-between items-center py-1.5 ${i < 2 ? 'border-b border-line' : ''}`}>
+                <span className="text-xs text-ink-soft"><span className="mr-1.5">{a.icon}</span>{a.scaleName}</span>
+                <div className="flex gap-1.5 items-center">
+                  <span className="text-[10px] text-muted">{a.date}</span>
+                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-card ${
+                    a.alertLevel >= 3 ? 'bg-danger/15 text-danger' : 'bg-gold-soft text-gold'
+                  }`}>Niv. {a.alertLevel}</span>
                 </div>
               </div>
             ))
@@ -279,20 +289,20 @@ const TestsTab: React.FC<{
   const arrow = (col: typeof sortCol) => sortCol === col ? (sortDir === 'asc' ? ' ↑' : ' ↓') : '';
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+    <div className="flex flex-col gap-5">
       {/* Bar chart — all tests */}
       <Section title="Classement des tests par popularite">
         {popularity.length === 0 ? (
-          <p style={{ color: '#94A3B8', fontSize: 13 }}>Aucune donnee</p>
+          <p className="text-muted text-sm">Aucune donnee</p>
         ) : (
           <ResponsiveContainer width="100%" height={Math.max(300, popularity.length * 30)}>
             <BarChart data={popularity} layout="vertical" margin={{ left: 10 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" />
-              <XAxis type="number" tick={{ fontSize: 11, fill: '#94A3B8' }} />
-              <YAxis type="category" dataKey="name" width={180} tick={{ fontSize: 11, fill: '#475569' }} />
+              <CartesianGrid strokeDasharray="3 3" stroke="#E7E4DA" />
+              <XAxis type="number" tick={{ fontSize: 11, fill: '#6E7078' }} />
+              <YAxis type="category" dataKey="name" width={180} tick={{ fontSize: 11, fill: '#4B4D55' }} />
               <Tooltip contentStyle={{ borderRadius: 10, fontSize: 12 }} formatter={(v: number) => [`${v} completions`, 'Total']} />
               <Bar dataKey="count" radius={[0, 6, 6, 0]} maxBarSize={20}>
-                {popularity.map((_, i) => <Cell key={i} fill={i % 2 === 0 ? '#0D9488' : '#3B82F6'} />)}
+                {popularity.map((_, i) => <Cell key={i} fill={i % 2 === 0 ? '#4A5D57' : '#B5522F'} />)}
               </Bar>
             </BarChart>
           </ResponsiveContainer>
@@ -302,35 +312,36 @@ const TestsTab: React.FC<{
       {/* Sortable scores table */}
       <Section title="Scores moyens par test">
         {sortedScores.length === 0 ? (
-          <p style={{ color: '#94A3B8', fontSize: 13 }}>Aucune donnee</p>
+          <p className="text-muted text-sm">Aucune donnee</p>
         ) : (
-          <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+          <div className="overflow-x-auto">
+            <table className="w-full border-collapse text-xs">
               <thead>
-                <tr style={{ borderBottom: '2px solid #F1F5F9' }}>
-                  <th onClick={() => toggleSort('name')} style={thStyle}>Test{arrow('name')}</th>
-                  <th onClick={() => toggleSort('count')} style={{ ...thStyle, textAlign: 'center' }}>Completes{arrow('count')}</th>
-                  <th onClick={() => toggleSort('avg')} style={{ ...thStyle, textAlign: 'center' }}>Score moy.{arrow('avg')}</th>
-                  <th onClick={() => toggleSort('severity')} style={{ ...thStyle, textAlign: 'center' }}>Tendance{arrow('severity')}</th>
+                <tr className="border-b-2 border-line">
+                  <th onClick={() => toggleSort('name')} className={THEAD_TH}>Test{arrow('name')}</th>
+                  <th onClick={() => toggleSort('count')} className={`${THEAD_TH} text-center`}>Completes{arrow('count')}</th>
+                  <th onClick={() => toggleSort('avg')} className={`${THEAD_TH} text-center`}>Score moy.{arrow('avg')}</th>
+                  <th onClick={() => toggleSort('severity')} className={`${THEAD_TH} text-center`}>Tendance{arrow('severity')}</th>
                 </tr>
               </thead>
               <tbody>
                 {sortedScores.map(test => (
-                  <tr key={test.scaleId} style={{ borderBottom: '1px solid #F8FAFC' }}>
-                    <td style={{ padding: '7px 6px', fontWeight: 500, color: '#0A2342' }}>
-                      <span style={{ marginRight: 6 }}>{test.icon}</span>{test.name}
+                  <tr key={test.scaleId} className="border-b border-line">
+                    <td className="py-1.5 px-1.5 font-medium text-ink">
+                      <span className="mr-1.5">{test.icon}</span>{test.name}
                     </td>
-                    <td style={{ textAlign: 'center', padding: '7px 6px', color: '#94A3B8' }}>{test.count}</td>
-                    <td style={{ textAlign: 'center', padding: '7px 6px', color: '#475569' }}>
+                    <td className="text-center py-1.5 px-1.5 text-muted">{test.count}</td>
+                    <td className="text-center py-1.5 px-1.5 text-ink-soft">
                       {test.avgScore}{test.maxScore > 0 ? ` / ${test.maxScore}` : ''}
                     </td>
-                    <td style={{ textAlign: 'center', padding: '7px 6px' }}>
-                      <span style={{
-                        display: 'inline-block', padding: '2px 8px', borderRadius: 10,
-                        fontSize: 10, fontWeight: 700,
-                        color: severityColor(test.mostCommonSeverity),
-                        background: `${severityColor(test.mostCommonSeverity)}15`,
-                      }}>{severityLabel(test.mostCommonSeverity)}</span>
+                    <td className="text-center py-1.5 px-1.5">
+                      <span
+                        className="inline-block px-2 py-0.5 rounded-card text-[10px] font-bold"
+                        style={{
+                          color: severityColor(test.mostCommonSeverity),
+                          background: `${severityColor(test.mostCommonSeverity)}15`,
+                        }}
+                      >{severityLabel(test.mostCommonSeverity)}</span>
                     </td>
                   </tr>
                 ))}
@@ -343,15 +354,15 @@ const TestsTab: React.FC<{
       {/* Full daily tests chart */}
       <Section title="Tests completes par jour (30 derniers jours)">
         {dailyTests.length === 0 ? (
-          <p style={{ color: '#94A3B8', fontSize: 13 }}>Aucune donnee</p>
+          <p className="text-muted text-sm">Aucune donnee</p>
         ) : (
           <ResponsiveContainer width="100%" height={260}>
             <LineChart data={dailyTests}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" />
-              <XAxis dataKey="label" tick={{ fontSize: 10, fill: '#94A3B8' }} interval="preserveStartEnd" />
-              <YAxis allowDecimals={false} tick={{ fontSize: 11, fill: '#94A3B8' }} />
+              <CartesianGrid strokeDasharray="3 3" stroke="#E7E4DA" />
+              <XAxis dataKey="label" tick={{ fontSize: 10, fill: '#6E7078' }} interval="preserveStartEnd" />
+              <YAxis allowDecimals={false} tick={{ fontSize: 11, fill: '#6E7078' }} />
               <Tooltip contentStyle={{ borderRadius: 10, fontSize: 12 }} />
-              <Line type="monotone" dataKey="count" stroke="#3B82F6" strokeWidth={2} dot={false} name="Tests" />
+              <Line type="monotone" dataKey="count" stroke="#4A5D57" strokeWidth={2} dot={false} name="Tests" />
             </LineChart>
           </ResponsiveContainer>
         )}
@@ -360,16 +371,8 @@ const TestsTab: React.FC<{
   );
 };
 
-const thStyle: React.CSSProperties = {
-  textAlign: 'left',
-  padding: '8px 6px',
-  color: '#64748B',
-  fontWeight: 600,
-  cursor: 'pointer',
-  userSelect: 'none',
-  fontSize: 11,
-  whiteSpace: 'nowrap',
-};
+const THEAD_TH =
+  'text-left py-2 px-1.5 text-muted font-semibold cursor-pointer select-none text-[11px] whitespace-nowrap';
 
 // ══════════════════════════════════════════════════════════════════════════════
 // TAB 3 — ALERTES
@@ -406,27 +409,29 @@ const AlertsTab: React.FC<{
     : '0';
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+    <div className="flex flex-col gap-5">
       {/* KPIs */}
-      <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-        <KpiCard icon="🔴" value={stats.alertsLevel3 ?? 0} label="Niveau 3 (critique)" color="#DC2626" />
-        <KpiCard icon="🟠" value={stats.alertsLevel2 ?? 0} label="Niveau 2 (attention)" color="#EA580C" />
-        <KpiCard icon="📊" value={`${alertRate}%`} label="Taux d'alerte global" color="#64748B" />
+      <div className="flex gap-3 flex-wrap">
+        <KpiCard icon={<AlertCircle className="h-[18px] w-[18px]" />} value={stats.alertsLevel3 ?? 0} label="Niveau 3 (critique)" tone="danger" />
+        <KpiCard icon={<AlertTriangle className="h-[18px] w-[18px]" />} value={stats.alertsLevel2 ?? 0} label="Niveau 2 (attention)" tone="warn" />
+        <KpiCard icon={<Percent className="h-[18px] w-[18px]" />} value={`${alertRate}%`} label="Taux d'alerte global" tone="muted" />
       </div>
 
       {/* Filter pills */}
-      <div style={{ display: 'flex', gap: 6 }}>
+      <div className="flex gap-1.5">
         {([0, 2, 3] as const).map(lvl => (
           <button
             key={lvl}
             onClick={() => { setFilterLevel(lvl); setPage(0); }}
-            style={{
-              padding: '6px 14px', borderRadius: 8, border: '1px solid',
-              fontSize: 11, fontWeight: 600, cursor: 'pointer',
-              background: filterLevel === lvl ? (lvl === 3 ? '#FEE2E2' : lvl === 2 ? '#FFEDD5' : '#F0FDF4') : 'white',
-              color: filterLevel === lvl ? (lvl === 3 ? '#DC2626' : lvl === 2 ? '#EA580C' : '#0A2342') : '#64748B',
-              borderColor: filterLevel === lvl ? (lvl === 3 ? '#FECACA' : lvl === 2 ? '#FDBA74' : '#BBF7D0') : '#E2E8F0',
-            }}
+            className={`px-3.5 py-1.5 rounded-pill border text-[11px] font-semibold cursor-pointer ${
+              filterLevel === lvl
+                ? lvl === 3
+                  ? 'bg-danger/15 text-danger border-danger/30'
+                  : lvl === 2
+                  ? 'bg-gold-soft text-gold border-gold/30'
+                  : 'bg-ok/15 text-ink border-ok/30'
+                : 'bg-card text-ink-soft border-line'
+            }`}
           >
             {lvl === 0 ? 'Toutes' : `Niveau ${lvl}`}
           </button>
@@ -436,39 +441,37 @@ const AlertsTab: React.FC<{
       {/* Alerts list */}
       <Section title={`Alertes recentes — ${filtered.length} resultats`}>
         {paged.length === 0 ? (
-          <p style={{ color: '#94A3B8', fontSize: 13 }}>Aucune alerte.</p>
+          <p className="text-muted text-sm">Aucune alerte.</p>
         ) : (
           <>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            <div className="flex flex-col gap-1.5">
               {paged.map((alert, i) => (
-                <div key={i} style={{
-                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                  padding: '9px 12px', borderRadius: 10,
-                  background: alert.alertLevel >= 3 ? '#FEF2F2' : '#FFF7ED',
-                  border: `1px solid ${alert.alertLevel >= 3 ? 'rgba(220,38,38,0.12)' : 'rgba(234,88,12,0.12)'}`,
-                }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <span style={{ fontSize: 14 }}>{alert.icon}</span>
-                    <span style={{ fontSize: 12, fontWeight: 600, color: '#0A2342' }}>{alert.scaleName}</span>
-                    <span style={{ fontSize: 10, color: '#94A3B8' }}>{alert.date}</span>
+                <div
+                  key={i}
+                  className={`flex items-center justify-between px-3 py-2.5 rounded-card border ${
+                    alert.alertLevel >= 3 ? 'bg-danger/5 border-danger/15' : 'bg-gold-soft/60 border-gold/15'
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm">{alert.icon}</span>
+                    <span className="text-xs font-semibold text-ink">{alert.scaleName}</span>
+                    <span className="text-[10px] text-muted">{alert.date}</span>
                   </div>
-                  <span style={{
-                    fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 6,
-                    background: alert.alertLevel >= 3 ? '#FEE2E2' : '#FFEDD5',
-                    color: alert.alertLevel >= 3 ? '#DC2626' : '#EA580C',
-                  }}>Niveau {alert.alertLevel}</span>
+                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-card ${
+                    alert.alertLevel >= 3 ? 'bg-danger/15 text-danger' : 'bg-gold-soft text-gold'
+                  }`}>Niveau {alert.alertLevel}</span>
                 </div>
               ))}
             </div>
 
             {/* Pagination */}
             {totalPages > 1 && (
-              <div style={{ display: 'flex', justifyContent: 'center', gap: 8, marginTop: 12 }}>
+              <div className="flex justify-center items-center gap-2 mt-3">
                 <button onClick={() => setPage(p => Math.max(0, p - 1))} disabled={page === 0}
-                  style={{ ...paginationBtn, opacity: page === 0 ? 0.4 : 1 }}>← Precedent</button>
-                <span style={{ fontSize: 12, color: '#64748B', padding: '6px 0' }}>{page + 1} / {totalPages}</span>
+                  className={`${PAGINATION_BTN} ${page === 0 ? 'opacity-40' : 'opacity-100'}`}>← Precedent</button>
+                <span className="text-xs text-ink-soft py-1.5">{page + 1} / {totalPages}</span>
                 <button onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))} disabled={page >= totalPages - 1}
-                  style={{ ...paginationBtn, opacity: page >= totalPages - 1 ? 0.4 : 1 }}>Suivant →</button>
+                  className={`${PAGINATION_BTN} ${page >= totalPages - 1 ? 'opacity-40' : 'opacity-100'}`}>Suivant →</button>
               </div>
             )}
           </>
@@ -480,11 +483,11 @@ const AlertsTab: React.FC<{
         <Section title="Repartition des alertes par test">
           <ResponsiveContainer width="100%" height={Math.max(200, alertsByTest.length * 30)}>
             <BarChart data={alertsByTest} layout="vertical" margin={{ left: 10 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" />
-              <XAxis type="number" tick={{ fontSize: 11, fill: '#94A3B8' }} />
-              <YAxis type="category" dataKey="name" width={160} tick={{ fontSize: 11, fill: '#475569' }} />
+              <CartesianGrid strokeDasharray="3 3" stroke="#E7E4DA" />
+              <XAxis type="number" tick={{ fontSize: 11, fill: '#6E7078' }} />
+              <YAxis type="category" dataKey="name" width={160} tick={{ fontSize: 11, fill: '#4B4D55' }} />
               <Tooltip contentStyle={{ borderRadius: 8, fontSize: 12 }} formatter={(v: number) => [`${v} alertes`, 'Total']} />
-              <Bar dataKey="count" radius={[0, 6, 6, 0]} maxBarSize={18} fill="#EF4444" />
+              <Bar dataKey="count" radius={[0, 6, 6, 0]} maxBarSize={18} fill="#B23A3A" />
             </BarChart>
           </ResponsiveContainer>
         </Section>
@@ -493,10 +496,8 @@ const AlertsTab: React.FC<{
   );
 };
 
-const paginationBtn: React.CSSProperties = {
-  padding: '5px 14px', borderRadius: 8, border: '1px solid #E2E8F0',
-  fontSize: 11, fontWeight: 600, cursor: 'pointer', background: 'white', color: '#475569',
-};
+const PAGINATION_BTN =
+  'px-3.5 py-1.5 rounded-card border border-line text-[11px] font-semibold cursor-pointer bg-card text-ink-soft hover:bg-paper transition-colors';
 
 // ══════════════════════════════════════════════════════════════════════════════
 // TAB 4 — TOP USERS
@@ -548,9 +549,9 @@ const UsersTab: React.FC<{
       {/* Metrics */}
       {metrics && (
         <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-          <KpiCard icon="🏆" value={metrics.completeProfiles} label="Profils complets" sub="Tous tests faits" color="#059669" />
-          <KpiCard icon="📊" value={metrics.avgTestsPerUser} label="Tests moy./user" color="#3B82F6" />
-          <KpiCard icon="💤" value={metrics.inactiveUsers30d} label="Inactifs 30j+" color="#94A3B8" />
+          <KpiCard icon={<Trophy className="h-[18px] w-[18px]" />} value={metrics.completeProfiles} label="Profils complets" sub="Tous tests faits" color="#059669" />
+          <KpiCard icon={<BarChart3 className="h-[18px] w-[18px]" />} value={metrics.avgTestsPerUser} label="Tests moy./user" color="#3B82F6" />
+          <KpiCard icon={<Moon className="h-[18px] w-[18px]" />} value={metrics.inactiveUsers30d} label="Inactifs 30j+" color="#94A3B8" />
         </div>
       )}
 
@@ -571,7 +572,7 @@ const UsersTab: React.FC<{
             boxSizing: 'border-box',
           }}
         />
-        <span style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', fontSize: 14 }}>🔍</span>
+        <Search style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)' }} className="h-3.5 w-3.5 text-gray-400" />
       </div>
 
       {/* Table */}
@@ -708,14 +709,14 @@ const UserDetailPanel: React.FC<{ userId: string; onClose: () => void }> = ({ us
           <div style={{ padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 20 }}>
             {/* Identity */}
             <div>
-              <h3 style={{ margin: '0 0 8px', fontSize: 18, fontWeight: 800, color: '#0A2342' }}>
-                👤 {detail.name}
+              <h3 style={{ margin: '0 0 8px', fontSize: 18, fontWeight: 800, color: '#0A2342', display: 'flex', alignItems: 'center', gap: 6 }}>
+                <User className="h-4 w-4" /> {detail.name}
               </h3>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 12, color: '#64748B' }}>
-                {detail.phone !== '—' && <div>📱 {detail.phone}</div>}
-                {detail.email !== '—' && <div>📧 {detail.email}</div>}
-                <div>📅 Inscrit le {detail.registeredAt}</div>
-                <div>🔑 {detail.authProvider}</div>
+                {detail.phone !== '—' && <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Phone className="h-3 w-3" /> {detail.phone}</div>}
+                {detail.email !== '—' && <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Mail className="h-3 w-3" /> {detail.email}</div>}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Calendar className="h-3 w-3" /> Inscrit le {detail.registeredAt}</div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}><KeyRound className="h-3 w-3" /> {detail.authProvider}</div>
               </div>
             </div>
 
@@ -723,8 +724,8 @@ const UserDetailPanel: React.FC<{ userId: string; onClose: () => void }> = ({ us
 
             {/* Progress */}
             <div>
-              <div style={{ fontSize: 13, fontWeight: 700, color: '#0A2342', marginBottom: 8 }}>
-                📊 Progression : {detail.completedTests}/{detail.totalScales} tests
+              <div style={{ fontSize: 13, fontWeight: 700, color: '#0A2342', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
+                <BarChart3 className="h-3.5 w-3.5" /> Progression : {detail.completedTests}/{detail.totalScales} tests
               </div>
               <div style={{
                 height: 8, borderRadius: 4, background: '#F1F5F9', overflow: 'hidden',
@@ -732,7 +733,7 @@ const UserDetailPanel: React.FC<{ userId: string; onClose: () => void }> = ({ us
                 <div style={{
                   height: '100%',
                   width: `${Math.min(100, (detail.completedTests / detail.totalScales) * 100)}%`,
-                  background: 'linear-gradient(90deg, #0D9488, #3B82F6)',
+                  background: '#4A5D57',
                   borderRadius: 4,
                   transition: 'width 0.5s',
                 }} />
@@ -761,8 +762,8 @@ const UserDetailPanel: React.FC<{ userId: string; onClose: () => void }> = ({ us
 
             {/* Tests */}
             <div>
-              <div style={{ fontSize: 13, fontWeight: 700, color: '#0A2342', marginBottom: 8 }}>
-                📋 Tests completes ({detail.tests.length})
+              <div style={{ fontSize: 13, fontWeight: 700, color: '#0A2342', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
+                <ClipboardList className="h-3.5 w-3.5" /> Tests completes ({detail.tests.length})
               </div>
               {detail.tests.length === 0 ? (
                 <p style={{ fontSize: 12, color: '#94A3B8' }}>Aucun test complete</p>
@@ -798,8 +799,8 @@ const UserDetailPanel: React.FC<{ userId: string; onClose: () => void }> = ({ us
 
             {/* Recent activity */}
             <div>
-              <div style={{ fontSize: 13, fontWeight: 700, color: '#0A2342', marginBottom: 8 }}>
-                ⏱️ Activite recente
+              <div style={{ fontSize: 13, fontWeight: 700, color: '#0A2342', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
+                <Clock className="h-3.5 w-3.5" /> Activite recente
               </div>
               {detail.recentActivity.length === 0 ? (
                 <p style={{ fontSize: 12, color: '#94A3B8' }}>Aucune activite recente</p>

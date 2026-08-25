@@ -154,7 +154,7 @@ export const usePhoneAuth = () => {
       // Numéros de test Firebase (facultatif)
       const testNumbers = ["+14505168884", "+15551234567"];
       if (testNumbers.includes(formatted)) {
-        console.log("🧪 Numéro de test détecté:", formatted);
+        console.log("Numéro de test détecté:", formatted);
       }
 
       await ensureRecaptcha();
@@ -180,22 +180,22 @@ export const usePhoneAuth = () => {
       return confirmation;
     } catch (err: any) {
       // 🔍 LOGGER EXACTEMENT TOUTES LES INFORMATIONS D'ERREUR
-      console.error("❌ [PHONE_AUTH] ===== ERREUR DÉTAILLÉE signInWithPhoneNumber =====");
-      console.error("❌ [PHONE_AUTH] error.code:", err?.code);
-      console.error("❌ [PHONE_AUTH] error.message:", err?.message);
-      console.error("❌ [PHONE_AUTH] error.customData:", err?.customData);
-      console.error("❌ [PHONE_AUTH] error.stack:", err?.stack);
-      console.error("❌ [PHONE_AUTH] error complet:", err);
+      console.error("[PHONE_AUTH] ===== ERREUR DÉTAILLÉE signInWithPhoneNumber =====");
+      console.error("[PHONE_AUTH] error.code:", err?.code);
+      console.error("[PHONE_AUTH] error.message:", err?.message);
+      console.error("[PHONE_AUTH] error.customData:", err?.customData);
+      console.error("[PHONE_AUTH] error.stack:", err?.stack);
+      console.error("[PHONE_AUTH] error complet:", err);
       
       // Essayer de logger la réponse réseau si disponible
       if (err?.serverResponse) {
-        console.error("❌ [PHONE_AUTH] error.serverResponse:", err.serverResponse);
+        console.error("[PHONE_AUTH] error.serverResponse:", err.serverResponse);
       }
       if (err?.response) {
-        console.error("❌ [PHONE_AUTH] error.response:", err.response);
+        console.error("[PHONE_AUTH] error.response:", err.response);
       }
       if (err?.details) {
-        console.error("❌ [PHONE_AUTH] error.details:", err.details);
+        console.error("[PHONE_AUTH] error.details:", err.details);
       }
 
       // Gestion spéciale pour certaines erreurs reCAPTCHA (réinitialisation)

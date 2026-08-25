@@ -200,7 +200,7 @@ const AdminProfessionals: React.FC = () => {
     return (
       <AdminLayout>
         <div className="flex items-center justify-center min-h-screen">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-accent"></div>
         </div>
       </AdminLayout>
     );
@@ -210,10 +210,10 @@ const AdminProfessionals: React.FC = () => {
     return (
       <AdminLayout>
         <div className="text-center py-12">
-          <div className="text-red-600 text-xl mb-4">{error}</div>
+          <div className="text-danger text-xl mb-4">{error}</div>
           <button
             onClick={fetchProfessionals}
-            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+            className="bg-accent text-white px-4 py-2 rounded-card hover:bg-accent/90"
           >
             Réessayer
           </button>
@@ -252,26 +252,26 @@ const AdminProfessionals: React.FC = () => {
 
   // Fonction de rendu des lignes
   const renderRow = (professional: Professional) => (
-    <tr key={professional.id} className="hover:bg-gray-50">
+    <tr key={professional.id} className="hover:bg-paper">
       <td className="px-6 py-4 whitespace-nowrap">
         <div className="flex items-center">
           <div className="flex-shrink-0 h-10 w-10">
-            <User className="h-10 w-10 text-gray-400" />
+            <User className="h-10 w-10 text-muted" />
           </div>
           <div className="ml-4">
-            <div className="text-sm font-medium text-gray-900">
+            <div className="text-sm font-medium text-ink">
               {professional.name}
             </div>
-            <div className="text-sm text-gray-500">
+            <div className="text-sm text-muted">
               {professional.specialty || "Spécialité non définie"}
             </div>
           </div>
         </div>
       </td>
       <td className="px-6 py-4 whitespace-nowrap">
-        <div className="text-sm text-gray-900">{professional.email}</div>
+        <div className="text-sm text-ink">{professional.email}</div>
         {professional.phone && (
-          <div className="text-sm text-gray-500 flex items-center">
+          <div className="text-sm text-muted flex items-center">
             <Phone className="h-4 w-4 mr-1" />
             {professional.phone}
           </div>
@@ -280,19 +280,19 @@ const AdminProfessionals: React.FC = () => {
       <td className="px-6 py-4 whitespace-nowrap">
         <div className="flex flex-col space-y-2">
           <span
-            className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+            className={`inline-flex px-2 py-1 text-xs font-semibold rounded-pill ${
               professional.isApproved
-                ? "bg-green-100 text-green-800"
-                : "bg-yellow-100 text-yellow-800"
+                ? "bg-ok/15 text-ok"
+                : "bg-gold-soft text-gold"
             }`}
           >
             {professional.isApproved ? "Approuvé" : "En attente"}
           </span>
           <span
-            className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+            className={`inline-flex px-2 py-1 text-xs font-semibold rounded-pill ${
               professional.isActive
-                ? "bg-green-100 text-green-800"
-                : "bg-red-100 text-red-800"
+                ? "bg-ok/15 text-ok"
+                : "bg-danger/10 text-danger"
             }`}
           >
             {professional.isActive ? "Actif" : "Inactif"}
@@ -306,10 +306,10 @@ const AdminProfessionals: React.FC = () => {
               handleUpdateStatus(professional.userId, !professional.isActive)
             }
             disabled={actionLoading === `status-${professional.userId}`}
-            className={`px-3 py-1 rounded text-xs font-medium ${
+            className={`px-3 py-1 rounded-card text-xs font-medium ${
               professional.isActive
-                ? "bg-red-100 text-red-700 hover:bg-red-200"
-                : "bg-green-100 text-green-700 hover:bg-green-200"
+                ? "bg-danger/10 text-danger hover:bg-danger/20"
+                : "bg-ok/15 text-ok hover:bg-ok/25"
             } disabled:opacity-50`}
           >
             {actionLoading === `status-${professional.userId}` ? (
@@ -329,10 +329,10 @@ const AdminProfessionals: React.FC = () => {
               )
             }
             disabled={actionLoading === `approval-${professional.userId}`}
-            className={`px-3 py-1 rounded text-xs font-medium ${
+            className={`px-3 py-1 rounded-card text-xs font-medium ${
               professional.isApproved
-                ? "bg-yellow-100 text-yellow-700 hover:bg-yellow-200"
-                : "bg-blue-100 text-blue-700 hover:bg-blue-200"
+                ? "bg-gold-soft text-gold hover:bg-gold-soft/70"
+                : "bg-accent-soft text-accent hover:bg-accent-soft/70"
             } disabled:opacity-50`}
           >
             {actionLoading === `approval-${professional.userId}` ? (
@@ -347,7 +347,7 @@ const AdminProfessionals: React.FC = () => {
           <button
             onClick={() => handleDeleteProfessional(professional.userId)}
             disabled={actionLoading === `delete-${professional.userId}`}
-            className="px-3 py-1 bg-red-100 text-red-700 hover:bg-red-200 rounded text-xs font-medium disabled:opacity-50"
+            className="px-3 py-1 bg-danger/10 text-danger hover:bg-danger/20 rounded-card text-xs font-medium disabled:opacity-50"
           >
             {actionLoading === `delete-${professional.userId}` ? (
               <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-current"></div>
@@ -376,11 +376,11 @@ const AdminProfessionals: React.FC = () => {
   return (
     <AdminLayout>
       <div className="mb-4 flex justify-between items-center">
-        <h1 className="text-2xl font-bold">Gestion des Professionnels</h1>
+        <h1 className="font-display text-2xl font-semibold text-ink">Gestion des Professionnels</h1>
         <button
           onClick={handleBackfillPublic}
           disabled={isBackfilling}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="flex items-center gap-2 px-4 py-2 bg-accent text-white rounded-card hover:bg-accent/90 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {isBackfilling ? (
             <>

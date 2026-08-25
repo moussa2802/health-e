@@ -14,7 +14,7 @@ export const RELIGIOUS_CULTURAL: AssessmentScale = {
   shortName: "Religion & Culture",
   category: 'mental_health',
   description: "Évalue l'influence des croyances religieuses et des valeurs culturelles sur le profil psychologique et les décisions de vie.",
-  instructions: "Ces questions portent sur la place de ta foi et de ta culture dans ta vie. Pas de jugement ici — on veut juste comprendre ton vécu 🤲",
+  instructions: "Ces questions portent sur la place de ta foi et de ta culture dans ta vie. Pas de jugement ici — on veut juste comprendre ton vécu",
   timeEstimateMinutes: 6,
   reference: "Questionnaire Healt-e (2026). Inspiré des travaux de l'École de Psychiatrie de Fann, Dakar, Sénégal.",
   licenseNote: "Questionnaire original Healt-e. Tous droits réservés.",
@@ -44,8 +44,8 @@ export const RELIGIOUS_CULTURAL: AssessmentScale = {
     { key: 'traditional_medicine', label: "Médecine traditionnelle",           itemIds: [11,12,13],  range: { min: 3, max: 15 } },
   ],
   interpretation: [
-    { min: 14, max: 30, label: "Impact spirituel faible / intégration harmonieuse", severity: 'positive', description: "Ta foi et ta culture semblent t'apporter plus de force que de contrainte — c'est un bel équilibre.", referralRequired: false, recommendation: "Continue à puiser dans tes ressources spirituelles et culturelles, elles te font du bien 🤲" },
+    { min: 14, max: 30, label: "Impact spirituel faible / intégration harmonieuse", severity: 'positive', description: "Ta foi et ta culture semblent t'apporter plus de force que de contrainte — c'est un bel équilibre.", referralRequired: false, recommendation: "Continue à puiser dans tes ressources spirituelles et culturelles, elles te font du bien" },
     { min: 31, max: 50, label: "Tensions culturelles modérées",                    severity: 'mild',     description: "Il y a des moments où tu sens un décalage entre tes valeurs personnelles et ce que ta religion ou ta culture attend de toi.", referralRequired: false, recommendation: "Explorer ces tensions avec quelqu'un qui comprend les enjeux culturels peut t'aider à y voir plus clair. Tu n'es pas {{le seul|la seule}} à vivre ça." },
-    { min: 51, max: 70, label: "Conflit culturel ou spirituel important",          severity: 'moderate', description: "Tu vis des tensions profondes entre ce que tu ressens et ce que ta foi ou ta culture te demande. Ça peut peser lourd.", referralRequired: false, recommendation: "Un accompagnement avec un professionnel sensible à ces questions culturelles et spirituelles pourrait vraiment t'aider à trouver ton chemin 🌿" },
+    { min: 51, max: 70, label: "Conflit culturel ou spirituel important",          severity: 'moderate', description: "Tu vis des tensions profondes entre ce que tu ressens et ce que ta foi ou ta culture te demande. Ça peut peser lourd.", referralRequired: false, recommendation: "Un accompagnement avec un professionnel sensible à ces questions culturelles et spirituelles pourrait vraiment t'aider à trouver ton chemin" },
   ],
 };

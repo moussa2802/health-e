@@ -25,10 +25,8 @@ import {
   getDoc,
   doc,
   orderBy,
-  limit,
 } from "firebase/firestore";
 import LoadingSpinner from "../../components/ui/LoadingSpinner";
-import { getBookings } from "../../services/bookingService";
 import {
   sendMessage,
   getOrCreateConversation,
@@ -63,7 +61,7 @@ const PatientsList: React.FC = () => {
       try {
         setLoading(true);
         console.log(
-          "👥 [PATIENTS LIST DEBUG] Starting data fetch for professional:",
+          "[PATIENTS LIST DEBUG] Starting data fetch for professional:",
           currentUser.id
         );
 
@@ -80,7 +78,7 @@ const PatientsList: React.FC = () => {
           professionalPatientsQuery
         );
         console.log(
-          "👥 [PATIENTS LIST DEBUG] Professional patients fetched successfully:",
+          "[PATIENTS LIST DEBUG] Professional patients fetched successfully:",
           professionalPatientsSnapshot.size
         );
 
@@ -135,7 +133,7 @@ const PatientsList: React.FC = () => {
         setPatients(patientsList);
         setError(null);
       } catch (error) {
-        console.error("❌ Error fetching patients:", error);
+        console.error("Error fetching patients:", error);
         setError("Erreur lors du chargement des patients");
       } finally {
         setLoading(false);
@@ -170,7 +168,7 @@ const PatientsList: React.FC = () => {
       setShowToast(true);
       setTimeout(() => setShowToast(false), 3000);
     } catch (error) {
-      console.error("❌ Error archiving patient:", error);
+      console.error("Error archiving patient:", error);
       setToastMessage("Erreur lors de l'archivage du patient");
       setToastType("error");
       setShowToast(true);
@@ -226,11 +224,11 @@ const PatientsList: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+      <div className="min-h-screen bg-paper">
         <div className="container mx-auto px-4 py-8">
           <div className="flex items-center justify-center h-64">
             <LoadingSpinner size="lg" />
-            <span className="ml-4 text-lg text-gray-600">
+            <span className="ml-4 text-lg text-ink-soft">
               Chargement des patients...
             </span>
           </div>
@@ -241,14 +239,14 @@ const PatientsList: React.FC = () => {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+      <div className="min-h-screen bg-paper">
         <div className="container mx-auto px-4 py-8">
-          <div className="bg-red-50 border border-red-200 text-red-700 px-6 py-4 rounded-xl shadow-sm">
+          <div className="bg-danger/10 border border-danger/30 text-danger px-6 py-4 rounded-card shadow-soft">
             <strong className="font-semibold">Erreur : </strong>
             <span className="block sm:inline">{error}</span>
             <button
               onClick={() => window.location.reload()}
-              className="mt-3 bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition-colors"
+              className="mt-3 bg-danger text-paper px-4 py-2 rounded-pill hover:bg-danger/90 transition-colors"
             >
               Réessayer
             </button>
@@ -259,21 +257,23 @@ const PatientsList: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+    <div className="min-h-screen bg-paper">
       <div className="container mx-auto px-4 py-8">
         {/* Header with stats */}
-        <div className="bg-white rounded-2xl shadow-lg p-6 mb-8">
+        <div className="bg-card border border-line rounded-block shadow-soft p-6 mb-8">
           <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">Mes patients</h1>
+              <h1 className="text-3xl font-display font-bold text-ink">
+                Mes patients
+              </h1>
               <div className="flex items-center gap-6 mt-2">
-                <div className="flex items-center gap-2 text-green-600">
+                <div className="flex items-center gap-2 text-sage">
                   <Users className="h-5 w-5" />
                   <span className="font-medium">
                     {activePatientsCount} patients actifs
                   </span>
                 </div>
-                <div className="flex items-center gap-2 text-gray-600">
+                <div className="flex items-center gap-2 text-ink-soft">
                   <ArchiveIcon className="h-5 w-5" />
                   <span className="font-medium">
                     {archivedPatientsCount} archivés
@@ -284,18 +284,18 @@ const PatientsList: React.FC = () => {
 
             <div className="flex items-center gap-4">
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted h-5 w-5" />
                 <input
                   type="text"
                   placeholder="Rechercher un patient..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10 pr-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-64"
+                  className="pl-10 pr-4 py-2 border border-line rounded-pill focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent w-64"
                 />
               </div>
               <button
                 onClick={() => window.location.reload()}
-                className="p-2 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 transition-colors"
+                className="p-2 bg-paper border border-line text-ink-soft rounded-pill hover:bg-line/40 transition-colors"
                 title="Actualiser"
               >
                 <RefreshCw className="h-5 w-5" />
@@ -305,24 +305,24 @@ const PatientsList: React.FC = () => {
         </div>
 
         {/* Tabs */}
-        <div className="bg-white rounded-2xl shadow-lg p-6 mb-8">
-          <div className="flex space-x-1 bg-gray-100 p-1 rounded-xl">
+        <div className="bg-card border border-line rounded-block shadow-soft p-6 mb-8">
+          <div className="flex space-x-1 bg-paper p-1 rounded-pill">
             <button
               onClick={() => setActiveTab("active")}
-              className={`flex-1 py-3 px-4 rounded-lg font-medium transition-all duration-200 ${
+              className={`flex-1 py-3 px-4 rounded-pill font-medium transition-all duration-200 ${
                 activeTab === "active"
-                  ? "bg-white text-blue-600 shadow-sm"
-                  : "text-gray-600 hover:text-gray-900"
+                  ? "bg-card text-accent shadow-soft"
+                  : "text-ink-soft hover:text-ink"
               }`}
             >
               Patients actifs ({activePatientsCount})
             </button>
             <button
               onClick={() => setActiveTab("archived")}
-              className={`flex-1 py-3 px-4 rounded-lg font-medium transition-all duration-200 ${
+              className={`flex-1 py-3 px-4 rounded-pill font-medium transition-all duration-200 ${
                 activeTab === "archived"
-                  ? "bg-white text-blue-600 shadow-sm"
-                  : "text-gray-600 hover:text-gray-900"
+                  ? "bg-card text-accent shadow-soft"
+                  : "text-ink-soft hover:text-ink"
               }`}
             >
               Archives ({archivedPatientsCount})
@@ -334,13 +334,13 @@ const PatientsList: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {sortedPatients.length === 0 ? (
             <div className="col-span-full text-center py-12">
-              <User className="mx-auto h-16 w-16 text-gray-400" />
-              <h3 className="mt-4 text-lg font-medium text-gray-900">
+              <User className="mx-auto h-16 w-16 text-muted" />
+              <h3 className="mt-4 text-lg font-medium text-ink">
                 {activeTab === "active"
                   ? "Aucun patient actif"
                   : "Aucun patient archivé"}
               </h3>
-              <p className="mt-2 text-gray-500">
+              <p className="mt-2 text-muted">
                 {searchTerm
                   ? "Essayez de modifier votre recherche."
                   : activeTab === "active"
@@ -352,8 +352,8 @@ const PatientsList: React.FC = () => {
             sortedPatients.map((patient) => (
               <div
                 key={patient.id}
-                className={`bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-md hover:scale-[1.01] transition-all duration-200 ${
-                  patient.isArchived ? "opacity-75 bg-gray-50" : ""
+                className={`bg-card rounded-card shadow-soft border border-line overflow-hidden hover:shadow-lift transition-all duration-200 ${
+                  patient.isArchived ? "opacity-75 bg-paper" : ""
                 }`}
               >
                 <div className="p-4">
@@ -366,28 +366,28 @@ const PatientsList: React.FC = () => {
                         className="w-12 h-12 rounded-full object-cover mr-4"
                       />
                     ) : (
-                      <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-100 to-indigo-100 flex items-center justify-center mr-4">
-                        <User className="h-6 w-6 text-blue-600" />
+                      <div className="w-12 h-12 rounded-full bg-accent-soft flex items-center justify-center mr-4">
+                        <User className="h-6 w-6 text-accent" />
                       </div>
                     )}
                     <div className="flex-1">
                       <div className="flex items-center gap-2">
-                        <h3 className="font-semibold text-lg text-gray-900">
+                        <h3 className="font-semibold text-lg text-ink">
                           {patient.name}
                         </h3>
                         {isNewPatient(patient) && !patient.isArchived && (
-                          <span className="px-2 py-1 bg-yellow-100 text-yellow-800 text-xs font-medium rounded-full">
+                          <span className="px-2 py-1 bg-gold-soft text-gold text-xs font-medium rounded-pill">
                             Nouveau
                           </span>
                         )}
                         {patient.isArchived && (
-                          <span className="px-2 py-1 bg-gray-100 text-gray-600 text-xs font-medium rounded-full flex items-center gap-1">
+                          <span className="px-2 py-1 bg-paper border border-line text-ink-soft text-xs font-medium rounded-pill flex items-center gap-1">
                             <Archive className="h-3 w-3" />
                             Archivé
                           </span>
                         )}
                       </div>
-                      <p className="text-gray-500 text-sm">
+                      <p className="text-muted text-sm">
                         {patient.consultationsCount} consultation
                         {patient.consultationsCount > 1 ? "s" : ""}
                       </p>
@@ -397,14 +397,14 @@ const PatientsList: React.FC = () => {
                   {/* Patient Info - Simplifié : Nom, Âge, Dates de RDV */}
                   <div className="space-y-2 mb-4">
                     {/* Nom du patient */}
-                    <div className="flex items-center text-sm text-gray-600">
+                    <div className="flex items-center text-sm text-ink-soft">
                       <User className="h-4 w-4 mr-2" />
                       <span>{patient.name}</span>
                     </div>
 
                     {/* Dernière consultation */}
                     {patient.lastConsultation && (
-                      <div className="flex items-center text-sm text-gray-600">
+                      <div className="flex items-center text-sm text-ink-soft">
                         <Calendar className="h-4 w-4 mr-2" />
                         <span>
                           Dernière consultation:{" "}
@@ -415,7 +415,7 @@ const PatientsList: React.FC = () => {
 
                     {/* Prochain rendez-vous */}
                     {patient.nextAppointment && !patient.isArchived && (
-                      <div className="flex items-center text-sm text-green-600">
+                      <div className="flex items-center text-sm text-sage">
                         <Clock className="h-4 w-4 mr-2" />
                         <span>
                           Prochain RDV: {formatDate(patient.nextAppointment)}
@@ -425,7 +425,7 @@ const PatientsList: React.FC = () => {
 
                     {/* Date d'archivage si archivé */}
                     {patient.isArchived && patient.archivedAt && (
-                      <div className="flex items-center text-sm text-gray-500">
+                      <div className="flex items-center text-sm text-muted">
                         <Archive className="h-4 w-4 mr-2" />
                         <span>
                           Archivé le: {formatDate(patient.archivedAt)}
@@ -441,7 +441,7 @@ const PatientsList: React.FC = () => {
                         setSelectedPatient(patient);
                         setShowPatientDetails(true);
                       }}
-                      className="flex items-center gap-2 px-3 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors text-sm font-medium"
+                      className="flex items-center gap-2 px-3 py-2 bg-accent-soft text-accent rounded-pill hover:bg-accent/20 transition-colors text-sm font-medium"
                     >
                       <Eye className="h-4 w-4" />
                       Détails
@@ -453,7 +453,7 @@ const PatientsList: React.FC = () => {
                           setSelectedPatient(patient);
                           setShowMessageModal(true);
                         }}
-                        className="flex items-center gap-2 px-3 py-2 bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition-colors text-sm font-medium"
+                        className="flex items-center gap-2 px-3 py-2 bg-sage-soft text-sage rounded-pill hover:bg-sage/20 transition-colors text-sm font-medium"
                       >
                         <MessageCircle className="h-4 w-4" />
                         Message
@@ -464,10 +464,10 @@ const PatientsList: React.FC = () => {
                       onClick={() =>
                         handleArchivePatient(patient.id, !patient.isArchived)
                       }
-                      className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors text-sm font-medium ${
+                      className={`flex items-center gap-2 px-3 py-2 rounded-pill transition-colors text-sm font-medium ${
                         patient.isArchived
-                          ? "bg-green-100 text-green-700 hover:bg-green-200"
-                          : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                          ? "bg-sage-soft text-sage hover:bg-sage/20"
+                          : "bg-paper border border-line text-ink-soft hover:bg-line/40"
                       }`}
                     >
                       {patient.isArchived ? (
@@ -494,10 +494,10 @@ const PatientsList: React.FC = () => {
       {showToast && (
         <div className="fixed top-4 right-4 z-50">
           <div
-            className={`px-6 py-4 rounded-xl shadow-lg flex items-center gap-3 ${
+            className={`px-6 py-4 rounded-card shadow-lift flex items-center gap-3 ${
               toastType === "success"
-                ? "bg-green-50 border border-green-200 text-green-700"
-                : "bg-red-50 border border-red-200 text-red-700"
+                ? "bg-ok/10 border border-ok/30 text-ok"
+                : "bg-danger/10 border border-danger/30 text-danger"
             }`}
           >
             <CheckCircle className="h-5 w-5" />
@@ -508,16 +508,16 @@ const PatientsList: React.FC = () => {
 
       {/* Message Modal */}
       {showMessageModal && selectedPatient && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-xl max-w-md w-full">
-            <div className="p-6 border-b border-gray-200">
+        <div className="fixed inset-0 bg-ink/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-card rounded-block shadow-lift max-w-md w-full">
+            <div className="p-6 border-b border-line">
               <div className="flex justify-between items-center">
-                <h2 className="text-xl font-bold">
+                <h2 className="text-xl font-display font-bold text-ink">
                   Envoyer un message à {selectedPatient.name}
                 </h2>
                 <button
                   onClick={() => setShowMessageModal(false)}
-                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                  className="p-2 hover:bg-paper rounded-card transition-colors"
                 >
                   <X className="h-5 w-5" />
                 </button>
@@ -529,20 +529,20 @@ const PatientsList: React.FC = () => {
                 <div className="flex space-x-2 mb-4">
                   <button
                     onClick={() => setMessageType("text")}
-                    className={`flex-1 py-2 px-4 rounded-lg font-medium transition-colors ${
+                    className={`flex-1 py-2 px-4 rounded-pill font-medium transition-colors ${
                       messageType === "text"
-                        ? "bg-blue-100 text-blue-700"
-                        : "bg-gray-100 text-gray-600"
+                        ? "bg-accent-soft text-accent"
+                        : "bg-paper text-ink-soft"
                     }`}
                   >
                     Message
                   </button>
                   <button
                     onClick={() => setMessageType("reminder")}
-                    className={`flex-1 py-2 px-4 rounded-lg font-medium transition-colors ${
+                    className={`flex-1 py-2 px-4 rounded-pill font-medium transition-colors ${
                       messageType === "reminder"
-                        ? "bg-blue-100 text-blue-700"
-                        : "bg-gray-100 text-gray-600"
+                        ? "bg-accent-soft text-accent"
+                        : "bg-paper text-ink-soft"
                     }`}
                   >
                     Rappel
@@ -554,13 +554,13 @@ const PatientsList: React.FC = () => {
                     value={newMessage}
                     onChange={(e) => setNewMessage(e.target.value)}
                     placeholder="Tapez votre message..."
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                    className="w-full p-3 border border-line rounded-card focus:outline-none focus:ring-2 focus:ring-accent resize-none"
                     rows={4}
                   />
                 ) : (
                   <div className="space-y-3">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                      <label className="block text-sm font-medium text-ink-soft mb-2">
                         Date du rappel
                       </label>
                       <input
@@ -568,23 +568,23 @@ const PatientsList: React.FC = () => {
                         value={reminderDate}
                         onChange={(e) => setReminderDate(e.target.value)}
                         min={new Date().toISOString().split("T")[0]}
-                        className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="w-full p-3 border border-line rounded-card focus:outline-none focus:ring-2 focus:ring-accent"
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                      <label className="block text-sm font-medium text-ink-soft mb-2">
                         Heure du rappel
                       </label>
                       <input
                         type="time"
                         value={reminderTime}
                         onChange={(e) => setReminderTime(e.target.value)}
-                        className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="w-full p-3 border border-line rounded-card focus:outline-none focus:ring-2 focus:ring-accent"
                       />
                     </div>
-                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-                      <p className="text-sm text-blue-700">
-                        <strong>💡 Conseil :</strong> Le patient recevra une
+                    <div className="bg-accent-soft border border-accent/20 rounded-card p-3">
+                      <p className="text-sm text-accent">
+                        <strong>Conseil :</strong> Le patient recevra une
                         notification de rappel à la date et heure spécifiées.
                       </p>
                     </div>
@@ -595,7 +595,7 @@ const PatientsList: React.FC = () => {
               <div className="flex justify-end gap-3">
                 <button
                   onClick={() => setShowMessageModal(false)}
-                  className="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors"
+                  className="px-4 py-2 text-ink-soft hover:text-ink transition-colors"
                 >
                   Annuler
                 </button>
@@ -630,7 +630,7 @@ const PatientsList: React.FC = () => {
                           newMessage.trim()
                         );
 
-                        // ✅ La notification est créée automatiquement par sendMessage
+                        // La notification est créée automatiquement par sendMessage
                         // Pas besoin de createNotification manuel ici
 
                         setToastMessage("Message envoyé avec succès !");
@@ -697,7 +697,7 @@ const PatientsList: React.FC = () => {
                       // Masquer le toast après 3 secondes
                       setTimeout(() => setShowToast(false), 3000);
                     } catch (error) {
-                      console.error("❌ Erreur lors de l'envoi:", error);
+                      console.error("Erreur lors de l'envoi:", error);
                       setToastMessage(
                         error instanceof Error
                           ? error.message
@@ -708,7 +708,7 @@ const PatientsList: React.FC = () => {
                       setTimeout(() => setShowToast(false), 3000);
                     }
                   }}
-                  className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+                  className="px-6 py-2 bg-accent text-paper rounded-pill hover:bg-accent/90 transition-colors font-medium"
                 >
                   Envoyer
                 </button>
@@ -720,11 +720,11 @@ const PatientsList: React.FC = () => {
 
       {/* Patient Details Modal */}
       {showPatientDetails && selectedPatient && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-ink/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-card rounded-block shadow-lift max-w-2xl w-full max-h-[90vh] overflow-y-auto">
             <div className="p-6">
               <div className="flex items-center justify-between mb-6">
-                <h2 className="text-2xl font-bold text-gray-900">
+                <h2 className="text-2xl font-display font-bold text-ink">
                   Détails du patient
                 </h2>
                 <button
@@ -732,7 +732,7 @@ const PatientsList: React.FC = () => {
                     setShowPatientDetails(false);
                     setSelectedPatient(null);
                   }}
-                  className="text-gray-400 hover:text-gray-600 transition-colors"
+                  className="text-muted hover:text-ink-soft transition-colors"
                 >
                   <X className="h-6 w-6" />
                 </button>
@@ -740,32 +740,32 @@ const PatientsList: React.FC = () => {
 
               <div className="space-y-6">
                 {/* Patient Info */}
-                <div className="bg-gray-50 rounded-lg p-4">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                <div className="bg-paper rounded-card p-4">
+                  <h3 className="text-lg font-semibold text-ink mb-4">
                     Informations personnelles
                   </h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <label className="text-sm font-medium text-gray-500">
+                      <label className="text-sm font-medium text-muted">
                         Nom complet
                       </label>
-                      <p className="text-gray-900 font-medium">
+                      <p className="text-ink font-medium">
                         {selectedPatient.name}
                       </p>
                     </div>
                     <div>
-                      <label className="text-sm font-medium text-gray-500">
+                      <label className="text-sm font-medium text-muted">
                         ID Patient
                       </label>
-                      <p className="text-gray-900 font-mono text-sm">
+                      <p className="text-ink font-mono text-sm">
                         {selectedPatient.id}
                       </p>
                     </div>
                     <div>
-                      <label className="text-sm font-medium text-gray-500">
+                      <label className="text-sm font-medium text-muted">
                         Dernière consultation
                       </label>
-                      <p className="text-gray-900">
+                      <p className="text-ink">
                         {selectedPatient.lastConsultation
                           ? new Date(
                               selectedPatient.lastConsultation
@@ -780,10 +780,10 @@ const PatientsList: React.FC = () => {
                       </p>
                     </div>
                     <div>
-                      <label className="text-sm font-medium text-gray-500">
+                      <label className="text-sm font-medium text-muted">
                         Nombre de consultations
                       </label>
-                      <p className="text-gray-900 font-medium">
+                      <p className="text-ink font-medium">
                         {selectedPatient.consultationsCount}
                       </p>
                     </div>
@@ -791,19 +791,19 @@ const PatientsList: React.FC = () => {
                 </div>
 
                 {/* Status */}
-                <div className="bg-gray-50 rounded-lg p-4">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                <div className="bg-paper rounded-card p-4">
+                  <h3 className="text-lg font-semibold text-ink mb-4">
                     Statut
                   </h3>
                   <div className="flex items-center gap-3">
                     {selectedPatient.isArchived ? (
                       <>
-                        <ArchiveIcon className="h-5 w-5 text-orange-500" />
-                        <span className="text-orange-600 font-medium">
+                        <ArchiveIcon className="h-5 w-5 text-gold" />
+                        <span className="text-gold font-medium">
                           Patient archivé
                         </span>
                         {selectedPatient.archivedAt && (
-                          <span className="text-gray-500 text-sm">
+                          <span className="text-muted text-sm">
                             (Archivé le{" "}
                             {new Date(
                               selectedPatient.archivedAt
@@ -814,8 +814,8 @@ const PatientsList: React.FC = () => {
                       </>
                     ) : (
                       <>
-                        <CheckCircle className="h-5 w-5 text-green-500" />
-                        <span className="text-green-600 font-medium">
+                        <CheckCircle className="h-5 w-5 text-ok" />
+                        <span className="text-ok font-medium">
                           Patient actif
                         </span>
                       </>
@@ -824,7 +824,7 @@ const PatientsList: React.FC = () => {
                 </div>
 
                 {/* Actions */}
-                <div className="flex flex-wrap gap-3 pt-4 border-t border-gray-200">
+                <div className="flex flex-wrap gap-3 pt-4 border-t border-line">
                   {!selectedPatient.isArchived && (
                     <button
                       onClick={() => {
@@ -832,7 +832,7 @@ const PatientsList: React.FC = () => {
                         setSelectedPatient(selectedPatient);
                         setShowMessageModal(true);
                       }}
-                      className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+                      className="flex items-center gap-2 px-4 py-2 bg-accent text-paper rounded-pill hover:bg-accent/90 transition-colors font-medium"
                     >
                       <MessageCircle className="h-4 w-4" />
                       Envoyer un message
@@ -844,7 +844,7 @@ const PatientsList: React.FC = () => {
                       setShowPatientDetails(false);
                       setSelectedPatient(null);
                     }}
-                    className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors font-medium"
+                    className="px-4 py-2 bg-paper border border-line text-ink-soft rounded-pill hover:bg-line/40 transition-colors font-medium"
                   >
                     Fermer
                   </button>
@@ -859,4 +859,3 @@ const PatientsList: React.FC = () => {
 };
 
 export default PatientsList;
-

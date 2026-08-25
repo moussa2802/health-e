@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { collection, query, orderBy, getDocs, doc, setDoc, getDoc, limit } from 'firebase/firestore';
+import { MessageCircle, History, X, ArrowRight, ArrowLeft, Zap } from 'lucide-react';
 import { db } from '../../utils/firebase';
 import { getOnboardingProfile } from '../../utils/onboardingProfile';
 import { getProfileProgress } from '../../services/evaluationService';
@@ -186,7 +187,7 @@ const FloatingChat: React.FC<Props> = ({ userId }) => {
     if (open && view === 'chat' && messages.length === 0) {
       setMessages([{
         role: 'assistant',
-        content: `Salut ${prenom || 'toi'} ! 😊 Comment puis-je t'aider aujourd'hui ?`,
+        content: `Salut ${prenom || 'toi'} ! Comment puis-je t'aider aujourd'hui ?`,
         timestamp: new Date().toISOString(),
       }]);
     }
@@ -316,7 +317,7 @@ const FloatingChat: React.FC<Props> = ({ userId }) => {
     conversationId.current = `conv_${Date.now()}`;
     setMessages([{
       role: 'assistant',
-      content: `Salut ${prenom || 'toi'} ! 😊 Comment puis-je t'aider aujourd'hui ?`,
+      content: `Salut ${prenom || 'toi'} ! Comment puis-je t'aider aujourd'hui ?`,
       timestamp: new Date().toISOString(),
     }]);
     setView('chat');
@@ -341,98 +342,89 @@ const FloatingChat: React.FC<Props> = ({ userId }) => {
           50% { opacity: 1; transform: translateY(-3px); }
         }
         .dr-lo-fab { transition: transform 0.15s ease, box-shadow 0.15s ease; }
-        .dr-lo-fab:hover { transform: scale(1.07); box-shadow: 0 6px 28px rgba(99,102,241,0.55) !important; }
-        .chat-user-bubble { background: linear-gradient(135deg,#3B82F6,#6366F1); color:#fff; border-radius:16px 16px 4px 16px; }
-        .chat-bot-bubble  { background:#F1F5F9; color:#0A2342; border-radius:16px 16px 16px 4px; }
-        .chat-input-area:focus { outline:none; border-color:rgba(99,102,241,0.5) !important; }
-        .conv-item:hover { background:#F8FAFF; }
+        .dr-lo-fab:hover { transform: scale(1.07); }
+        .conv-item:hover { background: #F3F1EA; }
       `}</style>
 
       {/* ── Fenêtre ── */}
       {open && (
-        <div style={{
-          position: 'fixed', bottom: 88, right: 20,
-          width: 340, maxHeight: '72vh',
-          background: '#fff', borderRadius: 20,
-          boxShadow: '0 8px 40px rgba(0,0,0,0.18)',
-          display: 'flex', flexDirection: 'column',
-          zIndex: 9999, overflow: 'hidden',
-          fontFamily: "'Inter',-apple-system,sans-serif",
-          border: '1px solid rgba(0,0,0,0.07)',
-          animation: 'chatSlideIn 0.2s ease',
-        }}>
+        <div
+          className="fixed bottom-[88px] right-5 w-[340px] max-h-[72vh] bg-card rounded-block shadow-lift flex flex-col z-[9999] overflow-hidden border border-line"
+          style={{ animation: 'chatSlideIn 0.2s ease' }}
+        >
 
           {/* Header */}
-          <div style={{
-            background: 'linear-gradient(135deg,#1E40AF,#6366F1)',
-            padding: '12px 14px',
-            display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0,
-          }}>
+          <div className="bg-sage px-3.5 py-3 flex items-center gap-2.5 flex-shrink-0">
             <img
               src={DR_LO_PHOTO} alt="Dr Lô"
-              style={{ width: 34, height: 34, borderRadius: '50%', objectFit: 'cover', border: '2px solid rgba(255,255,255,0.35)', flexShrink: 0 }}
+              className="w-[34px] h-[34px] rounded-full object-cover border-2 border-white/35 flex-shrink-0"
               onError={e => { (e.target as HTMLImageElement).src = ''; (e.target as HTMLImageElement).style.display = 'none'; }}
             />
-            <div style={{ flex: 1 }}>
-              <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: '#fff' }}>Dr Lô</p>
-              <p style={{ margin: 0, fontSize: 11, color: 'rgba(255,255,255,0.72)', display: 'flex', alignItems: 'center', gap: 4 }}>
-                <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#4ADE80', display: 'inline-block' }} />
+            <div className="flex-1">
+              <p className="m-0 text-[13px] font-bold text-white">Dr Lô</p>
+              <p className="m-0 text-[11px] text-white/70 flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-ok inline-block" />
                 En ligne
               </p>
             </div>
             {/* Tabs */}
-            <div style={{ display: 'flex', gap: 4 }}>
+            <div className="flex gap-1">
               <button
                 onClick={() => { setView('chat'); setSelectedConv(null); }}
-                style={{
-                  padding: '4px 9px', borderRadius: 8, border: 'none', cursor: 'pointer', fontSize: 11, fontWeight: 600,
-                  background: view === 'chat' ? 'rgba(255,255,255,0.25)' : 'transparent',
-                  color: '#fff',
-                }}
-              >💬</button>
+                className={`p-1.5 rounded-lg border-0 cursor-pointer text-white transition-colors ${
+                  view === 'chat' ? 'bg-white/25' : 'bg-transparent hover:bg-white/10'
+                }`}
+              >
+                <MessageCircle size={14} />
+              </button>
               <button
                 onClick={() => setView('history')}
-                style={{
-                  padding: '4px 9px', borderRadius: 8, border: 'none', cursor: 'pointer', fontSize: 11, fontWeight: 600,
-                  background: view === 'history' ? 'rgba(255,255,255,0.25)' : 'transparent',
-                  color: '#fff',
-                }}
+                className={`p-1.5 rounded-lg border-0 cursor-pointer text-white transition-colors ${
+                  view === 'history' ? 'bg-white/25' : 'bg-transparent hover:bg-white/10'
+                }`}
                 title="Historique"
-              >🕐</button>
+              >
+                <History size={14} />
+              </button>
             </div>
             <button
               onClick={() => setOpen(false)}
-              style={{ background: 'rgba(255,255,255,0.15)', border: 'none', color: '#fff', borderRadius: 8, padding: '3px 8px', cursor: 'pointer', fontSize: 13 }}
-            >✕</button>
+              className="bg-white/15 border-0 text-white rounded-lg px-2 py-1 cursor-pointer hover:bg-white/25 transition-colors"
+            >
+              <X size={14} />
+            </button>
           </div>
 
           {/* ── Vue Chat ── */}
           {view === 'chat' && (
             <>
-              <div style={{ flex: 1, overflowY: 'auto', padding: '14px 12px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <div className="flex-1 overflow-y-auto px-3 py-3.5 flex flex-col gap-2.5">
                 {messages.map((msg, i) => (
-                  <div key={i} style={{ display: 'flex', justifyContent: msg.role === 'user' ? 'flex-end' : 'flex-start' }}>
+                  <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                     {msg.role === 'assistant' && (
                       <img
                         src={DR_LO_PHOTO} alt=""
-                        style={{ width: 24, height: 24, borderRadius: '50%', objectFit: 'cover', flexShrink: 0, marginRight: 6, alignSelf: 'flex-end', marginBottom: 2 }}
+                        className="w-6 h-6 rounded-full object-cover flex-shrink-0 mr-1.5 self-end mb-0.5"
                         onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
                       />
                     )}
                     <div
-                      className={msg.role === 'user' ? 'chat-user-bubble' : 'chat-bot-bubble'}
-                      style={{ maxWidth: '78%', padding: '9px 12px', fontSize: 13, lineHeight: 1.55, whiteSpace: 'pre-wrap' }}
+                      className={`max-w-[78%] px-3 py-2 text-[13px] leading-snug whitespace-pre-wrap ${
+                        msg.role === 'user'
+                          ? 'bg-sage text-white rounded-2xl rounded-br-md'
+                          : 'bg-paper text-ink rounded-2xl rounded-bl-md'
+                      }`}
                     >
                       {msg.content}
                     </div>
                   </div>
                 ))}
                 {loading && (
-                  <div style={{ display: 'flex', justifyContent: 'flex-start', alignItems: 'flex-end', gap: 6 }}>
-                    <img src={DR_LO_PHOTO} alt="" style={{ width: 24, height: 24, borderRadius: '50%', objectFit: 'cover' }} onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
-                    <div className="chat-bot-bubble" style={{ padding: '10px 14px', display: 'flex', gap: 5, alignItems: 'center' }}>
+                  <div className="flex justify-start items-end gap-1.5">
+                    <img src={DR_LO_PHOTO} alt="" className="w-6 h-6 rounded-full object-cover" onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                    <div className="bg-paper rounded-2xl rounded-bl-md px-3.5 py-2.5 flex gap-1.5 items-center">
                       {[0, 0.18, 0.36].map((delay, i) => (
-                        <span key={i} style={{ width: 6, height: 6, borderRadius: '50%', background: '#94A3B8', display: 'inline-block', animation: `typingDot 0.9s ease ${delay}s infinite` }} />
+                        <span key={i} className="w-1.5 h-1.5 rounded-full bg-muted inline-block" style={{ animation: `typingDot 0.9s ease ${delay}s infinite` }} />
                       ))}
                     </div>
                   </div>
@@ -441,51 +433,38 @@ const FloatingChat: React.FC<Props> = ({ userId }) => {
               </div>
 
               {!KORIS_CONFIG.active && (
-                <div style={{ padding: '3px 14px', flexShrink: 0 }}>
-                  <span style={{ fontSize: 10, color: '#CBD5E1' }}>⚡ Utilisera des Koris (bientôt)</span>
+                <div className="px-3.5 py-0.5 flex-shrink-0">
+                  <span className="text-[10px] text-muted flex items-center gap-1"><Zap size={10} /> Utilisera des Koris (bientôt)</span>
                 </div>
               )}
 
               {limitReached ? (
-                <div style={{
-                  padding: '12px 16px', borderTop: '1px solid #F1F5F9',
-                  textAlign: 'center', flexShrink: 0,
-                }}>
-                  <p style={{ margin: 0, fontSize: 13, color: '#64748B', lineHeight: 1.5 }}>
-                    Tu as atteint la limite de messages pour aujourd'hui. Reviens demain pour continuer avec Dr Lo 🤍
+                <div className="px-4 py-3 border-t border-line text-center flex-shrink-0">
+                  <p className="m-0 text-[13px] text-ink-soft leading-snug">
+                    Tu as atteint la limite de messages pour aujourd'hui. Reviens demain pour continuer avec Dr Lo.
                   </p>
                 </div>
               ) : (
-                <div style={{ padding: '8px 10px 12px', borderTop: '1px solid #F1F5F9', display: 'flex', gap: 7, alignItems: 'flex-end', flexShrink: 0 }}>
+                <div className="px-2.5 pt-2 pb-3 border-t border-line flex gap-1.5 items-end flex-shrink-0">
                   <textarea
                     ref={inputRef}
-                    className="chat-input-area"
                     value={input}
                     onChange={e => setInput(e.target.value)}
                     onKeyDown={handleKeyDown}
-                    placeholder={`Ecrire un message... (◉${KORIS_COSTS.chat}/msg • ${DAILY_MESSAGE_LIMIT - dailyCount} restants)`}
+                    placeholder={`Ecrire un message... (${KORIS_COSTS.chat}/msg • ${DAILY_MESSAGE_LIMIT - dailyCount} restants)`}
                     rows={1}
                     disabled={loading}
-                    style={{
-                      flex: 1, resize: 'none', border: '1.5px solid #E2E8F0',
-                      borderRadius: 12, padding: '8px 11px', fontSize: 13,
-                      fontFamily: 'inherit', background: '#F8FAFF', color: '#0A2342',
-                      lineHeight: '20px', overflowY: 'auto',
-                      minHeight: 36, maxHeight: 116,
-                      transition: 'height 0.1s ease',
-                    }}
+                    className="flex-1 resize-none border-[1.5px] border-line rounded-xl px-2.5 py-2 text-[13px] font-sans bg-paper text-ink leading-5 overflow-y-auto min-h-9 max-h-[116px] outline-none focus:border-sage/60 transition-colors"
                   />
                   <button
                     onClick={sendMessage}
                     disabled={loading || !input.trim()}
-                    style={{
-                      width: 36, height: 36, borderRadius: 10, border: 'none',
-                      background: loading || !input.trim() ? '#E2E8F0' : 'linear-gradient(135deg,#3B82F6,#6366F1)',
-                      color: '#fff', fontSize: 15, cursor: loading || !input.trim() ? 'default' : 'pointer',
-                      flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      transition: 'background 0.15s',
-                    }}
-                  >→</button>
+                    className={`w-9 h-9 rounded-xl border-0 flex-shrink-0 flex items-center justify-center transition-colors ${
+                      loading || !input.trim() ? 'bg-line text-muted cursor-default' : 'bg-sage text-white cursor-pointer hover:bg-sage/90'
+                    }`}
+                  >
+                    <ArrowRight size={16} />
+                  </button>
                 </div>
               )}
             </>
@@ -493,46 +472,41 @@ const FloatingChat: React.FC<Props> = ({ userId }) => {
 
           {/* ── Vue Historique ── */}
           {view === 'history' && !selectedConv && (
-            <div style={{ flex: 1, overflowY: 'auto', padding: '12px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-                <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: '#0A2342' }}>Conversations</p>
+            <div className="flex-1 overflow-y-auto p-3">
+              <div className="flex items-center justify-between mb-2.5">
+                <p className="m-0 text-[13px] font-bold text-ink">Conversations</p>
                 <button
                   onClick={startNewConversation}
-                  style={{ fontSize: 11, fontWeight: 600, color: '#3B82F6', background: '#EFF6FF', border: 'none', borderRadius: 8, padding: '4px 10px', cursor: 'pointer' }}
+                  className="text-[11px] font-semibold text-sage bg-sage-soft border-0 rounded-lg px-2.5 py-1 cursor-pointer hover:bg-sage-soft/70 transition-colors"
                 >
                   + Nouvelle
                 </button>
               </div>
 
               {!userId ? (
-                <p style={{ fontSize: 13, color: '#94A3B8', textAlign: 'center', marginTop: 20 }}>
+                <p className="text-[13px] text-muted text-center mt-5">
                   Connecte-toi pour voir tes conversations.
                 </p>
               ) : loadingHistory ? (
-                <p style={{ fontSize: 13, color: '#94A3B8', textAlign: 'center', marginTop: 20 }}>Chargement…</p>
+                <p className="text-[13px] text-muted text-center mt-5">Chargement…</p>
               ) : conversations.length === 0 ? (
-                <p style={{ fontSize: 13, color: '#94A3B8', textAlign: 'center', marginTop: 20, lineHeight: 1.6 }}>
+                <p className="text-[13px] text-muted text-center mt-5 leading-relaxed">
                   Aucune conversation sauvegardée.<br />Pose une question à Dr Lô !
                 </p>
               ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <div className="flex flex-col gap-2">
                   {conversations.map(conv => {
                     const lastMsg = conv.messages.filter(m => m.role === 'user').pop();
                     return (
                       <button
                         key={conv.id}
-                        className="conv-item"
+                        className="conv-item w-full text-left px-3 py-2.5 rounded-xl border border-line bg-card cursor-pointer transition-colors"
                         onClick={() => setSelectedConv(conv)}
-                        style={{
-                          width: '100%', textAlign: 'left', padding: '10px 12px',
-                          borderRadius: 12, border: '1px solid #E2E8F0',
-                          background: '#fff', cursor: 'pointer',
-                        }}
                       >
-                        <p style={{ margin: '0 0 3px', fontSize: 12, fontWeight: 600, color: '#0A2342', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        <p className="m-0 mb-0.5 text-xs font-semibold text-ink overflow-hidden text-ellipsis whitespace-nowrap">
                           {lastMsg?.content ?? 'Conversation'}
                         </p>
-                        <p style={{ margin: 0, fontSize: 11, color: '#94A3B8' }}>
+                        <p className="m-0 text-[11px] text-muted">
                           {formatDate(conv.updated_at)} · {conv.messages.length} messages
                         </p>
                       </button>
@@ -546,39 +520,38 @@ const FloatingChat: React.FC<Props> = ({ userId }) => {
           {/* ── Vue conversation sélectionnée ── */}
           {view === 'history' && selectedConv && (
             <>
-              <div style={{ padding: '8px 12px', borderBottom: '1px solid #F1F5F9', flexShrink: 0 }}>
+              <div className="px-3 py-2 border-b border-line flex-shrink-0">
                 <button
                   onClick={() => setSelectedConv(null)}
-                  style={{ fontSize: 12, color: '#3B82F6', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 600 }}
+                  className="text-xs text-sage bg-transparent border-0 cursor-pointer font-semibold flex items-center gap-1"
                 >
-                  ← Retour
+                  <ArrowLeft size={13} /> Retour
                 </button>
               </div>
-              <div style={{ flex: 1, overflowY: 'auto', padding: '12px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <div className="flex-1 overflow-y-auto p-3 flex flex-col gap-2.5">
                 {selectedConv.messages.map((msg, i) => (
-                  <div key={i} style={{ display: 'flex', justifyContent: msg.role === 'user' ? 'flex-end' : 'flex-start' }}>
+                  <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                     {msg.role === 'assistant' && (
-                      <img src={DR_LO_PHOTO} alt="" style={{ width: 24, height: 24, borderRadius: '50%', objectFit: 'cover', flexShrink: 0, marginRight: 6, alignSelf: 'flex-end', marginBottom: 2 }} onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                      <img src={DR_LO_PHOTO} alt="" className="w-6 h-6 rounded-full object-cover flex-shrink-0 mr-1.5 self-end mb-0.5" onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
                     )}
                     <div
-                      className={msg.role === 'user' ? 'chat-user-bubble' : 'chat-bot-bubble'}
-                      style={{ maxWidth: '78%', padding: '9px 12px', fontSize: 13, lineHeight: 1.55, whiteSpace: 'pre-wrap' }}
+                      className={`max-w-[78%] px-3 py-2 text-[13px] leading-snug whitespace-pre-wrap ${
+                        msg.role === 'user'
+                          ? 'bg-sage text-white rounded-2xl rounded-br-md'
+                          : 'bg-paper text-ink rounded-2xl rounded-bl-md'
+                      }`}
                     >
                       {msg.content}
                     </div>
                   </div>
                 ))}
               </div>
-              <div style={{ padding: '10px 12px', borderTop: '1px solid #F1F5F9', flexShrink: 0 }}>
+              <div className="px-3 py-2.5 border-t border-line flex-shrink-0">
                 <button
                   onClick={startNewConversation}
-                  style={{
-                    width: '100%', padding: '9px', borderRadius: 10, border: 'none',
-                    background: 'linear-gradient(135deg,#3B82F6,#6366F1)',
-                    color: '#fff', fontSize: 12, fontWeight: 700, cursor: 'pointer',
-                  }}
+                  className="w-full py-2 rounded-xl border-0 bg-sage text-white text-xs font-bold cursor-pointer flex items-center justify-center gap-1.5 hover:bg-sage/90 transition-colors"
                 >
-                  Continuer avec Dr Lô →
+                  Continuer avec Dr Lô <ArrowRight size={13} />
                 </button>
               </div>
             </>
@@ -588,42 +561,28 @@ const FloatingChat: React.FC<Props> = ({ userId }) => {
 
       {/* ── Bouton flottant ── */}
       <button
-        className="dr-lo-fab"
+        className="dr-lo-fab fixed bottom-5 right-5 w-[58px] h-[58px] rounded-full border-0 bg-sage shadow-lift cursor-pointer z-[10000] p-0 overflow-hidden"
         onClick={() => setOpen(o => !o)}
-        style={{
-          position: 'fixed', bottom: 20, right: 20,
-          width: 58, height: 58, borderRadius: '50%', border: 'none',
-          background: 'linear-gradient(135deg,#1E40AF,#6366F1)',
-          boxShadow: '0 4px 20px rgba(99,102,241,0.42)',
-          cursor: 'pointer', zIndex: 10000,
-          padding: 0, overflow: 'hidden',
-        }}
         title="Parler à Dr Lô"
       >
         <img
           src={DR_LO_PHOTO}
           alt="Dr Lô"
-          style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }}
+          className="w-full h-full object-cover rounded-full"
           onError={e => {
             (e.target as HTMLImageElement).style.display = 'none';
             const btn = (e.target as HTMLImageElement).parentElement!;
             if (!btn.querySelector('.drlo-fallback')) {
+              btn.classList.add('flex', 'items-center', 'justify-center');
               const span = document.createElement('span');
-              span.className = 'drlo-fallback';
-              span.textContent = '🩺';
-              span.style.fontSize = '26px';
+              span.className = 'drlo-fallback text-white';
+              span.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4.8 2.3A.3.3 0 1 0 4.8 2.3z"/><path d="M8 15v1a6 6 0 0 0 6 6v0a6 6 0 0 0 6-6v-3"/><path d="M15 2v6a3 3 0 0 0 3 3v0a3 3 0 0 0 3-3V2"/><path d="M18 2v6"/><path d="M2 15h.01M8 15a5 5 0 0 1-5-5V4"/></svg>';
               btn.appendChild(span);
             }
           }}
         />
         {unread > 0 && (
-          <span style={{
-            position: 'absolute', top: -2, right: -2,
-            width: 18, height: 18, borderRadius: '50%',
-            background: '#EF4444', color: '#fff', fontSize: 10, fontWeight: 700,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            border: '2px solid #fff',
-          }}>
+          <span className="absolute -top-0.5 -right-0.5 w-[18px] h-[18px] rounded-full bg-danger text-white text-[10px] font-bold flex items-center justify-center border-2 border-card">
             {unread}
           </span>
         )}

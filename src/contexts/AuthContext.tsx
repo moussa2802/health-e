@@ -164,7 +164,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
           { merge: true }
         );
 
-        console.log("✅ [GOOGLE] Compte Google associé après redirect");
+        console.log("[GOOGLE] Compte Google associé après redirect");
       } else {
         // ── Returning from signInWithRedirect ──
         const email = firebaseUser.email || "";
@@ -176,7 +176,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         if (userDoc.exists()) {
           // Existing user — mark as Google in patients doc for admin stats
           await setDoc(doc(db, "patients", firebaseUser.uid), { authProvider: "google", googleLinked: true }, { merge: true }).catch(() => {});
-          console.log("✅ [GOOGLE] Utilisateur existant connecté après redirect");
+          console.log("[GOOGLE] Utilisateur existant connecté après redirect");
         } else {
           // New user — create patient profile
           const newUser = {
@@ -195,12 +195,12 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
           await createDefaultPatientProfile(firebaseUser.uid, displayName, email, "");
           await setDoc(doc(db, "patients", firebaseUser.uid), { authProvider: "google" }, { merge: true });
           localStorage.setItem("he_new_account", "true");
-          console.log("✅ [GOOGLE] Nouveau compte créé après redirect");
+          console.log("[GOOGLE] Nouveau compte créé après redirect");
         }
       }
     } catch (error: any) {
       // auth/account-exists-with-different-credential, etc.
-      console.error("❌ [GOOGLE] Erreur traitement redirect:", error?.code, error?.message);
+      console.error("[GOOGLE] Erreur traitement redirect:", error?.code, error?.message);
       localStorage.removeItem("he_google_redirect_type");
     }
   };
@@ -237,7 +237,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
           // Firestore doc missing — if Google user, auto-create patient profile
           const isGoogleUser = firebaseUser.providerData.some(p => p.providerId === "google.com");
           if (isGoogleUser) {
-            console.log("⚠️ [AUTH] Google user sans doc Firestore — création automatique");
+            console.log("[AUTH] Google user sans doc Firestore — création automatique");
             const newUser = {
               id: firebaseUser.uid,
               name: firebaseUser.displayName || "",
@@ -408,7 +408,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
           if (!userDoc.exists()) {
             console.warn(
-              "🔥 Utilisateur Auth existe, mais Firestore est manquant."
+              "Utilisateur Auth existe, mais Firestore est manquant."
             );
             await signOut(auth);
             throw new Error(
@@ -592,11 +592,11 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
           // Mark patient doc as Google auth for admin stats
           await setDoc(doc(db, "patients", firebaseUser.uid), { authProvider: "google" }, { merge: true });
           localStorage.setItem("he_new_account", "true");
-          console.log("✅ [GOOGLE] Nouveau compte créé via popup");
+          console.log("[GOOGLE] Nouveau compte créé via popup");
         } else {
           // Ensure existing user has authProvider on patients doc
           await setDoc(doc(db, "patients", firebaseUser.uid), { authProvider: "google", googleLinked: true }, { merge: true }).catch(() => {});
-          console.log("✅ [GOOGLE] Utilisateur existant connecté via popup");
+          console.log("[GOOGLE] Utilisateur existant connecté via popup");
         }
       }
     } catch (popupError: any) {
@@ -607,7 +607,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         popupError?.code === "auth/cancelled-popup-request" ||
         popupError?.message?.includes("Cross-Origin-Opener-Policy")
       ) {
-        console.log("⚠️ [GOOGLE] Popup bloqué, fallback redirect");
+        console.log("[GOOGLE] Popup bloqué, fallback redirect");
         try {
           localStorage.setItem("he_google_redirect_type", "signin");
           await signInWithRedirect(auth, googleProvider);
@@ -645,7 +645,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
           email, profileImage: photoURL || null, updatedAt: serverTimestamp(),
         }, { merge: true });
       }
-      console.log("✅ [GOOGLE] Compte Google associé via popup");
+      console.log("[GOOGLE] Compte Google associé via popup");
     } catch (popupError: any) {
       if (
         popupError?.code === "auth/popup-blocked" ||
@@ -653,7 +653,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         popupError?.code === "auth/cancelled-popup-request" ||
         popupError?.message?.includes("Cross-Origin-Opener-Policy")
       ) {
-        console.log("⚠️ [GOOGLE] Popup bloqué, fallback redirect");
+        console.log("[GOOGLE] Popup bloqué, fallback redirect");
         try {
           localStorage.setItem("he_google_redirect_type", "link");
           await linkWithRedirect(firebaseUser, googleProvider);
@@ -686,7 +686,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     try {
       // Prevent multiple simultaneous registrations
       if (registrationInProgressRef.current) {
-        console.log("❌ [REGISTER] Inscription déjà en cours");
+        console.log("[REGISTER] Inscription déjà en cours");
         throw new Error(
           "Une inscription est déjà en cours. Veuillez patienter."
         );
@@ -696,20 +696,20 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
       // Vérifier si l'email existe déjà dans Firestore
       console.log(
-        "🔍 [REGISTER] Vérification de la possibilité d'inscription..."
+        "[REGISTER] Vérification de la possibilité d'inscription..."
       );
       const canRegister = await canUserRegister(email);
-      console.log("🔍 [REGISTER] Résultat de la vérification:", canRegister);
+      console.log("[REGISTER] Résultat de la vérification:", canRegister);
 
       if (!canRegister) {
-        console.log("❌ [REGISTER] Inscription bloquée");
+        console.log("[REGISTER] Inscription bloquée");
         throw new Error(
           "Cette adresse email est déjà utilisée par un compte actif. Si vous avez oublié votre mot de passe, utilisez la fonction 'Mot de passe oublié'."
         );
       }
 
       console.log(
-        "✅ [REGISTER] Inscription autorisée, création du compte Firebase Auth..."
+        "[REGISTER] Inscription autorisée, création du compte Firebase Auth..."
       );
 
       let user;
@@ -722,14 +722,14 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
           password
         );
         user = userCredential.user;
-        console.log("✅ [REGISTER] Nouveau compte Firebase Auth créé");
+        console.log("[REGISTER] Nouveau compte Firebase Auth créé");
       } catch (firebaseError) {
         if (
           firebaseError instanceof FirebaseError &&
           firebaseError.code === "auth/email-already-in-use"
         ) {
           console.log(
-            "⚠️ [REGISTER] Email existe déjà dans Firebase Auth, tentative de connexion..."
+            "[REGISTER] Email existe déjà dans Firebase Auth, tentative de connexion..."
           );
 
           // L'email existe dans Firebase Auth mais pas dans Firestore
@@ -741,10 +741,10 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
               password
             );
             user = signInResult.user;
-            console.log("✅ [REGISTER] Connexion réussie avec l'utilisateur existant");
+            console.log("[REGISTER] Connexion réussie avec l'utilisateur existant");
           } catch (signInError) {
             console.log(
-              "❌ [REGISTER] Échec de la connexion avec l'utilisateur existant"
+              "[REGISTER] Échec de la connexion avec l'utilisateur existant"
             );
             throw new Error(
               "Cet email est déjà utilisé. Si c'est votre compte, connectez-vous. Si vous avez oublié votre mot de passe, utilisez 'Mot de passe oublié'."
@@ -756,9 +756,9 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       }
 
       // Envoi de l'email de vérification
-      console.log("📧 [REGISTER] Envoi de l'email de vérification...");
+      console.log("[REGISTER] Envoi de l'email de vérification...");
       await sendEmailVerification(user);
-      console.log("✅ [REGISTER] Email de vérification envoyé");
+      console.log("[REGISTER] Email de vérification envoyé");
 
       // Préparation des données utilisateur
       const userData = {
@@ -773,20 +773,20 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       // Données utilisateur préparées (log supprimé — contient email/uid)
 
       // Sauvegarde dans Firestore
-      console.log("💾 [REGISTER] Sauvegarde dans Firestore...");
+      console.log("[REGISTER] Sauvegarde dans Firestore...");
       const db = getFirestore();
       await setDoc(doc(db, "users", user.uid), userData);
-      console.log("✅ [REGISTER] Utilisateur sauvegardé dans Firestore");
+      console.log("[REGISTER] Utilisateur sauvegardé dans Firestore");
 
       // Sauvegarde dans la collection spécifique
       const collectionName =
         userType === "patient" ? "patients" : "professionals";
       console.log(
-        "💾 [REGISTER] Sauvegarde dans la collection:",
+        "[REGISTER] Sauvegarde dans la collection:",
         collectionName
       );
       await setDoc(doc(db, collectionName, user.uid), userData);
-      console.log("✅ [REGISTER] Utilisateur sauvegardé dans", collectionName);
+      console.log("[REGISTER] Utilisateur sauvegardé dans", collectionName);
 
       // Stockage temporaire pour la suite du processus
       localStorage.setItem("pending-user-id", user.uid);
@@ -811,49 +811,49 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
           additionalData.primarySpecialty
         );
         console.log(
-          "✅ [REGISTER] Spécialité stockée:",
+          "[REGISTER] Spécialité stockée:",
           additionalData.primarySpecialty
         );
       } else if (userType === "professional") {
         console.warn(
-          "⚠️ [REGISTER] Aucune spécialité fournie ou spécialité vide pour professionnel"
+          "[REGISTER] Aucune spécialité fournie ou spécialité vide pour professionnel"
         );
       }
       if (userType === "professional" && additionalData?.category) {
         localStorage.setItem("pending-category", additionalData.category);
       }
 
-      console.log("🎉 [REGISTER] Inscription terminée avec succès!");
+      console.log("[REGISTER] Inscription terminée avec succès!");
     } catch (error) {
-      console.error("🚨 [REGISTER] Erreur lors de l'inscription:", error);
+      console.error("[REGISTER] Erreur lors de l'inscription:", error);
 
       if (error instanceof FirebaseError) {
-        console.log("🔍 [REGISTER] Code d'erreur Firebase:", error.code);
+        console.log("[REGISTER] Code d'erreur Firebase:", error.code);
 
         switch (error.code) {
           case "auth/email-already-in-use":
-            console.log("❌ [REGISTER] Email déjà utilisé dans Firebase Auth");
+            console.log("[REGISTER] Email déjà utilisé dans Firebase Auth");
             throw new Error(
               'Un compte avec cet email existe déjà. Connectez-vous ou utilisez "Mot de passe oublié" si votre compte n\'est pas finalisé.'
             );
 
           case "auth/weak-password":
-            console.log("❌ [REGISTER] Mot de passe trop faible");
+            console.log("[REGISTER] Mot de passe trop faible");
             throw new Error(
               "Le mot de passe doit contenir au moins 6 caractères."
             );
 
           case "auth/invalid-email":
-            console.log("❌ [REGISTER] Format d'email invalide");
+            console.log("[REGISTER] Format d'email invalide");
             throw new Error("Format d'email invalide.");
 
           default:
-            console.log("❌ [REGISTER] Erreur Firebase non gérée:", error.code);
+            console.log("[REGISTER] Erreur Firebase non gérée:", error.code);
             throw new Error(`Erreur lors de l'inscription: ${error.message}`);
         }
       }
 
-      console.log("❌ [REGISTER] Erreur non-Firebase:", error);
+      console.log("[REGISTER] Erreur non-Firebase:", error);
       throw error;
     } finally {
       registrationInProgressRef.current = false;

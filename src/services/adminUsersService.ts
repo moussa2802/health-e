@@ -8,7 +8,7 @@ import {
   limit as firestoreLimit, Timestamp, startAfter,
 } from 'firebase/firestore';
 import { db } from '../utils/firebase';
-import { SCALE_META } from '../utils/scaleMeta';
+import { SCALE_META, getScaleEmoji } from '../utils/scaleMeta';
 import { MENTAL_HEALTH_SCALES, SEXUAL_HEALTH_SCALES, BONUS_SCALES } from '../data/scales';
 
 // ── Types ────────────────────────────────────────────────────────────────────
@@ -190,7 +190,7 @@ export async function getUserDetail(userId: string): Promise<UserDetail | null> 
         return {
           scaleId,
           scaleName: meta?.label ?? scaleId,
-          icon: meta?.icon ?? '📋',
+          icon: getScaleEmoji(scaleId),
           score: (result.totalScore as number) ?? 0,
           maxScore: (result.interpretation as Record<string, unknown>)?.max as number ?? 0,
           label: ((result.interpretation as Record<string, unknown>)?.label as string) ?? '—',

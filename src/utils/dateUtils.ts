@@ -57,7 +57,7 @@ export function normalizeDate(date: any): string {
     }
     
     if (isNaN(dateObj.getTime())) {
-      console.warn('⚠️ Date invalide après conversion:', date);
+      console.warn('Date invalide après conversion:', date);
       return '';
     }
     
@@ -94,7 +94,7 @@ export function generateSlotKey(date: any, time: string): string {
   const cleanTime = time.trim();
   const key = `${normalizedDate}-${cleanTime}`;
   
-  console.log(`🔑 [KEY DEBUG] generateSlotKey: date=${normalizedDate}, time="${cleanTime}", key="${key}"`);
+  console.log(`[KEY DEBUG] generateSlotKey: date=${normalizedDate}, time="${cleanTime}", key="${key}"`);
   return key;
 }
 

@@ -7,6 +7,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
+import { X } from 'lucide-react';
 import { useKoris } from '../../contexts/KorisContext';
 import { KORIS_WELCOME_BONUS, KORIS_DAILY_AMOUNT } from '../../services/korisService';
 
@@ -53,25 +54,9 @@ const KorisWelcome: React.FC = () => {
 
   return (
     <div
+      className="fixed top-20 left-1/2 z-[9998] bg-gold text-white px-5 py-3 rounded-block shadow-lift flex items-center gap-2.5"
       style={{
-        position: 'fixed',
-        top: 80,
-        left: '50%',
         transform: `translateX(-50%) translateY(${exiting ? '-20px' : '0'})`,
-        zIndex: 9998,
-        background: isWelcome
-          ? 'linear-gradient(135deg, #0D9488, #059669)'
-          : isPhaseSwitch
-            ? 'linear-gradient(135deg, #D97706, #F59E0B)'
-            : 'linear-gradient(135deg, #059669, #047857)',
-        color: 'white',
-        padding: '12px 20px',
-        borderRadius: 16,
-        boxShadow: '0 8px 24px rgba(0,0,0,0.2)',
-        display: 'flex',
-        alignItems: 'center',
-        gap: 10,
-        fontFamily: "'Inter', -apple-system, sans-serif",
         opacity: exiting ? 0 : 1,
         transition: 'opacity 0.4s, transform 0.4s',
         maxWidth: 'calc(100vw - 32px)',
@@ -80,27 +65,17 @@ const KorisWelcome: React.FC = () => {
       <img
         src={KORI_IMG}
         alt="Kori"
-        style={{
-          width: 36,
-          height: 36,
-          borderRadius: '50%',
-          objectFit: 'cover',
-          border: '2px solid rgba(255,255,255,0.3)',
-        }}
+        className="w-9 h-9 rounded-full object-cover border-2 border-white/30"
       />
       <div>
-        <div style={{ fontSize: 13, fontWeight: 700 }}>{title}</div>
-        <div style={{ fontSize: 11, opacity: 0.85, marginTop: 1 }}>{subtitle}</div>
+        <div className="text-[13px] font-bold">{title}</div>
+        <div className="text-[11px] opacity-85 mt-0.5">{subtitle}</div>
       </div>
       <button
         onClick={() => { setExiting(true); setTimeout(() => setVisible(false), 300); }}
-        style={{
-          background: 'rgba(255,255,255,0.2)', border: 'none', borderRadius: 8,
-          padding: '3px 7px', color: 'white', cursor: 'pointer',
-          fontSize: 13, fontWeight: 600, marginLeft: 4,
-        }}
+        className="bg-white/20 border-0 rounded-lg px-1.5 py-1 text-white cursor-pointer ml-1 hover:bg-white/30 transition-colors"
       >
-        ✕
+        <X size={13} />
       </button>
     </div>
   );

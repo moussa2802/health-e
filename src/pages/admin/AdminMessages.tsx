@@ -2,15 +2,15 @@ import React, { useState, useEffect } from 'react';
 import { Search, Filter, Send, Users, User, Check, X, Plus } from 'lucide-react';
 import AdminLayout from '../../components/admin/AdminLayout';
 import { useAuth } from '../../contexts/AuthContext';
-import { 
-  subscribeToConversations, 
-  subscribeToMessages, 
-  sendMessage, 
+import {
+  subscribeToConversations,
+  subscribeToMessages,
+  sendMessage,
   getOrCreateConversation,
   searchUsers,
   sendBroadcastMessage,
   type Message,
-  type Conversation 
+  type Conversation
 } from '../../services/messageService';
 
 interface Professional {
@@ -35,7 +35,7 @@ const AdminMessages: React.FC = () => {
   const [userSearchResults, setUserSearchResults] = useState<Array<{id: string, name: string, type: string}>>([]);
   const [loading, setLoading] = useState(true);
   const [sendingMessage, setSendingMessage] = useState(false);
-  
+
   // Broadcast message state
   const [broadcastMessage, setBroadcastMessage] = useState('');
   const [broadcastType, setBroadcastType] = useState<'all' | 'professional' | 'patient'>('all');
@@ -49,7 +49,7 @@ const AdminMessages: React.FC = () => {
     if (!currentUser?.id) return;
 
     setLoading(true);
-    
+
     const unsubscribe = subscribeToConversations(
       currentUser.id,
       (conversationsData) => {
@@ -149,7 +149,7 @@ const AdminMessages: React.FC = () => {
         broadcastType,
         selectedSpecialty || undefined
       );
-      
+
       setBroadcastMessage('');
       setBroadcastType('all');
       setSelectedSpecialty('');
@@ -165,10 +165,10 @@ const AdminMessages: React.FC = () => {
 
   const getOtherParticipant = (conversation: Conversation) => {
     if (!currentUser?.id) return null;
-    
+
     const otherParticipantId = conversation.participants.find(id => id !== currentUser.id);
     if (!otherParticipantId) return null;
-    
+
     return {
       id: otherParticipantId,
       name: conversation.participantNames[otherParticipantId],
@@ -178,11 +178,11 @@ const AdminMessages: React.FC = () => {
 
   const formatMessageTime = (timestamp: any) => {
     if (!timestamp) return '';
-    
+
     const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
-    return date.toLocaleTimeString('fr-FR', { 
-      hour: '2-digit', 
-      minute: '2-digit' 
+    return date.toLocaleTimeString('fr-FR', {
+      hour: '2-digit',
+      minute: '2-digit'
     });
   };
 
@@ -191,8 +191,8 @@ const AdminMessages: React.FC = () => {
       <AdminLayout>
         <div className="p-6">
           <div className="flex items-center justify-center h-64">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
-            <span className="ml-4 text-lg text-gray-600">Chargement des conversations...</span>
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-accent"></div>
+            <span className="ml-4 text-lg text-ink-soft">Chargement des conversations...</span>
           </div>
         </div>
       </AdminLayout>
@@ -206,14 +206,14 @@ const AdminMessages: React.FC = () => {
           <div className="flex space-x-3">
             <button
               onClick={() => setShowBroadcastModal(true)}
-              className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 flex items-center"
+              className="px-4 py-2 bg-sage text-white rounded-card hover:bg-sage/90 flex items-center"
             >
               <Users className="h-4 w-4 mr-2" />
               Message de diffusion
             </button>
             <button
               onClick={() => setShowNewMessageModal(true)}
-              className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 flex items-center"
+              className="px-4 py-2 bg-accent text-white rounded-card hover:bg-accent/90 flex items-center"
             >
               <Plus className="h-4 w-4 mr-2" />
               Nouveau message
@@ -224,22 +224,22 @@ const AdminMessages: React.FC = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Liste des conversations */}
           <div className="lg:col-span-1">
-            <div className="bg-white rounded-lg shadow-md overflow-hidden">
-              <div className="p-4 border-b border-gray-200">
-                <h2 className="text-lg font-semibold mb-4">Conversations</h2>
+            <div className="bg-card rounded-card shadow-soft overflow-hidden">
+              <div className="p-4 border-b border-line">
+                <h2 className="text-lg font-semibold text-ink mb-4">Conversations</h2>
                 <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted" />
                   <input
                     type="text"
                     placeholder="Rechercher..."
-                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full pl-10 pr-4 py-2 border border-line rounded-card focus:outline-none focus:ring-2 focus:ring-accent"
                   />
                 </div>
               </div>
 
               <div className="max-h-96 overflow-y-auto">
                 {conversations.length === 0 ? (
-                  <div className="p-4 text-center text-gray-500">
+                  <div className="p-4 text-center text-muted">
                     Aucune conversation
                   </div>
                 ) : (
@@ -251,17 +251,17 @@ const AdminMessages: React.FC = () => {
                       <button
                         key={conversation.id}
                         onClick={() => setSelectedConversation(conversation)}
-                        className={`w-full p-4 text-left hover:bg-gray-50 border-b border-gray-100 ${
-                          selectedConversation?.id === conversation.id ? 'bg-blue-50' : ''
+                        className={`w-full p-4 text-left hover:bg-paper border-b border-line ${
+                          selectedConversation?.id === conversation.id ? 'bg-accent-soft' : ''
                         }`}
                       >
                         <div className="flex items-center space-x-3">
-                          <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center">
-                            <User className="h-5 w-5 text-gray-500" />
+                          <div className="w-10 h-10 rounded-full bg-paper-dark flex items-center justify-center">
+                            <User className="h-5 w-5 text-muted" />
                           </div>
                           <div className="flex-1 min-w-0">
-                            <h3 className="font-medium truncate">{otherParticipant.name}</h3>
-                            <p className="text-sm text-gray-500 capitalize">
+                            <h3 className="font-medium text-ink truncate">{otherParticipant.name}</h3>
+                            <p className="text-sm text-muted capitalize">
                               {otherParticipant.type === 'professional' ? 'Professionnel' : 'Patient'}
                             </p>
                           </div>
@@ -276,21 +276,21 @@ const AdminMessages: React.FC = () => {
 
           {/* Zone de chat */}
           <div className="lg:col-span-2">
-            <div className="bg-white rounded-lg shadow-md overflow-hidden h-[600px] flex flex-col">
+            <div className="bg-card rounded-card shadow-soft overflow-hidden h-[600px] flex flex-col">
               {selectedConversation ? (
                 <>
                   {/* En-tête */}
-                  <div className="p-4 border-b border-gray-200">
+                  <div className="p-4 border-b border-line">
                     {(() => {
                       const otherParticipant = getOtherParticipant(selectedConversation);
                       return otherParticipant ? (
                         <div className="flex items-center space-x-3">
-                          <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center">
-                            <User className="h-5 w-5 text-gray-500" />
+                          <div className="w-10 h-10 rounded-full bg-paper-dark flex items-center justify-center">
+                            <User className="h-5 w-5 text-muted" />
                           </div>
                           <div>
-                            <h2 className="font-medium">{otherParticipant.name}</h2>
-                            <p className="text-sm text-gray-500 capitalize">
+                            <h2 className="font-medium text-ink">{otherParticipant.name}</h2>
+                            <p className="text-sm text-muted capitalize">
                               {otherParticipant.type === 'professional' ? 'Professionnel' : 'Patient'}
                             </p>
                           </div>
@@ -300,9 +300,9 @@ const AdminMessages: React.FC = () => {
                   </div>
 
                   {/* Messages */}
-                  <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50">
+                  <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-paper">
                     {messages.length === 0 ? (
-                      <div className="text-center text-gray-500 text-sm">
+                      <div className="text-center text-muted text-sm">
                         Début de la conversation
                       </div>
                     ) : (
@@ -314,15 +314,15 @@ const AdminMessages: React.FC = () => {
                           }`}
                         >
                           <div
-                            className={`max-w-[70%] rounded-lg px-4 py-2 ${
+                            className={`max-w-[70%] rounded-card px-4 py-2 ${
                               message.senderId === currentUser?.id
-                                ? 'bg-blue-500 text-white'
-                                : 'bg-white text-gray-900 border border-gray-200'
+                                ? 'bg-accent text-white'
+                                : 'bg-card text-ink border border-line'
                             }`}
                           >
                             <p className="text-sm">{message.content}</p>
                             <p className={`text-xs mt-1 ${
-                              message.senderId === currentUser?.id ? 'text-blue-100' : 'text-gray-500'
+                              message.senderId === currentUser?.id ? 'text-white/70' : 'text-muted'
                             }`}>
                               {formatMessageTime(message.timestamp)}
                             </p>
@@ -333,7 +333,7 @@ const AdminMessages: React.FC = () => {
                   </div>
 
                   {/* Zone de saisie */}
-                  <div className="p-4 border-t border-gray-200">
+                  <div className="p-4 border-t border-line">
                     <form onSubmit={(e) => {
                       e.preventDefault();
                       handleSendMessage();
@@ -343,13 +343,13 @@ const AdminMessages: React.FC = () => {
                         value={newMessage}
                         onChange={(e) => setNewMessage(e.target.value)}
                         placeholder="Écrivez votre message..."
-                        className="flex-1 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                        className="flex-1 rounded-md border-line shadow-sm focus:border-accent focus:ring-accent"
                         disabled={sendingMessage}
                       />
                       <button
                         type="submit"
                         disabled={!newMessage.trim() || sendingMessage}
-                        className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="px-4 py-2 bg-accent text-white rounded-card hover:bg-accent/90 disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         {sendingMessage ? (
                           <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
@@ -362,7 +362,7 @@ const AdminMessages: React.FC = () => {
                 </>
               ) : (
                 <div className="flex-1 flex items-center justify-center">
-                  <p className="text-gray-500">Sélectionnez une conversation pour commencer</p>
+                  <p className="text-muted">Sélectionnez une conversation pour commencer</p>
                 </div>
               )}
             </div>
@@ -371,13 +371,13 @@ const AdminMessages: React.FC = () => {
 
         {/* Modal nouveau message */}
         {showNewMessageModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg p-6 w-full max-w-md">
+          <div className="fixed inset-0 bg-ink/50 flex items-center justify-center z-50">
+            <div className="bg-card rounded-card p-6 w-full max-w-md">
               <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xl font-semibold">Nouveau message</h2>
+                <h2 className="text-xl font-semibold text-ink">Nouveau message</h2>
                 <button
                   onClick={() => setShowNewMessageModal(false)}
-                  className="text-gray-400 hover:text-gray-600"
+                  className="text-muted hover:text-ink-soft"
                 >
                   <X className="h-6 w-6" />
                 </button>
@@ -385,7 +385,7 @@ const AdminMessages: React.FC = () => {
 
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-ink-soft mb-1">
                     Rechercher un utilisateur
                   </label>
                   <input
@@ -393,24 +393,24 @@ const AdminMessages: React.FC = () => {
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     placeholder="Tapez un nom..."
-                    className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                    className="w-full rounded-md border-line shadow-sm focus:border-accent focus:ring-accent"
                   />
                 </div>
 
                 {userSearchResults.length > 0 && (
-                  <div className="max-h-48 overflow-y-auto border border-gray-200 rounded-md">
+                  <div className="max-h-48 overflow-y-auto border border-line rounded-card">
                     {userSearchResults.map((user) => (
                       <button
                         key={user.id}
                         onClick={() => handleStartNewConversation(user)}
-                        className="w-full p-3 text-left hover:bg-gray-50 flex items-center space-x-3"
+                        className="w-full p-3 text-left hover:bg-paper flex items-center space-x-3"
                       >
-                        <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center">
-                          <User className="h-4 w-4 text-gray-500" />
+                        <div className="w-8 h-8 rounded-full bg-paper-dark flex items-center justify-center">
+                          <User className="h-4 w-4 text-muted" />
                         </div>
                         <div>
-                          <p className="font-medium">{user.name}</p>
-                          <p className="text-sm text-gray-500 capitalize">
+                          <p className="font-medium text-ink">{user.name}</p>
+                          <p className="text-sm text-muted capitalize">
                             {user.type === 'professional' ? 'Professionnel' : 'Patient'}
                           </p>
                         </div>
@@ -420,7 +420,7 @@ const AdminMessages: React.FC = () => {
                 )}
 
                 {searchTerm.length >= 2 && userSearchResults.length === 0 && (
-                  <p className="text-gray-500 text-sm">Aucun utilisateur trouvé</p>
+                  <p className="text-muted text-sm">Aucun utilisateur trouvé</p>
                 )}
               </div>
             </div>
@@ -429,13 +429,13 @@ const AdminMessages: React.FC = () => {
 
         {/* Modal message de diffusion */}
         {showBroadcastModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg p-6 w-full max-w-lg">
+          <div className="fixed inset-0 bg-ink/50 flex items-center justify-center z-50">
+            <div className="bg-card rounded-card p-6 w-full max-w-lg">
               <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xl font-semibold">Message de diffusion</h2>
+                <h2 className="text-xl font-semibold text-ink">Message de diffusion</h2>
                 <button
                   onClick={() => setShowBroadcastModal(false)}
-                  className="text-gray-400 hover:text-gray-600"
+                  className="text-muted hover:text-ink-soft"
                 >
                   <X className="h-6 w-6" />
                 </button>
@@ -443,13 +443,13 @@ const AdminMessages: React.FC = () => {
 
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-ink-soft mb-1">
                     Destinataires
                   </label>
                   <select
                     value={broadcastType}
                     onChange={(e) => setBroadcastType(e.target.value as any)}
-                    className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                    className="w-full rounded-md border-line shadow-sm focus:border-accent focus:ring-accent"
                   >
                     <option value="all">Tous les utilisateurs</option>
                     <option value="professional">Tous les professionnels</option>
@@ -459,13 +459,13 @@ const AdminMessages: React.FC = () => {
 
                 {broadcastType === 'professional' && (
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-ink-soft mb-1">
                       Spécialité (optionnel)
                     </label>
                     <select
                       value={selectedSpecialty}
                       onChange={(e) => setSelectedSpecialty(e.target.value)}
-                      className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                      className="w-full rounded-md border-line shadow-sm focus:border-accent focus:ring-accent"
                     >
                       <option value="">Toutes les spécialités</option>
                       {specialties.map((specialty) => (
@@ -478,7 +478,7 @@ const AdminMessages: React.FC = () => {
                 )}
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-ink-soft mb-1">
                     Message
                   </label>
                   <textarea
@@ -486,21 +486,21 @@ const AdminMessages: React.FC = () => {
                     onChange={(e) => setBroadcastMessage(e.target.value)}
                     placeholder="Votre message de diffusion..."
                     rows={4}
-                    className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                    className="w-full rounded-md border-line shadow-sm focus:border-accent focus:ring-accent"
                   />
                 </div>
 
                 <div className="flex justify-end space-x-3">
                   <button
                     onClick={() => setShowBroadcastModal(false)}
-                    className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+                    className="px-4 py-2 border border-line rounded-card text-ink-soft hover:bg-paper"
                   >
                     Annuler
                   </button>
                   <button
                     onClick={handleSendBroadcast}
                     disabled={!broadcastMessage.trim() || sendingBroadcast}
-                    className="px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="px-4 py-2 bg-sage text-white rounded-card hover:bg-sage/90 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {sendingBroadcast ? (
                       <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>

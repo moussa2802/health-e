@@ -14,7 +14,7 @@ export const PAIR: AssessmentScale = {
   shortName: "PAIR",
   category: 'sexual_health',
   description: "Évalue la qualité de l'intimité dans votre relation principale selon 5 dimensions.",
-  instructions: "En pensant à ta relation actuelle, dis-moi dans quelle mesure ces affirmations correspondent à votre couple 💑",
+  instructions: "En pensant à ta relation actuelle, dis-moi dans quelle mesure ces affirmations correspondent à votre couple",
   timeEstimateMinutes: 10,
   reference: "Schaefer, M.T. & Olson, D.H. (1981). Assessing intimacy: The PAIR inventory. Journal of Marital and Family Therapy, 7(1), 47–60.",
   licenseNote: "Libre pour usage clinique et de recherche.",

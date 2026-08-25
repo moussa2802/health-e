@@ -147,7 +147,7 @@ function replaceTemplateVariables(
 // Envoyer un email via l'extension Trigger Email
 export async function sendEmail(emailData: EmailData): Promise<string> {
   try {
-    console.log("📧 Sending email to:", emailData.to);
+    console.log("Sending email to:", emailData.to);
 
     // Ensure Firestore is ready
     await ensureFirestoreReady();
@@ -178,11 +178,11 @@ export async function sendEmail(emailData: EmailData): Promise<string> {
     };
 
     const docRef = await addDoc(mailRef, mailData);
-    console.log("✅ Email queued successfully:", docRef.id);
+    console.log("Email queued successfully:", docRef.id);
 
     return docRef.id;
   } catch (error) {
-    console.error("❌ Error sending email:", error);
+    console.error("Error sending email:", error);
     throw new Error("Failed to send email");
   }
 }

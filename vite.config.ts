@@ -1,6 +1,7 @@
 import { defineConfig, loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
 import { sentryVitePlugin } from '@sentry/vite-plugin';
+import { VitePWA } from 'vite-plugin-pwa';
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => {
@@ -11,7 +12,51 @@ export default defineConfig(({ mode }) => {
     // Ignorer les erreurs de lecture du .env (problème de permissions iCloud)
   }
 
-  const plugins = [react()];
+  const plugins = [
+    react(),
+    VitePWA({
+      registerType: 'prompt',
+      scope: '/',
+      manifest: {
+        name: 'Health-e',
+        short_name: 'Health-e',
+        description: 'Santé mentale, intime et bien-être — évalue, comprends, progresse.',
+        start_url: '/',
+        scope: '/',
+        display: 'standalone',
+        orientation: 'portrait',
+        theme_color: '#F3F1EA',
+        background_color: '#F3F1EA',
+        icons: [
+          { src: '/icons/icon-192.png', sizes: '192x192', type: 'image/png' },
+          { src: '/icons/icon-512.png', sizes: '512x512', type: 'image/png' },
+        ],
+      },
+      workbox: {
+        globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
+        cleanupOutdatedCaches: true,
+        clientsClaim: true,
+        navigateFallback: '/index.html',
+        navigateFallbackDenylist: [/^\/api/, /^\/.netlify/],
+        runtimeCaching: [
+          {
+            urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/,
+            handler: 'StaleWhileRevalidate',
+            options: { cacheName: 'google-fonts-stylesheets' },
+          },
+          {
+            urlPattern: /^https:\/\/fonts\.gstatic\.com\/.*/,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'google-fonts-webfonts',
+              expiration: { maxEntries: 30, maxAgeSeconds: 365 * 24 * 60 * 60 },
+              cacheableResponse: { statuses: [0, 200] },
+            },
+          },
+        ],
+      },
+    }),
+  ];
 
   // Upload source maps to Sentry only during production builds when auth token is available
   if (mode === 'production' && env.SENTRY_AUTH_TOKEN) {

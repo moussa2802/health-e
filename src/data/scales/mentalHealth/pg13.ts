@@ -6,7 +6,7 @@ export const PG13: AssessmentScale = {
   shortName: "PG-13",
   category: 'mental_health',
   description: "Évalue les symptômes de deuil prolongé ou compliqué suite à une perte significative.",
-  instructions: "Ces questions portent sur ton deuil. Pense à la personne que tu as perdue et réponds honnêtement — il n'y a pas de mauvaise réponse 🤍",
+  instructions: "Ces questions portent sur ton deuil. Pense à la personne que tu as perdue et réponds honnêtement — il n'y a pas de mauvaise réponse",
   timeEstimateMinutes: 6,
   reference: "Prigerson, H.G., et al. (2009). Prolonged Grief Disorder: Psychometric Validation of Criteria. PLOS Medicine, 6(8).",
   licenseNote: "Libre pour usage clinique et de recherche.",

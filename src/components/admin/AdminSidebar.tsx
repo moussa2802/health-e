@@ -113,10 +113,10 @@ const AdminSidebar = () => {
                     href={path}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className={`flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ${
+                    className={`flex items-center space-x-3 px-4 py-3 rounded-card transition-colors ${
                       highlight
-                        ? "bg-gradient-to-r from-blue-500 to-blue-600 text-white hover:from-blue-600 hover:to-blue-700 shadow-md"
-                        : "text-gray-600 hover:bg-gray-50"
+                        ? "bg-accent text-white hover:bg-accent/90 shadow-soft"
+                        : "text-ink-soft hover:bg-paper"
                     }`}
                   >
                     <Icon
@@ -124,7 +124,7 @@ const AdminSidebar = () => {
                     />
                     <span className="font-medium">{label}</span>
                     <svg
-                      className="h-4 w-4 ml-auto text-gray-400"
+                      className="h-4 w-4 ml-auto text-muted"
                       fill="none"
                       stroke="currentColor"
                       viewBox="0 0 24 24"
@@ -137,7 +137,7 @@ const AdminSidebar = () => {
                       />
                     </svg>
                     {highlight && (
-                      <span className="ml-2 px-2 py-1 bg-white bg-opacity-20 rounded-full text-xs font-medium">
+                      <span className="ml-2 px-2 py-1 bg-white/20 rounded-pill text-xs font-medium">
                         Nouveau
                       </span>
                     )}
@@ -150,10 +150,10 @@ const AdminSidebar = () => {
               <li key={path}>
                 <Link
                   to={path}
-                  className={`flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ${
+                  className={`flex items-center space-x-3 px-4 py-3 rounded-card transition-colors ${
                     location.pathname === path
-                      ? "bg-blue-50 text-blue-600"
-                      : "text-gray-600 hover:bg-gray-50"
+                      ? "bg-accent-soft text-accent"
+                      : "text-ink-soft hover:bg-paper"
                   }`}
                 >
                   <Icon className="h-5 w-5" />

@@ -48,6 +48,18 @@ export function createGuestSession(scaleId: string): GuestSession {
   return session;
 }
 
+export function getGuestInProgressSession(scaleId: string): GuestSession | null {
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    if (!key?.startsWith(SESSION_PREFIX)) continue;
+    try {
+      const s = JSON.parse(localStorage.getItem(key) ?? '') as GuestSession;
+      if (s.scaleId === scaleId && s.status === 'in_progress' && Object.keys(s.answers).length > 0) return s;
+    } catch { /* ignore */ }
+  }
+  return null;
+}
+
 export function getGuestSession(id: string): GuestSession | null {
   const raw = localStorage.getItem(`${SESSION_PREFIX}${id}`);
   if (!raw) return null;

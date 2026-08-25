@@ -1,4 +1,29 @@
 import React, { useState, useEffect } from 'react';
+import {
+  ArrowLeft,
+  ArrowRight,
+  Baby,
+  Brain,
+  Check,
+  CheckCircle2,
+  Feather,
+  Flame,
+  HeartCrack,
+  HelpCircle,
+  Heart,
+  PartyPopper,
+  ShieldAlert,
+  Sparkles,
+  Sprout,
+  TreeDeciduous,
+  User,
+  UserMinus,
+  Users,
+  UsersRound,
+  Leaf,
+  EyeOff,
+  type LucideIcon,
+} from 'lucide-react';
 import { saveOnboardingProfile } from '../../utils/onboardingProfile';
 import type { OnboardingProfile } from '../../types/onboarding';
 
@@ -12,7 +37,7 @@ interface Props {
 interface ChoiceOption {
   value: string;
   label: string;
-  emoji: string;
+  icon: LucideIcon;
 }
 
 interface Question {
@@ -27,7 +52,7 @@ const QUESTIONS: Question[] = [
   {
     key: 'prenom',
     type: 'text',
-    drLoSays: "Avant tout — comment tu t'appelles ? 😊",
+    drLoSays: "Avant tout — comment tu t'appelles ?",
     placeholder: "Ton prénom...",
   },
   {
@@ -35,11 +60,11 @@ const QUESTIONS: Question[] = [
     type: 'choice',
     drLoSays: "Tu as quel âge ?",
     options: [
-      { value: '18-25', label: '18 – 25 ans', emoji: '🌱' },
-      { value: '26-35', label: '26 – 35 ans', emoji: '🔥' },
-      { value: '36-45', label: '36 – 45 ans', emoji: '💫' },
-      { value: '46-55', label: '46 – 55 ans', emoji: '🌿' },
-      { value: '55+',   label: '55 ans et plus', emoji: '🌳' },
+      { value: '18-25', label: '18 – 25 ans', icon: Sprout },
+      { value: '26-35', label: '26 – 35 ans', icon: Flame },
+      { value: '36-45', label: '36 – 45 ans', icon: Sparkles },
+      { value: '46-55', label: '46 – 55 ans', icon: Leaf },
+      { value: '55+',   label: '55 ans et plus', icon: TreeDeciduous },
     ],
   },
   {
@@ -47,8 +72,8 @@ const QUESTIONS: Question[] = [
     type: 'choice',
     drLoSays: 'Tu es ?',
     options: [
-      { value: 'homme', label: 'Homme', emoji: '👨' },
-      { value: 'femme', label: 'Femme', emoji: '👩' },
+      { value: 'homme', label: 'Homme', icon: User },
+      { value: 'femme', label: 'Femme', icon: User },
     ],
   },
   {
@@ -56,13 +81,13 @@ const QUESTIONS: Question[] = [
     type: 'choice',
     drLoSays: "Et ta situation relationnelle en ce moment ?",
     options: [
-      { value: 'celibataire',    label: 'Célibataire',                  emoji: '🦋' },
-      { value: 'en_couple',      label: 'En couple',                    emoji: '💑' },
-      { value: 'marie',          label: 'Marié(e)',                     emoji: '💍' },
-      { value: 'polygamie',      label: 'En situation de polygamie',    emoji: '🏡' },
-      { value: 'separe_divorce', label: 'Séparé(e) / Divorcé(e)',       emoji: '🍃' },
-      { value: 'veuf',           label: 'Veuf(ve)',                     emoji: '🕊️' },
-      { value: 'complique',      label: "C'est compliqué 😅",           emoji: '🤔' },
+      { value: 'celibataire',    label: 'Célibataire',                  icon: User },
+      { value: 'en_couple',      label: 'En couple',                    icon: Users },
+      { value: 'marie',          label: 'Marié(e)',                     icon: Heart },
+      { value: 'polygamie',      label: 'En situation de polygamie',    icon: UsersRound },
+      { value: 'separe_divorce', label: 'Séparé(e) / Divorcé(e)',       icon: UserMinus },
+      { value: 'veuf',           label: 'Veuf(ve)',                     icon: Feather },
+      { value: 'complique',      label: "C'est compliqué",              icon: HelpCircle },
     ],
   },
   {
@@ -70,9 +95,9 @@ const QUESTIONS: Question[] = [
     type: 'choice',
     drLoSays: "Est-ce que tu as vécu la perte d'un proche — un décès, une rupture douloureuse, un deuil important ?",
     options: [
-      { value: 'recent', label: "Oui, et c'est encore récent (moins d'1 an)", emoji: '🤍' },
-      { value: 'ancien', label: "Oui, mais c'était il y a longtemps",          emoji: '💙' },
-      { value: 'non',    label: "Non, pas vraiment",                           emoji: '✅' },
+      { value: 'recent', label: "Oui, et c'est encore récent (moins d'1 an)", icon: HeartCrack },
+      { value: 'ancien', label: "Oui, mais c'était il y a longtemps",          icon: Heart },
+      { value: 'non',    label: "Non, pas vraiment",                           icon: Check },
     ],
   },
   {
@@ -80,9 +105,9 @@ const QUESTIONS: Question[] = [
     type: 'choice',
     drLoSays: "Est-ce que tu as vécu un événement particulièrement difficile ou traumatisant dans ta vie ?",
     options: [
-      { value: 'oui', label: 'Oui',                                             emoji: '💪' },
-      { value: 'non', label: 'Non',                                             emoji: '✅' },
-      { value: 'np',  label: "Je préfère ne pas répondre pour l'instant",       emoji: '🤐' },
+      { value: 'oui', label: 'Oui',                                             icon: ShieldAlert },
+      { value: 'non', label: 'Non',                                             icon: Check },
+      { value: 'np',  label: "Je préfère ne pas répondre pour l'instant",       icon: EyeOff },
     ],
   },
   {
@@ -90,9 +115,9 @@ const QUESTIONS: Question[] = [
     type: 'choice',
     drLoSays: "As-tu déjà été marié(e) ou tu l'es actuellement ?",
     options: [
-      { value: 'actuellement',   label: 'Oui, actuellement marié(e)', emoji: '💍' },
-      { value: 'plus_maintenant', label: 'Oui, mais plus maintenant', emoji: '🍃' },
-      { value: 'jamais',          label: 'Non, jamais',               emoji: '🦋' },
+      { value: 'actuellement',    label: 'Oui, actuellement marié(e)', icon: Heart },
+      { value: 'plus_maintenant', label: 'Oui, mais plus maintenant',  icon: UserMinus },
+      { value: 'jamais',          label: 'Non, jamais',                icon: User },
     ],
   },
   {
@@ -100,40 +125,12 @@ const QUESTIONS: Question[] = [
     type: 'choice',
     drLoSays: "Est-ce que tu as des enfants ?",
     options: [
-      { value: 'oui',   label: 'Oui',             emoji: '👨‍👩‍👦' },
-      { value: 'non',   label: 'Non',             emoji: '✅' },
-      { value: 'perte', label: "J'ai perdu un enfant 🤍", emoji: '🕊️' },
+      { value: 'oui',   label: 'Oui',                     icon: Baby },
+      { value: 'non',   label: 'Non',                     icon: Check },
+      { value: 'perte', label: "J'ai perdu un enfant",     icon: HeartCrack },
     ],
   },
 ];
-
-// ── Styles ──────────────────────────────────────────────────────────────────
-
-const PAGE_BG: React.CSSProperties = {
-  minHeight: '100vh',
-  background: '#F8FAFF',
-  position: 'relative',
-  overflow: 'hidden',
-  display: 'flex',
-  flexDirection: 'column',
-  alignItems: 'center',
-  justifyContent: 'center',
-  padding: '24px 16px',
-};
-
-const CARD: React.CSSProperties = {
-  width: '100%',
-  maxWidth: 480,
-  background: 'rgba(255,255,255,0.88)',
-  backdropFilter: 'blur(18px)',
-  WebkitBackdropFilter: 'blur(18px)',
-  border: '1.5px solid rgba(255,255,255,0.65)',
-  borderRadius: 28,
-  boxShadow: '0 8px 40px rgba(59,130,246,0.10), 0 2px 8px rgba(0,0,0,0.04)',
-  padding: '28px 24px 24px',
-  position: 'relative' as const,
-  zIndex: 1,
-};
 
 // ── Component ───────────────────────────────────────────────────────────────
 
@@ -207,53 +204,41 @@ const OnboardingProfile: React.FC<Props> = ({ onComplete, defaultPrenom }) => {
 
   if (step === 0) {
     return (
-      <div style={PAGE_BG}>
-        <Blob1 /><Blob2 />
-        <div style={CARD}>
+      <div className="min-h-screen bg-paper flex flex-col items-center justify-center px-4 py-6">
+        <div className="w-full max-w-[480px] bg-card border border-line rounded-block shadow-soft p-7 pb-6">
           {/* Dr. Lô avatar */}
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: 24 }}>
+          <div className="flex flex-col items-center mb-6">
             <DrLoAvatar size={96} />
           </div>
 
-          <h1 style={{
-            margin: '0 0 10px',
-            fontSize: 22, fontWeight: 800, textAlign: 'center',
-            background: 'linear-gradient(135deg,#3B82F6,#2DD4BF)',
-            WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
-          }}>
+          <h1 className="font-display m-0 mb-2.5 text-2xl font-bold text-center text-ink">
             Avant de commencer...
           </h1>
-          <p style={{
-            margin: '0 0 24px',
-            fontSize: 14, lineHeight: 1.65, color: '#475569', textAlign: 'center',
-          }}>
-            On a besoin d'apprendre à te connaître un peu. Pas de panique — c'est rapide et ça va vraiment personnaliser ton expérience 😊
+          <p className="m-0 mb-6 text-sm leading-relaxed text-ink-soft text-center">
+            On a besoin d'apprendre à te connaître un peu. Pas de panique — c'est rapide et ça va vraiment personnaliser ton expérience.
           </p>
 
-          <div style={{
-            background: 'rgba(59,130,246,0.06)',
-            borderRadius: 14, padding: '12px 16px', marginBottom: 24,
-            border: '1px solid rgba(59,130,246,0.12)',
-          }}>
-            <p style={{ margin: 0, fontSize: 12, color: '#1E40AF', lineHeight: 1.6 }}>
-              ✅ 8 questions rapides<br />
-              ✅ Tes réponses restent sur ton appareil<br />
-              ✅ Les évaluations s'adaptent à ton profil
-            </p>
+          <div className="bg-sage-soft border border-sage/20 rounded-card px-4 py-3 mb-6">
+            <ul className="m-0 p-0 list-none space-y-1.5">
+              {[
+                '8 questions rapides',
+                'Tes réponses restent sur ton appareil',
+                "Les évaluations s'adaptent à ton profil",
+              ].map(line => (
+                <li key={line} className="flex items-center gap-2 text-xs text-sage leading-relaxed">
+                  <CheckCircle2 size={14} className="shrink-0" strokeWidth={2.5} />
+                  {line}
+                </li>
+              ))}
+            </ul>
           </div>
 
           <button
             onClick={() => setStep(1)}
-            style={{
-              width: '100%',
-              background: 'linear-gradient(135deg,#3B82F6,#2DD4BF)',
-              color: 'white', fontWeight: 700, fontSize: 15,
-              padding: '14px 0', border: 'none',
-              borderRadius: 16, cursor: 'pointer',
-              boxShadow: '0 4px 18px rgba(59,130,246,0.28)',
-            }}
+            className="w-full flex items-center justify-center gap-2 bg-ink text-white font-semibold text-[15px] py-3.5 rounded-card shadow-soft hover:opacity-90 transition-opacity"
           >
-            C'est parti ! →
+            C'est parti !
+            <ArrowRight size={18} />
           </button>
         </div>
       </div>
@@ -264,19 +249,16 @@ const OnboardingProfile: React.FC<Props> = ({ onComplete, defaultPrenom }) => {
 
   if (step === 9) {
     return (
-      <div style={PAGE_BG}>
-        <Blob1 /><Blob2 />
-        <div style={{ ...CARD, textAlign: 'center' }}>
-          <div style={{ fontSize: 52, marginBottom: 12 }}>🎉</div>
-          <h2 style={{
-            margin: '0 0 8px', fontSize: 22, fontWeight: 800,
-            background: 'linear-gradient(135deg,#3B82F6,#2DD4BF)',
-            WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
-          }}>
+      <div className="min-h-screen bg-paper flex flex-col items-center justify-center px-4 py-6">
+        <div className="w-full max-w-[480px] bg-card border border-line rounded-block shadow-soft p-7 pb-6 text-center">
+          <div className="mx-auto mb-3 w-14 h-14 rounded-full bg-accent-soft flex items-center justify-center">
+            <PartyPopper size={28} className="text-accent" />
+          </div>
+          <h2 className="font-display m-0 mb-2 text-2xl font-bold text-ink">
             Parfait{prenom ? `, ${prenom}` : ''} !
           </h2>
-          <p style={{ margin: 0, fontSize: 14, color: '#64748B', lineHeight: 1.6 }}>
-            Ton profil est prêt. Les évaluations sont maintenant personnalisées pour toi 🧠
+          <p className="m-0 text-sm text-muted leading-relaxed">
+            Ton profil est prêt. Les évaluations sont maintenant personnalisées pour toi.
           </p>
         </div>
       </div>
@@ -288,63 +270,37 @@ const OnboardingProfile: React.FC<Props> = ({ onComplete, defaultPrenom }) => {
   if (!currentQ) return null;
 
   return (
-    <div style={PAGE_BG}>
-      <Blob1 /><Blob2 />
-
+    <div className="min-h-screen bg-paper flex flex-col items-center justify-center px-4 py-6">
       {/* Progress bar */}
-      <div style={{
-        position: 'fixed', top: 0, left: 0, right: 0, zIndex: 10,
-        height: 4, background: '#E2E8F0',
-      }}>
-        <div style={{
-          height: '100%', width: `${progress}%`,
-          background: 'linear-gradient(90deg,#3B82F6,#2DD4BF)',
-          transition: 'width 0.4s ease',
-        }} />
+      <div className="fixed top-0 left-0 right-0 z-10 h-1 bg-line">
+        <div
+          className="h-full bg-accent transition-[width] duration-400 ease-out"
+          style={{ width: `${progress}%` }}
+        />
       </div>
 
-      <div style={CARD}>
+      <div className="w-full max-w-[480px] bg-card border border-line rounded-block shadow-soft p-7 pb-6">
         {/* Step counter */}
-        <div style={{
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          marginBottom: 18,
-        }}>
+        <div className="flex items-center justify-between mb-5">
           {step > 1 && (
             <button
               onClick={() => setStep(s => s - 1)}
-              style={{
-                background: 'none', border: 'none', cursor: 'pointer',
-                color: '#94A3B8', fontSize: 13, fontWeight: 600, padding: 0,
-              }}
+              className="flex items-center gap-1 bg-transparent border-none cursor-pointer text-muted text-[13px] font-semibold p-0 hover:text-ink-soft transition-colors"
             >
-              ← Retour
+              <ArrowLeft size={14} />
+              Retour
             </button>
           )}
-          <span style={{ marginLeft: 'auto', fontSize: 12, color: '#94A3B8', fontWeight: 600 }}>
+          <span className="ml-auto text-xs text-muted font-semibold">
             {step} / {totalQuestions}
           </span>
         </div>
 
         {/* Dr. Lô speech bubble */}
-        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, marginBottom: 22 }}>
+        <div className="flex items-start gap-3 mb-6">
           <DrLoAvatar size={48} />
-          <div style={{
-            flex: 1,
-            background: 'rgba(255,255,255,0.95)',
-            border: '1.5px solid rgba(59,130,246,0.18)',
-            borderRadius: '16px 16px 16px 4px',
-            padding: '12px 14px',
-            boxShadow: '0 3px 14px rgba(59,130,246,0.10)',
-            position: 'relative',
-          }}>
-            {/* Tail */}
-            <span style={{
-              position: 'absolute', top: 16, left: -8,
-              borderTop: '6px solid transparent',
-              borderBottom: '6px solid transparent',
-              borderRight: '9px solid rgba(255,255,255,0.95)',
-            }} />
-            <p style={{ margin: 0, fontSize: 14, fontWeight: 600, color: '#0A2342', lineHeight: 1.55 }}>
+          <div className="relative flex-1 bg-card border border-line rounded-[16px] rounded-bl-[4px] px-3.5 py-3 shadow-soft">
+            <p className="m-0 text-sm font-semibold text-ink leading-relaxed">
               {currentQ.drLoSays}
             </p>
           </div>
@@ -352,7 +308,7 @@ const OnboardingProfile: React.FC<Props> = ({ onComplete, defaultPrenom }) => {
 
         {/* ── Text input ── */}
         {currentQ.type === 'text' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <div className="flex flex-col gap-3">
             <input
               autoFocus
               type="text"
@@ -360,74 +316,49 @@ const OnboardingProfile: React.FC<Props> = ({ onComplete, defaultPrenom }) => {
               onChange={e => setTextValue(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && handleTextNext()}
               placeholder={currentQ.placeholder}
-              style={{
-                width: '100%',
-                padding: '14px 16px',
-                fontSize: 16, fontWeight: 600,
-                borderRadius: 14,
-                border: '1.5px solid rgba(59,130,246,0.25)',
-                background: 'rgba(255,255,255,0.7)',
-                outline: 'none',
-                boxSizing: 'border-box',
-                color: '#0A2342',
-              }}
+              className="w-full px-4 py-3.5 text-base font-semibold rounded-card border border-line bg-paper text-ink outline-none focus:border-accent transition-colors box-border"
             />
             <button
               onClick={handleTextNext}
               disabled={!textValue.trim()}
-              style={{
-                background: textValue.trim()
-                  ? 'linear-gradient(135deg,#3B82F6,#2DD4BF)'
-                  : '#E2E8F0',
-                color: textValue.trim() ? 'white' : '#94A3B8',
-                fontWeight: 700, fontSize: 14,
-                padding: '13px 0', border: 'none',
-                borderRadius: 14, cursor: textValue.trim() ? 'pointer' : 'not-allowed',
-                transition: 'all 0.2s ease',
-              }}
+              className={`flex items-center justify-center gap-2 font-bold text-sm py-3.5 rounded-card border-none transition-colors ${
+                textValue.trim()
+                  ? 'bg-ink text-white cursor-pointer hover:opacity-90'
+                  : 'bg-line text-muted cursor-not-allowed'
+              }`}
             >
-              Continuer →
+              Continuer
+              <ArrowRight size={16} />
             </button>
           </div>
         )}
 
         {/* ── Choice options ── */}
         {currentQ.type === 'choice' && currentQ.options && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <div className="flex flex-col gap-2">
             {currentQ.options.map(opt => {
               const isSelected = selecting === opt.value;
+              const OptIcon = opt.icon;
               return (
                 <button
                   key={opt.value}
                   onClick={() => handleChoiceSelect(currentQ, opt.value)}
                   disabled={selecting !== null}
-                  style={{
-                    display: 'flex', alignItems: 'center', gap: 12,
-                    padding: '13px 16px',
-                    border: isSelected
-                      ? '1.5px solid #3B82F6'
-                      : '1.5px solid rgba(59,130,246,0.15)',
-                    borderRadius: 14,
-                    background: isSelected
-                      ? 'linear-gradient(135deg,rgba(59,130,246,0.10),rgba(45,212,191,0.08))'
-                      : 'rgba(255,255,255,0.55)',
-                    cursor: 'pointer',
-                    textAlign: 'left',
-                    transform: isSelected ? 'scale(0.98)' : 'scale(1)',
-                    transition: 'all 0.18s ease',
-                    width: '100%',
-                  }}
+                  className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-card border text-left transition-all duration-200 ${
+                    isSelected
+                      ? 'bg-accent border-accent scale-[0.98]'
+                      : 'bg-card border-line hover:border-accent/40'
+                  }`}
                 >
-                  <span style={{ fontSize: 20, flexShrink: 0, lineHeight: 1 }}>{opt.emoji}</span>
-                  <span style={{
-                    fontSize: 13, fontWeight: 600,
-                    color: isSelected ? '#2563EB' : '#0A2342',
-                    lineHeight: 1.4,
-                  }}>
+                  <OptIcon
+                    size={20}
+                    className={`shrink-0 ${isSelected ? 'text-white' : 'text-accent'}`}
+                  />
+                  <span className={`text-sm font-semibold leading-relaxed ${isSelected ? 'text-white' : 'text-ink'}`}>
                     {opt.label}
                   </span>
                   {isSelected && (
-                    <span style={{ marginLeft: 'auto', fontSize: 16 }}>✓</span>
+                    <Check size={18} className="ml-auto text-white shrink-0" strokeWidth={3} />
                   )}
                 </button>
               );
@@ -437,21 +368,16 @@ const OnboardingProfile: React.FC<Props> = ({ onComplete, defaultPrenom }) => {
       </div>
 
       {/* Step dots */}
-      <div style={{ display: 'flex', gap: 6, marginTop: 20, zIndex: 1 }}>
+      <div className="flex gap-1.5 mt-5 z-[1]">
         {Array.from({ length: totalQuestions }).map((_, i) => {
           const idx = i + 1;
           return (
-            <div key={i} style={{
-              width: idx === step ? 20 : 7,
-              height: 7,
-              borderRadius: 4,
-              background: idx < step
-                ? 'rgba(59,130,246,0.4)'
-                : idx === step
-                ? 'linear-gradient(135deg,#3B82F6,#2DD4BF)'
-                : 'rgba(0,0,0,0.10)',
-              transition: 'all 0.3s ease',
-            }} />
+            <div
+              key={i}
+              className={`h-[7px] rounded-full transition-all duration-300 ${
+                idx === step ? 'w-5 bg-accent' : idx < step ? 'w-[7px] bg-accent/40' : 'w-[7px] bg-line'
+              }`}
+            />
           );
         })}
       </div>
@@ -462,51 +388,33 @@ const OnboardingProfile: React.FC<Props> = ({ onComplete, defaultPrenom }) => {
 // ── Sub-components ─────────────────────────────────────────────────────────
 
 const DrLoAvatar: React.FC<{ size: number }> = ({ size }) => (
-  <div style={{ position: 'relative', flexShrink: 0, width: size, height: size }}>
-    <div style={{
-      position: 'absolute', inset: 0, borderRadius: '50%', padding: 3,
-      background: 'linear-gradient(135deg,#3B82F6,#2DD4BF)',
-    }}>
-      <div style={{ borderRadius: '50%', width: '100%', height: '100%', background: 'white' }} />
+  <div className="relative shrink-0" style={{ width: size, height: size }}>
+    <div className="absolute inset-0 rounded-full bg-accent p-[3px]">
+      <div className="rounded-full w-full h-full bg-card" />
     </div>
     <img
       src="/dr-lo.png"
       alt="Dr. Lô"
+      className="absolute rounded-full object-cover"
       style={{
-        position: 'absolute', inset: Math.round(size * 0.065),
+        inset: Math.round(size * 0.065),
         width: `calc(100% - ${Math.round(size * 0.13)}px)`,
         height: `calc(100% - ${Math.round(size * 0.13)}px)`,
-        borderRadius: '50%', objectFit: 'cover', objectPosition: 'top center',
+        objectPosition: 'top center',
       }}
     />
-    <div style={{
-      position: 'absolute', bottom: size > 60 ? 4 : 1, right: size > 60 ? 4 : 1,
-      background: 'linear-gradient(135deg,#3B82F6,#2DD4BF)',
-      borderRadius: '50%',
-      width: size > 60 ? 26 : 16, height: size > 60 ? 26 : 16,
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-      fontSize: size > 60 ? 13 : 8,
-      border: '2px solid white',
-    }}>
-      🧠
+    <div
+      className="absolute flex items-center justify-center rounded-full bg-accent border-2 border-card"
+      style={{
+        bottom: size > 60 ? 4 : 1,
+        right: size > 60 ? 4 : 1,
+        width: size > 60 ? 26 : 16,
+        height: size > 60 ? 26 : 16,
+      }}
+    >
+      <Brain size={size > 60 ? 14 : 9} className="text-white" />
     </div>
   </div>
-);
-
-const Blob1: React.FC = () => (
-  <div style={{
-    position: 'fixed', top: '-10%', right: '-5%',
-    width: 400, height: 400, borderRadius: '50%', pointerEvents: 'none', zIndex: 0,
-    background: 'radial-gradient(circle,rgba(59,130,246,0.09) 0%,transparent 70%)',
-  }} />
-);
-
-const Blob2: React.FC = () => (
-  <div style={{
-    position: 'fixed', bottom: '-10%', left: '-5%',
-    width: 350, height: 350, borderRadius: '50%', pointerEvents: 'none', zIndex: 0,
-    background: 'radial-gradient(circle,rgba(45,212,191,0.08) 0%,transparent 70%)',
-  }} />
 );
 
 export default OnboardingProfile;

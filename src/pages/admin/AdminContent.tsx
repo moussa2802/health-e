@@ -367,7 +367,7 @@ const AdminContent: React.FC = () => {
         <div className="p-6">
           <div className="flex items-center justify-center h-64">
             <LoadingSpinner size="lg" />
-            <span className="ml-4 text-lg text-gray-600">
+            <span className="ml-4 text-lg text-ink-soft">
               {language === 'fr' ? 'Chargement du contenu...' : 'Loading content...'}
             </span>
           </div>
@@ -380,12 +380,12 @@ const AdminContent: React.FC = () => {
     <AdminLayout>
       <div className="p-6">
         <div className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl font-bold">
+          <h1 className="font-display text-2xl font-semibold text-ink">
             {language === 'fr' ? 'Gestion du contenu' : 'Content Management'}
           </h1>
           <button
             onClick={() => setShowAddForm(true)}
-            className="flex items-center px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
+            className="flex items-center px-4 py-2 bg-accent text-white rounded-card hover:bg-accent/90"
           >
             <Plus className="h-4 w-4 mr-2" />
             {language === 'fr' ? 'Ajouter du contenu' : 'Add Content'}
@@ -393,14 +393,14 @@ const AdminContent: React.FC = () => {
         </div>
 
         {error && (
-          <div className="mb-6 p-4 bg-red-100 border border-red-400 text-red-700 rounded-lg flex items-center justify-between">
+          <div className="mb-6 p-4 bg-danger/10 border border-danger text-danger rounded-card flex items-center justify-between">
             <div className="flex items-center">
               <AlertCircle className="h-5 w-5 mr-2" />
               {error}
             </div>
-            <button 
+            <button
               onClick={fetchContent}
-              className="px-3 py-1 bg-red-500 text-white rounded-md hover:bg-red-600 flex items-center"
+              className="px-3 py-1 bg-danger text-white rounded-card hover:bg-danger/90 flex items-center"
             >
               <RefreshCw className="h-4 w-4 mr-2" />
               {language === 'fr' ? 'Réessayer' : 'Retry'}
@@ -410,11 +410,11 @@ const AdminContent: React.FC = () => {
 
         {/* Add/Edit Form Modal */}
         {(showAddForm || editingId) && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
-            <div className="bg-white rounded-lg w-full max-w-2xl mx-4 flex flex-col max-h-[90vh]">
-              <div className="flex justify-between items-center p-6 border-b">
-                <h2 className="text-xl font-semibold">
-                  {editingId 
+          <div className="fixed inset-0 bg-ink/50 z-50 flex items-center justify-center">
+            <div className="bg-card rounded-card w-full max-w-2xl mx-4 flex flex-col max-h-[90vh]">
+              <div className="flex justify-between items-center p-6 border-b border-line">
+                <h2 className="text-xl font-semibold text-ink">
+                  {editingId
                     ? (language === 'fr' ? 'Modifier le contenu' : 'Edit Content')
                     : (language === 'fr' ? 'Ajouter du contenu' : 'Add Content')}
                 </h2>
@@ -424,7 +424,7 @@ const AdminContent: React.FC = () => {
                     setEditingId(null);
                     resetForm();
                   }}
-                  className="text-gray-500 hover:text-gray-700"
+                  className="text-muted hover:text-ink-soft"
                 >
                   <X className="h-5 w-5" />
                 </button>
@@ -432,29 +432,29 @@ const AdminContent: React.FC = () => {
 
               <div className="overflow-y-auto p-6 flex-1">
                 {uploadError && (
-                  <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
+                  <div className="mb-4 p-3 bg-danger/10 border border-danger text-danger rounded-card">
                     {uploadError}
                   </div>
                 )}
 
                 {saveSuccess && (
-                  <div className="mb-4 p-3 bg-green-100 border border-green-400 text-green-700 rounded flex items-center">
+                  <div className="mb-4 p-3 bg-ok/10 border border-ok text-ok rounded-card flex items-center">
                     <CheckCircle className="h-5 w-5 mr-2" />
-                    {language === 'fr' 
-                      ? 'Contenu enregistré avec succès !' 
+                    {language === 'fr'
+                      ? 'Contenu enregistré avec succès !'
                       : 'Content saved successfully!'}
                   </div>
                 )}
 
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-ink-soft mb-1">
                       {language === 'fr' ? 'Type de contenu' : 'Content Type'}
                     </label>
                     <select
                       value={newContent.type}
                       onChange={(e) => setNewContent({ ...newContent, type: e.target.value as 'testimonial' | 'health-tip' })}
-                      className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                      className="w-full rounded-md border-line shadow-sm focus:border-accent focus:ring-accent"
                     >
                       <option value="testimonial">{language === 'fr' ? 'Témoignage' : 'Testimonial'}</option>
                       <option value="health-tip">{language === 'fr' ? 'Conseil santé' : 'Health Tip'}</option>
@@ -462,53 +462,53 @@ const AdminContent: React.FC = () => {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      {language === 'fr' ? 'Titre' : 'Title'} <span className="text-red-500">*</span>
+                    <label className="block text-sm font-medium text-ink-soft mb-1">
+                      {language === 'fr' ? 'Titre' : 'Title'} <span className="text-danger">*</span>
                     </label>
                     <input
                       type="text"
                       value={newContent.title || ''}
                       onChange={(e) => setNewContent({ ...newContent, title: e.target.value })}
-                      className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                      className="w-full rounded-md border-line shadow-sm focus:border-accent focus:ring-accent"
                       required
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      {language === 'fr' ? 'Description' : 'Description'} <span className="text-red-500">*</span>
+                    <label className="block text-sm font-medium text-ink-soft mb-1">
+                      {language === 'fr' ? 'Description' : 'Description'} <span className="text-danger">*</span>
                     </label>
                     <textarea
                       value={newContent.description || ''}
                       onChange={(e) => setNewContent({ ...newContent, description: e.target.value })}
                       rows={3}
-                      className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                      className="w-full rounded-md border-line shadow-sm focus:border-accent focus:ring-accent"
                       required
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      {language === 'fr' ? 'Auteur' : 'Author'} <span className="text-red-500">*</span>
+                    <label className="block text-sm font-medium text-ink-soft mb-1">
+                      {language === 'fr' ? 'Auteur' : 'Author'} <span className="text-danger">*</span>
                     </label>
                     <input
                       type="text"
                       value={newContent.author || ''}
                       onChange={(e) => setNewContent({ ...newContent, author: e.target.value })}
-                      className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                      className="w-full rounded-md border-line shadow-sm focus:border-accent focus:ring-accent"
                       required
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-ink-soft mb-1">
                       {language === 'fr' ? 'Rôle/Titre' : 'Role/Title'}
                     </label>
                     <input
                       type="text"
                       value={newContent.role || ''}
                       onChange={(e) => setNewContent({ ...newContent, role: e.target.value })}
-                      className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                      className="w-full rounded-md border-line shadow-sm focus:border-accent focus:ring-accent"
                     />
                   </div>
 
@@ -518,15 +518,15 @@ const AdminContent: React.FC = () => {
                       id="featured"
                       checked={newContent.featured || false}
                       onChange={(e) => setNewContent({ ...newContent, featured: e.target.checked })}
-                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                      className="h-4 w-4 text-accent focus:ring-accent border-line rounded"
                     />
-                    <label htmlFor="featured" className="ml-2 block text-sm text-gray-700">
+                    <label htmlFor="featured" className="ml-2 block text-sm text-ink-soft">
                       {language === 'fr' ? 'Mis en avant sur la page d\'accueil' : 'Featured on homepage'}
                     </label>
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-ink-soft mb-1">
                       {language === 'fr' ? 'Vidéo' : 'Video'}
                     </label>
                     <div className="mt-1 flex items-center space-x-4">
@@ -534,11 +534,11 @@ const AdminContent: React.FC = () => {
                         type="button"
                         onClick={() => videoInputRef.current?.click()}
                         disabled={isUploadingVideo}
-                        className="px-4 py-2 bg-gray-100 border border-gray-300 rounded-md hover:bg-gray-200 flex items-center disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="px-4 py-2 bg-paper border border-line rounded-card hover:bg-paper-dark flex items-center disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         {isUploadingVideo ? (
                           <>
-                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-600 mr-2"></div>
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-ink-soft mr-2"></div>
                             {language === 'fr' ? 'Téléchargement...' : 'Uploading...'}
                           </>
                         ) : (
@@ -560,7 +560,7 @@ const AdminContent: React.FC = () => {
                         <div className="relative">
                           <video
                             src={videoPreview}
-                            className="h-20 w-20 object-cover rounded"
+                            className="h-20 w-20 object-cover rounded-card"
                             controls
                           />
                           <button
@@ -570,14 +570,14 @@ const AdminContent: React.FC = () => {
                               setNewContent({ ...newContent, videoUrl: '' });
                               setVideoOnly(false);
                             }}
-                            className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1"
+                            className="absolute -top-2 -right-2 bg-danger text-white rounded-full p-1"
                           >
                             <X className="h-4 w-4" />
                           </button>
                         </div>
                       )}
                     </div>
-                    <p className="mt-2 text-sm text-gray-500">
+                    <p className="mt-2 text-sm text-muted">
                       {language === 'fr'
                         ? 'Format MP4, WebM. Taille maximale 50MB. La vidéo sera stockée dans Firebase Storage.'
                         : 'MP4, WebM format. Max size 50MB. The video will be stored in Firebase Storage.'}
@@ -585,13 +585,13 @@ const AdminContent: React.FC = () => {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-ink-soft mb-1">
                       {language === 'fr' ? 'Image' : 'Image'}
                       {!videoOnly && (
-                        <span className="text-red-500 ml-1">*</span>
+                        <span className="text-danger ml-1">*</span>
                       )}
                       {videoOnly && (
-                        <span className="text-gray-500 text-xs ml-2">
+                        <span className="text-muted text-xs ml-2">
                           {language === 'fr' ? '(générée automatiquement à partir de la vidéo)' : '(automatically generated from video)'}
                         </span>
                       )}
@@ -601,13 +601,13 @@ const AdminContent: React.FC = () => {
                         type="button"
                         onClick={() => imageInputRef.current?.click()}
                         disabled={isUploadingImage || videoOnly}
-                        className={`px-4 py-2 bg-gray-100 border border-gray-300 rounded-md hover:bg-gray-200 flex items-center ${
+                        className={`px-4 py-2 bg-paper border border-line rounded-card hover:bg-paper-dark flex items-center ${
                           isUploadingImage || videoOnly ? 'opacity-50 cursor-not-allowed' : ''
                         }`}
                       >
                         {isUploadingImage ? (
                           <>
-                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-600 mr-2"></div>
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-ink-soft mr-2"></div>
                             {language === 'fr' ? 'Téléchargement...' : 'Uploading...'}
                           </>
                         ) : (
@@ -630,7 +630,7 @@ const AdminContent: React.FC = () => {
                           <img
                             src={imagePreview}
                             alt="Preview"
-                            className="h-20 w-20 object-cover rounded"
+                            className="h-20 w-20 object-cover rounded-card"
                           />
                           <button
                             onClick={() => {
@@ -641,7 +641,7 @@ const AdminContent: React.FC = () => {
                                 setNewContent({ ...newContent, imageUrl: '' });
                               }
                             }}
-                            className={`absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 ${
+                            className={`absolute -top-2 -right-2 bg-danger text-white rounded-full p-1 ${
                               videoOnly ? 'opacity-50 cursor-not-allowed' : ''
                             }`}
                             disabled={videoOnly}
@@ -651,14 +651,14 @@ const AdminContent: React.FC = () => {
                         </div>
                       )}
                     </div>
-                    <p className="mt-2 text-sm text-gray-500">
-                      {language === 'fr' 
+                    <p className="mt-2 text-sm text-muted">
+                      {language === 'fr'
                         ? 'Format JPG, PNG. Taille maximale 5MB. L\'image sera stockée dans Firebase Storage.'
                         : 'JPG, PNG format. Max size 5MB. The image will be stored in Firebase Storage.'}
                     </p>
                     {videoOnly && (
-                      <p className="mt-1 text-sm text-blue-500">
-                        {language === 'fr' 
+                      <p className="mt-1 text-sm text-accent">
+                        {language === 'fr'
                           ? 'Une miniature a été générée automatiquement à partir de la vidéo.'
                           : 'A thumbnail has been automatically generated from the video.'}
                       </p>
@@ -667,21 +667,21 @@ const AdminContent: React.FC = () => {
                 </div>
               </div>
 
-              <div className="border-t p-6 flex justify-end space-x-3">
+              <div className="border-t border-line p-6 flex justify-end space-x-3">
                 <button
                   onClick={() => {
                     setShowAddForm(false);
                     setEditingId(null);
                     resetForm();
                   }}
-                  className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+                  className="px-4 py-2 border border-line rounded-card text-ink-soft hover:bg-paper"
                 >
                   {language === 'fr' ? 'Annuler' : 'Cancel'}
                 </button>
                 <button
                   onClick={() => editingId ? handleSave(editingId) : handleAdd()}
                   disabled={isUploadingImage || isUploadingVideo || isSaving}
-                  className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+                  className="px-4 py-2 bg-accent text-white rounded-card hover:bg-accent/90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
                 >
                   {isSaving ? (
                     <>

@@ -6,6 +6,7 @@ import {
   MessageSquare,
   Calendar,
   CheckCircle,
+  Check,
 } from "lucide-react";
 import { useAuth } from "../../contexts/AuthContext";
 import LoadingSpinner from "../ui/LoadingSpinner";
@@ -113,7 +114,7 @@ const NotificationCenter: React.FC = () => {
 
         unsubscribeRef.current = unsubscribe;
       } catch (error) {
-        console.error("❌ Error setting up notifications:", error);
+        console.error("Error setting up notifications:", error);
       }
     };
 
@@ -236,7 +237,7 @@ const NotificationCenter: React.FC = () => {
 
       setIsOpen(false);
     } catch (err) {
-      console.error("❌ Erreur lors du clic sur la notification :", err);
+      console.error("Erreur lors du clic sur la notification :", err);
     }
   };
 
@@ -269,7 +270,7 @@ const NotificationCenter: React.FC = () => {
 
       return date.toLocaleDateString();
     } catch (error) {
-      console.error("⛔ Erreur dans formatTimestamp:", error);
+      console.error("Erreur dans formatTimestamp:", error);
       return "Date invalide";
     }
   };
@@ -374,7 +375,7 @@ const NotificationCenter: React.FC = () => {
                 onClick={markAllAsRead}
                 className="w-full py-1.5 px-3 bg-gray-100 text-gray-600 text-xs font-medium rounded border border-gray-200 hover:bg-gray-200 transition-colors duration-200 flex items-center justify-center space-x-2"
               >
-                <span className="text-gray-500">✓</span>
+                <Check className="h-3.5 w-3.5 text-gray-500" />
                 <span>
                   Marquer tout comme lu ({notifications.length} notifications)
                 </span>

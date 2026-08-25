@@ -15,7 +15,7 @@ export const BONUS_PERSONNALITE: AssessmentScale = {
   shortName: 'PDQ-4 / PID-5',
   category: 'bonus',
   description: 'Dépistage de traits de personnalité qui peuvent influencer tes relations et ton bien-être, basé sur les critères du DSM-5.',
-  instructions: 'Ces affirmations décrivent des façons d\'être et de fonctionner. Indique si ça te correspond en général — depuis au moins 2 ans, pas juste en ce moment 🔍',
+  instructions: 'Ces affirmations décrivent des façons d\'être et de fonctionner. Indique si ça te correspond en général — depuis au moins 2 ans, pas juste en ce moment',
   timeEstimateMinutes: 5,
   reference: 'Adapté du Personality Diagnostic Questionnaire-4 (Hyler, 1994) et du PID-5 Short Form (APA, 2013).',
   licenseNote: 'Outil de dépistage adapté pour usage éducatif et d\'auto-évaluation.',

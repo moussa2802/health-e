@@ -2,12 +2,14 @@ import React, { useState, useEffect } from "react";
 import { useSearchParams, useParams, Link } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
 import {
-  CheckCircle,
+  CheckCircle2,
   AlertCircle,
   Calendar,
   Clock,
   User,
   Video,
+  Loader2,
+  Settings,
 } from "lucide-react";
 // REPLACE the firebase/firestore import block with:
 import {
@@ -57,7 +59,7 @@ const AppointmentSuccess: React.FC = () => {
       const paytechRef = searchParams.get("ref_command");
 
       if (paytechStatus && paytechRef) {
-        console.log("🔔 [PAYTECH] Payment callback received:", {
+        console.log("[PAYTECH] Payment callback received:", {
           paytechStatus,
           paytechRef,
         });
@@ -69,7 +71,7 @@ const AppointmentSuccess: React.FC = () => {
       }
 
       try {
-        console.log("🔍 Fetching booking data for ID:", bookingId);
+        console.log("Fetching booking data for ID:", bookingId);
         const db = getFirestoreInstance();
         if (!db) {
           setError("Base de données non disponible");
@@ -79,13 +81,13 @@ const AppointmentSuccess: React.FC = () => {
 
         const bookingRef = doc(db, "bookings", bookingId);
         console.log(
-          "🔍 [APPOINTMENT SUCCESS] Looking for booking in Firestore:",
+          "[APPOINTMENT SUCCESS] Looking for booking in Firestore:",
           bookingRef.path
         );
         const snapshot = await getDoc(bookingRef);
 
         if (snapshot.exists()) {
-          console.log("✅ Booking data found:", snapshot.data());
+          console.log("Booking data found:", snapshot.data());
           const data = snapshot.data() as BookingData;
           setBookingData(data);
 
@@ -93,7 +95,7 @@ const AppointmentSuccess: React.FC = () => {
           if (data.paymentStatus) {
             setPaymentStatus(data.paymentStatus);
             console.log(
-              "🔍 [APPOINTMENT SUCCESS] Payment status:",
+              "[APPOINTMENT SUCCESS] Payment status:",
               data.paymentStatus
             );
           }
@@ -101,7 +103,7 @@ const AppointmentSuccess: React.FC = () => {
           // Si la réservation est en statut "pending", afficher un message d'attente
           if (data.status === "pending") {
             console.log(
-              "⏳ [APPOINTMENT SUCCESS] Booking is pending payment confirmation"
+              "[APPOINTMENT SUCCESS] Booking is pending payment confirmation"
             );
           }
 
@@ -125,7 +127,7 @@ const AppointmentSuccess: React.FC = () => {
               if (refreshed.exists())
                 setBookingData(refreshed.data() as BookingData);
             } catch (e) {
-              console.warn("⚠️ Unable to auto-confirm booking:", e);
+              console.warn("Unable to auto-confirm booking:", e);
             }
           }
 
@@ -140,23 +142,23 @@ const AppointmentSuccess: React.FC = () => {
               });
               setPaymentStatus("cancelled");
             } catch (e) {
-              console.warn("⚠️ Unable to mark cancelled:", e);
+              console.warn("Unable to mark cancelled:", e);
             }
           }
 
           // Si le paiement est confirmé, mettre à jour le statut
           if (data.paymentStatus === "paid" || data.status === "confirmed") {
             setPaymentStatus("confirmed");
-            console.log("✅ [APPOINTMENT SUCCESS] Payment confirmed");
+            console.log("[APPOINTMENT SUCCESS] Payment confirmed");
           }
         } else {
           // --- START new fallback ---
-          console.log("⚠️ No booking found with ID:", bookingId);
+          console.log("No booking found with ID:", bookingId);
 
           // Cas des IDs temporaires : tenter un mapping vers un ID final
           if (bookingId && bookingId.startsWith("temp_")) {
             console.log(
-              "🔄 [APPOINTMENT SUCCESS] Temporary ID detected, checking for redirect mapping..."
+              "[APPOINTMENT SUCCESS] Temporary ID detected, checking for redirect mapping..."
             );
 
             // 1) Chercher un mapping dans temp_redirects
@@ -168,7 +170,7 @@ const AppointmentSuccess: React.FC = () => {
                 finalBookingId: string;
               };
               console.log(
-                "🔄 [APPOINTMENT SUCCESS] Found redirect to:",
+                "[APPOINTMENT SUCCESS] Found redirect to:",
                 finalBookingId
               );
 
@@ -200,7 +202,7 @@ const AppointmentSuccess: React.FC = () => {
           // --- END new fallback ---
         }
       } catch (err) {
-        console.error("❌ Error fetching booking:", err);
+        console.error("Error fetching booking:", err);
 
         // Si c'est une erreur de connexion, réessayer après un délai
         if (
@@ -208,7 +210,7 @@ const AppointmentSuccess: React.FC = () => {
           (err.message.includes("offline") ||
             err.message.includes("unavailable"))
         ) {
-          console.log("🔄 Connection error, retrying in 2 seconds...");
+          console.log("Connection error, retrying in 2 seconds...");
           setTimeout(() => {
             fetchBooking();
           }, 2000);
@@ -226,10 +228,10 @@ const AppointmentSuccess: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="container mx-auto px-4 py-16">
-        <div className="max-w-md mx-auto bg-white rounded-lg shadow-md p-8 text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
-          <p className="mt-4 text-gray-600">
+      <div className="min-h-screen bg-paper container mx-auto px-4 py-16">
+        <div className="max-w-md mx-auto bg-card border border-line rounded-card shadow-soft p-8 text-center">
+          <Loader2 className="h-12 w-12 mx-auto text-accent animate-spin" />
+          <p className="mt-4 text-ink-soft">
             Chargement des détails de votre réservation...
           </p>
         </div>
@@ -239,32 +241,21 @@ const AppointmentSuccess: React.FC = () => {
 
   if (error) {
     return (
-      <div className="container mx-auto px-4 py-16">
-        <div className="max-w-md mx-auto bg-white rounded-lg shadow-md p-8 text-center">
-          <div className="text-red-500 mb-4">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-12 w-12 mx-auto"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-              />
-            </svg>
+      <div className="min-h-screen bg-paper container mx-auto px-4 py-16">
+        <div className="max-w-md mx-auto bg-card border border-line rounded-card shadow-soft p-8 text-center">
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-danger/10 mb-4">
+            <AlertCircle className="h-8 w-8 text-danger" />
           </div>
-          <h2 className="text-xl font-semibold mb-2">{error}</h2>
-          <p className="text-gray-600 mb-6">
+          <h2 className="font-display text-xl font-semibold text-ink mb-2">
+            {error}
+          </h2>
+          <p className="text-ink-soft mb-6">
             Impossible d'afficher les détails de votre réservation.
           </p>
           <div className="flex justify-center">
             <Link
               to="/patient/dashboard"
-              className="bg-blue-500 text-white py-2 px-4 rounded-md hover:bg-blue-600 transition-colors"
+              className="inline-flex items-center px-4 py-2 rounded-pill text-sm font-medium text-white bg-ink hover:bg-ink/90 transition-colors"
             >
               Voir mes rendez-vous
             </Link>
@@ -278,7 +269,7 @@ const AppointmentSuccess: React.FC = () => {
   const handleManualUpdate = async () => {
     try {
       console.log(
-        "🔧 [MANUAL UPDATE] Attempting to manually update booking status"
+        "[MANUAL UPDATE] Attempting to manually update booking status"
       );
 
       // Récupérer l'instance Firestore
@@ -302,11 +293,11 @@ const AppointmentSuccess: React.FC = () => {
         updatedAt: serverTimestamp(),
       });
 
-      console.log("✅ [MANUAL UPDATE] Booking status updated successfully");
+      console.log("[MANUAL UPDATE] Booking status updated successfully");
       alert("Statut mis à jour avec succès !");
       window.location.reload();
     } catch (error) {
-      console.error("❌ [MANUAL UPDATE] Error:", error);
+      console.error("[MANUAL UPDATE] Error:", error);
       alert("Erreur lors de la mise à jour du statut");
     }
   };
@@ -318,50 +309,39 @@ const AppointmentSuccess: React.FC = () => {
     bookingData?.status === "pending_payment"
   ) {
     return (
-      <div className="container mx-auto px-4 py-16">
-        <div className="max-w-md mx-auto bg-white rounded-lg shadow-md p-8 text-center">
-          <div className="text-yellow-500 mb-4">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-12 w-12 mx-auto"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-              />
-            </svg>
+      <div className="min-h-screen bg-paper container mx-auto px-4 py-16">
+        <div className="max-w-md mx-auto bg-card border border-line rounded-card shadow-soft p-8 text-center">
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-warn/10 mb-4">
+            <AlertCircle className="h-8 w-8 text-warn" />
           </div>
-          <h2 className="text-xl font-semibold mb-2">Paiement en attente</h2>
-          <p className="text-gray-600 mb-6">
+          <h2 className="font-display text-xl font-semibold text-ink mb-2">
+            Paiement en attente
+          </h2>
+          <p className="text-ink-soft mb-6">
             Votre réservation est en attente de confirmation de paiement.
           </p>
 
           {/* Détails du rendez-vous */}
           {bookingData && (
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-              <h3 className="font-semibold text-blue-800 mb-3">
+            <div className="bg-card border border-line rounded-card shadow-soft p-4 mb-6 text-left">
+              <h3 className="font-display font-semibold text-ink mb-3">
                 Détails du rendez-vous
               </h3>
-              <div className="space-y-2 text-sm">
+              <div className="space-y-2 text-sm text-ink-soft">
                 <div className="flex items-center">
-                  <Calendar className="h-4 w-4 mr-2 text-blue-600" />
+                  <Calendar className="h-4 w-4 mr-2 text-sage" />
                   <span>Date: {bookingData.date}</span>
                 </div>
                 <div className="flex items-center">
-                  <Clock className="h-4 w-4 mr-2 text-blue-600" />
+                  <Clock className="h-4 w-4 mr-2 text-sage" />
                   <span>Heure: {bookingData.startTime}</span>
                 </div>
                 <div className="flex items-center">
-                  <Video className="h-4 w-4 mr-2 text-blue-600" />
+                  <Video className="h-4 w-4 mr-2 text-sage" />
                   <span>Type: Consultation {bookingData.type}</span>
                 </div>
                 <div className="flex items-center">
-                  <User className="h-4 w-4 mr-2 text-blue-600" />
+                  <User className="h-4 w-4 mr-2 text-sage" />
                   <span>Professionnel: {bookingData.professionalName}</span>
                 </div>
               </div>
@@ -369,29 +349,30 @@ const AppointmentSuccess: React.FC = () => {
           )}
 
           {/* Bouton de test pour mise à jour manuelle */}
-          <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-            <p className="text-sm text-yellow-800 mb-2">
-              <strong>Test :</strong> Si le paiement est confirmé mais le statut
-              ne se met pas à jour automatiquement
+          <div className="mb-4 p-3 bg-warn/10 border border-warn/20 rounded-card text-left">
+            <p className="text-sm text-ink-soft mb-2">
+              <strong className="text-ink">Test :</strong> Si le paiement est
+              confirmé mais le statut ne se met pas à jour automatiquement
             </p>
             <button
               onClick={handleManualUpdate}
-              className="bg-yellow-500 text-white py-2 px-4 rounded-md hover:bg-yellow-600 transition-colors text-sm"
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-pill text-sm font-medium text-white bg-ink hover:bg-ink/90 transition-colors"
             >
-              🔧 Mettre à jour le statut manuellement
+              <Settings className="h-4 w-4" />
+              Mettre à jour le statut manuellement
             </button>
           </div>
 
           <div className="flex flex-col space-y-3">
             <Link
               to="/patient/dashboard"
-              className="bg-blue-500 text-white py-2 px-4 rounded-md hover:bg-blue-600 transition-colors"
+              className="inline-flex items-center justify-center px-4 py-2 rounded-pill text-sm font-medium text-white bg-ink hover:bg-ink/90 transition-colors"
             >
               Voir mes rendez-vous
             </Link>
             <Link
               to="/"
-              className="bg-gray-500 text-white py-2 px-4 rounded-md hover:bg-gray-600 transition-colors"
+              className="inline-flex items-center justify-center px-4 py-2 rounded-pill text-sm font-medium text-ink-soft border border-line bg-card hover:bg-paper transition-colors"
             >
               Retour à l'accueil
             </Link>
@@ -401,64 +382,73 @@ const AppointmentSuccess: React.FC = () => {
     );
   }
 
+  const isConfirmed = paymentStatus === "confirmed" || paymentStatus === "paid";
+  const isPending = paymentStatus === "pending";
+  const statusColor = isConfirmed ? "ok" : isPending ? "warn" : "danger";
+
   return (
-    <div className="container mx-auto px-4 py-16">
-      <div className="max-w-md mx-auto bg-white rounded-lg shadow-md overflow-hidden">
-        <div
-          className={`text-center p-8 rounded-2xl shadow-lg mb-6 ${
-            paymentStatus === "confirmed" || paymentStatus === "paid"
-              ? "bg-gradient-to-r from-green-500 to-green-600"
-              : paymentStatus === "pending"
-              ? "bg-gradient-to-r from-yellow-500 to-yellow-600"
-              : "bg-gradient-to-r from-red-500 to-red-600"
-          }`}
-        >
-          {paymentStatus === "confirmed" || paymentStatus === "paid" ? (
-            <CheckCircle className="h-16 w-16 mx-auto mb-4" />
-          ) : paymentStatus === "pending" ? (
-            <AlertCircle className="h-16 w-16 mx-auto mb-4" />
-          ) : (
-            <AlertCircle className="h-16 w-16 mx-auto mb-4" />
-          )}
-          <h1 className="text-2xl font-bold mb-2">
-            {paymentStatus === "confirmed" || paymentStatus === "paid"
+    <div className="min-h-screen bg-paper container mx-auto px-4 py-16">
+      <div className="max-w-md mx-auto bg-card border border-line rounded-card shadow-soft overflow-hidden">
+        <div className="text-center p-8 border-b border-line">
+          <div
+            className={`inline-flex items-center justify-center w-20 h-20 rounded-full mb-4 ${
+              isConfirmed
+                ? "bg-ok/10"
+                : isPending
+                ? "bg-warn/10"
+                : "bg-danger/10"
+            }`}
+          >
+            {isConfirmed ? (
+              <CheckCircle2 className="h-10 w-10 text-ok" />
+            ) : (
+              <AlertCircle
+                className={`h-10 w-10 ${
+                  isPending ? "text-warn" : "text-danger"
+                }`}
+              />
+            )}
+          </div>
+          <h1 className="font-display text-2xl font-bold text-ink mb-2">
+            {isConfirmed
               ? "Paiement confirmé !"
-              : paymentStatus === "pending"
+              : isPending
               ? "Paiement en attente"
               : "Paiement échoué"}
           </h1>
-          <p>
-            {paymentStatus === "confirmed" || paymentStatus === "paid"
+          <p className="text-ink-soft">
+            {isConfirmed
               ? "Votre consultation a été réservée et payée avec succès."
-              : paymentStatus === "pending"
+              : isPending
               ? "Votre réservation est en attente de confirmation de paiement."
               : "Le paiement n'a pas pu être traité. Veuillez réessayer."}
           </p>
         </div>
 
         <div className="p-6">
-          <div className="bg-blue-50 border border-blue-100 rounded-lg p-4 mb-6">
-            <h2 className="text-lg font-semibold mb-2 text-blue-700">
+          <div className="bg-sage-soft border border-sage/20 rounded-card p-4 mb-6">
+            <h2 className="font-display text-lg font-semibold mb-2 text-sage">
               Détails du rendez-vous
             </h2>
-            <div className="space-y-2 text-blue-800">
+            <div className="space-y-2 text-ink-soft">
               <div className="flex items-center">
-                <Calendar className="h-5 w-5 mr-2 text-blue-500" />
+                <Calendar className="h-5 w-5 mr-2 text-sage" />
                 <p>
-                  <strong>Date :</strong> {bookingData?.date || "Non spécifiée"}
+                  <strong className="text-ink">Date :</strong>{" "}
+                  {bookingData?.date || "Non spécifiée"}
                 </p>
               </div>
               <div className="flex items-center">
-                <Clock className="h-5 w-5 mr-2 text-blue-500" />
+                <Clock className="h-5 w-5 mr-2 text-sage" />
                 <p>
-                  <strong>Heure :</strong>{" "}
+                  <strong className="text-ink">Heure :</strong>{" "}
                   {bookingData?.startTime || "Non spécifiée"}
                 </p>
               </div>
               <div className="flex items-center">
-                <Video className="h-5 w-5 mr-2 text-blue-500" />
+                <Video className="h-5 w-5 mr-2 text-sage" />
                 <p>
-                  <strong>Type :</strong>{" "}
+                  <strong className="text-ink">Type :</strong>{" "}
                   {bookingData?.type === "video"
                     ? "Consultation vidéo"
                     : bookingData?.type === "audio"
@@ -467,9 +457,9 @@ const AppointmentSuccess: React.FC = () => {
                 </p>
               </div>
               <div className="flex items-center">
-                <User className="h-5 w-5 mr-2 text-blue-500" />
+                <User className="h-5 w-5 mr-2 text-sage" />
                 <p>
-                  <strong>Professionnel :</strong> Dr.{" "}
+                  <strong className="text-ink">Professionnel :</strong> Dr.{" "}
                   {bookingData?.professionalName || "Nom non spécifié"}
                 </p>
               </div>
@@ -477,35 +467,37 @@ const AppointmentSuccess: React.FC = () => {
           </div>
 
           <div className="mb-6">
-            <h3 className="text-lg font-semibold mb-2">Prochaines étapes</h3>
+            <h3 className="font-display text-lg font-semibold text-ink mb-2">
+              Prochaines étapes
+            </h3>
             <ul className="space-y-3">
               <li className="flex">
-                <div className="flex-shrink-0 h-6 w-6 rounded-full bg-blue-100 text-blue-500 flex items-center justify-center mr-3 mt-0.5">
+                <div className="flex-shrink-0 h-6 w-6 rounded-full bg-sage-soft text-sage flex items-center justify-center mr-3 mt-0.5 text-sm font-semibold">
                   1
                 </div>
                 <div>
-                  <p className="text-gray-700">
+                  <p className="text-ink-soft">
                     Un e-mail de confirmation a été envoyé à votre adresse.
                   </p>
                 </div>
               </li>
               <li className="flex">
-                <div className="flex-shrink-0 h-6 w-6 rounded-full bg-blue-100 text-blue-500 flex items-center justify-center mr-3 mt-0.5">
+                <div className="flex-shrink-0 h-6 w-6 rounded-full bg-sage-soft text-sage flex items-center justify-center mr-3 mt-0.5 text-sm font-semibold">
                   2
                 </div>
                 <div>
-                  <p className="text-gray-700">
+                  <p className="text-ink-soft">
                     Le jour de votre rendez-vous, connectez-vous 5 minutes avant
                     l'heure prévue.
                   </p>
                 </div>
               </li>
               <li className="flex">
-                <div className="flex-shrink-0 h-6 w-6 rounded-full bg-blue-100 text-blue-500 flex items-center justify-center mr-3 mt-0.5">
+                <div className="flex-shrink-0 h-6 w-6 rounded-full bg-sage-soft text-sage flex items-center justify-center mr-3 mt-0.5 text-sm font-semibold">
                   3
                 </div>
                 <div>
-                  <p className="text-gray-700">
+                  <p className="text-ink-soft">
                     Assurez-vous d'avoir une bonne connexion internet et un
                     environnement calme.
                   </p>
@@ -515,23 +507,23 @@ const AppointmentSuccess: React.FC = () => {
           </div>
 
           <div className="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-3">
-            {paymentStatus !== "confirmed" && paymentStatus !== "paid" && (
+            {!isConfirmed && (
               <Link
                 to={`/book-appointment/${bookingData?.professionalId}`}
-                className="flex-1 bg-green-500 text-white py-3 px-4 rounded-md text-center font-medium hover:bg-green-600 transition-colors"
+                className="flex-1 bg-accent text-white py-3 px-4 rounded-pill text-center font-medium hover:bg-accent/90 transition-colors"
               >
                 Réessayer le paiement
               </Link>
             )}
             <Link
               to="/patient/dashboard"
-              className="flex-1 bg-blue-500 text-white py-3 px-4 rounded-md text-center font-medium hover:bg-blue-600 transition-colors"
+              className="flex-1 bg-ink text-white py-3 px-4 rounded-pill text-center font-medium hover:bg-ink/90 transition-colors"
             >
               Voir mes rendez-vous
             </Link>
             <Link
               to="/"
-              className="flex-1 border border-gray-300 text-gray-700 py-3 px-4 rounded-md text-center font-medium hover:bg-gray-50 transition-colors"
+              className="flex-1 border border-line bg-card text-ink-soft py-3 px-4 rounded-pill text-center font-medium hover:bg-paper transition-colors"
             >
               Retour à l'accueil
             </Link>

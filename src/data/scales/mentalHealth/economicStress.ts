@@ -30,12 +30,12 @@ export const ECONOMIC_STRESS: AssessmentScale = {
     { id: 6,  text: "Le manque d'argent a touché ta confiance en toi ou ton image aux yeux des autres ?",                                             type: 'frequency', options: freq5 },
     { id: 7,  text: "Tu as ressenti du stress à cause de dettes ou de remboursements qui traînent ?",                                                 type: 'frequency', options: freq5 },
     { id: 8,  text: "Tu as eu du mal à assurer ta part dans les cérémonies, baptêmes, funérailles ou tontines ?",                                     type: 'frequency', options: freq5 },
-    { id: 9,  text: "Malgré les galères, tu as réussi à garder ta dignité et ton estime de toi 💪",                                                   type: 'frequency', options: freq5 },
+    { id: 9,  text: "Malgré les galères, tu as réussi à garder ta dignité et ton estime de toi",                                                   type: 'frequency', options: freq5 },
     { id: 10, text: "Tu as trouvé des solutions créatives pour t'en sortir malgré les contraintes financières ?",                                     type: 'frequency', options: freq5 },
   ],
   interpretation: [
-    { min: 0,  max: 13, label: "Stress économique faible",   severity: 'minimal',  description: "Ton niveau de stress lié à l'argent est plutôt bas — c'est une bonne nouvelle.", referralRequired: false, recommendation: "Continue comme ça ! Tes stratégies pour gérer les finances semblent fonctionner. Garde le cap 🙏" },
+    { min: 0,  max: 13, label: "Stress économique faible",   severity: 'minimal',  description: "Ton niveau de stress lié à l'argent est plutôt bas — c'est une bonne nouvelle.", referralRequired: false, recommendation: "Continue comme ça ! Tes stratégies pour gérer les finances semblent fonctionner. Garde le cap" },
     { min: 14, max: 26, label: "Stress économique modéré",   severity: 'moderate', description: "L'argent te pèse pas mal en ce moment, et ça peut clairement affecter ton moral.", referralRequired: false, recommendation: "Essaie d'identifier ce qui te stresse le plus côté finances, et regarde les soutiens disponibles autour de toi — famille, communauté, associations. Tu n'as pas à tout porter {{seul|seule}}." },
-    { min: 27, max: 40, label: "Stress économique élevé",    severity: 'severe',   description: "Le poids de l'argent est vraiment lourd en ce moment, et ça impacte sérieusement ton bien-être.", referralRequired: true, recommendation: "Ce que tu traverses est difficile, et tu mérites un coup de main. Un soutien psychologique ou social peut t'aider à reprendre pied. Tu n'es pas {{seul|seule}} dans cette situation ❤️" },
+    { min: 27, max: 40, label: "Stress économique élevé",    severity: 'severe',   description: "Le poids de l'argent est vraiment lourd en ce moment, et ça impacte sérieusement ton bien-être.", referralRequired: true, recommendation: "Ce que tu traverses est difficile, et tu mérites un coup de main. Un soutien psychologique ou social peut t'aider à reprendre pied. Tu n'es pas {{seul|seule}} dans cette situation" },
   ],
 };

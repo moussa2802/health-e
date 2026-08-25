@@ -92,7 +92,7 @@ function isSameDay(a: Date, b: Date) {
   );
 }
 
-// 👉 A utiliser partout
+// A utiliser partout
 export function isConsultationDay(dateString: string): boolean {
   const d = parseBookingDate(dateString);
   if (!d) return false;
@@ -120,26 +120,23 @@ const WelcomeBanner: React.FC<{ name: string }> = ({ name }) => {
       : "Bonsoir";
 
   return (
-    <div className="bg-gradient-to-br from-blue-600 via-blue-500 to-teal-500 text-white p-8 rounded-2xl shadow-xl mb-8 relative overflow-hidden">
-      <div className="absolute inset-0 bg-black/10"></div>
-      <div className="relative z-10">
-        <h1 className="text-3xl font-bold mb-2">
-          {greeting}, {displayName} 👋
-        </h1>
-        <p className="text-blue-50 text-lg opacity-90">
-          Voici votre tableau de bord professionnel
-        </p>
-        <div className="mt-4 flex items-center gap-2 text-blue-100">
-          <Calendar className="h-5 w-5" />
-          <span>
-            {new Date().toLocaleDateString("fr-FR", {
-              weekday: "long",
-              year: "numeric",
-              month: "long",
-              day: "numeric",
-            })}
-          </span>
-        </div>
+    <div className="bg-ink text-paper p-8 rounded-block shadow-lift mb-8">
+      <h1 className="text-3xl font-display font-bold mb-2">
+        {greeting}, {displayName}
+      </h1>
+      <p className="text-paper/70 text-lg">
+        Voici votre tableau de bord professionnel
+      </p>
+      <div className="mt-4 flex items-center gap-2 text-paper/70">
+        <Calendar className="h-5 w-5" />
+        <span>
+          {new Date().toLocaleDateString("fr-FR", {
+            weekday: "long",
+            year: "numeric",
+            month: "long",
+            day: "numeric",
+          })}
+        </span>
       </div>
     </div>
   );
@@ -158,9 +155,9 @@ const FinancialStats: React.FC<{
         ? `${revenue.available.toLocaleString()} FCFA`
         : "••••••",
       icon: Wallet,
-      color: "from-green-500 to-emerald-500",
-      bgColor: "bg-green-50",
-      textColor: "text-green-700",
+      iconBg: "bg-sage",
+      bgColor: "bg-sage-soft",
+      textColor: "text-sage",
     },
     {
       title: "En attente",
@@ -168,9 +165,9 @@ const FinancialStats: React.FC<{
         ? `${revenue.pending.toLocaleString()} FCFA`
         : "••••••",
       icon: Clock,
-      color: "from-yellow-500 to-orange-500",
-      bgColor: "bg-yellow-50",
-      textColor: "text-yellow-700",
+      iconBg: "bg-gold",
+      bgColor: "bg-gold-soft",
+      textColor: "text-gold",
     },
     {
       title: "Total retiré",
@@ -178,29 +175,29 @@ const FinancialStats: React.FC<{
         ? `${revenue.withdrawn.toLocaleString()} FCFA`
         : "••••••",
       icon: TrendingUp,
-      color: "from-blue-500 to-indigo-500",
-      bgColor: "bg-blue-50",
-      textColor: "text-blue-700",
+      iconBg: "bg-accent",
+      bgColor: "bg-accent-soft",
+      textColor: "text-accent",
     },
   ];
 
   return (
-    <div className="bg-white rounded-2xl shadow-lg p-6 mb-8">
+    <div className="bg-card border border-line rounded-block shadow-soft p-6 mb-8">
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
-          <BarChart3 className="h-6 w-6 text-blue-600" />
+        <h2 className="text-xl font-display font-bold text-ink flex items-center gap-2">
+          <BarChart3 className="h-6 w-6 text-accent" />
           Statistiques financières
         </h2>
         <div className="flex items-center gap-2">
           <Link
             to="/professional/financial-details"
-            className="px-4 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors text-sm font-medium"
+            className="px-4 py-2 bg-accent-soft text-accent rounded-pill hover:bg-accent/20 transition-colors text-sm font-medium"
           >
             Voir détails
           </Link>
           <button
             onClick={onToggleBalance}
-            className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium"
+            className="px-4 py-2 bg-paper border border-line text-ink-soft rounded-pill hover:bg-line/40 transition-colors text-sm font-medium"
           >
             {showBalance ? "Masquer" : "Afficher"}
           </button>
@@ -213,19 +210,19 @@ const FinancialStats: React.FC<{
           return (
             <div
               key={index}
-              className={`${stat.bgColor} rounded-xl p-4 border border-gray-100`}
+              className={`${stat.bgColor} rounded-card p-4 border border-line`}
             >
               <div className="flex items-center justify-between mb-3">
-                <div
-                  className={`p-2 rounded-lg bg-gradient-to-r ${stat.color}`}
-                >
-                  <IconComponent className="h-5 w-5 text-white" />
+                <div className={`p-2 rounded-card ${stat.iconBg}`}>
+                  <IconComponent className="h-5 w-5 text-paper" />
                 </div>
                 <span className={`text-sm font-medium ${stat.textColor}`}>
                   {stat.title}
                 </span>
               </div>
-              <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
+              <p className="text-2xl font-display font-bold text-ink">
+                {stat.value}
+              </p>
             </div>
           );
         })}
@@ -241,43 +238,43 @@ const QuickActions: React.FC = () => {
       title: "Gérer mon profil",
       icon: User,
       link: "/professional/settings",
-      color: "from-blue-500 to-blue-600",
-      bgColor: "bg-blue-50",
+      iconBg: "bg-accent",
+      bgColor: "bg-accent-soft",
     },
     {
       title: "Mes disponibilités",
       icon: CalendarCheck,
       link: "/professional/availability",
-      color: "from-green-500 to-green-600",
-      bgColor: "bg-green-50",
+      iconBg: "bg-sage",
+      bgColor: "bg-sage-soft",
     },
     {
       title: "Mes patients",
       icon: Users2,
       link: "/professional/patients",
-      color: "from-purple-500 to-purple-600",
-      bgColor: "bg-purple-50",
+      iconBg: "bg-gold",
+      bgColor: "bg-gold-soft",
     },
     {
       title: "Messages",
       icon: MessageCircle,
       link: "/professional/messages",
-      color: "from-orange-500 to-orange-600",
-      bgColor: "bg-orange-50",
+      iconBg: "bg-ink",
+      bgColor: "bg-ink/5",
     },
     {
       title: "Support",
       icon: MessageCircle,
       action: "support",
-      color: "from-red-500 to-red-600",
-      bgColor: "bg-red-50",
+      iconBg: "bg-danger",
+      bgColor: "bg-danger/10",
     },
   ];
 
   return (
-    <div className="bg-white rounded-2xl shadow-lg p-6 mb-8">
-      <h2 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
-        <Settings className="h-6 w-6 text-gray-600" />
+    <div className="bg-card border border-line rounded-block shadow-soft p-6 mb-8">
+      <h2 className="text-xl font-display font-bold text-ink mb-6 flex items-center gap-2">
+        <Settings className="h-6 w-6 text-ink-soft" />
         Actions rapides
       </h2>
 
@@ -292,14 +289,14 @@ const QuickActions: React.FC = () => {
                 onClick={() =>
                   window.dispatchEvent(new CustomEvent("showSupport"))
                 }
-                className={`${action.bgColor} rounded-xl p-4 text-center hover:scale-105 transition-all duration-200 group cursor-pointer`}
+                className={`${action.bgColor} rounded-card p-4 text-center hover:scale-105 transition-all duration-200 group cursor-pointer`}
               >
                 <div
-                  className={`p-3 rounded-lg bg-gradient-to-r ${action.color} inline-block mb-3 group-hover:scale-110 transition-transform`}
+                  className={`p-3 rounded-card ${action.iconBg} inline-block mb-3 group-hover:scale-110 transition-transform`}
                 >
-                  <IconComponent className="h-6 w-6 text-white" />
+                  <IconComponent className="h-6 w-6 text-paper" />
                 </div>
-                <p className="text-sm font-medium text-gray-700">
+                <p className="text-sm font-medium text-ink-soft">
                   {action.title}
                 </p>
               </button>
@@ -310,14 +307,14 @@ const QuickActions: React.FC = () => {
             <Link
               key={index}
               to={action.link || "#"}
-              className={`${action.bgColor} rounded-xl p-4 text-center hover:scale-105 transition-all duration-200 group`}
+              className={`${action.bgColor} rounded-card p-4 text-center hover:scale-105 transition-all duration-200 group`}
             >
               <div
-                className={`p-3 rounded-lg bg-gradient-to-r ${action.color} inline-block mb-3 group-hover:scale-110 transition-transform`}
+                className={`p-3 rounded-card ${action.iconBg} inline-block mb-3 group-hover:scale-110 transition-transform`}
               >
-                <IconComponent className="h-6 w-6 text-white" />
+                <IconComponent className="h-6 w-6 text-paper" />
               </div>
-              <p className="text-sm font-medium text-gray-700">
+              <p className="text-sm font-medium text-ink-soft">
                 {action.title}
               </p>
             </Link>
@@ -346,33 +343,33 @@ const TodaysAgenda: React.FC<{
   const getConsultationTypeIcon = (type: string) => {
     switch (type) {
       case "video":
-        return <Video className="h-4 w-4 text-blue-600" />;
+        return <Video className="h-4 w-4 text-accent" />;
       case "audio":
-        return <Phone className="h-4 w-4 text-green-600" />;
+        return <Phone className="h-4 w-4 text-sage" />;
       default:
-        return <FileText className="h-4 w-4 text-gray-600" />;
+        return <FileText className="h-4 w-4 text-ink-soft" />;
     }
   };
 
   const getConsultationTypeColor = (type: string) => {
     switch (type) {
       case "video":
-        return "bg-blue-100 text-blue-700";
+        return "bg-accent-soft text-accent";
       case "audio":
-        return "bg-green-100 text-green-700";
+        return "bg-sage-soft text-sage";
       default:
-        return "bg-gray-100 text-gray-700";
+        return "bg-paper text-ink-soft";
     }
   };
 
   return (
-    <div className="bg-white rounded-2xl shadow-lg p-6 mb-8">
+    <div className="bg-card border border-line rounded-block shadow-soft p-6 mb-8">
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
-          <CalendarDays className="h-6 w-6 text-blue-600" />
+        <h2 className="text-xl font-display font-bold text-ink flex items-center gap-2">
+          <CalendarDays className="h-6 w-6 text-accent" />
           Agenda du jour
         </h2>
-        <span className="text-sm text-gray-500">
+        <span className="text-sm text-muted">
           {todaysBookings.length} consultation
           {todaysBookings.length > 1 ? "s" : ""}
         </span>
@@ -380,8 +377,8 @@ const TodaysAgenda: React.FC<{
 
       {todaysBookings.length === 0 ? (
         <div className="text-center py-8">
-          <Calendar className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-          <p className="text-gray-500">
+          <Calendar className="h-12 w-12 text-muted mx-auto mb-4" />
+          <p className="text-muted">
             Aucune consultation prévue aujourd'hui
           </p>
         </div>
@@ -390,13 +387,13 @@ const TodaysAgenda: React.FC<{
           {todaysBookings.map((booking) => (
             <div
               key={booking.id}
-              className="flex items-center justify-between p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors"
+              className="flex items-center justify-between p-4 bg-paper rounded-card hover:bg-line/40 transition-colors"
             >
               <div className="flex items-center gap-3">
                 <div className="flex items-center gap-2">
                   {getConsultationTypeIcon(booking.type)}
                   <span
-                    className={`px-2 py-1 rounded-full text-xs font-medium ${getConsultationTypeColor(
+                    className={`px-2 py-1 rounded-pill text-xs font-medium ${getConsultationTypeColor(
                       booking.type
                     )}`}
                   >
@@ -404,10 +401,10 @@ const TodaysAgenda: React.FC<{
                   </span>
                 </div>
                 <div>
-                  <p className="font-medium text-gray-900">
+                  <p className="font-medium text-ink">
                     {booking.patientName}
                   </p>
-                  <p className="text-sm text-gray-500">
+                  <p className="text-sm text-muted">
                     {formatDateTimeWithTimezone(
                       booking.date,
                       booking.startTime
@@ -459,12 +456,12 @@ const ConsultationsSection: React.FC<{
 
   const getStatusColor = (status: string) => {
     const statusConfig = {
-      confirmed: "bg-green-100 text-green-700",
-      pending: "bg-yellow-100 text-yellow-700",
-      completed: "bg-blue-100 text-blue-700",
-      cancelled: "bg-red-100 text-red-700",
-      en_attente: "bg-yellow-100 text-yellow-700",
-      confirmé: "bg-green-100 text-green-700",
+      confirmed: "bg-ok/10 text-ok",
+      pending: "bg-warn/10 text-warn",
+      completed: "bg-accent-soft text-accent",
+      cancelled: "bg-danger/10 text-danger",
+      en_attente: "bg-warn/10 text-warn",
+      confirmé: "bg-ok/10 text-ok",
     };
 
     return (
@@ -490,11 +487,11 @@ const ConsultationsSection: React.FC<{
   const getConsultationIcon = (type: string) => {
     switch (type) {
       case "video":
-        return <Video className="h-4 w-4 text-blue-500" />;
+        return <Video className="h-4 w-4 text-accent" />;
       case "audio":
-        return <Phone className="h-4 w-4 text-green-500" />;
+        return <Phone className="h-4 w-4 text-sage" />;
       default:
-        return <FileText className="h-4 w-4 text-gray-500" />;
+        return <FileText className="h-4 w-4 text-muted" />;
     }
   };
 
@@ -504,20 +501,20 @@ const ConsultationsSection: React.FC<{
   return (
     <div className="mb-8">
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-2xl font-bold text-gray-900 flex items-center">
-          <Calendar className="h-6 w-6 mr-3 text-blue-600" />
+        <h2 className="text-2xl font-display font-bold text-ink flex items-center">
+          <Calendar className="h-6 w-6 mr-3 text-accent" />
           Consultations
         </h2>
       </div>
 
       {/* Tabs modernisés */}
-      <div className="flex bg-gray-100 rounded-xl p-1 mb-6">
+      <div className="flex bg-paper rounded-pill p-1 mb-6">
         <button
           onClick={() => setActiveTab("upcoming")}
-          className={`flex-1 py-3 px-4 rounded-lg text-sm font-medium transition-all duration-200 ${
+          className={`flex-1 py-3 px-4 rounded-pill text-sm font-medium transition-all duration-200 ${
             activeTab === "upcoming"
-              ? "bg-white text-blue-600 shadow-sm"
-              : "text-gray-600 hover:text-gray-800"
+              ? "bg-card text-accent shadow-soft"
+              : "text-ink-soft hover:text-ink"
           }`}
         >
           <div className="flex items-center justify-center">
@@ -526,10 +523,10 @@ const ConsultationsSection: React.FC<{
         </button>
         <button
           onClick={() => setActiveTab("past")}
-          className={`flex-1 py-3 px-4 rounded-lg text-sm font-medium transition-all duration-200 ${
+          className={`flex-1 py-3 px-4 rounded-pill text-sm font-medium transition-all duration-200 ${
             activeTab === "past"
-              ? "bg-white text-blue-600 shadow-sm"
-              : "text-gray-600 hover:text-gray-800"
+              ? "bg-card text-accent shadow-soft"
+              : "text-ink-soft hover:text-ink"
           }`}
         >
           <div className="flex items-center justify-center">
@@ -545,19 +542,19 @@ const ConsultationsSection: React.FC<{
           {displayedBookings.map((booking) => (
             <div
               key={booking.id}
-              className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-lg transition-all duration-300 hover:scale-[1.02]"
+              className="bg-card rounded-block shadow-soft border border-line overflow-hidden hover:shadow-lift transition-all duration-300"
             >
               <div className="p-6">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4">
                   <div className="flex items-center mb-4 sm:mb-0">
-                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center mr-4 shadow-md">
-                      <User className="h-6 w-6 text-white" />
+                    <div className="w-12 h-12 rounded-card bg-accent flex items-center justify-center mr-4 shadow-soft">
+                      <User className="h-6 w-6 text-paper" />
                     </div>
                     <div>
-                      <h3 className="font-bold text-lg text-gray-900">
+                      <h3 className="font-bold text-lg text-ink">
                         {booking.patientName}
                       </h3>
-                      <p className="text-gray-600 flex items-center">
+                      <p className="text-ink-soft flex items-center">
                         <Stethoscope className="h-4 w-4 mr-1" />
                         Consultation {booking.type}
                       </p>
@@ -566,15 +563,15 @@ const ConsultationsSection: React.FC<{
 
                   <div className="flex items-center">
                     {getConsultationIcon(booking.type)}
-                    <span className="ml-2 text-sm text-gray-600 capitalize font-medium">
+                    <span className="ml-2 text-sm text-ink-soft capitalize font-medium">
                       {booking.type}
                     </span>
                   </div>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-                  <div className="flex items-center text-gray-600 bg-gray-50 rounded-lg p-3">
-                    <Calendar className="h-4 w-4 mr-2 text-blue-500" />
+                  <div className="flex items-center text-ink-soft bg-paper rounded-card p-3">
+                    <Calendar className="h-4 w-4 mr-2 text-accent" />
                     <span className="text-sm font-medium">
                       {formatDateTimeWithTimezone(
                         booking.date,
@@ -582,15 +579,15 @@ const ConsultationsSection: React.FC<{
                       )}
                     </span>
                   </div>
-                  <div className="flex items-center text-gray-600 bg-gray-50 rounded-lg p-3">
-                    <Clock className="h-4 w-4 mr-2 text-green-500" />
+                  <div className="flex items-center text-ink-soft bg-paper rounded-card p-3">
+                    <Clock className="h-4 w-4 mr-2 text-sage" />
                     <span className="text-sm font-medium">
                       Durée: {booking.duration} min
                     </span>
                   </div>
                   <div className="flex items-center">
                     <span
-                      className={`text-xs font-bold px-3 py-1.5 rounded-full ${getStatusColor(
+                      className={`text-xs font-bold px-3 py-1.5 rounded-pill ${getStatusColor(
                         // Si c'est dans l'historique et que la date est passée, afficher comme "completed"
                         activeTab === "past" &&
                           isDatePassed(booking.date) &&
@@ -623,7 +620,7 @@ const ConsultationsSection: React.FC<{
                   <div className="flex justify-between items-center">
                     <button
                       onClick={() => onCancel?.(booking.id)}
-                      className="flex items-center text-red-500 text-sm font-medium hover:text-red-600 transition-colors"
+                      className="flex items-center text-danger text-sm font-medium hover:text-danger/80 transition-colors"
                     >
                       <XCircle className="h-4 w-4 mr-1" />
                       Annuler
@@ -635,7 +632,7 @@ const ConsultationsSection: React.FC<{
                             ? `?patientId=${booking.patientId}`
                             : ""
                         }`}
-                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium flex items-center gap-2"
+                        className="px-4 py-2 bg-accent text-paper rounded-pill hover:bg-accent/90 transition-colors text-sm font-medium flex items-center gap-2"
                         onClick={() => {
                           console.log("[AGENDA] Rejoindre", {
                             bookingId: booking.id,
@@ -647,7 +644,7 @@ const ConsultationsSection: React.FC<{
                         Rejoindre
                       </Link>
                     ) : (
-                      <div className="px-4 py-2 bg-gray-300 text-gray-500 rounded-lg text-sm font-medium flex items-center gap-2 cursor-not-allowed">
+                      <div className="px-4 py-2 bg-line text-muted rounded-pill text-sm font-medium flex items-center gap-2 cursor-not-allowed">
                         <Play className="h-4 w-4" />
                         Rejoindre
                         <span className="text-xs">(Disponible le jour J)</span>
@@ -664,7 +661,7 @@ const ConsultationsSection: React.FC<{
                       <div></div> {/* Espaceur */}
                       <button
                         onClick={() => onComplete(booking.id)}
-                        className="bg-gradient-to-r from-blue-500 to-blue-600 text-white px-6 py-2.5 rounded-xl text-sm font-semibold hover:from-blue-600 hover:to-blue-700 transition-all duration-200 shadow-md hover:shadow-lg flex items-center"
+                        className="bg-sage text-paper px-6 py-2.5 rounded-pill text-sm font-semibold hover:bg-sage/90 transition-all duration-200 shadow-soft flex items-center"
                       >
                         <CheckCircle className="h-4 w-4 mr-2" />
                         Terminer
@@ -676,11 +673,11 @@ const ConsultationsSection: React.FC<{
           ))}
         </div>
       ) : (
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 text-center">
-          <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <Calendar className="h-8 w-8 text-gray-400" />
+        <div className="bg-card rounded-block shadow-soft border border-line p-8 text-center">
+          <div className="w-16 h-16 bg-paper border border-line rounded-full flex items-center justify-center mx-auto mb-4">
+            <Calendar className="h-8 w-8 text-muted" />
           </div>
-          <p className="text-gray-500 font-medium">
+          <p className="text-muted font-medium">
             {activeTab === "upcoming"
               ? "Vous n'avez pas de rendez-vous à venir."
               : "Vous n'avez pas encore eu de consultations."}
@@ -759,7 +756,7 @@ const ProfessionalDashboard: React.FC = () => {
   useEffect(() => {
     if (!currentUser?.id) {
       console.log(
-        "⚠️ No current user, skipping consultation requests listener"
+        "No current user, skipping consultation requests listener"
       );
       return;
     }
@@ -800,12 +797,12 @@ const ProfessionalDashboard: React.FC = () => {
   useEffect(() => {
     const testConnection = async () => {
       if (!currentUser?.id) {
-        console.log("⚠️ No current user, skipping connection test");
+        console.log("No current user, skipping connection test");
         return;
       }
 
       try {
-        console.log("🔍 Testing Firestore connection...");
+        console.log("Testing Firestore connection...");
 
         // Ensure Firestore is ready before checking status
         await ensureFirestoreReady();
@@ -818,10 +815,10 @@ const ProfessionalDashboard: React.FC = () => {
           );
         } else {
           setConnectionError(null);
-          console.log("✅ Firestore connection status verified");
+          console.log("Firestore connection status verified");
         }
       } catch (error) {
-        console.error("❌ Firestore connection status check failed:", error);
+        console.error("Firestore connection status check failed:", error);
         setConnectionError(
           "Problème de connexion à la base de données. Veuillez vérifier votre connexion internet."
         );
@@ -829,9 +826,12 @@ const ProfessionalDashboard: React.FC = () => {
         // Reset Firestore connection on critical errors
         try {
           await resetFirestoreConnection();
-          console.log("✅ Firestore connection reset after error");
+          console.log("Firestore connection reset after error");
         } catch (resetError) {
-          console.error("❌ Failed to reset Firestore connection:", resetError);
+          console.error(
+            "Failed to reset Firestore connection:",
+            resetError
+          );
         }
       }
     };
@@ -899,7 +899,7 @@ const ProfessionalDashboard: React.FC = () => {
           })),
         });
       } catch (e) {
-        console.error("⚠️ fetchRevenue error:", e);
+        console.error("fetchRevenue error:", e);
       }
     };
 
@@ -959,7 +959,7 @@ const ProfessionalDashboard: React.FC = () => {
 
   const handleCancelBooking = async (bookingId: string) => {
     if (!currentUser?.id) {
-      console.warn("⚠️ User not authenticated, cannot cancel booking");
+      console.warn("User not authenticated, cannot cancel booking");
       return;
     }
 
@@ -973,9 +973,9 @@ const ProfessionalDashboard: React.FC = () => {
         window.location.reload(); // Solution simple pour rafraîchir
       }
 
-      console.log("✅ Booking cancelled successfully");
+      console.log("Booking cancelled successfully");
     } catch (error) {
-      console.error("❌ Error cancelling booking:", error);
+      console.error("Error cancelling booking:", error);
       alert("Erreur lors de l'annulation du rendez-vous. Veuillez réessayer.");
     } finally {
       setIsCancelling(false);
@@ -991,7 +991,7 @@ const ProfessionalDashboard: React.FC = () => {
 
   const handleCompleteBooking = async (bookingId: string, notes?: string) => {
     if (!currentUser?.id) {
-      console.warn("⚠️ No current user, cannot complete booking");
+      console.warn("No current user, cannot complete booking");
       return;
     }
 
@@ -999,10 +999,10 @@ const ProfessionalDashboard: React.FC = () => {
       // Ensure Firestore is ready before operation
       await ensureFirestoreReady();
 
-      console.log("✅ Completing booking:", bookingId);
+      console.log("Completing booking:", bookingId);
       await completeBooking(bookingId, notes);
     } catch (error) {
-      console.error("❌ Error completing booking:", error);
+      console.error("Error completing booking:", error);
       alert("Erreur lors de la finalisation. Veuillez réessayer.");
 
       // Reset Firestore connection on critical errors
@@ -1015,10 +1015,10 @@ const ProfessionalDashboard: React.FC = () => {
         ) {
           try {
             await resetFirestoreConnection();
-            console.log("✅ Firestore connection reset after error");
+            console.log("Firestore connection reset after error");
           } catch (resetError) {
             console.error(
-              "❌ Failed to reset Firestore connection:",
+              "Failed to reset Firestore connection:",
               resetError
             );
           }
@@ -1034,7 +1034,7 @@ const ProfessionalDashboard: React.FC = () => {
     e.preventDefault();
 
     if (!currentUser?.id) {
-      console.warn("⚠️ No current user, cannot process withdrawal");
+      console.warn("No current user, cannot process withdrawal");
       return;
     }
 
@@ -1044,7 +1044,7 @@ const ProfessionalDashboard: React.FC = () => {
       // Ensure Firestore is ready before operation
       await ensureFirestoreReady();
 
-      console.log("💸 Processing withdrawal request...");
+      console.log("Processing withdrawal request...");
       // Simulate withdrawal processing
       await new Promise((resolve) => setTimeout(resolve, 2000));
 
@@ -1058,9 +1058,9 @@ const ProfessionalDashboard: React.FC = () => {
       alert(
         "Demande de retrait initiée avec succès. Vous recevrez une confirmation par email."
       );
-      console.log("✅ Withdrawal request processed successfully");
+      console.log("Withdrawal request processed successfully");
     } catch (error) {
-      console.error("❌ Error processing withdrawal:", error);
+      console.error("Error processing withdrawal:", error);
       alert("Une erreur est survenue lors du traitement de votre demande.");
 
       // Reset Firestore connection on critical errors
@@ -1073,10 +1073,10 @@ const ProfessionalDashboard: React.FC = () => {
         ) {
           try {
             await resetFirestoreConnection();
-            console.log("✅ Firestore connection reset after error");
+            console.log("Firestore connection reset after error");
           } catch (resetError) {
             console.error(
-              "❌ Failed to reset Firestore connection:",
+              "Failed to reset Firestore connection:",
               resetError
             );
           }
@@ -1092,7 +1092,7 @@ const ProfessionalDashboard: React.FC = () => {
     }
   };
 
-  // ✅ FIXED: Simplified migration function that doesn't require index
+  // Simplified migration function that doesn't require index
   // const handleMigrateAvailability = async () => {
   //   ...
   // } // Supprimé car inutilisé
@@ -1100,7 +1100,7 @@ const ProfessionalDashboard: React.FC = () => {
   // Handle connection recovery
   const handleConnectionRecovery = async () => {
     if (!currentUser?.id) {
-      console.warn("⚠️ No current user, cannot recover connection");
+      console.warn("No current user, cannot recover connection");
       return;
     }
 
@@ -1116,7 +1116,7 @@ const ProfessionalDashboard: React.FC = () => {
       setConnectionError(null);
       setConnectionStatus(getFirestoreConnectionStatus());
     } catch (error) {
-      console.error("❌ Failed to recover connection:", error);
+      console.error("Failed to recover connection:", error);
       setConnectionError(
         "Échec de la reconnexion. Veuillez rafraîchir la page."
       );
@@ -1127,8 +1127,8 @@ const ProfessionalDashboard: React.FC = () => {
     return (
       <div className="container mx-auto px-4 py-8">
         <div className="flex justify-center items-center h-64">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
-          <span className="ml-4 text-lg text-gray-600">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-accent"></div>
+          <span className="ml-4 text-lg text-ink-soft">
             Chargement du tableau de bord...
           </span>
         </div>
@@ -1137,7 +1137,7 @@ const ProfessionalDashboard: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+    <div className="min-h-screen bg-paper">
       <div className="container mx-auto px-4 py-8">
         <ConsultationRequests />
         {showEthicsReminder && (
@@ -1152,7 +1152,7 @@ const ProfessionalDashboard: React.FC = () => {
 
         {/* Connection Status Banner */}
         {(connectionError || error) && (
-          <div className="mb-6 p-4 bg-yellow-100 border border-yellow-400 text-yellow-700 rounded-xl flex items-center justify-between">
+          <div className="mb-6 p-4 bg-warn/10 border border-warn/30 text-warn rounded-card flex items-center justify-between">
             <div className="flex items-center">
               <AlertCircle className="h-5 w-5 mr-2" />
               <div className="flex-1">
@@ -1166,10 +1166,10 @@ const ProfessionalDashboard: React.FC = () => {
             </div>
             <div className="flex items-center space-x-3">
               <div
-                className={`flex items-center px-3 py-1 rounded-full text-sm ${
+                className={`flex items-center px-3 py-1 rounded-pill text-sm ${
                   connectionStatus.isOnline && connectionStatus.isInitialized
-                    ? "bg-green-100 text-green-800"
-                    : "bg-red-100 text-red-800"
+                    ? "bg-ok/10 text-ok"
+                    : "bg-danger/10 text-danger"
                 }`}
               >
                 {connectionStatus.isOnline && connectionStatus.isInitialized ? (
@@ -1186,7 +1186,7 @@ const ProfessionalDashboard: React.FC = () => {
               </div>
               <button
                 onClick={handleConnectionRecovery}
-                className="px-3 py-1 bg-blue-500 text-white rounded-lg hover:bg-blue-600 text-sm transition-colors"
+                className="px-3 py-1 bg-accent text-paper rounded-pill hover:bg-accent/90 text-sm transition-colors"
               >
                 Reconnecter
               </button>
@@ -1199,14 +1199,14 @@ const ProfessionalDashboard: React.FC = () => {
           <div
             className={`mb-6 p-4 ${
               migrationResult.startsWith("✅")
-                ? "bg-green-100 border border-green-400 text-green-700"
-                : "bg-red-100 border border-red-400 text-red-700"
-            } rounded-xl flex items-center justify-between`}
+                ? "bg-ok/10 border border-ok/30 text-ok"
+                : "bg-danger/10 border border-danger/30 text-danger"
+            } rounded-card flex items-center justify-between`}
           >
             <p>{migrationResult}</p>
             <button
               onClick={() => setMigrationResult(null)}
-              className="text-gray-500 hover:text-gray-700"
+              className="text-muted hover:text-ink-soft"
             >
               <X className="h-5 w-5" />
             </button>
@@ -1227,18 +1227,18 @@ const ProfessionalDashboard: React.FC = () => {
 
         {/* Group Therapy Sessions Section */}
         {loadingGroupTherapy ? (
-          <div className="bg-white rounded-2xl shadow-lg p-6 mb-8">
+          <div className="bg-card border border-line rounded-block shadow-soft p-6 mb-8">
             <div className="flex items-center justify-center py-8">
               <LoadingSpinner size="md" />
-              <span className="ml-3 text-gray-600">
+              <span className="ml-3 text-ink-soft">
                 Chargement des thérapies...
               </span>
             </div>
           </div>
         ) : groupTherapySessions.length > 0 ? (
-          <div className="bg-white rounded-2xl shadow-lg p-6 mb-8">
-            <h2 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
-              <Users2 className="h-6 w-6 text-purple-600" />
+          <div className="bg-card border border-line rounded-block shadow-soft p-6 mb-8">
+            <h2 className="text-xl font-display font-bold text-ink mb-6 flex items-center gap-2">
+              <Users2 className="h-6 w-6 text-gold" />
               Mes thérapies de groupe
             </h2>
             <div className="space-y-4">
@@ -1256,17 +1256,17 @@ const ProfessionalDashboard: React.FC = () => {
                 return (
                   <div
                     key={session.id}
-                    className="border border-gray-200 rounded-xl p-4 hover:shadow-md transition-shadow"
+                    className="border border-line rounded-card p-4 hover:shadow-soft transition-shadow"
                   >
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
-                        <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                        <h3 className="text-lg font-semibold text-ink mb-2">
                           {session.title}
                         </h3>
-                        <p className="text-sm text-gray-600 mb-3">
+                        <p className="text-sm text-ink-soft mb-3">
                           {session.description}
                         </p>
-                        <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600">
+                        <div className="flex flex-wrap items-center gap-4 text-sm text-ink-soft">
                           {session.date && (
                             <div className="flex items-center">
                               <Calendar className="h-4 w-4 mr-2" />
@@ -1288,11 +1288,11 @@ const ProfessionalDashboard: React.FC = () => {
                           </div>
                           <div>
                             {isFree ? (
-                              <span className="text-green-600 font-medium">
+                              <span className="text-ok font-medium">
                                 Gratuit
                               </span>
                             ) : (
-                              <span className="text-blue-600 font-medium">
+                              <span className="text-accent font-medium">
                                 {session.price} FCFA
                               </span>
                             )}
@@ -1322,7 +1322,7 @@ const ProfessionalDashboard: React.FC = () => {
                                 );
                               }
                             }}
-                            className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-600 text-white rounded-lg font-medium hover:from-purple-600 hover:to-pink-700 transition-all shadow-sm hover:shadow-md"
+                            className="inline-flex items-center px-4 py-2 bg-gold text-paper rounded-pill font-medium hover:bg-gold/90 transition-all shadow-soft"
                           >
                             <Video className="h-4 w-4 mr-2" />
                             Rejoindre
@@ -1359,7 +1359,7 @@ const ProfessionalDashboard: React.FC = () => {
                                 alert(errorMessage);
                               }
                             }}
-                            className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-lg font-medium hover:from-green-600 hover:to-emerald-700 transition-all shadow-sm hover:shadow-md"
+                            className="inline-flex items-center px-4 py-2 bg-sage text-paper rounded-pill font-medium hover:bg-sage/90 transition-all shadow-soft"
                           >
                             <Video className="h-4 w-4 mr-2" />
                             Démarrer la réunion
@@ -1386,13 +1386,15 @@ const ProfessionalDashboard: React.FC = () => {
 
         {/* Withdrawal Modal */}
         {showWithdrawalModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-6">
+          <div className="fixed inset-0 bg-ink/50 flex items-center justify-center z-50 p-4">
+            <div className="bg-card rounded-block shadow-lift max-w-md w-full p-6">
               <div className="flex justify-between items-center mb-6">
-                <h2 className="text-xl font-bold">Retrait de fonds</h2>
+                <h2 className="text-xl font-display font-bold text-ink">
+                  Retrait de fonds
+                </h2>
                 <button
                   onClick={() => setShowWithdrawalModal(false)}
-                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                  className="p-2 hover:bg-paper rounded-card transition-colors"
                 >
                   <X className="h-6 w-6" />
                 </button>
@@ -1400,7 +1402,7 @@ const ProfessionalDashboard: React.FC = () => {
 
               <form onSubmit={handleWithdrawal} className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-ink-soft mb-2">
                     Montant (FCFA)
                   </label>
                   <input
@@ -1412,14 +1414,14 @@ const ProfessionalDashboard: React.FC = () => {
                         amount: Number(e.target.value),
                       })
                     }
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-4 py-2 border border-line rounded-card focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent"
                     placeholder="Montant à retirer"
                     required
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-ink-soft mb-2">
                     Méthode de retrait
                   </label>
                   <select
@@ -1433,7 +1435,7 @@ const ProfessionalDashboard: React.FC = () => {
                           | "bank-transfer",
                       })
                     }
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-4 py-2 border border-line rounded-card focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent"
                   >
                     <option value="wave">Wave</option>
                     <option value="orange-money">Orange Money</option>
@@ -1442,7 +1444,7 @@ const ProfessionalDashboard: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-ink-soft mb-2">
                     Numéro de compte
                   </label>
                   <input
@@ -1454,7 +1456,7 @@ const ProfessionalDashboard: React.FC = () => {
                         accountNumber: e.target.value,
                       })
                     }
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-4 py-2 border border-line rounded-card focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent"
                     placeholder="Numéro de compte"
                     required
                   />
@@ -1464,14 +1466,14 @@ const ProfessionalDashboard: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => setShowWithdrawalModal(false)}
-                    className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                    className="flex-1 px-4 py-2 border border-line text-ink-soft rounded-pill hover:bg-paper transition-colors"
                   >
                     Annuler
                   </button>
                   <button
                     type="submit"
                     disabled={isSaving}
-                    className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
+                    className="flex-1 px-4 py-2 bg-accent text-paper rounded-pill hover:bg-accent/90 transition-colors disabled:opacity-50"
                   >
                     {isSaving ? (
                       <div className="flex items-center justify-center">
@@ -1490,13 +1492,15 @@ const ProfessionalDashboard: React.FC = () => {
 
         {/* Support Modal */}
         {showSupport && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-xl shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col">
-              <div className="p-6 border-b border-gray-200 flex justify-between items-center flex-shrink-0">
-                <h2 className="text-xl font-semibold">Support et assistance</h2>
+          <div className="fixed inset-0 bg-ink/50 flex items-center justify-center z-50">
+            <div className="bg-card rounded-block shadow-lift w-full max-w-4xl max-h-[90vh] flex flex-col">
+              <div className="p-6 border-b border-line flex justify-between items-center flex-shrink-0">
+                <h2 className="text-xl font-display font-bold text-ink">
+                  Support et assistance
+                </h2>
                 <button
                   onClick={() => setShowSupport(false)}
-                  className="text-gray-400 hover:text-gray-600"
+                  className="text-muted hover:text-ink-soft"
                 >
                   <X className="h-6 w-6" />
                 </button>
@@ -1510,22 +1514,22 @@ const ProfessionalDashboard: React.FC = () => {
 
         {/* Modal de confirmation d'annulation */}
         {showCancelModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-xl p-6 w-full max-w-md mx-4">
+          <div className="fixed inset-0 bg-ink/50 flex items-center justify-center z-50">
+            <div className="bg-card rounded-block shadow-lift p-6 w-full max-w-md mx-4">
               <div className="flex items-center justify-between mb-6">
-                <h3 className="text-lg font-semibold text-gray-900">
+                <h3 className="text-lg font-semibold text-ink">
                   Confirmer l'annulation
                 </h3>
                 <button
                   onClick={() => setShowCancelModal(false)}
-                  className="text-gray-400 hover:text-gray-600"
+                  className="text-muted hover:text-ink-soft"
                 >
                   <X className="h-5 w-5" />
                 </button>
               </div>
 
               <div className="mb-6">
-                <p className="text-gray-600">
+                <p className="text-ink-soft">
                   Êtes-vous sûr de vouloir annuler cette consultation ? Cette
                   action ne peut pas être annulée.
                 </p>
@@ -1535,14 +1539,14 @@ const ProfessionalDashboard: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setShowCancelModal(false)}
-                  className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                  className="flex-1 px-4 py-2 border border-line text-ink-soft rounded-pill hover:bg-paper transition-colors"
                 >
                   Annuler
                 </button>
                 <button
                   onClick={() => handleCancelBooking(bookingToCancel!)}
                   disabled={isCancelling}
-                  className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50"
+                  className="flex-1 px-4 py-2 bg-danger text-paper rounded-pill hover:bg-danger/90 transition-colors disabled:opacity-50"
                 >
                   {isCancelling ? (
                     <div className="flex items-center justify-center">

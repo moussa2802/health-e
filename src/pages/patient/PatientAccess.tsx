@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { ArrowLeft, AlertCircle } from "lucide-react";
+import { Link, useNavigate, useLocation } from "react-router-dom";
+import { ArrowLeft, ArrowRight, ChevronLeft, AlertCircle, Heart, User } from "lucide-react";
 import PhoneInput, { isValidPhoneNumber } from "react-phone-number-input";
 import "react-phone-number-input/style.css";
 
@@ -23,6 +23,12 @@ const toE164 = (v: string) => (v?.startsWith("+") ? v : `+${(v || "").trim()}`);
 
 const PatientAccess: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  // Retour vers /app si on venait de là (ex: ProtectedRoute a mémorisé state.from),
+  // sinon comportement historique inchangé (toujours /assessment).
+  const fromPath = (location.state as { from?: { pathname?: string } } | null)
+    ?.from?.pathname;
+  const postLoginPath = fromPath?.startsWith("/app") ? fromPath : "/assessment";
   const [hasProcessedPendingRegistration, setHasProcessedPendingRegistration] =
     useState(false);
 
@@ -108,7 +114,7 @@ const PatientAccess: React.FC = () => {
 
       // Inscrire l'utilisateur (retourne { status: "registered" } ou { status: "alreadyRegistered" })
       console.log(
-        `🔄 [PATIENT] Inscription à la thérapie de groupe: sessionId=${sessionId}, userId=${userId}`
+        `[PATIENT] Inscription à la thérapie de groupe: sessionId=${sessionId}, userId=${userId}`
       );
       const result = await registerUserToSession(sessionId, userId);
 
@@ -127,7 +133,7 @@ const PatientAccess: React.FC = () => {
         return;
       }
 
-      console.log(`✅ [PATIENT] Inscription réussie à la session ${sessionId}`);
+      console.log(`[PATIENT] Inscription réussie à la session ${sessionId}`);
       // Rediriger vers la page de réunion SEULEMENT après succès
       navigate(`/group-therapy/${sessionId}/meeting`, {
         state: { registered: true },
@@ -178,9 +184,9 @@ const PatientAccess: React.FC = () => {
       !pendingSessionId
     ) {
       // Si authentifié sans pendingSessionId, rediriger vers Healt-e 2.0
-      navigate("/assessment");
+      navigate(postLoginPath);
     }
-  }, [isAuthenticated, currentUser, step, navigate]);
+  }, [isAuthenticated, currentUser, step, navigate, postLoginPath]);
 
   // ---- Google Sign-In (popup, with redirect fallback) ----
   const onGoogleSignIn = async () => {
@@ -194,7 +200,7 @@ const PatientAccess: React.FC = () => {
       }
       await signInWithGoogle();
       // Popup succeeded — navigate directly to assessment
-      navigate("/assessment");
+      navigate(postLoginPath);
     } catch (e: any) {
       setErr(e?.message || "Erreur lors de la connexion Google.");
       setGoogleLoading(false);
@@ -206,41 +212,41 @@ const PatientAccess: React.FC = () => {
     e.preventDefault();
     setErr("");
 
-    console.log("📱 [PATIENT] ===== DÉBUT ON SUBMIT PHONE =====");
-    console.log("📱 [PATIENT] Téléphone saisi:", phone);
+    console.log("[PATIENT] ===== DÉBUT ON SUBMIT PHONE =====");
+    console.log("[PATIENT] Téléphone saisi:", phone);
 
     const e164 = toE164(phone);
-    console.log("📱 [PATIENT] Téléphone E164:", e164);
-    console.log("📱 [PATIENT] Téléphone valide:", isValidPhoneNumber(e164));
+    console.log("[PATIENT] Téléphone E164:", e164);
+    console.log("[PATIENT] Téléphone valide:", isValidPhoneNumber(e164));
 
     if (!e164 || !isValidPhoneNumber(e164)) {
-      console.log("❌ [PATIENT] Numéro invalide");
+      console.log("[PATIENT] Numéro invalide");
       setErr("Saisissez un numéro valide au format international (ex: +221…).");
       return;
     }
 
     try {
-      console.log("🔄 [PATIENT] Début de l'envoi du code...");
+      console.log("[PATIENT] Début de l'envoi du code...");
       setLoading(true);
       await sendVerificationCode(e164);
       // sendVerificationCode throw une exception en cas d'erreur, donc si on arrive ici, c'est un succès
-      console.log("✅ [PATIENT] Code envoyé, passage à l'étape verify");
+      console.log("[PATIENT] Code envoyé, passage à l'étape verify");
       setStep("verify");
     } catch (e: unknown) {
-      console.log("❌ [PATIENT] ===== ERREUR ON SUBMIT PHONE =====");
-      console.error("❌ [PATIENT] Erreur complète:", e);
+      console.log("[PATIENT] ===== ERREUR ON SUBMIT PHONE =====");
+      console.error("[PATIENT] Erreur complète:", e);
       const error = e as {
         code?: string;
         message?: string;
         originalError?: unknown;
       };
-      console.error("❌ [PATIENT] Code d'erreur:", error?.code);
-      console.error("❌ [PATIENT] Message:", error?.message);
-      console.error("❌ [PATIENT] Erreur originale:", error?.originalError);
+      console.error("[PATIENT] Code d'erreur:", error?.code);
+      console.error("[PATIENT] Message:", error?.message);
+      console.error("[PATIENT] Erreur originale:", error?.originalError);
       // Le message d'erreur contient déjà le code (format: [code] message)
       setErr(error?.message || "Erreur lors de l'envoi du code.");
     } finally {
-      console.log("🏁 [PATIENT] Fin de onSubmitPhone, loading = false");
+      console.log("[PATIENT] Fin de onSubmitPhone, loading = false");
       setLoading(false);
     }
   };
@@ -250,21 +256,21 @@ const PatientAccess: React.FC = () => {
     e.preventDefault();
     setErr("");
 
-    console.log("📝 [PATIENT] ===== DÉBUT ON SUBMIT PROFILE =====");
-    console.log("👤 [PATIENT] Nom complet:", fullName);
-    console.log("⚧ [PATIENT] Genre:", gender);
-    console.log("📋 [PATIENT] Terms acceptés:", hasAgreedToTerms);
+    console.log("[PATIENT] ===== DÉBUT ON SUBMIT PROFILE =====");
+    console.log("[PATIENT] Nom complet:", fullName);
+    console.log("[PATIENT] Genre:", gender);
+    console.log("[PATIENT] Terms acceptés:", hasAgreedToTerms);
 
     if (!fullName.trim()) {
-      console.log("❌ [PATIENT] Nom manquant");
+      console.log("[PATIENT] Nom manquant");
       return setErr("Veuillez renseigner votre nom et prénom.");
     }
     if (!gender) {
-      console.log("❌ [PATIENT] Genre manquant");
+      console.log("[PATIENT] Genre manquant");
       return setErr("Veuillez sélectionner votre genre.");
     }
     if (!hasAgreedToTerms) {
-      console.log("❌ [PATIENT] Terms non acceptés");
+      console.log("[PATIENT] Terms non acceptés");
       setShowTermsModal(true);
       return setErr(
         "Vous devez accepter les conditions d'utilisation et la politique de confidentialité."
@@ -272,28 +278,28 @@ const PatientAccess: React.FC = () => {
     }
 
     try {
-      console.log("🔄 [PATIENT] Début de la création du profil...");
+      console.log("[PATIENT] Début de la création du profil...");
       setLoading(true);
       const uid = getAuth().currentUser?.uid;
       if (!uid) {
-        console.log("❌ [PATIENT] UID manquant");
+        console.log("[PATIENT] UID manquant");
         throw new Error("Utilisateur non authentifié.");
       }
       const e164 = toE164(getAuth().currentUser?.phoneNumber || phone);
-      console.log("👤 [PATIENT] UID:", uid);
-      console.log("📱 [PATIENT] E164:", e164);
+      console.log("[PATIENT] UID:", uid);
+      console.log("[PATIENT] E164:", e164);
 
       console.log(
-        "📝 [PATIENT] Création du profil avec createUserWithPhone..."
+        "[PATIENT] Création du profil avec createUserWithPhone..."
       );
       await createUserWithPhone(fullName.trim(), e164, {
         type: "patient",
         gender,
       });
-      console.log("✅ [PATIENT] Profil créé, connexion...");
+      console.log("[PATIENT] Profil créé, connexion...");
 
       await loginWithPhone(uid, e164);
-      console.log("🚀 [PATIENT] Connexion réussie");
+      console.log("[PATIENT] Connexion réussie");
 
       // Si on vient d'une thérapie de groupe, inscrire l'utilisateur (si intent autorisé)
       const pendingSessionId = getPendingGroupTherapySessionId();
@@ -302,15 +308,15 @@ const PatientAccess: React.FC = () => {
         await handlePostAuthGroupTherapyRegistration(pendingSessionId);
       } else {
         localStorage.setItem('he_new_account', 'true');
-        navigate("/assessment");
+        navigate(postLoginPath);
       }
     } catch (e: any) {
-      console.log("❌ [PATIENT] ===== ERREUR ON SUBMIT PROFILE =====");
-      console.error("❌ [PATIENT] Erreur complète:", e);
-      console.error("❌ [PATIENT] Message:", e?.message);
+      console.log("[PATIENT] ===== ERREUR ON SUBMIT PROFILE =====");
+      console.error("[PATIENT] Erreur complète:", e);
+      console.error("[PATIENT] Message:", e?.message);
       setErr(e?.message || "Erreur lors de la création du profil.");
     } finally {
-      console.log("🏁 [PATIENT] Fin de onSubmitProfile, loading = false");
+      console.log("[PATIENT] Fin de onSubmitProfile, loading = false");
       setLoading(false);
     }
   };
@@ -320,42 +326,42 @@ const PatientAccess: React.FC = () => {
     e.preventDefault();
     setErr("");
 
-    console.log("🔐 [PATIENT] ===== DÉBUT ON VERIFY CODE =====");
-    console.log("🔢 [PATIENT] Code saisi:", code);
+    console.log("[PATIENT] ===== DÉBUT ON VERIFY CODE =====");
+    console.log("[PATIENT] Code saisi:", code);
 
     if (!code.trim()) {
-      console.log("❌ [PATIENT] Code vide");
+      console.log("[PATIENT] Code vide");
       setErr("Veuillez saisir le code reçu par SMS.");
       return;
     }
 
     try {
-      console.log("🔄 [PATIENT] Début de la vérification du code...");
+      console.log("[PATIENT] Début de la vérification du code...");
       setLoading(true);
       const cred = await verifyLoginCode(code);
       if (!cred?.user) {
-        console.log("❌ [PATIENT] Credential ou user manquant");
+        console.log("[PATIENT] Credential ou user manquant");
         throw new Error("Code invalide ou expiré.");
       }
 
       const uid = cred.user.uid;
       const e164 = toE164(cred.user.phoneNumber || phone);
-      console.log("👤 [PATIENT] UID:", uid);
-      console.log("📱 [PATIENT] E164:", e164);
+      console.log("[PATIENT] UID:", uid);
+      console.log("[PATIENT] E164:", e164);
 
-      console.log("🔍 [PATIENT] Vérification de l'existence du profil...");
+      console.log("[PATIENT] Vérification de l'existence du profil...");
       const db = getFirestore();
       let profileExists = false;
       try {
         const snap = await getDoc(doc(db, "users", uid));
         profileExists = snap.exists();
-        console.log("📋 [PATIENT] Profil existe:", profileExists);
+        console.log("[PATIENT] Profil existe:", profileExists);
       } catch (err: any) {
-        console.log("⚠️ [PATIENT] Erreur lecture Firestore:", err);
+        console.log("[PATIENT] Erreur lecture Firestore:", err);
         // Si la lecture est refusée, on bascule en création de profil
         if (err?.code === "permission-denied") {
           console.log(
-            "🔒 [PATIENT] Permission refusée, considère profil inexistant"
+            "[PATIENT] Permission refusée, considère profil inexistant"
           );
           profileExists = false;
         } else {
@@ -364,9 +370,9 @@ const PatientAccess: React.FC = () => {
       }
 
       if (profileExists) {
-        console.log("✅ [PATIENT] Profil existant, connexion...");
+        console.log("[PATIENT] Profil existant, connexion...");
         await loginWithPhone(uid, e164);
-        console.log("🚀 [PATIENT] Connexion réussie");
+        console.log("[PATIENT] Connexion réussie");
 
         // Si on vient d'une thérapie de groupe, inscrire l'utilisateur (si intent autorisé)
         const pendingSessionId = getPendingGroupTherapySessionId();
@@ -374,7 +380,7 @@ const PatientAccess: React.FC = () => {
           setHasProcessedPendingRegistration(true);
           await handlePostAuthGroupTherapyRegistration(pendingSessionId);
         } else {
-          navigate("/assessment");
+          navigate(postLoginPath);
         }
       } else {
         // Nouvel utilisateur - créer automatiquement avec un nom par défaut
@@ -383,7 +389,7 @@ const PatientAccess: React.FC = () => {
         // Vérifier si les termes sont acceptés
         if (!hasAgreedToTerms) {
           console.log(
-            "⚠️ [PATIENT] Terms non acceptés, passage à completeProfile"
+            "[PATIENT] Terms non acceptés, passage à completeProfile"
           );
           setStep("completeProfile");
           return;
@@ -398,11 +404,11 @@ const PatientAccess: React.FC = () => {
             gender: "homme", // Genre par défaut
           });
 
-          console.log("✅ [PATIENT] Compte créé automatiquement");
+          console.log("[PATIENT] Compte créé automatiquement");
 
           // Se connecter
           await loginWithPhone(uid, e164);
-          console.log("🚀 [PATIENT] Connexion réussie");
+          console.log("[PATIENT] Connexion réussie");
 
           // Si on vient d'une thérapie de groupe, inscrire l'utilisateur (si intent autorisé)
           const pendingSessionId = getPendingGroupTherapySessionId();
@@ -411,11 +417,11 @@ const PatientAccess: React.FC = () => {
             await handlePostAuthGroupTherapyRegistration(pendingSessionId);
           } else {
             localStorage.setItem('he_new_account', 'true');
-            navigate("/assessment");
+            navigate(postLoginPath);
           }
         } catch (createError: any) {
           console.error(
-            "❌ [PATIENT] Erreur création automatique:",
+            "[PATIENT] Erreur création automatique:",
             createError
           );
           // En cas d'erreur, passer à l'étape de création manuelle
@@ -423,12 +429,12 @@ const PatientAccess: React.FC = () => {
         }
       }
     } catch (e: any) {
-      console.log("❌ [PATIENT] ===== ERREUR ON VERIFY CODE =====");
-      console.error("❌ [PATIENT] Erreur complète:", e);
-      console.error("❌ [PATIENT] Message:", e?.message);
+      console.log("[PATIENT] ===== ERREUR ON VERIFY CODE =====");
+      console.error("[PATIENT] Erreur complète:", e);
+      console.error("[PATIENT] Message:", e?.message);
       setErr(e?.message || "La vérification a échoué.");
     } finally {
-      console.log("🏁 [PATIENT] Fin de onVerifyCode, loading = false");
+      console.log("[PATIENT] Fin de onVerifyCode, loading = false");
       setLoading(false);
     }
   };
@@ -440,40 +446,22 @@ const PatientAccess: React.FC = () => {
     : step === "completeProfile" ? 2
     : 0;
 
-  const gradientBtn =
-    "w-full text-white font-semibold px-4 py-3 rounded-xl shadow disabled:opacity-50 disabled:cursor-not-allowed transition-opacity";
+  const primaryBtnCls =
+    "w-full flex items-center justify-center gap-2 text-white font-semibold px-4 py-3 rounded-pill bg-ink hover:bg-ink/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors";
 
   const inputCls =
-    "w-full rounded-xl border border-white/40 bg-white/60 px-4 py-3 text-gray-800 placeholder-gray-400 focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-200 backdrop-blur-sm";
+    "w-full rounded-xl border border-line bg-card px-4 py-3 text-ink placeholder-muted focus:outline-none focus:border-accent transition-colors";
+
+  const backLinkCls =
+    "w-full flex items-center justify-center gap-1.5 text-sm text-ink-soft hover:text-ink font-medium pt-1 transition-colors";
 
   return (
-    <div
-      className="min-h-screen relative overflow-hidden"
-      style={{ background: "#F8FAFF" }}
-    >
-      {/* ── Gradient blobs (same as homepage) ── */}
-      <div
-        style={{
-          position: "absolute", top: "-15%", right: "-10%",
-          width: 500, height: 500, borderRadius: "50%",
-          background: "radial-gradient(circle, rgba(59,130,246,0.10) 0%, transparent 70%)",
-          pointerEvents: "none",
-        }}
-      />
-      <div
-        style={{
-          position: "absolute", bottom: "-10%", left: "-5%",
-          width: 400, height: 400, borderRadius: "50%",
-          background: "radial-gradient(circle, rgba(45,212,191,0.09) 0%, transparent 70%)",
-          pointerEvents: "none",
-        }}
-      />
-
+    <div className="min-h-screen bg-paper">
       {/* ── Back link ── */}
-      <div className="relative z-10 pt-6 px-6">
+      <div className="pt-6 px-6">
         <Link
           to="/"
-          className="inline-flex items-center gap-1.5 text-sm font-medium text-blue-600 hover:text-blue-700"
+          className="inline-flex items-center gap-1.5 text-sm font-medium text-accent hover:text-accent/80 transition-colors"
         >
           <ArrowLeft className="h-4 w-4" />
           Retour à l'accueil
@@ -481,63 +469,26 @@ const PatientAccess: React.FC = () => {
       </div>
 
       {/* ── Main card ── */}
-      <div className="relative z-10 flex items-center justify-center px-4 py-10 min-h-[calc(100vh-64px)]">
-        <div
-          className="w-full max-w-md rounded-3xl p-8"
-          style={{
-            background: "rgba(255,255,255,0.82)",
-            backdropFilter: "blur(18px)",
-            WebkitBackdropFilter: "blur(18px)",
-            border: "1.5px solid rgba(255,255,255,0.6)",
-            boxShadow: "0 8px 40px rgba(59,130,246,0.10), 0 1.5px 8px rgba(0,0,0,0.04)",
-          }}
-        >
+      <div className="flex items-center justify-center px-4 py-10 min-h-[calc(100vh-64px)]">
+        <div className="w-full max-w-md bg-card rounded-block border border-line shadow-lift p-8">
           {/* ── Dr. Lô avatar (compact) ── */}
           <div className="flex flex-col items-center mb-7">
-            <div className="relative mb-4" style={{ width: 80, height: 80 }}>
-              {/* Gradient ring */}
-              <div
-                style={{
-                  position: "absolute", inset: 0, borderRadius: "50%",
-                  padding: 3,
-                  background: "linear-gradient(135deg,#3B82F6,#2DD4BF)",
-                }}
-              >
-                <div style={{ borderRadius: "50%", width: "100%", height: "100%", background: "white" }} />
-              </div>
+            <div className="relative mb-4 w-20 h-20">
               <img
                 src="/dr-lo.png"
                 alt="Dr. Lô"
-                style={{
-                  position: "absolute", inset: 5,
-                  width: "calc(100% - 10px)", height: "calc(100% - 10px)",
-                  borderRadius: "50%", objectFit: "cover", objectPosition: "top center",
-                }}
+                className="w-full h-full rounded-full object-cover object-top border-4 border-accent-soft shadow-soft"
               />
               {/* Badge */}
-              <div
-                style={{
-                  position: "absolute", bottom: 2, right: 0,
-                  background: "linear-gradient(135deg,#3B82F6,#2DD4BF)",
-                  borderRadius: "50%", width: 22, height: 22,
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                  fontSize: 11, border: "2px solid white",
-                }}
-              >
-                🧠
+              <div className="absolute -bottom-0.5 -right-0.5 w-[22px] h-[22px] rounded-full bg-accent border-2 border-card flex items-center justify-center">
+                <Heart className="h-3 w-3 text-white" />
               </div>
             </div>
 
-            <h1
-              className="text-2xl font-bold text-center"
-              style={{
-                background: "linear-gradient(135deg,#3B82F6,#2DD4BF)",
-                WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
-              }}
-            >
+            <h1 className="font-display text-2xl font-bold text-center text-ink">
               Espace Patient
             </h1>
-            <p className="text-sm text-gray-500 mt-1 text-center">
+            <p className="text-sm text-ink-soft mt-1 text-center">
               {step === "enterPhone" && "Connectez-vous en un clic avec Google ou par SMS."}
               {step === "verify" && "Entrez le code reçu par SMS."}
               {step === "completeProfile" && "Finalisez votre inscription."}
@@ -550,15 +501,13 @@ const PatientAccess: React.FC = () => {
                 {[0, 1, 2].map(i => (
                   <div
                     key={i}
-                    style={{
-                      width: i === stepIndex ? 22 : 8,
-                      height: 8,
-                      borderRadius: 4,
-                      background: i === stepIndex
-                        ? "linear-gradient(135deg,#3B82F6,#2DD4BF)"
-                        : i < stepIndex ? "rgba(59,130,246,0.4)" : "rgba(0,0,0,0.10)",
-                      transition: "all 0.3s ease",
-                    }}
+                    className={`h-2 rounded-full transition-all duration-300 ${
+                      i === stepIndex
+                        ? "w-[22px] bg-accent"
+                        : i < stepIndex
+                        ? "w-2 bg-accent/40"
+                        : "w-2 bg-line"
+                    }`}
                   />
                 ))}
               </div>
@@ -567,8 +516,7 @@ const PatientAccess: React.FC = () => {
 
           {/* ── Error banner ── */}
           {(err || phoneError) && (
-            <div className="mb-5 p-3 rounded-xl flex items-center gap-2 text-sm text-red-700"
-              style={{ background: "rgba(254,226,226,0.8)", border: "1px solid rgba(252,165,165,0.5)" }}>
+            <div className="mb-5 p-3 rounded-xl flex items-center gap-2 text-sm text-danger bg-danger/10 border border-danger/20">
               <AlertCircle className="h-4 w-4 flex-shrink-0" />
               <span>{err || phoneError}</span>
             </div>
@@ -582,15 +530,7 @@ const PatientAccess: React.FC = () => {
                 type="button"
                 onClick={onGoogleSignIn}
                 disabled={googleLoading || loading || phoneLoading}
-                className="w-full flex items-center justify-center gap-3 px-4 py-3.5 rounded-xl font-semibold text-sm transition-all"
-                style={{
-                  background: "white",
-                  border: "1.5px solid rgba(0,0,0,0.12)",
-                  color: "#1E293B",
-                  boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
-                  opacity: googleLoading ? 0.6 : 1,
-                  cursor: googleLoading ? "not-allowed" : "pointer",
-                }}
+                className="w-full flex items-center justify-center gap-3 px-4 py-3.5 rounded-pill font-semibold text-sm bg-card border border-line text-ink hover:bg-paper transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
               >
                 {googleLoading ? (
                   <span>Connexion Google...</span>
@@ -609,9 +549,9 @@ const PatientAccess: React.FC = () => {
 
               {/* ── Divider ── */}
               <div className="flex items-center gap-3">
-                <div className="flex-1 h-px" style={{ background: "rgba(0,0,0,0.10)" }} />
-                <span className="text-xs text-gray-400 font-medium">ou</span>
-                <div className="flex-1 h-px" style={{ background: "rgba(0,0,0,0.10)" }} />
+                <div className="flex-1 h-px bg-line" />
+                <span className="text-xs text-muted font-medium">ou</span>
+                <div className="flex-1 h-px bg-line" />
               </div>
 
               {/* ── SMS toggle / form ── */}
@@ -619,18 +559,14 @@ const PatientAccess: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setShowSmsForm(true)}
-                  className="w-full text-sm text-gray-500 hover:text-gray-700 font-medium py-2.5 rounded-xl transition-colors"
-                  style={{
-                    background: "rgba(0,0,0,0.03)",
-                    border: "1px solid rgba(0,0,0,0.07)",
-                  }}
+                  className="w-full text-sm text-ink-soft hover:text-ink font-medium py-2.5 rounded-pill bg-paper border border-line transition-colors"
                 >
                   Continuer par SMS
                 </button>
               ) : (
                 <form onSubmit={onSubmitPhone} className="space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-600 mb-1.5">
+                    <label className="block text-sm font-medium text-ink-soft mb-1.5">
                       Numero de telephone
                     </label>
                     <PhoneInput
@@ -638,10 +574,10 @@ const PatientAccess: React.FC = () => {
                       defaultCountry="SN"
                       value={phone}
                       onChange={(v) => setPhone(v || "")}
-                      className="w-full rounded-xl border border-white/40 bg-white/60 px-3 py-3 focus:border-blue-400 focus:ring-blue-200"
+                      className="w-full rounded-xl border border-line bg-card px-3 py-3 focus-within:border-accent transition-colors"
                       placeholder="Ex: +221 77 123 45 67"
                     />
-                    <p className="text-xs text-gray-400 mt-1.5">
+                    <p className="text-xs text-muted mt-1.5">
                       Format international requis (ex: +221...).
                     </p>
                   </div>
@@ -652,8 +588,7 @@ const PatientAccess: React.FC = () => {
                       loading || phoneLoading || !phone ||
                       !isValidPhoneNumber(toE164(phone)) || isInCooldown
                     }
-                    className={gradientBtn}
-                    style={{ background: "linear-gradient(135deg,#3B82F6,#2DD4BF)" }}
+                    className={primaryBtnCls}
                   >
                     {loading || phoneLoading
                       ? "Envoi du code..."
@@ -669,14 +604,11 @@ const PatientAccess: React.FC = () => {
           {/* ── STEP 2: vérification du code ── */}
           {step === "verify" && (
             <form onSubmit={onVerifyCode} className="space-y-5">
-              <div
-                className="text-sm text-center rounded-xl py-2 px-4"
-                style={{ background: "rgba(59,130,246,0.07)", color: "#2563EB" }}
-              >
+              <div className="text-sm text-center rounded-xl py-2 px-4 bg-accent-soft text-accent">
                 Code envoyé au <span className="font-semibold">{toE164(phone)}</span>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-600 mb-1.5">
+                <label className="block text-sm font-medium text-ink-soft mb-1.5">
                   Code de vérification
                 </label>
                 <input
@@ -693,18 +625,23 @@ const PatientAccess: React.FC = () => {
               <button
                 type="submit"
                 disabled={loading || phoneLoading || !code.trim()}
-                className={gradientBtn}
-                style={{ background: "linear-gradient(135deg,#3B82F6,#2DD4BF)" }}
+                className={primaryBtnCls}
               >
-                {loading || phoneLoading ? "Vérification…" : "Vérifier →"}
+                {loading || phoneLoading ? "Vérification…" : (
+                  <>
+                    Vérifier
+                    <ArrowRight className="h-4 w-4" />
+                  </>
+                )}
               </button>
 
               <button
                 type="button"
                 onClick={() => { setCode(""); setStep("enterPhone"); }}
-                className="w-full text-sm text-gray-500 hover:text-gray-700 font-medium pt-1"
+                className={backLinkCls}
               >
-                ← Modifier le numéro
+                <ChevronLeft className="h-4 w-4" />
+                Modifier le numéro
               </button>
             </form>
           )}
@@ -712,12 +649,12 @@ const PatientAccess: React.FC = () => {
           {/* ── STEP 3: profil (si nécessaire) ── */}
           {step === "completeProfile" && (
             <form onSubmit={onSubmitProfile} className="space-y-5">
-              <p className="text-sm text-gray-500 text-center -mt-2 mb-1">
+              <p className="text-sm text-ink-soft text-center -mt-2 mb-1">
                 Complétez votre profil pour finaliser l'inscription.
               </p>
 
               <div>
-                <label className="block text-sm font-medium text-gray-600 mb-1.5">
+                <label className="block text-sm font-medium text-ink-soft mb-1.5">
                   Nom et prénom
                 </label>
                 <input
@@ -730,7 +667,7 @@ const PatientAccess: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-600 mb-1.5">
+                <label className="block text-sm font-medium text-ink-soft mb-1.5">
                   Genre
                 </label>
                 <div className="grid grid-cols-2 gap-3">
@@ -739,43 +676,36 @@ const PatientAccess: React.FC = () => {
                       key={g}
                       type="button"
                       onClick={() => setGender(g)}
-                      className="px-4 py-3 rounded-xl text-sm font-medium transition-all"
-                      style={{
-                        border: gender === g
-                          ? "1.5px solid #3B82F6"
-                          : "1.5px solid rgba(0,0,0,0.12)",
-                        background: gender === g
-                          ? "rgba(59,130,246,0.08)"
-                          : "rgba(255,255,255,0.5)",
-                        color: gender === g ? "#2563EB" : "#4B5563",
-                      }}
+                      className={`flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-sm font-medium border transition-colors ${
+                        gender === g
+                          ? "border-accent bg-accent-soft text-accent"
+                          : "border-line bg-card text-ink-soft hover:bg-paper"
+                      }`}
                     >
-                      {g === "homme" ? "👨 Homme" : "👩 Femme"}
+                      <User className="h-4 w-4" />
+                      {g === "homme" ? "Homme" : "Femme"}
                     </button>
                   ))}
                 </div>
               </div>
 
-              <div
-                className="flex items-center justify-between rounded-xl p-3"
-                style={{ background: "rgba(0,0,0,0.03)", border: "1px solid rgba(0,0,0,0.07)" }}
-              >
+              <div className="flex items-center justify-between rounded-xl p-3 bg-paper border border-line">
                 <div className="flex items-center gap-2">
                   <input
                     id="terms"
                     type="checkbox"
                     checked={hasAgreedToTerms}
                     readOnly
-                    className="h-4 w-4 text-blue-600 border-gray-300 rounded"
+                    className="h-4 w-4 text-accent border-line rounded"
                   />
-                  <label htmlFor="terms" className="text-xs text-gray-600">
+                  <label htmlFor="terms" className="text-xs text-ink-soft">
                     J'accepte les conditions & confidentialité
                   </label>
                 </div>
                 <button
                   type="button"
                   onClick={() => setShowTermsModal(true)}
-                  className="text-blue-500 hover:text-blue-600 text-xs font-medium underline ml-2 flex-shrink-0"
+                  className="text-accent hover:text-accent/80 text-xs font-medium underline ml-2 flex-shrink-0"
                 >
                   Lire
                 </button>
@@ -784,18 +714,23 @@ const PatientAccess: React.FC = () => {
               <button
                 type="submit"
                 disabled={loading || phoneLoading || !fullName.trim() || !gender}
-                className={gradientBtn}
-                style={{ background: "linear-gradient(135deg,#3B82F6,#2DD4BF)" }}
+                className={primaryBtnCls}
               >
-                {loading || phoneLoading ? "Création…" : "Créer mon compte →"}
+                {loading || phoneLoading ? "Création…" : (
+                  <>
+                    Créer mon compte
+                    <ArrowRight className="h-4 w-4" />
+                  </>
+                )}
               </button>
 
               <button
                 type="button"
                 onClick={() => setStep("enterPhone")}
-                className="w-full text-sm text-gray-500 hover:text-gray-700 font-medium pt-1"
+                className={backLinkCls}
               >
-                ← Changer de numéro
+                <ChevronLeft className="h-4 w-4" />
+                Changer de numéro
               </button>
             </form>
           )}
@@ -803,7 +738,7 @@ const PatientAccess: React.FC = () => {
           {/* ── STEP: Déjà authentifié ── */}
           {step === "alreadyAuthenticated" && getPendingGroupTherapySessionId() && (
             <div className="space-y-5">
-              <p className="text-sm text-gray-600 text-center">
+              <p className="text-sm text-ink-soft text-center">
                 Vous êtes déjà connecté(e). Confirmez pour rejoindre la session de thérapie de groupe.
               </p>
 
@@ -817,18 +752,23 @@ const PatientAccess: React.FC = () => {
                   }
                 }}
                 disabled={loading}
-                className={gradientBtn}
-                style={{ background: "linear-gradient(135deg,#3B82F6,#2DD4BF)" }}
+                className={primaryBtnCls}
               >
-                {loading ? "Inscription en cours…" : "Rejoindre la session →"}
+                {loading ? "Inscription en cours…" : (
+                  <>
+                    Rejoindre la session
+                    <ArrowRight className="h-4 w-4" />
+                  </>
+                )}
               </button>
 
               <button
                 type="button"
                 onClick={() => navigate("/patient/dashboard")}
-                className="w-full text-sm text-gray-500 hover:text-gray-700 font-medium pt-1"
+                className={backLinkCls}
               >
-                ← Retour au tableau de bord
+                <ChevronLeft className="h-4 w-4" />
+                Retour au tableau de bord
               </button>
             </div>
           )}

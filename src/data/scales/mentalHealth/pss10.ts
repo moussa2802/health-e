@@ -18,7 +18,7 @@ export const PSS10: AssessmentScale = {
   timeEstimateMinutes: 4,
   reference: "Cohen, S., Kamarck, T., & Mermelstein, R. (1983). A global measure of perceived stress. Journal of Health and Social Behavior, 24(4), 385–396.",
   licenseNote: "Domaine public. Libre de droits.",
-  warningMessage: "Ces résultats sont un premier éclairage, pas un diagnostic — si tu te sens {{submergé|submergée}}, parler à un professionnel peut vraiment aider 🤝",
+  warningMessage: "Ces résultats sont un premier éclairage, pas un diagnostic — si tu te sens {{submergé|submergée}}, parler à un professionnel peut vraiment aider",
   scoreRange: { min: 0, max: 40 },
   reverseIds: [4, 5, 7, 8],
   items: [
@@ -31,11 +31,11 @@ export const PSS10: AssessmentScale = {
     { id: 7,  text: "Tu as réussi à garder ton calme face aux petites irritations du quotidien ?",                            type: 'frequency', options: opts },
     { id: 8,  text: "Tu t'es {{senti|sentie}} maître de la situation, comme aux commandes de ta vie ?",                               type: 'frequency', options: opts },
     { id: 9,  text: "Tu t'es {{mis|mise}} en colère à cause de choses sur lesquelles tu n'avais aucun contrôle ?",                 type: 'frequency', options: opts },
-    { id: 10, text: "Tu as eu l'impression que les problèmes s'empilaient au point de ne plus pouvoir gérer ? 🧱",            type: 'frequency', options: opts },
+    { id: 10, text: "Tu as eu l'impression que les problèmes s'empilaient au point de ne plus pouvoir gérer ?",            type: 'frequency', options: opts },
   ],
   interpretation: [
-    { min: 0,  max: 13, label: "Ton niveau de stress est bas 😌",    severity: 'minimal',  description: "Tu gères bien la pression — ton stress reste dans une zone confortable et gérable.", referralRequired: false, recommendation: "Continue comme ça ! Garde tes bonnes habitudes de bien-être, elles font clairement effet." },
-    { min: 14, max: 26, label: "Ton stress est modéré",    severity: 'moderate', description: "Le stress commence à peser un peu — comme un sac à dos qu'on remplit sans s'en rendre compte 🎒", referralRequired: false, recommendation: "C'est le bon moment pour identifier ce qui te pèse le plus et mettre en place des stratégies concrètes : respiration, mouvement, pauses régulières." },
-    { min: 27, max: 40, label: "Ton niveau de stress est élevé",     severity: 'severe',   description: "Tu es sous forte pression et ça mérite qu'on s'en occupe — c'est pas un signe de faiblesse, c'est un signal d'alerte ⚠️", referralRequired: true, recommendation: "Parler à un professionnel de santé peut t'aider à retrouver de l'air. Tu n'as pas à tout porter {{seul|seule}}." },
+    { min: 0,  max: 13, label: "Ton niveau de stress est bas",    severity: 'minimal',  description: "Tu gères bien la pression — ton stress reste dans une zone confortable et gérable.", referralRequired: false, recommendation: "Continue comme ça ! Garde tes bonnes habitudes de bien-être, elles font clairement effet." },
+    { min: 14, max: 26, label: "Ton stress est modéré",    severity: 'moderate', description: "Le stress commence à peser un peu — comme un sac à dos qu'on remplit sans s'en rendre compte", referralRequired: false, recommendation: "C'est le bon moment pour identifier ce qui te pèse le plus et mettre en place des stratégies concrètes : respiration, mouvement, pauses régulières." },
+    { min: 27, max: 40, label: "Ton niveau de stress est élevé",     severity: 'severe',   description: "Tu es sous forte pression et ça mérite qu'on s'en occupe — c'est pas un signe de faiblesse, c'est un signal d'alerte", referralRequired: true, recommendation: "Parler à un professionnel de santé peut t'aider à retrouver de l'air. Tu n'as pas à tout porter {{seul|seule}}." },
   ],
 };

@@ -1,5 +1,5 @@
 import React from "react";
-import { X, Check, Calendar, Clock } from "lucide-react";
+import { X, Check, Calendar, Clock, Loader2, Info } from "lucide-react";
 import { format, isSameDay, isBefore, isToday, startOfDay } from "date-fns";
 
 interface DatePickerModalProps {
@@ -128,7 +128,7 @@ const DatePickerModal: React.FC<DatePickerModalProps> = ({
     endDate.setHours(23, 59, 59, 999);
 
     console.log(
-      `🔍 Génération des dates du ${format(
+      `Génération des dates du ${format(
         currentDate,
         "dd/MM/yyyy"
       )} au ${format(endDate, "dd/MM/yyyy")}`
@@ -144,7 +144,7 @@ const DatePickerModal: React.FC<DatePickerModalProps> = ({
 
       if (activeDay) {
         console.log(
-          `✅ Date trouvée: ${format(currentDate, "EEEE dd/MM/yyyy")} (${
+          `Date trouvée: ${format(currentDate, "EEEE dd/MM/yyyy")} (${
             activeDay[0]
           })`
         );
@@ -155,7 +155,7 @@ const DatePickerModal: React.FC<DatePickerModalProps> = ({
       currentDate.setDate(currentDate.getDate() + 1);
     }
 
-    console.log(`📊 Total des dates générées: ${dates.length}`);
+    console.log(`Total des dates générées: ${dates.length}`);
 
     return dates;
   };
@@ -289,19 +289,19 @@ const DatePickerModal: React.FC<DatePickerModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-6xl max-h-[90vh] flex flex-col overflow-hidden">
+    <div className="fixed inset-0 bg-ink/50 flex items-center justify-center z-50 px-4">
+      <div className="bg-card rounded-block shadow-lift w-full max-w-6xl max-h-[90vh] flex flex-col overflow-hidden">
         {/* Header */}
-        <div className="p-6 border-b border-gray-200 flex justify-between items-center">
-          <h2 className="text-xl font-semibold text-gray-800 flex items-center">
-            <Calendar className="w-6 h-6 text-blue-500 mr-2" />
+        <div className="p-6 border-b border-line flex justify-between items-center">
+          <h2 className="font-display text-xl font-semibold text-ink flex items-center">
+            <Calendar className="w-6 h-6 text-accent mr-2" />
             Créer un modèle de créneaux
           </h2>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+            className="p-2 hover:bg-paper rounded-pill transition-colors"
           >
-            <X className="w-5 h-5 text-gray-500" />
+            <X className="w-5 h-5 text-ink-soft" />
           </button>
         </div>
 
@@ -309,8 +309,8 @@ const DatePickerModal: React.FC<DatePickerModalProps> = ({
           <>
             {/* Planning hebdomadaire */}
             <div className="mb-6">
-              <h3 className="text-lg font-medium text-gray-800 mb-4 flex items-center">
-                <Clock className="w-5 h-5 text-blue-500 mr-2" />
+              <h3 className="text-lg font-medium text-ink mb-4 flex items-center">
+                <Clock className="w-5 h-5 text-accent mr-2" />
                 Planning hebdomadaire
               </h3>
 
@@ -329,16 +329,16 @@ const DatePickerModal: React.FC<DatePickerModalProps> = ({
                   return (
                     <div
                       key={dayName}
-                      className="flex items-center space-x-4 p-3 border border-gray-200 rounded-lg"
+                      className="flex items-center space-x-4 p-3 border border-line rounded-xl"
                     >
                       <label className="flex items-center space-x-3 flex-1">
                         <input
                           type="checkbox"
                           checked={config.active}
                           onChange={() => handleDayToggle(dayName)}
-                          className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                          className="w-4 h-4 text-accent border-line rounded focus:ring-accent"
                         />
-                        <span className="font-medium text-gray-700 min-w-[80px]">
+                        <span className="font-medium text-ink-soft min-w-[80px]">
                           {dayLabels[dayName as keyof typeof dayLabels]}
                         </span>
                       </label>
@@ -355,9 +355,9 @@ const DatePickerModal: React.FC<DatePickerModalProps> = ({
                                 e.target.value
                               )
                             }
-                            className="px-3 py-1 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            className="px-3 py-1 border border-line rounded-xl text-sm focus:outline-none focus:border-accent"
                           />
-                          <span className="text-gray-500">à</span>
+                          <span className="text-muted">à</span>
                           <input
                             type="time"
                             value={config.endTime}
@@ -368,7 +368,7 @@ const DatePickerModal: React.FC<DatePickerModalProps> = ({
                                 e.target.value
                               )
                             }
-                            className="px-3 py-1 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            className="px-3 py-1 border border-line rounded-xl text-sm focus:outline-none focus:border-accent"
                           />
                         </div>
                       )}
@@ -380,13 +380,13 @@ const DatePickerModal: React.FC<DatePickerModalProps> = ({
 
             {/* Durée des créneaux */}
             <div className="mb-6">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-ink-soft mb-2">
                 Durée des créneaux
               </label>
               <select
                 value={slotDuration}
                 onChange={(e) => setSlotDuration(Number(e.target.value))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border border-line rounded-xl focus:outline-none focus:border-accent"
               >
                 <option value={15}>15 minutes</option>
                 <option value={30}>30 minutes</option>
@@ -399,12 +399,12 @@ const DatePickerModal: React.FC<DatePickerModalProps> = ({
 
             {/* Période de validité */}
             <div className="mb-6">
-              <h3 className="text-lg font-medium text-gray-800 mb-4">
+              <h3 className="text-lg font-medium text-ink mb-4">
                 Période de validité
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-ink-soft mb-2">
                     Date de début
                   </label>
                   <input
@@ -416,11 +416,11 @@ const DatePickerModal: React.FC<DatePickerModalProps> = ({
                         startDate: new Date(e.target.value),
                       }))
                     }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-line rounded-xl focus:outline-none focus:border-accent"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-ink-soft mb-2">
                     Date de fin
                   </label>
                   <input
@@ -432,7 +432,7 @@ const DatePickerModal: React.FC<DatePickerModalProps> = ({
                         endDate: new Date(e.target.value),
                       }))
                     }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-line rounded-xl focus:outline-none focus:border-accent"
                   />
                 </div>
               </div>
@@ -440,7 +440,7 @@ const DatePickerModal: React.FC<DatePickerModalProps> = ({
 
             {/* Fréquence de répétition */}
             <div className="mb-6">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-ink-soft mb-2">
                 Fréquence de répétition
               </label>
               <select
@@ -451,7 +451,7 @@ const DatePickerModal: React.FC<DatePickerModalProps> = ({
                     type: e.target.value as "weekly" | "biweekly" | "monthly",
                   }))
                 }
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border border-line rounded-xl focus:outline-none focus:border-accent"
               >
                 <option value="weekly">Chaque semaine</option>
                 <option value="biweekly">Chaque 2 semaines</option>
@@ -461,33 +461,36 @@ const DatePickerModal: React.FC<DatePickerModalProps> = ({
           </>
 
           {/* Aperçu */}
-          <div className="bg-gray-50 p-4 rounded-md">
-            <h4 className="text-sm font-medium text-gray-700 mb-2">Aperçu</h4>
-            <div className="space-y-2 text-sm text-gray-600">
+          <div className="bg-paper p-4 rounded-xl border border-line">
+            <h4 className="text-sm font-medium text-ink-soft mb-2">Aperçu</h4>
+            <div className="space-y-2 text-sm text-ink-soft">
               <p>
-                <span className="font-medium">{preview.activeDays}</span>{" "}
+                <span className="font-medium text-ink">{preview.activeDays}</span>{" "}
                 jour(s) actif(s) par semaine
               </p>
               <p>
-                <span className="font-medium">{preview.totalDates}</span>{" "}
+                <span className="font-medium text-ink">{preview.totalDates}</span>{" "}
                 occurrence(s) générée(s)
               </p>
               <p>
-                <span className="font-medium">{preview.totalSlots}</span>{" "}
+                <span className="font-medium text-ink">{preview.totalSlots}</span>{" "}
                 créneau(x) au total
               </p>
-              <p className="text-xs text-blue-600 bg-blue-50 p-2 rounded">
-                💡 Période : du{" "}
-                {format(repetitionConfig.startDate, "dd/MM/yyyy")} au{" "}
-                {format(repetitionConfig.endDate, "dd/MM/yyyy")}(
-                {repetitionConfig.type === "weekly"
-                  ? "chaque semaine"
-                  : repetitionConfig.type === "biweekly"
-                  ? "chaque 2 semaines"
-                  : "chaque mois"}
-                )
+              <p className="flex items-start gap-1.5 text-xs text-accent bg-accent-soft p-2 rounded-xl">
+                <Info className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" />
+                <span>
+                  Période : du{" "}
+                  {format(repetitionConfig.startDate, "dd/MM/yyyy")} au{" "}
+                  {format(repetitionConfig.endDate, "dd/MM/yyyy")} (
+                  {repetitionConfig.type === "weekly"
+                    ? "chaque semaine"
+                    : repetitionConfig.type === "biweekly"
+                    ? "chaque 2 semaines"
+                    : "chaque mois"}
+                  )
+                </span>
               </p>
-              <p className="text-lg font-semibold text-blue-600">
+              <p className="text-lg font-semibold text-accent">
                 Total: <span className="font-bold">{preview.totalSlots}</span>{" "}
                 créneau(x) à créer
               </p>
@@ -496,21 +499,21 @@ const DatePickerModal: React.FC<DatePickerModalProps> = ({
         </div>
 
         {/* Footer */}
-        <div className="p-6 border-t border-gray-200 flex justify-end space-x-3">
+        <div className="p-6 border-t border-line flex justify-end space-x-3">
           <button
             onClick={onClose}
-            className="px-4 py-2 text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors"
+            className="px-4 py-2 text-ink-soft bg-paper rounded-pill hover:bg-line/50 transition-colors"
           >
             Annuler
           </button>
           <button
             onClick={onAddSlots}
             disabled={loading || preview.totalSlots === 0}
-            className="px-6 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+            className="px-6 py-2 bg-accent text-white rounded-pill hover:bg-accent/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
           >
             {loading ? (
               <>
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                 Création...
               </>
             ) : (

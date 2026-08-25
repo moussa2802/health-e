@@ -15,6 +15,7 @@ import {
   Eye,
   Check,
   BarChart3,
+  Phone,
 } from "lucide-react";
 import {
   createGroupTherapySession,
@@ -423,20 +424,20 @@ const AdminGroupTherapy: React.FC = () => {
       <div className="space-y-6">
         {/* Header */}
         <div className="flex justify-between items-center">
-          <h1 className="text-2xl font-bold text-gray-900">
+          <h1 className="font-display text-2xl font-semibold text-ink">
             {language === "fr" ? "Thérapies de groupe" : "Group Therapy"}
           </h1>
           <div className="flex items-center space-x-3">
             <button
               onClick={handleShowStatistics}
-              className="flex items-center space-x-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+              className="flex items-center space-x-2 px-4 py-2 bg-sage text-white rounded-card hover:bg-sage/90 transition-colors"
             >
               <BarChart3 className="h-5 w-5" />
               <span>{language === "fr" ? "Statistiques" : "Statistics"}</span>
             </button>
             <button
               onClick={() => setShowForm(!showForm)}
-              className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              className="flex items-center space-x-2 px-4 py-2 bg-accent text-white rounded-card hover:bg-accent/90 transition-colors"
             >
               <Plus className="h-5 w-5" />
               <span>
@@ -448,16 +449,16 @@ const AdminGroupTherapy: React.FC = () => {
 
         {/* Formulaire de création */}
         {showForm && (
-          <div className="bg-white rounded-lg shadow-md p-6">
+          <div className="bg-card rounded-block shadow-soft p-6">
             <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-semibold">
+              <h2 className="font-display text-xl font-semibold text-ink">
                 {language === "fr"
                   ? "Nouvelle thérapie de groupe"
                   : "New Group Therapy"}
               </h2>
               <button
                 onClick={() => setShowForm(false)}
-                className="text-gray-500 hover:text-gray-700"
+                className="text-muted hover:text-ink"
               >
                 <X className="h-6 w-6" />
               </button>
@@ -465,14 +466,14 @@ const AdminGroupTherapy: React.FC = () => {
 
             <form onSubmit={handleSubmit} className="space-y-4">
               {formError && (
-                <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+                <div className="bg-danger/10 border border-danger text-danger px-4 py-3 rounded-card">
                   {formError}
                 </div>
               )}
 
               {/* Titre */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-ink-soft mb-1">
                   {language === "fr" ? "Titre *" : "Title *"}
                 </label>
                 <input
@@ -480,14 +481,14 @@ const AdminGroupTherapy: React.FC = () => {
                   name="title"
                   value={formData.title}
                   onChange={handleInputChange}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full px-4 py-2 border border-line rounded-card focus:ring-2 focus:ring-accent focus:border-accent"
                   required
                 />
               </div>
 
               {/* Description */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-ink-soft mb-1">
                   {language === "fr" ? "Description *" : "Description *"}
                 </label>
                 <textarea
@@ -495,14 +496,14 @@ const AdminGroupTherapy: React.FC = () => {
                   value={formData.description}
                   onChange={handleInputChange}
                   rows={4}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full px-4 py-2 border border-line rounded-card focus:ring-2 focus:ring-accent focus:border-accent"
                   required
                 />
               </div>
 
               {/* Date */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-ink-soft mb-1">
                   {language === "fr" ? "Date *" : "Date *"}
                 </label>
                 <input
@@ -510,14 +511,14 @@ const AdminGroupTherapy: React.FC = () => {
                   name="date"
                   value={formData.date}
                   onChange={handleInputChange}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full px-4 py-2 border border-line rounded-card focus:ring-2 focus:ring-accent focus:border-accent"
                   required
                 />
               </div>
 
               {/* Heure */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-ink-soft mb-1">
                   {language === "fr" ? "Heure *" : "Time *"}
                 </label>
                 <input
@@ -525,14 +526,14 @@ const AdminGroupTherapy: React.FC = () => {
                   name="time"
                   value={formData.time}
                   onChange={handleInputChange}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full px-4 py-2 border border-line rounded-card focus:ring-2 focus:ring-accent focus:border-accent"
                   required
                 />
               </div>
 
               {/* Prix */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-ink-soft mb-1">
                   {language === "fr"
                     ? "Prix (0 = Gratuit) *"
                     : "Price (0 = Free) *"}
@@ -544,14 +545,14 @@ const AdminGroupTherapy: React.FC = () => {
                   onChange={handleInputChange}
                   min="0"
                   step="0.01"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full px-4 py-2 border border-line rounded-card focus:ring-2 focus:ring-accent focus:border-accent"
                   required
                 />
               </div>
 
               {/* Capacity */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-ink-soft mb-1">
                   {language === "fr"
                     ? "Capacité (nombre maximum de participants) *"
                     : "Capacity (max participants) *"}
@@ -562,21 +563,21 @@ const AdminGroupTherapy: React.FC = () => {
                   value={formData.capacity}
                   onChange={handleInputChange}
                   min="2"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full px-4 py-2 border border-line rounded-card focus:ring-2 focus:ring-accent focus:border-accent"
                   required
                 />
               </div>
 
               {/* Professionnels */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-ink-soft mb-2">
                   {language === "fr" ? "Professionnels *" : "Professionals *"}
                 </label>
-                <div className="space-y-2 max-h-60 overflow-y-auto border border-gray-200 rounded-lg p-4">
+                <div className="space-y-2 max-h-60 overflow-y-auto border border-line rounded-card p-4">
                   {professionals.map((pro) => (
                     <div
                       key={pro.id}
-                      className="flex items-center justify-between p-2 hover:bg-gray-50 rounded"
+                      className="flex items-center justify-between p-2 hover:bg-paper rounded-card"
                     >
                       <div className="flex items-center space-x-2">
                         <input
@@ -586,11 +587,11 @@ const AdminGroupTherapy: React.FC = () => {
                           onChange={() =>
                             handleProfessionalSelect(pro.id, true)
                           }
-                          className="w-4 h-4 text-blue-600"
+                          className="w-4 h-4 text-accent"
                         />
                         <span className="font-medium">{pro.name}</span>
                         {formData.primaryHostId === pro.id && (
-                          <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
+                          <span className="text-xs bg-accent-soft text-accent px-2 py-1 rounded-pill">
                             {language === "fr" ? "Hôte" : "Host"}
                           </span>
                         )}
@@ -603,9 +604,9 @@ const AdminGroupTherapy: React.FC = () => {
                             onChange={() =>
                               handleProfessionalSelect(pro.id, false)
                             }
-                            className="w-4 h-4 text-blue-600"
+                            className="w-4 h-4 text-accent"
                           />
-                          <span className="text-sm text-gray-600">
+                          <span className="text-sm text-muted">
                             {language === "fr" ? "Secondaire" : "Secondary"}
                           </span>
                         </label>
@@ -620,14 +621,14 @@ const AdminGroupTherapy: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setShowForm(false)}
-                  className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+                  className="px-4 py-2 border border-line rounded-card text-ink-soft hover:bg-paper"
                 >
                   {language === "fr" ? "Annuler" : "Cancel"}
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-4 py-2 bg-accent text-white rounded-card hover:bg-accent/90 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {isSubmitting
                     ? language === "fr"
@@ -644,8 +645,8 @@ const AdminGroupTherapy: React.FC = () => {
 
         {/* Liste des sessions en cards */}
         {sessions.length === 0 ? (
-          <div className="bg-white rounded-lg shadow-md p-12 text-center">
-            <p className="text-gray-500 text-lg">
+          <div className="bg-card rounded-block shadow-soft p-12 text-center">
+            <p className="text-muted text-lg">
               {language === "fr"
                 ? "Aucune session de thérapie de groupe"
                 : "No group therapy sessions"}
@@ -680,10 +681,10 @@ const AdminGroupTherapy: React.FC = () => {
               return (
                 <div
                   key={session.id}
-                  className="bg-white rounded-xl shadow-lg border border-gray-200 hover:shadow-xl transition-all duration-300 overflow-hidden"
+                  className="bg-card rounded-block shadow-soft border border-line hover:shadow-lift transition-all duration-300 overflow-hidden"
                 >
-                  {/* Header avec gradient */}
-                  <div className="bg-gradient-to-r from-purple-600 via-pink-600 to-orange-500 p-6 text-white">
+                  {/* Header */}
+                  <div className="bg-ink p-6 text-paper">
                     <h3 className="text-xl font-bold mb-4">{session.title}</h3>
                     {session.date && (
                       <div className="flex items-center space-x-2 mb-2 text-sm">
@@ -701,14 +702,14 @@ const AdminGroupTherapy: React.FC = () => {
 
                   {/* Body */}
                   <div className="p-6">
-                    <p className="text-gray-600 text-sm mb-4 line-clamp-3">
+                    <p className="text-ink-soft text-sm mb-4 line-clamp-3">
                       {session.description}
                     </p>
 
                     {/* Hôtes */}
                     {(primaryHost || secondaryHosts.length > 0) && (
                       <div className="mb-4">
-                        <p className="font-semibold text-sm text-gray-700 mb-2">
+                        <p className="font-semibold text-sm text-ink-soft mb-2">
                           Hôte(s):
                         </p>
                         {primaryHost && (
@@ -720,8 +721,8 @@ const AdminGroupTherapy: React.FC = () => {
                                 className="w-8 h-8 rounded-full object-cover"
                               />
                             ) : (
-                              <div className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center">
-                                <User className="h-4 w-4 text-purple-600" />
+                              <div className="w-8 h-8 rounded-full bg-accent-soft flex items-center justify-center">
+                                <User className="h-4 w-4 text-accent" />
                               </div>
                             )}
                             <div className="flex-1">
@@ -729,12 +730,12 @@ const AdminGroupTherapy: React.FC = () => {
                                 <span className="text-sm font-medium">
                                   {primaryHost.name}
                                 </span>
-                                <span className="bg-purple-100 text-purple-800 px-2 py-0.5 rounded-full text-xs font-semibold">
+                                <span className="bg-accent-soft text-accent px-2 py-0.5 rounded-pill text-xs font-semibold">
                                   Principal
                                 </span>
                               </div>
                               {primaryHost.specialty && (
-                                <p className="text-xs text-gray-500">
+                                <p className="text-xs text-muted">
                                   {primaryHost.specialty}
                                 </p>
                               )}
@@ -753,8 +754,8 @@ const AdminGroupTherapy: React.FC = () => {
                                 className="w-8 h-8 rounded-full object-cover"
                               />
                             ) : (
-                              <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center">
-                                <User className="h-4 w-4 text-gray-600" />
+                              <div className="w-8 h-8 rounded-full bg-paper-dark flex items-center justify-center">
+                                <User className="h-4 w-4 text-ink-soft" />
                               </div>
                             )}
                             <div className="flex-1">
@@ -762,7 +763,7 @@ const AdminGroupTherapy: React.FC = () => {
                                 {host.name}
                               </span>
                               {host.specialty && (
-                                <p className="text-xs text-gray-500">
+                                <p className="text-xs text-muted">
                                   {host.specialty}
                                 </p>
                               )}
@@ -774,7 +775,7 @@ const AdminGroupTherapy: React.FC = () => {
 
                     {/* Places et prix */}
                     <div className="flex items-center justify-between mb-4 text-sm">
-                      <div className="flex items-center text-gray-600">
+                      <div className="flex items-center text-ink-soft">
                         <Users className="h-4 w-4 mr-1" />
                         <span>
                           {participantsCount} / {session.capacity} places
@@ -783,13 +784,13 @@ const AdminGroupTherapy: React.FC = () => {
                       <div className="flex items-center">
                         {isFree ? (
                           <>
-                            <Heart className="h-4 w-4 text-green-600 mr-1" />
-                            <span className="text-green-600 font-semibold">
+                            <Heart className="h-4 w-4 text-ok mr-1" />
+                            <span className="text-ok font-semibold">
                               Gratuit
                             </span>
                           </>
                         ) : (
-                          <span className="text-gray-700 font-semibold">
+                          <span className="text-ink font-semibold">
                             {session.price} XOF
                           </span>
                         )}
@@ -800,10 +801,10 @@ const AdminGroupTherapy: React.FC = () => {
                     <div className="mb-4">
                       <div className="flex items-center space-x-2">
                         <span
-                          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                          className={`inline-flex items-center px-2.5 py-0.5 rounded-pill text-xs font-medium ${
                             session.isActive
-                              ? "bg-green-100 text-green-800"
-                              : "bg-gray-100 text-gray-800"
+                              ? "bg-ok/15 text-ok"
+                              : "bg-paper-dark text-ink-soft"
                           }`}
                         >
                           {session.isActive
@@ -815,7 +816,7 @@ const AdminGroupTherapy: React.FC = () => {
                             : "Inactive"}
                         </span>
                         {session.isCompleted && (
-                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-pill text-xs font-medium bg-sage-soft text-sage">
                             {language === "fr" ? "Terminé" : "Completed"}
                           </span>
                         )}
@@ -827,7 +828,7 @@ const AdminGroupTherapy: React.FC = () => {
                       {/* Bouton principal: Participants */}
                       <button
                         onClick={() => handleViewParticipants(session)}
-                        className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center text-sm font-medium"
+                        className="w-full px-4 py-2 bg-ink text-white rounded-card hover:bg-ink/90 transition-colors flex items-center justify-center text-sm font-medium"
                       >
                         <Eye className="h-4 w-4 mr-2" />
                         {language === "fr"
@@ -840,7 +841,7 @@ const AdminGroupTherapy: React.FC = () => {
                         {/* Modifier */}
                         <button
                           onClick={() => handleEdit(session)}
-                          className="flex-1 px-3 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors flex items-center justify-center text-sm"
+                          className="flex-1 px-3 py-2 border border-line text-ink-soft rounded-card hover:bg-paper transition-colors flex items-center justify-center text-sm"
                           title={language === "fr" ? "Modifier" : "Edit"}
                         >
                           <Edit2 className="h-4 w-4 mr-1" />
@@ -853,7 +854,7 @@ const AdminGroupTherapy: React.FC = () => {
                         {!session.isCompleted ? (
                           <button
                             onClick={() => handleMarkAsCompleted(session.id)}
-                            className="flex-1 px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center text-sm font-medium"
+                            className="flex-1 px-3 py-2 bg-ok text-white rounded-card hover:bg-ok/90 transition-colors flex items-center justify-center text-sm font-medium"
                             title={
                               language === "fr"
                                 ? "Marquer comme terminé"
@@ -868,7 +869,7 @@ const AdminGroupTherapy: React.FC = () => {
                         ) : (
                           <button
                             onClick={() => handleMarkAsNotCompleted(session.id)}
-                            className="flex-1 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center text-sm font-medium"
+                            className="flex-1 px-3 py-2 bg-sage text-white rounded-card hover:bg-sage/90 transition-colors flex items-center justify-center text-sm font-medium"
                             title={
                               language === "fr"
                                 ? "Réactiver la session"
@@ -885,7 +886,7 @@ const AdminGroupTherapy: React.FC = () => {
                         {/* Supprimer */}
                         <button
                           onClick={() => handleDeleteSession(session.id)}
-                          className="flex-1 px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors flex items-center justify-center text-sm font-medium"
+                          className="flex-1 px-3 py-2 bg-danger text-white rounded-card hover:bg-danger/90 transition-colors flex items-center justify-center text-sm font-medium"
                           title={language === "fr" ? "Supprimer" : "Delete"}
                         >
                           <Trash2 className="h-4 w-4 mr-1" />
@@ -900,10 +901,10 @@ const AdminGroupTherapy: React.FC = () => {
                         onClick={() =>
                           handleToggleStatus(session.id, session.isActive)
                         }
-                        className={`w-full px-3 py-2 rounded-lg transition-colors flex items-center justify-center text-sm font-medium ${
+                        className={`w-full px-3 py-2 rounded-card transition-colors flex items-center justify-center text-sm font-medium ${
                           session.isActive
-                            ? "bg-orange-600 text-white hover:bg-orange-700"
-                            : "bg-gray-400 text-white hover:bg-gray-500"
+                            ? "bg-gold text-white hover:bg-gold/90"
+                            : "bg-sage text-white hover:bg-sage/90"
                         }`}
                         title={
                           session.isActive
@@ -941,10 +942,10 @@ const AdminGroupTherapy: React.FC = () => {
 
         {/* Modal pour afficher les participants */}
         {showParticipantsModal && selectedSession && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[80vh] overflow-y-auto">
+          <div className="fixed inset-0 bg-ink/50 flex items-center justify-center z-50">
+            <div className="bg-card rounded-block shadow-lift p-6 max-w-2xl w-full mx-4 max-h-[80vh] overflow-y-auto">
               <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xl font-bold">
+                <h2 className="font-display text-xl font-semibold text-ink">
                   {language === "fr" ? "Participants" : "Participants"} -{" "}
                   {selectedSession.title}
                 </h2>
@@ -953,14 +954,14 @@ const AdminGroupTherapy: React.FC = () => {
                     setShowParticipantsModal(false);
                     setSelectedSession(null);
                   }}
-                  className="text-gray-500 hover:text-gray-700"
+                  className="text-muted hover:text-ink"
                 >
                   <X className="h-6 w-6" />
                 </button>
               </div>
               <div className="space-y-2">
                 {participantsList.length === 0 ? (
-                  <p className="text-gray-500 text-center py-8">
+                  <p className="text-muted text-center py-8">
                     {language === "fr"
                       ? "Aucun participant inscrit"
                       : "No participants registered"}
@@ -969,18 +970,19 @@ const AdminGroupTherapy: React.FC = () => {
                   participantsList.map((userId) => (
                     <div
                       key={userId}
-                      className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg"
+                      className="flex items-center space-x-3 p-3 bg-paper rounded-card"
                     >
-                      <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center">
-                        <User className="h-5 w-5 text-purple-600" />
+                      <div className="w-10 h-10 rounded-full bg-accent-soft flex items-center justify-center">
+                        <User className="h-5 w-5 text-accent" />
                       </div>
                       <div className="flex-1">
                         <p className="font-medium">
                           {participantsNames[userId] || userId}
                         </p>
-                        <p className="text-xs text-gray-500">{userId}</p>
-                        <p className="text-sm text-gray-700 mt-1">
-                          📱 {participantsPhones[userId] || "Non disponible"}
+                        <p className="text-xs text-muted">{userId}</p>
+                        <p className="text-sm text-ink-soft mt-1 flex items-center gap-1">
+                          <Phone className="h-3.5 w-3.5 text-muted" />
+                          {participantsPhones[userId] || "Non disponible"}
                         </p>
                       </div>
                     </div>
@@ -993,10 +995,10 @@ const AdminGroupTherapy: React.FC = () => {
 
         {/* Modal pour modifier une session */}
         {showEditModal && selectedSession && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[80vh] overflow-y-auto">
+          <div className="fixed inset-0 bg-ink/50 flex items-center justify-center z-50">
+            <div className="bg-card rounded-block shadow-lift p-6 max-w-2xl w-full mx-4 max-h-[80vh] overflow-y-auto">
               <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xl font-bold">
+                <h2 className="font-display text-xl font-semibold text-ink">
                   {language === "fr" ? "Modifier la session" : "Edit Session"}
                 </h2>
                 <button
@@ -1004,21 +1006,21 @@ const AdminGroupTherapy: React.FC = () => {
                     setShowEditModal(false);
                     setSelectedSession(null);
                   }}
-                  className="text-gray-500 hover:text-gray-700"
+                  className="text-muted hover:text-ink"
                 >
                   <X className="h-6 w-6" />
                 </button>
               </div>
               <form onSubmit={handleUpdateSession} className="space-y-4">
                 {formError && (
-                  <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+                  <div className="bg-danger/10 border border-danger text-danger px-4 py-3 rounded-card">
                     {formError}
                   </div>
                 )}
 
                 {/* Titre */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-ink-soft mb-1">
                     {language === "fr" ? "Titre *" : "Title *"}
                   </label>
                   <input
@@ -1026,14 +1028,14 @@ const AdminGroupTherapy: React.FC = () => {
                     name="title"
                     value={formData.title}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-4 py-2 border border-line rounded-card focus:ring-2 focus:ring-accent focus:border-accent"
                     required
                   />
                 </div>
 
                 {/* Description */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-ink-soft mb-1">
                     {language === "fr" ? "Description *" : "Description *"}
                   </label>
                   <textarea
@@ -1041,14 +1043,14 @@ const AdminGroupTherapy: React.FC = () => {
                     value={formData.description}
                     onChange={handleInputChange}
                     rows={4}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-4 py-2 border border-line rounded-card focus:ring-2 focus:ring-accent focus:border-accent"
                     required
                   />
                 </div>
 
                 {/* Date */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-ink-soft mb-1">
                     {language === "fr" ? "Date *" : "Date *"}
                   </label>
                   <input
@@ -1056,14 +1058,14 @@ const AdminGroupTherapy: React.FC = () => {
                     name="date"
                     value={formData.date}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-4 py-2 border border-line rounded-card focus:ring-2 focus:ring-accent focus:border-accent"
                     required
                   />
                 </div>
 
                 {/* Heure */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-ink-soft mb-1">
                     {language === "fr" ? "Heure *" : "Time *"}
                   </label>
                   <input
@@ -1071,14 +1073,14 @@ const AdminGroupTherapy: React.FC = () => {
                     name="time"
                     value={formData.time}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-4 py-2 border border-line rounded-card focus:ring-2 focus:ring-accent focus:border-accent"
                     required
                   />
                 </div>
 
                 {/* Prix */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-ink-soft mb-1">
                     {language === "fr"
                       ? "Prix (0 = Gratuit) *"
                       : "Price (0 = Free) *"}
@@ -1090,14 +1092,14 @@ const AdminGroupTherapy: React.FC = () => {
                     onChange={handleInputChange}
                     min="0"
                     step="0.01"
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-4 py-2 border border-line rounded-card focus:ring-2 focus:ring-accent focus:border-accent"
                     required
                   />
                 </div>
 
                 {/* Capacity */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-ink-soft mb-1">
                     {language === "fr"
                       ? "Capacité (nombre maximum de participants) *"
                       : "Capacity (max participants) *"}
@@ -1108,21 +1110,21 @@ const AdminGroupTherapy: React.FC = () => {
                     value={formData.capacity}
                     onChange={handleInputChange}
                     min="2"
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-4 py-2 border border-line rounded-card focus:ring-2 focus:ring-accent focus:border-accent"
                     required
                   />
                 </div>
 
                 {/* Professionnels */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-ink-soft mb-2">
                     {language === "fr" ? "Professionnels *" : "Professionals *"}
                   </label>
-                  <div className="space-y-2 max-h-60 overflow-y-auto border border-gray-200 rounded-lg p-4">
+                  <div className="space-y-2 max-h-60 overflow-y-auto border border-line rounded-card p-4">
                     {professionals.map((pro) => (
                       <div
                         key={pro.id}
-                        className="flex items-center justify-between p-2 hover:bg-gray-50 rounded"
+                        className="flex items-center justify-between p-2 hover:bg-paper rounded-card"
                       >
                         <div className="flex items-center space-x-2">
                           <input
@@ -1132,11 +1134,11 @@ const AdminGroupTherapy: React.FC = () => {
                             onChange={() =>
                               handleProfessionalSelect(pro.id, true)
                             }
-                            className="w-4 h-4 text-blue-600"
+                            className="w-4 h-4 text-accent"
                           />
                           <span className="font-medium">{pro.name}</span>
                           {formData.primaryHostId === pro.id && (
-                            <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
+                            <span className="text-xs bg-accent-soft text-accent px-2 py-1 rounded-pill">
                               {language === "fr" ? "Hôte" : "Host"}
                             </span>
                           )}
@@ -1151,9 +1153,9 @@ const AdminGroupTherapy: React.FC = () => {
                               onChange={() =>
                                 handleProfessionalSelect(pro.id, false)
                               }
-                              className="w-4 h-4 text-blue-600"
+                              className="w-4 h-4 text-accent"
                             />
-                            <span className="text-sm text-gray-600">
+                            <span className="text-sm text-muted">
                               {language === "fr" ? "Secondaire" : "Secondary"}
                             </span>
                           </label>
@@ -1171,14 +1173,14 @@ const AdminGroupTherapy: React.FC = () => {
                       setShowEditModal(false);
                       setSelectedSession(null);
                     }}
-                    className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+                    className="px-4 py-2 border border-line rounded-card text-ink-soft hover:bg-paper"
                   >
                     {language === "fr" ? "Annuler" : "Cancel"}
                   </button>
                   <button
                     type="submit"
                     disabled={isSubmitting}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="px-4 py-2 bg-accent text-white rounded-card hover:bg-accent/90 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {isSubmitting
                       ? language === "fr"

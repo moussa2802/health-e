@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowLeft, Mail, CheckCircle, AlertCircle } from "lucide-react";
+import { ArrowLeft, Mail, CheckCircle2, AlertCircle, Loader2 } from "lucide-react";
 import { useAuth } from "../../contexts/AuthContext";
 
 const ForgotPasswordProfessional: React.FC = () => {
@@ -12,7 +12,7 @@ const ForgotPasswordProfessional: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!email.trim()) {
       setError("Veuillez entrer votre adresse email");
       return;
@@ -36,23 +36,23 @@ const ForgotPasswordProfessional: React.FC = () => {
 
   if (success) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="max-w-md w-full bg-white rounded-lg shadow-md p-8">
+      <div className="min-h-screen bg-paper flex items-center justify-center px-4">
+        <div className="max-w-md w-full bg-card rounded-block border border-line shadow-soft p-8">
           <div className="text-center">
-            <CheckCircle className="h-16 w-16 text-teal-500 mx-auto mb-4" />
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">
+            <CheckCircle2 className="h-16 w-16 text-sage mx-auto mb-4" />
+            <h2 className="font-display text-2xl font-bold text-ink mb-4">
               Email envoyé !
             </h2>
-            <p className="text-gray-600 mb-6">
+            <p className="text-ink-soft mb-6">
               Nous avons envoyé un lien de réinitialisation à{" "}
-              <span className="font-semibold">{email}</span>
+              <span className="font-semibold text-ink">{email}</span>
             </p>
-            <p className="text-sm text-gray-500 mb-6">
+            <p className="text-sm text-muted mb-6">
               Vérifiez votre boîte de réception et cliquez sur le lien pour réinitialiser votre mot de passe.
             </p>
             <Link
               to="/professional/access"
-              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-teal-600 hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500"
+              className="inline-flex items-center px-4 py-2 text-sm font-medium rounded-pill text-white bg-sage hover:bg-sage/90 transition-colors"
             >
               Retour à la connexion
             </Link>
@@ -63,21 +63,21 @@ const ForgotPasswordProfessional: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-      <div className="max-w-md w-full bg-white rounded-lg shadow-md p-8">
+    <div className="min-h-screen bg-paper flex items-center justify-center px-4">
+      <div className="max-w-md w-full bg-card rounded-block border border-line shadow-soft p-8">
         {/* Header */}
         <div className="text-center mb-8">
           <Link
             to="/professional/access"
-            className="inline-flex items-center text-teal-600 hover:text-teal-700 mb-4"
+            className="inline-flex items-center text-sm text-sage hover:text-sage/80 mb-4"
           >
             <ArrowLeft className="h-4 w-4 mr-2" />
             Retour à la connexion
           </Link>
-          <h2 className="text-2xl font-bold text-gray-900">
+          <h2 className="font-display text-2xl font-bold text-ink">
             Mot de passe oublié ?
           </h2>
-          <p className="text-gray-600 mt-2">
+          <p className="text-ink-soft mt-2">
             Entrez votre adresse email et nous vous enverrons un lien pour réinitialiser votre mot de passe.
           </p>
         </div>
@@ -85,12 +85,12 @@ const ForgotPasswordProfessional: React.FC = () => {
         {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+            <label htmlFor="email" className="block text-sm font-medium text-ink-soft mb-2">
               Adresse email
             </label>
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <Mail className="h-5 w-5 text-gray-400" />
+                <Mail className="h-5 w-5 text-muted" />
               </div>
               <input
                 id="email"
@@ -100,7 +100,7 @@ const ForgotPasswordProfessional: React.FC = () => {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-teal-500 focus:border-teal-500"
+                className="block w-full pl-10 pr-3 py-2 border border-line rounded-xl bg-card placeholder-muted focus:outline-none focus:border-sage"
                 placeholder="votre@email.com"
               />
             </div>
@@ -108,8 +108,8 @@ const ForgotPasswordProfessional: React.FC = () => {
 
           {/* Error Message */}
           {error && (
-            <div className="flex items-center p-3 text-sm text-red-700 bg-red-100 rounded-md">
-              <AlertCircle className="h-4 w-4 mr-2" />
+            <div className="flex items-center p-3 text-sm text-danger bg-danger/10 rounded-xl">
+              <AlertCircle className="h-4 w-4 mr-2 flex-shrink-0" />
               {error}
             </div>
           )}
@@ -118,11 +118,11 @@ const ForgotPasswordProfessional: React.FC = () => {
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-teal-600 hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full flex justify-center items-center py-2.5 px-4 rounded-pill text-sm font-medium text-white bg-sage hover:bg-sage/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isLoading ? (
               <div className="flex items-center">
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                 Envoi en cours...
               </div>
             ) : (
@@ -133,11 +133,11 @@ const ForgotPasswordProfessional: React.FC = () => {
 
         {/* Additional Help */}
         <div className="mt-6 text-center">
-          <p className="text-sm text-gray-600">
+          <p className="text-sm text-ink-soft">
             Vous vous souvenez de votre mot de passe ?{" "}
             <Link
               to="/professional/access"
-              className="font-medium text-teal-600 hover:text-teal-500"
+              className="font-medium text-sage hover:text-sage/80"
             >
               Se connecter
             </Link>

@@ -3,6 +3,7 @@
  */
 
 import React, { useEffect, useState } from 'react';
+import { Minus, Plus, Gift, Undo2, Circle } from 'lucide-react';
 import { useKoris } from '../../contexts/KorisContext';
 import { getKorisHistory, getFeatureLabel, KORIS_COSTS, type KorisTransaction } from '../../services/korisService';
 import { useAuth } from '../../contexts/AuthContext';
@@ -37,125 +38,107 @@ const KorisDetailPanel: React.FC<Props> = ({ onClose }) => {
 
   const typeIcon = (type: string) => {
     switch (type) {
-      case 'spend': return '−';
-      case 'refill': return '+';
-      case 'bonus': return '🎁';
-      case 'refund': return '↩';
-      default: return '•';
+      case 'spend': return <Minus size={12} />;
+      case 'refill': return <Plus size={12} />;
+      case 'bonus': return <Gift size={12} />;
+      case 'refund': return <Undo2 size={12} />;
+      default: return <Circle size={8} />;
     }
   };
 
-  const typeColor = (type: string) => {
+  const typeToneClass = (type: string) => {
     switch (type) {
-      case 'spend': return '#DC2626';
-      case 'refill': return '#059669';
-      case 'bonus': return '#D97706';
-      case 'refund': return '#3B82F6';
-      default: return '#64748B';
+      case 'spend': return 'text-danger bg-danger/10';
+      case 'refill': return 'text-ok bg-ok/10';
+      case 'bonus': return 'text-gold bg-gold-soft';
+      case 'refund': return 'text-accent bg-accent-soft';
+      default: return 'text-muted bg-line/50';
+    }
+  };
+
+  const typeTextClass = (type: string) => {
+    switch (type) {
+      case 'spend': return 'text-danger';
+      case 'refill': return 'text-ok';
+      case 'bonus': return 'text-gold';
+      case 'refund': return 'text-accent';
+      default: return 'text-muted';
     }
   };
 
   return (
     <div
       data-koris-panel
-      style={{
-        position: 'absolute',
-        top: '100%',
-        right: 0,
-        marginTop: 8,
-        width: 320,
-        maxHeight: '70vh',
-        background: 'white',
-        borderRadius: 16,
-        boxShadow: '0 8px 32px rgba(0,0,0,0.15)',
-        border: '1px solid rgba(59,130,246,0.1)',
-        zIndex: 100,
-        overflow: 'hidden',
-        fontFamily: "'Inter', -apple-system, sans-serif",
-      }}
+      className="absolute top-full right-0 mt-2 w-80 max-h-[70vh] bg-card rounded-block shadow-lift border border-line z-[100] overflow-hidden"
     >
       {/* Header */}
-      <div style={{
-        background: 'linear-gradient(135deg, #0D9488, #059669)',
-        padding: '18px 16px',
-        color: 'white',
-        display: 'flex',
-        alignItems: 'center',
-        gap: 12,
-      }}>
+      <div className="bg-gold px-4 py-4.5 text-white flex items-center gap-3">
         <img
           src={KORI_IMG}
           alt="Kori"
-          style={{ width: 48, height: 48, borderRadius: '50%', objectFit: 'cover', border: '2px solid rgba(255,255,255,0.3)' }}
+          className="w-12 h-12 rounded-full object-cover border-2 border-white/30"
         />
         <div>
-          <div style={{ fontSize: 11, opacity: 0.85 }}>Mon solde</div>
-          <div style={{ fontSize: 28, fontWeight: 800, letterSpacing: '-1px' }}>
+          <div className="text-[11px] opacity-85">Mon solde</div>
+          <div className="text-[28px] font-extrabold tracking-tight">
             {balance}
-            <span style={{ fontSize: 13, fontWeight: 500, marginLeft: 5, opacity: 0.85 }}>Koris</span>
+            <span className="text-[13px] font-medium ml-1 opacity-85">Koris</span>
           </div>
-          <div style={{ fontSize: 10, opacity: 0.75 }}>+10 chaque jour à minuit</div>
+          <div className="text-[10px] opacity-75">+10 chaque jour à minuit</div>
         </div>
       </div>
 
       {/* Tarifs */}
-      <div style={{ padding: '10px 16px', borderBottom: '1px solid #F1F5F9' }}>
-        <div style={{ fontSize: 10, fontWeight: 600, color: '#94A3B8', textTransform: 'uppercase', marginBottom: 6 }}>
+      <div className="px-4 py-2.5 border-b border-line">
+        <div className="text-[10px] font-semibold text-muted uppercase mb-1.5">
           Tarifs
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '3px 12px', fontSize: 11 }}>
+        <div className="grid grid-cols-[1fr_auto] gap-x-3 gap-y-1 text-[11px]">
           {Object.entries(KORIS_COSTS)
             .filter(([, cost]) => cost > 0)
             .map(([feature, cost]) => (
               <React.Fragment key={feature}>
-                <span style={{ color: '#475569' }}>{getFeatureLabel(feature)}</span>
-                <span style={{ display: 'flex', alignItems: 'center', gap: 3, fontWeight: 600, color: '#0D9488', justifyContent: 'flex-end' }}>
-                  <img src={KORI_IMG} alt="" style={{ width: 12, height: 12, borderRadius: '50%', objectFit: 'cover' }} />
+                <span className="text-ink-soft">{getFeatureLabel(feature)}</span>
+                <span className="flex items-center gap-1 font-semibold text-gold justify-end">
+                  <img src={KORI_IMG} alt="" className="w-3 h-3 rounded-full object-cover" />
                   {cost}
                 </span>
               </React.Fragment>
             ))}
-          <span style={{ color: '#059669' }}>Tests d'évaluation</span>
-          <span style={{ fontWeight: 600, color: '#059669', textAlign: 'right' }}>Gratuit</span>
+          <span className="text-ok">Tests d'évaluation</span>
+          <span className="font-semibold text-ok text-right">Gratuit</span>
         </div>
       </div>
 
       {/* Historique */}
-      <div style={{ padding: '10px 16px', maxHeight: 180, overflowY: 'auto' }}>
-        <div style={{ fontSize: 10, fontWeight: 600, color: '#94A3B8', textTransform: 'uppercase', marginBottom: 6 }}>
+      <div className="px-4 py-2.5 max-h-[180px] overflow-y-auto">
+        <div className="text-[10px] font-semibold text-muted uppercase mb-1.5">
           Historique récent
         </div>
         {loading ? (
-          <div style={{ fontSize: 11, color: '#94A3B8', textAlign: 'center', padding: 10 }}>Chargement...</div>
+          <div className="text-[11px] text-muted text-center py-2.5">Chargement...</div>
         ) : history.length === 0 ? (
-          <div style={{ fontSize: 11, color: '#94A3B8', textAlign: 'center', padding: 10 }}>Aucune transaction</div>
+          <div className="text-[11px] text-muted text-center py-2.5">Aucune transaction</div>
         ) : (
           history.map((tx, i) => (
             <div
               key={tx.id ?? i}
-              style={{
-                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                padding: '5px 0',
-                borderBottom: i < history.length - 1 ? '1px solid #F8FAFC' : 'none',
-              }}
+              className={`flex items-center justify-between py-1.5 ${
+                i < history.length - 1 ? 'border-b border-line/60' : ''
+              }`}
             >
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                <span style={{
-                  width: 20, height: 20, borderRadius: '50%',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: 11, fontWeight: 700,
-                  color: typeColor(tx.type), background: `${typeColor(tx.type)}15`,
-                }}>
+              <div className="flex items-center gap-1.5">
+                <span className={`w-5 h-5 rounded-full flex items-center justify-center font-bold ${typeToneClass(tx.type)}`}>
                   {typeIcon(tx.type)}
                 </span>
                 <div>
-                  <div style={{ fontSize: 11, color: '#334155', fontWeight: 500 }}>{getFeatureLabel(tx.feature)}</div>
-                  <div style={{ fontSize: 9, color: '#94A3B8' }}>
+                  <div className="text-[11px] text-ink-soft font-medium">{getFeatureLabel(tx.feature)}</div>
+                  <div className="text-[9px] text-muted">
                     {new Date(tx.timestamp).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
                   </div>
                 </div>
               </div>
-              <span style={{ fontSize: 12, fontWeight: 700, color: typeColor(tx.type) }}>
+              <span className={`text-xs font-bold ${typeTextClass(tx.type)}`}>
                 {tx.type === 'spend' ? '−' : '+'}{tx.amount}
               </span>
             </div>

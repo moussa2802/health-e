@@ -36,7 +36,7 @@ export async function getAvailableAppointments(
   endDate: Date
 ): Promise<Appointment[]> {
   try {
-    console.log('📅 Getting available appointments for professional:', professionalId);
+    console.log('Getting available appointments for professional:', professionalId);
     
     // CRITICAL: Ensure Firestore is ready before fetching
     await ensureFirestoreReady();
@@ -65,14 +65,14 @@ export async function getAvailableAppointments(
       ...doc.data()
     } as Appointment));
     
-    console.log(`✅ Found ${appointments.length} available appointments`);
+    console.log(`Found ${appointments.length} available appointments`);
     return appointments;
   } catch (error) {
-    console.error('❌ Error getting available appointments:', error);
+    console.error('Error getting available appointments:', error);
     
     // Try a simpler query without date range if the index doesn't exist
     try {
-      console.log('🔄 Trying simpler query without date range...');
+      console.log('Trying simpler query without date range...');
       
       const db = getFirestoreInstance();
       if (!db) throw new Error('Firestore not available');
@@ -98,10 +98,10 @@ export async function getAvailableAppointments(
                  appointmentDate <= format(endDate, 'yyyy-MM-dd');
         });
       
-      console.log(`✅ Found ${appointments.length} available appointments (client-side filtering)`);
+      console.log(`Found ${appointments.length} available appointments (client-side filtering)`);
       return appointments;
     } catch (fallbackError) {
-      console.error('❌ Fallback query also failed:', fallbackError);
+      console.error('Fallback query also failed:', fallbackError);
       throw new Error('Failed to get available appointments');
     }
   }
@@ -113,7 +113,7 @@ export async function createAvailableAppointments(
   slots: { date: string; time: string; duration?: number }[]
 ): Promise<string[]> {
   try {
-    console.log('📅 Creating available appointments for professional:', professionalId);
+    console.log('Creating available appointments for professional:', professionalId);
     
     // CRITICAL: Ensure Firestore is ready before creating
     await ensureFirestoreReady();
@@ -154,10 +154,10 @@ export async function createAvailableAppointments(
       }
     }
     
-    console.log(`✅ Created ${appointmentIds.length} available appointments`);
+    console.log(`Created ${appointmentIds.length} available appointments`);
     return appointmentIds;
   } catch (error) {
-    console.error('❌ Error creating available appointments:', error);
+    console.error('Error creating available appointments:', error);
     throw new Error('Failed to create available appointments');
   }
 }
@@ -168,7 +168,7 @@ export async function bookAppointment(
   patientId: string
 ): Promise<void> {
   try {
-    console.log('📅 Booking appointment:', appointmentId);
+    console.log('Booking appointment:', appointmentId);
     
     // CRITICAL: Ensure Firestore is ready before booking
     await ensureFirestoreReady();
@@ -197,9 +197,9 @@ export async function bookAppointment(
       updatedAt: serverTimestamp()
     });
     
-    console.log('✅ Appointment booked successfully');
+    console.log('Appointment booked successfully');
   } catch (error) {
-    console.error('❌ Error booking appointment:', error);
+    console.error('Error booking appointment:', error);
     throw new Error('Failed to book appointment');
   }
 }
@@ -209,7 +209,7 @@ export async function cancelAppointment(
   appointmentId: string
 ): Promise<void> {
   try {
-    console.log('📅 Cancelling appointment:', appointmentId);
+    console.log('Cancelling appointment:', appointmentId);
     
     // CRITICAL: Ensure Firestore is ready before cancelling
     await ensureFirestoreReady();
@@ -231,9 +231,9 @@ export async function cancelAppointment(
       updatedAt: serverTimestamp()
     });
     
-    console.log('✅ Appointment cancelled successfully');
+    console.log('Appointment cancelled successfully');
   } catch (error) {
-    console.error('❌ Error cancelling appointment:', error);
+    console.error('Error cancelling appointment:', error);
     throw new Error('Failed to cancel appointment');
   }
 }
@@ -243,7 +243,7 @@ export async function getPatientAppointments(
   patientId: string
 ): Promise<Appointment[]> {
   try {
-    console.log('📅 Getting appointments for patient:', patientId);
+    console.log('Getting appointments for patient:', patientId);
     
     // CRITICAL: Ensure Firestore is ready before fetching
     await ensureFirestoreReady();
@@ -266,10 +266,10 @@ export async function getPatientAppointments(
       ...doc.data()
     } as Appointment));
     
-    console.log(`✅ Found ${appointments.length} appointments for patient`);
+    console.log(`Found ${appointments.length} appointments for patient`);
     return appointments;
   } catch (error) {
-    console.error('❌ Error getting patient appointments:', error);
+    console.error('Error getting patient appointments:', error);
     throw new Error('Failed to get patient appointments');
   }
 }
@@ -281,7 +281,7 @@ export async function convertAvailabilityToAppointments(
   weeks: number = 4
 ): Promise<string[]> {
   try {
-    console.log('📅 Converting availability to appointments for professional:', professionalId);
+    console.log('Converting availability to appointments for professional:', professionalId);
     
     // Generate appointment slots
     const slots: { date: string; time: string; duration?: number }[] = [];
@@ -301,7 +301,7 @@ export async function convertAvailabilityToAppointments(
     availability.forEach(avail => {
       const dayNumber = dayMap[avail.day];
       if (dayNumber === undefined) {
-        console.warn(`⚠️ Unknown day: ${avail.day}, skipping`);
+        console.warn(`Unknown day: ${avail.day}, skipping`);
         return;
       }
       
@@ -330,7 +330,7 @@ export async function convertAvailabilityToAppointments(
     // Create the appointments
     return await createAvailableAppointments(professionalId, slots);
   } catch (error) {
-    console.error('❌ Error converting availability to appointments:', error);
+    console.error('Error converting availability to appointments:', error);
     throw new Error('Failed to convert availability to appointments');
   }
 }

@@ -14,7 +14,7 @@ export const SOCIAL_PRESSURE_SEX: AssessmentScale = {
   shortName: "Pression Sexualité",
   category: 'sexual_health',
   description: "Évalue l'impact des pressions sociales et culturelles sur la vie sexuelle.",
-  instructions: "Ces questions portent sur les pressions sociales et culturelles qui pèsent sur ta sexualité. Pas de jugement — on veut comprendre ce que tu vis 🤲",
+  instructions: "Ces questions portent sur les pressions sociales et culturelles qui pèsent sur ta sexualité. Pas de jugement — on veut comprendre ce que tu vis",
   timeEstimateMinutes: 5,
   reference: "Questionnaire Healt-e (2026). Développé pour le contexte africain francophone.",
   licenseNote: "Questionnaire original Healt-e. Tous droits réservés.",

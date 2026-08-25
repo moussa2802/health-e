@@ -53,28 +53,30 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-paper">
       {/* Header Admin harmonisé avec le sidebar */}
-      <header className="fixed top-0 left-0 right-0 h-16 bg-white shadow-sm z-40 flex items-center justify-between px-4">
+      <header className="fixed top-0 left-0 right-0 h-16 bg-card border-b border-line shadow-soft z-40 flex items-center justify-between px-4">
         {/* Gauche : Menu + Titre */}
         <div className="flex items-center">
           <button
             onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="p-2 mr-4 rounded-lg hover:bg-gray-100 transition-colors"
+            className="p-2 mr-4 rounded-card hover:bg-paper transition-colors"
             aria-label="Ouvrir/fermer le menu"
           >
-            <Menu className="h-6 w-6 text-gray-600" />
+            <Menu className="h-6 w-6 text-ink-soft" />
           </button>
 
           <div className="flex items-center">
-            <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center mr-3">
-              <span className="text-white font-bold text-sm">H</span>
+            <div className="w-8 h-8 bg-ink rounded-card flex items-center justify-center mr-3">
+              <span className="text-white font-display font-semibold text-sm">
+                H
+              </span>
             </div>
             <div>
-              <h1 className="text-xl font-bold text-gray-900">
+              <h1 className="text-xl font-display font-semibold text-ink">
                 {language === "fr" ? "Health-e Admin" : "Health-e Admin"}
               </h1>
-              <p className="text-xs text-gray-500">
+              <p className="text-xs text-muted">
                 {language === "fr" ? "Administration" : "Administration"}
               </p>
             </div>
@@ -90,7 +92,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
           <div className="relative">
             <button
               onClick={() => setProfileMenuOpen(!profileMenuOpen)}
-              className="flex items-center space-x-2 p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              className="flex items-center space-x-2 p-2 hover:bg-paper rounded-card transition-colors"
             >
               {currentUser?.profileImage ? (
                 <img
@@ -99,20 +101,20 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
                   className="w-8 h-8 rounded-full object-cover"
                 />
               ) : (
-                <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
+                <div className="w-8 h-8 bg-ink rounded-full flex items-center justify-center">
                   <User className="h-5 w-5 text-white" />
                 </div>
               )}
-              <span className="text-gray-700 font-medium">
+              <span className="text-ink-soft font-medium">
                 {currentUser?.name || "Admin"}
               </span>
             </button>
 
             {profileMenuOpen && (
-              <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg py-1 z-50 border border-gray-200">
+              <div className="absolute right-0 mt-2 w-48 bg-card rounded-card shadow-lift py-1 z-50 border border-line">
                 <button
                   onClick={handleLogout}
-                  className="w-full flex items-center px-4 py-2 text-gray-700 hover:bg-gray-100 transition-colors"
+                  className="w-full flex items-center px-4 py-2 text-ink-soft hover:bg-paper transition-colors"
                 >
                   <LogOut className="h-4 w-4 mr-2" />
                   {language === "fr" ? "Se déconnecter" : "Logout"}
@@ -125,7 +127,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
 
       {/* Sidebar */}
       <div
-        className={`fixed top-12 left-0 h-[calc(100vh-3rem)] z-30 w-64 bg-white transform transition-transform duration-200 ease-in-out shadow-lg border-r border-gray-200 ${
+        className={`fixed top-12 left-0 h-[calc(100vh-3rem)] z-30 w-64 bg-card transform transition-transform duration-200 ease-in-out shadow-soft border-r border-line ${
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
@@ -143,7 +145,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
           <div className="p-6">
             {/* Page Header */}
             <div className="flex justify-between items-center mb-6">
-              <h2 className="text-2xl font-bold text-gray-900">
+              <h2 className="text-2xl font-display font-semibold text-ink">
                 {getPageTitle()}
               </h2>
             </div>
@@ -155,7 +157,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
       {/* Overlay for mobile */}
       {sidebarOpen && (
         <div
-          className="fixed inset-0 bg-black bg-opacity-50 z-20 md:hidden"
+          className="fixed inset-0 bg-ink/50 z-20 md:hidden"
           onClick={() => setSidebarOpen(false)}
         />
       )}

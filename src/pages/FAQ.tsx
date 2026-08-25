@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ChevronDown, ChevronUp } from 'lucide-react';
+import { ChevronDown, HelpCircle } from 'lucide-react';
 
 interface FAQItem {
   question: string;
@@ -73,38 +73,41 @@ const FAQ: React.FC = () => {
   ];
 
   const toggleItem = (index: number) => {
-    setOpenItems(openItems.includes(index) 
+    setOpenItems(openItems.includes(index)
       ? openItems.filter(i => i !== index)
       : [...openItems, index]
     );
   };
 
-  const filteredItems = faqItems.filter(item => 
+  const filteredItems = faqItems.filter(item =>
     activeCategory === 'all' || item.category === activeCategory
   );
 
   return (
-    <div className="min-h-screen bg-gray-50 py-12 px-4">
-      <div className="max-w-4xl mx-auto">
-        <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold text-gray-900 mb-4">
+    <div className="min-h-screen bg-paper px-4 py-12">
+      <div className="mx-auto max-w-4xl">
+        <div className="mb-12 text-center">
+          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-sage-soft">
+            <HelpCircle className="h-8 w-8 text-sage" />
+          </div>
+          <h1 className="font-display mb-4 text-4xl font-bold text-ink">
             Foire aux questions
           </h1>
-          <p className="text-lg text-gray-600">
+          <p className="text-lg text-ink-soft">
             Trouvez rapidement des réponses à vos questions sur Health-e
           </p>
         </div>
 
         {/* Categories */}
-        <div className="flex flex-wrap justify-center gap-2 mb-8">
+        <div className="mb-8 flex flex-wrap justify-center gap-2">
           {categories.map(category => (
             <button
               key={category.id}
               onClick={() => setActiveCategory(category.id)}
-              className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+              className={`rounded-pill px-4 py-2 text-sm font-medium transition-colors ${
                 activeCategory === category.id
-                  ? 'bg-blue-500 text-white'
-                  : 'bg-white text-gray-600 hover:bg-gray-100'
+                  ? 'bg-ink text-white'
+                  : 'border border-line bg-card text-ink-soft hover:bg-paper'
               }`}
             >
               {category.name}
@@ -113,26 +116,26 @@ const FAQ: React.FC = () => {
         </div>
 
         {/* FAQ Items */}
-        <div className="bg-white rounded-xl shadow-md overflow-hidden">
+        <div className="overflow-hidden rounded-block border border-line bg-card shadow-soft">
           {filteredItems.map((item, index) => (
-            <div key={index} className="border-b border-gray-200 last:border-0">
+            <div key={index} className="border-b border-line last:border-0">
               <button
                 onClick={() => toggleItem(index)}
-                className="w-full px-6 py-4 text-left flex items-center justify-between hover:bg-gray-50 transition-colors"
+                className="flex w-full items-center justify-between px-6 py-4 text-left transition-colors hover:bg-paper"
               >
-                <span className="text-lg font-medium text-gray-900">
+                <span className="text-lg font-medium text-ink">
                   {item.question}
                 </span>
-                {openItems.includes(index) ? (
-                  <ChevronUp className="h-5 w-5 text-gray-500" />
-                ) : (
-                  <ChevronDown className="h-5 w-5 text-gray-500" />
-                )}
+                <ChevronDown
+                  className={`h-5 w-5 flex-shrink-0 text-muted transition-transform duration-200 ${
+                    openItems.includes(index) ? 'rotate-180' : ''
+                  }`}
+                />
               </button>
-              
+
               {openItems.includes(index) && (
                 <div className="px-6 pb-4">
-                  <p className="text-gray-600 whitespace-pre-line">
+                  <p className="whitespace-pre-line text-ink-soft">
                     {item.answer}
                   </p>
                 </div>
@@ -143,12 +146,12 @@ const FAQ: React.FC = () => {
 
         {/* Contact Section */}
         <div className="mt-12 text-center">
-          <p className="text-gray-600">
+          <p className="text-ink-soft">
             Vous n'avez pas trouvé la réponse à votre question ?
           </p>
           <a
             href="/contact"
-            className="inline-block mt-4 px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+            className="mt-4 inline-block rounded-pill bg-accent px-6 py-3 font-medium text-white transition-colors hover:bg-accent/90"
           >
             Contactez-nous
           </a>

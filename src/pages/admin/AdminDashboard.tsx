@@ -110,8 +110,8 @@ const AdminDashboard = () => {
       <AdminLayout>
         <div className="p-8">
           <div className="flex items-center justify-center h-64">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
-            <span className="ml-4 text-lg text-gray-600">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-accent"></div>
+            <span className="ml-4 text-lg text-ink-soft">
               Chargement des données...
             </span>
           </div>
@@ -124,12 +124,12 @@ const AdminDashboard = () => {
     return (
       <AdminLayout>
         <div className="p-8">
-          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative">
-            <strong className="font-bold">Erreur : </strong>
+          <div className="bg-danger/10 border border-danger text-danger px-4 py-3 rounded-card relative">
+            <strong className="font-semibold">Erreur : </strong>
             <span className="block sm:inline">{error}</span>
             <button
               onClick={() => window.location.reload()}
-              className="mt-2 bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600"
+              className="mt-2 bg-danger text-white px-4 py-2 rounded-card hover:bg-danger/90"
             >
               Réessayer
             </button>
@@ -143,7 +143,7 @@ const AdminDashboard = () => {
     return (
       <AdminLayout>
         <div className="p-8">
-          <div className="text-center text-gray-500">
+          <div className="text-center text-muted">
             Aucune donnée disponible
           </div>
         </div>
@@ -155,7 +155,7 @@ const AdminDashboard = () => {
     <AdminLayout>
       <div>
         <div className="mb-6">
-          <div className="text-sm text-gray-500">
+          <div className="text-sm text-muted">
             Données en temps réel depuis Firebase
           </div>
         </div>
@@ -163,61 +163,61 @@ const AdminDashboard = () => {
         {/* Stats Overview */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           {/* Total Revenue */}
-          <div className="bg-white rounded-lg p-6 shadow-md">
+          <div className="bg-card rounded-block p-6 shadow-soft">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-700">
+              <h3 className="text-lg font-semibold text-ink-soft">
                 Revenus totaux
               </h3>
-              <DollarSign className="h-6 w-6 text-green-500" />
+              <DollarSign className="h-6 w-6 text-ok" />
             </div>
             <div className="space-y-4">
               <div>
-                <p className="text-3xl font-bold text-gray-900">
+                <p className="font-display text-3xl font-semibold text-ink">
                   {statistics.revenue.total.toLocaleString()} XOF
                 </p>
-                <p className="text-sm text-gray-500">
+                <p className="text-sm text-muted">
                   Toutes consultations confondues
                 </p>
               </div>
               <div className="flex justify-between text-sm">
                 <div>
-                  <p className="font-medium">
+                  <p className="font-medium text-ink">
                     {statistics.revenue.mentalHealth.toLocaleString()} XOF
                   </p>
-                  <p className="text-gray-500">Profil psychologique</p>
+                  <p className="text-muted">Profil psychologique</p>
                 </div>
                 <div>
-                  <p className="font-medium">
+                  <p className="font-medium text-ink">
                     {statistics.revenue.sexualHealth.toLocaleString()} XOF
                   </p>
-                  <p className="text-gray-500">Vie intime</p>
+                  <p className="text-muted">Vie intime</p>
                 </div>
               </div>
             </div>
           </div>
 
           {/* Platform Fees */}
-          <div className="bg-white rounded-lg p-6 shadow-md">
+          <div className="bg-card rounded-block p-6 shadow-soft">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-700">
+              <h3 className="text-lg font-semibold text-ink-soft">
                 Commissions plateforme
               </h3>
-              <Percent className="h-6 w-6 text-blue-500" />
+              <Percent className="h-6 w-6 text-sage" />
             </div>
             <div className="space-y-4">
               <div>
-                <p className="text-3xl font-bold text-gray-900">
+                <p className="font-display text-3xl font-semibold text-ink">
                   {statistics.revenue.platformFees.toLocaleString()} XOF
                 </p>
-                <p className="text-sm text-gray-500">Total des commissions</p>
+                <p className="text-sm text-muted">Total des commissions</p>
               </div>
               <div className="flex justify-between text-sm">
                 <div>
-                  <p className="font-medium">15%</p>
-                  <p className="text-gray-500">Taux de commission</p>
+                  <p className="font-medium text-ink">15%</p>
+                  <p className="text-muted">Taux de commission</p>
                 </div>
                 <div>
-                  <p className="font-medium">
+                  <p className="font-medium text-ink">
                     {statistics.appointments.completed > 0
                       ? Math.round(
                           statistics.revenue.platformFees /
@@ -226,36 +226,36 @@ const AdminDashboard = () => {
                       : "0"}{" "}
                     XOF
                   </p>
-                  <p className="text-gray-500">Moyenne/consultation</p>
+                  <p className="text-muted">Moyenne/consultation</p>
                 </div>
               </div>
             </div>
           </div>
 
           {/* Consultations Stats */}
-          <div className="bg-white rounded-lg p-6 shadow-md">
+          <div className="bg-card rounded-block p-6 shadow-soft">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-700">
+              <h3 className="text-lg font-semibold text-ink-soft">
                 Consultations
               </h3>
-              <Calendar className="h-6 w-6 text-purple-500" />
+              <Calendar className="h-6 w-6 text-accent" />
             </div>
             <div className="space-y-4">
               <div>
-                <p className="text-3xl font-bold text-gray-900">
+                <p className="font-display text-3xl font-semibold text-ink">
                   {statistics.appointments.total}
                 </p>
-                <p className="text-sm text-gray-500">Total des consultations</p>
+                <p className="text-sm text-muted">Total des consultations</p>
               </div>
               <div className="flex justify-between text-sm">
                 <div>
-                  <p className="font-medium">
+                  <p className="font-medium text-ink">
                     {statistics.appointments.completionRate}%
                   </p>
-                  <p className="text-gray-500">Taux de réussite</p>
+                  <p className="text-muted">Taux de réussite</p>
                 </div>
                 <div>
-                  <p className="font-medium">
+                  <p className="font-medium text-ink">
                     {statistics.appointments.total > 0
                       ? Math.round(
                           (statistics.appointments.cancelled /
@@ -265,42 +265,44 @@ const AdminDashboard = () => {
                       : 0}
                     %
                   </p>
-                  <p className="text-gray-500">Annulations</p>
+                  <p className="text-muted">Annulations</p>
                 </div>
               </div>
             </div>
           </div>
 
           {/* Users Stats */}
-          <div className="bg-white rounded-lg p-6 shadow-md">
+          <div className="bg-card rounded-block p-6 shadow-soft">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-700">
+              <h3 className="text-lg font-semibold text-ink-soft">
                 Utilisateurs
               </h3>
-              <Users className="h-6 w-6 text-emerald-500" />
+              <Users className="h-6 w-6 text-gold" />
             </div>
             <div className="space-y-4">
               <div className="flex items-center">
-                <p className="text-3xl font-bold text-gray-900">
+                <p className="font-display text-3xl font-semibold text-ink">
                   {statistics.users.total}
                 </p>
                 {statistics.growth.monthly > 0 ? (
-                  <ArrowUpRight className="h-5 w-5 text-green-500 ml-2" />
+                  <ArrowUpRight className="h-5 w-5 text-ok ml-2" />
                 ) : (
-                  <ArrowDownRight className="h-5 w-5 text-red-500 ml-2" />
+                  <ArrowDownRight className="h-5 w-5 text-danger ml-2" />
                 )}
               </div>
-              <p className="text-sm text-gray-500">Total des utilisateurs</p>
+              <p className="text-sm text-muted">Total des utilisateurs</p>
               <div className="flex justify-between text-sm">
                 <div>
-                  <p className="font-medium">{statistics.users.patients}</p>
-                  <p className="text-gray-500">Patients</p>
+                  <p className="font-medium text-ink">
+                    {statistics.users.patients}
+                  </p>
+                  <p className="text-muted">Patients</p>
                 </div>
                 <div>
-                  <p className="font-medium">
+                  <p className="font-medium text-ink">
                     {statistics.users.professionals}
                   </p>
-                  <p className="text-gray-500">Professionnels</p>
+                  <p className="text-muted">Professionnels</p>
                 </div>
               </div>
             </div>
@@ -308,33 +310,37 @@ const AdminDashboard = () => {
         </div>
 
         {/* Recent Transactions */}
-        <div className="bg-white rounded-lg shadow-md p-6 mb-8">
-          <h2 className="text-xl font-semibold mb-6">Transactions récentes</h2>
+        <div className="bg-card rounded-block shadow-soft p-6 mb-8">
+          <h2 className="font-display text-xl font-semibold text-ink mb-6">
+            Transactions récentes
+          </h2>
           {recentTransactions.length > 0 ? (
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
-                  <tr className="text-left border-b border-gray-200">
-                    <th className="pb-3 font-semibold text-gray-600">
+                  <tr className="text-left border-b border-line">
+                    <th className="pb-3 font-semibold text-ink-soft">
                       Patient
                     </th>
-                    <th className="pb-3 font-semibold text-gray-600">
+                    <th className="pb-3 font-semibold text-ink-soft">
                       Professionnel
                     </th>
-                    <th className="pb-3 font-semibold text-gray-600">
+                    <th className="pb-3 font-semibold text-ink-soft">
                       Montant
                     </th>
-                    <th className="pb-3 font-semibold text-gray-600">
+                    <th className="pb-3 font-semibold text-ink-soft">
                       Commission
                     </th>
-                    <th className="pb-3 font-semibold text-gray-600">Type</th>
-                    <th className="pb-3 font-semibold text-gray-600">Date</th>
-                    <th className="pb-3 font-semibold text-gray-600">Statut</th>
+                    <th className="pb-3 font-semibold text-ink-soft">Type</th>
+                    <th className="pb-3 font-semibold text-ink-soft">Date</th>
+                    <th className="pb-3 font-semibold text-ink-soft">
+                      Statut
+                    </th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-100">
+                <tbody className="divide-y divide-line">
                   {recentTransactions.map((transaction) => (
-                    <tr key={transaction.id} className="text-gray-800">
+                    <tr key={transaction.id} className="text-ink">
                       <td className="py-3">{transaction.patient}</td>
                       <td className="py-3">{transaction.professional}</td>
                       <td className="py-3">
@@ -345,10 +351,10 @@ const AdminDashboard = () => {
                       </td>
                       <td className="py-3">
                         <span
-                          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                          className={`inline-flex items-center px-2.5 py-0.5 rounded-pill text-xs font-medium ${
                             transaction.type === "mental"
-                              ? "bg-blue-100 text-blue-800"
-                              : "bg-pink-100 text-pink-800"
+                              ? "bg-sage-soft text-sage"
+                              : "bg-accent-soft text-accent"
                           }`}
                         >
                           {transaction.type === "mental"
@@ -359,12 +365,12 @@ const AdminDashboard = () => {
                       <td className="py-3">{transaction.date}</td>
                       <td className="py-3">
                         <span
-                          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                          className={`inline-flex items-center px-2.5 py-0.5 rounded-pill text-xs font-medium ${
                             transaction.status === "completed"
-                              ? "bg-green-100 text-green-800"
+                              ? "bg-ok/15 text-ok"
                               : transaction.status === "pending"
-                              ? "bg-yellow-100 text-yellow-800"
-                              : "bg-gray-100 text-gray-800"
+                              ? "bg-gold-soft text-gold"
+                              : "bg-paper text-ink-soft"
                           }`}
                         >
                           {transaction.status === "completed"
@@ -380,7 +386,7 @@ const AdminDashboard = () => {
               </table>
             </div>
           ) : (
-            <div className="text-center text-gray-500 py-8">
+            <div className="text-center text-muted py-8">
               Aucune transaction récente
             </div>
           )}
@@ -412,19 +418,19 @@ const AdminDashboard = () => {
 
         {/* Revenue Distribution Chart */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <h2 className="text-xl font-semibold mb-6">
+          <div className="bg-card rounded-block shadow-soft p-6">
+            <h2 className="font-display text-xl font-semibold text-ink mb-6">
               Distribution des revenus
             </h2>
             <div className="relative pt-1">
               <div className="flex mb-2 items-center justify-between">
                 <div>
-                  <span className="text-xs font-semibold inline-block py-1 px-2 uppercase rounded-full text-blue-600 bg-blue-200">
+                  <span className="text-xs font-semibold inline-block py-1 px-2 uppercase rounded-pill text-sage bg-sage-soft">
                     Profil psychologique
                   </span>
                 </div>
                 <div className="text-right">
-                  <span className="text-xs font-semibold inline-block text-blue-600">
+                  <span className="text-xs font-semibold inline-block text-sage">
                     {statistics.revenue.total > 0
                       ? Math.round(
                           (statistics.revenue.mentalHealth /
@@ -436,7 +442,7 @@ const AdminDashboard = () => {
                   </span>
                 </div>
               </div>
-              <div className="overflow-hidden h-2 mb-4 text-xs flex rounded bg-blue-200">
+              <div className="overflow-hidden h-2 mb-4 text-xs flex rounded-pill bg-sage-soft">
                 <div
                   style={{
                     width: `${
@@ -447,17 +453,17 @@ const AdminDashboard = () => {
                         : 0
                     }%`,
                   }}
-                  className="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-blue-500"
+                  className="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-sage"
                 ></div>
               </div>
               <div className="flex mb-2 items-center justify-between">
                 <div>
-                  <span className="text-xs font-semibold inline-block py-1 px-2 uppercase rounded-full text-pink-600 bg-pink-200">
+                  <span className="text-xs font-semibold inline-block py-1 px-2 uppercase rounded-pill text-accent bg-accent-soft">
                     Vie intime
                   </span>
                 </div>
                 <div className="text-right">
-                  <span className="text-xs font-semibold inline-block text-pink-600">
+                  <span className="text-xs font-semibold inline-block text-accent">
                     {statistics.revenue.total > 0
                       ? Math.round(
                           (statistics.revenue.sexualHealth /
@@ -469,7 +475,7 @@ const AdminDashboard = () => {
                   </span>
                 </div>
               </div>
-              <div className="overflow-hidden h-2 mb-4 text-xs flex rounded bg-pink-200">
+              <div className="overflow-hidden h-2 mb-4 text-xs flex rounded-pill bg-accent-soft">
                 <div
                   style={{
                     width: `${
@@ -480,65 +486,67 @@ const AdminDashboard = () => {
                         : 0
                     }%`,
                   }}
-                  className="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-pink-500"
+                  className="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-accent"
                 ></div>
               </div>
             </div>
           </div>
 
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <h2 className="text-xl font-semibold mb-6">
+          <div className="bg-card rounded-block shadow-soft p-6">
+            <h2 className="font-display text-xl font-semibold text-ink mb-6">
               Répartition des professionnels
             </h2>
             <div className="space-y-6">
               <div className="flex items-center justify-between">
                 <div className="flex items-center">
-                  <div className="w-12 h-12 rounded-lg bg-blue-100 flex items-center justify-center mr-4">
-                    <Users className="h-6 w-6 text-blue-500" />
+                  <div className="w-12 h-12 rounded-card bg-sage-soft flex items-center justify-center mr-4">
+                    <Users className="h-6 w-6 text-sage" />
                   </div>
                   <div>
-                    <p className="font-medium">Profil psychologique</p>
-                    <p className="text-sm text-gray-500">
+                    <p className="font-medium text-ink">
+                      Profil psychologique
+                    </p>
+                    <p className="text-sm text-muted">
                       Psychologues, Psychiatres
                     </p>
                   </div>
                 </div>
-                <p className="text-xl font-bold">
+                <p className="font-display text-xl font-semibold text-ink">
                   {statistics.services.mentalHealthProfessionals}
                 </p>
               </div>
 
               <div className="flex items-center justify-between">
                 <div className="flex items-center">
-                  <div className="w-12 h-12 rounded-lg bg-pink-100 flex items-center justify-center mr-4">
-                    <Users className="h-6 w-6 text-pink-500" />
+                  <div className="w-12 h-12 rounded-card bg-accent-soft flex items-center justify-center mr-4">
+                    <Users className="h-6 w-6 text-accent" />
                   </div>
                   <div>
-                    <p className="font-medium">Vie intime</p>
-                    <p className="text-sm text-gray-500">
+                    <p className="font-medium text-ink">Vie intime</p>
+                    <p className="text-sm text-muted">
                       Sexologues, Gynécologues, Urologues
                     </p>
                   </div>
                 </div>
-                <p className="text-xl font-bold">
+                <p className="font-display text-xl font-semibold text-ink">
                   {statistics.services.sexualHealthProfessionals}
                 </p>
               </div>
 
-              <div className="pt-4 border-t">
+              <div className="pt-4 border-t border-line">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center">
-                    <div className="w-12 h-12 rounded-lg bg-green-100 flex items-center justify-center mr-4">
-                      <TrendingUp className="h-6 w-6 text-green-500" />
+                    <div className="w-12 h-12 rounded-card bg-ok/10 flex items-center justify-center mr-4">
+                      <TrendingUp className="h-6 w-6 text-ok" />
                     </div>
                     <div>
-                      <p className="font-medium">Note moyenne</p>
-                      <p className="text-sm text-gray-500">
+                      <p className="font-medium text-ink">Note moyenne</p>
+                      <p className="text-sm text-muted">
                         Satisfaction globale
                       </p>
                     </div>
                   </div>
-                  <p className="text-xl font-bold">
+                  <p className="font-display text-xl font-semibold text-ink">
                     {statistics.growth.averageRating}/5
                   </p>
                 </div>

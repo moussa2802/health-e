@@ -7,7 +7,7 @@ export const IIEF: AssessmentScale = {
   category: 'sexual_health',
   targetGender: 'male',
   description: "Évalue le fonctionnement sexuel masculin sur 5 domaines dont la fonction érectile.",
-  instructions: "Ces questions portent sur ton fonctionnement sexuel au cours des 4 dernières semaines. Sois honnête — c'est entre toi et Dr Lô 💪",
+  instructions: "Ces questions portent sur ton fonctionnement sexuel au cours des 4 dernières semaines. Sois honnête — c'est entre toi et Dr Lô",
   timeEstimateMinutes: 7,
   reference: "Rosen, R.C., et al. (1997). The International Index of Erectile Function (IIEF). Urology, 49(6), 822–830.",
   licenseNote: "Usage clinique libre assumé. IIEF développé par Rosen et al. (1997).",

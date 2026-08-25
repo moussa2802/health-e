@@ -13,11 +13,11 @@ export const TSI_BASE: AssessmentScale = {
   shortName: "Trauma Sexuel",
   category: 'sexual_health',
   description: "Évalue les symptômes de détresse liés à des traumatismes sexuels ou des abus. Basé sur les travaux publiés de Briere (1995).",
-  instructions: "Ces questions portent sur des expériences sexuelles difficiles et leurs traces. Ce n'est pas un sujet facile — prends ton temps et sache que tu es en sécurité ici \u{1F90D}",
+  instructions: "Ces questions portent sur des expériences sexuelles difficiles et leurs traces. Ce n'est pas un sujet facile — prends ton temps et sache que tu es en sécurité ici",
   timeEstimateMinutes: 7,
   reference: "Briere, J. (1995). Trauma Symptom Inventory professional manual. Psychological Assessment Resources. Questions basées sur les articles publiés, pas l'outil commercial PAR Inc.",
   licenseNote: "Basé sur les construits théoriques publiés de Briere (1995). Ne constitue pas l'outil TSI-2 commercial.",
-  warningMessage: "Ces questions portent sur des expériences sexuelles difficiles. Un score élevé ne veut pas dire que tu es « {{cassé|cassée}} » — il reflète l'impact d'un événement, pas ta valeur. \u{1F90D}",
+  warningMessage: "Ces questions portent sur des expériences sexuelles difficiles. Un score élevé ne veut pas dire que tu es « {{cassé|cassée}} » — il reflète l'impact d'un événement, pas ta valeur.",
   scoreRange: { min: 0, max: 48 },
   items: [
     { id: 1,  text: "Des pensées ou images à contenu sexuel te viennent en tête sans que tu le veuilles ?",                                     type: 'frequency', options: opts, subscale: 'intrusive' },

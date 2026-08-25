@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
 import paytechService from "../../services/paytechService";
 import LoadingSpinner from "../ui/LoadingSpinner";
-import { CreditCard, AlertCircle, CheckCircle } from "lucide-react";
+import { CreditCard, AlertCircle, ShieldCheck } from "lucide-react";
 
 interface PayTechPaymentFormProps {
   bookingId: string;
@@ -38,7 +38,7 @@ const PayTechPaymentForm: React.FC<PayTechPaymentFormProps> = ({
 
     try {
       console.log(
-        "🔔 [PAYTECH] Starting payment process for booking:",
+        "[PAYTECH] Starting payment process for booking:",
         bookingId
       );
 
@@ -67,7 +67,7 @@ const PayTechPaymentForm: React.FC<PayTechPaymentFormProps> = ({
       const response = await paytechService.initiatePayment(paymentData);
 
       console.log(
-        "✅ [PAYTECH] Payment initiated, redirecting to:",
+        "[PAYTECH] Payment initiated, redirecting to:",
         response.redirect_url
       );
 
@@ -79,7 +79,7 @@ const PayTechPaymentForm: React.FC<PayTechPaymentFormProps> = ({
         onSuccess();
       }
     } catch (error) {
-      console.error("❌ [PAYTECH] Payment error:", error);
+      console.error("[PAYTECH] Payment error:", error);
       const errorMessage =
         error instanceof Error ? error.message : "Erreur lors du paiement";
       setError(errorMessage);
@@ -93,49 +93,49 @@ const PayTechPaymentForm: React.FC<PayTechPaymentFormProps> = ({
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-md p-6">
+    <div className="bg-card rounded-block border border-line shadow-soft p-6">
       <div className="flex items-center mb-4">
-        <CreditCard className="h-6 w-6 text-blue-600 mr-2" />
-        <h3 className="text-lg font-semibold text-gray-900">
+        <CreditCard className="h-6 w-6 text-accent mr-2" />
+        <h3 className="font-display text-lg font-semibold text-ink">
           Paiement sécurisé
         </h3>
       </div>
 
       <div className="mb-6">
         <div className="flex justify-between items-center mb-4">
-          <span className="text-gray-600">Montant à payer :</span>
-          <span className="text-xl font-bold text-green-600">
+          <span className="text-ink-soft">Montant à payer :</span>
+          <span className="text-xl font-bold text-ok">
             {amount.toLocaleString()} XOF
           </span>
         </div>
 
-        <div className="bg-gray-50 rounded-lg p-4 mb-4">
-          <h4 className="font-medium text-gray-900 mb-2">
+        <div className="bg-paper rounded-xl p-4 mb-4">
+          <h4 className="font-medium text-ink mb-2">
             Détails de la consultation
           </h4>
-          <div className="text-sm text-gray-600">
+          <div className="text-sm text-ink-soft">
             <p>
-              <strong>Professionnel :</strong> {professionalName}
+              <strong className="text-ink">Professionnel :</strong> {professionalName}
             </p>
             <p>
-              <strong>Référence :</strong> {bookingId}
+              <strong className="text-ink">Référence :</strong> {bookingId}
             </p>
           </div>
         </div>
 
         {error && (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
+          <div className="bg-danger/10 border border-danger/20 rounded-xl p-4 mb-4">
             <div className="flex items-center">
-              <AlertCircle className="h-5 w-5 text-red-500 mr-2" />
-              <span className="text-red-700">{error}</span>
+              <AlertCircle className="h-5 w-5 text-danger mr-2 flex-shrink-0" />
+              <span className="text-danger">{error}</span>
             </div>
           </div>
         )}
 
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+        <div className="bg-sage-soft border border-sage/20 rounded-xl p-4 mb-6">
           <div className="flex items-start">
-            <CheckCircle className="h-5 w-5 text-blue-500 mr-2 mt-0.5" />
-            <div className="text-sm text-blue-700">
+            <ShieldCheck className="h-5 w-5 text-sage mr-2 mt-0.5 flex-shrink-0" />
+            <div className="text-sm text-sage">
               <p className="font-medium mb-1">Paiement sécurisé</p>
               <p>
                 Votre paiement sera traité de manière sécurisée par PayTech.
@@ -150,10 +150,10 @@ const PayTechPaymentForm: React.FC<PayTechPaymentFormProps> = ({
         <button
           onClick={handlePayment}
           disabled={isLoading}
-          className={`flex-1 flex items-center justify-center px-6 py-3 rounded-lg font-medium transition-colors ${
+          className={`flex-1 flex items-center justify-center px-6 py-3 rounded-pill font-medium transition-colors ${
             isLoading
-              ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-              : "bg-blue-600 hover:bg-blue-700 text-white"
+              ? "bg-line text-muted cursor-not-allowed"
+              : "bg-accent hover:bg-accent/90 text-white"
           }`}
         >
           {isLoading ? (
@@ -172,13 +172,13 @@ const PayTechPaymentForm: React.FC<PayTechPaymentFormProps> = ({
         <button
           onClick={() => navigate(-1)}
           disabled={isLoading}
-          className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50"
+          className="px-6 py-3 border border-line text-ink-soft rounded-pill hover:bg-paper transition-colors disabled:opacity-50"
         >
           Annuler
         </button>
       </div>
 
-      <div className="mt-4 text-xs text-gray-500 text-center">
+      <div className="mt-4 text-xs text-muted text-center">
         En cliquant sur "Payer maintenant", vous acceptez les conditions de
         paiement de PayTech.
       </div>

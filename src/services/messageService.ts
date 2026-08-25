@@ -69,7 +69,7 @@ export async function getOrCreateConversation(
 ): Promise<string> {
   try {
     console.log(
-      "💬 Creating/getting conversation between:",
+      "Creating/getting conversation between:",
       user1Name,
       "and",
       user2Name
@@ -77,7 +77,7 @@ export async function getOrCreateConversation(
 
     // CRITICAL: Verify users are authenticated
     if (!user1Id || !user2Id) {
-      console.warn("⛔️ User IDs missing. Conversation creation cancelled.");
+      console.warn("User IDs missing. Conversation creation cancelled.");
       throw new Error("Identifiants utilisateurs manquants");
     }
 
@@ -120,17 +120,17 @@ export async function getOrCreateConversation(
         return await setDoc(conversationRef, conversationData);
       });
 
-      console.log("✅ New conversation created:", conversationId);
+      console.log("New conversation created:", conversationId);
 
       // Invalider le cache
       conversationsCache.clear();
     } else {
-      console.log("✅ Existing conversation found:", conversationId);
+      console.log("Existing conversation found:", conversationId);
     }
 
     return conversationId;
   } catch (error) {
-    console.error("❌ Error creating/getting conversation:", error);
+    console.error("Error creating/getting conversation:", error);
     throw new Error("Erreur lors de la création de la conversation");
   }
 }
@@ -160,11 +160,11 @@ export async function sendMessage(
   content: string
 ): Promise<void> {
   try {
-    console.log("📤 Sending message in conversation:", conversationId);
+    console.log("Sending message in conversation:", conversationId);
 
     // CRITICAL: Verify user is authenticated
     if (!senderId) {
-      console.warn("⛔️ Sender ID missing. Message sending cancelled.");
+      console.warn("Sender ID missing. Message sending cancelled.");
       throw new Error("Identifiant utilisateur manquant");
     }
 
@@ -181,7 +181,7 @@ export async function sendMessage(
     // Check if conversation exists
     const conversationSnap = await getDoc(conversationRef);
     if (!conversationSnap.exists()) {
-      console.warn("⚠️ Conversation does not exist, creating it...");
+      console.warn("Conversation does not exist, creating it...");
       // This should not happen normally, but we'll handle it gracefully
       throw new Error(
         "Conversation non trouvée. Veuillez créer une nouvelle conversation."
@@ -231,7 +231,7 @@ export async function sendMessage(
           timestamp: Date.now(),
         });
 
-        console.log("✅ Message notification sent to recipient:", recipientId);
+        console.log("Message notification sent to recipient:", recipientId);
         // ✅ Create Firestore notification
         const participantNames = conversationData.participantNames || {};
         const recipientName = participantNames[recipientId] || "Utilisateur";
@@ -246,7 +246,7 @@ export async function sendMessage(
         );
       }
     } catch (notifyError) {
-      console.warn("⚠️ Failed to send message notification:", notifyError);
+      console.warn("Failed to send message notification:", notifyError);
       // Continue anyway, this is just a notification
     }
 
@@ -262,12 +262,12 @@ export async function sendMessage(
       });
     });
 
-    console.log("✅ Message sent successfully");
+    console.log("Message sent successfully");
 
     // Invalider le cache
     conversationsCache.clear();
   } catch (error) {
-    console.error("❌ Error sending message:", error);
+    console.error("Error sending message:", error);
     throw new Error("Erreur lors de l'envoi du message");
   }
 }
@@ -280,7 +280,7 @@ export async function updateParticipantNameInConversations(
 ): Promise<void> {
   try {
     console.log(
-      "🔄 Updating participant name in conversations:",
+      "Updating participant name in conversations:",
       userId,
       "->",
       newName
@@ -300,11 +300,11 @@ export async function updateParticipantNameInConversations(
     const conversationsSnap = await getDocs(conversationsQuery);
 
     if (conversationsSnap.empty) {
-      console.log("ℹ️ No conversations found for user:", userId);
+      console.log("ℹ No conversations found for user:", userId);
       return;
     }
 
-    console.log(`📝 Found ${conversationsSnap.size} conversations to update`);
+    console.log(`Found ${conversationsSnap.size} conversations to update`);
 
     // Mettre à jour chaque conversation
     const updatePromises = conversationsSnap.docs.map(
@@ -325,7 +325,7 @@ export async function updateParticipantNameInConversations(
         });
 
         console.log(
-          `✅ Updated conversation ${conversationId} with new name: ${newName}`
+          `Updated conversation ${conversationId} with new name: ${newName}`
         );
       }
     );
@@ -335,10 +335,10 @@ export async function updateParticipantNameInConversations(
     // Invalider le cache
     conversationsCache.clear();
 
-    console.log("✅ All conversations updated successfully");
+    console.log("All conversations updated successfully");
   } catch (error) {
     console.error(
-      "❌ Error updating participant name in conversations:",
+      "Error updating participant name in conversations:",
       error
     );
     throw new Error("Erreur lors de la mise à jour des conversations");
@@ -354,7 +354,7 @@ export function subscribeToMessages(
   // CRITICAL: Verify conversation ID is provided
   if (!conversationId) {
     console.warn(
-      "⛔️ Conversation ID missing. Messages subscription cancelled."
+      "Conversation ID missing. Messages subscription cancelled."
     );
     callback([]);
     return () => {};
@@ -364,7 +364,7 @@ export function subscribeToMessages(
   const listenerId = `messages_${conversationId}_${++messageListenerIdCounter}_${Date.now()}`;
 
   console.log(
-    `🔔 Setting up messages subscription for conversation: ${conversationId} with ID: ${listenerId}`
+    `Setting up messages subscription for conversation: ${conversationId} with ID: ${listenerId}`
   );
 
   // Clean up any existing listener for this conversation
@@ -373,7 +373,7 @@ export function subscribeToMessages(
   );
   if (existingListenerId) {
     console.log(
-      "🧹 Cleaning up existing message listener:",
+      "Cleaning up existing message listener:",
       existingListenerId
     );
     const cleanup = activeMessageListeners.get(existingListenerId);
@@ -388,7 +388,7 @@ export function subscribeToMessages(
     .then((isReady) => {
       if (!isReady) {
         console.warn(
-          "⚠️ Firestore not ready for messages subscription, providing empty data"
+          "Firestore not ready for messages subscription, providing empty data"
         );
         callback([]);
         return;
@@ -397,7 +397,7 @@ export function subscribeToMessages(
       const db = getFirestoreInstance();
       if (!db) {
         console.warn(
-          "❌ Firestore not initialized, cannot subscribe to messages"
+          "Firestore not initialized, cannot subscribe to messages"
         );
         callback([]);
         return;
@@ -412,7 +412,7 @@ export function subscribeToMessages(
         getDoc(conversationRef)
           .then((conversationSnap) => {
             if (!conversationSnap.exists()) {
-              console.warn("⚠️ Conversation does not exist, creating it...");
+              console.warn("Conversation does not exist, creating it...");
               // This should not happen normally, but we'll handle it gracefully
               callback([]);
               return;
@@ -446,12 +446,12 @@ export function subscribeToMessages(
                     .reverse(); // Inverser pour avoir l'ordre chronologique
 
                   console.log(
-                    `✅ Received ${messages.length} messages via subscription (listener: ${listenerId})`
+                    `Received ${messages.length} messages via subscription (listener: ${listenerId})`
                   );
                   callback(messages);
                 } catch (error) {
                   console.error(
-                    `❌ Error processing messages snapshot (listener: ${listenerId}):`,
+                    `Error processing messages snapshot (listener: ${listenerId}):`,
                     error
                   );
                   callback([]);
@@ -459,14 +459,14 @@ export function subscribeToMessages(
               },
               async (error) => {
                 console.error(
-                  `❌ Error in messages subscription (listener: ${listenerId}):`,
+                  `Error in messages subscription (listener: ${listenerId}):`,
                   error
                 );
 
                 // CRITICAL: Handle Firestore internal assertion failures
                 if (isFirestoreInternalError(error)) {
                   console.error(
-                    "🚨 Firestore internal assertion failure in messages subscription, resetting connection..."
+                    "Firestore internal assertion failure in messages subscription, resetting connection..."
                   );
 
                   // Clean up this listener immediately
@@ -481,11 +481,11 @@ export function subscribeToMessages(
                   try {
                     await resetFirestoreConnection();
                     console.log(
-                      "✅ Firestore connection reset after internal assertion failure in messages"
+                      "Firestore connection reset after internal assertion failure in messages"
                     );
                   } catch (resetError) {
                     console.warn(
-                      "⚠️ Could not reset Firestore after internal assertion failure:",
+                      "Could not reset Firestore after internal assertion failure:",
                       resetError
                     );
                   }
@@ -500,7 +500,7 @@ export function subscribeToMessages(
                   error.message.includes("Target ID already exists")
                 ) {
                   console.error(
-                    "🎯 Target ID conflict in messages, cleaning up..."
+                    "Target ID conflict in messages, cleaning up..."
                   );
 
                   // Clean up this listener immediately
@@ -526,19 +526,19 @@ export function subscribeToMessages(
           })
           .catch((error) => {
             console.error(
-              `❌ Error checking if conversation exists (listener: ${listenerId}):`,
+              `Error checking if conversation exists (listener: ${listenerId}):`,
               error
             );
             callback([]);
           });
       } catch (error) {
-        console.error("❌ Error setting up messages subscription:", error);
+        console.error("Error setting up messages subscription:", error);
         callback([]);
       }
     })
     .catch((error) => {
       console.error(
-        `❌ Failed to ensure Firestore ready for messages subscription:`,
+        `Failed to ensure Firestore ready for messages subscription:`,
         error
       );
       callback([]);
@@ -546,7 +546,7 @@ export function subscribeToMessages(
 
   // Return a cleanup function that will be called when the component unmounts
   return () => {
-    console.log(`🧹 Cleaning up message listener: ${listenerId}`);
+    console.log(`Cleaning up message listener: ${listenerId}`);
     if (activeMessageListeners.has(listenerId)) {
       const cleanup = activeMessageListeners.get(listenerId);
       if (cleanup) {
@@ -565,7 +565,7 @@ export function subscribeToConversations(
 ): () => void {
   // CRITICAL: Verify user is authenticated
   if (!userId) {
-    console.warn("⛔️ User ID missing. Conversations subscription cancelled.");
+    console.warn("User ID missing. Conversations subscription cancelled.");
     callback([]);
     return () => {};
   }
@@ -574,7 +574,7 @@ export function subscribeToConversations(
   const listenerId = `conversations_${userId}_${++messageListenerIdCounter}_${Date.now()}`;
 
   console.log(
-    `🔔 Setting up conversations subscription for user: ${userId} with ID: ${listenerId}`
+    `Setting up conversations subscription for user: ${userId} with ID: ${listenerId}`
   );
 
   // Clean up any existing listener for this user
@@ -583,7 +583,7 @@ export function subscribeToConversations(
   );
   if (existingListenerId) {
     console.log(
-      "🧹 Cleaning up existing conversation listener:",
+      "Cleaning up existing conversation listener:",
       existingListenerId
     );
     const cleanup = activeMessageListeners.get(existingListenerId);
@@ -597,7 +597,7 @@ export function subscribeToConversations(
   const cacheKey = `conversations_${userId}`;
   const cachedData = conversationsCache.get(cacheKey);
   if (cachedData) {
-    console.log("📦 Using cached conversations data");
+    console.log("Using cached conversations data");
     callback(cachedData);
   }
 
@@ -606,7 +606,7 @@ export function subscribeToConversations(
     .then((isReady) => {
       if (!isReady) {
         console.warn(
-          "⚠️ Firestore not ready for conversations subscription, providing empty data"
+          "Firestore not ready for conversations subscription, providing empty data"
         );
         callback([]);
         return;
@@ -615,7 +615,7 @@ export function subscribeToConversations(
       const db = getFirestoreInstance();
       if (!db) {
         console.warn(
-          "❌ Firestore not initialized, cannot subscribe to conversations"
+          "Firestore not initialized, cannot subscribe to conversations"
         );
         callback([]);
         return;
@@ -669,7 +669,7 @@ export function subscribeToConversations(
               });
 
               console.log(
-                `✅ Received ${sortedConversations.length} conversations via subscription (listener: ${listenerId})`
+                `Received ${sortedConversations.length} conversations via subscription (listener: ${listenerId})`
               );
 
               // Mettre en cache
@@ -683,11 +683,11 @@ export function subscribeToConversations(
 
               // Clear error if we successfully receive data
               if (conversations.length > 0) {
-                console.log("✅ Conversations loaded successfully");
+                console.log("Conversations loaded successfully");
               }
             } catch (error) {
               console.error(
-                `❌ Error processing conversations snapshot (listener: ${listenerId}):`,
+                `Error processing conversations snapshot (listener: ${listenerId}):`,
                 error
               );
               callback([]);
@@ -695,14 +695,14 @@ export function subscribeToConversations(
           },
           async (error) => {
             console.error(
-              `❌ Error in conversations subscription (listener: ${listenerId}):`,
+              `Error in conversations subscription (listener: ${listenerId}):`,
               error
             );
 
             // CRITICAL: Handle Firestore internal assertion failures
             if (isFirestoreInternalError(error)) {
               console.error(
-                "🚨 Firestore internal assertion failure in conversations subscription, resetting connection..."
+                "Firestore internal assertion failure in conversations subscription, resetting connection..."
               );
 
               // Clean up this listener immediately
@@ -717,14 +717,14 @@ export function subscribeToConversations(
               try {
                 await resetFirestoreConnection();
                 console.log(
-                  "✅ Firestore connection reset after internal assertion failure in conversations"
+                  "Firestore connection reset after internal assertion failure in conversations"
                 );
 
                 // Try to resubscribe after a delay
                 setTimeout(() => {
                   if (userId) {
                     console.log(
-                      "🔄 Attempting to resubscribe to conversations after reset"
+                      "Attempting to resubscribe to conversations after reset"
                     );
                     const newUnsubscribe = subscribeToConversations(
                       userId,
@@ -738,7 +738,7 @@ export function subscribeToConversations(
                 }, 2000);
               } catch (resetError) {
                 console.warn(
-                  "⚠️ Could not reset Firestore after internal assertion failure:",
+                  "Could not reset Firestore after internal assertion failure:",
                   resetError
                 );
               }
@@ -753,7 +753,7 @@ export function subscribeToConversations(
               error.message.includes("Target ID already exists")
             ) {
               console.error(
-                "🎯 Target ID conflict in conversations, cleaning up..."
+                "Target ID conflict in conversations, cleaning up..."
               );
 
               // Clean up this listener immediately
@@ -772,12 +772,12 @@ export function subscribeToConversations(
 
             // Provide specific error handling without nested listeners
             if (error.code === "permission-denied") {
-              console.error("❌ Permission denied for conversations");
+              console.error("Permission denied for conversations");
             } else if (error.code === "unavailable") {
-              console.error("❌ Firestore service unavailable");
+              console.error("Firestore service unavailable");
             } else {
               console.error(
-                "❌ Unknown error in conversations subscription:",
+                "Unknown error in conversations subscription:",
                 error.code
               );
             }
@@ -789,13 +789,13 @@ export function subscribeToConversations(
         // Store the listener with unique ID
         activeMessageListeners.set(listenerId, unsubscribe);
       } catch (error) {
-        console.error("❌ Error setting up conversations subscription:", error);
+        console.error("Error setting up conversations subscription:", error);
         callback([]);
       }
     })
     .catch((error) => {
       console.error(
-        `❌ Failed to ensure Firestore ready for conversations subscription:`,
+        `Failed to ensure Firestore ready for conversations subscription:`,
         error
       );
       callback([]);
@@ -803,7 +803,7 @@ export function subscribeToConversations(
 
   // Return a cleanup function that will be called when the component unmounts
   return () => {
-    console.log(`🧹 Cleaning up conversation listener: ${listenerId}`);
+    console.log(`Cleaning up conversation listener: ${listenerId}`);
     if (activeMessageListeners.has(listenerId)) {
       const cleanup = activeMessageListeners.get(listenerId);
       if (cleanup) {
@@ -820,12 +820,12 @@ export async function markMessagesAsRead(
   userId: string
 ): Promise<void> {
   try {
-    console.log("👁️ Marking messages as read for user:", userId);
+    console.log("Marking messages as read for user:", userId);
 
     // CRITICAL: Verify user is authenticated
     if (!userId || !conversationId) {
       console.warn(
-        "⛔️ User ID or conversation ID missing. Mark as read cancelled."
+        "User ID or conversation ID missing. Mark as read cancelled."
       );
       return;
     }
@@ -844,7 +844,7 @@ export async function markMessagesAsRead(
     const conversationSnap = await getDoc(conversationRef);
     if (!conversationSnap.exists()) {
       console.warn(
-        "⚠️ Conversation does not exist, cannot mark messages as read"
+        "Conversation does not exist, cannot mark messages as read"
       );
       return;
     }
@@ -896,14 +896,14 @@ export async function markMessagesAsRead(
         }
       }
 
-      console.log(`✅ Marked ${snapshot.docs.length} messages as read`);
+      console.log(`Marked ${snapshot.docs.length} messages as read`);
 
       // Invalider le cache des messages non lus pour cette conversation
       const cacheKey = `unread_${conversationId}_${userId}`;
       unreadCountCache.delete(cacheKey);
     }
   } catch (error) {
-    console.error("❌ Error marking messages as read:", error);
+    console.error("Error marking messages as read:", error);
     // Ne pas lancer d'erreur pour ne pas bloquer l'interface
   }
 }
@@ -956,7 +956,7 @@ export async function getUnreadCountForConversation(
 
     return count;
   } catch (error) {
-    console.error("❌ Error getting unread count for conversation:", error);
+    console.error("Error getting unread count for conversation:", error);
     return 0;
   }
 }
@@ -965,7 +965,7 @@ export async function getUnreadCount(userId: string): Promise<number> {
   try {
     // CRITICAL: Verify user is authenticated
     if (!userId) {
-      console.warn("⛔️ User ID missing. Unread count check cancelled.");
+      console.warn("User ID missing. Unread count check cancelled.");
       return 0;
     }
 
@@ -977,18 +977,18 @@ export async function getUnreadCount(userId: string): Promise<number> {
       return cached.count;
     }
 
-    console.log("📊 Getting unread count for user:", userId);
+    console.log("Getting unread count for user:", userId);
 
     // CRITICAL: Ensure Firestore is ready before operation
     const isReady = await ensureFirestoreReady();
     if (!isReady) {
-      console.warn("⚠️ Firestore not ready for unread count, returning 0");
+      console.warn("Firestore not ready for unread count, returning 0");
       return 0;
     }
 
     const db = getFirestoreInstance();
     if (!db) {
-      console.warn("⚠️ Firestore not available for unread count, returning 0");
+      console.warn("Firestore not available for unread count, returning 0");
       return 0;
     }
 
@@ -1030,7 +1030,7 @@ export async function getUnreadCount(userId: string): Promise<number> {
           return messagesSnapshot.size;
         } catch {
           console.warn(
-            "⚠️ Error counting unread messages for conversation:",
+            "Error counting unread messages for conversation:",
             conversationDoc.id
           );
           return 0;
@@ -1046,10 +1046,10 @@ export async function getUnreadCount(userId: string): Promise<number> {
       timestamp: Date.now(),
     });
 
-    console.log(`✅ Total unread messages: ${totalUnread}`);
+    console.log(`Total unread messages: ${totalUnread}`);
     return totalUnread;
   } catch (error) {
-    console.error("❌ Error getting unread count:", error);
+    console.error("Error getting unread count:", error);
     return 0;
   }
 }
@@ -1070,17 +1070,17 @@ export async function searchUsers(
   try {
     // CRITICAL: Verify user is authenticated
     if (!currentUserId) {
-      console.warn("⛔️ Current user ID missing. User search cancelled.");
+      console.warn("Current user ID missing. User search cancelled.");
       return [];
     }
 
-    console.log("🔍 Searching users with term:", searchTerm);
+    console.log("Searching users with term:", searchTerm);
 
     // Vérifier le cache
     const cacheKey = `users_search_${searchTerm.toLowerCase()}`;
     const cached = usersCache.get(cacheKey);
     if (cached) {
-      console.log("📦 Using cached search results");
+      console.log("Using cached search results");
       return cached;
     }
 
@@ -1120,7 +1120,7 @@ export async function searchUsers(
         }
       });
     } catch (error) {
-      console.log("⚠️ Error searching in users collection:", error);
+      console.log("Error searching in users collection:", error);
     }
 
     // 2. Rechercher dans la collection "patients" (patients)
@@ -1143,7 +1143,7 @@ export async function searchUsers(
         }
       });
     } catch (error) {
-      console.log("⚠️ Error searching in patients collection:", error);
+      console.log("Error searching in patients collection:", error);
     }
 
     // 3. Filtrer par nom et exclure l'utilisateur actuel
@@ -1173,10 +1173,10 @@ export async function searchUsers(
     usersCache.set(cacheKey, results);
     setTimeout(() => usersCache.delete(cacheKey), 60000);
 
-    console.log(`✅ Found ${results.length} matching users`);
+    console.log(`Found ${results.length} matching users`);
     return results;
   } catch (error) {
-    console.error("❌ Error searching users:", error);
+    console.error("Error searching users:", error);
     return [];
   }
 }
@@ -1192,11 +1192,11 @@ export async function sendBroadcastMessage(
   try {
     // CRITICAL: Verify sender is authenticated
     if (!senderId) {
-      console.warn("⛔️ Sender ID missing. Broadcast message cancelled.");
+      console.warn("Sender ID missing. Broadcast message cancelled.");
       throw new Error("Identifiant utilisateur manquant");
     }
 
-    console.log("📢 Sending broadcast message to:", recipientType);
+    console.log("Sending broadcast message to:", recipientType);
 
     // CRITICAL: Ensure Firestore is ready before operation
     await ensureFirestoreReady();
@@ -1255,7 +1255,7 @@ export async function sendBroadcastMessage(
       );
     }
 
-    console.log(`📤 Sending broadcast to ${targetUsers.length} users`);
+    console.log(`Sending broadcast to ${targetUsers.length} users`);
 
     // Traiter par lots de 5 pour éviter les surcharges
     const batchSize = 5;
@@ -1281,7 +1281,7 @@ export async function sendBroadcastMessage(
             content
           );
         } catch (error) {
-          console.warn(`⚠️ Failed to send message to user ${user.id}:`, error);
+          console.warn(`Failed to send message to user ${user.id}:`, error);
         }
       });
 
@@ -1293,9 +1293,9 @@ export async function sendBroadcastMessage(
       }
     }
 
-    console.log("✅ Broadcast message sent successfully");
+    console.log("Broadcast message sent successfully");
   } catch (error) {
-    console.error("❌ Error sending broadcast message:", error);
+    console.error("Error sending broadcast message:", error);
     throw new Error("Erreur lors de l'envoi du message de diffusion");
   }
 }
@@ -1305,16 +1305,16 @@ export function clearMessageCaches(): void {
   conversationsCache.clear();
   unreadCountCache.clear();
   usersCache.clear();
-  console.log("🧹 Message caches cleared");
+  console.log("Message caches cleared");
 }
 
 // Utility function to clean up all message listeners
 export const cleanupAllMessageListeners = () => {
   console.log(
-    `🧹 Cleaning up all ${activeMessageListeners.size} message listeners`
+    `Cleaning up all ${activeMessageListeners.size} message listeners`
   );
   activeMessageListeners.forEach((unsubscribe, listenerId) => {
-    console.log("🧹 Cleaning up message listener:", listenerId);
+    console.log("Cleaning up message listener:", listenerId);
     unsubscribe();
   });
   activeMessageListeners.clear();

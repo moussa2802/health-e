@@ -18,11 +18,11 @@ export const CECA_Q: AssessmentScale = {
   shortName: "CECA-Q",
   category: 'mental_health',
   description: "Évalue les expériences de soins et de maltraitance durant l'enfance, notamment les attitudes parentales et les éventuels abus.",
-  instructions: "Ces questions portent sur ton enfance, avant tes 17 ans. Pense à la personne qui s'occupait principalement de toi. Prends ton temps, il n'y a aucune obligation de répondre à tout 🤍",
+  instructions: "Ces questions portent sur ton enfance, avant tes 17 ans. Pense à la personne qui s'occupait principalement de toi. Prends ton temps, il n'y a aucune obligation de répondre à tout",
   timeEstimateMinutes: 8,
   reference: "Bifulco, A., Brown, G.W., & Harris, T.O. (1994). Childhood Experience of Care and Abuse (CECA). Social Psychiatry and Psychiatric Epidemiology, 29(4), 141–198.",
   licenseNote: "Basé sur les questions publiées dans les articles de Bifulco (1994). Usage clinique et de recherche.",
-  warningMessage: "Ces questions portent sur ton enfance et peuvent évoquer des souvenirs difficiles. Un score élevé ne signifie pas que tu as un problème aujourd'hui. Prends soin de toi. 🤍",
+  warningMessage: "Ces questions portent sur ton enfance et peuvent évoquer des souvenirs difficiles. Un score élevé ne signifie pas que tu as un problème aujourd'hui. Prends soin de toi.",
   scoreRange: { min: 16, max: 64 },
   items: [
     { id: 1,  text: "La personne qui s'occupait de toi te montrait de l'affection — des câlins, des mots tendres, te dire qu'elle t'aimait ?",              type: 'likert', options: freq, subscale: 'maternal_care', reversed: true },

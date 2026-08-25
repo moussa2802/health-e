@@ -93,7 +93,7 @@ const AdminPatients: React.FC = () => {
     return (
       <AdminLayout>
         <div className="flex items-center justify-center min-h-screen">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-accent"></div>
         </div>
       </AdminLayout>
     );
@@ -103,10 +103,10 @@ const AdminPatients: React.FC = () => {
     return (
       <AdminLayout>
         <div className="text-center py-12">
-          <div className="text-red-600 text-xl mb-4">{error}</div>
+          <div className="text-danger text-xl mb-4">{error}</div>
           <button
             onClick={fetchPatients}
-            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+            className="bg-accent text-white px-4 py-2 rounded-card hover:bg-accent/90"
           >
             Réessayer
           </button>
@@ -134,18 +134,18 @@ const AdminPatients: React.FC = () => {
 
   // Fonction de rendu des lignes
   const renderRow = (patient: Patient) => (
-    <tr key={patient.id} className="hover:bg-gray-50">
+    <tr key={patient.id} className="hover:bg-paper">
       <td className="px-6 py-4 whitespace-nowrap">
         <div className="flex items-center">
-          <div className="w-10 h-10 rounded-full bg-green-200 flex items-center justify-center mr-3">
-            <User className="h-6 w-6 text-green-600" />
+          <div className="w-10 h-10 rounded-full bg-sage-soft flex items-center justify-center mr-3">
+            <User className="h-6 w-6 text-sage" />
           </div>
           <div>
-            <div className="text-sm font-medium text-gray-900">
+            <div className="text-sm font-medium text-ink">
               {patient.name}
             </div>
             {patient.dateOfBirth && (
-              <div className="text-sm text-gray-500 flex items-center">
+              <div className="text-sm text-muted flex items-center">
                 <Calendar className="h-4 w-4 mr-1" />
                 {formatDateOfBirth(patient.dateOfBirth)}
               </div>
@@ -157,21 +157,21 @@ const AdminPatients: React.FC = () => {
         <div className="space-y-2">
           {/* Email */}
           {patient.email && (
-            <div className="text-sm text-gray-900 flex items-center">
-              <Mail className="h-4 w-4 mr-2 text-gray-400" />
+            <div className="text-sm text-ink flex items-center">
+              <Mail className="h-4 w-4 mr-2 text-muted" />
               {patient.email}
             </div>
           )}
           {/* Téléphone */}
           {patient.phone ? (
-            <div className="text-sm text-gray-900 flex items-center">
-              <Phone className="h-4 w-4 mr-2 text-green-500" />
+            <div className="text-sm text-ink flex items-center">
+              <Phone className="h-4 w-4 mr-2 text-sage" />
               {patient.phone}
             </div>
           ) : null}
           {/* Genre */}
-          <div className="text-sm text-gray-500 flex items-center">
-            <User className="h-4 w-4 mr-2 text-gray-400" />
+          <div className="text-sm text-muted flex items-center">
+            <User className="h-4 w-4 mr-2 text-muted" />
             {patient.gender === "M"
               ? "Homme"
               : patient.gender === "F"
@@ -182,14 +182,14 @@ const AdminPatients: React.FC = () => {
           </div>
         </div>
       </td>
-      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+      <td className="px-6 py-4 whitespace-nowrap text-sm text-muted">
         {formatDate(patient.createdAt)}
       </td>
       <td className="px-6 py-4 whitespace-nowrap">
         <div className="flex space-x-2">
           <button
             onClick={() => window.open(`mailto:${patient.email}`, "_blank")}
-            className="px-3 py-1 bg-blue-100 text-blue-700 hover:bg-blue-200 rounded text-xs font-medium"
+            className="px-3 py-1 bg-accent-soft text-accent hover:bg-accent-soft/70 rounded-card text-xs font-medium"
           >
             <Mail className="h-3 w-3 mr-1 inline" />
             Contacter

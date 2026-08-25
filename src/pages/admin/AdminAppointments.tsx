@@ -229,17 +229,17 @@ const AdminAppointments: React.FC = () => {
   const getStatusColor = (status: string) => {
     switch (status) {
       case "en_attente":
-        return "bg-yellow-100 text-yellow-800";
+        return "bg-gold-soft text-gold";
       case "confirmé":
       case "confirmed":
-        return "bg-blue-100 text-blue-800";
+        return "bg-sage-soft text-sage";
       case "terminé":
       case "completed":
-        return "bg-green-100 text-green-800";
+        return "bg-ok/15 text-ok";
       case "annulé":
-        return "bg-red-100 text-red-800";
+        return "bg-danger/10 text-danger";
       default:
-        return "bg-gray-100 text-gray-800";
+        return "bg-paper text-ink-soft";
     }
   };
 
@@ -248,8 +248,8 @@ const AdminAppointments: React.FC = () => {
       <AdminLayout>
         <div className="p-6">
           <div className="flex items-center justify-center h-64">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
-            <span className="ml-4 text-lg text-gray-600">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-accent"></div>
+            <span className="ml-4 text-lg text-ink-soft">
               Chargement des consultations...
             </span>
           </div>
@@ -262,12 +262,12 @@ const AdminAppointments: React.FC = () => {
     return (
       <AdminLayout>
         <div className="p-6">
-          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative">
+          <div className="bg-danger/10 border border-danger text-danger px-4 py-3 rounded-card relative">
             <strong className="font-bold">Erreur : </strong>
             <span className="block sm:inline">{error}</span>
             <button
               onClick={fetchAppointments}
-              className="mt-2 bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600"
+              className="mt-2 bg-danger text-white px-4 py-2 rounded-card hover:bg-danger/90"
             >
               Réessayer
             </button>
@@ -284,7 +284,7 @@ const AdminAppointments: React.FC = () => {
       <div className="p-6">
         <div className="flex justify-between items-center mb-6">
           <div>
-            <p className="text-gray-600">
+            <p className="text-ink-soft">
               {filteredAppointments.length} consultation
               {filteredAppointments.length > 1 ? "s" : ""}
               {appointments.length !== filteredAppointments.length &&
@@ -293,7 +293,7 @@ const AdminAppointments: React.FC = () => {
           </div>
           <button
             onClick={handleExport}
-            className="flex items-center px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
+            className="flex items-center px-4 py-2 bg-accent text-white rounded-card hover:bg-accent/90"
           >
             <Download className="w-4 h-4 mr-2" />
             Exporter
@@ -301,14 +301,14 @@ const AdminAppointments: React.FC = () => {
         </div>
 
         {/* Filtres simplifiés */}
-        <div className="bg-white rounded-lg shadow p-4 mb-6">
+        <div className="bg-card rounded-block shadow-soft p-4 mb-6">
           <div className="flex flex-col md:flex-row gap-4">
             <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted w-5 h-5" />
               <input
                 type="text"
                 placeholder="Rechercher une consultation..."
-                className="pl-10 w-full border border-gray-300 rounded-md p-2"
+                className="pl-10 w-full border border-line rounded-card p-2"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
@@ -317,7 +317,7 @@ const AdminAppointments: React.FC = () => {
               <select
                 value={selectedStatus}
                 onChange={(e) => setSelectedStatus(e.target.value)}
-                className="border border-gray-300 rounded-md p-2"
+                className="border border-line rounded-card p-2"
               >
                 <option value="all">Tous les statuts</option>
                 <option value="en_attente">En attente</option>
@@ -330,42 +330,42 @@ const AdminAppointments: React.FC = () => {
         </div>
 
         {/* Table des consultations */}
-        <div className="bg-white rounded-lg shadow overflow-hidden">
+        <div className="bg-card rounded-block shadow-soft overflow-hidden">
           {filteredAppointments.length > 0 ? (
             <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
+              <table className="min-w-full divide-y divide-line">
+                <thead className="bg-paper">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-muted uppercase tracking-wider">
                       Consultation
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-muted uppercase tracking-wider">
                       Date et heure
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-muted uppercase tracking-wider">
                       Statut
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-muted uppercase tracking-wider">
                       Montant
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-muted uppercase tracking-wider">
                       Date de création
                     </th>
                   </tr>
                 </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
+                <tbody className="bg-card divide-y divide-line">
                   {filteredAppointments.map((appointment) => (
-                    <tr key={appointment.id} className="hover:bg-gray-50">
+                    <tr key={appointment.id} className="hover:bg-paper">
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
-                          <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center mr-3">
-                            <Calendar className="h-6 w-6 text-green-500" />
+                          <div className="w-10 h-10 rounded-full bg-accent-soft flex items-center justify-center mr-3">
+                            <Calendar className="h-6 w-6 text-accent" />
                           </div>
                           <div>
-                            <div className="text-sm font-medium text-gray-900">
+                            <div className="text-sm font-medium text-ink">
                               {appointment.patientName || "Patient inconnu"}
                             </div>
-                            <div className="text-sm text-gray-500">
+                            <div className="text-sm text-muted">
                               avec{" "}
                               {appointment.professionalName ||
                                 "Professionnel inconnu"}
@@ -374,35 +374,35 @@ const AdminAppointments: React.FC = () => {
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">
+                        <div className="text-sm text-ink">
                           <div className="flex items-center">
-                            <Calendar className="w-4 h-4 mr-2 text-gray-400" />
+                            <Calendar className="w-4 h-4 mr-2 text-muted" />
                             {formatDate(appointment.date)}
                           </div>
                           <div className="flex items-center mt-1">
-                            <Clock className="w-4 h-4 mr-2 text-gray-400" />
+                            <Clock className="w-4 h-4 mr-2 text-muted" />
                             {appointment.time}
                           </div>
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span
-                          className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(
+                          className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-pill ${getStatusColor(
                             appointment.status
                           )}`}
                         >
                           {getStatusLabel(appointment.status)}
                         </span>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-ink">
                         <div className="flex items-center">
-                          <DollarSign className="w-4 h-4 mr-2 text-gray-400" />
+                          <DollarSign className="w-4 h-4 mr-2 text-muted" />
                           {appointment.amount
                             ? `${appointment.amount} FCFA`
                             : "Non spécifié"}
                         </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-muted">
                         {formatDate(appointment.createdAt)}
                       </td>
                     </tr>
@@ -412,13 +412,13 @@ const AdminAppointments: React.FC = () => {
             </div>
           ) : (
             <div className="text-center py-12">
-              <Calendar className="mx-auto h-12 w-12 text-gray-400" />
-              <h3 className="mt-2 text-sm font-medium text-gray-900">
+              <Calendar className="mx-auto h-12 w-12 text-muted" />
+              <h3 className="mt-2 text-sm font-medium text-ink">
                 {searchTerm || selectedStatus !== "all"
                   ? "Aucune consultation ne correspond à vos critères"
                   : "Aucune consultation trouvée"}
               </h3>
-              <p className="mt-1 text-sm text-gray-500">
+              <p className="mt-1 text-sm text-muted">
                 {searchTerm || selectedStatus !== "all"
                   ? "Essayez de modifier vos critères de recherche ou de filtrage."
                   : "Aucune consultation n'a encore été programmée."}

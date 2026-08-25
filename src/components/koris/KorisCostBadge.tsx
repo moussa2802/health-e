@@ -11,9 +11,10 @@ const KORI_IMG = '/kori.png';
 interface Props {
   feature: KorisFeatureType;
   style?: React.CSSProperties;
+  className?: string;
 }
 
-const KorisCostBadge: React.FC<Props> = ({ feature, style }) => {
+const KorisCostBadge: React.FC<Props> = ({ feature, style, className = '' }) => {
   const { getCost, canAfford } = useKoris();
   const cost = getCost(feature);
 
@@ -23,27 +24,16 @@ const KorisCostBadge: React.FC<Props> = ({ feature, style }) => {
 
   return (
     <span
-      style={{
-        display: 'inline-flex',
-        alignItems: 'center',
-        gap: 3,
-        fontSize: 11,
-        fontWeight: 600,
-        color: affordable ? '#0D9488' : '#DC2626',
-        background: affordable
-          ? 'rgba(13,148,136,0.08)'
-          : 'rgba(239,68,68,0.08)',
-        padding: '2px 7px 2px 4px',
-        borderRadius: 10,
-        whiteSpace: 'nowrap',
-        ...style,
-      }}
+      style={style}
+      className={`inline-flex items-center gap-1 pl-1 pr-1.5 py-0.5 rounded-lg text-[11px] font-semibold whitespace-nowrap ${
+        affordable ? 'text-gold bg-gold-soft' : 'text-danger bg-danger/10'
+      } ${className}`}
       title={affordable ? `Coût: ${cost} Koris` : `Solde insuffisant (${cost} Koris requis)`}
     >
       <img
         src={KORI_IMG}
         alt=""
-        style={{ width: 14, height: 14, borderRadius: '50%', objectFit: 'cover' }}
+        className="w-3.5 h-3.5 rounded-full object-cover"
       />
       {cost}
     </span>

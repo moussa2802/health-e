@@ -1,6 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { doc, onSnapshot } from 'firebase/firestore';
+import {
+  ArrowLeft, Brain, Heart, ClipboardList, User, Stethoscope, RefreshCw, Target, Lock,
+  Link2, Copy, FileDown, CheckCircle2, Circle, Lightbulb, Sparkles, Pin, Dumbbell,
+  AlertTriangle, Flame, Loader2, BarChart3,
+} from 'lucide-react';
 import { db } from '../../utils/firebase';
 import { useAuth } from '../../contexts/AuthContext';
 import {
@@ -31,7 +36,7 @@ import SexualHealthFilterWizard from '../../components/assessment/SexualHealthFi
 import SexualAccessGate from '../../components/assessment/SexualAccessGate';
 import { MENTAL_HEALTH_SCALES, SEXUAL_HEALTH_SCALES, BONUS_SCALES } from '../../data/scales';
 import { triggerDrLoMentalHealth, triggerDrLoSexualHealth, triggerDrLoSynthesis } from '../../utils/drLoAnalysis';
-import { getScaleMeta } from '../../utils/scaleMeta';
+import { getScaleMeta, getScaleCategory, getCategoryColor, getScaleEmoji } from '../../utils/scaleMeta';
 import PageTooltips from '../../components/Onboarding/PageTooltips';
 import { getAllTestAttemptCounts, deleteTestResult, resetFullProfile } from '../../services/testManagementService';
 import { getCachedConseils, getOrGenerateConseils, type CachedConseils } from '../../services/conseilsService';
@@ -44,22 +49,21 @@ import KorisCostBadge from '../../components/koris/KorisCostBadge';
 import type { ScaleResult, AssessmentScale } from '../../types/assessment';
 import type { SexualHealthFilter } from '../../types/onboarding';
 
+// ── Design tokens (severity) ────────────────────────────────────────────────
+// ok=#3C7A5A · gold=#8F6A1F · accent=#B5522F · danger=#B23A3A
+
 function getSeverityColor(severity: string): string {
   switch (severity) {
-    case 'positive': case 'none': case 'minimal': return '#16A34A';
-    case 'mild': case 'moderate': return '#D97706';
-    case 'severe': case 'alert': return '#DC2626';
-    default: return '#64748B';
+    case 'positive': case 'none': case 'minimal': return '#3C7A5A';
+    case 'mild': return '#8F6A1F';
+    case 'moderate': return '#B5522F';
+    case 'severe': case 'alert': return '#B23A3A';
+    default: return '#6E7078';
   }
 }
 
 function getSeverityBg(severity: string): string {
-  switch (severity) {
-    case 'positive': case 'none': case 'minimal': return '#DCFCE7';
-    case 'mild': case 'moderate': return '#FEF3C7';
-    case 'severe': case 'alert': return '#FEE2E2';
-    default: return '#F1F5F9';
-  }
+  return `${getSeverityColor(severity)}18`;
 }
 
 function getShortComment(result: ScaleResult): string {
@@ -103,199 +107,146 @@ const ScaleRow: React.FC<{
 }> = ({ scale, result, onStart, onDelete, deleteConfirm, loading, expandedTestId, onToggle, expandedAdviceId, onToggleAdvice, attemptCount, cachedConseils, conseilsLoading }) => {
   const isCompleted = !!result;
   const meta = getScaleMeta(scale.id);
+  const catColor = getCategoryColor(getScaleCategory(scale.id));
   const fullComment = result ? getShortComment(result) : '';
   const isExpanded = expandedTestId === scale.id;
   const isAdviceExpanded = expandedAdviceId === scale.id;
   const hasConseils = cachedConseils && cachedConseils.conseils && cachedConseils.conseils.length > 0;
 
   return (
-    <div style={{
-      background: isCompleted ? '#F0FDF4' : '#FFFFFF',
-      border: isCompleted ? '1.5px solid rgba(34,197,94,0.3)' : '1.5px solid rgba(59,130,246,0.12)',
-      borderRadius: 12, padding: '14px 16px',
-      display: 'flex', alignItems: 'center', gap: 13,
-    }}>
-      <div style={{
-        width: 40, height: 40, borderRadius: 10,
-        background: isCompleted ? '#DCFCE7' : '#EFF6FF',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        fontSize: 18, flexShrink: 0,
-      }}>
-        {meta.icon}
+    <div
+      className="flex items-center gap-3 rounded-2xl p-4 bg-white"
+      style={{
+        border: isCompleted ? '1.5px solid rgba(60,122,90,0.35)' : '1.5px solid #E7E4DA',
+      }}
+    >
+      <div
+        className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+        style={{ background: isCompleted ? 'rgba(60,122,90,0.12)' : `${catColor.accent}12` }}
+      >
+        <meta.icon size={18} color={isCompleted ? '#3C7A5A' : catColor.accent} />
       </div>
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2, flexWrap: 'wrap' }}>
-          <span style={{ fontSize: 11, fontWeight: 700, color: '#64748B' }}>{scale.shortName}</span>
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-1.5 mb-0.5 flex-wrap">
+          <span className="text-[11px] font-bold text-muted">{scale.shortName}</span>
           {scale.targetGender === 'female' && (
-            <span style={{ fontSize: 10, fontWeight: 700, color: '#DB2777', background: 'rgba(219,39,119,0.08)', border: '1px solid rgba(219,39,119,0.2)', borderRadius: 20, padding: '1px 7px' }}>
+            <span className="text-[10px] font-bold rounded-full px-2 py-0.5" style={{ color: '#B5522F', background: 'rgba(201,96,63,0.08)', border: '1px solid rgba(201,96,63,0.2)' }}>
               Pour les femmes
             </span>
           )}
           {scale.targetGender === 'male' && (
-            <span style={{ fontSize: 10, fontWeight: 700, color: '#2563EB', background: 'rgba(37,99,235,0.08)', border: '1px solid rgba(37,99,235,0.2)', borderRadius: 20, padding: '1px 7px' }}>
+            <span className="text-[10px] font-bold rounded-full px-2 py-0.5" style={{ color: '#4A5D57', background: 'rgba(74,93,87,0.08)', border: '1px solid rgba(74,93,87,0.2)' }}>
               Pour les hommes
             </span>
           )}
-          {isCompleted && <span style={{ fontSize: 11 }}>✅</span>}
+          {isCompleted && <CheckCircle2 size={12} color="#3C7A5A" />}
           {isCompleted && attemptCount && attemptCount > 1 && (
-            <span style={{ fontSize: 10, fontWeight: 600, color: '#6B7280', background: '#F3F4F6', borderRadius: 20, padding: '1px 7px' }}>
+            <span className="text-[10px] font-semibold text-ink-light rounded-full px-2 py-0.5" style={{ background: '#F3F1EA' }}>
               Passé {attemptCount} fois
             </span>
           )}
         </div>
-        <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: '#0A2342', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+        <p className="m-0 text-[13px] font-semibold text-ink overflow-hidden text-ellipsis whitespace-nowrap">
           {meta.label}
         </p>
         {isCompleted && result ? (
           <>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4, flexWrap: 'wrap' }}>
-              <span style={{
-                display: 'inline-block', padding: '2px 10px', borderRadius: 20,
-                fontSize: 11, fontWeight: 700,
-                background: getSeverityBg(result.interpretation.severity),
-                color: getSeverityColor(result.interpretation.severity),
-              }}>
+            <div className="flex items-center gap-2 mt-1 flex-wrap">
+              <span
+                className="inline-block px-2.5 py-0.5 rounded-full text-[11px] font-bold"
+                style={{ background: getSeverityBg(result.interpretation.severity), color: getSeverityColor(result.interpretation.severity) }}
+              >
                 {result.interpretation.label}
               </span>
-              <span style={{ fontSize: 11, color: '#94A3B8' }}>Score : {result.totalScore}</span>
+              <span className="text-[11px] text-muted">Score : {result.totalScore}</span>
               {result.completedAt && (
-                <span style={{ fontSize: 11, color: '#CBD5E1' }}>{formatDate(result.completedAt)}</span>
+                <span className="text-[11px] text-muted opacity-70">{formatDate(result.completedAt)}</span>
               )}
             </div>
             {fullComment && (
-              <div style={{ marginTop: 6 }}>
+              <div className="mt-1.5">
                 <button
                   type="button"
                   onClick={() => onToggle(scale.id)}
-                  style={{
-                    background: 'transparent',
-                    border: 'none',
-                    padding: 0,
-                    fontSize: 11,
-                    fontWeight: 700,
-                    color: '#3B82F6',
-                    cursor: 'pointer',
-                  }}
+                  className="bg-transparent border-0 p-0 text-[11px] font-bold cursor-pointer"
+                  style={{ color: catColor.accent }}
                 >
                   {isExpanded ? 'Masquer' : 'Voir mon analyse'}
                 </button>
                 {isExpanded && (
-                  <div style={{
-                    marginTop: 8,
-                    background: '#F8FAFF',
-                    border: '1px solid rgba(59,130,246,0.12)',
-                    borderRadius: 10,
-                    padding: '10px 12px',
-                    fontSize: 12,
-                    color: '#374151',
-                    lineHeight: 1.55,
-                  }}>
+                  <div className="mt-2 rounded-xl px-3 py-2.5 text-xs text-ink-soft leading-relaxed" style={{ background: '#F3F1EA', border: '1px solid #E7E4DA' }}>
                     {fullComment}
                   </div>
                 )}
               </div>
             )}
             {isCompleted && (
-              <div style={{ marginTop: 8 }}>
+              <div className="mt-2">
                 <button
                   type="button"
                   onClick={() => onToggleAdvice(scale.id)}
-                  style={{
-                    background: 'transparent',
-                    border: 'none',
-                    padding: 0,
-                    fontSize: 11,
-                    fontWeight: 700,
-                    color: '#0EA5E9',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 4,
-                  }}
+                  className="bg-transparent border-0 p-0 text-[11px] font-bold cursor-pointer flex items-center gap-1"
+                  style={{ color: '#8F6A1F' }}
                 >
                   {conseilsLoading ? (
-                    <><div style={{ width: 10, height: 10, border: '1.5px solid #0EA5E9', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} /> Génération en cours…</>
-                  ) : isAdviceExpanded ? 'Masquer' : hasConseils ? '💡 Voir mes conseils' : '✨ Générer mes conseils'}
+                    <><Loader2 size={11} className="animate-spin" /> Génération en cours…</>
+                  ) : isAdviceExpanded ? (
+                    'Masquer'
+                  ) : hasConseils ? (
+                    <><Lightbulb size={12} /> Voir mes conseils</>
+                  ) : (
+                    <><Sparkles size={12} /> Générer mes conseils</>
+                  )}
                 </button>
                 {isAdviceExpanded && !conseilsLoading && (
                   hasConseils ? (
-                    <div style={{
-                      marginTop: 8,
-                      background: 'linear-gradient(135deg, #F0FDF4, #EFF6FF)',
-                      border: '1px solid rgba(16,185,129,0.18)',
-                      borderRadius: 12,
-                      padding: '12px 14px',
-                      fontSize: 12,
-                      color: '#0A2342',
-                      lineHeight: 1.55,
-                    }}>
+                    <div className="mt-2 rounded-2xl px-3.5 py-3 text-xs text-ink leading-relaxed" style={{ background: '#E4EAE6', border: '1px solid rgba(74,93,87,0.18)' }}>
                       {/* Signification */}
                       {cachedConseils!.signification && (
-                        <div style={{
-                          background: '#F0FDF4',
-                          borderRadius: 8, padding: '8px 10px', marginBottom: 10,
-                          border: '1px solid rgba(16,185,129,0.15)',
-                        }}>
-                          <div style={{ fontSize: 10, fontWeight: 700, color: '#16A34A', textTransform: 'uppercase', marginBottom: 4, letterSpacing: '0.04em' }}>
-                            📌 Ce que ça veut dire
+                        <div className="rounded-lg px-2.5 py-2 mb-2.5" style={{ background: '#FFFFFF', border: '1px solid rgba(74,93,87,0.15)' }}>
+                          <div className="flex items-center gap-1 text-[10px] font-bold uppercase mb-1 tracking-wide" style={{ color: '#3C7A5A' }}>
+                            <Pin size={11} /> Ce que ça veut dire
                           </div>
-                          <div style={{ fontSize: 12, color: '#374151', lineHeight: 1.6 }}>
+                          <div className="text-xs text-ink-soft leading-relaxed">
                             {cachedConseils!.signification}
                           </div>
                         </div>
                       )}
                       {/* 3 Conseils */}
-                      <div style={{ fontSize: 10, fontWeight: 700, color: '#3B82F6', textTransform: 'uppercase', marginBottom: 6, letterSpacing: '0.04em' }}>
-                        ✅ Mes 3 conseils
+                      <div className="flex items-center gap-1 text-[10px] font-bold uppercase mb-1.5 tracking-wide" style={{ color: catColor.accent }}>
+                        <CheckCircle2 size={11} /> Mes 3 conseils
                       </div>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                      <div className="flex flex-col gap-2">
                         {cachedConseils!.conseils.map((c, i) => (
-                          <div key={i} style={{
-                            background: '#F8FAFF', borderRadius: 8, padding: '8px 10px',
-                            borderLeft: '3px solid #3B82F6',
-                          }}>
-                            <div style={{ fontSize: 12, fontWeight: 700, color: '#0A2342', marginBottom: 2 }}>{c.titre}</div>
-                            <div style={{ fontSize: 12, color: '#374151', lineHeight: 1.55 }}>{c.texte}</div>
+                          <div key={i} className="rounded-lg px-2.5 py-2" style={{ background: '#FFFFFF', borderLeft: `3px solid ${catColor.accent}` }}>
+                            <div className="text-xs font-bold text-ink mb-0.5">{c.titre}</div>
+                            <div className="text-xs text-ink-soft leading-relaxed">{c.texte}</div>
                           </div>
                         ))}
                       </div>
                       {/* Exercice */}
                       {cachedConseils!.exercice && (
-                        <div style={{
-                          marginTop: 10, background: 'linear-gradient(135deg, #EFF6FF, #F0FDFA)',
-                          borderRadius: 8, padding: '8px 10px',
-                          border: '1px solid rgba(59,130,246,0.15)',
-                        }}>
-                          <div style={{ fontSize: 10, fontWeight: 700, color: '#3B82F6', textTransform: 'uppercase', marginBottom: 4, letterSpacing: '0.04em' }}>
-                            🏋️ Exercice de la semaine
+                        <div className="mt-2.5 rounded-lg px-2.5 py-2" style={{ background: 'rgba(201,96,63,0.06)', border: '1px solid rgba(201,96,63,0.15)' }}>
+                          <div className="flex items-center gap-1 text-[10px] font-bold uppercase mb-1 tracking-wide" style={{ color: '#B5522F' }}>
+                            <Dumbbell size={11} /> Exercice de la semaine
                           </div>
-                          <div style={{ fontSize: 12, fontWeight: 700, color: '#0A2342', marginBottom: 2 }}>{cachedConseils!.exercice.titre}</div>
-                          <div style={{ fontSize: 12, color: '#374151', lineHeight: 1.55 }}>{cachedConseils!.exercice.description}</div>
+                          <div className="text-xs font-bold text-ink mb-0.5">{cachedConseils!.exercice.titre}</div>
+                          <div className="text-xs text-ink-soft leading-relaxed">{cachedConseils!.exercice.description}</div>
                         </div>
                       )}
                       {/* Avis pro */}
                       {cachedConseils!.avis_pro && (
-                        <div style={{
-                          marginTop: 10, background: '#FFF7ED', borderRadius: 8, padding: '8px 10px',
-                          border: '1px solid rgba(249,115,22,0.2)',
-                        }}>
-                          <div style={{ fontSize: 10, fontWeight: 700, color: '#EA580C', textTransform: 'uppercase', marginBottom: 4 }}>⚕️ Avis du Dr Lô</div>
-                          <div style={{ fontSize: 12, color: '#9A3412', lineHeight: 1.55 }}>{cachedConseils!.avis_pro}</div>
+                        <div className="mt-2.5 rounded-lg px-2.5 py-2" style={{ background: '#F1EAD6', border: '1px solid rgba(183,138,46,0.25)' }}>
+                          <div className="flex items-center gap-1 text-[10px] font-bold uppercase mb-1" style={{ color: '#8F6A1F' }}>
+                            <Stethoscope size={11} /> Avis du Dr Lô
+                          </div>
+                          <div className="text-xs text-ink-soft leading-relaxed">{cachedConseils!.avis_pro}</div>
                         </div>
                       )}
                     </div>
                   ) : (
-                    <div style={{
-                      marginTop: 8,
-                      background: '#FFF7ED',
-                      border: '1px solid rgba(249,115,22,0.15)',
-                      borderRadius: 10,
-                      padding: '10px 12px',
-                      fontSize: 12,
-                      color: '#9A3412',
-                      display: 'flex', alignItems: 'center', gap: 6,
-                    }}>
-                      <span>⚠️</span> La génération a échoué. Réessaie en appuyant à nouveau.
+                    <div className="mt-2 rounded-xl px-3 py-2.5 text-xs flex items-center gap-1.5" style={{ background: 'rgba(178,58,58,0.06)', border: '1px solid rgba(178,58,58,0.2)', color: '#B23A3A' }}>
+                      <AlertTriangle size={13} className="flex-shrink-0" /> La génération a échoué. Réessaie en appuyant à nouveau.
                     </div>
                   )
                 )}
@@ -303,47 +254,45 @@ const ScaleRow: React.FC<{
             )}
           </>
         ) : (
-          <span style={{ fontSize: 11, color: '#94A3B8', marginTop: 2, display: 'block' }}>
+          <span className="text-[11px] text-muted mt-0.5 block">
             À faire · {scale.timeEstimateMinutes} min
           </span>
         )}
       </div>
-      <div style={{ flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'flex-end' }}>
+      <div className="flex-shrink-0 flex flex-col gap-1 items-end">
         {isCompleted ? (
           <>
-            <button onClick={() => onStart(scale.id)} disabled={loading} style={{
-              background: 'transparent', border: '1.5px solid rgba(34,197,94,0.4)',
-              borderRadius: 18, padding: '5px 12px', fontSize: 11, fontWeight: 600,
-              color: '#16A34A', cursor: 'pointer', display: 'flex', alignItems: 'center',
-              gap: 4, opacity: loading ? 0.6 : 1,
-            }}>
-              {loading
-                ? <div style={{ width: 12, height: 12, border: '1.5px solid #16A34A', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
-                : 'Refaire'}
+            <button
+              onClick={() => onStart(scale.id)}
+              disabled={loading}
+              className="bg-transparent rounded-full px-3 py-1 text-[11px] font-semibold flex items-center gap-1 cursor-pointer"
+              style={{ border: '1.5px solid rgba(60,122,90,0.4)', color: '#3C7A5A', opacity: loading ? 0.6 : 1 }}
+            >
+              {loading ? <Loader2 size={12} className="animate-spin" /> : 'Refaire'}
             </button>
             {onDelete && (
-              <button onClick={() => onDelete(scale.id)} style={{
-                background: deleteConfirm ? '#FEE2E2' : 'transparent',
-                border: deleteConfirm ? '1px solid #FCA5A5' : 'none',
-                borderRadius: 12,
-                padding: '2px 8px', fontSize: 10, fontWeight: 600,
-                color: '#DC2626', cursor: 'pointer',
-                opacity: deleteConfirm ? 1 : 0.6,
-              }}>
+              <button
+                onClick={() => onDelete(scale.id)}
+                className="rounded-xl px-2 py-0.5 text-[10px] font-semibold cursor-pointer"
+                style={{
+                  background: deleteConfirm ? 'rgba(178,58,58,0.1)' : 'transparent',
+                  border: deleteConfirm ? '1px solid rgba(178,58,58,0.4)' : 'none',
+                  color: '#B23A3A',
+                  opacity: deleteConfirm ? 1 : 0.6,
+                }}
+              >
                 {deleteConfirm ? 'Confirmer ?' : 'Supprimer'}
               </button>
             )}
           </>
         ) : (
-          <button onClick={() => onStart(scale.id)} disabled={loading} style={{
-            background: 'linear-gradient(135deg,#3B82F6,#2DD4BF)', border: 'none',
-            borderRadius: 18, padding: '6px 14px', fontSize: 11, fontWeight: 700,
-            color: '#FFFFFF', cursor: 'pointer', display: 'flex', alignItems: 'center',
-            gap: 4, opacity: loading ? 0.6 : 1, boxShadow: '0 2px 8px rgba(59,130,246,0.25)',
-          }}>
-            {loading
-              ? <div style={{ width: 12, height: 12, border: '1.5px solid rgba(255,255,255,0.8)', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
-              : 'Commencer'}
+          <button
+            onClick={() => onStart(scale.id)}
+            disabled={loading}
+            className="rounded-full px-3.5 py-1.5 text-[11px] font-bold text-white flex items-center gap-1 cursor-pointer"
+            style={{ background: catColor.accent, opacity: loading ? 0.6 : 1, boxShadow: `0 2px 8px ${catColor.accent}40` }}
+          >
+            {loading ? <Loader2 size={12} className="animate-spin" /> : 'Commencer'}
           </button>
         )}
       </div>
@@ -366,26 +315,6 @@ const SEXUAL_REQUIRED = [
   { id: 'pair', label: 'Intimité de couple' },
 ];
 
-function getSeverityDot(severity: string): string {
-  switch (severity) {
-    case 'positive': case 'none': case 'minimal': return '#16A34A';
-    case 'mild': return '#D97706';
-    case 'moderate': return '#EA580C';
-    case 'severe': case 'alert': return '#DC2626';
-    default: return '#64748B';
-  }
-}
-
-function getSeverityEmoji(severity: string): string {
-  switch (severity) {
-    case 'positive': case 'none': case 'minimal': return '🟢';
-    case 'mild': return '🟡';
-    case 'moderate': return '🟠';
-    case 'severe': case 'alert': return '🔴';
-    default: return '⚪';
-  }
-}
-
 // ── ProfileCard ───────────────────────────────────────────────────────────────
 
 const ProfileCard: React.FC<{
@@ -404,10 +333,9 @@ const ProfileCard: React.FC<{
   sexualFilter?: SexualHealthFilter | null;
 }> = ({ isMental, prenom, profileResults, scales, allScalesForCategory, drLoAnalysis, drLoUpdatedAt, drLoUpdating, onUpdateDrLo, compatibilityId, isAuthenticated, cardRef, sexualFilter }) => {
 
-  const accentColor = isMental ? '#1E40AF' : '#7C3AED';
-  const gradientBg = isMental
-    ? 'linear-gradient(145deg, #0A2342 0%, #1E40AF 50%, #0891B2 100%)'
-    : 'linear-gradient(145deg, #3B0764 0%, #7C3AED 50%, #BE185D 100%)';
+  const catColor = getCategoryColor(isMental ? 'mental' : 'sexual');
+  const accentColor = catColor.accent;
+  const CategoryIcon = isMental ? Brain : Heart;
 
   const completedScales = scales.filter(s => profileResults[s.id]);
   const completedCount = completedScales.length;
@@ -458,64 +386,45 @@ const ProfileCard: React.FC<{
   return (
     <div
       ref={cardRef}
-      style={{
-        background: '#FFFFFF',
-        borderRadius: 20,
-        overflow: 'hidden',
-        boxShadow: '0 8px 40px rgba(0,0,0,0.12)',
-        maxWidth: 560,
-        margin: '0 auto',
-        fontFamily: "'Inter',-apple-system,sans-serif",
-      }}
+      className="bg-white rounded-block overflow-hidden shadow-lift mx-auto"
+      style={{ maxWidth: 560 }}
     >
-      {/* ── Gradient Header ─────────────────────────────────────────────── */}
-      <div style={{ background: gradientBg, padding: '28px 24px 32px', position: 'relative', overflow: 'hidden' }}>
+      {/* ── Solid Header ─────────────────────────────────────────────────── */}
+      <div className="px-6 pt-7 pb-8 relative overflow-hidden" style={{ background: accentColor }}>
         {/* Decorative circles */}
-        <div style={{
-          position: 'absolute', top: -30, right: -30,
-          width: 120, height: 120, borderRadius: '50%',
-          background: 'rgba(255,255,255,0.06)',
-        }} />
-        <div style={{
-          position: 'absolute', bottom: -20, left: -20,
-          width: 80, height: 80, borderRadius: '50%',
-          background: 'rgba(255,255,255,0.06)',
-        }} />
+        <div className="absolute rounded-full" style={{ top: -30, right: -30, width: 120, height: 120, background: 'rgba(255,255,255,0.08)' }} />
+        <div className="absolute rounded-full" style={{ bottom: -20, left: -20, width: 80, height: 80, background: 'rgba(255,255,255,0.08)' }} />
 
         {/* Logo row */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span style={{ fontSize: 18 }}>{isMental ? '🧠' : '💋'}</span>
-            <span style={{ fontSize: 14, fontWeight: 800, color: 'rgba(255,255,255,0.95)', letterSpacing: '0.5px' }}>
+        <div className="flex items-center justify-between mb-6 relative">
+          <div className="flex items-center gap-2">
+            <CategoryIcon size={18} color="rgba(255,255,255,0.95)" />
+            <span className="text-sm font-extrabold tracking-wide" style={{ color: 'rgba(255,255,255,0.95)' }}>
               HEALTH-E
             </span>
           </div>
-          <span style={{
-            fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.7)',
-            background: 'rgba(255,255,255,0.15)', padding: '3px 10px', borderRadius: 20,
-            letterSpacing: '1px',
-          }}>
+          <span
+            className="text-[10px] font-bold rounded-full px-2.5 py-1 tracking-wide whitespace-nowrap"
+            style={{ color: 'rgba(255,255,255,0.75)', background: 'rgba(255,255,255,0.15)' }}
+          >
             {isMental ? 'PROFIL PSYCHOLOGIQUE' : 'VIE INTIME'}
           </span>
         </div>
 
         {/* Avatar + name */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-          <div style={{
-            width: 56, height: 56, borderRadius: '50%',
-            background: 'rgba(255,255,255,0.2)',
-            border: '2px solid rgba(255,255,255,0.4)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: 22, fontWeight: 800, color: '#FFFFFF', flexShrink: 0,
-          }}>
+        <div className="flex items-center gap-4 relative">
+          <div
+            className="w-14 h-14 rounded-full flex items-center justify-center flex-shrink-0 text-xl font-extrabold text-white"
+            style={{ background: 'rgba(255,255,255,0.2)', border: '2px solid rgba(255,255,255,0.4)' }}
+          >
             {initials}
           </div>
           <div>
-            <p style={{ margin: 0, fontSize: 22, fontWeight: 800, color: '#FFFFFF', letterSpacing: '-0.3px' }}>
+            <p className="font-display m-0 text-2xl font-extrabold text-white tracking-tight">
               {prenom || 'Mon Profil'}
             </p>
             {dateStr && (
-              <p style={{ margin: '2px 0 0', fontSize: 11, color: 'rgba(255,255,255,0.65)', fontWeight: 500 }}>
+              <p className="m-0 mt-0.5 text-[11px] font-medium" style={{ color: 'rgba(255,255,255,0.65)' }}>
                 Évalué·e le {dateStr}
               </p>
             )}
@@ -524,92 +433,72 @@ const ProfileCard: React.FC<{
       </div>
 
       {/* ── Body ────────────────────────────────────────────────────────── */}
-      <div style={{ padding: '0 24px 24px', background: '#FFFFFF' }}>
+      <div className="px-6 pb-6 bg-white">
 
         {/* Dr Lo section */}
-        <div style={{ padding: '20px 0', borderBottom: '1px solid #F1F5F9' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-            <div style={{
-              width: 28, height: 28, borderRadius: '50%', overflow: 'hidden', flexShrink: 0,
-              border: `2px solid ${accentColor}30`,
-            }}>
-              <img src="/dr-lo.png" alt="Dr. Lô"
-                style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'top center' }} />
+        <div className="py-5" style={{ borderBottom: '1px solid #F1F5F9' }}>
+          <div className="flex items-center gap-2 mb-3">
+            <div className="w-7 h-7 rounded-full overflow-hidden flex-shrink-0" style={{ border: `2px solid ${accentColor}30` }}>
+              <img src="/dr-lo.png" alt="Dr. Lô" className="w-full h-full object-cover" style={{ objectPosition: 'top center' }} />
             </div>
-            <span style={{ fontSize: 12, fontWeight: 800, color: accentColor, letterSpacing: '0.5px' }}>
-              🩺 ANALYSE DR LÔ
+            <span className="text-xs font-extrabold tracking-wide flex items-center gap-1" style={{ color: accentColor }}>
+              <Stethoscope size={12} /> ANALYSE DR LÔ
             </span>
-            <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 4 }}>
-              <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#22C55E', display: 'inline-block' }} />
-              <span style={{ fontSize: 9, fontWeight: 700, color: '#16A34A' }}>IA</span>
+            <div className="ml-auto flex items-center gap-1">
+              <span className="w-1.5 h-1.5 rounded-full inline-block" style={{ background: '#3C7A5A' }} />
+              <span className="text-[9px] font-bold" style={{ color: '#3C7A5A' }}>IA</span>
             </div>
           </div>
 
-          <div style={{
-            background: '#F8FAFF', borderRadius: 12, padding: '14px 16px',
-            border: `1px solid ${accentColor}15`,
-          }}>
+          <div className="rounded-xl px-4 py-3.5" style={{ background: '#F8F7F3', border: `1px solid ${accentColor}15` }}>
             {!isAuthenticated && completedCount > 0 ? (
               <>
-                <p style={{ margin: '0 0 10px', fontSize: 13, color: '#374151', lineHeight: 1.65 }}>
-                  Tu as {completedCount} évaluation{completedCount > 1 ? 's' : ''} — crée un compte pour ton analyse Dr Lô personnalisée 🎯
+                <p className="m-0 mb-2.5 text-[13px] text-ink-soft leading-relaxed">
+                  Tu as {completedCount} évaluation{completedCount > 1 ? 's' : ''} — crée un compte pour ton analyse Dr Lô personnalisée
                 </p>
-                <Link to="/patient/access" style={{
-                  display: 'inline-flex', alignItems: 'center', gap: 5,
-                  background: `linear-gradient(135deg,${accentColor},${isMental ? '#0891B2' : '#BE185D'})`,
-                  color: '#fff', fontWeight: 700, fontSize: 11,
-                  padding: '7px 14px', borderRadius: 16, textDecoration: 'none',
-                }}>
+                <Link
+                  to="/patient/access"
+                  className="inline-flex items-center gap-1.5 text-white font-bold text-[11px] rounded-full px-3.5 py-1.5 no-underline"
+                  style={{ background: accentColor }}
+                >
                   Créer mon compte →
                 </Link>
               </>
             ) : completedCount === 0 ? (
-              <p style={{ margin: 0, fontSize: 13, color: '#94A3B8', lineHeight: 1.65, fontStyle: 'italic' }}>
-                Lance ta première évaluation pour que Dr Lô commence son analyse personnalisée. — Dr Lo 🩺
+              <p className="m-0 text-[13px] text-muted leading-relaxed italic">
+                Lance ta première évaluation pour que Dr Lô commence son analyse personnalisée. — Dr Lo
               </p>
             ) : drLoUpdating ? (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <div style={{
-                  width: 16, height: 16, border: `2px solid ${accentColor}`,
-                  borderTopColor: 'transparent', borderRadius: '50%',
-                  animation: 'spin 0.8s linear infinite', flexShrink: 0,
-                }} />
-                <p style={{ margin: 0, fontSize: 12, color: '#64748B' }}>
+              <div className="flex items-center gap-2.5">
+                <Loader2 size={16} className="animate-spin flex-shrink-0" style={{ color: accentColor }} />
+                <p className="m-0 text-xs text-muted">
                   Dr. Lô met à jour ton analyse… Cela peut prendre quelques secondes.
                 </p>
               </div>
             ) : drLoAnalysis ? (
               <>
-                <p style={{ margin: 0, fontSize: 13, color: '#374151', lineHeight: 1.8, whiteSpace: 'pre-line' }}>
+                <p className="m-0 text-[13px] text-ink-soft leading-loose whitespace-pre-line">
                   {drLoAnalysis}
                 </p>
                 {/* Status + update button */}
-                <div style={{
-                  marginTop: 12, paddingTop: 10, borderTop: '1px solid rgba(0,0,0,0.06)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                  flexWrap: 'wrap', gap: 8,
-                }}>
+                <div className="mt-3 pt-2.5 flex items-center justify-between flex-wrap gap-2" style={{ borderTop: '1px solid rgba(0,0,0,0.06)' }}>
                   {isOutdated ? (
                     <>
-                      <p style={{ margin: 0, fontSize: 11, color: '#D97706', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4 }}>
-                        <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#F59E0B', display: 'inline-block' }} />
+                      <p className="m-0 text-[11px] font-semibold flex items-center gap-1" style={{ color: '#8F6A1F' }}>
+                        <span className="w-1.5 h-1.5 rounded-full inline-block" style={{ background: '#8F6A1F' }} />
                         Profil modifié depuis la dernière analyse
                       </p>
                       <button
                         onClick={onUpdateDrLo}
-                        style={{
-                          background: `linear-gradient(135deg,${accentColor},${isMental ? '#0891B2' : '#BE185D'})`,
-                          color: 'white', border: 'none', borderRadius: 10,
-                          padding: '7px 14px', fontSize: 11, fontWeight: 700,
-                          cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5,
-                        }}
+                        className="text-white border-0 rounded-lg px-3.5 py-1.5 text-[11px] font-bold cursor-pointer flex items-center gap-1.5"
+                        style={{ background: accentColor }}
                       >
-                        🔄 Mettre à jour l'analyse
+                        <RefreshCw size={12} /> Mettre à jour l'analyse
                       </button>
                     </>
                   ) : (
-                    <p style={{ margin: 0, fontSize: 11, color: '#16A34A', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4 }}>
-                      <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#22C55E', display: 'inline-block' }} />
+                    <p className="m-0 text-[11px] font-semibold flex items-center gap-1" style={{ color: '#3C7A5A' }}>
+                      <span className="w-1.5 h-1.5 rounded-full inline-block" style={{ background: '#3C7A5A' }} />
                       Profil à jour {drLoDateStr ? `· ${drLoDateStr}` : ''}
                     </p>
                   )}
@@ -617,21 +506,16 @@ const ProfileCard: React.FC<{
               </>
             ) : (
               /* No analysis yet, but tests completed — show generate button */
-              <div style={{ textAlign: 'center', padding: '6px 0' }}>
-                <p style={{ margin: '0 0 10px', fontSize: 13, color: '#64748B', lineHeight: 1.6 }}>
+              <div className="text-center py-1.5">
+                <p className="m-0 mb-2.5 text-[13px] text-muted leading-relaxed">
                   Tu as {completedCount} évaluation{completedCount > 1 ? 's' : ''}. Génère ton analyse personnalisée Dr Lô.
                 </p>
                 <button
                   onClick={onUpdateDrLo}
-                  style={{
-                    background: `linear-gradient(135deg,${accentColor},${isMental ? '#0891B2' : '#BE185D'})`,
-                    color: 'white', border: 'none', borderRadius: 12,
-                    padding: '10px 20px', fontSize: 13, fontWeight: 700,
-                    cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 6,
-                    boxShadow: '0 2px 10px rgba(0,0,0,0.15)',
-                  }}
+                  className="text-white border-0 rounded-xl px-5 py-2.5 text-[13px] font-bold cursor-pointer inline-flex items-center gap-1.5"
+                  style={{ background: accentColor, boxShadow: '0 2px 10px rgba(0,0,0,0.15)' }}
                 >
-                  🩺 Générer l'analyse Dr Lô
+                  <Stethoscope size={14} /> Générer l'analyse Dr Lô
                 </button>
               </div>
             )}
@@ -639,62 +523,52 @@ const ProfileCard: React.FC<{
         </div>
 
         {/* Evaluations section */}
-        <div style={{ padding: '20px 0', borderBottom: '1px solid #F1F5F9' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-            <span style={{ fontSize: 12, fontWeight: 800, color: '#0A2342', letterSpacing: '0.5px' }}>
-              📊 MES ÉVALUATIONS
+        <div className="py-5" style={{ borderBottom: '1px solid #F1F5F9' }}>
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-xs font-extrabold text-ink tracking-wide flex items-center gap-1.5">
+              <BarChart3 size={13} /> MES ÉVALUATIONS
             </span>
-            <span style={{ fontSize: 12, fontWeight: 700, color: accentColor }}>
+            <span className="text-xs font-bold" style={{ color: accentColor }}>
               {completedCount}/{totalCount}
             </span>
           </div>
 
           {/* Progress bar */}
-          <div style={{ height: 5, background: '#F1F5F9', borderRadius: 99, overflow: 'hidden', marginBottom: 14 }}>
-            <div style={{
-              height: '100%',
-              width: `${totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0}%`,
-              background: isMental
-                ? 'linear-gradient(90deg,#1E40AF,#0891B2)'
-                : 'linear-gradient(90deg,#7C3AED,#BE185D)',
-              borderRadius: 99, transition: 'width 0.5s ease',
-              minWidth: completedCount > 0 ? 6 : 0,
-            }} />
+          <div className="h-[5px] rounded-pill overflow-hidden mb-3.5" style={{ background: '#F1F5F9' }}>
+            <div
+              className="h-full rounded-pill transition-all duration-500"
+              style={{
+                width: `${totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0}%`,
+                background: accentColor,
+                minWidth: completedCount > 0 ? 6 : 0,
+              }}
+            />
           </div>
 
           {/* Completed items list */}
           {completedCount === 0 ? (
-            <p style={{ margin: 0, fontSize: 12, color: '#94A3B8', textAlign: 'center', padding: '8px 0' }}>
+            <p className="m-0 text-xs text-muted text-center py-2">
               Aucune évaluation complétée
             </p>
           ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            <div className="flex flex-col gap-1.5">
               {completedScales.map(scale => {
                 const result = profileResults[scale.id];
                 const meta = getScaleMeta(scale.id);
-                const sev = result.interpretation.severity;
-                const dotColor = getSeverityDot(sev);
-                const emoji = getSeverityEmoji(sev);
+                const sevColor = getSeverityColor(result.interpretation.severity);
                 return (
-                  <div key={scale.id} style={{
-                    display: 'flex', alignItems: 'center', gap: 8,
-                    padding: '7px 10px', borderRadius: 10,
-                    background: '#F8FAFF',
-                  }}>
-                    <span style={{ fontSize: 15, width: 22, textAlign: 'center', flexShrink: 0 }}>{meta.icon}</span>
-                    <span style={{ fontSize: 12, fontWeight: 600, color: '#0A2342', flex: 1, minWidth: 0 }}>
+                  <div key={scale.id} className="flex items-center gap-2 rounded-lg px-2.5 py-1.5" style={{ background: '#F8F7F3' }}>
+                    <span className="w-5 flex items-center justify-center flex-shrink-0" style={{ color: sevColor }}>
+                      <meta.icon size={15} />
+                    </span>
+                    <span className="text-xs font-semibold text-ink flex-1 min-w-0">
                       {meta.label}
                     </span>
-                    <span style={{
-                      display: 'inline-flex', alignItems: 'center', gap: 4,
-                      background: `${dotColor}18`,
-                      color: dotColor,
-                      fontSize: 11, fontWeight: 700,
-                      padding: '2px 9px', borderRadius: 20,
-                      border: `1px solid ${dotColor}30`,
-                      whiteSpace: 'nowrap', flexShrink: 0,
-                    }}>
-                      {emoji} {result.interpretation.label}
+                    <span
+                      className="inline-flex items-center gap-1 text-[11px] font-bold rounded-full px-2.5 py-0.5 whitespace-nowrap flex-shrink-0"
+                      style={{ background: `${sevColor}18`, color: sevColor, border: `1px solid ${sevColor}30` }}
+                    >
+                      {result.interpretation.label}
                     </span>
                   </div>
                 );
@@ -704,77 +578,63 @@ const ProfileCard: React.FC<{
         </div>
 
         {/* Compatibility code section */}
-        <div style={{ padding: '20px 0', borderBottom: '1px solid #F1F5F9' }}>
-          <span style={{ fontSize: 12, fontWeight: 800, color: '#0A2342', letterSpacing: '0.5px', display: 'block', marginBottom: 12 }}>
-            🔗 TON CODE DE COMPATIBILITÉ
+        <div className="py-5" style={{ borderBottom: '1px solid #F1F5F9' }}>
+          <span className="text-xs font-extrabold text-ink tracking-wide mb-3 flex items-center gap-1.5">
+            <Link2 size={13} /> TON CODE DE COMPATIBILITÉ
           </span>
 
           {!isAuthenticated ? (
-            <div style={{
-              background: '#F8FAFF', borderRadius: 12, padding: '14px 16px', textAlign: 'center',
-              border: '1px dashed #CBD5E1',
-            }}>
-              <p style={{ margin: '0 0 10px', fontSize: 12, color: '#64748B' }}>
-                🔒 Crée un compte pour générer ton code de compatibilité
+            <div className="rounded-xl px-4 py-3.5 text-center mt-3" style={{ background: '#F8F7F3', border: '1px dashed #CBD5E1' }}>
+              <p className="m-0 mb-2.5 text-xs text-muted flex items-center justify-center gap-1">
+                <Lock size={12} /> Crée un compte pour générer ton code de compatibilité
               </p>
-              <Link to="/patient/access" style={{
-                display: 'inline-flex', alignItems: 'center', gap: 5,
-                background: `linear-gradient(135deg,${accentColor},${isMental ? '#0891B2' : '#BE185D'})`,
-                color: '#fff', fontWeight: 700, fontSize: 11,
-                padding: '7px 14px', borderRadius: 16, textDecoration: 'none',
-              }}>
+              <Link
+                to="/patient/access"
+                className="inline-flex items-center gap-1.5 text-white font-bold text-[11px] rounded-full px-3.5 py-1.5 no-underline"
+                style={{ background: accentColor }}
+              >
                 Créer mon compte →
               </Link>
             </div>
           ) : isUnlocked ? (
-            <div style={{
-              background: `linear-gradient(135deg,${accentColor}08,${isMental ? '#0891B2' : '#BE185D'}08)`,
-              border: `1.5px solid ${accentColor}30`,
-              borderRadius: 12, padding: '14px 16px',
-            }}>
-              <p style={{ margin: '0 0 8px', fontSize: 10, color: '#94A3B8', fontWeight: 600, letterSpacing: '1px' }}>
+            <div className="rounded-xl px-4 py-3.5 mt-3" style={{ background: `${accentColor}08`, border: `1.5px solid ${accentColor}30` }}>
+              <p className="m-0 mb-2 text-[10px] text-muted font-semibold tracking-wide">
                 TON CODE UNIQUE
               </p>
-              <p style={{
-                margin: '0 0 12px', fontSize: 18, fontWeight: 800,
-                color: accentColor, letterSpacing: '1.5px', fontFamily: 'monospace',
-              }}>
+              <p className="m-0 mb-3 text-lg font-extrabold tracking-wide" style={{ color: accentColor, fontFamily: 'monospace' }}>
                 {compatibilityId}
               </p>
-              <p style={{ margin: 0, fontSize: 11, color: '#64748B' }}>
-                Partage ce code pour comparer vos profils de compatibilité ❤️
+              <p className="m-0 text-[11px] text-muted">
+                Partage ce code pour comparer vos profils de compatibilité
               </p>
             </div>
           ) : (
-            <div style={{
-              background: '#F8FAFF', borderRadius: 12, padding: '14px 16px',
-              border: '1px dashed #CBD5E1',
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-                <span style={{ fontSize: 12, color: '#374151', fontWeight: 600 }}>
-                  🔒 {doneRequired}/{totalRequired} évaluations obligatoires
+            <div className="rounded-xl px-4 py-3.5 mt-3" style={{ background: '#F8F7F3', border: '1px dashed #CBD5E1' }}>
+              <div className="flex items-center justify-between mb-2.5">
+                <span className="text-xs text-ink-soft font-semibold flex items-center gap-1">
+                  <Lock size={12} /> {doneRequired}/{totalRequired} évaluations obligatoires
                 </span>
-                <span style={{ fontSize: 11, fontWeight: 700, color: accentColor }}>
+                <span className="text-[11px] font-bold" style={{ color: accentColor }}>
                   {Math.round((doneRequired / totalRequired) * 100)}%
                 </span>
               </div>
-              <div style={{ height: 5, background: '#E2E8F0', borderRadius: 99, overflow: 'hidden', marginBottom: 12 }}>
-                <div style={{
-                  height: '100%',
-                  width: `${Math.round((doneRequired / totalRequired) * 100)}%`,
-                  background: isMental
-                    ? 'linear-gradient(90deg,#1E40AF,#0891B2)'
-                    : 'linear-gradient(90deg,#7C3AED,#BE185D)',
-                  borderRadius: 99, minWidth: doneRequired > 0 ? 6 : 0,
-                }} />
+              <div className="h-[5px] rounded-pill overflow-hidden mb-3" style={{ background: '#E2E8F0' }}>
+                <div
+                  className="h-full rounded-pill"
+                  style={{
+                    width: `${Math.round((doneRequired / totalRequired) * 100)}%`,
+                    background: accentColor,
+                    minWidth: doneRequired > 0 ? 6 : 0,
+                  }}
+                />
               </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+              <div className="flex flex-col gap-1">
                 {required.map(r => (
-                  <div key={r.id} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <span style={{ fontSize: 11 }}>
-                      {profileResults[r.id] ? '✅' : '⬜'}
-                    </span>
-                    <span style={{ fontSize: 11, color: profileResults[r.id] ? '#16A34A' : '#94A3B8', fontWeight: profileResults[r.id] ? 600 : 400 }}>
+                  <div key={r.id} className="flex items-center gap-1.5">
+                    {profileResults[r.id]
+                      ? <CheckCircle2 size={12} color="#3C7A5A" />
+                      : <Circle size={12} className="text-muted" />}
+                    <span className="text-[11px]" style={{ color: profileResults[r.id] ? '#3C7A5A' : '#6E7078', fontWeight: profileResults[r.id] ? 600 : 400 }}>
                       {r.label}
                     </span>
                   </div>
@@ -785,9 +645,9 @@ const ProfileCard: React.FC<{
         </div>
 
         {/* Footer */}
-        <div style={{ paddingTop: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
-          <span style={{ fontSize: 14 }}>{isMental ? '🧠' : '💋'}</span>
-          <span style={{ fontSize: 12, fontWeight: 700, color: '#94A3B8' }}>health-e.sn</span>
+        <div className="pt-4 flex items-center justify-center gap-1.5">
+          <CategoryIcon size={14} color="#6E7078" />
+          <span className="text-xs font-bold text-muted">health-e.sn</span>
         </div>
       </div>
     </div>
@@ -805,10 +665,8 @@ const AssessmentCategoryPage: React.FC = () => {
 
   const isMental = category === 'mental';
   const isValidCategory = category === 'mental' || category === 'sexual';
-  const accentColor = isMental ? '#3B82F6' : '#C026D3';
-  const accentGrad = isMental
-    ? 'linear-gradient(135deg,#3B82F6,#2DD4BF)'
-    : 'linear-gradient(135deg,#C026D3,#EC4899)';
+  const catColor = getCategoryColor(isMental ? 'mental' : 'sexual');
+  const accentColor = catColor.accent;
 
   // ── TOUS les hooks en premier — jamais après un early return ──────────────
 
@@ -930,30 +788,8 @@ const AssessmentCategoryPage: React.FC = () => {
 
   if (!isValidCategory) return null;
 
-  const startScale = async (scaleId: string) => {
-    if (!isAuthenticated || !currentUser) {
-      if (hasReachedGuestLimit()) { setShowLoginWall(true); return; }
-      const gs = createGuestSession(scaleId);
-      setGuestCount(getGuestCount());
-      navigate(`/assessment/quiz/${gs.id}?guest=true`);
-      return;
-    }
-    setLoadingCard(scaleId);
-    setErrorMsg(null);
-    try {
-      const session = await createSession(currentUser.id, [scaleId]);
-      navigate(`/assessment/quiz/${session.id}`);
-    } catch {
-      await new Promise(r => setTimeout(r, 3000));
-      try {
-        const session = await createSession(currentUser.id, [scaleId]);
-        navigate(`/assessment/quiz/${session.id}`);
-      } catch {
-        setErrorMsg('Connexion instable. Réessaie dans quelques secondes.');
-      }
-    } finally {
-      setLoadingCard(null);
-    }
+  const startScale = (scaleId: string) => {
+    navigate(`/assessment/test/${scaleId}`);
   };
 
   const handleDeleteScale = async (scaleId: string) => {
@@ -1063,7 +899,7 @@ const AssessmentCategoryPage: React.FC = () => {
               scaleId,
               scaleName: scaleObj?.name ?? scaleMeta.label,
               score: result.totalScore,
-              scoreMax: scaleMeta.scoreMax ?? 100,
+              scoreMax: (scaleMeta as any)?.scoreMax ?? 100,
               niveau: result.interpretation?.label ?? '',
               severity: result.interpretation?.severity ?? 'none',
               prenom: onboardingProfile?.prenom ?? '',
@@ -1101,11 +937,11 @@ const AssessmentCategoryPage: React.FC = () => {
           const meta = getScaleMeta(s.id);
           return {
             name: meta?.label ?? s.name ?? s.shortName ?? '',
-            icon: meta?.icon ?? '',
+            icon: getScaleEmoji(s.id),
             resultLabel: r?.interpretation?.label ?? '',
             severity: r?.interpretation?.severity ?? 'none',
             score: r?.totalScore ?? 0,
-            maxScore: meta?.scoreMax ?? s.scoreRange?.max ?? 100,
+            maxScore: (meta as any)?.scoreMax ?? s.scoreRange?.max ?? 100,
           };
         });
 
@@ -1118,7 +954,7 @@ const AssessmentCategoryPage: React.FC = () => {
               const meta = getScaleMeta(s.id);
               return {
                 name: meta?.label ?? s.name ?? s.shortName ?? '',
-                icon: meta?.icon ?? '',
+                icon: getScaleEmoji(s.id),
                 resultLabel: r?.interpretation?.label ?? '',
                 severity: r?.interpretation?.severity ?? 'none',
               };
@@ -1178,14 +1014,7 @@ const AssessmentCategoryPage: React.FC = () => {
     });
   };
 
-  if (!isMental && !sexualAccessGranted) {
-    return (
-      <SexualAccessGate
-        userId={isAuthenticated && currentUser ? currentUser.id : null}
-        onGranted={() => setSexualAccessGranted(true)}
-      />
-    );
-  }
+  // SexualAccessGate is now handled per-test in TestDetailPage
 
   if (showSexualFilter) {
     return (
@@ -1204,65 +1033,47 @@ const AssessmentCategoryPage: React.FC = () => {
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: '#F8FAFF', fontFamily: "'Inter',-apple-system,sans-serif" }}>
-      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+    <div className="min-h-screen" style={{ background: '#F3F1EA' }}>
 
       {/* ── Header ──────────────────────────────────────────────────────────── */}
-      <div style={{
-        background: 'rgba(255,255,255,0.95)',
-        backdropFilter: 'blur(12px)',
-        borderBottom: '1px solid rgba(59,130,246,0.1)',
-        padding: '14px 0',
-        position: 'sticky', top: 0, zIndex: 20,
-      }}>
-        <div style={{
-          maxWidth: 600, margin: '0 auto', padding: '0 20px',
-          display: 'flex', alignItems: 'center', gap: 12,
-        }}>
+      <div
+        className="sticky top-0 z-20 py-3.5"
+        style={{ background: 'rgba(243,241,234,0.95)', backdropFilter: 'blur(12px)', borderBottom: '1px solid rgba(23,24,27,0.08)' }}
+      >
+        <div className="max-w-[600px] mx-auto px-5 flex items-center gap-3">
           <button
             onClick={() => navigate('/assessment')}
-            style={{
-              background: 'none', border: 'none', cursor: 'pointer',
-              padding: '6px 8px', borderRadius: 8,
-              color: '#64748B', fontSize: 20, flexShrink: 0,
-            }}
+            className="bg-transparent border-0 cursor-pointer rounded-lg p-1.5 text-muted flex-shrink-0"
           >
-            ←
+            <ArrowLeft size={20} />
           </button>
-          <h1 style={{ margin: 0, fontSize: 18, fontWeight: 800, color: '#0A2342', flex: 1 }}>
-            {isMental ? '🧠 Profil psychologique' : '💋 Vie intime'}
+          <h1 className="font-display m-0 text-lg font-bold text-ink flex-1 flex items-center gap-2">
+            {isMental ? <Brain size={18} color={accentColor} /> : <Heart size={18} color={accentColor} />}
+            {isMental ? 'Profil psychologique' : 'Vie intime'}
           </h1>
-          <span style={{
-            background: `${accentColor}18`, color: accentColor,
-            fontSize: 11, fontWeight: 700,
-            padding: '3px 10px', borderRadius: 18,
-            border: `1px solid ${accentColor}30`, whiteSpace: 'nowrap',
-          }}>
+          <span
+            className="text-[11px] font-bold rounded-full px-2.5 py-1 whitespace-nowrap"
+            style={{ background: `${accentColor}18`, color: accentColor, border: `1px solid ${accentColor}30` }}
+          >
             {completedCount}/{scales.length}
           </span>
         </div>
       </div>
 
       {/* ── Tab bar ─────────────────────────────────────────────────────────── */}
-      <div style={{ maxWidth: 600, margin: '16px auto 0', padding: '0 20px' }}>
-        <div style={{
-          display: 'flex', background: 'white',
-          border: '1px solid rgba(59,130,246,0.1)',
-          borderRadius: 14, padding: 4, gap: 4,
-        }}>
+      <div className="max-w-[600px] mx-auto px-5 mt-4">
+        <div className="flex bg-white rounded-2xl p-1 gap-1" style={{ border: '1px solid rgba(23,24,27,0.08)' }}>
           {(['evaluations', 'profil'] as const).map(tab => (
             <button
               key={tab}
               onClick={() => switchTab(tab)}
+              className="flex-1 py-2.5 rounded-xl border-0 font-bold text-[13px] cursor-pointer flex items-center justify-center gap-1.5 transition-colors duration-150"
               style={{
-                flex: 1, padding: '10px 0', borderRadius: 10, border: 'none',
-                background: activeTab === tab ? accentGrad : 'transparent',
-                color: activeTab === tab ? 'white' : '#64748B',
-                fontWeight: 700, fontSize: 13, cursor: 'pointer',
-                transition: 'all 0.18s ease',
+                background: activeTab === tab ? accentColor : 'transparent',
+                color: activeTab === tab ? '#fff' : '#6E7078',
               }}
             >
-              {tab === 'evaluations' ? '📋 Évaluations' : '👤 Mon Profil'}
+              {tab === 'evaluations' ? <><ClipboardList size={14} /> Évaluations</> : <><User size={14} /> Mon Profil</>}
             </button>
           ))}
         </div>
@@ -1270,36 +1081,27 @@ const AssessmentCategoryPage: React.FC = () => {
 
       {/* ── Bandeau erreur ──────────────────────────────────────────────────── */}
       {errorMsg && (
-        <div style={{ maxWidth: 600, margin: '10px auto 0', padding: '0 20px' }}>
-          <div style={{
-            background: '#FEF2F2', border: '1px solid rgba(220,38,38,0.2)',
-            borderRadius: 10, padding: '10px 16px', fontSize: 12, color: '#DC2626',
-          }}>
-            {errorMsg}
+        <div className="max-w-[600px] mx-auto px-5 mt-2.5">
+          <div className="rounded-xl px-4 py-2.5 text-xs flex items-center gap-2" style={{ background: 'rgba(178,58,58,0.06)', border: '1px solid rgba(178,58,58,0.25)', color: '#B23A3A' }}>
+            <AlertTriangle size={14} className="flex-shrink-0" /> {errorMsg}
           </div>
         </div>
       )}
 
       {/* ── Bandeau invité ──────────────────────────────────────────────────── */}
       {!isAuthenticated && (
-        <div style={{ maxWidth: 600, margin: '10px auto 0', padding: '0 20px' }}>
-          <div style={{
-            background: 'linear-gradient(135deg,#EFF6FF,#F0FDFA)',
-            border: '1px solid rgba(59,130,246,0.2)',
-            borderRadius: 12, padding: '10px 16px',
-            display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap',
-          }}>
-            <p style={{ margin: 0, fontSize: 12, color: '#1E40AF', fontWeight: 500 }}>
+        <div className="max-w-[600px] mx-auto px-5 mt-2.5">
+          <div className="rounded-xl px-4 py-2.5 flex items-center justify-between gap-2.5 flex-wrap" style={{ background: `${accentColor}08`, border: `1px solid ${accentColor}20` }}>
+            <p className="m-0 text-xs font-medium" style={{ color: accentColor }}>
               {guestCount < GUEST_MAX_TESTS
                 ? `${GUEST_MAX_TESTS - guestCount} essai${GUEST_MAX_TESTS - guestCount > 1 ? 's' : ''} gratuit${GUEST_MAX_TESTS - guestCount > 1 ? 's' : ''} restant`
                 : 'Limite atteinte — crée un compte pour continuer'}
             </p>
-            <Link to="/patient/access" style={{
-              display: 'inline-flex', alignItems: 'center', gap: 4,
-              background: 'linear-gradient(135deg,#3B82F6,#2DD4BF)',
-              color: '#fff', fontWeight: 600, fontSize: 11,
-              padding: '5px 12px', borderRadius: 14, textDecoration: 'none',
-            }}>
+            <Link
+              to="/patient/access"
+              className="inline-flex items-center gap-1 text-white font-semibold text-[11px] rounded-full px-3 py-1.5 no-underline"
+              style={{ background: accentColor }}
+            >
               {guestCount >= GUEST_MAX_TESTS ? 'Créer un compte' : 'Se connecter'}
             </Link>
           </div>
@@ -1308,17 +1110,17 @@ const AssessmentCategoryPage: React.FC = () => {
 
       {/* ── Google Link Banner (phone-only users) ── */}
       {isAuthenticated && (
-        <div style={{ maxWidth: 600, margin: '0 auto', padding: '0 20px' }}>
+        <div className="max-w-[600px] mx-auto px-5">
           <GoogleLinkBanner />
         </div>
       )}
 
       {/* ── Contenu ─────────────────────────────────────────────────────────── */}
-      <div style={{ maxWidth: 600, margin: '16px auto 0', padding: '0 20px 60px' }}>
+      <div className="max-w-[600px] mx-auto px-5 pt-4 pb-[60px]">
 
         {/* Onglet Évaluations */}
         {activeTab === 'evaluations' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <div className="flex flex-col gap-2">
             {scales.map((scale, idx) => (
               <div key={scale.id} {...(idx === 0 ? { 'data-tooltip-id': 'first-item-card' } : {})}>
                 <ScaleRow
@@ -1338,14 +1140,9 @@ const AssessmentCategoryPage: React.FC = () => {
                 />
               </div>
             ))}
-            <div style={{
-              marginTop: 12,
-              background: '#FFFBEB', border: '1px solid rgba(217,119,6,0.22)',
-              borderRadius: 10, padding: '10px 14px',
-              display: 'flex', alignItems: 'flex-start', gap: 8,
-            }}>
-              <span style={{ fontSize: 13, flexShrink: 0 }}>⚠️</span>
-              <p style={{ margin: 0, fontSize: 11, color: '#92400E', lineHeight: 1.55 }}>
+            <div className="mt-3 rounded-xl px-3.5 py-2.5 flex items-start gap-2" style={{ background: 'rgba(181,115,42,0.06)', border: '1px solid rgba(181,115,42,0.25)' }}>
+              <AlertTriangle size={14} className="flex-shrink-0 mt-0.5" style={{ color: '#B5732A' }} />
+              <p className="m-0 text-[11px] leading-relaxed" style={{ color: '#8C5A21' }}>
                 Ces évaluations ne remplacent pas une consultation avec un professionnel de santé.
                 En cas de détresse, consultez immédiatement un spécialiste qualifié.
               </p>
@@ -1353,31 +1150,25 @@ const AssessmentCategoryPage: React.FC = () => {
 
             {/* ── Sous-section Tests Bonus (mental uniquement) ── */}
             {isMental && (
-              <div style={{ marginTop: 20 }}>
-                <div style={{
-                  background: 'linear-gradient(135deg,#1E0442 0%,#2D0A5A 60%,#1E0442 100%)',
-                  borderRadius: 16, padding: '16px 18px', marginBottom: 14,
-                  position: 'relative', overflow: 'hidden',
-                }}>
-                  <div style={{ position: 'absolute', top: -15, right: -15, width: 90, height: 90, borderRadius: '50%', background: 'radial-gradient(circle, rgba(167,139,250,0.2) 0%, transparent 70%)' }} />
-                  <div style={{ position: 'relative', zIndex: 1, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div className="mt-5">
+                <div className="rounded-2xl px-[18px] py-4 mb-3.5 relative overflow-hidden" style={{ background: '#17181B' }}>
+                  <div className="absolute rounded-full" style={{ top: -15, right: -15, width: 90, height: 90, background: 'rgba(183,138,46,0.18)' }} />
+                  <div className="relative z-10 flex items-center justify-between">
                     <div>
-                      <p style={{ margin: '0 0 3px', fontSize: 15, fontWeight: 800, color: '#fff' }}>✨ Tests Bonus</p>
-                      <p style={{ margin: 0, fontSize: 11, color: 'rgba(255,255,255,0.6)', lineHeight: 1.4 }}>
-                        Ces tests enrichissent ton profil — très populaires 🔥
+                      <p className="m-0 mb-0.5 text-[15px] font-extrabold text-white flex items-center gap-1.5">
+                        <Sparkles size={15} color="#D4AD5A" /> Tests Bonus
+                      </p>
+                      <p className="m-0 text-[11px] leading-tight flex items-center gap-1 flex-wrap" style={{ color: 'rgba(255,255,255,0.6)' }}>
+                        Ces tests enrichissent ton profil — très populaires <Flame size={11} color="#D4AD5A" />
                       </p>
                     </div>
-                    <span style={{
-                      background: 'rgba(167,139,250,0.25)', color: '#C4B5FD',
-                      fontSize: 11, fontWeight: 700, padding: '3px 10px', borderRadius: 20,
-                      border: '1px solid rgba(167,139,250,0.3)', whiteSpace: 'nowrap',
-                    }}>
+                    <span className="text-[11px] font-bold rounded-full px-2.5 py-1 whitespace-nowrap" style={{ background: 'rgba(183,138,46,0.25)', color: '#D4AD5A', border: '1px solid rgba(183,138,46,0.35)' }}>
                       {bonusCompleted}/{BONUS_SCALES.length}
                     </span>
                   </div>
                 </div>
 
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <div className="flex flex-col gap-2">
                   {BONUS_SCALES.map(scale => (
                     <ScaleRow
                       key={scale.id}
@@ -1404,7 +1195,7 @@ const AssessmentCategoryPage: React.FC = () => {
 
         {/* Onglet Mon Profil */}
         {activeTab === 'profil' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <div className="flex flex-col gap-3">
             <ProfileCard
               isMental={isMental}
               prenom={onboardingProfile?.prenom ?? (currentUser?.name ?? '')}
@@ -1423,45 +1214,33 @@ const AssessmentCategoryPage: React.FC = () => {
 
             {/* ── Résultats Tests Bonus (mental uniquement) ── */}
             {isMental && bonusCompleted > 0 && (
-              <div style={{
-                background: '#fff',
-                border: '1.5px solid rgba(124,58,237,0.15)',
-                borderRadius: 16, padding: '16px 18px',
-                boxShadow: '0 2px 12px rgba(124,58,237,0.06)',
-              }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-                  <span style={{ fontSize: 12, fontWeight: 800, color: '#5B21B6', letterSpacing: '0.5px' }}>
-                    ✨ TESTS BONUS
+              <div className="bg-white rounded-2xl px-[18px] py-4" style={{ border: '1.5px solid rgba(183,138,46,0.2)', boxShadow: '0 2px 12px rgba(183,138,46,0.06)' }}>
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-xs font-extrabold tracking-wide flex items-center gap-1.5" style={{ color: '#8A6A1E' }}>
+                    <Sparkles size={13} /> TESTS BONUS
                   </span>
-                  <span style={{ fontSize: 12, fontWeight: 700, color: '#7C3AED' }}>
+                  <span className="text-xs font-bold" style={{ color: '#8F6A1F' }}>
                     {bonusCompleted}/{BONUS_SCALES.length}
                   </span>
                 </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                <div className="flex flex-col gap-1.5">
                   {BONUS_SCALES.filter(s => profileResults[s.id]).map(scale => {
                     const result = profileResults[scale.id];
                     const meta = getScaleMeta(scale.id);
-                    const sev = result.interpretation.severity;
-                    const dotColor = getSeverityDot(sev);
-                    const emoji = getSeverityEmoji(sev);
+                    const sevColor = getSeverityColor(result.interpretation.severity);
                     return (
-                      <div key={scale.id} style={{
-                        display: 'flex', alignItems: 'center', gap: 8,
-                        padding: '7px 10px', borderRadius: 10, background: '#F5F3FF',
-                      }}>
-                        <span style={{ fontSize: 14, width: 20, textAlign: 'center', flexShrink: 0 }}>{meta.icon}</span>
-                        <span style={{ fontSize: 11, fontWeight: 600, color: '#0A2342', flex: 1, minWidth: 0 }}>
+                      <div key={scale.id} className="flex items-center gap-2 rounded-lg px-2.5 py-1.5" style={{ background: '#F1EAD6' }}>
+                        <span className="w-5 flex items-center justify-center flex-shrink-0" style={{ color: sevColor }}>
+                          <meta.icon size={14} />
+                        </span>
+                        <span className="text-[11px] font-semibold text-ink flex-1 min-w-0">
                           {meta.label}
                         </span>
-                        <span style={{
-                          display: 'inline-flex', alignItems: 'center', gap: 3,
-                          background: `${dotColor}18`, color: dotColor,
-                          fontSize: 10, fontWeight: 700,
-                          padding: '2px 8px', borderRadius: 18,
-                          border: `1px solid ${dotColor}30`,
-                          whiteSpace: 'nowrap', flexShrink: 0,
-                        }}>
-                          {emoji} {result.interpretation.label}
+                        <span
+                          className="inline-flex items-center gap-1 text-[10px] font-bold rounded-full px-2 py-0.5 whitespace-nowrap flex-shrink-0"
+                          style={{ background: `${sevColor}18`, color: sevColor, border: `1px solid ${sevColor}30` }}
+                        >
+                          {result.interpretation.label}
                         </span>
                       </div>
                     );
@@ -1471,81 +1250,61 @@ const AssessmentCategoryPage: React.FC = () => {
             )}
 
             {/* Action buttons */}
-            <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
+            <div className="flex gap-2 mt-1">
               <button
                 onClick={shareProfile}
                 disabled={isCapturing || completedCount === 0}
+                className="flex-1 rounded-2xl px-4 py-3.5 text-[13px] font-bold flex items-center justify-center gap-1.5 border-0"
                 style={{
-                  flex: 1,
-                  background: isCapturing
-                    ? '#E2E8F0'
-                    : isMental
-                      ? 'linear-gradient(135deg,#1E40AF,#0891B2)'
-                      : 'linear-gradient(135deg,#7C3AED,#BE185D)',
-                  border: 'none', borderRadius: 14,
-                  padding: '13px 16px', cursor: completedCount === 0 ? 'not-allowed' : 'pointer',
+                  background: isCapturing ? '#E2E8F0' : accentColor,
+                  cursor: completedCount === 0 ? 'not-allowed' : 'pointer',
                   color: isCapturing ? '#94A3B8' : '#FFFFFF',
-                  fontSize: 13, fontWeight: 700,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-                  boxShadow: completedCount === 0 ? 'none' : '0 3px 12px rgba(0,0,0,0.2)',
+                  boxShadow: completedCount === 0 ? 'none' : `0 3px 12px ${accentColor}30`,
                   opacity: completedCount === 0 ? 0.5 : 1,
                 }}
               >
                 {isCapturing
-                  ? <><div style={{ width: 14, height: 14, border: '2px solid #94A3B8', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} /> Génération…</>
-                  : <>📄 Télécharger mon profil</>
+                  ? <><Loader2 size={14} className="animate-spin" /> Génération…</>
+                  : <><FileDown size={14} /> Télécharger mon profil</>
                 }
               </button>
 
               {isAuthenticated && compatibilityId && (
                 <button
                   onClick={copyCompatibilityCode}
+                  className="flex-1 rounded-2xl px-4 py-3.5 text-[13px] font-bold cursor-pointer flex items-center justify-center gap-1.5 transition-colors duration-200"
                   style={{
-                    flex: 1,
-                    background: copyMsg ? '#DCFCE7' : 'white',
-                    border: `1.5px solid ${copyMsg ? '#16A34A' : accentColor}30`,
-                    borderRadius: 14, padding: '13px 16px',
-                    cursor: 'pointer', color: copyMsg ? '#16A34A' : accentColor,
-                    fontSize: 13, fontWeight: 700,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-                    transition: 'all 0.2s ease',
+                    background: copyMsg ? 'rgba(60,122,90,0.1)' : 'white',
+                    border: `1.5px solid ${copyMsg ? '#3C7A5A' : accentColor}30`,
+                    color: copyMsg ? '#3C7A5A' : accentColor,
                   }}
                 >
-                  {copyMsg ? `✅ ${copyMsg}` : '🔗 Copier mon code'}
+                  {copyMsg ? <><CheckCircle2 size={14} /> {copyMsg}</> : <><Copy size={14} /> Copier mon code</>}
                 </button>
               )}
             </div>
 
             {completedCount === 0 && (
-              <p style={{ margin: 0, fontSize: 11, color: '#94A3B8', textAlign: 'center' }}>
+              <p className="m-0 text-[11px] text-muted text-center">
                 Complète au moins une évaluation pour télécharger ton profil
               </p>
             )}
 
             {/* ── Réinitialiser ── */}
             {isAuthenticated && currentUser && (
-              <div style={{
-                marginTop: 20, padding: '14px 16px',
-                background: '#FEF2F2', border: '1px solid #FECACA',
-                borderRadius: 12,
-                display: 'flex', alignItems: 'center', gap: 12,
-              }}>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <p style={{ margin: 0, fontSize: 12, fontWeight: 600, color: '#991B1B' }}>
+              <div className="mt-5 rounded-xl px-4 py-3.5 flex items-center gap-3" style={{ background: 'rgba(178,58,58,0.05)', border: '1px solid rgba(178,58,58,0.2)' }}>
+                <div className="flex-1 min-w-0">
+                  <p className="m-0 text-xs font-semibold" style={{ color: '#8C2E2E' }}>
                     Réinitialiser mon profil
                   </p>
-                  <p style={{ margin: '3px 0 0', fontSize: 11, color: '#B91C1C', lineHeight: 1.4 }}>
+                  <p className="m-0 mt-0.5 text-[11px] leading-tight" style={{ color: '#B23A3A' }}>
                     Supprime tous tes résultats et synthèses Dr Lô. Ton compte et préférences sont conservés.
                   </p>
                 </div>
                 <button
                   onClick={() => setShowResetModal(true)}
-                  style={{
-                    background: 'white', border: '1px solid #FCA5A5',
-                    borderRadius: 8, padding: '7px 14px',
-                    fontSize: 11, fontWeight: 700, color: '#DC2626',
-                    cursor: 'pointer', flexShrink: 0, whiteSpace: 'nowrap' as const,
-                  }}
+                  className="bg-white rounded-lg px-3.5 py-1.5 text-[11px] font-bold cursor-pointer flex-shrink-0 whitespace-nowrap"
+                  style={{ border: '1px solid rgba(178,58,58,0.35)', color: '#B23A3A' }}
                 >
                   Réinitialiser
                 </button>
@@ -1565,44 +1324,47 @@ const AssessmentCategoryPage: React.FC = () => {
       {/* ── Modale login wall ──────────────────────────────────────────────── */}
       {showLoginWall && (
         <div
-          style={{
-            position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)',
-            zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16,
-          }}
+          className="fixed inset-0 z-[100] flex items-center justify-center p-4"
+          style={{ background: 'rgba(0,0,0,0.5)' }}
           onClick={() => setShowLoginWall(false)}
         >
           <div
-            style={{
-              background: '#fff', borderRadius: 20, padding: 28,
-              maxWidth: 400, width: '100%',
-              boxShadow: '0 20px 60px rgba(0,0,0,0.2)', textAlign: 'center',
-            }}
+            className="bg-white rounded-block p-7 w-full text-center"
+            style={{ maxWidth: 400, boxShadow: '0 20px 60px rgba(0,0,0,0.2)' }}
             onClick={e => e.stopPropagation()}
           >
-            <div style={{ fontSize: 48, marginBottom: 12 }}>🎯</div>
-            <h3 style={{ margin: '0 0 8px', fontSize: 20, fontWeight: 800, color: '#0A2342' }}>
+            <div className="w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-3" style={{ background: `${accentColor}12` }}>
+              <Target size={26} color={accentColor} />
+            </div>
+            <h3 className="font-display m-0 mb-2 text-xl font-extrabold text-ink">
               Tu as utilisé tes 3 essais gratuits !
             </h3>
-            <p style={{ margin: '0 0 8px', fontSize: 13, color: '#475569', lineHeight: 1.55 }}>
+            <p className="m-0 mb-2 text-[13px] text-ink-soft leading-relaxed">
               Crée un compte <strong>gratuit</strong> pour :
             </p>
-            <ul style={{ textAlign: 'left', margin: '0 0 20px', padding: '0 0 0 20px', fontSize: 12, color: '#475569', lineHeight: 1.9 }}>
-              <li>✅ Accéder aux 24 évaluations sans limite</li>
-              <li>✅ Sauvegarder et suivre ta progression</li>
-              <li>✅ Obtenir ton profil Dr Lô en profil psychologique &amp; vie intime</li>
-              <li>✅ Tester ta compatibilité avec un proche</li>
+            <ul className="text-left m-0 mb-5 pl-0 text-xs text-ink-soft leading-loose list-none">
+              {[
+                'Accéder aux 24 évaluations sans limite',
+                'Sauvegarder et suivre ta progression',
+                'Obtenir ton profil Dr Lô en profil psychologique & vie intime',
+                'Tester ta compatibilité avec un proche',
+              ].map(item => (
+                <li key={item} className="flex items-start gap-1.5 mb-1">
+                  <CheckCircle2 size={14} color="#3C7A5A" className="flex-shrink-0 mt-0.5" />
+                  <span>{item}</span>
+                </li>
+              ))}
             </ul>
-            <Link to="/patient/access" style={{
-              display: 'block', width: '100%',
-              background: 'linear-gradient(135deg,#3B82F6,#2DD4BF)',
-              color: '#fff', fontWeight: 700, fontSize: 14,
-              padding: '13px 0', borderRadius: 14, textDecoration: 'none', marginBottom: 10,
-            }}>
+            <Link
+              to="/patient/access"
+              className="block w-full text-white font-bold text-sm rounded-2xl py-3.5 no-underline mb-2.5"
+              style={{ background: accentColor }}
+            >
               Créer mon compte gratuit →
             </Link>
             <button
               onClick={() => setShowLoginWall(false)}
-              style={{ background: 'transparent', border: 'none', fontSize: 12, color: '#94A3B8', cursor: 'pointer' }}
+              className="bg-transparent border-0 text-xs text-muted cursor-pointer"
             >
               Fermer
             </button>

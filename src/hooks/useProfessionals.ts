@@ -59,7 +59,7 @@ const CACHE_DURATION = 60000; // 1 minute
 
 // CRITICAL: Clear all caches when data is deleted
 const clearAllCaches = () => {
-  console.log("🧹 Clearing all professionals caches after data deletion");
+  console.log("Clearing all professionals caches after data deletion");
   professionalsCache.clear();
 
   // Clear browser storage as well
@@ -78,9 +78,9 @@ const clearAllCaches = () => {
         }
       });
 
-      console.log("✅ Browser storage cleared of professional data");
+      console.log("Browser storage cleared of professional data");
     } catch (error) {
-      console.warn("⚠️ Could not clear browser storage:", error);
+      console.warn("Could not clear browser storage:", error);
     }
   }
 };
@@ -100,9 +100,9 @@ export const useProfessionals = (
     const cacheKey = `professionals_${filterType || "all"}`;
 
     console.log(
-      `🔍 Setting up professionals subscription with filter: ${
-        filterType || "all"
-      }`
+      `Setting up professionals subscription with filter: ${
+ filterType || "all"
+ }`
     );
 
     // CRITICAL: Clear caches first to ensure fresh data after deletion
@@ -119,7 +119,7 @@ export const useProfessionals = (
       id.startsWith(`professionals_${filterType || "all"}_`)
     );
     if (existingListenerId) {
-      console.log("🧹 Cleaning up existing listener:", existingListenerId);
+      console.log("Cleaning up existing listener:", existingListenerId);
       const cleanup = activeListeners.get(existingListenerId);
       if (cleanup) {
         cleanup();
@@ -137,7 +137,7 @@ export const useProfessionals = (
     // Fallback: Try to load data with getDocs if onSnapshot fails
     const fetchProfessionalsWithFallback = async () => {
       try {
-        console.log("🔍 Fetching professionals with fallback method");
+        console.log("Fetching professionals with fallback method");
 
         // CRITICAL: Ensure Firestore is ready before fetching
         await ensureFirestoreReady();
@@ -195,7 +195,7 @@ export const useProfessionals = (
 
             if (needsMigration) {
               console.log(
-                `🔧 Migrating availability for ${professional.name} in memory...`
+                `Migrating availability for ${professional.name} in memory...`
               );
               professional.availability = migrateAvailabilityData(
                 professional.availability
@@ -213,7 +213,7 @@ export const useProfessionals = (
         });
 
         console.log(
-          `✅ Fetched ${sortedResults.length} professionals with fallback (fresh data after deletion)`
+          `Fetched ${sortedResults.length} professionals with fallback (fresh data after deletion)`
         );
 
         if (isMountedRef.current) {
@@ -227,7 +227,7 @@ export const useProfessionals = (
           });
         }
       } catch (err) {
-        console.error("❌ Fallback fetch failed:", err);
+        console.error("Fallback fetch failed:", err);
         if (isMountedRef.current) {
           setError(
             "Impossible de charger les données. Vérifiez votre connexion internet."
@@ -242,19 +242,19 @@ export const useProfessionals = (
       .then((isReady) => {
         if (!isReady) {
           console.warn(
-            "⚠️ Firestore not ready for professionals subscription, using fallback"
+            "Firestore not ready for professionals subscription, using fallback"
           );
           fetchProfessionalsWithFallback();
           return;
         }
 
-        console.log("✅ Firestore ready for professionals subscription");
+        console.log("Firestore ready for professionals subscription");
 
         try {
           // CRITICAL: Ensure Firestore is ready before setting up subscription
           ensureFirestoreReady().catch((error) => {
             console.warn(
-              "⚠️ Failed to ensure Firestore ready before professionals subscription:",
+              "Failed to ensure Firestore ready before professionals subscription:",
               error
             );
           });
@@ -262,7 +262,7 @@ export const useProfessionals = (
           const db = getFirestoreInstance();
           if (!db) {
             console.warn(
-              "⚠️ Firestore not available for professionals subscription, using fallback"
+              "Firestore not available for professionals subscription, using fallback"
             );
             fetchProfessionalsWithFallback();
             return;
@@ -291,7 +291,7 @@ export const useProfessionals = (
           }
 
           console.log(
-            `📡 Setting up real-time subscription with ID: ${listenerId}...`
+            `Setting up real-time subscription with ID: ${listenerId}...`
           );
 
           // Set up real-time subscription with unique ID tracking
@@ -303,14 +303,14 @@ export const useProfessionals = (
                 listenerIdRef.current !== listenerId
               ) {
                 console.log(
-                  "🚫 Ignoring snapshot for unmounted component or old listener"
+                  "Ignoring snapshot for unmounted component or old listener"
                 );
                 return;
               }
 
               try {
                 console.log(
-                  `📊 Received ${querySnapshot.docs.length} documents from Firestore (listener: ${listenerId})`
+                  `Received ${querySnapshot.docs.length} documents from Firestore (listener: ${listenerId})`
                 );
 
                 let results: Professional[] = querySnapshot.docs.map((doc) => {
@@ -336,7 +336,7 @@ export const useProfessionals = (
 
                     if (needsMigration) {
                       console.log(
-                        `🔧 Migrating availability for ${professional.name} in real-time...`
+                        `Migrating availability for ${professional.name} in real-time...`
                       );
                       professional.availability = migrateAvailabilityData(
                         professional.availability
@@ -354,7 +354,7 @@ export const useProfessionals = (
                 });
 
                 console.log(
-                  `✅ Processed ${sortedResults.length} professionals successfully (listener: ${listenerId})`
+                  `Processed ${sortedResults.length} professionals successfully (listener: ${listenerId})`
                 );
 
                 if (
@@ -375,7 +375,7 @@ export const useProfessionals = (
                   }
                 }
               } catch (err) {
-                console.error("❌ Error processing professionals data:", err);
+                console.error("Error processing professionals data:", err);
                 if (
                   isMountedRef.current &&
                   listenerIdRef.current === listenerId
@@ -396,20 +396,20 @@ export const useProfessionals = (
                 listenerIdRef.current !== listenerId
               ) {
                 console.log(
-                  "🚫 Ignoring error for unmounted component or old listener"
+                  "Ignoring error for unmounted component or old listener"
                 );
                 return;
               }
 
               console.error(
-                `❌ Error in professionals subscription (listener: ${listenerId}):`,
+                `Error in professionals subscription (listener: ${listenerId}):`,
                 err
               );
 
               // CRITICAL: Handle Firestore internal assertion failures
               if (isFirestoreInternalError(err)) {
                 console.error(
-                  "🚨 Firestore internal assertion failure in professionals subscription, resetting connection..."
+                  "Firestore internal assertion failure in professionals subscription, resetting connection..."
                 );
 
                 // Clean up this listener immediately
@@ -424,7 +424,7 @@ export const useProfessionals = (
                 try {
                   await resetFirestoreConnection();
                   console.log(
-                    "✅ Firestore connection reset after internal assertion failure in professionals"
+                    "Firestore connection reset after internal assertion failure in professionals"
                   );
 
                   // Wait longer before retrying after internal errors
@@ -435,7 +435,7 @@ export const useProfessionals = (
                   }, 2000);
                 } catch (resetError) {
                   console.warn(
-                    "⚠️ Could not reset Firestore after internal assertion failure:",
+                    "Could not reset Firestore after internal assertion failure:",
                     resetError
                   );
                 }
@@ -455,7 +455,7 @@ export const useProfessionals = (
                   "Service temporairement indisponible. Veuillez réessayer dans quelques instants.";
               } else if (err.code === "failed-precondition") {
                 console.warn(
-                  "⚠️ Firestore index may be required, but continuing with basic query"
+                  "Firestore index may be required, but continuing with basic query"
                 );
                 errorMessage =
                   "Chargement en cours... Les données peuvent prendre quelques instants à apparaître.";
@@ -463,7 +463,7 @@ export const useProfessionals = (
                 err.message &&
                 err.message.includes("Target ID already exists")
               ) {
-                console.error("🎯 Target ID conflict detected, cleaning up...");
+                console.error("Target ID conflict detected, cleaning up...");
                 errorMessage =
                   "Conflit de cache détecté. Rechargement automatique en cours...";
 
@@ -513,12 +513,12 @@ export const useProfessionals = (
               listenerIdRef.current === listenerId
             ) {
               console.warn(
-                `⚠️ Professionals subscription timeout for listener: ${listenerId}`
+                `Professionals subscription timeout for listener: ${listenerId}`
               );
               setLoading(false);
               // Don't set error for empty database - this is expected after deletion
               console.log(
-                "ℹ️ No professionals found - this is expected after database cleanup"
+                "ℹ No professionals found - this is expected after database cleanup"
               );
             }
           }, 15000); // 15 second timeout
@@ -540,7 +540,7 @@ export const useProfessionals = (
               activeListeners.has(listenerIdRef.current)
             ) {
               console.log(
-                `🧹 Cleaning up professionals listener: ${listenerIdRef.current}`
+                `Cleaning up professionals listener: ${listenerIdRef.current}`
               );
               const cleanup = activeListeners.get(listenerIdRef.current);
               if (cleanup) {
@@ -550,12 +550,12 @@ export const useProfessionals = (
             }
 
             console.log(
-              `🧹 Cleaned up professionals subscription for: ${listenerId}`
+              `Cleaned up professionals subscription for: ${listenerId}`
             );
           };
         } catch (error) {
           console.error(
-            "❌ Error setting up professionals subscription:",
+            "Error setting up professionals subscription:",
             error
           );
           if (isMountedRef.current) {
@@ -575,7 +575,7 @@ export const useProfessionals = (
       })
       .catch((error) => {
         console.error(
-          "❌ Failed to ensure Firestore ready for professionals subscription:",
+          "Failed to ensure Firestore ready for professionals subscription:",
           error
         );
         if (isMountedRef.current) {
@@ -594,7 +594,7 @@ export const useProfessionals = (
   const refreshProfessionals = async () => {
     if (!isMountedRef.current) return;
 
-    console.log("🔄 Manually refreshing professionals...");
+    console.log("Manually refreshing professionals...");
     const cacheKey = `professionals_${filterType || "all"}`;
 
     // Clear cache
@@ -626,9 +626,9 @@ export const useProfessionals = (
       // Force a complete reload by incrementing the counter
       listenerIdCounter++;
 
-      console.log("✅ Refresh initiated, new subscription will be created");
+      console.log("Refresh initiated, new subscription will be created");
     } catch (err) {
-      console.error("❌ Failed to refresh professionals:", err);
+      console.error("Failed to refresh professionals:", err);
       if (isMountedRef.current) {
         setError("Erreur lors du rafraîchissement des données");
         setLoading(false);
@@ -642,10 +642,10 @@ export const useProfessionals = (
 // Utility function to clean up all listeners (use when unmounting the app)
 export const cleanupAllProfessionalsListeners = () => {
   console.log(
-    `🧹 Cleaning up all ${activeListeners.size} professionals listeners`
+    `Cleaning up all ${activeListeners.size} professionals listeners`
   );
   activeListeners.forEach((unsubscribe, listenerId) => {
-    console.log("🧹 Cleaning up professionals listener:", listenerId);
+    console.log("Cleaning up professionals listener:", listenerId);
     unsubscribe();
   });
   activeListeners.clear();
@@ -667,9 +667,9 @@ export const cleanupAllProfessionalsListeners = () => {
         }
       });
 
-      console.log("✅ Browser storage cleared of professional data");
+      console.log("Browser storage cleared of professional data");
     } catch (error) {
-      console.warn("⚠️ Could not clear browser storage:", error);
+      console.warn("Could not clear browser storage:", error);
     }
   }
 };

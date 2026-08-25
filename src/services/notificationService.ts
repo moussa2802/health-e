@@ -82,7 +82,7 @@ export async function createNotification(
   }
 ): Promise<string> {
   try {
-    console.log(`📣 Creating ${type} notification for user:`, userId);
+    console.log(`Creating ${type} notification for user:`, userId);
 
     // CRITICAL: Ensure Firestore is ready before creating
     await ensureFirestoreReady();
@@ -106,22 +106,22 @@ export async function createNotification(
     };
 
     const docRef = await addDoc(notificationsRef, notificationData);
-    console.log("✅ Notification created successfully:", docRef.id);
+    console.log("Notification created successfully:", docRef.id);
 
     // Envoyer un email si les données email sont fournies
     if (emailData) {
       try {
         await sendNotificationEmail(type, emailData);
-        console.log("✅ Email notification sent successfully");
+        console.log("Email notification sent successfully");
       } catch (emailError) {
-        console.warn("⚠️ Failed to send email notification:", emailError);
+        console.warn("Failed to send email notification:", emailError);
         // Ne pas faire échouer la création de notification si l'email échoue
       }
     }
 
     return docRef.id;
   } catch (error) {
-    console.error("❌ Error creating notification:", error);
+    console.error("Error creating notification:", error);
     throw new Error("Failed to create notification");
   }
 }
@@ -249,13 +249,13 @@ export function subscribeToNotifications(
   // Vérifier si l'utilisateur est valide
   if (!userId) {
     console.warn(
-      "🔔 [DEBUG] No userId provided for notifications subscription"
+      "[DEBUG] No userId provided for notifications subscription"
     );
     callback([]);
     return () => {};
   }
 
-  console.log("🔔 Setting up notifications subscription for user:", userId);
+  console.log("Setting up notifications subscription for user:", userId);
 
   // Generate unique listener ID
   const listenerId = `notifications_${userId}_${++notificationListenerIdCounter}`;
@@ -267,7 +267,7 @@ export function subscribeToNotifications(
 
   if (existingListenerId) {
     console.log(
-      "🧹 Cleaning up existing notification listener:",
+      "Cleaning up existing notification listener:",
       existingListenerId
     );
     const cleanup = activeNotificationListeners.get(existingListenerId);
@@ -281,7 +281,7 @@ export function subscribeToNotifications(
   ensureFirestoreReady()
     .then(async (isReady) => {
       if (!isReady) {
-        console.warn("⚠️ Firestore not ready for notifications subscription");
+        console.warn("Firestore not ready for notifications subscription");
         callback([]);
         return;
       }
@@ -289,7 +289,7 @@ export function subscribeToNotifications(
       const db = getFirestoreInstance();
       if (!db) {
         console.warn(
-          "⚠️ Firestore not available for notifications subscription"
+          "Firestore not available for notifications subscription"
         );
         callback([]);
         return;
@@ -320,9 +320,9 @@ export function subscribeToNotifications(
         const unsubscribe = onSnapshot(
           q,
           (snapshot) => {
-            console.log("🔔 [DEBUG] onSnapshot callback triggered");
+            console.log("[DEBUG] onSnapshot callback triggered");
             console.log(
-              "📊 Received",
+              "Received",
               snapshot.docs.length,
               "notification documents"
             );
@@ -353,7 +353,7 @@ export function subscribeToNotifications(
                 // Remove duplicates based on ID
                 if (seenIds.has(notification.id)) {
                   console.log(
-                    "🔔 [DEBUG] Duplicate notification filtered out:",
+                    "[DEBUG] Duplicate notification filtered out:",
                     notification.id
                   );
                   return false;
@@ -363,19 +363,19 @@ export function subscribeToNotifications(
               });
 
             console.log(
-              "✅ Received",
+              "Received",
               notifications.length,
               "unique notifications"
             );
             callback(notifications);
           },
           (error) => {
-            console.log("🔔 [DEBUG] onSnapshot error callback triggered");
-            console.error("❌ Error in notifications subscription:", error);
-            console.error("❌ Error code:", error.code);
-            console.error("❌ Error message:", error.message);
-            console.error("❌ User ID used in query:", userId);
-            console.log("🔔 [DEBUG] Full error object:", {
+            console.log("[DEBUG] onSnapshot error callback triggered");
+            console.error("Error in notifications subscription:", error);
+            console.error("Error code:", error.code);
+            console.error("Error message:", error.message);
+            console.error("User ID used in query:", userId);
+            console.log("[DEBUG] Full error object:", {
               code: error.code,
               name: error.name,
             });
@@ -386,18 +386,18 @@ export function subscribeToNotifications(
         // Store the unsubscribe function
         activeNotificationListeners.set(listenerId, unsubscribe);
       } catch (error) {
-        console.error("❌ Error setting up notifications subscription:", error);
+        console.error("Error setting up notifications subscription:", error);
         callback([]);
       }
     })
     .catch((error) => {
-      console.error("❌ Error ensuring Firestore is ready:", error);
+      console.error("Error ensuring Firestore is ready:", error);
       callback([]);
     });
 
   // Return cleanup function
   return () => {
-    console.log("🧹 Cleaning up notification listener:", listenerId);
+    console.log("Cleaning up notification listener:", listenerId);
     const unsubscribe = activeNotificationListeners.get(listenerId);
     if (unsubscribe) {
       unsubscribe();
@@ -411,7 +411,7 @@ export async function markNotificationAsRead(
   notificationId: string
 ): Promise<void> {
   try {
-    console.log("👁️ Marking notification as read:", notificationId);
+    console.log("Marking notification as read:", notificationId);
 
     // CRITICAL: Ensure Firestore is ready before updating
     await ensureFirestoreReady();
@@ -424,9 +424,9 @@ export async function markNotificationAsRead(
       read: true,
     });
 
-    console.log("✅ Notification marked as read");
+    console.log("Notification marked as read");
   } catch (error) {
-    console.error("❌ Error marking notification as read:", error);
+    console.error("Error marking notification as read:", error);
   }
 }
 
@@ -435,7 +435,7 @@ export async function markAllNotificationsAsRead(
   userId: string
 ): Promise<void> {
   try {
-    console.log("👁️ Marking all notifications as read for user:", userId);
+    console.log("Marking all notifications as read for user:", userId);
 
     // CRITICAL: Ensure Firestore is ready before updating
     await ensureFirestoreReady();
@@ -455,7 +455,7 @@ export async function markAllNotificationsAsRead(
     const snapshot = await getDocs(q);
 
     if (snapshot.empty) {
-      console.log("✅ No unread notifications to mark as read");
+      console.log("No unread notifications to mark as read");
       return;
     }
 
@@ -467,9 +467,9 @@ export async function markAllNotificationsAsRead(
     });
 
     await batch.commit();
-    console.log(`✅ Marked ${snapshot.size} notifications as read`);
+    console.log(`Marked ${snapshot.size} notifications as read`);
   } catch (error) {
-    console.error("❌ Error marking all notifications as read:", error);
+    console.error("Error marking all notifications as read:", error);
   }
 }
 
@@ -478,7 +478,7 @@ export async function getUnreadNotificationsCount(
   userId: string
 ): Promise<number> {
   try {
-    console.log("🔢 Getting unread notifications count for user:", userId);
+    console.log("Getting unread notifications count for user:", userId);
 
     // CRITICAL: Ensure Firestore is ready before querying
     await ensureFirestoreReady();
@@ -495,11 +495,11 @@ export async function getUnreadNotificationsCount(
     );
 
     const snapshot = await getDocs(q);
-    console.log(`✅ Found ${snapshot.size} unread notifications`);
+    console.log(`Found ${snapshot.size} unread notifications`);
 
     return snapshot.size;
   } catch (error) {
-    console.error("❌ Error getting unread notifications count:", error);
+    console.error("Error getting unread notifications count:", error);
     return 0;
   }
 }
@@ -509,7 +509,7 @@ export function listenForBookingStatusChanges(
   userId: string,
   callback: (bookingId: string, status: string) => void
 ): () => void {
-  console.log("🔔 Setting up booking status changes listener for:", userId);
+  console.log("Setting up booking status changes listener for:", userId);
 
   const database = getDatabase();
   const bookingsRef = ref(database, `booking_status_changes/${userId}`);
@@ -523,7 +523,7 @@ export function listenForBookingStatusChanges(
     Object.entries(data).forEach(
       ([bookingId, statusData]: [string, unknown]) => {
         const status = (statusData as { status: string }).status;
-        console.log(`📣 Booking ${bookingId} status changed to: ${status}`);
+        console.log(`Booking ${bookingId} status changed to: ${status}`);
 
         // Call the callback with the booking ID and status
         callback(bookingId, status);
@@ -533,7 +533,7 @@ export function listenForBookingStatusChanges(
 
   // Return cleanup function
   return () => {
-    console.log("🧹 Cleaning up booking status changes listener");
+    console.log("Cleaning up booking status changes listener");
     off(bookingsRef);
   };
 }
@@ -541,11 +541,11 @@ export function listenForBookingStatusChanges(
 // Clean up all notification listeners
 export function cleanupAllNotificationListeners(): void {
   console.log(
-    `🧹 Cleaning up all ${activeNotificationListeners.size} notification listeners`
+    `Cleaning up all ${activeNotificationListeners.size} notification listeners`
   );
 
   activeNotificationListeners.forEach((unsubscribe, listenerId) => {
-    console.log("🧹 Cleaning up notification listener:", listenerId);
+    console.log("Cleaning up notification listener:", listenerId);
     unsubscribe();
   });
 
@@ -560,7 +560,7 @@ export function subscribeToAdminNotifications(
   const db = getFirestoreInstance();
   if (!db) {
     console.warn(
-      "⚠️ Firestore not available for admin notifications subscription"
+      "Firestore not available for admin notifications subscription"
     );
     callback([]);
     return () => {};
@@ -595,7 +595,7 @@ export async function createAdminNotificationForNewProfessional(
 ): Promise<string> {
   try {
     console.log(
-      "🔔 Creating admin notification for new professional:",
+      "Creating admin notification for new professional:",
       professionalName
     );
 
@@ -609,7 +609,7 @@ export async function createAdminNotificationForNewProfessional(
     // We'll use the known admin ID directly
     const adminId = "FYostm61DLbrax729IYT6OBHSuA3"; // Known admin ID
 
-    console.log("✅ Using known admin ID:", adminId);
+    console.log("Using known admin ID:", adminId);
 
     // Create notification in Firestore
     const notificationsRef = collection(db, "notifications");
@@ -627,11 +627,11 @@ export async function createAdminNotificationForNewProfessional(
     };
 
     const docRef = await addDoc(notificationsRef, notificationData);
-    console.log("✅ Admin notification created successfully:", docRef.id);
+    console.log("Admin notification created successfully:", docRef.id);
 
     return docRef.id;
   } catch (error) {
-    console.error("❌ Error creating admin notification:", error);
+    console.error("Error creating admin notification:", error);
     throw new Error("Failed to create admin notification");
   }
 }
@@ -689,10 +689,10 @@ export const createWithdrawalRequestNotification = async (
     };
 
     const docRef = await addDoc(collection(db, "notifications"), notification);
-    console.log("✅ [NOTIF] Notification de retrait créée:", docRef.id);
+    console.log("[NOTIF] Notification de retrait créée:", docRef.id);
     return docRef.id;
   } catch (error) {
-    console.error("❌ [NOTIF] Erreur création notification retrait:", error);
+    console.error("[NOTIF] Erreur création notification retrait:", error);
     throw error;
   }
 };
@@ -760,13 +760,13 @@ export const createWithdrawalStatusUpdateNotification = async (
 
     const docRef = await addDoc(collection(db, "notifications"), notification);
     console.log(
-      "✅ [NOTIF] Notification de mise à jour de statut créée:",
+      "[NOTIF] Notification de mise à jour de statut créée:",
       docRef.id
     );
     return docRef.id;
   } catch (error) {
     console.error(
-      "❌ [NOTIF] Erreur création notification mise à jour:",
+      "[NOTIF] Erreur création notification mise à jour:",
       error
     );
     throw error;
@@ -875,11 +875,11 @@ export const createTransactionNotification = async (
     };
 
     const docRef = await addDoc(collection(db, "notifications"), notification);
-    console.log("✅ [NOTIF] Notification de transaction créée:", docRef.id);
+    console.log("[NOTIF] Notification de transaction créée:", docRef.id);
     return docRef.id;
   } catch (error) {
     console.error(
-      "❌ [NOTIF] Erreur création notification transaction:",
+      "[NOTIF] Erreur création notification transaction:",
       error
     );
     throw error;

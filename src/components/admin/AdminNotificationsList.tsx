@@ -59,10 +59,10 @@ const AdminNotificationsList: React.FC = () => {
   const loadNotifications = useCallback(async () => {
     try {
       setLoading(true);
-      console.log("🔍 [ADMIN LIST] Début chargement notifications...");
+      console.log("[ADMIN LIST] Début chargement notifications...");
       if (!currentUser?.id) {
         console.warn(
-          "⚠️ [ADMIN LIST] Admin ID non disponible. Impossible de charger les notifications."
+          "[ADMIN LIST] Admin ID non disponible. Impossible de charger les notifications."
         );
         setNotifications([]);
         setLoading(false);
@@ -77,9 +77,9 @@ const AdminNotificationsList: React.FC = () => {
           : (filter as AdminNotification["type"]),
         100
       );
-      console.log("📊 [ADMIN LIST] Notifications reçues:", realNotifications);
+      console.log("[ADMIN LIST] Notifications reçues:", realNotifications);
       console.log(
-        "📊 [ADMIN LIST] Nombre de notifications:",
+        "[ADMIN LIST] Nombre de notifications:",
         realNotifications?.length || 0
       );
 
@@ -87,12 +87,12 @@ const AdminNotificationsList: React.FC = () => {
         setNotifications(realNotifications);
       } else {
         console.log(
-          "⚠️ [ADMIN LIST] Aucune notification trouvée dans Firestore"
+          "[ADMIN LIST] Aucune notification trouvée dans Firestore"
         );
         setNotifications([]);
       }
     } catch (error) {
-      console.error("❌ [ADMIN LIST] Erreur chargement notifications:", error);
+      console.error("[ADMIN LIST] Erreur chargement notifications:", error);
       setNotifications([]);
     } finally {
       setLoading(false);
@@ -113,7 +113,7 @@ const AdminNotificationsList: React.FC = () => {
         )
       );
     } catch (error) {
-      console.error("❌ [ADMIN LIST] Erreur marquage lu:", error);
+      console.error("[ADMIN LIST] Erreur marquage lu:", error);
     }
   };
 
@@ -125,7 +125,7 @@ const AdminNotificationsList: React.FC = () => {
         prev.map((n) => ({ ...n, status: "read" as const }))
       );
     } catch (error) {
-      console.error("❌ [ADMIN LIST] Erreur marquage toutes lues:", error);
+      console.error("[ADMIN LIST] Erreur marquage toutes lues:", error);
     }
   };
 
@@ -135,7 +135,7 @@ const AdminNotificationsList: React.FC = () => {
       await deleteAdminNotification(notificationId);
       setNotifications((prev) => prev.filter((n) => n.id !== notificationId));
     } catch (error) {
-      console.error("❌ [ADMIN LIST] Erreur suppression:", error);
+      console.error("[ADMIN LIST] Erreur suppression:", error);
     }
   };
 
@@ -173,21 +173,21 @@ const AdminNotificationsList: React.FC = () => {
   const getTypeIcon = (type: string) => {
     switch (type) {
       case "withdrawal":
-        return <DollarSign className="h-5 w-5 text-green-500" />;
+        return <DollarSign className="h-5 w-5 text-ok" />;
       case "user":
       case "new_professional_registration":
-        return <User className="h-5 w-5 text-blue-500" />;
+        return <User className="h-5 w-5 text-gold" />;
       case "appointment":
-        return <Calendar className="h-5 w-5 text-purple-500" />;
+        return <Calendar className="h-5 w-5 text-accent" />;
       case "message":
-        return <MessageSquare className="h-5 w-5 text-orange-500" />;
+        return <MessageSquare className="h-5 w-5 text-sage" />;
       case "support":
       case "support_message":
-        return <Info className="h-5 w-5 text-red-500" />;
+        return <Info className="h-5 w-5 text-danger" />;
       case "system":
-        return <Info className="h-5 w-5 text-gray-500" />;
+        return <Info className="h-5 w-5 text-muted" />;
       default:
-        return <Info className="h-5 w-5 text-gray-600" />;
+        return <Info className="h-5 w-5 text-ink-soft" />;
     }
   };
 
@@ -195,20 +195,20 @@ const AdminNotificationsList: React.FC = () => {
     switch (type) {
       case "new_professional_registration":
       case "user":
-        return "border-l-4 border-l-blue-500 bg-blue-50";
+        return "border-l-4 border-l-gold bg-gold-soft";
       case "withdrawal_request":
       case "withdrawal":
-        return "border-l-4 border-l-green-500 bg-green-50";
+        return "border-l-4 border-l-ok bg-ok/10";
       case "appointment_cancelled":
       case "appointment":
-        return "border-l-4 border-l-purple-500 bg-purple-50";
+        return "border-l-4 border-l-accent bg-accent-soft";
       case "support":
       case "support_message":
-        return "border-l-4 border-l-red-500 bg-red-50";
+        return "border-l-4 border-l-danger bg-danger/10";
       case "message":
-        return "border-l-4 border-l-indigo-500 bg-indigo-50";
+        return "border-l-4 border-l-sage bg-sage-soft";
       default:
-        return "border-l-4 border-l-gray-500 bg-gray-50";
+        return "border-l-4 border-l-muted bg-paper";
     }
   };
 
@@ -264,7 +264,7 @@ const AdminNotificationsList: React.FC = () => {
     return (
       <div className="p-8 text-center">
         <LoadingSpinner size="lg" />
-        <p className="mt-4 text-gray-600">Chargement des notifications...</p>
+        <p className="mt-4 text-ink-soft">Chargement des notifications...</p>
       </div>
     );
   }
@@ -274,11 +274,11 @@ const AdminNotificationsList: React.FC = () => {
       {/* En-tête avec statistiques et actions */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <div className="text-sm text-gray-600">
+          <div className="text-sm text-ink-soft">
             <span className="font-medium">{notifications.length}</span>{" "}
             notifications
             {unreadCount > 0 && (
-              <span className="ml-2 text-blue-600 font-medium">
+              <span className="ml-2 text-accent font-medium">
                 ({unreadCount} non lues)
               </span>
             )}
@@ -288,7 +288,7 @@ const AdminNotificationsList: React.FC = () => {
         {unreadCount > 0 && (
           <button
             onClick={handleMarkAllAsRead}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            className="flex items-center gap-2 px-4 py-2 bg-accent text-white rounded-card hover:bg-accent/90 transition-colors"
           >
             <CheckCircle className="h-4 w-4" />
             Tout marquer comme lu
@@ -297,15 +297,15 @@ const AdminNotificationsList: React.FC = () => {
       </div>
 
       {/* Filtres */}
-      <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg">
-        <span className="text-sm font-medium text-gray-700 flex items-center gap-2">
+      <div className="flex items-center gap-4 p-4 bg-paper rounded-card">
+        <span className="text-sm font-medium text-ink-soft flex items-center gap-2">
           <Filter className="h-4 w-4" />
           Filtrer:
         </span>
         <select
           value={filter}
           onChange={(e) => setFilter(e.target.value as typeof filter)}
-          className="px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+          className="px-3 py-2 text-sm border border-line rounded-card focus:ring-2 focus:ring-accent focus:border-accent"
         >
           <option value="all">Toutes ({notifications.length})</option>
           <option value="unread">Non lues ({unreadCount})</option>
@@ -324,8 +324,8 @@ const AdminNotificationsList: React.FC = () => {
       {/* Liste des notifications */}
       <div className="space-y-4">
         {filteredNotifications.length === 0 ? (
-          <div className="text-center py-12 text-gray-500">
-            <Info className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+          <div className="text-center py-12 text-muted">
+            <Info className="h-12 w-12 mx-auto mb-4 text-muted" />
             <p className="text-lg font-medium">Aucune notification</p>
             <p className="text-sm">
               {filter === "all"
@@ -339,10 +339,10 @@ const AdminNotificationsList: React.FC = () => {
           filteredNotifications.map((notification) => (
             <div
               key={notification.id}
-              className={`p-6 border border-gray-200 rounded-lg hover:shadow-md transition-all cursor-pointer ${
+              className={`p-6 border border-line rounded-block hover:shadow-lift transition-all cursor-pointer ${
                 notification.status === "unread"
-                  ? "bg-blue-50 border-blue-200"
-                  : "bg-white"
+                  ? "bg-accent-soft border-accent/40"
+                  : "bg-card"
               } ${getTypeColor(notification.type)}`}
               onClick={() => handleNotificationClick(notification)}
             >
@@ -352,25 +352,25 @@ const AdminNotificationsList: React.FC = () => {
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between mb-3">
-                    <h3 className="text-lg font-semibold text-gray-900">
+                    <h3 className="text-lg font-semibold text-ink">
                       {notification.title}
                     </h3>
                     <div className="flex items-center gap-2">
                       <span
-                        className={`px-3 py-1 text-xs font-medium rounded-full ${
+                        className={`px-3 py-1 text-xs font-medium rounded-pill ${
                           notification.status === "unread"
-                            ? "bg-blue-100 text-blue-800"
-                            : "bg-gray-100 text-gray-800"
+                            ? "bg-accent-soft text-accent"
+                            : "bg-paper text-ink-soft"
                         }`}
                       >
                         {notification.status === "unread" ? "Non lu" : "Lu"}
                       </span>
                     </div>
                   </div>
-                  <p className="text-gray-700 mb-4 leading-relaxed">
+                  <p className="text-ink-soft mb-4 leading-relaxed">
                     {notification.message}
                   </p>
-                  <div className="flex items-center justify-between text-sm text-gray-500">
+                  <div className="flex items-center justify-between text-sm text-muted">
                     <div className="flex items-center gap-4">
                       <span className="flex items-center gap-1">
                         {getTypeIcon(notification.type)}
@@ -384,7 +384,7 @@ const AdminNotificationsList: React.FC = () => {
                           e.stopPropagation();
                           handleMarkAsRead(notification.id);
                         }}
-                        className="p-2 text-gray-400 hover:text-blue-600 transition-colors"
+                        className="p-2 text-muted hover:text-accent transition-colors"
                         title="Marquer comme lu"
                       >
                         <Eye className="h-4 w-4" />
@@ -394,7 +394,7 @@ const AdminNotificationsList: React.FC = () => {
                           e.stopPropagation();
                           handleDeleteNotification(notification.id);
                         }}
-                        className="p-2 text-gray-400 hover:text-red-600 transition-colors"
+                        className="p-2 text-muted hover:text-danger transition-colors"
                         title="Supprimer"
                       >
                         <Trash2 className="h-4 w-4" />

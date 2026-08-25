@@ -94,20 +94,20 @@ try {
   enableNetwork(db)
     .then(() => {
       firestoreConnectionStatus.isOnline = true;
-      console.log("✅ Firestore network enabled on initialization");
+      console.log("Firestore network enabled on initialization");
     })
     .catch((e) => {
       console.warn(
-        "⚠️ Failed to enable Firestore network on initialization",
+        "Failed to enable Firestore network on initialization",
         e
       );
       firestoreConnectionStatus.isOnline = false;
     });
 
   rtdb = getDatabase(app);
-  console.log("✅ Firebase initialized");
+  console.log("Firebase initialized");
 } catch (e) {
-  console.error("❌ Firebase init failed", e);
+  console.error("Firebase init failed", e);
   firestoreConnectionStatus.lastError = e as Error;
 }
 
@@ -148,7 +148,7 @@ export const getFirestoreConnectionStatus = () => {
 
 // CRITICAL: Clean all browser storage related to Firebase
 export const cleanAllFirebaseStorage = async (): Promise<void> => {
-  console.log("🧹 Cleaning all Firebase-related browser storage...");
+  console.log("Cleaning all Firebase-related browser storage...");
 
   try {
     // Clean localStorage
@@ -175,7 +175,7 @@ export const cleanAllFirebaseStorage = async (): Promise<void> => {
         localStorage.removeItem(key);
       });
 
-      console.log(`✅ Removed ${keysToRemove.length} items from localStorage`);
+      console.log(`Removed ${keysToRemove.length} items from localStorage`);
     }
 
     // Clean sessionStorage
@@ -202,7 +202,7 @@ export const cleanAllFirebaseStorage = async (): Promise<void> => {
       });
 
       console.log(
-        `✅ Removed ${keysToRemove.length} items from sessionStorage`
+        `Removed ${keysToRemove.length} items from sessionStorage`
       );
     }
 
@@ -213,7 +213,7 @@ export const cleanAllFirebaseStorage = async (): Promise<void> => {
         window.location.hostname.includes("webcontainer") ||
         window.location.hostname.includes("health-e.sn"))
     ) {
-      console.log("⚠️ Skipping IndexedDB cleanup in web container environment");
+      console.log("Skipping IndexedDB cleanup in web container environment");
     } else if (typeof indexedDB !== "undefined") {
       try {
         // Get all databases and await the operation
@@ -235,14 +235,14 @@ export const cleanAllFirebaseStorage = async (): Promise<void> => {
 
                 deleteRequest.onsuccess = () => {
                   console.log(
-                    `✅ Deleted IndexedDB database: ${database.name}`
+                    `Deleted IndexedDB database: ${database.name}`
                   );
                   resolve();
                 };
 
                 deleteRequest.onerror = () => {
                   console.warn(
-                    `⚠️ Failed to delete IndexedDB database ${database.name}:`,
+                    `Failed to delete IndexedDB database ${database.name}:`,
                     deleteRequest.error
                   );
                   resolve(); // Resolve anyway to not block the process
@@ -250,14 +250,14 @@ export const cleanAllFirebaseStorage = async (): Promise<void> => {
 
                 deleteRequest.onblocked = () => {
                   console.warn(
-                    `⚠️ IndexedDB database deletion blocked for ${database.name}`
+                    `IndexedDB database deletion blocked for ${database.name}`
                   );
                   // Wait a bit and resolve anyway
                   setTimeout(() => resolve(), 1000);
                 };
               } catch (error) {
                 console.warn(
-                  `⚠️ Error initiating deletion of IndexedDB database ${database.name}:`,
+                  `Error initiating deletion of IndexedDB database ${database.name}:`,
                   error
                 );
                 resolve(); // Resolve anyway to not block the process
@@ -269,17 +269,17 @@ export const cleanAllFirebaseStorage = async (): Promise<void> => {
         if (deletionPromises.length > 0) {
           await Promise.all(deletionPromises);
           console.log(
-            `✅ Completed deletion of ${deletionPromises.length} IndexedDB databases`
+            `Completed deletion of ${deletionPromises.length} IndexedDB databases`
           );
         }
       } catch (error) {
-        console.warn("⚠️ Failed to list or delete IndexedDB databases:", error);
+        console.warn("Failed to list or delete IndexedDB databases:", error);
       }
     }
 
-    console.log("✅ All Firebase-related browser storage cleaned");
+    console.log("All Firebase-related browser storage cleaned");
   } catch (error) {
-    console.error("❌ Error cleaning Firebase storage:", error);
+    console.error("Error cleaning Firebase storage:", error);
   }
 };
 
@@ -287,17 +287,17 @@ export const cleanAllFirebaseStorage = async (): Promise<void> => {
 export const forceFirestoreOnline = async (): Promise<boolean> => {
   const currentDb = getFirestoreInstance();
   if (!currentDb || !isFirestoreInitialized) {
-    console.warn("⚠️ Firestore not initialized, cannot force online");
+    console.warn("Firestore not initialized, cannot force online");
     return false;
   }
 
   try {
     await enableNetwork(currentDb);
     firestoreConnectionStatus.isOnline = true;
-    console.log("✅ Firestore is online");
+    console.log("Firestore is online");
     return true;
   } catch (e) {
-    console.warn("⚠️ Firestore enable failed", e);
+    console.warn("Firestore enable failed", e);
     firestoreConnectionStatus.isOnline = false;
     firestoreConnectionStatus.lastError = e as Error;
     return false;
@@ -317,14 +317,14 @@ export const ensureFirestoreReady = async (): Promise<boolean> => {
     if (db && isFirestoreInitialized) {
       return true;
     } else {
-      console.warn("⚠️ Firestore not initialized in web container environment");
+      console.warn("Firestore not initialized in web container environment");
       return false;
     }
   }
 
   // Check if we're currently resetting
   if (isResetting) {
-    console.warn("⚠️ Firestore is currently resetting, waiting...");
+    console.warn("Firestore is currently resetting, waiting...");
     // Wait for reset to complete
     let attempts = 0;
     while (isResetting && attempts < 20) {
@@ -334,7 +334,7 @@ export const ensureFirestoreReady = async (): Promise<boolean> => {
     }
 
     if (isResetting) {
-      console.warn("⚠️ Firestore reset taking too long, proceeding anyway");
+      console.warn("Firestore reset taking too long, proceeding anyway");
       return false;
     }
   }
@@ -342,12 +342,12 @@ export const ensureFirestoreReady = async (): Promise<boolean> => {
   // Always get the current instance (important after resets)
   const currentDb = getFirestoreInstance();
   if (!currentDb) {
-    console.warn("⚠️ Firestore instance is null");
+    console.warn("Firestore instance is null");
     return false;
   }
 
   if (!isFirestoreInitialized) {
-    console.warn("⚠️ Firestore not initialized");
+    console.warn("Firestore not initialized");
     return false;
   }
 
@@ -355,7 +355,7 @@ export const ensureFirestoreReady = async (): Promise<boolean> => {
     const result = await forceFirestoreOnline();
     return result;
   } catch (e) {
-    console.warn("⚠️ Failed to ensure Firestore is ready", e);
+    console.warn("Failed to ensure Firestore is ready", e);
     return false;
   }
 };
@@ -383,7 +383,7 @@ export const retryFirestoreOperation = async <T>(
     try {
       // CRITICAL FIX: Always ensure Firestore is ready before each attempt
       console.log(
-        `🔄 Ensuring Firestore is ready for attempt ${attempt}/${maxRetries}`
+        `Ensuring Firestore is ready for attempt ${attempt}/${maxRetries}`
       );
       const isReady = await ensureFirestoreReady();
       if (!isReady) {
@@ -401,16 +401,16 @@ export const retryFirestoreOperation = async <T>(
     } catch (error: any) {
       lastError = error;
       console.warn(
-        `⚠️ Firestore operation failed (attempt ${attempt}/${maxRetries}):`,
+        `Firestore operation failed (attempt ${attempt}/${maxRetries}):`,
         error
       );
 
       // If this is a Firestore internal error, try to reset the connection
       if (isFirestoreInternalError(error) && attempt < maxRetries) {
         console.warn(
-          `🔄 Detected Firestore internal error, attempting reset before retry ${
-            attempt + 1
-          }`
+          `Detected Firestore internal error, attempting reset before retry ${
+ attempt + 1
+ }`
         );
         try {
           await resetFirestoreConnection();
@@ -418,7 +418,7 @@ export const retryFirestoreOperation = async <T>(
           await new Promise((resolve) => setTimeout(resolve, 2000));
         } catch (resetError) {
           console.warn(
-            `⚠️ Failed to reset Firestore connection during retry:`,
+            `Failed to reset Firestore connection during retry:`,
             resetError
           );
         }
@@ -433,7 +433,7 @@ export const retryFirestoreOperation = async <T>(
 
   // If we get here, all retries failed
   console.error(
-    `❌ All ${maxRetries} retry attempts failed for Firestore operation`
+    `All ${maxRetries} retry attempts failed for Firestore operation`
   );
   throw lastError;
 };
@@ -448,19 +448,19 @@ export const resetFirestoreConnection = async (): Promise<boolean> => {
       window.location.hostname.includes("health-e.sn"))
   ) {
     console.log(
-      "🔄 Using simplified Firestore reset for web container environment"
+      "Using simplified Firestore reset for web container environment"
     );
 
     // Check if we're already resetting
     if (isResetting) {
-      console.warn("⚠️ Firestore reset already in progress, skipping");
+      console.warn("Firestore reset already in progress, skipping");
       return false;
     }
 
     // Check if Firestore is initialized
     const currentDb = getFirestoreInstance();
     if (!currentDb || !isFirestoreInitialized) {
-      console.warn("⚠️ Firestore not initialized, cannot reset");
+      console.warn("Firestore not initialized, cannot reset");
       return false;
     }
 
@@ -469,7 +469,7 @@ export const resetFirestoreConnection = async (): Promise<boolean> => {
     firestoreConnectionStatus.lastResetTime = Date.now();
 
     try {
-      console.log("🔄 Resetting Firestore connection...");
+      console.log("Resetting Firestore connection...");
 
       // Clean up all active listeners
       try {
@@ -483,7 +483,7 @@ export const resetFirestoreConnection = async (): Promise<boolean> => {
           "../services/messageService"
         );
 
-        console.log("🧹 Cleaning up all listeners before reset...");
+        console.log("Cleaning up all listeners before reset...");
         cleanupAllProfessionalsListeners();
         cleanupAllBookingListeners();
         cleanupAllMessageListeners();
@@ -492,7 +492,7 @@ export const resetFirestoreConnection = async (): Promise<boolean> => {
         await new Promise((resolve) => setTimeout(resolve, 500));
       } catch (cleanupError) {
         console.warn(
-          "⚠️ Error cleaning up listeners during reset:",
+          "Error cleaning up listeners during reset:",
           cleanupError
         );
       }
@@ -500,9 +500,9 @@ export const resetFirestoreConnection = async (): Promise<boolean> => {
       // Disable network first
       try {
         await disableNetwork(currentDb);
-        console.log("✅ Firestore network disabled for reset");
+        console.log("Firestore network disabled for reset");
       } catch (disableError) {
-        console.warn("⚠️ Error disabling Firestore network:", disableError);
+        console.warn("Error disabling Firestore network:", disableError);
       }
 
       // Short delay
@@ -512,9 +512,9 @@ export const resetFirestoreConnection = async (): Promise<boolean> => {
       try {
         await enableNetwork(currentDb);
         firestoreConnectionStatus.isOnline = true;
-        console.log("✅ Firestore network re-enabled");
+        console.log("Firestore network re-enabled");
       } catch (enableError) {
-        console.warn("⚠️ Error re-enabling Firestore network:", enableError);
+        console.warn("Error re-enabling Firestore network:", enableError);
         firestoreConnectionStatus.isOnline = false;
         firestoreConnectionStatus.lastError = enableError as Error;
       }
@@ -522,10 +522,10 @@ export const resetFirestoreConnection = async (): Promise<boolean> => {
       // Final short wait
       await new Promise((resolve) => setTimeout(resolve, 500));
 
-      console.log("✅ Simplified Firestore connection reset complete");
+      console.log("Simplified Firestore connection reset complete");
       return true;
     } catch (e) {
-      console.error("❌ Reset Firestore failed", e);
+      console.error("Reset Firestore failed", e);
       firestoreConnectionStatus.lastError = e as Error;
       return false;
     } finally {
@@ -536,14 +536,14 @@ export const resetFirestoreConnection = async (): Promise<boolean> => {
   // For non-web container environments, use the full reset process
   // Check if we're already resetting
   if (isResetting) {
-    console.warn("⚠️ Firestore reset already in progress, skipping");
+    console.warn("Firestore reset already in progress, skipping");
     return false;
   }
 
   // Check if Firestore is initialized
   const currentDb = getFirestoreInstance();
   if (!currentDb || !isFirestoreInitialized) {
-    console.warn("⚠️ Firestore not initialized, cannot reset");
+    console.warn("Firestore not initialized, cannot reset");
     return false;
   }
 
@@ -560,7 +560,7 @@ export const resetFirestoreConnection = async (): Promise<boolean> => {
   // Check if we've reset too many times
   if (resetTimes.length > MAX_RESETS_PER_HOUR) {
     console.warn(
-      `⚠️ Too many Firestore resets (${resetTimes.length}) in the last hour, skipping`
+      `Too many Firestore resets (${resetTimes.length}) in the last hour, skipping`
     );
     return false;
   }
@@ -570,10 +570,10 @@ export const resetFirestoreConnection = async (): Promise<boolean> => {
   firestoreConnectionStatus.lastResetTime = now;
 
   try {
-    console.log("🔄 Resetting Firestore connection...");
+    console.log("Resetting Firestore connection...");
 
     // Clean all Firebase storage at the beginning
-    console.log("🧹 Cleaning all Firebase storage before reset...");
+    console.log("Cleaning all Firebase storage before reset...");
     await cleanAllFirebaseStorage();
 
     // Wait after storage cleanup
@@ -591,7 +591,7 @@ export const resetFirestoreConnection = async (): Promise<boolean> => {
         "../services/messageService"
       );
 
-      console.log("🧹 Cleaning up all listeners before reset...");
+      console.log("Cleaning up all listeners before reset...");
       cleanupAllProfessionalsListeners();
       cleanupAllBookingListeners();
       cleanupAllMessageListeners();
@@ -600,7 +600,7 @@ export const resetFirestoreConnection = async (): Promise<boolean> => {
       await new Promise((resolve) => setTimeout(resolve, 1000));
     } catch (cleanupError) {
       console.warn(
-        "⚠️ Error cleaning up listeners during reset:",
+        "Error cleaning up listeners during reset:",
         cleanupError
       );
     }
@@ -608,32 +608,32 @@ export const resetFirestoreConnection = async (): Promise<boolean> => {
     // Disable network first
     try {
       await disableNetwork(currentDb);
-      console.log("✅ Firestore network disabled for reset");
+      console.log("Firestore network disabled for reset");
     } catch (disableError) {
-      console.warn("⚠️ Error disabling Firestore network:", disableError);
+      console.warn("Error disabling Firestore network:", disableError);
     }
 
     // Wait before terminating
-    console.log("⏳ Waiting before terminating Firestore instance...");
+    console.log("Waiting before terminating Firestore instance...");
     await new Promise((resolve) => setTimeout(resolve, 1000));
 
     // Terminate the Firestore instance
     try {
       await terminate(currentDb);
-      console.log("✅ Firestore instance terminated");
+      console.log("Firestore instance terminated");
     } catch (terminateError) {
-      console.warn("⚠️ Error terminating Firestore:", terminateError);
+      console.warn("Error terminating Firestore:", terminateError);
     }
 
     // Explicitly set db to null after termination
     db = null;
     isFirestoreInitialized = false;
     firestoreConnectionStatus.isInitialized = false;
-    console.log("✅ Firestore instance explicitly nullified");
+    console.log("Firestore instance explicitly nullified");
 
     // Wait after termination before clearing IndexedDB
     console.log(
-      "⏳ Waiting after termination before clearing IndexedDB persistence..."
+      "Waiting after termination before clearing IndexedDB persistence..."
     );
     await new Promise((resolve) => setTimeout(resolve, 1000));
 
@@ -655,25 +655,25 @@ export const resetFirestoreConnection = async (): Promise<boolean> => {
 
       isFirestoreInitialized = true;
       firestoreConnectionStatus.isInitialized = true;
-      console.log("✅ Firestore re-initialized");
+      console.log("Firestore re-initialized");
     } catch (initError) {
-      console.error("❌ Error re-initializing Firestore:", initError);
+      console.error("Error re-initializing Firestore:", initError);
       firestoreConnectionStatus.isInitialized = false;
       firestoreConnectionStatus.lastError = initError as Error;
       throw initError;
     }
 
     // Wait before enabling network
-    console.log("⏳ Waiting before enabling network...");
+    console.log("Waiting before enabling network...");
     await new Promise((resolve) => setTimeout(resolve, 1000));
 
     // Re-enable network
     try {
       await enableNetwork(db);
       firestoreConnectionStatus.isOnline = true;
-      console.log("✅ Firestore network re-enabled");
+      console.log("Firestore network re-enabled");
     } catch (enableError) {
-      console.warn("⚠️ Error re-enabling Firestore network:", enableError);
+      console.warn("Error re-enabling Firestore network:", enableError);
       firestoreConnectionStatus.isOnline = false;
       firestoreConnectionStatus.lastError = enableError as Error;
     }
@@ -681,10 +681,10 @@ export const resetFirestoreConnection = async (): Promise<boolean> => {
     // Final wait to ensure everything is stable
     await new Promise((resolve) => setTimeout(resolve, 1000));
 
-    console.log("✅ Firestore connection reset complete");
+    console.log("Firestore connection reset complete");
     return true;
   } catch (e) {
-    console.error("❌ Reset Firestore failed", e);
+    console.error("Reset Firestore failed", e);
     firestoreConnectionStatus.lastError = e as Error;
     return false;
   } finally {
@@ -695,7 +695,7 @@ export const resetFirestoreConnection = async (): Promise<boolean> => {
 // Ensure required collections exist
 export async function ensureRequiredCollectionsExist(): Promise<void> {
   try {
-    console.log("🔍 Checking if required collections exist...");
+    console.log("Checking if required collections exist...");
 
     // CRITICAL FIX: Skip for web container environment or if Firestore is not ready
     if (
@@ -704,20 +704,20 @@ export async function ensureRequiredCollectionsExist(): Promise<void> {
         window.location.hostname.includes("webcontainer") ||
         window.location.hostname.includes("health-e.sn"))
     ) {
-      console.log("⚠️ Skipping collection check in web container environment");
+      console.log("Skipping collection check in web container environment");
       return;
     }
 
     // CRITICAL: Ensure Firestore is ready before checking
     const isReady = await ensureFirestoreReady();
     if (!isReady) {
-      console.warn("⚠️ Firestore not ready for collection check, skipping");
+      console.warn("Firestore not ready for collection check, skipping");
       return;
     }
 
     const db = getFirestoreInstance();
     if (!db) {
-      console.warn("⚠️ Firestore not available for collection check, skipping");
+      console.warn("Firestore not available for collection check, skipping");
       return;
     }
 
@@ -737,17 +737,17 @@ export async function ensureRequiredCollectionsExist(): Promise<void> {
         const snapshot = await getDocs(query(collectionRef, limit(1)));
 
         console.log(
-          `✅ Collection ${collectionName} exists with ${snapshot.size} documents`
+          `Collection ${collectionName} exists with ${snapshot.size} documents`
         );
       } catch (error) {
-        console.warn(`⚠️ Error checking collection ${collectionName}:`, error);
+        console.warn(`Error checking collection ${collectionName}:`, error);
         // Collection might not exist, but that's okay - it will be created when needed
       }
     }
 
-    console.log("✅ Required collections check complete");
+    console.log("Required collections check complete");
   } catch (error) {
-    console.error("❌ Error checking required collections:", error);
+    console.error("Error checking required collections:", error);
     // Don't throw, as this is just a check
   }
 }
@@ -755,7 +755,7 @@ export async function ensureRequiredCollectionsExist(): Promise<void> {
 // CRITICAL: Function to clean up duplicate professional documents
 export async function cleanupDuplicateProfessionals(): Promise<number> {
   try {
-    console.log("🧹 Starting cleanup of duplicate professional documents...");
+    console.log("Starting cleanup of duplicate professional documents...");
 
     // CRITICAL: Ensure Firestore is ready before cleaning up
     await ensureFirestoreReady();
@@ -768,7 +768,7 @@ export async function cleanupDuplicateProfessionals(): Promise<number> {
     const snapshot = await getDocs(professionalsRef);
 
     console.log(
-      `📊 Found ${snapshot.docs.length} professionals to check for duplicates`
+      `Found ${snapshot.docs.length} professionals to check for duplicates`
     );
 
     // Group professionals by userId
@@ -787,7 +787,7 @@ export async function cleanupDuplicateProfessionals(): Promise<number> {
       }
     });
 
-    console.log(`📊 Found ${professionalsByUserId.size} unique userIds`);
+    console.log(`Found ${professionalsByUserId.size} unique userIds`);
 
     let deletedCount = 0;
 
@@ -798,7 +798,7 @@ export async function cleanupDuplicateProfessionals(): Promise<number> {
       }
 
       console.log(
-        `⚠️ Found ${professionals.length} documents for userId ${userId}`
+        `Found ${professionals.length} documents for userId ${userId}`
       );
 
       // Sort by createdAt (newest first)
@@ -812,14 +812,14 @@ export async function cleanupDuplicateProfessionals(): Promise<number> {
       for (let i = 1; i < professionals.length; i++) {
         const docToDelete = professionals[i];
         console.log(
-          `🗑️ Deleting duplicate document ${docToDelete.id} for userId ${userId}`
+          `Deleting duplicate document ${docToDelete.id} for userId ${userId}`
         );
 
         try {
           await deleteDoc(doc(db, "professionals", docToDelete.id));
           deletedCount++;
         } catch (error) {
-          console.error(`❌ Error deleting document ${docToDelete.id}:`, error);
+          console.error(`Error deleting document ${docToDelete.id}:`, error);
         }
 
         // Small delay to avoid overwhelming Firestore
@@ -828,11 +828,11 @@ export async function cleanupDuplicateProfessionals(): Promise<number> {
     }
 
     console.log(
-      `🎉 Cleanup completed! Deleted ${deletedCount} duplicate documents`
+      `Cleanup completed! Deleted ${deletedCount} duplicate documents`
     );
     return deletedCount;
   } catch (error) {
-    console.error("❌ Error during duplicate cleanup:", error);
+    console.error("Error during duplicate cleanup:", error);
     throw new Error("Erreur lors du nettoyage des documents dupliqués");
   }
 }

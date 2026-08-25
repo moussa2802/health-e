@@ -117,7 +117,7 @@ const AdminStatistics: React.FC = () => {
   if (error) {
     return (
       <AdminLayout>
-        <div className="text-center text-red-600 p-8">
+        <div className="text-center text-danger p-8">
           <p className="text-lg font-semibold">Erreur de chargement</p>
           <p className="text-sm">{error}</p>
         </div>
@@ -129,7 +129,7 @@ const AdminStatistics: React.FC = () => {
   if (!statistics) {
     return (
       <AdminLayout>
-        <div className="text-center text-gray-500 p-8">
+        <div className="text-center text-muted p-8">
           <p>Aucune donnée statistique disponible</p>
         </div>
       </AdminLayout>
@@ -146,7 +146,7 @@ const AdminStatistics: React.FC = () => {
               onChange={(e) =>
                 setFilters({ ...filters, dateRange: e.target.value })
               }
-              className="border border-gray-300 rounded-md p-2"
+              className="border border-line rounded-card p-2"
             >
               <option value="week">Cette semaine</option>
               <option value="month">Ce mois</option>
@@ -155,7 +155,7 @@ const AdminStatistics: React.FC = () => {
             </select>
             <button
               onClick={handleExport}
-              className="flex items-center px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
+              className="flex items-center px-4 py-2 bg-accent text-white rounded-card hover:bg-accent/90"
             >
               <Download className="w-4 h-4 mr-2" />
               Exporter
@@ -165,89 +165,89 @@ const AdminStatistics: React.FC = () => {
 
         {/* Overview Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <div className="bg-white rounded-lg shadow p-6">
+          <div className="bg-card rounded-block shadow-soft p-6">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-700">
+              <h3 className="text-lg font-semibold text-ink-soft">
                 Utilisateurs
               </h3>
-              <Users className="h-6 w-6 text-blue-500" />
+              <Users className="h-6 w-6 text-gold" />
             </div>
             <div className="space-y-2">
               <div className="flex justify-between items-center">
-                <span className="text-gray-600">Total</span>
-                <span className="text-2xl font-bold">
+                <span className="text-ink-soft">Total</span>
+                <span className="font-display text-2xl font-semibold text-ink">
                   {statistics.users.total}
                 </span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-gray-600">Patients</span>
-                <span className="text-2xl font-bold">
+                <span className="text-ink-soft">Patients</span>
+                <span className="font-display text-2xl font-semibold text-ink">
                   {statistics.users.patients}
                 </span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-gray-600">Professionnels</span>
-                <span className="text-2xl font-bold">
+                <span className="text-ink-soft">Professionnels</span>
+                <span className="font-display text-2xl font-semibold text-ink">
                   {statistics.users.professionals}
                 </span>
               </div>
             </div>
           </div>
 
-          <div className="bg-white rounded-lg shadow p-6">
+          <div className="bg-card rounded-block shadow-soft p-6">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-700">
+              <h3 className="text-lg font-semibold text-ink-soft">
                 Consultations
               </h3>
-              <Calendar className="h-6 w-6 text-blue-500" />
+              <Calendar className="h-6 w-6 text-accent" />
             </div>
             <div className="space-y-2">
               <div className="flex justify-between items-center">
-                <span className="text-gray-600">Total</span>
-                <span className="text-2xl font-bold">
+                <span className="text-ink-soft">Total</span>
+                <span className="font-display text-2xl font-semibold text-ink">
                   {statistics.appointments.total}
                 </span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-gray-600">Complétées</span>
-                <span className="text-2xl font-bold">
+                <span className="text-ink-soft">Complétées</span>
+                <span className="font-display text-2xl font-semibold text-ink">
                   {statistics.appointments.completed}
                 </span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-gray-600">Taux de réussite</span>
-                <span className="text-2xl font-bold">
+                <span className="text-ink-soft">Taux de réussite</span>
+                <span className="font-display text-2xl font-semibold text-ink">
                   {statistics.appointments.completionRate}%
                 </span>
               </div>
             </div>
           </div>
 
-          <div className="bg-white rounded-lg shadow p-6">
+          <div className="bg-card rounded-block shadow-soft p-6">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-700">Revenus</h3>
-              <TrendingUp className="h-6 w-6 text-green-500" />
+              <h3 className="text-lg font-semibold text-ink-soft">Revenus</h3>
+              <TrendingUp className="h-6 w-6 text-ok" />
             </div>
             <div className="space-y-2">
               <div className="flex justify-between items-center">
-                <span className="text-gray-600">Total</span>
-                <span className="text-2xl font-bold">
+                <span className="text-ink-soft">Total</span>
+                <span className="font-display text-2xl font-semibold text-ink">
                   {statistics.revenue.total.toLocaleString()} XOF
                 </span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-gray-600">Commissions</span>
-                <span className="text-2xl font-bold">
+                <span className="text-ink-soft">Commissions</span>
+                <span className="font-display text-2xl font-semibold text-ink">
                   {statistics.revenue.platformFees.toLocaleString()} XOF
                 </span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-gray-600">Croissance</span>
+                <span className="text-ink-soft">Croissance</span>
                 <span
-                  className={`text-2xl font-bold flex items-center ${
+                  className={`font-display text-2xl font-semibold flex items-center ${
                     statistics.growth.monthly >= 0
-                      ? "text-green-600"
-                      : "text-red-600"
+                      ? "text-ok"
+                      : "text-danger"
                   }`}
                 >
                   {statistics.growth.monthly >= 0 ? (
@@ -261,23 +261,23 @@ const AdminStatistics: React.FC = () => {
             </div>
           </div>
 
-          <div className="bg-white rounded-lg shadow p-6">
+          <div className="bg-card rounded-block shadow-soft p-6">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-700">
+              <h3 className="text-lg font-semibold text-ink-soft">
                 Satisfaction
               </h3>
-              <Activity className="h-6 w-6 text-purple-500" />
+              <Activity className="h-6 w-6 text-sage" />
             </div>
             <div className="space-y-2">
               <div className="flex justify-between items-center">
-                <span className="text-gray-600">Note moyenne</span>
-                <span className="text-2xl font-bold">
+                <span className="text-ink-soft">Note moyenne</span>
+                <span className="font-display text-2xl font-semibold text-ink">
                   {statistics.growth.averageRating}/5
                 </span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-gray-600">Taux de satisfaction</span>
-                <span className="text-2xl font-bold">
+                <span className="text-ink-soft">Taux de satisfaction</span>
+                <span className="font-display text-2xl font-semibold text-ink">
                   {statistics.growth.satisfactionRate}%
                 </span>
               </div>
@@ -287,27 +287,27 @@ const AdminStatistics: React.FC = () => {
 
         {/* Répartition par type de service */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-          <div className="bg-white rounded-lg shadow p-6">
-            <h3 className="text-lg font-semibold text-gray-700 mb-4">
+          <div className="bg-card rounded-block shadow-soft p-6">
+            <h3 className="text-lg font-semibold text-ink-soft mb-4">
               Répartition des revenus
             </h3>
             <div className="space-y-4">
               <div className="flex justify-between items-center">
-                <span className="text-gray-600">Profil psychologique</span>
-                <span className="font-semibold">
+                <span className="text-ink-soft">Profil psychologique</span>
+                <span className="font-semibold text-ink">
                   {statistics.revenue.mentalHealth.toLocaleString()} XOF
                 </span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-gray-600">Vie intime</span>
-                <span className="font-semibold">
+                <span className="text-ink-soft">Vie intime</span>
+                <span className="font-semibold text-ink">
                   {statistics.revenue.sexualHealth.toLocaleString()} XOF
                 </span>
               </div>
-              <div className="pt-2 border-t">
+              <div className="pt-2 border-t border-line">
                 <div className="flex justify-between items-center">
-                  <span className="font-semibold text-gray-800">Total</span>
-                  <span className="font-bold text-lg">
+                  <span className="font-semibold text-ink">Total</span>
+                  <span className="font-display font-bold text-lg text-ink">
                     {statistics.revenue.total.toLocaleString()} XOF
                   </span>
                 </div>
@@ -315,29 +315,29 @@ const AdminStatistics: React.FC = () => {
             </div>
           </div>
 
-          <div className="bg-white rounded-lg shadow p-6">
-            <h3 className="text-lg font-semibold text-gray-700 mb-4">
+          <div className="bg-card rounded-block shadow-soft p-6">
+            <h3 className="text-lg font-semibold text-ink-soft mb-4">
               Statut des consultations
             </h3>
             <div className="space-y-4">
               <div className="flex justify-between items-center">
-                <span className="text-gray-600">À venir</span>
-                <span className="font-semibold">
+                <span className="text-ink-soft">À venir</span>
+                <span className="font-semibold text-ink">
                   {statistics.appointments.upcoming}
                 </span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-gray-600">Annulées</span>
-                <span className="font-semibold">
+                <span className="text-ink-soft">Annulées</span>
+                <span className="font-semibold text-ink">
                   {statistics.appointments.cancelled}
                 </span>
               </div>
-              <div className="pt-2 border-t">
+              <div className="pt-2 border-t border-line">
                 <div className="flex justify-between items-center">
-                  <span className="font-semibold text-gray-800">
+                  <span className="font-semibold text-ink">
                     Taux de réussite
                   </span>
-                  <span className="font-bold text-lg text-green-600">
+                  <span className="font-display font-bold text-lg text-ok">
                     {statistics.appointments.completionRate}%
                   </span>
                 </div>
@@ -347,56 +347,56 @@ const AdminStatistics: React.FC = () => {
         </div>
 
         {/* Transactions récentes */}
-        <div className="bg-white rounded-lg shadow p-6">
-          <h3 className="text-lg font-semibold text-gray-700 mb-4">
+        <div className="bg-card rounded-block shadow-soft p-6">
+          <h3 className="text-lg font-semibold text-ink-soft mb-4">
             Transactions récentes
           </h3>
           {recentTransactions.length > 0 ? (
             <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
+              <table className="min-w-full divide-y divide-line">
+                <thead className="bg-paper">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-muted uppercase tracking-wider">
                       Patient
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-muted uppercase tracking-wider">
                       Professionnel
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-muted uppercase tracking-wider">
                       Montant
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-muted uppercase tracking-wider">
                       Commission
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-muted uppercase tracking-wider">
                       Type
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-muted uppercase tracking-wider">
                       Date
                     </th>
                   </tr>
                 </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
+                <tbody className="bg-card divide-y divide-line">
                   {recentTransactions.map((transaction) => (
-                    <tr key={transaction.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                    <tr key={transaction.id} className="hover:bg-paper">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-ink">
                         {transaction.patient}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-muted">
                         {transaction.professional}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-ink">
                         {transaction.amount.toLocaleString()} XOF
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-muted">
                         {transaction.platformFee.toLocaleString()} XOF
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span
-                          className={`px-2 py-1 text-xs font-medium rounded-full ${
+                          className={`px-2 py-1 text-xs font-medium rounded-pill ${
                             transaction.type === "mental"
-                              ? "bg-blue-100 text-blue-800"
-                              : "bg-purple-100 text-purple-800"
+                              ? "bg-sage-soft text-sage"
+                              : "bg-accent-soft text-accent"
                           }`}
                         >
                           {transaction.type === "mental"
@@ -404,7 +404,7 @@ const AdminStatistics: React.FC = () => {
                             : "Vie intime"}
                         </span>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-muted">
                         {transaction.date}
                       </td>
                     </tr>
@@ -413,7 +413,7 @@ const AdminStatistics: React.FC = () => {
               </table>
             </div>
           ) : (
-            <div className="text-center text-gray-500 py-8">
+            <div className="text-center text-muted py-8">
               Aucune transaction récente
             </div>
           )}

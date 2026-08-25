@@ -11,11 +11,11 @@ export const ACE: AssessmentScale = {
   shortName: "ACE Score",
   category: 'mental_health',
   description: "Évalue l'exposition à des expériences négatives pendant l'enfance (avant 18 ans) pouvant avoir un impact sur la santé à l'âge adulte.",
-  instructions: "Ces questions portent sur ton enfance, avant tes 18 ans. Réponds selon ce que tu as réellement vécu — il n'y a pas de bonne ou mauvaise réponse. Prends le temps qu'il te faut 🤍",
+  instructions: "Ces questions portent sur ton enfance, avant tes 18 ans. Réponds selon ce que tu as réellement vécu — il n'y a pas de bonne ou mauvaise réponse. Prends le temps qu'il te faut",
   timeEstimateMinutes: 5,
   reference: "Felitti, V.J., et al. (1998). Relationship of childhood abuse and household dysfunction to many of the leading causes of death in adults. American Journal of Preventive Medicine, 14(4), 245–258.",
   licenseNote: "Centers for Disease Control and Prevention (CDC). Domaine public.",
-  warningMessage: "Ce test explore ton histoire d'enfance. Un score élevé reflète ce que tu as traversé — pas forcément comment tu vas aujourd'hui. 🤍",
+  warningMessage: "Ce test explore ton histoire d'enfance. Un score élevé reflète ce que tu as traversé — pas forcément comment tu vas aujourd'hui.",
   scoreRange: { min: 0, max: 10 },
   items: [
     { id: 1,  text: "Quand tu étais enfant, est-ce qu'un adulte à la maison t'insultait, te rabaissait, t'humiliait ou te faisait peur — régulièrement ?",                    type: 'boolean', options: yesNo },

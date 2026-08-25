@@ -14,15 +14,15 @@ export const PCL5: AssessmentScale = {
   shortName: "PCL-5",
   category: 'mental_health',
   description: "Évalue les symptômes du trouble de stress post-traumatique (TSPT) selon le DSM-5.",
-  instructions: "Ces questions portent sur le dernier mois. Si tu as vécu un événement difficile ou traumatisant, dis-moi dans quelle mesure ces situations t'ont {{affecté|affectée}} 🤍",
+  instructions: "Ces questions portent sur le dernier mois. Si tu as vécu un événement difficile ou traumatisant, dis-moi dans quelle mesure ces situations t'ont {{affecté|affectée}}",
   timeEstimateMinutes: 8,
   reference: "Weathers, F.W., et al. (2013). PTSD Checklist for DSM-5 (PCL-5). National Center for PTSD.",
   licenseNote: "Domaine public. U.S. Department of Veterans Affairs.",
-  warningMessage: "Ces questions portent sur des expériences difficiles. Un score élevé ne veut pas automatiquement dire que tu as besoin d'aide en urgence — ça dépend de ce que tu vis maintenant. 🤍",
+  warningMessage: "Ces questions portent sur des expériences difficiles. Un score élevé ne veut pas automatiquement dire que tu as besoin d'aide en urgence — ça dépend de ce que tu vis maintenant.",
   scoreRange: { min: 0, max: 80 },
   items: [
 
-    { id: 1,  text: "Des souvenirs d'un événement difficile te reviennent sans que tu le veuilles — comme un film qui se relance tout seul ? 🎬",                      type: 'likert', options: opts, subscale: 'intrusion' },
+    { id: 1,  text: "Des souvenirs d'un événement difficile te reviennent sans que tu le veuilles — comme un film qui se relance tout seul ?",                      type: 'likert', options: opts, subscale: 'intrusion' },
     { id: 2,  text: "Tu fais des rêves ou des cauchemars en lien avec cet événement — des nuits agitées à cause de ça ?",                                               type: 'likert', options: opts, subscale: 'intrusion' },
     { id: 3,  text: "Il t'arrive de revivre un moment douloureux comme si tu y étais encore — les images, les sensations, tout revient d'un coup ?",                    type: 'likert', options: opts, subscale: 'intrusion' },
     { id: 4,  text: "Quand quelque chose te rappelle cet événement — un bruit, une odeur, une situation — tu te sens {{submergé|submergée}} d'émotions ?",                         type: 'likert', options: opts, subscale: 'intrusion' },
@@ -53,7 +53,7 @@ export const PCL5: AssessmentScale = {
     { min: 0,  max: 20, label: "Pas de signal d'alarme",       severity: 'minimal',  description: "Tes réponses sont en dessous du seuil clinique — ça veut dire que les symptômes traumatiques ne semblent pas peser sur ton quotidien en ce moment.", referralRequired: false, recommendation: "Continue à prendre soin de toi et à t'entourer de personnes qui te font du bien. Si les choses changent, n'hésite pas à refaire le point." },
     { min: 21, max: 32, label: "Quelques traces, mais pas de diagnostic",     severity: 'mild',     description: "Tu montres quelques signes de stress post-traumatique, sans atteindre le seuil clinique. C'est comme un bleu qui n'a pas encore complètement disparu.", referralRequired: false, recommendation: "Parler à un professionnel pourrait t'aider à comprendre ces traces et à t'en libérer avant qu'elles ne s'installent. Ce n'est pas urgent, mais c'est un cadeau que tu peux te faire." },
     { min: 33, max: 49, label: "Seuil clinique atteint — ton corps te parle",                severity: 'severe',   alertLevel: 2, description: "Ton score dépasse le seuil clinique (33). Cela ne veut pas dire que tu es « {{cassé|cassée}} » — cela veut dire que ce que tu as vécu a laissé une empreinte profonde qui mérite d'être accompagnée.", referralRequired: true, recommendation: "Je te recommande de consulter un psychologue ou psychiatre spécialisé en trauma. Des approches comme l'EMDR ou la thérapie cognitive du trauma ont fait leurs preuves. Tu mérites ce soutien." },
-    { min: 50, max: 80, label: "Impact sévère — tu as besoin de soutien maintenant",                  severity: 'severe',   alertLevel: 3, description: "Ton score indique un niveau de souffrance élevé. Ce n'est pas une faiblesse — c'est le signe que tu portes un poids trop lourd {{tout|toute}} {{seul|seule}}.", referralRequired: true, recommendation: "Une consultation rapide avec un spécialiste du trauma est vraiment importante. En attendant, si tu te sens en détresse, le 3114 (numéro national de prévention du suicide) est disponible 24h/24. Tu n'es pas {{seul|seule}}." },
+    { min: 50, max: 80, label: "Impact sévère — tu as besoin de soutien maintenant",                  severity: 'severe',   alertLevel: 3, description: "Ton score indique un niveau de souffrance élevé. Ce n'est pas une faiblesse — c'est le signe que tu portes un poids trop lourd {{tout|toute}} {{seul|seule}}.", referralRequired: true, recommendation: "Une consultation rapide avec un spécialiste du trauma est vraiment importante. En attendant, si tu te sens en détresse, des lignes d'aide sont disponibles 24h/24 — elles apparaîtront sur ta page de résultat. Tu n'es pas {{seul|seule}}." },
   ],
 
   contextQuestion: {

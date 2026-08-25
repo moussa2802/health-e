@@ -21,7 +21,7 @@ export const BONUS_BURNOUT: AssessmentScale = {
   shortName: 'MBI Court',
   category: 'bonus',
   description: 'Évalue le niveau d\'épuisement professionnel selon les 3 dimensions du burnout : épuisement émotionnel, dépersonnalisation et sens de l\'accomplissement.',
-  instructions: 'Ces questions portent sur ce que tu ressens par rapport à ton travail ou tes activités principales. Dis-moi à quelle fréquence tu vis ces situations 💼',
+  instructions: 'Ces questions portent sur ce que tu ressens par rapport à ton travail ou tes activités principales. Dis-moi à quelle fréquence tu vis ces situations',
   timeEstimateMinutes: 4,
   reference: 'Maslach, C., Jackson, S.E., & Leiter, M.P. (1996). Maslach Burnout Inventory Manual (3e éd.). Consulting Psychologists Press.',
   licenseNote: 'Adaptation courte du MBI pour usage d\'auto-évaluation et de dépistage.',

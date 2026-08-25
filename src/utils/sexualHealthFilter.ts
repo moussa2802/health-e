@@ -115,7 +115,7 @@ function adaptSDI2(scale: AssessmentScale, profile: SexualExperienceProfile): As
   return {
     ...scale,
     instructions: profile === 'no_experience'
-      ? "Les questions suivantes portent sur ton attirance, tes envies et tes fantasmes — pas besoin d'avoir eu des rapports pour y répondre 😊"
+      ? "Les questions suivantes portent sur ton attirance, tes envies et tes fantasmes — pas besoin d'avoir eu des rapports pour y répondre"
       : "Les questions suivantes portent sur ton désir sexuel au cours des derniers mois.",
     items: scale.items.map(item => {
       const override = overrides[item.id];
@@ -128,7 +128,7 @@ function adaptSDI2Minimal(scale: AssessmentScale): AssessmentScale {
   // Profile D: only keep solitary items (10-14)
   return {
     ...scale,
-    instructions: "Quelques questions générales sur ton rapport au désir. Réponds à ton rythme, sans pression 😊",
+    instructions: "Quelques questions générales sur ton rapport au désir. Réponds à ton rythme, sans pression",
     items: scale.items.map(item =>
       item.subscale === 'dyadic' ? { ...item, noScore: true, text: item.text } : item
     ),
@@ -165,7 +165,7 @@ const FSFI_ITEM_OVERRIDES_B: Record<number, string> = {
 function adaptFSFI(scale: AssessmentScale): AssessmentScale {
   return {
     ...scale,
-    instructions: "Ces questions portent sur ton vécu intime au cours des 4 dernières semaines — adapté à ton expérience telle qu'elle est 😊",
+    instructions: "Ces questions portent sur ton vécu intime au cours des 4 dernières semaines — adapté à ton expérience telle qu'elle est",
     items: scale.items.map((item: ScaleItem) => {
       const override = FSFI_ITEM_OVERRIDES_B[item.id];
       return override ? { ...item, text: override } : item;

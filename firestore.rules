@@ -67,6 +67,13 @@ service cloud.firestore {
       allow read, write: if isOwner(patientId);
     }
 
+    // ─── COMPANION APP (/app) — check-ins quotidiens ──────────────────────────
+    // Le profil companion (situation, cycle, streak) vit dans le champ
+    // `companion` du document patients/{patientId} ci-dessus (même règle).
+    match /patients/{patientId}/checkins/{checkinId} {
+      allow read, write: if isOwner(patientId);
+    }
+
     // ─── MEDICAL RECORDS ──────────────────────────────────────────────────────
     match /patients/{patientId}/medicalRecords/{recordId} {
       allow read: if request.auth != null &&

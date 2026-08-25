@@ -21,6 +21,8 @@ import {
   Plus,
   Download,
   Edit,
+  CheckCircle2,
+  Loader2,
 } from "lucide-react";
 import { useAuth } from "../../contexts/AuthContext";
 import { useBookings } from "../../hooks/useBookings";
@@ -73,20 +75,19 @@ async function convertImageUrlToBase64(url: string): Promise<string> {
 
 // Welcome banner component avec design moderne
 const WelcomeBanner: React.FC<{ name: string }> = ({ name }) => (
-  <div className="bg-gradient-to-br from-blue-600 via-blue-500 to-indigo-600 text-white p-8 rounded-2xl shadow-xl mb-8 relative overflow-hidden">
-    <div className="absolute inset-0 bg-gradient-to-r from-white/10 to-transparent"></div>
+  <div className="bg-ink text-white p-8 rounded-block shadow-lift mb-8 relative overflow-hidden">
     <div className="relative z-10">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-3xl font-bold flex items-center mb-2">
-            Bonjour, {name} 👋
+          <h2 className="font-display text-3xl font-semibold flex items-center mb-2">
+            Bonjour, {name}
           </h2>
-          <p className="text-blue-100 text-lg">
+          <p className="text-white/70 text-lg">
             Voici votre tableau de bord santé personnalisé
           </p>
         </div>
         <div className="hidden lg:block">
-          <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center">
+          <div className="w-16 h-16 bg-white/10 rounded-full flex items-center justify-center">
             <Heart className="h-8 w-8 text-white" />
           </div>
         </div>
@@ -149,14 +150,14 @@ const PatientDashboard: React.FC = () => {
         setLoadingRecords(false);
       },
       (err) => {
-        console.error("❌ [DASHBOARD] Medical records error:", err);
+        console.error("[DASHBOARD] Medical records error:", err);
         setRecordError("Impossible de charger vos dossiers médicaux.");
         setLoadingRecords(false);
       },
     );
 
     return () => {
-      console.log("🧹 [DASHBOARD] Cleaning up medical records listener");
+      console.log("[DASHBOARD] Cleaning up medical records listener");
       unsub();
     };
   }, [currentUser?.id]);
@@ -298,7 +299,7 @@ const PatientDashboard: React.FC = () => {
       return btoa(binary);
     }
     try {
-      console.log("🔍 [FONT DEBUG] Loading Inter fonts...");
+      console.log("[FONT DEBUG] Loading Inter fonts...");
       const regularB64 = await loadTtf("/fonts/Inter-Regular.ttf");
       const boldB64 = await loadTtf("/fonts/Inter-Bold.ttf");
 
@@ -308,10 +309,10 @@ const PatientDashboard: React.FC = () => {
       doc.addFont("Inter-Bold.ttf", "Inter", "bold");
 
       _fontsLoaded = true;
-      console.log("✅ [FONT DEBUG] Inter fonts loaded successfully");
+      console.log("[FONT DEBUG] Inter fonts loaded successfully");
     } catch (e) {
       console.warn(
-        "⚠️ [FONT DEBUG] Failed to load Inter fonts, using helvetica fallback:",
+        "[FONT DEBUG] Failed to load Inter fonts, using helvetica fallback:",
         e,
       );
       _fontsLoaded = false;
@@ -359,7 +360,7 @@ const PatientDashboard: React.FC = () => {
       await ensureFontsLoaded(doc);
 
       // Vérifier les polices disponibles
-      console.log("🔍 [FONT DEBUG] Available fonts:", doc.getFontList());
+      console.log("[FONT DEBUG] Available fonts:", doc.getFontList());
 
       // Essayer de récupérer le profil patient complet pour avoir la date de naissance
       let patientProfile = null;
@@ -367,10 +368,10 @@ const PatientDashboard: React.FC = () => {
         const { getPatientProfile } =
           await import("../../services/profileService");
         patientProfile = await getPatientProfile(currentUser?.id || "");
-        console.log("🔍 [PDF DEBUG] Profil patient récupéré:", patientProfile);
+        console.log("[PDF DEBUG] Profil patient récupéré:", patientProfile);
       } catch (e) {
         console.warn(
-          "⚠️ [PDF DEBUG] Impossible de récupérer le profil patient:",
+          "[PDF DEBUG] Impossible de récupérer le profil patient:",
           e,
         );
       }
@@ -632,7 +633,7 @@ const PatientDashboard: React.FC = () => {
       const safeName = slugify(currentUser?.name || "patient");
       doc.save(`ordonnance-${safeName}-${dateStr}.pdf`);
     } catch (error) {
-      console.error("❌ [PDF DEBUG] Error generating prescription:", error);
+      console.error("[PDF DEBUG] Error generating prescription:", error);
       alert(
         "Erreur lors de la génération de l'ordonnance. Veuillez réessayer.",
       );
@@ -715,7 +716,7 @@ const PatientDashboard: React.FC = () => {
         patientProfile = await getPatientProfile(currentUser?.id || "");
       } catch (e) {
         console.warn(
-          "⚠️ [PDF DEBUG] Impossible de récupérer le profil patient:",
+          "[PDF DEBUG] Impossible de récupérer le profil patient:",
           e,
         );
       }
@@ -743,7 +744,7 @@ const PatientDashboard: React.FC = () => {
             )}`;
           }
         } catch (e) {
-          console.warn("⚠️ [PDF DEBUG] Erreur calcul âge:", e);
+          console.warn("[PDF DEBUG] Erreur calcul âge:", e);
         }
       }
 
@@ -949,7 +950,7 @@ const PatientDashboard: React.FC = () => {
       const safeName = slugify(currentUser?.name || "patient");
       doc.save(`recommandations-${safeName}-${dateStr}.pdf`);
     } catch (error) {
-      console.error("❌ [PDF DEBUG] Error generating recommendations:", error);
+      console.error("[PDF DEBUG] Error generating recommendations:", error);
       alert(
         "Erreur lors de la génération des recommandations. Veuillez réessayer.",
       );
@@ -959,13 +960,13 @@ const PatientDashboard: React.FC = () => {
   const getConsultationIcon = (type: string) => {
     switch (type) {
       case "video":
-        return <Video className="h-5 w-5 text-blue-500" />;
+        return <Video className="h-5 w-5 text-accent" />;
       case "audio":
-        return <PhoneCall className="h-5 w-5 text-blue-500" />;
+        return <PhoneCall className="h-5 w-5 text-accent" />;
       case "chat":
-        return <MessageSquare className="h-5 w-5 text-blue-500" />;
+        return <MessageSquare className="h-5 w-5 text-accent" />;
       default:
-        return <Video className="h-5 w-5 text-blue-500" />;
+        return <Video className="h-5 w-5 text-accent" />;
     }
   };
 
@@ -989,17 +990,17 @@ const PatientDashboard: React.FC = () => {
   const getStatusColor = (status: string) => {
     switch (status) {
       case "en_attente":
-        return "bg-yellow-100 text-yellow-800";
+        return "bg-warn/10 text-warn";
       case "confirmé":
       case "confirmed":
-        return "bg-green-100 text-green-800";
+        return "bg-ok/10 text-ok";
       case "terminé":
       case "completed":
-        return "bg-blue-100 text-blue-800";
+        return "bg-sage-soft text-sage";
       case "annulé":
-        return "bg-red-100 text-red-800";
+        return "bg-danger/10 text-danger";
       default:
-        return "bg-gray-100 text-gray-800";
+        return "bg-line text-ink-soft";
     }
   };
 
@@ -1037,12 +1038,12 @@ const PatientDashboard: React.FC = () => {
 
       if (isNaN(date.getTime())) {
         // Si ce n'est pas une date valide, retourner la chaîne originale
-        console.warn("⚠️ [FORMAT DATE] Invalid date:", dateString);
+        console.warn("[FORMAT DATE] Invalid date:", dateString);
         return dateString;
       }
 
       // Debug du formatage
-      console.log("🔍 [FORMAT DATE] Formatting date:", {
+      console.log("[FORMAT DATE] Formatting date:", {
         original: dateString,
         parsed: date.toISOString(),
         local: date.toLocaleDateString("fr-FR"),
@@ -1057,7 +1058,7 @@ const PatientDashboard: React.FC = () => {
         day: "numeric",
       });
     } catch (error) {
-      console.warn("⚠️ Erreur formatage date:", error, dateString);
+      console.warn("Erreur formatage date:", error, dateString);
       return dateString;
     }
   };
@@ -1100,7 +1101,7 @@ const PatientDashboard: React.FC = () => {
         bookingDate.getFullYear() === today.getFullYear()
       );
     } catch (error) {
-      console.error("❌ Error in isConsultationDay:", error);
+      console.error("Error in isConsultationDay:", error);
       return false;
     }
   };
@@ -1154,7 +1155,7 @@ const PatientDashboard: React.FC = () => {
     return (
       <div className="container mx-auto px-4 py-8">
         <div className="flex justify-center items-center h-64">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+          <Loader2 className="h-12 w-12 text-accent animate-spin" />
         </div>
       </div>
     );
@@ -1168,28 +1169,16 @@ const PatientDashboard: React.FC = () => {
 
       {/* Message de succès */}
       {successMessage && (
-        <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg flex items-center">
-          <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center mr-3">
-            <svg
-              className="w-5 h-5 text-white"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M5 13l4 4L19 7"
-              />
-            </svg>
+        <div className="mb-6 p-4 bg-ok/10 border border-ok/30 rounded-card flex items-center">
+          <div className="w-8 h-8 bg-ok rounded-full flex items-center justify-center mr-3 flex-shrink-0">
+            <CheckCircle2 className="w-5 h-5 text-white" />
           </div>
           <div className="flex-1">
-            <p className="text-green-800 font-medium">{successMessage}</p>
+            <p className="text-ok font-medium">{successMessage}</p>
           </div>
           <button
             onClick={() => setSuccessMessage(null)}
-            className="text-green-600 hover:text-green-800 ml-4"
+            className="text-ok hover:opacity-70 ml-4"
           >
             <X className="h-5 w-5" />
           </button>
@@ -1204,25 +1193,25 @@ const PatientDashboard: React.FC = () => {
         <div className="lg:col-span-2">
           {/* Actions rapides - déplacées au-dessus des consultations */}
           <div className="mb-8">
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-              <h3 className="font-bold text-xl text-gray-900 mb-6 flex items-center">
-                <Activity className="h-6 w-6 mr-3 text-purple-600" />
+            <div className="bg-card rounded-block shadow-soft border border-line p-6">
+              <h3 className="font-display text-xl font-semibold text-ink mb-6 flex items-center">
+                <Activity className="h-6 w-6 mr-3 text-sage" />
                 Actions rapides
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <Link
                   to="/professionals/mental"
-                  className="block p-4 border border-gray-200 rounded-xl hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 transition-all duration-200 hover:shadow-md group"
+                  className="block p-4 border border-line rounded-card hover:bg-sage-soft transition-all duration-200 hover:shadow-soft group"
                 >
-                  <div className="flex items-center text-gray-800">
-                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center mr-4 shadow-md group-hover:shadow-lg transition-shadow">
+                  <div className="flex items-center text-ink">
+                    <div className="w-12 h-12 rounded-card bg-sage flex items-center justify-center mr-4 shadow-soft group-hover:shadow-lift transition-shadow">
                       <Brain className="h-6 w-6 text-white" />
                     </div>
                     <div>
-                      <span className="font-semibold text-gray-900">
+                      <span className="font-semibold text-ink">
                         Consulter en profil psychologique
                       </span>
-                      <p className="text-sm text-gray-600 mt-1">
+                      <p className="text-sm text-ink-soft mt-1">
                         Psychologues et psychiatres
                       </p>
                     </div>
@@ -1230,17 +1219,17 @@ const PatientDashboard: React.FC = () => {
                 </Link>
                 <Link
                   to="/professionals/sexual"
-                  className="block p-4 border border-gray-200 rounded-xl hover:bg-gradient-to-r hover:from-teal-50 hover:to-cyan-50 transition-all duration-200 hover:shadow-md group"
+                  className="block p-4 border border-line rounded-card hover:bg-accent-soft transition-all duration-200 hover:shadow-soft group"
                 >
-                  <div className="flex items-center text-gray-800">
-                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-teal-500 to-teal-600 flex items-center justify-center mr-4 shadow-md group-hover:shadow-lg transition-shadow">
+                  <div className="flex items-center text-ink">
+                    <div className="w-12 h-12 rounded-card bg-accent flex items-center justify-center mr-4 shadow-soft group-hover:shadow-lift transition-shadow">
                       <Heart className="h-6 w-6 text-white" />
                     </div>
                     <div>
-                      <span className="font-semibold text-gray-900">
+                      <span className="font-semibold text-ink">
                         Consulter en vie intime
                       </span>
-                      <p className="text-sm text-gray-600 mt-1">
+                      <p className="text-sm text-ink-soft mt-1">
                         Gynécologues et sexologues
                       </p>
                     </div>
@@ -1249,17 +1238,17 @@ const PatientDashboard: React.FC = () => {
 
                 <button
                   onClick={() => setShowSupport(true)}
-                  className="block w-full p-4 border border-gray-200 rounded-xl hover:bg-gradient-to-r hover:from-orange-50 hover:to-red-50 transition-all duration-200 hover:shadow-md group"
+                  className="block w-full p-4 border border-line rounded-card hover:bg-gold-soft transition-all duration-200 hover:shadow-soft group"
                 >
-                  <div className="flex items-center text-gray-800">
-                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-orange-500 to-red-600 flex items-center justify-center mr-4 shadow-md group-hover:shadow-lg transition-shadow">
+                  <div className="flex items-center text-ink">
+                    <div className="w-12 h-12 rounded-card bg-gold flex items-center justify-center mr-4 shadow-soft group-hover:shadow-lift transition-shadow">
                       <MessageSquare className="h-6 w-6 text-white" />
                     </div>
                     <div>
-                      <span className="font-semibold text-gray-900">
+                      <span className="font-semibold text-ink">
                         Support et assistance
                       </span>
-                      <p className="text-sm text-gray-600 mt-1">
+                      <p className="text-sm text-ink-soft mt-1">
                         Besoin d'aide ? Contactez-nous
                       </p>
                     </div>
@@ -1273,12 +1262,12 @@ const PatientDashboard: React.FC = () => {
           {groupTherapySessions.length > 0 && (
             <div className="mb-8">
               <div className="flex items-center justify-between mb-6">
-                <h2 className="text-2xl font-bold text-gray-900 flex items-center">
-                  <Users className="h-6 w-6 mr-3 text-purple-600" />
+                <h2 className="font-display text-2xl font-semibold text-ink flex items-center">
+                  <Users className="h-6 w-6 mr-3 text-sage" />
                   Mes thérapies de groupe
                 </h2>
               </div>
-              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+              <div className="bg-card rounded-block shadow-soft border border-line p-6">
                 <div className="space-y-4">
                   {groupTherapySessions.map((session) => {
                     const formattedDate = session.date
@@ -1295,17 +1284,17 @@ const PatientDashboard: React.FC = () => {
                     return (
                       <div
                         key={session.id}
-                        className="border border-gray-200 rounded-xl p-4 hover:shadow-md transition-shadow"
+                        className="border border-line rounded-card p-4 hover:shadow-soft transition-shadow"
                       >
                         <div className="flex items-start justify-between">
                           <div className="flex-1">
-                            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                            <h3 className="text-lg font-semibold text-ink mb-2">
                               {session.title}
                             </h3>
-                            <p className="text-sm text-gray-600 mb-3">
+                            <p className="text-sm text-ink-soft mb-3">
                               {session.description}
                             </p>
-                            <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600">
+                            <div className="flex flex-wrap items-center gap-4 text-sm text-ink-soft">
                               {session.date && (
                                 <div className="flex items-center">
                                   <Calendar className="h-4 w-4 mr-2" />
@@ -1326,11 +1315,11 @@ const PatientDashboard: React.FC = () => {
                               </div>
                               <div>
                                 {isFree ? (
-                                  <span className="text-green-600 font-medium">
+                                  <span className="text-ok font-medium">
                                     Gratuit
                                   </span>
                                 ) : (
-                                  <span className="text-blue-600 font-medium">
+                                  <span className="text-accent font-medium">
                                     {session.price} FCFA
                                   </span>
                                 )}
@@ -1342,7 +1331,7 @@ const PatientDashboard: React.FC = () => {
                             session.meetingStatus === "open" ? (
                               <Link
                                 to={`/group-therapy/${session.id}/meeting`}
-                                className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-600 text-white rounded-lg font-medium hover:from-purple-600 hover:to-pink-700 transition-all shadow-sm hover:shadow-md"
+                                className="inline-flex items-center px-4 py-2 bg-sage text-white rounded-pill font-medium hover:bg-sage/90 transition-all shadow-soft hover:shadow-lift"
                               >
                                 <Video className="h-4 w-4 mr-2" />
                                 Rejoindre
@@ -1350,7 +1339,7 @@ const PatientDashboard: React.FC = () => {
                             ) : (
                               <Link
                                 to={`/group-therapy/${session.id}`}
-                                className="inline-flex items-center px-4 py-2 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 transition-all"
+                                className="inline-flex items-center px-4 py-2 bg-paper text-ink-soft border border-line rounded-pill font-medium hover:bg-line transition-all"
                               >
                                 Voir détails
                               </Link>
@@ -1368,20 +1357,20 @@ const PatientDashboard: React.FC = () => {
           {/* Upcoming Appointments Section */}
           <div className="mb-8">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-bold text-gray-900 flex items-center">
-                <Calendar className="h-6 w-6 mr-3 text-blue-600" />
+              <h2 className="font-display text-2xl font-semibold text-ink flex items-center">
+                <Calendar className="h-6 w-6 mr-3 text-accent" />
                 Consultations
               </h2>
             </div>
 
             {/* Tabs modernisés */}
-            <div className="flex bg-gray-100 rounded-xl p-1 mb-6">
+            <div className="flex bg-paper rounded-card p-1 mb-6">
               <button
                 onClick={() => setActiveTab("upcoming")}
-                className={`flex-1 py-3 px-4 rounded-lg text-sm font-medium transition-all duration-200 ${
+                className={`flex-1 py-3 px-4 rounded-card text-sm font-medium transition-all duration-200 ${
                   activeTab === "upcoming"
-                    ? "bg-white text-blue-600 shadow-sm"
-                    : "text-gray-600 hover:text-gray-800"
+                    ? "bg-card text-accent shadow-soft"
+                    : "text-ink-soft hover:text-ink"
                 }`}
               >
                 <div className="flex items-center justify-center">
@@ -1391,10 +1380,10 @@ const PatientDashboard: React.FC = () => {
               </button>
               <button
                 onClick={() => setActiveTab("past")}
-                className={`flex-1 py-3 px-4 rounded-lg text-sm font-medium transition-all duration-200 ${
+                className={`flex-1 py-3 px-4 rounded-card text-sm font-medium transition-all duration-200 ${
                   activeTab === "past"
-                    ? "bg-white text-blue-600 shadow-sm"
-                    : "text-gray-600 hover:text-gray-800"
+                    ? "bg-card text-accent shadow-soft"
+                    : "text-ink-soft hover:text-ink"
                 }`}
               >
                 <div className="flex items-center justify-center">
@@ -1410,19 +1399,19 @@ const PatientDashboard: React.FC = () => {
                 {displayedBookings.map((booking) => (
                   <div
                     key={booking.id}
-                    className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-lg transition-all duration-300 hover:scale-[1.02]"
+                    className="bg-card rounded-block shadow-soft border border-line overflow-hidden hover:shadow-lift transition-all duration-300 hover:scale-[1.02]"
                   >
                     <div className="p-6">
                       <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4">
                         <div className="flex items-center mb-4 sm:mb-0">
-                          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center mr-4 shadow-md">
+                          <div className="w-12 h-12 rounded-card bg-accent flex items-center justify-center mr-4 shadow-soft">
                             <User className="h-6 w-6 text-white" />
                           </div>
                           <div>
-                            <h3 className="font-bold text-lg text-gray-900">
+                            <h3 className="font-bold text-lg text-ink">
                               {booking.professionalName}
                             </h3>
-                            <p className="text-gray-600 flex items-center">
+                            <p className="text-ink-soft flex items-center">
                               <Stethoscope className="h-4 w-4 mr-1" />
                               Consultation {booking.type}
                             </p>
@@ -1431,15 +1420,15 @@ const PatientDashboard: React.FC = () => {
 
                         <div className="flex items-center">
                           {getConsultationIcon(booking.type)}
-                          <span className="ml-2 text-sm text-gray-600 capitalize font-medium">
+                          <span className="ml-2 text-sm text-ink-soft capitalize font-medium">
                             {booking.type}
                           </span>
                         </div>
                       </div>
 
                       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-                        <div className="flex items-center text-gray-600 bg-gray-50 rounded-lg p-3">
-                          <Calendar className="h-4 w-4 mr-2 text-blue-500" />
+                        <div className="flex items-center text-ink-soft bg-paper rounded-card p-3">
+                          <Calendar className="h-4 w-4 mr-2 text-muted" />
                           <span className="text-sm font-medium">
                             {formatDateTimeWithTimezone(
                               booking.date,
@@ -1447,15 +1436,15 @@ const PatientDashboard: React.FC = () => {
                             )}
                           </span>
                         </div>
-                        <div className="flex items-center text-gray-600 bg-gray-50 rounded-lg p-3">
-                          <Clock className="h-4 w-4 mr-2 text-green-500" />
+                        <div className="flex items-center text-ink-soft bg-paper rounded-card p-3">
+                          <Clock className="h-4 w-4 mr-2 text-muted" />
                           <span className="text-sm font-medium">
                             Durée: {booking.duration} min
                           </span>
                         </div>
                         <div className="flex items-center">
                           <span
-                            className={`text-xs font-bold px-3 py-1.5 rounded-full ${getStatusColor(
+                            className={`text-xs font-bold px-3 py-1.5 rounded-pill ${getStatusColor(
                               // Si c'est dans l'historique et que la date est passée, afficher comme "terminé"
                               activeTab === "past" &&
                                 isDatePassed(booking.date) &&
@@ -1485,7 +1474,7 @@ const PatientDashboard: React.FC = () => {
                         <div className="flex justify-end mt-2">
                           <button
                             onClick={() => handleDownloadInvoice(booking)}
-                            className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 border border-blue-200 transition-colors duration-200"
+                            className="flex items-center gap-2 px-4 py-2 rounded-card text-sm font-medium text-accent bg-accent-soft hover:bg-accent-soft/70 border border-accent-light transition-colors duration-200"
                           >
                             <Download className="h-4 w-4" />
                             Télécharger la facture
@@ -1511,14 +1500,14 @@ const PatientDashboard: React.FC = () => {
                               return canModify ? (
                                 <Link
                                   to={`/book/${booking.professionalId}?modify=${booking.id}`}
-                                  className="flex items-center text-blue-500 text-sm font-medium hover:text-blue-600 transition-colors"
+                                  className="flex items-center text-accent text-sm font-medium hover:opacity-80 transition-colors"
                                 >
                                   <Edit className="h-4 w-4 mr-1" />
                                   Modifier
                                 </Link>
                               ) : (
                                 <span
-                                  className="flex items-center text-gray-400 text-sm font-medium cursor-not-allowed"
+                                  className="flex items-center text-muted text-sm font-medium cursor-not-allowed"
                                   aria-disabled="true"
                                   title="La modification n'est plus possible à moins de 2 jours"
                                 >
@@ -1531,13 +1520,13 @@ const PatientDashboard: React.FC = () => {
                           {isConsultationDay(booking.date) ? (
                             <Link
                               to={`/consultation/${booking.id}`}
-                              className="bg-gradient-to-r from-blue-500 to-blue-600 text-white px-6 py-2.5 rounded-xl text-sm font-semibold hover:from-blue-600 hover:to-blue-700 transition-all duration-200 shadow-md hover:shadow-lg flex items-center"
+                              className="bg-accent text-white px-6 py-2.5 rounded-pill text-sm font-semibold hover:bg-accent/90 transition-all duration-200 shadow-soft hover:shadow-lift flex items-center"
                             >
                               <Play className="h-4 w-4 mr-2" />
                               Rejoindre
                             </Link>
                           ) : (
-                            <div className="bg-gray-300 text-gray-500 px-6 py-2.5 rounded-xl text-sm font-semibold flex items-center cursor-not-allowed">
+                            <div className="bg-line text-muted px-6 py-2.5 rounded-pill text-sm font-semibold flex items-center cursor-not-allowed">
                               <Play className="h-4 w-4 mr-2" />
                               Rejoindre
                               <span className="text-xs ml-2">
@@ -1552,11 +1541,11 @@ const PatientDashboard: React.FC = () => {
                 ))}
               </div>
             ) : (
-              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 text-center">
-                <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Calendar className="h-8 w-8 text-gray-400" />
+              <div className="bg-card rounded-block shadow-soft border border-line p-8 text-center">
+                <div className="w-16 h-16 bg-paper rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Calendar className="h-8 w-8 text-muted" />
                 </div>
-                <p className="text-gray-500 font-medium">
+                <p className="text-ink-soft font-medium">
                   {activeTab === "upcoming"
                     ? "Vous n'avez pas de rendez-vous à venir."
                     : "Vous n'avez pas encore eu de consultations."}

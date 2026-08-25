@@ -67,13 +67,13 @@ const Join: React.FC = () => {
     if (loading) {
       return (
         <div className="text-center">
-          <div className="bg-blue-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-            <RefreshCw className="h-8 w-8 text-blue-500 animate-spin" />
+          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-sage-soft">
+            <RefreshCw className="h-8 w-8 animate-spin text-sage" />
           </div>
-          <h2 className="text-xl font-semibold text-gray-800 mb-2">
+          <h2 className="font-display mb-2 text-xl font-semibold text-ink">
             Vérification en cours...
           </h2>
-          <p className="text-gray-600">
+          <p className="text-ink-soft">
             Nous vérifions votre lien de consultation.
           </p>
         </div>
@@ -83,24 +83,24 @@ const Join: React.FC = () => {
     if (error) {
       return (
         <div className="text-center">
-          <div className="bg-red-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-            <AlertCircle className="h-8 w-8 text-red-500" />
+          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-danger/10">
+            <AlertCircle className="h-8 w-8 text-danger" />
           </div>
-          <h2 className="text-xl font-semibold text-gray-800 mb-2">Erreur</h2>
-          <p className="text-gray-600 mb-6">{error}</p>
-          <div className="flex flex-col sm:flex-row gap-3 justify-center">
+          <h2 className="font-display mb-2 text-xl font-semibold text-ink">Erreur</h2>
+          <p className="mb-6 text-ink-soft">{error}</p>
+          <div className="flex flex-col justify-center gap-3 sm:flex-row">
             <button
               onClick={handleRetry}
-              className="flex items-center justify-center px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl transition-colors"
+              className="flex items-center justify-center rounded-card bg-ink px-6 py-3 font-semibold text-white transition-colors hover:bg-ink/90"
             >
-              <RefreshCw className="h-5 w-5 mr-2" />
+              <RefreshCw className="mr-2 h-5 w-5" />
               Réessayer
             </button>
             <Link
               to="/"
-              className="flex items-center justify-center px-6 py-3 bg-gray-600 hover:bg-gray-700 text-white font-semibold rounded-xl transition-colors"
+              className="flex items-center justify-center rounded-card border border-line bg-card px-6 py-3 font-semibold text-ink-soft transition-colors hover:bg-paper"
             >
-              <Home className="h-5 w-5 mr-2" />
+              <Home className="mr-2 h-5 w-5" />
               Accueil
             </Link>
           </div>
@@ -116,33 +116,33 @@ const Join: React.FC = () => {
       case "too_early":
         return (
           <div className="text-center">
-            <div className="bg-orange-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Clock className="h-8 w-8 text-orange-500" />
+            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-warn/10">
+              <Clock className="h-8 w-8 text-warn" />
             </div>
-            <h2 className="text-xl font-semibold text-gray-800 mb-2">
+            <h2 className="font-display mb-2 text-xl font-semibold text-ink">
               Ce n'est pas encore l'heure
             </h2>
-            <p className="text-gray-600 mb-4">
+            <p className="mb-4 text-ink-soft">
               Votre consultation avec{" "}
-              <strong>{joinInfo.professionalName}</strong> aura lieu le{" "}
-              <strong>{joinInfo.startsAtHuman}</strong>.
+              <strong className="text-ink">{joinInfo.professionalName}</strong> aura lieu le{" "}
+              <strong className="text-ink">{joinInfo.startsAtHuman}</strong>.
             </p>
-            <p className="text-gray-600 mb-6">
+            <p className="mb-6 text-ink-soft">
               Revenez à ce moment-là pour accéder à votre consultation.
             </p>
-            <div className="flex flex-col sm:flex-row gap-3 justify-center">
+            <div className="flex flex-col justify-center gap-3 sm:flex-row">
               <button
                 onClick={handleRetry}
-                className="flex items-center justify-center px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl transition-colors"
+                className="flex items-center justify-center rounded-card bg-ink px-6 py-3 font-semibold text-white transition-colors hover:bg-ink/90"
               >
-                <RefreshCw className="h-5 w-5 mr-2" />
+                <RefreshCw className="mr-2 h-5 w-5" />
                 Réessayer
               </button>
               <Link
                 to="/"
-                className="flex items-center justify-center px-6 py-3 bg-gray-600 hover:bg-gray-700 text-white font-semibold rounded-xl transition-colors"
+                className="flex items-center justify-center rounded-card border border-line bg-card px-6 py-3 font-semibold text-ink-soft transition-colors hover:bg-paper"
               >
-                <Home className="h-5 w-5 mr-2" />
+                <Home className="mr-2 h-5 w-5" />
                 Accueil
               </Link>
             </div>
@@ -152,20 +152,20 @@ const Join: React.FC = () => {
       case "finished":
         return (
           <div className="text-center">
-            <div className="bg-gray-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Clock className="h-8 w-8 text-gray-500" />
+            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-line">
+              <Clock className="h-8 w-8 text-muted" />
             </div>
-            <h2 className="text-xl font-semibold text-gray-800 mb-2">
+            <h2 className="font-display mb-2 text-xl font-semibold text-ink">
               Consultation terminée
             </h2>
-            <p className="text-gray-600 mb-6">
+            <p className="mb-6 text-ink-soft">
               Cette consultation est maintenant terminée.
             </p>
             <Link
               to="/"
-              className="flex items-center justify-center px-6 py-3 bg-gray-600 hover:bg-gray-700 text-white font-semibold rounded-xl transition-colors mx-auto max-w-xs"
+              className="mx-auto flex max-w-xs items-center justify-center rounded-card border border-line bg-card px-6 py-3 font-semibold text-ink-soft transition-colors hover:bg-paper"
             >
-              <Home className="h-5 w-5 mr-2" />
+              <Home className="mr-2 h-5 w-5" />
               Accueil
             </Link>
           </div>
@@ -175,20 +175,20 @@ const Join: React.FC = () => {
       default:
         return (
           <div className="text-center">
-            <div className="bg-red-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-              <AlertCircle className="h-8 w-8 text-red-500" />
+            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-danger/10">
+              <AlertCircle className="h-8 w-8 text-danger" />
             </div>
-            <h2 className="text-xl font-semibold text-gray-800 mb-2">
+            <h2 className="font-display mb-2 text-xl font-semibold text-ink">
               Lien invalide ou expiré
             </h2>
-            <p className="text-gray-600 mb-6">
+            <p className="mb-6 text-ink-soft">
               Ce lien de consultation n'est pas valide ou a expiré.
             </p>
             <Link
               to="/"
-              className="flex items-center justify-center px-6 py-3 bg-gray-600 hover:bg-gray-700 text-white font-semibold rounded-xl transition-colors mx-auto max-w-xs"
+              className="mx-auto flex max-w-xs items-center justify-center rounded-card border border-line bg-card px-6 py-3 font-semibold text-ink-soft transition-colors hover:bg-paper"
             >
-              <Home className="h-5 w-5 mr-2" />
+              <Home className="mr-2 h-5 w-5" />
               Accueil
             </Link>
           </div>
@@ -197,8 +197,8 @@ const Join: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center py-12 px-4">
-      <div className="max-w-md w-full bg-white rounded-2xl shadow-lg p-8">
+    <div className="flex min-h-screen items-center justify-center bg-paper px-4 py-12">
+      <div className="w-full max-w-md rounded-block border border-line bg-card p-8 shadow-lift">
         {renderContent()}
       </div>
     </div>

@@ -104,7 +104,7 @@ const AdminUsers: React.FC = () => {
     return (
       <AdminLayout>
         <div className="flex items-center justify-center min-h-screen">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-accent"></div>
         </div>
       </AdminLayout>
     );
@@ -114,10 +114,10 @@ const AdminUsers: React.FC = () => {
     return (
       <AdminLayout>
         <div className="text-center py-12">
-          <div className="text-red-600 text-xl mb-4">{error}</div>
+          <div className="text-danger text-xl mb-4">{error}</div>
           <button
             onClick={fetchData}
-            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+            className="bg-accent text-white px-4 py-2 rounded-card hover:bg-accent/90"
           >
             Réessayer
           </button>
@@ -154,17 +154,17 @@ const AdminUsers: React.FC = () => {
 
   // Fonction de rendu des lignes
   const renderRow = (user: User) => (
-    <tr key={user.id} className="hover:bg-gray-50">
+    <tr key={user.id} className="hover:bg-paper">
       <td className="px-6 py-4 whitespace-nowrap">
         <div className="flex items-center">
-          <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center mr-3">
-            <User className="h-6 w-6 text-gray-500" />
+          <div className="w-10 h-10 rounded-full bg-paper flex items-center justify-center mr-3">
+            <User className="h-6 w-6 text-muted" />
           </div>
           <div>
-            <div className="text-sm font-medium text-gray-900">{user.name}</div>
-            <div className="text-sm text-gray-500">{user.email}</div>
+            <div className="text-sm font-medium text-ink">{user.name}</div>
+            <div className="text-sm text-muted">{user.email}</div>
             {user.phone && (
-              <div className="text-sm text-gray-400">{user.phone}</div>
+              <div className="text-sm text-muted">{user.phone}</div>
             )}
           </div>
         </div>
@@ -173,27 +173,27 @@ const AdminUsers: React.FC = () => {
         <div className="flex items-center">
           {getUserTypeIcon(user.type)}
           <span
-            className={`ml-2 px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+            className={`ml-2 px-2 inline-flex text-xs leading-5 font-semibold rounded-pill ${
               user.type === "admin"
-                ? "bg-red-100 text-red-800"
+                ? "bg-danger/10 text-danger"
                 : user.type === "professional"
-                ? "bg-blue-100 text-blue-800"
-                : "bg-green-100 text-green-800"
+                ? "bg-accent-soft text-accent"
+                : "bg-ok/15 text-ok"
             }`}
           >
             {getUserTypeLabel(user.type)}
           </span>
         </div>
       </td>
-      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+      <td className="px-6 py-4 whitespace-nowrap text-sm text-muted">
         {formatCreatedAt(user.createdAt)}
       </td>
       <td className="px-6 py-4 whitespace-nowrap">
         <span
-          className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+          className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-pill ${
             user.isActive
-              ? "bg-green-100 text-green-800"
-              : "bg-red-100 text-red-800"
+              ? "bg-ok/15 text-ok"
+              : "bg-danger/10 text-danger"
           }`}
         >
           {user.isActive ? "Actif" : "Inactif"}
@@ -204,10 +204,10 @@ const AdminUsers: React.FC = () => {
           <button
             onClick={() => handleUpdateStatus(user.id, !user.isActive)}
             disabled={actionLoading === user.id}
-            className={`px-3 py-1 rounded text-xs font-medium ${
+            className={`px-3 py-1 rounded-card text-xs font-medium ${
               user.isActive
-                ? "bg-red-100 text-red-700 hover:bg-red-200"
-                : "bg-green-100 text-green-700 hover:bg-green-200"
+                ? "bg-danger/10 text-danger hover:bg-danger/20"
+                : "bg-ok/15 text-ok hover:bg-ok/25"
             } disabled:opacity-50`}
           >
             {actionLoading === user.id ? (
@@ -222,7 +222,7 @@ const AdminUsers: React.FC = () => {
           <button
             onClick={() => handleDeleteUser(user.id)}
             disabled={actionLoading === user.id}
-            className="px-3 py-1 bg-red-100 text-red-700 hover:bg-red-200 rounded text-xs font-medium disabled:opacity-50"
+            className="px-3 py-1 bg-danger/10 text-danger hover:bg-danger/20 rounded-card text-xs font-medium disabled:opacity-50"
           >
             <Trash2 className="h-3 w-3" />
           </button>
@@ -249,13 +249,13 @@ const AdminUsers: React.FC = () => {
 const getUserTypeIcon = (type: string) => {
   switch (type) {
     case "admin":
-      return <Shield className="h-5 w-5 text-red-500" />;
+      return <Shield className="h-5 w-5 text-danger" />;
     case "professional":
-      return <ShieldCheck className="h-5 w-5 text-blue-500" />;
+      return <ShieldCheck className="h-5 w-5 text-accent" />;
     case "patient":
-      return <User className="h-5 w-5 text-green-500" />;
+      return <User className="h-5 w-5 text-ok" />;
     default:
-      return <User className="h-5 w-5 text-gray-500" />;
+      return <User className="h-5 w-5 text-muted" />;
   }
 };
 

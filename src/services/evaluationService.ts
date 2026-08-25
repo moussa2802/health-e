@@ -123,7 +123,7 @@ export function computeScaleScore(
 
   // ── Sous-scores ──
   // IMPORTANT: les subscales utilisent UNIQUEMENT sub.reverseIds, PAS les reverseIds globaux.
-  // Cela évite les doubles-inversions (ex: Big Five neuroticism item 4).
+  // Cela évite les doubles-inversions (ex: Big Five emotional_stability item 4).
   const subscaleScores: Record<string, number> = {};
   if (scale.subscales) {
     for (const sub of scale.subscales) {
@@ -229,6 +229,18 @@ export async function getUserSessions(userId: string): Promise<UserAssessmentSes
   return snap.docs.map(d => d.data() as UserAssessmentSession);
 }
 
+export async function getInProgressSessions(
+  userId: string,
+): Promise<UserAssessmentSession[]> {
+  const q = query(
+    collection(db, SESSIONS_COL),
+    where('userId', '==', userId),
+    where('status', '==', 'in_progress'),
+  );
+  const snap = await getDocs(q);
+  return snap.docs.map(d => d.data() as UserAssessmentSession);
+}
+
 export async function saveClaudeInterpretation(sessionId: string, text: string): Promise<void> {
   await updateDoc(doc(db, SESSIONS_COL, sessionId), { claudeInterpretation: text });
 }
@@ -296,7 +308,8 @@ export const TOTAL_SCALES = MENTAL_HEALTH_SCALES.length + SEXUAL_HEALTH_SCALES.l
 export async function saveScaleResultToProfile(
   userId: string,
   scaleId: string,
-  result: ScaleResult
+  result: ScaleResult,
+  signatureValues?: { value: number; max: number }[],
 ): Promise<void> {
   const ref = doc(db, PROFILES_COL, userId);
   const snap = await getDoc(ref);
@@ -317,6 +330,10 @@ export async function saveScaleResultToProfile(
     updatedAt: serverTimestamp(),
     lastAssessmentDate: serverTimestamp(),
   };
+
+  if (signatureValues?.length) {
+    updateData[`signatures.${scaleId}`] = signatureValues;
+  }
 
   // Generate compatibility codes based on count thresholds (8 mental + 5 sexual)
   const MENTAL_IDS = MENTAL_HEALTH_SCALES.map(s => s.id);
@@ -375,6 +392,7 @@ export async function getProfileProgress(userId: string): Promise<{
   drLoSexualUpdatedAt: Date | null;
   onboardingProfile: Record<string, string> | null;
   sexualHealthFilter: Record<string, unknown> | null;
+  signatures: Record<string, { value: number; max: number }[]>;
 }> {
   const ref = doc(db, PROFILES_COL, userId);
   const snap = await getDoc(ref);
@@ -400,6 +418,7 @@ export async function getProfileProgress(userId: string): Promise<{
       drLoSexualUpdatedAt: null,
       onboardingProfile: null,
       sexualHealthFilter: null,
+      signatures: {},
     };
   }
   const data = snap.data();
@@ -433,6 +452,7 @@ export async function getProfileProgress(userId: string): Promise<{
     drLoSexualUpdatedAt: data.drLoSexualUpdatedAt instanceof Timestamp ? data.drLoSexualUpdatedAt.toDate() : null,
     onboardingProfile: (data.onboardingProfile as Record<string, string> | null) ?? null,
     sexualHealthFilter: (data.sexualHealthFilter as Record<string, unknown> | null) ?? null,
+    signatures: (data.signatures as Record<string, { value: number; max: number }[]>) ?? {},
   };
 }
 

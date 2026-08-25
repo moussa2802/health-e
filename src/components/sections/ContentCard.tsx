@@ -40,7 +40,7 @@ const ContentCard: React.FC<ContentCardProps> = ({
 
   return (
     <>
-      <div className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition-shadow h-full flex flex-col">
+      <div className="bg-card rounded-card border border-line shadow-soft overflow-hidden hover:shadow-lift transition-shadow h-full flex flex-col">
         <div className="relative">
           {content.videoUrl ? (
             <div className="relative">
@@ -48,15 +48,15 @@ const ContentCard: React.FC<ContentCardProps> = ({
                 <LazyImage
                   src={content.imageUrl}
                   alt={content.title}
-                  className="w-full h-full object-cover rounded-t-xl"
+                  className="w-full h-full object-cover"
                 />
               </div>
               <div
-                className="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center cursor-pointer rounded-t-xl"
+                className="absolute inset-0 bg-ink/40 flex items-center justify-center cursor-pointer"
                 onClick={handleVideoPlay}
               >
-                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-white rounded-full flex items-center justify-center">
-                  <Play className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600" />
+                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-card rounded-full flex items-center justify-center shadow-soft">
+                  <Play className="h-5 w-5 sm:h-6 sm:w-6 text-accent" />
                 </div>
               </div>
             </div>
@@ -65,13 +65,13 @@ const ContentCard: React.FC<ContentCardProps> = ({
               <LazyImage
                 src={content.imageUrl}
                 alt={content.title}
-                className="w-full h-full object-cover rounded-t-xl"
+                className="w-full h-full object-cover"
               />
             </div>
           )}
 
           {showType && (
-            <div className="absolute top-2 left-2 bg-blue-500 text-white px-2 py-1 text-xs font-bold rounded">
+            <div className="absolute top-2 left-2 bg-ink text-white px-2 py-1 text-xs font-bold rounded-pill">
               {content.type === "testimonial"
                 ? language === "fr"
                   ? "Témoignage"
@@ -84,16 +84,16 @@ const ContentCard: React.FC<ContentCardProps> = ({
         </div>
 
         <div className="p-5 flex-1 flex flex-col">
-          <h3 className="text-xl font-bold mb-2">{content.title}</h3>
+          <h3 className="font-display text-xl font-bold mb-2 text-ink">{content.title}</h3>
 
           <div className="mb-4 flex-1">
-            <p className="text-gray-600">
+            <p className="text-ink-soft">
               {expanded ? content.description : previewText}
             </p>
             {isLongText && !expanded && (
               <button
                 onClick={() => setExpanded(true)}
-                className="text-blue-500 hover:text-blue-700 mt-2 text-sm font-medium"
+                className="text-accent hover:text-ink mt-2 text-sm font-medium"
               >
                 {language === "fr" ? "Lire plus" : "Read more"}
               </button>
@@ -101,24 +101,24 @@ const ContentCard: React.FC<ContentCardProps> = ({
             {expanded && (
               <button
                 onClick={() => setExpanded(false)}
-                className="text-blue-500 hover:text-blue-700 mt-2 text-sm font-medium"
+                className="text-accent hover:text-ink mt-2 text-sm font-medium"
               >
                 {language === "fr" ? "Réduire" : "Show less"}
               </button>
             )}
           </div>
 
-          <div className="flex items-center justify-between mt-auto pt-4 border-t border-gray-100">
+          <div className="flex items-center justify-between mt-auto pt-4 border-t border-line">
             <div>
-              <p className="font-medium">{content.author}</p>
+              <p className="font-medium text-ink">{content.author}</p>
               {content.role && (
-                <p className="text-sm text-gray-500">{content.role}</p>
+                <p className="text-sm text-muted">{content.role}</p>
               )}
             </div>
 
             <button
               onClick={() => setShowModal(true)}
-              className="text-blue-500 hover:text-blue-700 flex items-center text-sm"
+              className="text-accent hover:text-ink flex items-center text-sm font-medium"
             >
               <span className="mr-1">
                 {language === "fr" ? "Voir tout" : "View full"}
@@ -131,15 +131,15 @@ const ContentCard: React.FC<ContentCardProps> = ({
 
       {/* Full content modal */}
       {showModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-2 sm:p-4">
-          <div className="bg-white rounded-lg w-full max-w-xs sm:max-w-md md:max-w-3xl max-h-[95vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-ink/50 z-50 flex items-center justify-center p-2 sm:p-4">
+          <div className="bg-card rounded-block w-full max-w-xs sm:max-w-md md:max-w-3xl max-h-[95vh] overflow-y-auto shadow-lift">
             <div className="relative">
               {content.videoUrl ? (
                 <div className="relative w-full">
                   <video
                     ref={modalVideoRef}
                     src={content.videoUrl}
-                    className="w-full h-auto max-h-96 object-contain rounded-t-lg"
+                    className="w-full h-auto max-h-96 object-contain rounded-t-block"
                     controls
                     poster={content.imageUrl}
                     autoPlay
@@ -151,33 +151,33 @@ const ContentCard: React.FC<ContentCardProps> = ({
                   <LazyImage
                     src={content.imageUrl}
                     alt={content.title}
-                    className="w-full h-auto max-h-96 object-contain rounded-t-lg"
+                    className="w-full h-auto max-h-96 object-contain rounded-t-block"
                   />
                 </div>
               )}
               <button
                 onClick={() => setShowModal(false)}
-                className="absolute top-2 right-2 bg-white rounded-full p-1.5 sm:p-2 shadow-md hover:bg-gray-100 transition-colors z-10"
+                className="absolute top-2 right-2 bg-card rounded-full p-1.5 sm:p-2 shadow-soft hover:bg-paper transition-colors z-10"
               >
-                <X className="h-4 w-4 sm:h-5 sm:w-5 text-gray-700" />
+                <X className="h-4 w-4 sm:h-5 sm:w-5 text-ink-soft" />
               </button>
             </div>
 
             <div className="p-4 sm:p-6">
-              <h2 className="text-xl sm:text-2xl font-bold mb-2">
+              <h2 className="font-display text-xl sm:text-2xl font-bold mb-2 text-ink">
                 {content.title}
               </h2>
               <div className="flex flex-col sm:flex-row sm:items-center mb-4 gap-1 sm:gap-0">
-                <p className="font-medium">{content.author}</p>
+                <p className="font-medium text-ink">{content.author}</p>
                 {content.role && (
-                  <p className="text-sm text-gray-500 sm:ml-2">
+                  <p className="text-sm text-muted sm:ml-2">
                     • {content.role}
                   </p>
                 )}
               </div>
 
               <div className="prose max-w-none">
-                <p className="whitespace-pre-line text-sm sm:text-base">
+                <p className="whitespace-pre-line text-sm sm:text-base text-ink-soft">
                   {content.description}
                 </p>
               </div>

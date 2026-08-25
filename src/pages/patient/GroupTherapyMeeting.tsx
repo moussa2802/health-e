@@ -1,6 +1,14 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
-import { Video, ArrowLeft, Users, Calendar, Clock } from "lucide-react";
+import {
+  Video,
+  ArrowLeft,
+  Users,
+  Calendar,
+  Clock,
+  CheckCircle2,
+  Lightbulb,
+} from "lucide-react";
 import {
   getGroupTherapySession,
   isUserRegisteredInSession,
@@ -285,8 +293,9 @@ const GroupTherapyMeeting: React.FC = () => {
               <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-green-100 mb-4">
                 <Video className="w-10 h-10 text-green-600" />
               </div>
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">
-                Vous êtes inscrit à cette session ✅
+              <h2 className="text-2xl font-bold text-gray-900 mb-2 flex items-center justify-center gap-2">
+                Vous êtes inscrit à cette session
+                <CheckCircle2 className="h-6 w-6 text-green-600" />
               </h2>
               <p className="text-gray-600">
                 Cliquez sur le bouton ci-dessous pour rejoindre la réunion
@@ -353,10 +362,13 @@ const GroupTherapyMeeting: React.FC = () => {
                           que le professionnel démarre la réunion.
                         </p>
                         <div className="bg-white rounded-lg p-3 border border-yellow-300">
-                          <p className="text-xs text-yellow-700">
-                            💡 Vous serez automatiquement autorisé à rejoindre
-                            une fois que le professionnel aura démarré la
-                            réunion.
+                          <p className="text-xs text-yellow-700 flex items-start gap-1.5">
+                            <Lightbulb className="h-3.5 w-3.5 flex-shrink-0 mt-0.5" />
+                            <span>
+                              Vous serez automatiquement autorisé à rejoindre
+                              une fois que le professionnel aura démarré la
+                              réunion.
+                            </span>
                           </p>
                         </div>
                       </div>

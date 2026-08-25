@@ -70,7 +70,7 @@ export async function createBooking(
 ): Promise<string> {
   try {
     console.log(
-      "📝 Creating new booking...",
+      "Creating new booking...",
       JSON.stringify(bookingData, null, 2)
     );
 
@@ -127,7 +127,7 @@ export async function createBooking(
       };
 
       console.log(
-        "📝 Création finale de la réservation avec les données:",
+        "Création finale de la réservation avec les données:",
         JSON.stringify(bookingWithDefaults, null, 2)
       );
 
@@ -146,8 +146,8 @@ export async function createBooking(
     );
     return tempId;
   } catch (error) {
-    console.error("❌ Error creating booking:", error);
-    console.error("❌ Error details:", {
+    console.error("Error creating booking:", error);
+    console.error("Error details:", {
       code: error.code,
       message: error.message,
       stack: error.stack,
@@ -189,7 +189,7 @@ export async function getBookings(): Promise<Booking[]> {
 
     return bookings;
   } catch (error) {
-    console.error("❌ Error fetching bookings:", error);
+    console.error("Error fetching bookings:", error);
     return []; // Return empty array instead of throwing
   }
 }
@@ -243,7 +243,7 @@ export async function getUserBookings(
 
     return sortedBookings;
   } catch (error) {
-    console.error("❌ Error fetching user bookings:", error);
+    console.error("Error fetching user bookings:", error);
     return []; // Return empty array instead of throwing
   }
 }
@@ -330,13 +330,13 @@ export function subscribeToBookings(
               );
 
               console.log(
-                `✅ Received ${sortedBookings.length} bookings via subscription (listener: ${listenerId})`
+                `Received ${sortedBookings.length} bookings via subscription (listener: ${listenerId})`
               );
 
               callback(sortedBookings);
             } catch (error) {
               console.error(
-                `❌ Error processing booking snapshot (listener: ${listenerId}):`,
+                `Error processing booking snapshot (listener: ${listenerId}):`,
                 error
               );
               callback([]); // Provide fallback empty array
@@ -344,14 +344,14 @@ export function subscribeToBookings(
           },
           async (error) => {
             console.error(
-              `❌ Error in booking subscription (listener: ${listenerId}):`,
+              `Error in booking subscription (listener: ${listenerId}):`,
               error
             );
 
             // CRITICAL: Handle Firestore internal assertion failures
             if (isFirestoreInternalError(error)) {
               console.error(
-                "🚨 Firestore internal assertion failure in bookings subscription, resetting connection..."
+                "Firestore internal assertion failure in bookings subscription, resetting connection..."
               );
 
               // Clean up this listener immediately
@@ -380,7 +380,7 @@ export function subscribeToBookings(
               error.message.includes("Target ID already exists")
             ) {
               console.error(
-                "🎯 Target ID conflict in bookings, cleaning up..."
+                "Target ID conflict in bookings, cleaning up..."
               );
 
               // Clean up this listener immediately
@@ -411,7 +411,7 @@ export function subscribeToBookings(
         activeBookingListeners.set(listenerId, unsubscribe);
       } catch (error) {
         console.error(
-          `❌ Error setting up booking subscription (listener: ${listenerId}):`,
+          `Error setting up booking subscription (listener: ${listenerId}):`,
           error
         );
         callback([]);
@@ -419,7 +419,7 @@ export function subscribeToBookings(
     })
     .catch((error) => {
       console.error(
-        `❌ Failed to ensure Firestore ready for booking subscription:`,
+        `Failed to ensure Firestore ready for booking subscription:`,
         error
       );
       callback([]);
@@ -479,7 +479,7 @@ export async function updateBooking(
     );
 
   } catch (error) {
-    console.error("❌ Error updating booking:", error);
+    console.error("Error updating booking:", error);
     throw error;
   }
 }
@@ -515,7 +515,7 @@ export async function updateBookingStatus(
     });
 
   } catch (error) {
-    console.error("❌ Error updating booking status:", error);
+    console.error("Error updating booking status:", error);
     throw new Error(
       "Impossible de mettre à jour le statut. Veuillez réessayer."
     );
@@ -566,7 +566,7 @@ export async function cancelBooking(bookingId: string): Promise<void> {
     );
 
   } catch (error) {
-    console.error("❌ Error cancelling booking:", error);
+    console.error("Error cancelling booking:", error);
     throw new Error("Impossible d'annuler la réservation. Veuillez réessayer.");
   }
 }
@@ -614,7 +614,7 @@ export async function confirmBooking(bookingId: string): Promise<void> {
     );
 
   } catch (error) {
-    console.error("❌ Error confirming booking:", error);
+    console.error("Error confirming booking:", error);
     throw new Error(
       "Impossible de confirmer la réservation. Veuillez réessayer."
     );
@@ -662,7 +662,7 @@ export async function completeBooking(
     });
 
   } catch (error) {
-    console.error("❌ Error completing booking:", error);
+    console.error("Error completing booking:", error);
     throw new Error(
       "Impossible de finaliser la réservation. Veuillez réessayer."
     );
@@ -694,7 +694,7 @@ export async function deleteBooking(bookingId: string): Promise<void> {
     });
 
   } catch (error) {
-    console.error("❌ Error deleting booking:", error);
+    console.error("Error deleting booking:", error);
     throw new Error(
       "Impossible de supprimer la réservation. Veuillez réessayer."
     );
@@ -758,7 +758,7 @@ export async function checkAvailability(
 
     return true; // Créneau disponible
   } catch (error) {
-    console.error("❌ Error checking availability:", error);
+    console.error("Error checking availability:", error);
     // En cas d'erreur, on assume que c'est disponible pour ne pas bloquer l'utilisateur
     return true;
   }
@@ -811,7 +811,7 @@ export async function getBookingStatistics() {
 
     return stats;
   } catch (error) {
-    console.error("❌ Error fetching booking statistics:", error);
+    console.error("Error fetching booking statistics:", error);
     // Return default statistics instead of throwing
     return {
       total: 0,

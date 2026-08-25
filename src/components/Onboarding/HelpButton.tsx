@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { HelpCircle, X, RefreshCw, Leaf, BookOpen } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { TOOLTIPS, pathToPageKey } from '../../utils/onboardingConfig';
 
@@ -34,24 +35,12 @@ const HelpButton: React.FC = () => {
       <button
         onClick={() => setOpen(o => !o)}
         title="Aide"
-        style={{
-          position: 'fixed', bottom: 32, left: 88, zIndex: 8000,
-          width: 34, height: 34, borderRadius: '50%',
-          background: open
-            ? 'linear-gradient(135deg, #3B82F6, #10B981)'
-            : 'rgba(255,255,255,0.92)',
-          border: '1.5px solid rgba(59,130,246,0.25)',
-          boxShadow: '0 4px 16px rgba(0,0,0,0.12)',
-          color: open ? 'white' : '#64748B',
-          fontSize: 14, fontWeight: 800, cursor: 'pointer',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          backdropFilter: 'blur(8px)',
-          transition: 'background 0.2s, color 0.2s, transform 0.15s',
-        }}
-        onMouseEnter={e => { if (!open) (e.currentTarget.style.transform = 'scale(1.08)'); }}
-        onMouseLeave={e => (e.currentTarget.style.transform = 'scale(1)')}
+        className={`fixed bottom-8 left-[88px] z-[8000] w-[34px] h-[34px] rounded-full border-[1.5px] shadow-lift flex items-center justify-center transition-all hover:scale-105 ${
+          open ? 'bg-sage text-white border-sage' : 'bg-card/90 text-ink-soft border-line'
+        }`}
+        style={{ backdropFilter: 'blur(8px)' }}
       >
-        {open ? '✕' : '?'}
+        {open ? <X size={15} /> : <HelpCircle size={16} />}
       </button>
 
       {/* Panel d'aide ───────────────────────────────────────────────────── */}
@@ -60,89 +49,52 @@ const HelpButton: React.FC = () => {
           {/* Overlay de fermeture */}
           <div
             onClick={() => setOpen(false)}
-            style={{ position: 'fixed', inset: 0, zIndex: 7999 }}
+            className="fixed inset-0 z-[7999]"
           />
 
-          <div
-            style={{
-              position: 'fixed', bottom: 76, left: 20, zIndex: 8001,
-              background: 'white',
-              borderRadius: 18,
-              border: '1px solid rgba(59,130,246,0.15)',
-              boxShadow: '0 8px 40px rgba(0,0,0,0.15)',
-              padding: '18px',
-              width: 260,
-              fontFamily: "'Inter', -apple-system, sans-serif",
-            }}
-          >
+          <div className="fixed bottom-[76px] left-5 z-[8001] bg-card rounded-block border border-line shadow-lift px-4.5 py-4.5 w-[260px]">
             {/* Header */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
-              <div style={{
-                width: 32, height: 32, borderRadius: '50%',
-                background: 'linear-gradient(135deg, #3B82F6, #10B981)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: 15, flexShrink: 0,
-              }}>
-                ❓
+            <div className="flex items-center gap-2 mb-3.5">
+              <div className="w-8 h-8 rounded-full bg-sage flex items-center justify-center flex-shrink-0">
+                <HelpCircle size={16} className="text-white" />
               </div>
               <div>
-                <p style={{ margin: 0, fontSize: 14, fontWeight: 800, color: '#0A2342' }}>Aide</p>
-                <p style={{ margin: 0, fontSize: 11, color: '#94A3B8' }}>Comment puis-je t'aider ?</p>
+                <p className="m-0 text-sm font-extrabold text-ink">Aide</p>
+                <p className="m-0 text-[11px] text-muted">Comment puis-je t'aider ?</p>
               </div>
             </div>
 
             {/* Actions */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <div className="flex flex-col gap-2">
               {hasPageTooltips && (
                 <button
                   onClick={replayTooltips}
-                  style={{
-                    padding: '11px 14px', borderRadius: 12,
-                    border: '1px solid rgba(59,130,246,0.15)',
-                    background: 'linear-gradient(135deg, #EFF6FF, #F0FDF4)',
-                    color: '#1E40AF', fontSize: 13, fontWeight: 600,
-                    cursor: 'pointer', textAlign: 'left',
-                    display: 'flex', alignItems: 'center', gap: 8,
-                  } as React.CSSProperties}
+                  className="px-3.5 py-2.5 rounded-xl border border-sage/20 bg-sage-soft text-sage text-[13px] font-semibold cursor-pointer text-left flex items-center gap-2 hover:bg-sage-soft/70 transition-colors"
                 >
-                  <span style={{ fontSize: 16 }}>🔄</span>
-                  <span>Revoir les explications<br /><span style={{ fontSize: 11, fontWeight: 400, color: '#64748B' }}>de cette page</span></span>
+                  <RefreshCw size={16} className="flex-shrink-0" />
+                  <span>Revoir les explications<br /><span className="text-[11px] font-normal text-muted">de cette page</span></span>
                 </button>
               )}
 
               <button
                 onClick={replayWelcome}
-                style={{
-                  padding: '11px 14px', borderRadius: 12,
-                  border: '1px solid rgba(16,185,129,0.15)',
-                  background: 'linear-gradient(135deg, #F0FDF4, #F0FDFA)',
-                  color: '#065F46', fontSize: 13, fontWeight: 600,
-                  cursor: 'pointer', textAlign: 'left',
-                  display: 'flex', alignItems: 'center', gap: 8,
-                } as React.CSSProperties}
+                className="px-3.5 py-2.5 rounded-xl border border-sage/20 bg-sage-soft text-sage text-[13px] font-semibold cursor-pointer text-left flex items-center gap-2 hover:bg-sage-soft/70 transition-colors"
               >
-                <span style={{ fontSize: 16 }}>🌿</span>
-                <span>Revoir la présentation<br /><span style={{ fontSize: 11, fontWeight: 400, color: '#64748B' }}>de Healt-e</span></span>
+                <Leaf size={16} className="flex-shrink-0" />
+                <span>Revoir la présentation<br /><span className="text-[11px] font-normal text-muted">de Healt-e</span></span>
               </button>
 
               <button
                 onClick={() => { navigate('/faq'); setOpen(false); }}
-                style={{
-                  padding: '11px 14px', borderRadius: 12,
-                  background: '#F8FAFC',
-                  color: '#374151', fontSize: 13, fontWeight: 600,
-                  cursor: 'pointer', textAlign: 'left',
-                  display: 'flex', alignItems: 'center', gap: 8,
-                  border: '1px solid #E2E8F0',
-                } as React.CSSProperties}
+                className="px-3.5 py-2.5 rounded-xl border border-line bg-paper text-ink-soft text-[13px] font-semibold cursor-pointer text-left flex items-center gap-2 hover:bg-line/40 transition-colors"
               >
-                <span style={{ fontSize: 16 }}>📖</span>
+                <BookOpen size={16} className="flex-shrink-0" />
                 <span>Questions fréquentes</span>
               </button>
             </div>
 
             {/* Footer */}
-            <p style={{ margin: '12px 0 0', fontSize: 10, color: '#CBD5E1', textAlign: 'center' }}>
+            <p className="mt-3 mb-0 text-[10px] text-muted text-center">
               Healt-e · Assistance IA
             </p>
           </div>

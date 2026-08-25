@@ -94,7 +94,7 @@ const AdminNotificationCenter: React.FC = () => {
       // Mise à jour Firestore
       await markAllAdminNotificationsAsRead(adminId);
     } catch (error) {
-      console.error("❌ [ADMIN] Erreur marquage toutes lues:", error);
+      console.error("[ADMIN] Erreur marquage toutes lues:", error);
     }
   };
 
@@ -106,7 +106,7 @@ const AdminNotificationCenter: React.FC = () => {
       // Mise à jour Firestore
       await deleteAdminNotification(notificationId);
     } catch (error) {
-      console.error("❌ [ADMIN] Erreur suppression:", error);
+      console.error("[ADMIN] Erreur suppression:", error);
     }
   };
 
@@ -131,7 +131,7 @@ const AdminNotificationCenter: React.FC = () => {
 
   const handleNotificationClick = (notification: AdminNotification) => {
     console.log(
-      "🔔 [ADMIN] Clic sur notification:",
+      "[ADMIN] Clic sur notification:",
       notification.type,
       notification.title
     );
@@ -149,7 +149,7 @@ const AdminNotificationCenter: React.FC = () => {
     }
 
     const redirectPath = getRedirectPath(notification.type);
-    console.log("🔔 [ADMIN] Redirection vers:", redirectPath);
+    console.log("[ADMIN] Redirection vers:", redirectPath);
     if (redirectPath) {
       navigate(redirectPath);
       setShowNotifications(false); // Fermer le panneau après navigation
@@ -159,21 +159,21 @@ const AdminNotificationCenter: React.FC = () => {
   const getTypeIcon = (type: string) => {
     switch (type) {
       case "withdrawal":
-        return <DollarSign className="h-5 w-5 text-green-500" />; // Vert pour les retraits
+        return <DollarSign className="h-5 w-5 text-ok" />; // Vert pour les retraits
       case "user":
       case "new_professional_registration":
-        return <User className="h-5 w-5 text-blue-500" />; // Bleu pour les utilisateurs
+        return <User className="h-5 w-5 text-sage" />; // Sauge pour les utilisateurs
       case "appointment":
-        return <Calendar className="h-5 w-5 text-purple-500" />; // Violet pour les consultations
+        return <Calendar className="h-5 w-5 text-accent" />; // Accent pour les consultations
       case "message":
-        return <MessageSquare className="h-5 w-5 text-orange-500" />; // Orange pour les messages
+        return <MessageSquare className="h-5 w-5 text-gold" />; // Or pour les messages
       case "support":
       case "support_message":
-        return <Info className="h-5 w-5 text-red-500" />; // Rouge pour le support
+        return <Info className="h-5 w-5 text-danger" />; // Rouge pour le support
       case "system":
-        return <Info className="h-5 w-5 text-gray-500" />; // Gris pour le système
+        return <Info className="h-5 w-5 text-muted" />; // Gris pour le système
       default:
-        return <Bell className="h-5 w-5 text-gray-600" />;
+        return <Bell className="h-5 w-5 text-ink-soft" />;
     }
   };
 
@@ -181,20 +181,20 @@ const AdminNotificationCenter: React.FC = () => {
     switch (type) {
       case "new_professional_registration":
       case "user":
-        return "border-l-4 border-l-blue-500 bg-blue-50";
+        return "border-l-4 border-l-sage bg-sage-soft";
       case "withdrawal_request":
       case "withdrawal":
-        return "border-l-4 border-l-green-500 bg-green-50";
+        return "border-l-4 border-l-ok bg-ok/10";
       case "appointment_cancelled":
       case "appointment":
-        return "border-l-4 border-l-purple-500 bg-purple-50";
+        return "border-l-4 border-l-accent bg-accent-soft";
       case "support":
       case "support_message":
-        return "border-l-4 border-l-red-500 bg-red-50";
+        return "border-l-4 border-l-danger bg-danger/10";
       case "message":
-        return "border-l-4 border-l-indigo-500 bg-indigo-50";
+        return "border-l-4 border-l-gold bg-gold-soft";
       default:
-        return "border-l-4 border-l-gray-500 bg-gray-50";
+        return "border-l-4 border-l-line bg-paper";
     }
   };
 
@@ -250,11 +250,11 @@ const AdminNotificationCenter: React.FC = () => {
         {/* Bouton de notification avec badge */}
         <button
           onClick={() => setShowNotifications(!showNotifications)}
-          className="relative p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+          className="relative p-2 text-ink-soft hover:text-ink hover:bg-paper rounded-card transition-colors"
         >
           <Bell className="h-6 w-6" />
           {unreadCount > 0 && (
-            <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-medium">
+            <span className="absolute -top-1 -right-1 bg-danger text-white text-xs rounded-pill h-5 w-5 flex items-center justify-center font-medium">
               {unreadCount > 99 ? "99+" : unreadCount}
             </span>
           )}
@@ -262,15 +262,15 @@ const AdminNotificationCenter: React.FC = () => {
 
         {/* Panneau de notifications */}
         {showNotifications && (
-          <div className="absolute right-0 mt-2 w-96 bg-white rounded-lg shadow-xl border border-gray-200 z-50 max-h-96 overflow-hidden">
+          <div className="absolute right-0 mt-2 w-96 bg-card rounded-card shadow-lift border border-line z-50 max-h-96 overflow-hidden">
             {/* Header */}
-            <div className="flex items-center justify-between p-4 border-b border-gray-200">
-              <h3 className="text-lg font-semibold text-gray-900">
+            <div className="flex items-center justify-between p-4 border-b border-line">
+              <h3 className="text-lg font-semibold text-ink">
                 Notifications
               </h3>
               <button
                 onClick={() => setShowNotifications(false)}
-                className="text-gray-400 hover:text-gray-600"
+                className="text-muted hover:text-ink-soft"
               >
                 <X className="h-5 w-5" />
               </button>
@@ -279,7 +279,7 @@ const AdminNotificationCenter: React.FC = () => {
             {/* Loading */}
             <div className="p-8 text-center">
               <LoadingSpinner size="md" />
-              <p className="mt-2 text-gray-600">
+              <p className="mt-2 text-ink-soft">
                 Chargement des notifications...
               </p>
             </div>

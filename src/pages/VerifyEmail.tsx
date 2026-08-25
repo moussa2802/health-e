@@ -1,6 +1,13 @@
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Mail, CheckCircle, RefreshCw, ArrowLeft } from "lucide-react";
+import {
+  Mail,
+  CheckCircle2,
+  RefreshCw,
+  ArrowLeft,
+  AlertCircle,
+  Lightbulb,
+} from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import { useTerms } from "../contexts/TermsContext";
 import { getAuth } from "firebase/auth";
@@ -74,9 +81,9 @@ const VerifyEmail: React.FC = () => {
 
           if (uid && email && name && userType) {
             console.log(
-              "✅ [VERIFY DEBUG] All required data found, creating Firestore documents..."
+              "[VERIFY DEBUG] All required data found, creating Firestore documents..."
             );
-            console.log("📋 [VERIFY DEBUG] Specialty data:", {
+            console.log("[VERIFY DEBUG] Specialty data:", {
               serviceType,
               primarySpecialty,
               category,
@@ -85,7 +92,7 @@ const VerifyEmail: React.FC = () => {
             const userRef = doc(collection(db, "users"), uid);
 
             try {
-              console.log("📝 [VERIFY DEBUG] Creating user document...");
+              console.log("[VERIFY DEBUG] Creating user document...");
               await setDoc(userRef, {
                 id: uid,
                 name,
@@ -112,24 +119,24 @@ const VerifyEmail: React.FC = () => {
                 );
               }
             } catch (error) {
-              console.error("❌ Firestore creation error:", error);
+              console.error("Firestore creation error:", error);
             }
           } else {
-            console.error("❌ Missing required data for account setup");
+            console.error("Missing required data for account setup");
           }
 
           // Force reload the current user to update the auth context
           try {
             await auth.currentUser?.reload();
           } catch (reloadError) {
-            console.warn("⚠️ Could not reload user:", reloadError);
+            console.warn("Could not reload user:", reloadError);
           }
 
           // Force refresh the auth context
           try {
             await refreshUser();
           } catch (refreshError) {
-            console.warn("⚠️ Could not refresh auth context:", refreshError);
+            console.warn("Could not refresh auth context:", refreshError);
           }
 
           // Wait a bit for currentUser to update
@@ -142,65 +149,65 @@ const VerifyEmail: React.FC = () => {
           finalUserType = userType;
 
           console.log(
-            "🎯 [VERIFY DEBUG] userType from localStorage:",
+            "[VERIFY DEBUG] userType from localStorage:",
             userType
           );
-          console.log("🎯 [VERIFY DEBUG] finalUserType:", finalUserType);
+          console.log("[VERIFY DEBUG] finalUserType:", finalUserType);
 
           let dashboardPath = "/";
 
           if (finalUserType === "patient") {
             dashboardPath = "/assessment";
-            console.log("👤 [VERIFY DEBUG] Patient → Healt-e 2.0 assessment");
+            console.log("[VERIFY DEBUG] Patient → Healt-e 2.0 assessment");
           } else if (finalUserType === "professional") {
             dashboardPath = "/professional/dashboard";
-            console.log("👨‍⚕️ [VERIFY DEBUG] Professional dashboard selected");
+            console.log("[VERIFY DEBUG] Professional dashboard selected");
           } else if (finalUserType === "admin") {
             dashboardPath = "/admin/dashboard";
-            console.log("👑 [VERIFY DEBUG] Admin dashboard selected");
+            console.log("[VERIFY DEBUG] Admin dashboard selected");
           } else {
             console.warn(
-              "⚠️ [VERIFY DEBUG] Unknown user type, defaulting to home"
+              "[VERIFY DEBUG] Unknown user type, defaulting to home"
             );
           }
 
-          console.log("🔄 [VERIFY DEBUG] Final redirect path:", dashboardPath);
+          console.log("[VERIFY DEBUG] Final redirect path:", dashboardPath);
 
           // Déclencher le modal de consentement si l'utilisateur n'a pas encore accepté les conditions
           if (!hasAgreedToTerms) {
             console.log(
-              "📋 [VERIFY DEBUG] User hasn't agreed to terms, showing modal..."
+              "[VERIFY DEBUG] User hasn't agreed to terms, showing modal..."
             );
             try {
               setShowTermsModal(true);
             } catch (modalError) {
-              console.error("❌ Error showing terms modal:", modalError);
+              console.error("Error showing terms modal:", modalError);
             }
           }
 
           // Navigate after handling terms modal
-          console.log("🚀 [VERIFY DEBUG] Navigating to dashboard...");
+          console.log("[VERIFY DEBUG] Navigating to dashboard...");
           navigate(dashboardPath);
 
           // Clean up localStorage AFTER navigation and stop the interval
           clearInterval(interval);
           setTimeout(() => {
-            console.log("🧹 [VERIFY DEBUG] Cleaning up localStorage...");
+            console.log("[VERIFY DEBUG] Cleaning up localStorage...");
             localStorage.removeItem("pending-user-id");
             localStorage.removeItem("pending-user-email");
             localStorage.removeItem("pending-user-name");
             localStorage.removeItem("pending-user-type");
             localStorage.removeItem("pending-service-type");
-            console.log("✅ [VERIFY DEBUG] localStorage cleaned up");
+            console.log("[VERIFY DEBUG] localStorage cleaned up");
           }, 1000);
         }
       } catch (error) {
-        console.error("❌ [VERIFY DEBUG] Error in verification check:", error);
+        console.error("[VERIFY DEBUG] Error in verification check:", error);
       }
     }, 2000); // Check every 2 seconds
 
     return () => {
-      console.log("🧹 [VERIFY DEBUG] Cleaning up interval");
+      console.log("[VERIFY DEBUG] Cleaning up interval");
       clearInterval(interval);
     };
   }, [
@@ -224,43 +231,48 @@ const VerifyEmail: React.FC = () => {
   const userEmail = auth.currentUser?.email || "";
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8">
+    <div className="flex min-h-screen items-center justify-center bg-paper px-4 py-12 sm:px-6 lg:px-8">
+      <div className="w-full max-w-md space-y-8 rounded-block border border-line bg-card p-8 shadow-lift">
         <div className="text-center">
-          <div className="mx-auto h-20 w-20 bg-blue-100 rounded-full flex items-center justify-center mb-6">
+          <div
+            className={`mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full ${
+              checkingVerification ? "bg-ok/10" : "bg-sage-soft"
+            }`}
+          >
             {checkingVerification ? (
-              <CheckCircle className="h-10 w-10 text-green-500" />
+              <CheckCircle2 className="h-10 w-10 text-ok" />
             ) : (
-              <Mail className="h-10 w-10 text-blue-500" />
+              <Mail className="h-10 w-10 text-sage" />
             )}
           </div>
 
-          <h2 className="text-3xl font-bold text-gray-900 mb-2">
+          <h2 className="font-display mb-2 text-3xl font-bold text-ink">
             {checkingVerification
               ? "E-mail vérifié !"
               : "Vérifiez votre e-mail"}
           </h2>
 
           {checkingVerification ? (
-            <p className="text-gray-600">
+            <p className="text-ink-soft">
               Configuration de votre compte en cours...
             </p>
           ) : (
             <>
-              <p className="text-gray-600 mb-4">
+              <p className="mb-4 text-ink-soft">
                 Nous avons envoyé un lien de vérification à :
               </p>
-              <p className="font-medium text-gray-900 mb-6">{userEmail}</p>
-              <p className="text-gray-600">
+              <p className="mb-6 font-medium text-ink">{userEmail}</p>
+              <p className="text-ink-soft">
                 Cliquez sur le lien dans l'e-mail pour activer votre compte.
               </p>
 
-              <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                <p className="text-sm text-blue-800">
-                  <strong>💡 Conseil :</strong> Après avoir cliqué sur le lien
-                  de vérification dans votre email, cette page se mettra à jour
-                  automatiquement et vous serez redirigé vers votre tableau de
-                  bord.
+              <div className="mt-4 flex gap-2 rounded-card border border-line bg-sage-soft p-4 text-left">
+                <Lightbulb className="mt-0.5 h-5 w-5 flex-shrink-0 text-sage" />
+                <p className="text-sm text-ink-soft">
+                  <strong className="text-ink">Conseil :</strong> Après avoir
+                  cliqué sur le lien de vérification dans votre email, cette
+                  page se mettra à jour automatiquement et vous serez
+                  redirigé vers votre tableau de bord.
                 </p>
               </div>
             </>
@@ -270,50 +282,49 @@ const VerifyEmail: React.FC = () => {
         {!checkingVerification && (
           <div className="space-y-4">
             {emailSent && (
-              <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded">
-                <div className="flex items-center">
-                  <CheckCircle className="h-5 w-5 mr-2" />
-                  <span>E-mail de vérification renvoyé avec succès</span>
-                </div>
+              <div className="flex items-center gap-2 rounded-card border border-ok/30 bg-ok/10 px-4 py-3 text-ok">
+                <CheckCircle2 className="h-5 w-5 flex-shrink-0" />
+                <span>E-mail de vérification renvoyé avec succès</span>
               </div>
             )}
 
             {error && (
-              <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+              <div className="flex items-center gap-2 rounded-card border border-danger/30 bg-danger/10 px-4 py-3 text-danger">
+                <AlertCircle className="h-5 w-5 flex-shrink-0" />
                 <span>{error}</span>
               </div>
             )}
 
-            <div className="text-center space-y-4">
-              <p className="text-sm text-gray-600">
+            <div className="space-y-4 text-center">
+              <p className="text-sm text-ink-soft">
                 Vous n'avez pas reçu l'e-mail ? Vérifiez votre dossier spam ou
               </p>
 
               <button
                 onClick={handleResendEmail}
                 disabled={isResending || isInCooldown}
-                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-blue-600 bg-blue-100 hover:bg-blue-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="inline-flex items-center rounded-pill bg-sage-soft px-4 py-2 text-sm font-medium text-sage transition-colors hover:bg-sage/20 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {isResending ? (
                   <>
-                    <RefreshCw className="animate-spin h-4 w-4 mr-2" />
+                    <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
                     Envoi en cours...
                   </>
                 ) : isInCooldown ? (
                   <>
-                    <Mail className="h-4 w-4 mr-2" />
+                    <Mail className="mr-2 h-4 w-4" />
                     Attendre {cooldownTime}s
                   </>
                 ) : (
                   <>
-                    <Mail className="h-4 w-4 mr-2" />
+                    <Mail className="mr-2 h-4 w-4" />
                     Renvoyer l'e-mail
                   </>
                 )}
               </button>
 
               {isInCooldown && (
-                <p className="mt-2 text-center text-sm text-gray-500">
+                <p className="mt-2 text-center text-sm text-muted">
                   Vous pourrez renvoyer un e-mail dans {cooldownTime} secondes
                 </p>
               )}
@@ -322,9 +333,9 @@ const VerifyEmail: React.FC = () => {
             <div className="text-center">
               <Link
                 to="/"
-                className="inline-flex items-center text-sm text-gray-500 hover:text-gray-700"
+                className="inline-flex items-center text-sm text-ink-soft transition-colors hover:text-ink"
               >
-                <ArrowLeft className="h-4 w-4 mr-1" />
+                <ArrowLeft className="mr-1 h-4 w-4" />
                 Retour à l'accueil
               </Link>
             </div>

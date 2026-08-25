@@ -8,6 +8,7 @@ import {
   ChevronRight,
   RefreshCw,
   AlertCircle,
+  Loader2,
 } from "lucide-react";
 import {
   format,
@@ -192,23 +193,23 @@ const NewAppointmentScheduler: React.FC<NewAppointmentSchedulerProps> = ({
         const reservedKeys = reserved.map((b) =>
           generateSlotKey(b.date, b.startTime)
         );
-        console.log("🔑 [RESERVED DEBUG] Reservation keys:", reservedKeys);
+        console.log("[RESERVED DEBUG] Reservation keys:", reservedKeys);
         if (reservedKeys.length > 0) {
-          console.log("📊 [RESERVED DEBUG] Sample key:", reservedKeys[0]);
+          console.log("[RESERVED DEBUG] Sample key:", reservedKeys[0]);
         }
 
         setReservedSlotKeys(reservedKeys);
 
         console.log(
-          "🔑 [RESERVED DEBUG] Reserved slot keys set:",
+          "[RESERVED DEBUG] Reserved slot keys set:",
           reservedKeys.length
         );
       } catch (error) {
         console.error(
-          "❌ [RESERVED DEBUG] Error loading reserved slots:",
+          "[RESERVED DEBUG] Error loading reserved slots:",
           error
         );
-        console.error("❌ [RESERVED DEBUG] Error details:", {
+        console.error("[RESERVED DEBUG] Error details:", {
           code: error.code,
           message: error.message,
           professionalId,
@@ -231,7 +232,7 @@ const NewAppointmentScheduler: React.FC<NewAppointmentSchedulerProps> = ({
     // Skip if user is not authenticated (for public view)
     if (!currentUser && !isProfessional) {
       console.log(
-        "🔍 [SLOTS DEBUG] User not authenticated, skipping slots fetch"
+        "[SLOTS DEBUG] User not authenticated, skipping slots fetch"
       );
       return;
     }
@@ -239,7 +240,7 @@ const NewAppointmentScheduler: React.FC<NewAppointmentSchedulerProps> = ({
     // Loop detection
     loopDetectionCountRef.current += 1;
     if (loopDetectionCountRef.current > 10) {
-      console.warn("⚠️ Infinite loop detected, stopping execution");
+      console.warn("Infinite loop detected, stopping execution");
       setIsInfiniteLoopDetected(true);
       return;
     }
@@ -249,13 +250,13 @@ const NewAppointmentScheduler: React.FC<NewAppointmentSchedulerProps> = ({
       setSlotError(null);
 
       console.log(
-        `🔄 Loading available slots for date: ${format(
+        `Loading available slots for date: ${format(
           selectedDate,
           "yyyy-MM-dd"
         )}`
       );
       console.log(
-        `🔍 Professional ID utilisé pour la requête: ${professionalId}`
+        `Professional ID utilisé pour la requête: ${professionalId}`
       );
 
       await ensureFirestoreReady();
@@ -274,7 +275,7 @@ const NewAppointmentScheduler: React.FC<NewAppointmentSchedulerProps> = ({
         where("start", "<", addDays(startOfDay(selectedDate), 1))
       );
 
-      console.log("🔍 Exécution de la requête Firestore...");
+      console.log("Exécution de la requête Firestore...");
       const querySnapshot = await getDocs(dateQuery);
       const slots: TimeSlot[] = [];
 
@@ -290,23 +291,23 @@ const NewAppointmentScheduler: React.FC<NewAppointmentSchedulerProps> = ({
         }
       });
 
-      console.log(`📊 Found ${slots.length} slots in Firestore`);
+      console.log(`Found ${slots.length} slots in Firestore`);
 
       // Update slots with booking status
       const updatedSlots = slots.map((slot) => {
         const slotKey = generateSlotKey(slot.date, slot.time);
-        console.log(`🔍 [SLOT CHECK] Créneau: ${slotKey}`);
+        console.log(`[SLOT CHECK] Créneau: ${slotKey}`);
         console.log(
-          `🔍 [SLOT CHECK] Dans reservedSlotKeys: ${reservedSlotKeys.includes(
+          `[SLOT CHECK] Dans reservedSlotKeys: ${reservedSlotKeys.includes(
             slotKey
           )}`
         );
         console.log(
-          `🔍 [SLOT CHECK] Firestore isAvailable: ${slot.isBooked !== true}`
+          `[SLOT CHECK] Firestore isAvailable: ${slot.isBooked !== true}`
         );
 
         const isBooked = reservedSlotKeys.includes(slotKey);
-        console.log(`🔍 [SLOT CHECK] Final isBooked: ${isBooked}`);
+        console.log(`[SLOT CHECK] Final isBooked: ${isBooked}`);
 
         return {
           ...slot,
@@ -315,10 +316,10 @@ const NewAppointmentScheduler: React.FC<NewAppointmentSchedulerProps> = ({
       });
 
       console.log(
-        `✅ [SLOT CHECK] Updated ${updatedSlots.length} slots with booking status`
+        `[SLOT CHECK] Updated ${updatedSlots.length} slots with booking status`
       );
       console.log(
-        `📊 [SLOT CHECK] ${
+        `[SLOT CHECK] ${
           updatedSlots.filter((s) => s.isBooked).length
         } slots marked as booked`
       );
@@ -327,7 +328,7 @@ const NewAppointmentScheduler: React.FC<NewAppointmentSchedulerProps> = ({
       const bookedSlots = updatedSlots.filter((s) => s.isBooked);
       if (bookedSlots.length > 0) {
         console.log(
-          "🔴 [RESERVED DEBUG] Créneaux réservés:",
+          "[RESERVED DEBUG] Créneaux réservés:",
           bookedSlots.map((s) => ({
             date: format(s.date, "yyyy-MM-dd"),
             time: s.time,
@@ -338,7 +339,7 @@ const NewAppointmentScheduler: React.FC<NewAppointmentSchedulerProps> = ({
 
       setAvailableSlots(updatedSlots);
 
-      console.log(`✅ Successfully loaded ${slots.length} slots`);
+      console.log(`Successfully loaded ${slots.length} slots`);
 
       // If we have a callback, call it
       if (onSlotsChange) {
@@ -441,12 +442,12 @@ const NewAppointmentScheduler: React.FC<NewAppointmentSchedulerProps> = ({
       // Vérifier l'authentification AVANT toute opération
       if (!currentUser?.id) {
         console.error(
-          "❌ Utilisateur non authentifié lors de la création des créneaux"
+          "Utilisateur non authentifié lors de la création des créneaux"
         );
         throw new Error("Utilisateur non authentifié");
       }
 
-      console.log("🔐 Vérification de l'authentification:", {
+      console.log("Vérification de l'authentification:", {
         currentUser: currentUser.id,
         isProfessional,
         professionalId,
@@ -478,13 +479,13 @@ const NewAppointmentScheduler: React.FC<NewAppointmentSchedulerProps> = ({
         // Vérifier que la date n'est pas dans le passé
         if (isBefore(targetDate, startOfDay(new Date()))) {
           console.warn(
-            `⚠️ Date dans le passé ignorée: ${format(targetDate, "yyyy-MM-dd")}`
+            `Date dans le passé ignorée: ${format(targetDate, "yyyy-MM-dd")}`
           );
           return;
         }
 
         console.log(
-          `📅 Création de créneaux pour: ${format(
+          `Création de créneaux pour: ${format(
             targetDate,
             "yyyy-MM-dd"
           )} (${startTime}-${endTime})`
@@ -494,7 +495,7 @@ const NewAppointmentScheduler: React.FC<NewAppointmentSchedulerProps> = ({
         const timeSlots = generateTimeSlots(startTime, endTime, slotDuration);
 
         if (timeSlots.length === 0) {
-          console.warn(`⚠️ Aucun créneau généré pour ${startTime}-${endTime}`);
+          console.warn(`Aucun créneau généré pour ${startTime}-${endTime}`);
           return;
         }
 
@@ -521,7 +522,7 @@ const NewAppointmentScheduler: React.FC<NewAppointmentSchedulerProps> = ({
           };
 
           console.log(
-            `📝 Création du créneau avec professionalId: ${currentUser.id}`
+            `Création du créneau avec professionalId: ${currentUser.id}`
           );
 
           const docRef = await addDoc(eventsRef, eventData);
@@ -558,7 +559,7 @@ const NewAppointmentScheduler: React.FC<NewAppointmentSchedulerProps> = ({
         const dayEndTime = daySchedule ? daySchedule.endTime : endTime;
 
         console.log(
-          `📅 Création pour ${dayName}: ${dayStartTime}-${dayEndTime}`
+          `Création pour ${dayName}: ${dayStartTime}-${dayEndTime}`
         );
 
         await createSlotsForDate(targetDate, dayStartTime, dayEndTime);
@@ -567,7 +568,7 @@ const NewAppointmentScheduler: React.FC<NewAppointmentSchedulerProps> = ({
       console.log(`Created ${createdSlots.length} slots`);
 
       // Vérifier l'état de l'authentification
-      console.log("🔐 État de l'authentification après création:", {
+      console.log("État de l'authentification après création:", {
         currentUser: currentUser?.id,
         isProfessional,
         professionalId,
@@ -585,7 +586,7 @@ const NewAppointmentScheduler: React.FC<NewAppointmentSchedulerProps> = ({
         // Créer une notification temporaire
         const notification = document.createElement("div");
         notification.className =
-          "fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 transform transition-all duration-300 translate-x-full";
+          "fixed top-4 right-4 bg-ok text-white px-6 py-3 rounded-pill shadow-lift z-50 transform transition-all duration-300 translate-x-full";
         notification.innerHTML = `
           <div class="flex items-center space-x-2">
             <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
@@ -692,7 +693,7 @@ const NewAppointmentScheduler: React.FC<NewAppointmentSchedulerProps> = ({
         {days.map((day, i) => (
           <div
             key={i}
-            className="text-center font-medium text-gray-500 text-sm py-2"
+            className="text-center font-medium text-muted text-sm py-2"
           >
             {day}
           </div>
@@ -765,14 +766,14 @@ const NewAppointmentScheduler: React.FC<NewAppointmentSchedulerProps> = ({
             const count = availableDatesMap.get(normalizedDate) || 0;
             availableDatesMap.set(normalizedDate, count + 1);
             console.log(
-              `✅ Jour disponible détecté (existingSlots): ${normalizedDate} (${
+              `Jour disponible détecté (existingSlots): ${normalizedDate} (${
                 count + 1
               } créneaux)`
             );
           }
         } catch (error) {
           console.error(
-            "❌ Erreur lors de la normalisation de la date:",
+            "Erreur lors de la normalisation de la date:",
             error,
             slot
           );
@@ -790,13 +791,13 @@ const NewAppointmentScheduler: React.FC<NewAppointmentSchedulerProps> = ({
             if (!availableDatesMap.has(normalizedDate)) {
               availableDatesMap.set(normalizedDate, 1);
               console.log(
-                `✅ Jour disponible détecté (availableDays): ${normalizedDate}`
+                `Jour disponible détecté (availableDays): ${normalizedDate}`
               );
             }
           }
         } catch (error) {
           console.error(
-            "❌ Erreur lors de la normalisation du jour disponible:",
+            "Erreur lors de la normalisation du jour disponible:",
             error,
             day
           );
@@ -872,16 +873,16 @@ const NewAppointmentScheduler: React.FC<NewAppointmentSchedulerProps> = ({
           return (
             <div
               key={idx}
-              className={`h-12 border border-gray-100 flex items-center justify-center relative ${
+              className={`h-12 border border-line flex items-center justify-center relative ${
                 !isCurrentMonth
-                  ? "text-gray-300 bg-gray-50"
+                  ? "text-muted bg-paper"
                   : isPast
-                  ? "text-gray-400 bg-gray-50"
+                  ? "text-muted bg-paper"
                   : isSelected
-                  ? "bg-blue-500 text-white"
+                  ? "bg-accent text-white"
                   : isTodayDate
-                  ? "bg-blue-50 text-blue-600"
-                  : "text-gray-700 hover:bg-gray-50"
+                  ? "ring-1 ring-inset ring-accent text-accent"
+                  : "text-ink-soft hover:bg-paper"
               } ${isSelectable ? "cursor-pointer" : "cursor-not-allowed"}`}
               onClick={() => isSelectable && setSelectedDate(day)}
             >
@@ -898,7 +899,7 @@ const NewAppointmentScheduler: React.FC<NewAppointmentSchedulerProps> = ({
                   {dayStr}
                 </span>
                 {hasAvailability && !isSelected && (
-                  <div className="absolute -bottom-1 w-2 h-2 rounded-full bg-green-500"></div>
+                  <div className="absolute -bottom-1 w-2 h-2 rounded-full bg-ok"></div>
                 )}
               </div>
             </div>
@@ -909,11 +910,11 @@ const NewAppointmentScheduler: React.FC<NewAppointmentSchedulerProps> = ({
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-lg overflow-hidden">
+    <div className="bg-card rounded-block border border-line shadow-soft overflow-hidden">
       {/* Header */}
-      <div className="p-4 border-b border-gray-200 flex justify-between items-center">
-        <h2 className="text-xl font-semibold text-gray-800 flex items-center">
-          <Calendar className="w-6 h-6 text-blue-500 mr-2" />
+      <div className="p-4 border-b border-line flex justify-between items-center">
+        <h2 className="font-display text-xl font-semibold text-ink flex items-center">
+          <Calendar className="w-6 h-6 text-accent mr-2" />
           {isProfessional
             ? "Gérer mes disponibilités"
             : "Sélectionner un créneau"}
@@ -922,7 +923,7 @@ const NewAppointmentScheduler: React.FC<NewAppointmentSchedulerProps> = ({
         {isProfessional && (
           <button
             onClick={() => setShowAddModal(true)}
-            className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-all duration-200 flex items-center shadow-sm hover:shadow-md transform hover:-translate-y-0.5"
+            className="px-4 py-2 bg-accent text-white rounded-pill hover:bg-accent/90 transition-colors flex items-center shadow-soft"
           >
             <Plus className="w-4 h-4 mr-2" />
             Ajouter des créneaux
@@ -932,40 +933,40 @@ const NewAppointmentScheduler: React.FC<NewAppointmentSchedulerProps> = ({
 
       {/* Error message */}
       {error && (
-        <div className="m-4 p-3 bg-red-50 border border-red-200 rounded-md flex items-center">
-          <AlertCircle className="w-5 h-5 text-red-500 mr-2" />
-          <p className="text-red-600 text-sm">{error}</p>
+        <div className="m-4 p-3 bg-danger/10 border border-danger/20 rounded-xl flex items-center">
+          <AlertCircle className="w-5 h-5 text-danger mr-2 flex-shrink-0" />
+          <p className="text-danger text-sm">{error}</p>
         </div>
       )}
 
       <div className="flex flex-col md:flex-row">
         {/* Calendar */}
-        <div className="md:w-1/2 p-4 border-r border-gray-200">
+        <div className="md:w-1/2 p-4 border-r border-line">
           <div className="flex justify-between items-center mb-4">
             <button
               onClick={prevMonth}
-              className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+              className="p-2 hover:bg-paper rounded-pill transition-colors"
             >
-              <ChevronLeft className="w-5 h-5 text-gray-600" />
+              <ChevronLeft className="w-5 h-5 text-ink-soft" />
             </button>
 
-            <h3 className="text-lg font-medium text-gray-800">
+            <h3 className="text-lg font-medium text-ink">
               {format(currentMonth, "MMMM yyyy", { locale: fr })}
             </h3>
 
             <button
               onClick={nextMonth}
-              className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+              className="p-2 hover:bg-paper rounded-pill transition-colors"
             >
-              <ChevronRight className="w-5 h-5 text-gray-600" />
+              <ChevronRight className="w-5 h-5 text-ink-soft" />
             </button>
           </div>
 
           {renderDays()}
           {renderCells()}
-          <div className="mt-4 p-3 bg-green-50 border border-green-100 rounded-md text-center text-sm text-green-700">
+          <div className="mt-4 p-3 bg-sage-soft border border-sage/20 rounded-xl text-center text-sm text-sage">
             <div className="flex items-center justify-center">
-              <div className="w-2 h-2 rounded-full bg-green-500 mr-2"></div>
+              <div className="w-2 h-2 rounded-full bg-ok mr-2"></div>
               <p>
                 Les jours avec un point vert indiquent des créneaux disponibles
               </p>
@@ -977,7 +978,7 @@ const NewAppointmentScheduler: React.FC<NewAppointmentSchedulerProps> = ({
               onClick={() => {
                 setCurrentMonth(new Date());
               }}
-              className="px-4 py-2 text-sm text-blue-600 hover:bg-blue-50 rounded-md transition-colors"
+              className="px-4 py-2 text-sm text-accent hover:bg-accent-soft rounded-pill transition-colors"
             >
               Aujourd'hui
             </button>
@@ -987,8 +988,8 @@ const NewAppointmentScheduler: React.FC<NewAppointmentSchedulerProps> = ({
         {/* Time slots */}
         <div className="md:w-1/2 p-4">
           <div className="flex justify-between items-center mb-4">
-            <h3 className="text-lg font-medium text-gray-800 flex items-center">
-              <Clock className="w-5 h-5 text-blue-500 mr-2" />
+            <h3 className="text-lg font-medium text-ink flex items-center">
+              <Clock className="w-5 h-5 text-accent mr-2" />
               {selectedDate
                 ? format(selectedDate, "EEEE d MMMM", { locale: fr })
                 : "Sélectionnez une date"}
@@ -996,7 +997,7 @@ const NewAppointmentScheduler: React.FC<NewAppointmentSchedulerProps> = ({
 
             <button
               onClick={() => setRefreshTrigger((prev) => prev + 1)}
-              className="p-2 text-gray-500 hover:bg-gray-100 rounded-full transition-colors"
+              className="p-2 text-ink-soft hover:bg-paper rounded-pill transition-colors"
               title="Rafraîchir"
             >
               <RefreshCw className="w-4 h-4" />
@@ -1005,9 +1006,9 @@ const NewAppointmentScheduler: React.FC<NewAppointmentSchedulerProps> = ({
 
           {/* Slot error message */}
           {(slotError || isInfiniteLoopDetected) && (
-            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md flex items-center">
-              <AlertCircle className="w-5 h-5 text-red-500 mr-2" />
-              <p className="text-red-600 text-sm">
+            <div className="mb-4 p-3 bg-danger/10 border border-danger/20 rounded-xl flex items-center">
+              <AlertCircle className="w-5 h-5 text-danger mr-2 flex-shrink-0" />
+              <p className="text-danger text-sm">
                 {slotError ||
                   "Problème de chargement des créneaux. Veuillez rafraîchir la page."}
               </p>
@@ -1016,8 +1017,8 @@ const NewAppointmentScheduler: React.FC<NewAppointmentSchedulerProps> = ({
 
           {loadingSlots && !isInfiniteLoopDetected ? (
             <div className="flex flex-col justify-center items-center h-40">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
-              <p className="mt-4 text-gray-500">Chargement des créneaux...</p>
+              <Loader2 className="w-8 h-8 text-accent animate-spin" />
+              <p className="mt-4 text-muted">Chargement des créneaux...</p>
             </div>
           ) : availableSlots.length > 0 ? (
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
@@ -1032,27 +1033,27 @@ const NewAppointmentScheduler: React.FC<NewAppointmentSchedulerProps> = ({
                       "yyyy-MM-dd"
                     )}-${slot.time}`
                   }
-                  className={`relative p-3 rounded-lg border transition-all duration-200 ${
+                  className={`relative p-3 rounded-xl border transition-all duration-200 ${
                     slot.isBooked
-                      ? "bg-gray-200 border-gray-400 cursor-not-allowed opacity-75"
+                      ? "bg-line/40 border-line cursor-not-allowed opacity-75"
                       : isProfessional
-                      ? "bg-blue-50 border-blue-200 shadow-sm hover:shadow-md"
+                      ? "bg-accent-soft border-accent/20 shadow-soft"
                       : selectedTimeSlot &&
                         selectedTimeSlot.time === slot.time &&
                         areDatesEqual(selectedTimeSlot.date, slot.date)
-                      ? "bg-blue-600 text-white border-blue-700 shadow-md transform scale-105"
-                      : "bg-blue-50 border-blue-200 hover:bg-blue-100 cursor-pointer hover:shadow-md"
+                      ? "bg-accent text-white border-accent shadow-soft scale-105"
+                      : "bg-accent-soft border-accent/20 hover:bg-accent-soft/70 cursor-pointer hover:shadow-soft"
                   }`}
                   onClick={() => {
                     if (slot.isBooked) {
-                      console.log("🚫 Créneau réservé, clic ignoré:", slot);
+                      console.log("Créneau réservé, clic ignoré:", slot);
                       return;
                     }
                     handleSlotClick(slot);
                   }}
                 >
                   {slot.isBooked && (
-                    <div className="absolute top-1 right-1 text-xs text-red-600 font-bold bg-white px-2 py-1 rounded-full border border-red-300 shadow-sm">
+                    <div className="absolute top-1 right-1 text-xs text-danger font-bold bg-card px-2 py-1 rounded-pill border border-danger/30 shadow-soft">
                       RÉSERVÉ
                     </div>
                   )}
@@ -1060,12 +1061,12 @@ const NewAppointmentScheduler: React.FC<NewAppointmentSchedulerProps> = ({
                     <span
                       className={`text-sm font-medium ${
                         slot.isBooked
-                          ? "text-gray-500"
+                          ? "text-muted"
                           : selectedTimeSlot &&
                             selectedTimeSlot.time === slot.time &&
                             areDatesEqual(selectedTimeSlot.date, slot.date)
                           ? "text-white"
-                          : "text-blue-700"
+                          : "text-accent"
                       }`}
                     >
                       {slot.time} {/* Afficher l'heure brute */}
@@ -1077,7 +1078,7 @@ const NewAppointmentScheduler: React.FC<NewAppointmentSchedulerProps> = ({
                           e.stopPropagation();
                           if (slot.id) handleDeleteSlot(slot.id);
                         }}
-                        className="p-1 text-red-500 hover:bg-red-100 rounded-full transition-colors"
+                        className="p-1 text-danger hover:bg-danger/10 rounded-pill transition-colors"
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
@@ -1085,8 +1086,8 @@ const NewAppointmentScheduler: React.FC<NewAppointmentSchedulerProps> = ({
                   </div>
 
                   {slot.isBooked && (
-                    <div className="absolute inset-0 flex items-center justify-center bg-gray-200 bg-opacity-50 rounded-lg">
-                      <span className="text-xs font-medium text-gray-600 bg-white px-2 py-1 rounded">
+                    <div className="absolute inset-0 flex items-center justify-center bg-line/50 rounded-xl">
+                      <span className="text-xs font-medium text-ink-soft bg-card px-2 py-1 rounded-pill">
                         Réservé
                       </span>
                     </div>
@@ -1095,10 +1096,10 @@ const NewAppointmentScheduler: React.FC<NewAppointmentSchedulerProps> = ({
               ))}
             </div>
           ) : (
-            <div className="flex flex-col items-center justify-center h-40 text-gray-500">
+            <div className="flex flex-col items-center justify-center h-40 text-muted">
               {isInfiniteLoopDetected ? (
                 <>
-                  <AlertCircle className="w-12 h-12 text-red-300 mb-2" />
+                  <AlertCircle className="w-12 h-12 text-danger/40 mb-2" />
                   <p className="text-center">
                     Problème de chargement des créneaux
                   </p>
@@ -1108,7 +1109,7 @@ const NewAppointmentScheduler: React.FC<NewAppointmentSchedulerProps> = ({
                       loopDetectionCountRef.current = 0;
                       setRefreshTrigger((prev) => prev + 1);
                     }}
-                    className="mt-4 px-4 py-2 text-sm bg-blue-500 text-white hover:bg-blue-600 rounded-md transition-colors"
+                    className="mt-4 px-4 py-2 text-sm bg-accent text-white hover:bg-accent/90 rounded-pill transition-colors"
                   >
                     <RefreshCw className="w-4 h-4 mr-2 inline" />
                     Réessayer
@@ -1116,7 +1117,7 @@ const NewAppointmentScheduler: React.FC<NewAppointmentSchedulerProps> = ({
                 </>
               ) : (
                 <>
-                  <Clock className="w-12 h-12 text-gray-300 mb-2" />
+                  <Clock className="w-12 h-12 text-muted/50 mb-2" />
                   <p className="text-center">
                     Aucun créneau disponible pour{" "}
                     {selectedDate
@@ -1128,7 +1129,7 @@ const NewAppointmentScheduler: React.FC<NewAppointmentSchedulerProps> = ({
               {isProfessional && (
                 <button
                   onClick={() => setShowAddModal(true)}
-                  className="mt-4 px-4 py-2 text-sm text-blue-600 hover:bg-blue-50 rounded-md transition-colors"
+                  className="mt-4 px-4 py-2 text-sm text-accent hover:bg-accent-soft rounded-pill transition-colors"
                 >
                   Ajouter des créneaux
                 </button>

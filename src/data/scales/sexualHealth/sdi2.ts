@@ -22,7 +22,7 @@ export const SDI2: AssessmentScale = {
   shortName: "SDI-2",
   category: 'sexual_health',
   description: "Évalue ton désir sexuel selon deux dimensions : le désir envers {{un|une}} partenaire et le désir sexuel personnel.",
-  instructions: "Ces questions portent sur ton désir sexuel ces derniers mois — à la fois envers {{un|une}} partenaire et de façon générale. Réponds selon ton vécu réel 💫",
+  instructions: "Ces questions portent sur ton désir sexuel ces derniers mois — à la fois envers {{un|une}} partenaire et de façon générale. Réponds selon ton vécu réel",
   timeEstimateMinutes: 6,
   reference: "Spector, I.P., Carey, M.P., & Steinberg, L. (1996). The Sexual Desire Inventory. Journal of Sex & Marital Therapy, 22(3), 175–190.",
   licenseNote: "Libre pour usage clinique et de recherche.",

@@ -320,17 +320,17 @@ const StableProfessionalSettings: React.FC = () => {
         <div className="flex items-center justify-center h-64">
           <div className="text-center">
             <LoadingSpinner size="lg" />
-            <p className="mt-4 text-lg text-gray-600">
+            <p className="mt-4 text-lg text-ink-soft">
               Chargement du profil...
             </p>
             <div className="mt-4 flex items-center justify-center">
               {connectionStatus.isOnline ? (
-                <div className="flex items-center text-green-600">
+                <div className="flex items-center text-ok">
                   <Wifi className="h-4 w-4 mr-1" />
                   <span className="text-sm">En ligne</span>
                 </div>
               ) : (
-                <div className="flex items-center text-red-600">
+                <div className="flex items-center text-danger">
                   <WifiOff className="h-4 w-4 mr-1" />
                   <span className="text-sm">Hors ligne</span>
                 </div>
@@ -339,7 +339,7 @@ const StableProfessionalSettings: React.FC = () => {
             <div className="mt-4">
               <button
                 onClick={handleReconnect}
-                className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors"
+                className="px-4 py-2 bg-accent text-paper rounded-pill hover:bg-accent/90 transition-colors"
               >
                 Forcer la reconnexion
               </button>
@@ -351,33 +351,33 @@ const StableProfessionalSettings: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+    <div className="min-h-screen bg-paper">
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
-        <div className="bg-white rounded-2xl shadow-lg p-6 mb-8">
+        <div className="bg-card border border-line rounded-block shadow-soft p-6 mb-8">
           <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">
+              <h1 className="text-3xl font-display font-bold text-ink">
                 Paramètres du profil
               </h1>
-              <p className="text-gray-600 mt-2">
+              <p className="text-ink-soft mt-2">
                 Gérez vos informations professionnelles et votre disponibilité
               </p>
             </div>
 
             <div className="flex items-center gap-4">
               {isLocalEnvironment && (
-                <div className="flex items-center px-3 py-1 rounded-full text-sm bg-yellow-100 text-yellow-800">
+                <div className="flex items-center px-3 py-1 rounded-pill text-sm bg-gold-soft text-gold">
                   <Globe className="h-4 w-4 mr-1" />
                   Mode développement
                 </div>
               )}
 
               <div
-                className={`flex items-center px-3 py-1 rounded-full text-sm ${
+                className={`flex items-center px-3 py-1 rounded-pill text-sm ${
                   connectionStatus.isOnline && connectionStatus.isInitialized
-                    ? "bg-green-100 text-green-800"
-                    : "bg-red-100 text-red-800"
+                    ? "bg-ok/10 text-ok"
+                    : "bg-danger/10 text-danger"
                 }`}
               >
                 {connectionStatus.isOnline && connectionStatus.isInitialized ? (
@@ -395,14 +395,14 @@ const StableProfessionalSettings: React.FC = () => {
 
         {/* Messages d'erreur et de succès */}
         {errorMessage && (
-          <div className="mb-6 p-4 bg-red-100 border border-red-400 text-red-700 rounded-xl flex items-center justify-between">
+          <div className="mb-6 p-4 bg-danger/10 border border-danger/30 text-danger rounded-card flex items-center justify-between">
             <div className="flex items-center">
               <AlertCircle className="h-5 w-5 mr-2" />
               <span>{errorMessage}</span>
             </div>
             <button
               onClick={() => setErrorMessage("")}
-              className="text-red-500 hover:text-red-700"
+              className="text-danger hover:text-danger/80"
             >
               <X className="h-5 w-5" />
             </button>
@@ -410,14 +410,14 @@ const StableProfessionalSettings: React.FC = () => {
         )}
 
         {saveSuccess && (
-          <div className="mb-6 p-4 bg-green-100 border border-green-400 text-green-700 rounded-xl flex items-center justify-between">
+          <div className="mb-6 p-4 bg-ok/10 border border-ok/30 text-ok rounded-card flex items-center justify-between">
             <div className="flex items-center">
               <CheckCircle className="h-5 w-5 mr-2" />
               <span>Profil sauvegardé avec succès !</span>
             </div>
             <button
               onClick={() => setSaveSuccess(false)}
-              className="text-green-500 hover:text-green-700"
+              className="text-ok hover:text-ok/80"
             >
               <X className="h-5 w-5" />
             </button>
@@ -427,13 +427,13 @@ const StableProfessionalSettings: React.FC = () => {
         {/* Contenu principal */}
         <div className="space-y-8">
           {/* Statut du profil */}
-          <div className="bg-white rounded-2xl shadow-lg p-6">
+          <div className="bg-card border border-line rounded-block shadow-soft p-6">
             <div className="flex items-center justify-between">
               <div>
-                <h2 className="text-xl font-semibold text-gray-900">
+                <h2 className="text-xl font-display font-semibold text-ink">
                   Statut du profil
                 </h2>
-                <p className="text-gray-600 mt-1">
+                <p className="text-ink-soft mt-1">
                   {profileData.isApproved
                     ? "Votre profil est approuvé et visible par les patients"
                     : "Votre profil est en attente d'approbation"}
@@ -444,10 +444,10 @@ const StableProfessionalSettings: React.FC = () => {
                 <div className="flex items-center gap-2">
                   <div
                     className={`w-3 h-3 rounded-full ${
-                      profileData.isApproved ? "bg-green-500" : "bg-yellow-500"
+                      profileData.isApproved ? "bg-ok" : "bg-gold"
                     }`}
                   ></div>
-                  <span className="text-sm text-gray-600">
+                  <span className="text-sm text-ink-soft">
                     {profileData.isApproved ? "Approuvé" : "En attente"}
                   </span>
                 </div>
@@ -475,10 +475,10 @@ const StableProfessionalSettings: React.FC = () => {
                     }
                   }}
                   disabled={!profileData.isApproved}
-                  className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                  className={`px-4 py-2 rounded-pill font-medium transition-colors ${
                     profileData.isActive
-                      ? "bg-green-100 text-green-700 hover:bg-green-200 border border-green-300"
-                      : "bg-gray-100 text-gray-700 hover:bg-gray-200 border border-gray-300"
+                      ? "bg-sage-soft text-sage hover:bg-sage/20 border border-sage/30"
+                      : "bg-paper text-ink-soft hover:bg-line/40 border border-line"
                   } ${
                     !profileData.isApproved
                       ? "opacity-50 cursor-not-allowed"
@@ -492,16 +492,16 @@ const StableProfessionalSettings: React.FC = () => {
           </div>
 
           {/* Préférences de notifications email */}
-          <div className="bg-white rounded-2xl shadow-lg p-6">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">
+          <div className="bg-card border border-line rounded-block shadow-soft p-6">
+            <h2 className="text-xl font-display font-semibold text-ink mb-4">
               Notifications par e-mail
             </h2>
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="text-lg font-medium text-gray-900">
+                <h3 className="text-lg font-medium text-ink">
                   Recevoir les notifications par e-mail
                 </h3>
-                <p className="text-gray-600 mt-1">
+                <p className="text-ink-soft mt-1">
                   Activez cette option pour recevoir des notifications par
                   e-mail pour les nouveaux rendez-vous, messages et autres
                   événements importants.
@@ -513,8 +513,8 @@ const StableProfessionalSettings: React.FC = () => {
                     handleEmailPreferencesChange(!emailNotificationsEnabled)
                   }
                   disabled={isUpdatingEmailPrefs}
-                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 ${
-                    emailNotificationsEnabled ? "bg-teal-600" : "bg-gray-200"
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 ${
+                    emailNotificationsEnabled ? "bg-accent" : "bg-line"
                   } ${
                     isUpdatingEmailPrefs
                       ? "opacity-50 cursor-not-allowed"
@@ -522,7 +522,7 @@ const StableProfessionalSettings: React.FC = () => {
                   }`}
                 >
                   <span
-                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                    className={`inline-block h-4 w-4 transform rounded-full bg-paper transition-transform ${
                       emailNotificationsEnabled
                         ? "translate-x-6"
                         : "translate-x-1"
@@ -531,17 +531,17 @@ const StableProfessionalSettings: React.FC = () => {
                 </button>
                 {isUpdatingEmailPrefs && (
                   <div className="ml-3">
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-teal-600"></div>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-accent"></div>
                   </div>
                 )}
               </div>
             </div>
             {emailNotificationsEnabled && (
-              <div className="mt-4 p-3 bg-teal-50 border border-teal-200 rounded-lg">
-                <p className="text-sm text-teal-700">
-                  ✅ Vous recevrez des notifications par e-mail pour :
+              <div className="mt-4 p-3 bg-accent-soft border border-accent/20 rounded-card">
+                <p className="text-sm text-accent">
+                  Vous recevrez des notifications par e-mail pour :
                 </p>
-                <ul className="text-sm text-teal-600 mt-2 ml-4 list-disc">
+                <ul className="text-sm text-accent/90 mt-2 ml-4 list-disc">
                   <li>Nouveaux rendez-vous</li>
                   <li>Messages des patients</li>
                   <li>Mises à jour de retraits</li>

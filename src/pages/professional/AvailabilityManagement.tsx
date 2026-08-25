@@ -26,7 +26,7 @@ const AvailabilityManagement: React.FC = () => {
           event.error.message.includes("removeChild") ||
           event.error.message.includes("Failed to execute"))
       ) {
-        console.warn("⚠️ Erreur DOM capturée et ignorée:", event.error.message);
+        console.warn("Erreur DOM capturée et ignorée:", event.error.message);
         event.preventDefault();
         event.stopPropagation();
         return false;
@@ -43,7 +43,7 @@ const AvailabilityManagement: React.FC = () => {
           event.reason.message.includes("Failed to execute"))
       ) {
         console.warn(
-          "⚠️ Promesse rejetée capturée et ignorée:",
+          "Promesse rejetée capturée et ignorée:",
           event.reason.message
         );
         event.preventDefault();
@@ -69,7 +69,7 @@ const AvailabilityManagement: React.FC = () => {
     return existingSlots
       .filter((slot) => {
         if (!slot.date || !slot.time) {
-          console.warn("⚠️ Slot invalide détecté:", slot);
+          console.warn("Slot invalide détecté:", slot);
           return false;
         }
         if (slot.isBooked) {
@@ -98,7 +98,7 @@ const AvailabilityManagement: React.FC = () => {
           };
         } catch (error) {
           console.error(
-            "❌ Erreur lors de la normalisation de la date:",
+            "Erreur lors de la normalisation de la date:",
             error,
             slot
           );
@@ -115,7 +115,7 @@ const AvailabilityManagement: React.FC = () => {
     if (!currentUser?.id) return;
 
     try {
-      console.log("🧹 Nettoyage automatique des créneaux passés...");
+      console.log("Nettoyage automatique des créneaux passés...");
 
       // Récupérer tous les créneaux
       const today = new Date();
@@ -136,7 +136,7 @@ const AvailabilityManagement: React.FC = () => {
 
       if (pastSlots.length > 0) {
         console.log(
-          `🗑️ ${pastSlots.length} créneaux passés identifiés pour suppression`
+          `${pastSlots.length} créneaux passés identifiés pour suppression`
         );
 
         // Supprimer chaque créneau passé
@@ -149,23 +149,23 @@ const AvailabilityManagement: React.FC = () => {
               );
               await deleteAvailabilitySlot(slot.id);
               console.log(
-                `✅ Créneau passé supprimé: ${slot.date} ${slot.time}`
+                `Créneau passé supprimé: ${slot.date} ${slot.time}`
               );
             } catch (error) {
               console.error(
-                `❌ Erreur lors de la suppression du créneau passé:`,
+                `Erreur lors de la suppression du créneau passé:`,
                 error
               );
             }
           }
         }
 
-        console.log("✅ Nettoyage des créneaux passés terminé");
+        console.log("Nettoyage des créneaux passés terminé");
       } else {
-        console.log("✅ Aucun créneau passé à nettoyer");
+        console.log("Aucun créneau passé à nettoyer");
       }
     } catch (error) {
-      console.error("❌ Erreur lors du nettoyage des créneaux passés:", error);
+      console.error("Erreur lors du nettoyage des créneaux passés:", error);
     }
   };
 
@@ -193,7 +193,7 @@ const AvailabilityManagement: React.FC = () => {
       ); // Inclure le mois suivant
 
       console.log(
-        `🔍 Chargement des créneaux du ${format(
+        `Chargement des créneaux du ${format(
           startOfCurrentMonth,
           "dd/MM/yyyy"
         )} au ${format(endOfCurrentMonth, "yyyy-MM-dd")}`
@@ -214,7 +214,7 @@ const AvailabilityManagement: React.FC = () => {
       }));
 
       console.log(
-        `✅ ${formattedSlots.length} créneaux chargés pour la période`
+        `${formattedSlots.length} créneaux chargés pour la période`
       );
 
       setExistingSlots(formattedSlots);
@@ -227,7 +227,7 @@ const AvailabilityManagement: React.FC = () => {
         setNoSlotsMessage(null);
       }
     } catch (error) {
-      console.error("❌ Erreur lors du chargement des créneaux:", error);
+      console.error("Erreur lors du chargement des créneaux:", error);
     } finally {
       setLoading(false);
     }
@@ -238,12 +238,12 @@ const AvailabilityManagement: React.FC = () => {
     const loadProfile = async () => {
       // Vérifier que l'utilisateur est toujours connecté
       if (!currentUser?.id) {
-        console.warn("⚠️ Utilisateur non connecté, arrêt du chargement");
+        console.warn("Utilisateur non connecté, arrêt du chargement");
         return;
       }
 
       console.log(
-        "🔐 Chargement du profil pour l'utilisateur:",
+        "Chargement du profil pour l'utilisateur:",
         currentUser.id
       );
       await loadSlotsForCurrentMonth();
@@ -261,7 +261,7 @@ const AvailabilityManagement: React.FC = () => {
   // Handle slots change from AppointmentScheduler
   const handleSlotsChange = (slots: TimeSlot[]) => {
     console.log(
-      "🔄 Slots changed in AvailabilityManagement:",
+      "Slots changed in AvailabilityManagement:",
       slots.length,
       "slots"
     );
@@ -277,7 +277,7 @@ const AvailabilityManagement: React.FC = () => {
       // Vérifier et filtrer les slots invalides avant de mettre à jour l'état
       const validSlots = slots.filter((slot) => {
         if (!slot.date || !slot.time) {
-          console.warn("⚠️ Invalid slot data: missing date or time", slot);
+          console.warn("Invalid slot data: missing date or time", slot);
           return false;
         }
         return true;
@@ -293,7 +293,7 @@ const AvailabilityManagement: React.FC = () => {
             } else if (slot.date instanceof Date) {
               normalizedDate = format(slot.date, "yyyy-MM-dd");
             } else {
-              console.warn("⚠️ Format de date non reconnu:", slot.date);
+              console.warn("Format de date non reconnu:", slot.date);
               return null;
             }
 
@@ -302,7 +302,7 @@ const AvailabilityManagement: React.FC = () => {
               date: normalizedDate,
             };
           } catch (error) {
-            console.error("❌ Erreur lors de la normalisation:", error);
+            console.error("Erreur lors de la normalisation:", error);
             return null;
           }
         })
@@ -313,12 +313,12 @@ const AvailabilityManagement: React.FC = () => {
         JSON.stringify(normalizedSlots) !== JSON.stringify(existingSlots);
 
       if (hasChanged) {
-        console.log("🎯 Créneaux modifiés, mise à jour de l'état");
+        console.log("Créneaux modifiés, mise à jour de l'état");
         setExistingSlots(normalizedSlots);
         setNoSlotsMessage(null);
-        console.log("✅ Slots updated");
+        console.log("Slots updated");
       } else {
-        console.log("ℹ️ Aucun changement détecté");
+        console.log("Aucun changement détecté");
       }
     }
   };
@@ -330,20 +330,20 @@ const AvailabilityManagement: React.FC = () => {
     try {
       // Reset Firestore connection to ensure fresh data
       await resetFirestoreConnection();
-      console.log("✅ Firestore connection reset");
+      console.log("Firestore connection reset");
 
       // Clear existing slots and reload
       setExistingSlots([]);
-      console.log("✅ Existing slots cleared");
+      console.log("Existing slots cleared");
 
       // Reload profile data
       await loadProfile();
-      console.log("✅ Profile data reloaded");
+      console.log("Profile data reloaded");
 
       // Update refresh trigger to force component re-render
       setRefreshTrigger((prev) => prev + 1);
     } catch (error) {
-      console.error("❌ Error refreshing data:", error);
+      console.error("Error refreshing data:", error);
     } finally {
       setRefreshing(false);
     }
@@ -366,7 +366,7 @@ const AvailabilityManagement: React.FC = () => {
       <div className="container mx-auto px-4 py-8">
         <div className="flex items-center justify-center h-64">
           <div className="text-center">
-            <div className="text-red-500 mb-4">
+            <div className="text-danger mb-4">
               <svg
                 className="w-16 h-16 mx-auto"
                 fill="currentColor"
@@ -379,15 +379,15 @@ const AvailabilityManagement: React.FC = () => {
                 />
               </svg>
             </div>
-            <h2 className="text-xl font-semibold text-gray-900 mb-2">
+            <h2 className="text-xl font-semibold text-ink mb-2">
               Session expirée
             </h2>
-            <p className="text-gray-600 mb-4">
+            <p className="text-ink-soft mb-4">
               Votre session a expiré. Veuillez vous reconnecter.
             </p>
             <button
               onClick={() => window.location.reload()}
-              className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+              className="px-4 py-2 bg-accent text-paper rounded-pill hover:bg-accent/90 transition-colors"
             >
               Recharger la page
             </button>
@@ -403,8 +403,8 @@ const AvailabilityManagement: React.FC = () => {
       <div className="container mx-auto px-4 py-8">
         <div className="flex items-center justify-center h-64">
           <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
-            <p className="mt-4 text-lg text-gray-600">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-accent mx-auto"></div>
+            <p className="mt-4 text-lg text-ink-soft">
               Vérification de la session...
             </p>
           </div>
@@ -419,7 +419,7 @@ const AvailabilityManagement: React.FC = () => {
         <div className="flex items-center justify-center h-64">
           <div className="text-center">
             <LoadingSpinner size="lg" />
-            <p className="mt-4 text-lg text-gray-600">
+            <p className="mt-4 text-lg text-ink-soft">
               Chargement des disponibilités...
             </p>
           </div>
@@ -432,22 +432,24 @@ const AvailabilityManagement: React.FC = () => {
     <div className="container mx-auto px-4 py-8">
       <div className="max-w-4xl mx-auto">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
-          <h1 className="text-2xl font-bold">Gérer mes disponibilités</h1>
+          <h1 className="text-2xl font-display font-bold text-ink">
+            Gérer mes disponibilités
+          </h1>
           <div className="flex space-x-3">
             <button
               onClick={() => setShowAddModal(true)}
-              className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-all duration-200 flex items-center shadow-md hover:shadow-lg transform hover:-translate-y-0.5"
+              className="px-4 py-2 bg-accent text-paper rounded-pill hover:bg-accent/90 transition-all duration-200 flex items-center shadow-soft"
             >
               <Plus className="h-4 w-4 mr-2" />
               Ajouter des créneaux
             </button>
-            <div className="text-sm text-gray-500 flex items-center">
+            <div className="text-sm text-muted flex items-center">
               {existingSlots.length} créneaux disponibles
             </div>
             <button
               onClick={handleRefresh}
               disabled={refreshing}
-              className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors flex items-center"
+              className="px-4 py-2 bg-paper border border-line text-ink-soft rounded-pill hover:bg-line/40 transition-colors flex items-center"
             >
               {refreshing ? (
                 <LoadingSpinner size="sm" className="mr-2" />
@@ -460,7 +462,7 @@ const AvailabilityManagement: React.FC = () => {
         </div>
 
         {noSlotsMessage && (
-          <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 text-yellow-700 rounded-lg flex items-center">
+          <div className="mb-6 p-4 bg-warn/10 border border-warn/30 text-warn rounded-card flex items-center">
             <Info className="h-5 w-5 mr-2" />
             <span>{noSlotsMessage}</span>
           </div>

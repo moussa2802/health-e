@@ -99,7 +99,7 @@ const FinancialDetails: React.FC = () => {
               .toDate()
               .toISOString();
           } catch (error) {
-            console.warn("⚠️ [REVENUE] Error converting createdAt:", error);
+            console.warn("[REVENUE] Error converting createdAt:", error);
             dateString = new Date().toISOString();
           }
         }
@@ -170,30 +170,30 @@ const FinancialDetails: React.FC = () => {
   const getStatusIcon = (status: string) => {
     switch (status) {
       case "completed":
-        return <CheckCircle className="h-4 w-4 text-green-500" />;
+        return <CheckCircle className="h-4 w-4 text-ok" />;
       case "pending":
-        return <Clock className="h-4 w-4 text-yellow-500" />;
+        return <Clock className="h-4 w-4 text-gold" />;
       case "failed":
-        return <XCircle className="h-4 w-4 text-red-500" />;
+        return <XCircle className="h-4 w-4 text-danger" />;
       case "cancelled":
-        return <XCircle className="h-4 w-4 text-gray-500" />;
+        return <XCircle className="h-4 w-4 text-muted" />;
       default:
-        return <AlertCircle className="h-4 w-4 text-gray-500" />;
+        return <AlertCircle className="h-4 w-4 text-muted" />;
     }
   };
 
   const getStatusColor = (status: string) => {
     switch (status) {
       case "completed":
-        return "bg-green-100 text-green-800";
+        return "bg-ok/10 text-ok";
       case "pending":
-        return "bg-yellow-100 text-yellow-800";
+        return "bg-gold-soft text-gold";
       case "failed":
-        return "bg-red-100 text-red-800";
+        return "bg-danger/10 text-danger";
       case "cancelled":
-        return "bg-gray-100 text-gray-800";
+        return "bg-paper text-ink-soft";
       default:
-        return "bg-gray-100 text-gray-800";
+        return "bg-paper text-ink-soft";
     }
   };
 

@@ -95,7 +95,7 @@ export const useBookings = (
         }
       })
       .catch((error) => {
-        console.warn("⚠️ Failed to ensure Firestore is ready:", error);
+        console.warn("Failed to ensure Firestore is ready:", error);
         setError("Erreur lors de la connexion à la base de données.");
         setLoading(false);
         clearTimeout(timeoutId);
@@ -135,7 +135,7 @@ export const useBookings = (
         await ensureFirestoreReady();
       } catch (connectionError) {
         console.warn(
-          "⚠️ Firestore connection issue during refresh:",
+          "Firestore connection issue during refresh:",
           connectionError
         );
         setError(
@@ -165,7 +165,7 @@ export const useBookings = (
       // Force a complete reload by incrementing the counter
       bookingListenerIdCounter++;
     } catch (err) {
-      console.error("❌ Failed to refresh bookings:", err);
+      console.error("Failed to refresh bookings:", err);
       if (isMountedRef.current) {
         setError("Erreur lors du rafraîchissement des données");
         setLoading(false);

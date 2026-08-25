@@ -12,6 +12,7 @@ import {
   Wifi,
   WifiOff,
   PenTool,
+  Clock,
 } from "lucide-react";
 import { jsPDF } from "jspdf";
 import {
@@ -142,7 +143,7 @@ const ConsultationRoom: React.FC = () => {
   // Load Jitsi Meet API script
   useEffect(() => {
     if (window.JitsiMeetExternalAPI) {
-      console.log("✅ Jitsi Meet API already loaded");
+      console.log("Jitsi Meet API already loaded");
       setJitsiLoaded(true);
       return;
     }
@@ -152,10 +153,10 @@ const ConsultationRoom: React.FC = () => {
     script.async = true;
     script.onload = () => {
       setJitsiLoaded(true);
-      console.log("✅ Jitsi Meet API script loaded");
+      console.log("Jitsi Meet API script loaded");
     };
     script.onerror = () => {
-      console.error("❌ Error loading Jitsi Meet API script");
+      console.error("Error loading Jitsi Meet API script");
       setConnectionError(
         "Impossible de charger l'API Jitsi Meet. Veuillez vérifier votre connexion internet."
       );
@@ -168,12 +169,12 @@ const ConsultationRoom: React.FC = () => {
       if (jitsiApiRef.current) {
         jitsiApiRef.current.dispose();
         jitsiApiRef.current = null;
-        console.log("🧹 Jitsi instance nettoyée");
+        console.log("Jitsi instance nettoyée");
       }
 
       if (jitsiContainerRef.current) {
         jitsiContainerRef.current.innerHTML = "";
-        console.log("♻️ Jitsi container vidé");
+        console.log("Jitsi container vidé");
       }
     };
   }, []);
@@ -186,14 +187,14 @@ const ConsultationRoom: React.FC = () => {
     const fetchParticipants = async () => {
       try {
         const roomParticipants = await getRoomParticipants(roomId);
-        console.log("👥 Room participants:", roomParticipants);
+        console.log("Room participants:", roomParticipants);
         console.log(
-          "👥 [CONSULTATION DEBUG] Participants structure:",
+          "[CONSULTATION DEBUG] Participants structure:",
           JSON.stringify(roomParticipants, null, 2)
         );
         setParticipants(roomParticipants);
       } catch (error) {
-        console.error("❌ Error fetching room participants:", error);
+        console.error("Error fetching room participants:", error);
       }
     };
 
@@ -270,7 +271,7 @@ const ConsultationRoom: React.FC = () => {
         return;
       }
 
-      console.warn("⚠️ Patient ID not resolved yet.");
+      console.warn("Patient ID not resolved yet.");
     })();
   }, [roomId, currentUser, participants]);
 
@@ -373,26 +374,26 @@ const ConsultationRoom: React.FC = () => {
       };
 
       if (!jitsiContainerRef.current) {
-        console.error("❌ Le conteneur Jitsi n'est pas prêt !");
+        console.error("Le conteneur Jitsi n'est pas prêt !");
         return;
       }
-      console.log("🖼️ Container exists:", jitsiContainerRef.current);
-      console.log("📺 RoomName utilisé :", roomName);
-      console.log("✅ Creating Jitsi API");
+      console.log("Container exists:", jitsiContainerRef.current);
+      console.log("RoomName utilisé :", roomName);
+      console.log("Creating Jitsi API");
 
       // Create Jitsi Meet API instance
       // 🔁 Ajouter une clé unique à la room pour forcer le bon rendu iframe
-      console.log("📺 RoomName utilisé :", options.roomName);
-      console.log("📦 Appel API Jitsi avec options :", options);
+      console.log("RoomName utilisé :", options.roomName);
+      console.log("Appel API Jitsi avec options :", options);
       const api = new window.JitsiMeetExternalAPI(domain, options);
       jitsiApiRef.current = api;
-      console.log("✅ Jitsi API created");
+      console.log("Jitsi API created");
 
       // Add event listeners
       api.addListener("videoConferenceJoined", () => {
-        console.log("✅ Joined Jitsi Meet conference");
+        console.log("Joined Jitsi Meet conference");
         console.log(
-          "✅ Jitsi: videoConferenceJoined triggered by:",
+          "Jitsi: videoConferenceJoined triggered by:",
           currentUser.name
         );
         setJitsiApiInitialized(true);
@@ -402,15 +403,15 @@ const ConsultationRoom: React.FC = () => {
 
       api.addListener("participantJoined", (data: unknown) => {
         const participant = data as JitsiParticipant;
-        console.log("👤 Participant joined:", participant);
+        console.log("Participant joined:", participant);
         if (participant.name?.toLowerCase().includes("patient")) {
-          console.log("🧍‍♀️ Le patient a rejoint la salle !");
+          console.log("Le patient a rejoint la salle !");
         } else if (
           participant.name?.toLowerCase().includes("dr") ||
           participant.name?.toLowerCase().includes("professionnel")
         ) {
-          console.log("👤 Participant joined:", participant);
-          console.log("🧍‍⚕️ Le professionnel a rejoint la salle !");
+          console.log("Participant joined:", participant);
+          console.log("Le professionnel a rejoint la salle !");
         }
 
         // Set remote user name if available
@@ -441,7 +442,7 @@ const ConsultationRoom: React.FC = () => {
           cleanupRef.current = cleanup;
         })
         .catch((error) => {
-          console.error("❌ Error joining room:", error);
+          console.error("Error joining room:", error);
           setConnectionError(
             "Erreur lors de la connexion à la salle de consultation"
           );
@@ -451,14 +452,14 @@ const ConsultationRoom: React.FC = () => {
       const unsubscribeConnectionStatus = getConnectionStatus(
         roomId,
         (status) => {
-          console.log("🔌 Connection status update:", status);
+          console.log("Connection status update:", status);
 
           const bothConnected =
             status.patientConnected && status.professionalConnected;
           setBothConnected(bothConnected);
 
           if (bothConnected) {
-            console.log("✅ Both participants are connected!");
+            console.log("Both participants are connected!");
 
             // Clear any waiting timeout
             if (waitingTimeoutRef.current) {
@@ -485,7 +486,7 @@ const ConsultationRoom: React.FC = () => {
 
       waitingTimeoutRef.current = timeout;
     } catch (error) {
-      console.error("❌ Error initializing Jitsi Meet:", error);
+      console.error("Error initializing Jitsi Meet:", error);
       setConnectionError(
         "Erreur lors de l'initialisation de la consultation vidéo"
       );
@@ -522,7 +523,7 @@ const ConsultationRoom: React.FC = () => {
         participantsIntervalRef.current = null;
       }
 
-      console.log("🧹 Cleanup complet effectué après la session Jitsi.");
+      console.log("Cleanup complet effectué après la session Jitsi.");
     };
   }, [jitsiLoaded, roomId, currentUser, isInitiator, jitsiApiInitialized]);
 
@@ -593,16 +594,16 @@ const ConsultationRoom: React.FC = () => {
               consultationType: "video",
             });
             console.log(
-              "✅ Patient enregistré dans la liste du professionnel:",
+              "Patient enregistré dans la liste du professionnel:",
               pid
             );
           } else {
             console.warn(
-              "⚠️ Patient ID introuvable — enregistrement de la liste patients sauté."
+              "Patient ID introuvable — enregistrement de la liste patients sauté."
             );
           }
         } catch (e) {
-          console.error("❌ Erreur d'enregistrement dans la liste du pro:", e);
+          console.error("Erreur d'enregistrement dans la liste du pro:", e);
           // on ne bloque pas la fin d'appel
         }
       }
@@ -623,7 +624,7 @@ const ConsultationRoom: React.FC = () => {
           : "/professional/dashboard"
       );
     } catch (error) {
-      console.error("❌ Error ending call:", error);
+      console.error("Error ending call:", error);
       // Navigate anyway
       navigate(
         currentUser?.type === "patient"
@@ -653,25 +654,25 @@ const ConsultationRoom: React.FC = () => {
       }
       return null;
     } catch (e) {
-      console.warn("⚠️ Could not fetch booking data:", e);
+      console.warn("Could not fetch booking data:", e);
       return null;
     }
   };
 
   const findPatientId = async (): Promise<string | null> => {
-    console.log("🔍 [CONSULTATION DEBUG] Finding patient ID...");
-    console.log("🔍 [CONSULTATION DEBUG] Room ID:", roomId);
+    console.log("[CONSULTATION DEBUG] Finding patient ID...");
+    console.log("[CONSULTATION DEBUG] Room ID:", roomId);
     console.log(
-      "🔍 [CONSULTATION DEBUG] Current user:",
+      "[CONSULTATION DEBUG] Current user:",
       currentUser?.id,
       currentUser?.type
     );
-    console.log("🔍 [CONSULTATION DEBUG] Remote user ID:", remoteUserId);
-    console.log("🔍 [CONSULTATION DEBUG] Participants:", participants);
+    console.log("[CONSULTATION DEBUG] Remote user ID:", remoteUserId);
+    console.log("[CONSULTATION DEBUG] Participants:", participants);
 
     // First check if we have participants from Firebase Realtime Database
     if (participants.length > 0) {
-      console.log("🔍 [CONSULTATION DEBUG] Checking Firebase participants...");
+      console.log("[CONSULTATION DEBUG] Checking Firebase participants...");
 
       // Find the patient participant (the one who is not the current user)
       const patientParticipant = participants.find(
@@ -680,7 +681,7 @@ const ConsultationRoom: React.FC = () => {
 
       if (patientParticipant) {
         console.log(
-          "✅ Found patient from Firebase participants:",
+          "Found patient from Firebase participants:",
           patientParticipant.id
         );
         return patientParticipant.id;
@@ -692,7 +693,7 @@ const ConsultationRoom: React.FC = () => {
       );
       if (otherParticipant) {
         console.log(
-          "✅ Using other participant as patient:",
+          "Using other participant as patient:",
           otherParticipant.id
         );
         return otherParticipant.id;
@@ -701,20 +702,20 @@ const ConsultationRoom: React.FC = () => {
 
     // If we're the patient, return our ID
     if (currentUser?.type === "patient") {
-      console.log("✅ Current user is the patient:", currentUser.id);
+      console.log("Current user is the patient:", currentUser.id);
       return currentUser.id;
     }
 
     // For booking consultations, try to extract from room ID or URL
     if (roomId && roomId.startsWith("booking-")) {
       const bookingId = roomId.replace("booking-", "");
-      console.log("🔍 [CONSULTATION DEBUG] Extracted booking ID:", bookingId);
+      console.log("[CONSULTATION DEBUG] Extracted booking ID:", bookingId);
 
       // Try to get patient ID from URL parameters
       const urlParams = new URLSearchParams(window.location.search);
       const patientIdFromUrl = urlParams.get("patientId");
       if (patientIdFromUrl) {
-        console.log("✅ Found patient ID from URL:", patientIdFromUrl);
+        console.log("Found patient ID from URL:", patientIdFromUrl);
         return patientIdFromUrl;
       }
 
@@ -723,13 +724,13 @@ const ConsultationRoom: React.FC = () => {
         const bookingData = await fetchBookingData(bookingId);
         if (bookingData?.patientId) {
           console.log(
-            "✅ Found patient ID from booking data:",
+            "Found patient ID from booking data:",
             bookingData.patientId
           );
           return bookingData.patientId;
         }
       } catch (error) {
-        console.warn("⚠️ Could not fetch booking data:", error);
+        console.warn("Could not fetch booking data:", error);
       }
     }
 
@@ -740,7 +741,7 @@ const ConsultationRoom: React.FC = () => {
       if (parts.length >= 2) {
         const possiblePatientId = parts[1];
         console.log(
-          "✅ Extracted patient ID from instant consultation room ID:",
+          "Extracted patient ID from instant consultation room ID:",
           possiblePatientId
         );
         return possiblePatientId;
@@ -749,14 +750,14 @@ const ConsultationRoom: React.FC = () => {
 
     // For temp consultations, try to get patient ID from URL parameters
     if (roomId && roomId.startsWith("temp_")) {
-      console.log("🔍 [CONSULTATION DEBUG] Handling temp consultation room ID");
+      console.log("[CONSULTATION DEBUG] Handling temp consultation room ID");
 
       // Try to get patient ID from URL parameters
       const urlParams = new URLSearchParams(window.location.search);
       const patientIdFromUrl = urlParams.get("patientId");
       if (patientIdFromUrl) {
         console.log(
-          "✅ Found patient ID from URL for temp consultation:",
+          "Found patient ID from URL for temp consultation:",
           patientIdFromUrl
         );
         return patientIdFromUrl;
@@ -768,7 +769,7 @@ const ConsultationRoom: React.FC = () => {
       );
       if (storedPatientId) {
         console.log(
-          "✅ Found patient ID from session storage:",
+          "Found patient ID from session storage:",
           storedPatientId
         );
         return storedPatientId;
@@ -779,7 +780,7 @@ const ConsultationRoom: React.FC = () => {
         `consultation_${roomId}_patientId`
       );
       if (localPatientId) {
-        console.log("✅ Found patient ID from localStorage:", localPatientId);
+        console.log("Found patient ID from localStorage:", localPatientId);
         return localPatientId;
       }
     }
@@ -789,22 +790,22 @@ const ConsultationRoom: React.FC = () => {
     const patientIdFromUrl = urlParams.get("patientId");
     if (patientIdFromUrl) {
       console.log(
-        "✅ Found patient ID from URL as fallback:",
+        "Found patient ID from URL as fallback:",
         patientIdFromUrl
       );
       return patientIdFromUrl;
     }
 
-    console.warn("⚠️ Could not determine patient ID");
-    console.warn("⚠️ [CONSULTATION DEBUG] All identification methods failed");
+    console.warn("Could not determine patient ID");
+    console.warn("[CONSULTATION DEBUG] All identification methods failed");
     console.warn(
-      "⚠️ [CONSULTATION DEBUG] Participants available:",
+      "[CONSULTATION DEBUG] Participants available:",
       participants
     );
-    console.warn("⚠️ [CONSULTATION DEBUG] Current user:", currentUser);
-    console.warn("⚠️ [CONSULTATION DEBUG] Room ID:", roomId);
+    console.warn("[CONSULTATION DEBUG] Current user:", currentUser);
+    console.warn("[CONSULTATION DEBUG] Room ID:", roomId);
     console.warn(
-      "⚠️ [CONSULTATION DEBUG] URL search params:",
+      "[CONSULTATION DEBUG] URL search params:",
       window.location.search
     );
     return null;
@@ -816,34 +817,34 @@ const ConsultationRoom: React.FC = () => {
 
     if (!patientId) {
       console.warn(
-        "⚠️ Could not determine patient ID, creating temporary patient"
+        "Could not determine patient ID, creating temporary patient"
       );
 
       // Create a temporary patient ID based on the room ID and timestamp
       const tempPatientId = `temp_patient_${roomId}_${Date.now()}`;
       console.log(
-        "🔍 [CONSULTATION DEBUG] Created temporary patient ID:",
+        "[CONSULTATION DEBUG] Created temporary patient ID:",
         tempPatientId
       );
       return tempPatientId;
     }
 
-    console.log("🔍 [CONSULTATION DEBUG] Found patient ID:", patientId);
-    console.log("🔍 [CONSULTATION DEBUG] Patient ID length:", patientId.length);
+    console.log("[CONSULTATION DEBUG] Found patient ID:", patientId);
+    console.log("[CONSULTATION DEBUG] Patient ID length:", patientId.length);
     console.log(
-      "🔍 [CONSULTATION DEBUG] Patient ID format check:",
+      "[CONSULTATION DEBUG] Patient ID format check:",
       /^[a-zA-Z0-9]+$/.test(patientId)
     );
 
     // If the patient ID looks like a Firestore ID (long alphanumeric), use it directly
     if (patientId.length > 20 && /^[a-zA-Z0-9]+$/.test(patientId)) {
-      console.log("✅ Using existing Firestore patient ID:", patientId);
+      console.log("Using existing Firestore patient ID:", patientId);
       return patientId;
     }
 
     // For shorter IDs (like Jitsi IDs), we'll use them directly and create the patient document if needed
     console.log(
-      "🔍 [CONSULTATION DEBUG] Using short ID as patient ID (will be created in Firestore):",
+      "[CONSULTATION DEBUG] Using short ID as patient ID (will be created in Firestore):",
       patientId
     );
     return patientId;
@@ -889,9 +890,9 @@ const ConsultationRoom: React.FC = () => {
     setSaveError(null);
 
     try {
-      console.log("📝 Saving medical record for patient:", patientId);
-      console.log("📝 Professional ID:", currentUser.id);
-      console.log("📝 Medical record data:", {
+      console.log("Saving medical record for patient:", patientId);
+      console.log("Professional ID:", currentUser.id);
+      console.log("Medical record data:", {
         diagnosis: medicalRecordData.diagnosis,
         treatment: medicalRecordData.treatment,
         recommendations: medicalRecordData.recommendations,
@@ -916,12 +917,12 @@ const ConsultationRoom: React.FC = () => {
         ),
       });
 
-      console.log("✅ Medical record updated successfully");
+      console.log("Medical record updated successfully");
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 3000);
     } catch (error: unknown) {
-      console.error("❌ Error saving medical record:", error);
-      console.error("❌ Error details:", {
+      console.error("Error saving medical record:", error);
+      console.error("Error details:", {
         code: (error as any)?.code,
         message: (error as any)?.message,
         patientId,
@@ -935,13 +936,13 @@ const ConsultationRoom: React.FC = () => {
         errorMessage.includes("patient reference update failed")
       ) {
         console.log(
-          "✅ Medical record created successfully despite patient update error"
+          "Medical record created successfully despite patient update error"
         );
         setSaveSuccess(true);
         setTimeout(() => setSaveSuccess(false), 3000);
       } else {
         console.error(
-          "💾 [CONSULTATION DEBUG] Unhandled error during medical record save:",
+          "[CONSULTATION DEBUG] Unhandled error during medical record save:",
           error
         );
         setSaveError(
@@ -1051,7 +1052,7 @@ const ConsultationRoom: React.FC = () => {
         );
       } catch (error) {
         console.error(
-          "❌ Erreur d'ajout de la signature/cachet dans le PDF :",
+          "Erreur d'ajout de la signature/cachet dans le PDF :",
           error
         );
         doc.setFontSize(9);
@@ -1184,7 +1185,7 @@ const ConsultationRoom: React.FC = () => {
         );
       } catch (error) {
         console.error(
-          `❌ Erreur d'ajout de la signature/cachet dans le PDF :`,
+          `Erreur d'ajout de la signature/cachet dans le PDF :`,
           error
         );
         doc.setFontSize(9);
@@ -1213,44 +1214,47 @@ const ConsultationRoom: React.FC = () => {
 
       if (jitsiContainerRef.current) {
         jitsiContainerRef.current.innerHTML = "";
-        console.log("♻️ Jitsi container reset");
+        console.log("Jitsi container reset");
       }
     };
   }, []);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+    <div className="min-h-screen bg-paper">
       {/* Header */}
-      <header className="bg-white shadow-lg border-b border-gray-200">
+      <header className="bg-card shadow-soft border-b border-line">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-4">
             <div className="flex items-center space-x-4">
-              <h1 className="text-2xl font-bold text-gray-900">
+              <h1 className="font-display text-2xl font-semibold text-ink">
                 Consultation vidéo
               </h1>
               <span
-                className={`px-4 py-2 rounded-full text-sm font-medium ${
+                className={`px-4 py-2 rounded-pill text-sm font-medium flex items-center gap-1.5 ${
                   bothConnected
-                    ? "bg-green-100 text-green-800 border border-green-200"
-                    : "bg-yellow-100 text-yellow-800 border border-yellow-200"
+                    ? "bg-sage-soft text-sage border border-sage/25"
+                    : "bg-gold-soft text-gold border border-gold/25"
                 }`}
               >
-                {bothConnected
-                  ? "✅ Consultation active"
-                  : "⏳ En attente de connexion..."}
+                {bothConnected ? (
+                  <CheckCircle className="h-4 w-4" />
+                ) : (
+                  <Clock className="h-4 w-4" />
+                )}
+                {bothConnected ? "Consultation active" : "En attente de connexion..."}
               </span>
             </div>
             <div className="flex items-center space-x-6">
-              <div className="flex items-center space-x-2 bg-white px-4 py-2 rounded-lg shadow-sm border">
-                <span className="text-sm font-medium text-gray-700">
+              <div className="flex items-center space-x-2 bg-card px-4 py-2 rounded-xl shadow-soft border border-line">
+                <span className="text-sm font-medium text-ink-soft">
                   Durée: {formatDuration(callDuration)}
                 </span>
               </div>
               <div
-                className={`flex items-center px-3 py-2 rounded-lg text-sm font-medium ${
+                className={`flex items-center px-3 py-2 rounded-xl text-sm font-medium ${
                   isOnline
-                    ? "bg-green-100 text-green-800 border border-green-200"
-                    : "bg-red-100 text-red-800 border border-red-200"
+                    ? "bg-sage-soft text-sage border border-sage/25"
+                    : "bg-danger/10 text-danger border border-danger/25"
                 }`}
               >
                 {isOnline ? (
@@ -1269,7 +1273,7 @@ const ConsultationRoom: React.FC = () => {
         {/* Error Messages */}
         {connectionError && (
           <div className="mb-6">
-            <div className="bg-red-50 border border-red-200 text-red-700 px-6 py-4 rounded-xl shadow-sm">
+            <div className="bg-danger/10 border border-danger/25 text-danger px-6 py-4 rounded-card shadow-soft">
               <strong className="font-semibold">Erreur de connexion : </strong>
               <span className="block sm:inline">{connectionError}</span>
             </div>
@@ -1278,7 +1282,7 @@ const ConsultationRoom: React.FC = () => {
 
         {timeoutMessage && (
           <div className="mb-6">
-            <div className="bg-yellow-50 border border-yellow-200 text-yellow-700 px-6 py-4 rounded-xl shadow-sm flex items-center">
+            <div className="bg-gold-soft border border-gold/25 text-gold px-6 py-4 rounded-card shadow-soft flex items-center">
               <AlertCircle className="h-5 w-5 mr-3" />
               <span className="font-medium">{timeoutMessage}</span>
             </div>
@@ -1287,7 +1291,7 @@ const ConsultationRoom: React.FC = () => {
 
         {/* Success notification */}
         {saveSuccess && (
-          <div className="fixed top-24 right-6 z-50 bg-green-50 border border-green-200 text-green-700 px-6 py-4 rounded-xl shadow-lg animate-fade-in-out flex items-center">
+          <div className="fixed top-24 right-6 z-50 bg-sage-soft border border-sage/25 text-sage px-6 py-4 rounded-card shadow-lift animate-fade-in-out flex items-center">
             <CheckCircle className="h-5 w-5 mr-3" />
             <span className="font-medium">
               Dossier médical enregistré avec succès
@@ -1299,11 +1303,11 @@ const ConsultationRoom: React.FC = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Video Container - Takes 2/3 on desktop */}
           <div className="lg:col-span-2">
-            <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
+            <div className="bg-card rounded-block shadow-lift overflow-hidden">
               {/* Video Area */}
               <div className="relative">
                 {!jitsiLoaded ? (
-                  <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-t-2xl overflow-hidden aspect-video w-full flex items-center justify-center">
+                  <div className="bg-ink rounded-t-block overflow-hidden aspect-video w-full flex items-center justify-center">
                     <div className="text-center text-white">
                       <LoadingSpinner size="lg" />
                       <p className="mt-4 text-lg font-medium">
@@ -1313,7 +1317,7 @@ const ConsultationRoom: React.FC = () => {
                   </div>
                 ) : (
                   <div
-                    className="bg-black rounded-t-2xl overflow-hidden"
+                    className="bg-black rounded-t-block overflow-hidden"
                     style={{ height: "70vh", maxHeight: "600px" }}
                   >
                     <div
@@ -1326,11 +1330,11 @@ const ConsultationRoom: React.FC = () => {
                 {/* Connection Status Banner - Moved outside video area to avoid overlapping Jitsi controls */}
                 {bothConnected && (
                   <div className="mt-4 px-4">
-                    <div className="bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded-xl shadow-sm flex items-center justify-center">
+                    <div className="bg-sage-soft border border-sage/25 text-sage px-4 py-3 rounded-card shadow-soft flex items-center justify-center">
                       <div className="flex items-center">
-                        <div className="w-3 h-3 bg-green-500 rounded-full mr-3 animate-pulse"></div>
+                        <div className="w-3 h-3 bg-sage rounded-full mr-3 animate-pulse"></div>
                         <span className="font-medium">
-                          ✅ Consultation active - Les deux participants sont
+                          Consultation active - Les deux participants sont
                           connectés
                         </span>
                       </div>
@@ -1340,7 +1344,7 @@ const ConsultationRoom: React.FC = () => {
               </div>
 
               {/* Controls */}
-              <div className="p-6 bg-gray-50 border-t border-gray-200">
+              <div className="p-6 bg-paper border-t border-line">
                 <div className="flex flex-col sm:flex-row justify-center space-y-3 sm:space-y-0 sm:space-x-4">
                   {currentUser?.type === "professional" && (
                     <button
@@ -1349,8 +1353,8 @@ const ConsultationRoom: React.FC = () => {
                       }
                       className={`px-6 py-3 rounded-xl font-medium transition-all duration-200 flex items-center justify-center ${
                         showMedicalRecordPanel
-                          ? "bg-blue-600 text-white shadow-lg transform scale-105"
-                          : "bg-blue-100 text-blue-700 hover:bg-blue-200 hover:shadow-md"
+                          ? "bg-accent text-white shadow-lift"
+                          : "bg-accent-soft text-accent hover:bg-accent-soft/70"
                       }`}
                     >
                       <FileText className="h-5 w-5 mr-2" />
@@ -1360,7 +1364,7 @@ const ConsultationRoom: React.FC = () => {
 
                   <button
                     onClick={endCall}
-                    className="px-6 py-3 rounded-xl bg-red-600 text-white hover:bg-red-700 transition-all duration-200 flex items-center justify-center font-medium shadow-lg hover:shadow-xl transform hover:scale-105"
+                    className="px-6 py-3 rounded-xl bg-danger text-white hover:bg-danger/90 transition-all duration-200 flex items-center justify-center font-medium shadow-lift"
                   >
                     <PhoneOff className="h-5 w-5 mr-2" />
                     Terminer l'appel
@@ -1373,19 +1377,19 @@ const ConsultationRoom: React.FC = () => {
           {/* Medical Record Panel - Takes 1/3 on desktop */}
           {showMedicalRecordPanel && currentUser?.type === "professional" && (
             <div className="lg:col-span-1">
-              <div className="bg-white rounded-2xl shadow-lg overflow-hidden h-full flex flex-col">
-                <div className="p-6 bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-gray-200">
-                  <h2 className="text-xl font-bold text-gray-900">
+              <div className="bg-card rounded-block shadow-lift overflow-hidden h-full flex flex-col">
+                <div className="p-6 bg-accent-soft border-b border-line">
+                  <h2 className="font-display text-xl font-semibold text-ink">
                     Dossier médical
                   </h2>
-                  <p className="text-sm text-gray-600 mt-1">
+                  <p className="text-sm text-ink-soft mt-1">
                     Remplissez les informations de consultation
                   </p>
                 </div>
 
                 <div className="flex-1 p-6 overflow-y-auto">
                   {saveSuccess && (
-                    <div className="mb-6 p-4 bg-green-50 text-green-800 rounded-xl border border-green-200 flex items-center">
+                    <div className="mb-6 p-4 bg-sage-soft text-sage rounded-xl border border-sage/25 flex items-center">
                       <CheckCircle className="h-5 w-5 mr-3" />
                       <span className="font-medium">
                         Dossier médical enregistré avec succès
@@ -1394,7 +1398,7 @@ const ConsultationRoom: React.FC = () => {
                   )}
 
                   {saveError && (
-                    <div className="mb-6 p-4 bg-red-50 text-red-800 rounded-xl border border-red-200 flex items-center">
+                    <div className="mb-6 p-4 bg-danger/10 text-danger rounded-xl border border-danger/25 flex items-center">
                       <AlertCircle className="h-5 w-5 mr-3" />
                       <span className="font-medium">{saveError}</span>
                     </div>
@@ -1402,7 +1406,7 @@ const ConsultationRoom: React.FC = () => {
 
                   <div className="space-y-6">
                     <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      <label className="block text-sm font-semibold text-ink-soft mb-2">
                         Diagnostic
                       </label>
                       <textarea
@@ -1414,13 +1418,13 @@ const ConsultationRoom: React.FC = () => {
                           })
                         }
                         rows={4}
-                        className="w-full rounded-xl border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 resize-none"
+                        className="w-full rounded-xl border-line bg-paper text-ink shadow-soft focus:border-accent focus:ring-accent resize-none"
                         placeholder="Entrez le diagnostic..."
                       />
                     </div>
 
                     <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2 flex items-center">
+                      <label className="block text-sm font-semibold text-ink-soft mb-2 flex items-center">
                         <Pill className="h-4 w-4 mr-2" />
                         Traitement
                       </label>
@@ -1434,13 +1438,13 @@ const ConsultationRoom: React.FC = () => {
                           setIsPrescriptionSigned(false);
                         }}
                         rows={4}
-                        className="w-full rounded-xl border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 resize-none"
+                        className="w-full rounded-xl border-line bg-paper text-ink shadow-soft focus:border-accent focus:ring-accent resize-none"
                         placeholder="Prescrire le traitement..."
                       />
                     </div>
 
                     <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      <label className="block text-sm font-semibold text-ink-soft mb-2">
                         Recommandations
                       </label>
                       <textarea
@@ -1452,17 +1456,17 @@ const ConsultationRoom: React.FC = () => {
                           })
                         }
                         rows={4}
-                        className="w-full rounded-xl border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 resize-none"
+                        className="w-full rounded-xl border-line bg-paper text-ink shadow-soft focus:border-accent focus:ring-accent resize-none"
                         placeholder="Ajoutez des recommandations..."
                       />
                     </div>
 
                     <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      <label className="block text-sm font-semibold text-ink-soft mb-2">
                         Prochain rendez-vous
                       </label>
                       <div className="flex items-center">
-                        <Calendar className="h-5 w-5 text-gray-400 mr-3" />
+                        <Calendar className="h-5 w-5 text-muted mr-3" />
                         <input
                           type="date"
                           value={medicalRecordData.nextAppointmentDate}
@@ -1472,19 +1476,19 @@ const ConsultationRoom: React.FC = () => {
                               nextAppointmentDate: e.target.value,
                             })
                           }
-                          className="w-full rounded-xl border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                          className="w-full rounded-xl border-line bg-paper text-ink shadow-soft focus:border-accent focus:ring-accent"
                         />
                       </div>
                     </div>
                   </div>
                 </div>
 
-                <div className="p-6 border-t border-gray-200 bg-gray-50">
+                <div className="p-6 border-t border-line bg-paper">
                   <div className="flex flex-col space-y-3">
                     <div className="flex flex-wrap gap-2">
                       <button
                         onClick={generateMedicalReport}
-                        className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors flex items-center text-sm font-medium"
+                        className="px-4 py-2 bg-paper text-ink-soft border border-line rounded-lg hover:bg-line/40 transition-colors flex items-center text-sm font-medium"
                       >
                         <FileText className="h-4 w-4 mr-2" />
                         Rapport
@@ -1502,10 +1506,10 @@ const ConsultationRoom: React.FC = () => {
                             }
                             className={`px-4 py-2 rounded-lg transition-colors flex items-center text-sm font-medium ${
                               isPrescriptionSigned
-                                ? "bg-green-100 text-green-700 border border-green-200"
+                                ? "bg-sage-soft text-sage border border-sage/25"
                                 : isSigningPrescription
-                                ? "bg-blue-100 text-blue-700 opacity-75"
-                                : "bg-blue-100 text-blue-700 hover:bg-blue-200"
+                                ? "bg-accent-soft text-accent opacity-75"
+                                : "bg-accent-soft text-accent hover:bg-accent-soft/70"
                             }`}
                           >
                             {isSigningPrescription ? (
@@ -1544,8 +1548,8 @@ const ConsultationRoom: React.FC = () => {
                             professionalProfile?.useElectronicSignature &&
                             (professionalProfile?.signatureUrl ||
                               professionalProfile?.stampUrl))
-                            ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                            : "bg-green-100 text-green-700 hover:bg-green-200"
+                            ? "bg-line text-muted cursor-not-allowed"
+                            : "bg-sage-soft text-sage hover:bg-sage-soft/70"
                         }`}
                       >
                         <Pill className="h-4 w-4 mr-2" />
@@ -1556,7 +1560,7 @@ const ConsultationRoom: React.FC = () => {
                     <button
                       onClick={handleSaveMedicalRecord}
                       disabled={isSaving}
-                      className="w-full px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-all duration-200 flex items-center justify-center font-medium shadow-lg hover:shadow-xl disabled:opacity-50"
+                      className="w-full px-6 py-3 bg-accent text-white rounded-xl hover:bg-accent/90 transition-all duration-200 flex items-center justify-center font-medium shadow-lift disabled:opacity-50"
                     >
                       {isSaving ? (
                         <LoadingSpinner size="sm" className="mr-3" />
