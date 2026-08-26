@@ -14,6 +14,7 @@ const opts = [
 
 export const BONUS_MANIPULATION: AssessmentScale = {
   id: 'bonus_manipulation',
+  code: 'B8',
   name: 'Manipulation & Machiavélisme',
   shortName: 'MACH-IV',
   category: 'bonus',

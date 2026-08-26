@@ -10,6 +10,7 @@ const agree5 = [
 
 export const RELIGIOUS_CULTURAL: AssessmentScale = {
   id: 'religious_cultural',
+  code: 'P13',
   name: "Impact Religieux et Culturel sur la Psyché",
   shortName: "Religion & Culture",
   category: 'mental_health',

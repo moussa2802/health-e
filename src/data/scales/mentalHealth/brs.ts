@@ -16,6 +16,7 @@ const opts = [
 
 export const BRS: AssessmentScale = {
   id: 'brs',
+  code: 'P6',
   name: "Résilience Brève",
   shortName: "BRS",
   category: 'mental_health',

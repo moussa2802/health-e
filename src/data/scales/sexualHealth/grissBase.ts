@@ -10,6 +10,7 @@ const opts = [
 
 export const GRISS_BASE: AssessmentScale = {
   id: 'griss_base',
+  code: 'V10',
   name: "Communication et Satisfaction Sexuelle dans le Couple",
   shortName: "Communication Couple",
   category: 'sexual_health',

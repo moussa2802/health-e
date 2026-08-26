@@ -18,6 +18,7 @@ const intensOpts = [
 
 export const SDI2: AssessmentScale = {
   id: 'sdi2',
+  code: 'V2',
   name: "Désir Sexuel",
   shortName: "SDI-2",
   category: 'sexual_health',

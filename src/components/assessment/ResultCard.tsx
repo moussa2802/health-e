@@ -261,10 +261,13 @@ const ResultCard = React.forwardRef<HTMLDivElement, ResultCardProps>(({ scale, r
         <b style={{ fontSize: 13, fontWeight: 700, letterSpacing: '-0.01em' }}>Health-e</b>
       </div>
       <span style={{
-        fontSize: 9.5, fontWeight: 700, letterSpacing: '0.11em', textTransform: 'uppercase',
-        color: '#BFB7A6', border: '1px solid rgba(241,236,225,.2)', borderRadius: 20, padding: '4px 10px',
+        fontFamily: "'JetBrains Mono', ui-monospace, monospace",
+        fontSize: 11.5, fontWeight: 700, letterSpacing: '0.04em',
+        color: '#EDE7DB', background: 'rgba(241,236,225,.14)',
+        border: '1px solid rgba(241,236,225,.2)', borderRadius: 7, padding: '4px 7px',
+        lineHeight: 1,
       }}>
-        {isSober ? 'Espace confidentiel' : (CAT_LABEL[cat] ?? 'Profil psychologique')}
+        {isSober ? 'Espace confidentiel' : `${scale.code} · ${(CAT_LABEL[cat] ?? 'PROFIL PSY').toUpperCase()}`}
       </span>
     </div>
   );

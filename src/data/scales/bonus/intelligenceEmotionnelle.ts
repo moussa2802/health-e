@@ -17,6 +17,7 @@ const opts = [
 
 export const BONUS_EQ: AssessmentScale = {
   id: 'bonus_eq',
+  code: 'B11',
   name: 'Intelligence émotionnelle',
   shortName: 'WLEIS',
   category: 'bonus',

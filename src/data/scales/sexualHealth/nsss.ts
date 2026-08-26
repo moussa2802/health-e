@@ -10,6 +10,7 @@ const opts = [
 
 export const NSSS: AssessmentScale = {
   id: 'nsss',
+  code: 'V1',
   name: "Satisfaction Sexuelle Globale",
   shortName: "NSSS",
   category: 'sexual_health',

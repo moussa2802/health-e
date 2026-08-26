@@ -2,6 +2,7 @@ import React from 'react';
 import { Check, Clock } from 'lucide-react';
 import type { AssessmentScale } from '../../types/assessment';
 import { getScaleMeta, getCategoryColor, getScaleCategory } from '../../utils/scaleMeta';
+import TestCode from './TestCode';
 
 interface ScaleCardProps {
   scale: AssessmentScale;
@@ -66,7 +67,10 @@ const ScaleCard: React.FC<ScaleCardProps> = ({ scale, selected, onToggle, disabl
           <Icon size={18} style={{ color: catColor.accent }} />
         </div>
         <div className="flex-1 min-w-0 pr-5">
-          <h3 className="font-semibold text-sm text-ink leading-tight">{meta.label}</h3>
+          <h3 className="font-semibold text-sm text-ink leading-tight flex items-center gap-2">
+            <TestCode scaleId={scale.id} />
+            {meta.label}
+          </h3>
           <p className="text-xs text-ink-light font-mono mt-0.5">{scale.shortName}</p>
         </div>
       </div>

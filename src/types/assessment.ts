@@ -62,6 +62,7 @@ export interface ContextQuestion {
 
 export interface AssessmentScale {
   id: string;
+  code: string;
   name: string;
   shortName: string;
   category: AssessmentCategory;

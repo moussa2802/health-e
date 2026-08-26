@@ -47,6 +47,7 @@ import GoogleLinkBanner from '../../components/auth/GoogleLinkBanner';
 import { useKoris } from '../../contexts/KorisContext';
 import { isAiAvailable } from '../../utils/aiCircuitBreaker';
 import KorisCostBadge from '../../components/koris/KorisCostBadge';
+import TestCode from '../../components/assessment/TestCode';
 import type { ScaleResult, AssessmentScale } from '../../types/assessment';
 import type { SexualHealthFilter } from '../../types/onboarding';
 
@@ -129,6 +130,7 @@ const ScaleRow: React.FC<{
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-1.5 mb-0.5 flex-wrap">
+          <TestCode scaleId={scale.id} />
           <span className="text-[11px] font-bold text-muted">{scale.shortName}</span>
           {scale.targetGender === 'female' && (
             <span className="text-[10px] font-bold rounded-full px-2 py-0.5" style={{ color: '#B5522F', background: 'rgba(201,96,63,0.08)', border: '1px solid rgba(201,96,63,0.2)' }}>
@@ -496,7 +498,11 @@ const ProfileCard: React.FC<{
                         className="text-white border-0 rounded-lg px-3.5 py-1.5 text-[11px] font-bold cursor-pointer flex items-center gap-1.5"
                         style={{ background: accentColor }}
                       >
-                        <RefreshCw size={12} /> Actualiser ({analysisCost}K · reste {balance - analysisCost})
+                        <RefreshCw size={12} /> Actualiser
+                        <span className="inline-flex items-center gap-1 bg-white/20 rounded-lg px-1.5 py-0.5 ml-1">
+                          <img src="/kori.png" alt="" className="w-3.5 h-3.5 rounded-full object-cover" />
+                          <span className="font-display text-[11px] font-semibold">{analysisCost}</span>
+                        </span>
                       </button>
                     </>
                   ) : (
@@ -703,6 +709,7 @@ const AssessmentCategoryPage: React.FC = () => {
     !isMental && !isSexualFilterComplete()
   );
   const [sexualAccessGranted, setSexualAccessGranted] = useState(isMental);
+  const [scaleSearch, setScaleSearch] = useState('');
 
   const onboardingProfile = getOnboardingProfile();
   const hiddenIds = onboardingProfile ? getHiddenScaleIds(onboardingProfile) : [];
@@ -711,6 +718,18 @@ const AssessmentCategoryPage: React.FC = () => {
   const scales = allScales.filter(s => !hiddenIds.includes(s.id) && !hiddenSexualIds.includes(s.id));
   const completedCount = scales.filter(s => profileResults[s.id]).length;
   const bonusCompleted = isMental ? BONUS_SCALES.filter(s => profileResults[s.id]).length : 0;
+
+  const filterScale = (s: AssessmentScale) => {
+    if (!scaleSearch.trim()) return true;
+    const q = scaleSearch.trim().toLowerCase();
+    const m = getScaleMeta(s.id);
+    return s.code.toLowerCase() === q
+      || s.shortName.toLowerCase().includes(q)
+      || s.name.toLowerCase().includes(q)
+      || m.label.toLowerCase().includes(q);
+  };
+  const filteredScales = scales.filter(filterScale);
+  const filteredBonus = BONUS_SCALES.filter(filterScale);
 
   // Redirect si catégorie invalide
   useEffect(() => {
@@ -1107,7 +1126,18 @@ const AssessmentCategoryPage: React.FC = () => {
         {/* Onglet Évaluations */}
         {activeTab === 'evaluations' && (
           <div className="flex flex-col gap-2">
-            {scales.map((scale, idx) => (
+            <div className="flex items-center gap-2.5 bg-white border border-line rounded-[14px] px-3.5 py-3 mb-1">
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="var(--muted, #8A8C95)" strokeWidth="2.2"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>
+              <input
+                type="text"
+                value={scaleSearch}
+                onChange={e => setScaleSearch(e.target.value)}
+                placeholder="Tape P7, V2 ou « anxiété »..."
+                className="border-0 outline-none bg-transparent flex-1 text-sm text-ink placeholder:text-muted"
+                style={{ fontFamily: 'inherit' }}
+              />
+            </div>
+            {filteredScales.map((scale, idx) => (
               <div key={scale.id} {...(idx === 0 ? { 'data-tooltip-id': 'first-item-card' } : {})}>
                 <ScaleRow
                   scale={scale}
@@ -1155,7 +1185,7 @@ const AssessmentCategoryPage: React.FC = () => {
                 </div>
 
                 <div className="flex flex-col gap-2">
-                  {BONUS_SCALES.map(scale => (
+                  {filteredBonus.map(scale => (
                     <ScaleRow
                       key={scale.id}
                       scale={scale}

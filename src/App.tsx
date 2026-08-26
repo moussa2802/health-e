@@ -142,6 +142,7 @@ const AssessmentQuizPage = lazy(() => import("./pages/assessment/AssessmentQuizP
 const AssessmentResultsPage = lazy(() => import("./pages/assessment/AssessmentResultsPage"));
 const CompatibilityPage = lazy(() => import("./pages/assessment/CompatibilityPage"));
 const TestDetailPage = lazy(() => import("./pages/assessment/TestDetailPage"));
+const TestCodeRedirect = lazy(() => import("./pages/assessment/TestDetailPage").then(m => ({ default: m.TestCodeRedirect })));
 const AssessmentProfilePage = lazy(() => import("./pages/assessment/AssessmentProfilePage"));
 
 // Loading fallback component
@@ -468,7 +469,7 @@ const AppChrome: React.FC = () => {
             <Route path="/assessment/quiz/:sessionId" element={<AssessmentQuizPage />} />
             <Route path="/assessment/results/:sessionId" element={<AssessmentResultsPage />} />
             <Route path="/assessment/compatibility" element={<CompatibilityPage />} />
-            <Route path="/assessment/test/:scaleId" element={<TestDetailPage />} />
+            <Route path="/assessment/test/:scaleId" element={<TestCodeRedirect />} />
             <Route path="/assessment/profile" element={<AssessmentProfilePage />} />
             <Route path="/assessment/:category" element={<AssessmentCategoryPage />} />
 

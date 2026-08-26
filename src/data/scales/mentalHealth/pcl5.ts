@@ -10,6 +10,7 @@ const opts = [
 
 export const PCL5: AssessmentScale = {
   id: 'pcl5',
+  code: 'P9',
   name: "Trouble de Stress Post-Traumatique",
   shortName: "PCL-5",
   category: 'mental_health',

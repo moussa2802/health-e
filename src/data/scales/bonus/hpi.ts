@@ -15,6 +15,7 @@ const opts = [
 
 export const BONUS_HPI: AssessmentScale = {
   id: 'bonus_hpi',
+  code: 'B5',
   name: 'Haut Potentiel Intellectuel',
   shortName: 'HPI / GATES',
   category: 'bonus',

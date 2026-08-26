@@ -10,6 +10,7 @@ const opts = [
 
 export const PSS10: AssessmentScale = {
   id: 'pss10',
+  code: 'P7',
   name: "Stress Perçu",
   shortName: "PSS-10",
   category: 'mental_health',

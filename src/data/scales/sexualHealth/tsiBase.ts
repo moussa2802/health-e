@@ -9,6 +9,7 @@ const opts = [
 
 export const TSI_BASE: AssessmentScale = {
   id: 'tsi_base',
+  code: 'V6',
   name: "Traumatismes Sexuels et Détresse Associée",
   shortName: "Trauma Sexuel",
   category: 'sexual_health',

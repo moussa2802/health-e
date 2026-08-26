@@ -10,6 +10,7 @@ const opts = [
 
 export const PAIR: AssessmentScale = {
   id: 'pair',
+  code: 'V7',
   name: "Intimité dans la Relation",
   shortName: "PAIR",
   category: 'sexual_health',

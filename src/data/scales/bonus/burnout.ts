@@ -17,6 +17,7 @@ const opts = [
 
 export const BONUS_BURNOUT: AssessmentScale = {
   id: 'bonus_burnout',
+  code: 'B9',
   name: 'Burnout professionnel',
   shortName: 'MBI Court',
   category: 'bonus',

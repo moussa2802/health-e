@@ -14,6 +14,7 @@ const opts = [
 
 export const BONUS_DEPENDANCE: AssessmentScale = {
   id: 'bonus_dependance',
+  code: 'B1',
   name: 'Dépendance affective',
   shortName: 'DAQ',
   category: 'bonus',

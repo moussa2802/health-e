@@ -2,6 +2,7 @@ import type { AssessmentScale } from '../../../types/assessment';
 
 export const FSFI: AssessmentScale = {
   id: 'fsfi',
+  code: 'V4',
   name: "Fonctionnement Sexuel Féminin",
   shortName: "FSFI",
   category: 'sexual_health',

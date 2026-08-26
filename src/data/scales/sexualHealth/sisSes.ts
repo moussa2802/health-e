@@ -9,6 +9,7 @@ const opts = [
 
 export const SIS_SES: AssessmentScale = {
   id: 'sis_ses',
+  code: 'V3',
   name: "Excitation et Inhibition Sexuelle",
   shortName: "SIS/SES",
   category: 'sexual_health',

@@ -1,13 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Navigate } from 'react-router-dom';
 import { ArrowLeft, Lock, Clock, HelpCircle, Info, Check, RefreshCw, Loader2, Play } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
-import { getScaleById } from '../../data/scales';
+import { getScaleById, getScaleByCode } from '../../data/scales';
 import { getScaleMeta, CATEGORY_COLORS, type ScaleCategory } from '../../utils/scaleMeta';
 import TEST_ABOUT from '../../data/testAbout';
 import TestHistoryPanel from '../../components/assessment/TestHistoryPanel';
 import ConseilsCard from '../../components/assessment/ConseilsCard';
 import SexualAccessGate from '../../components/assessment/SexualAccessGate';
+import TestCode from '../../components/assessment/TestCode';
 import ResultCard from '../../components/assessment/ResultCard';
 import {
   getProfileProgress,
@@ -29,6 +30,7 @@ import type { ScaleResult, ItemSeverity } from '../../types/assessment';
 import { getBigFiveProfile, getBigFiveSummary, BAND_LABEL, type Band } from '../../utils/bigFiveProfile';
 import { useKoris } from '../../contexts/KorisContext';
 import { KORIS_COSTS, spendKorisForTest, isTestFreeRetake } from '../../services/korisService';
+import KoriCta from '../../components/koris/KoriCta';
 
 const CATEGORY_LABELS: Record<ScaleCategory, string> = {
   mental: 'Psychologique',
@@ -188,6 +190,13 @@ const BigFiveDetailBlock: React.FC<{ result: ScaleResult }> = ({ result }) => {
       </div>
     </div>
   );
+};
+
+export const TestCodeRedirect: React.FC = () => {
+  const { scaleId } = useParams<{ scaleId: string }>();
+  const resolved = scaleId && /^[PVB]\d+$/i.test(scaleId) ? getScaleByCode(scaleId) : undefined;
+  if (resolved) return <Navigate to={`/assessment/test/${resolved.id}`} replace />;
+  return <TestDetailPage />;
 };
 
 const TestDetailPage: React.FC = () => {
@@ -387,6 +396,7 @@ const TestDetailPage: React.FC = () => {
               {meta.label}
             </h1>
             <div className="flex items-center gap-2 mt-2 flex-wrap">
+              <TestCode scaleId={scaleId} size="md" />
               <span className={`text-[11px] font-semibold px-2.5 py-[3px] rounded-[20px] ${iconBgClass} ${iconColorClass}`}>
                 {CATEGORY_LABELS[category]}
               </span>
@@ -406,6 +416,14 @@ const TestDetailPage: React.FC = () => {
             <Lock size={15} />
             Créer un compte pour faire ce test
           </button>
+        ) : isGuest ? (
+          <button
+            onClick={startTest}
+            disabled={starting}
+            className="w-full py-[15px] rounded-[16px] border-none text-[15px] font-bold cursor-pointer flex items-center justify-center gap-2.5 bg-ink text-[#F4F1E9] shadow-soft transition-colors hover:bg-ink/90 mb-5 disabled:opacity-60"
+          >
+            {starting ? <><Loader2 size={17} className="animate-spin" /> Chargement…</> : 'Faire le test'}
+          </button>
         ) : pendingSessionId ? (
           <div className="flex flex-col gap-2.5 mb-5">
             <button
@@ -415,30 +433,26 @@ const TestDetailPage: React.FC = () => {
             >
               <Play size={15} fill="currentColor" /> Reprendre le test
             </button>
-            <button
+            <KoriCta
+              label="Recommencer à zéro"
+              cost={KORIS_COSTS.test}
+              isFree={isFreeRetake}
+              freeReason={isFreeRetake ? 'Ton dernier passage date de plus de 30 jours' : undefined}
+              loading={starting}
               onClick={startTest}
-              disabled={starting}
-              className="w-full py-3 rounded-[14px] text-[13px] font-semibold cursor-pointer flex items-center justify-center gap-2 transition-colors hover:bg-ink/5"
-              style={{ background: 'transparent', border: '1px solid #E7E4DA', color: '#6B7280' }}
-            >
-              {starting ? <Loader2 size={14} className="animate-spin" /> : <RefreshCw size={14} />}
-              Recommencer à zéro
-            </button>
+              variant="outline"
+            />
           </div>
         ) : (
-          <button
+          <KoriCta
+            label={isDone ? 'Refaire le test' : 'Faire le test'}
+            cost={KORIS_COSTS.test}
+            isFree={isFreeRetake}
+            freeReason={isFreeRetake ? 'Ton dernier passage date de plus de 30 jours' : undefined}
+            loading={starting}
             onClick={startTest}
-            disabled={starting}
-            className="w-full py-[15px] rounded-[16px] border-none text-[15px] font-bold cursor-pointer flex items-center justify-center gap-2.5 bg-ink text-[#F4F1E9] shadow-soft transition-colors hover:bg-ink/90 mb-5 disabled:opacity-60"
-          >
-            {starting ? (
-              <><Loader2 size={17} className="animate-spin" /> Chargement…</>
-            ) : isDone ? (
-              <><RefreshCw size={17} /> Refaire le test{testCostLabel}</>
-            ) : (
-              <>Faire le test{testCostLabel}</>
-            )}
-          </button>
+            className="mb-5"
+          />
         )}
 
         {errorMsg && (

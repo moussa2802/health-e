@@ -2,6 +2,7 @@ import type { AssessmentScale } from '../../../types/assessment';
 
 export const PG13: AssessmentScale = {
   id: 'pg13',
+  code: 'P10',
   name: "Deuil Prolongé",
   shortName: "PG-13",
   category: 'mental_health',

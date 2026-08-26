@@ -14,6 +14,7 @@ const opts = [
 
 export const BONUS_JALOUSIE: AssessmentScale = {
   id: 'bonus_jalousie',
+  code: 'B10',
   name: 'Jalousie',
   shortName: 'MJS',
   category: 'bonus',

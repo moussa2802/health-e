@@ -484,7 +484,12 @@ const AssessmentResultsPage: React.FC = () => {
                   opacity: retaking ? 0.6 : 1,
                 }}
               >
-                <RefreshCw size={15} />{retaking ? 'Préparation...' : `Refaire — ${retakeCostLabel}`}
+                <RefreshCw size={15} />{retaking ? 'Préparation...' : 'Refaire'}
+                {!retaking && (
+                  <span style={{ background: retakeFree ? 'rgba(159,188,175,.22)' : 'rgba(23,24,27,.08)', padding: '2px 7px', borderRadius: 8, fontSize: 11, fontWeight: 800 }}>
+                    {retakeFree ? 'GRATUIT' : `${KORIS_COSTS.test}K`}
+                  </span>
+                )}
               </button>
             )}
           </div>

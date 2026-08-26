@@ -8,6 +8,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { createSession } from '../../services/evaluationService';
 import { useKoris } from '../../contexts/KorisContext';
 import { KORIS_COSTS, spendKorisForTest } from '../../services/korisService';
+import KoriCta from '../../components/koris/KoriCta';
 
 const MIN_SELECTION = 2;
 const MAX_SELECTION = 10;
@@ -106,7 +107,7 @@ const AssessmentSelectPage: React.FC = () => {
                 </>
               ) : (
                 <>
-                  Démarrer ({count} · {count * KORIS_COSTS.test} Kori{count * KORIS_COSTS.test > 1 ? 's' : ''})
+                  Démarrer ({count})
                   <ChevronRight size={15} />
                 </>
               )}
@@ -190,25 +191,13 @@ const AssessmentSelectPage: React.FC = () => {
 
         {/* Floating CTA */}
         {count >= MIN_SELECTION && (
-          <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-30">
-            <button
+          <div className="fixed bottom-6 left-4 right-4 z-30 max-w-md mx-auto">
+            <KoriCta
+              label={`Démarrer ${count} évaluation${count > 1 ? 's' : ''}`}
+              cost={count * KORIS_COSTS.test}
+              loading={loading}
               onClick={handleStart}
-              disabled={loading}
-              className="flex items-center gap-2 text-white font-semibold px-8 py-3.5 rounded-full shadow-2xl transition-all duration-200"
-              style={{ background: '#4A5D57' }}
-            >
-              {loading ? (
-                <>
-                  <Loader2 size={18} className="animate-spin" />
-                  Démarrage...
-                </>
-              ) : (
-                <>
-                  Démarrer {count} évaluation{count > 1 ? 's' : ''} · {count * KORIS_COSTS.test} Kori{count * KORIS_COSTS.test > 1 ? 's' : ''}
-                  <ChevronRight size={18} />
-                </>
-              )}
-            </button>
+            />
           </div>
         )}
       </div>

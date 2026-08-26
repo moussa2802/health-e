@@ -11,6 +11,7 @@ const opts = [
 
 export const BONUS_PERSONNALITE: AssessmentScale = {
   id: 'bonus_personnalite',
+  code: 'B7',
   name: 'Traits de personnalité',
   shortName: 'PDQ-4 / PID-5',
   category: 'bonus',

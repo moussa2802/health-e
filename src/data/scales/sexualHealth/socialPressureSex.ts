@@ -10,6 +10,7 @@ const opts = [
 
 export const SOCIAL_PRESSURE_SEX: AssessmentScale = {
   id: 'social_pressure_sex',
+  code: 'V9',
   name: "Pression Sociale et Sexualité",
   shortName: "Pression Sexualité",
   category: 'sexual_health',

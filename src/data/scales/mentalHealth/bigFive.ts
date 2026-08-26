@@ -15,6 +15,7 @@ const opts = [
 
 export const BIG_FIVE: AssessmentScale = {
   id: 'big_five',
+  code: 'P3',
   name: "Les Cinq Grands Traits de Personnalité",
   shortName: "Big Five",
   category: 'mental_health',

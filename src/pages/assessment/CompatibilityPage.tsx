@@ -25,6 +25,7 @@ import type { CompatibilityResult } from '../../types/assessment';
 import { RELATIONSHIP_CATEGORIES, getRelationshipLabel } from '../../utils/relationshipTypes';
 import { useKoris } from '../../contexts/KorisContext';
 import { KORIS_COSTS } from '../../services/korisService';
+import KoriCta from '../../components/koris/KoriCta';
 import { isAiAvailable } from '../../utils/aiCircuitBreaker';
 
 // Icon for each top-level relationship category (relationshipTypes.ts carries an
@@ -789,31 +790,13 @@ const CompatibilityPage: React.FC = () => {
             )}
 
             {/* CTA */}
-            <button
+            <KoriCta
+              label="Découvrir notre compatibilité"
+              cost={KORIS_COSTS.compatibility}
+              loading={calculating}
+              disabled={!canSubmit}
               onClick={handleCalculate}
-              disabled={calculating || !canSubmit}
-              className={`w-full py-4 rounded-2xl border-none text-[15px] font-bold flex items-center justify-center gap-2 tracking-wide transition-colors ${
-                !calculating && canSubmit
-                  ? 'bg-ink text-white cursor-pointer shadow-soft hover:shadow-lift'
-                  : 'bg-line text-muted cursor-not-allowed'
-              }`}
-            >
-              {calculating ? (
-                <>
-                  <Loader2 size={18} className="animate-spin" />
-                  Calcul en cours…
-                </>
-              ) : (
-                <span className="inline-flex items-center gap-2">
-                  <Heart size={16} />
-                  Découvrir notre compatibilité
-                  <span className="inline-flex items-center gap-1 bg-white/20 px-2 py-0.5 rounded-full text-[11px] font-extrabold">
-                    <img src="/kori.png" alt="" className="w-3.5 h-3.5 rounded-full object-cover" />
-                    {KORIS_COSTS.compatibility} · reste {balance - KORIS_COSTS.compatibility}
-                  </span>
-                </span>
-              )}
-            </button>
+            />
             {canSubmit && !calculating && (
               <p className="mt-2 mb-0 text-center text-[11px] text-muted flex items-center justify-center gap-1">
                 <Lock size={11} /> Résultat instantané et confidentiel

@@ -13,6 +13,7 @@ const opts = [
 
 export const BONUS_CONFIANCE: AssessmentScale = {
   id: 'bonus_confiance',
+  code: 'B6',
   name: 'Confiance en soi globale',
   shortName: 'GSE + Confiance',
   category: 'bonus',

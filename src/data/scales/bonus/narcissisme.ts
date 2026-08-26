@@ -8,6 +8,7 @@ import type { AssessmentScale } from '../../../types/assessment';
 
 export const BONUS_NARCISSISME: AssessmentScale = {
   id: 'bonus_narcissisme',
+  code: 'B2',
   name: 'Traits narcissiques',
   shortName: 'NPI-16',
   category: 'bonus',

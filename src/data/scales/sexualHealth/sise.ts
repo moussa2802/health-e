@@ -10,6 +10,7 @@ const opts = [
 
 export const SISE: AssessmentScale = {
   id: 'sise',
+  code: 'V8',
   name: "Identité et Satisfaction Sexuelles",
   shortName: "SISE",
   category: 'sexual_health',

@@ -10,6 +10,7 @@ const freq5 = [
 
 export const ECONOMIC_STRESS: AssessmentScale = {
   id: 'economic_stress',
+  code: 'P14',
   name: "Stress Économique et Survie",
   shortName: "Stress Économique",
   category: 'mental_health',

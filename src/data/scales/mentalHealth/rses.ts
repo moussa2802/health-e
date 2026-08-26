@@ -14,6 +14,7 @@ const opts = [
 
 export const RSES: AssessmentScale = {
   id: 'rses',
+  code: 'P5',
   name: "Estime de Soi de Rosenberg",
   shortName: "RSES",
   category: 'mental_health',

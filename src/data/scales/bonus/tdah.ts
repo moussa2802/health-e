@@ -15,6 +15,7 @@ const opts = [
 
 export const BONUS_TDAH: AssessmentScale = {
   id: 'bonus_tdah',
+  code: 'B4',
   name: 'TDAH (Adulte)',
   shortName: 'ASRS-v1.1',
   category: 'bonus',

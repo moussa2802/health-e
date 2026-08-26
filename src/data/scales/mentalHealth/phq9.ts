@@ -9,6 +9,7 @@ const opts = [
 
 export const PHQ9: AssessmentScale = {
   id: 'phq9',
+  code: 'P2',
   name: "Questionnaire sur la santé du patient",
   shortName: "PHQ-9",
   category: 'mental_health',

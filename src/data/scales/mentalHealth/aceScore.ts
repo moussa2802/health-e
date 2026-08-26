@@ -7,6 +7,7 @@ const yesNo = [
 
 export const ACE: AssessmentScale = {
   id: 'ace',
+  code: 'P8',
   name: "Expériences Négatives de l'Enfance",
   shortName: "ACE Score",
   category: 'mental_health',

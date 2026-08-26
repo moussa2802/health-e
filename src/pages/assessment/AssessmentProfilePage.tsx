@@ -11,6 +11,7 @@ import {
   createSession,
 } from '../../services/evaluationService';
 import ConfirmResetModal from '../../components/assessment/ConfirmResetModal';
+import TestCode from '../../components/assessment/TestCode';
 import ShareableProfileCard from '../../components/assessment/ShareableProfileCard';
 import { resetFullProfile } from '../../services/testManagementService';
 import { MENTAL_HEALTH_SCALES, SEXUAL_HEALTH_SCALES } from '../../data/scales';
@@ -142,6 +143,7 @@ const ScaleRow: React.FC<ScaleRowProps> = ({ scale, result, onStart, loading }) 
       {/* Infos */}
       <div className="min-w-0 flex-1">
         <div className="mb-0.5 flex items-center gap-1.5">
+          <TestCode scaleId={scale.id} />
           <span className="text-[11px] font-bold text-muted">{scale.shortName}</span>
           {isCompleted && <CheckCircle2 size={13} className={catColor.text} />}
         </div>
@@ -205,19 +207,41 @@ const ScaleRow: React.FC<ScaleRowProps> = ({ scale, result, onStart, loading }) 
           <button
             onClick={() => onStart(scale.id)}
             disabled={loading}
-            className={`flex items-center gap-1 rounded-pill border bg-transparent px-3 py-1.5 text-[11px] font-semibold disabled:opacity-60 ${catColor.border} ${catColor.text}`}
+            className={`flex items-center gap-1.5 rounded-pill border bg-transparent px-3 py-1.5 text-[11px] font-semibold disabled:opacity-60 ${catColor.border} ${catColor.text}`}
+            aria-label={`Refaire ${meta.label}, ${freeRetake ? 'gratuit' : KORIS_COSTS.test + ' Kori'}`}
           >
-            {loading ? <Loader2 size={12} className="animate-spin" /> : freeRetake ? 'Refaire — gratuit' : `Refaire — ${KORIS_COSTS.test}K`}
+            {loading ? <Loader2 size={12} className="animate-spin" /> : (
+              <>
+                Refaire
+                {freeRetake ? (
+                  <span className="inline-flex items-center rounded-md px-1.5 py-px text-[10px] font-extrabold uppercase" style={{ background: 'rgba(159,188,175,.22)', color: '#3C7A5A' }}>Gratuit</span>
+                ) : (
+                  <span className="inline-flex items-center gap-0.5 rounded-md px-1.5 py-px" style={{ background: 'rgba(23,24,27,.06)' }}>
+                    <img src="/kori.png" alt="" className="w-3 h-3 rounded-full object-cover" />
+                    <span className="font-display text-[11px] font-semibold text-ink">{KORIS_COSTS.test}</span>
+                  </span>
+                )}
+              </>
+            )}
           </button>
         ) : (
           <button
             onClick={() => onStart(scale.id)}
             disabled={loading}
-            className={`flex items-center gap-1 rounded-pill px-3.5 py-1.5 text-[11px] font-bold text-white shadow-soft disabled:opacity-60 ${getCategorySolidBg(
+            className={`flex items-center gap-1.5 rounded-pill px-3 py-1.5 text-[11px] font-bold text-white shadow-soft disabled:opacity-60 ${getCategorySolidBg(
               category
             )}`}
+            aria-label={`Commencer ${meta.label}, ${KORIS_COSTS.test} Kori`}
           >
-            {loading ? <Loader2 size={12} className="animate-spin" /> : `Commencer — ${KORIS_COSTS.test}K`}
+            {loading ? <Loader2 size={12} className="animate-spin" /> : (
+              <>
+                Commencer
+                <span className="inline-flex items-center gap-0.5 rounded-md px-1.5 py-px" style={{ background: 'rgba(255,255,255,.18)' }}>
+                  <img src="/kori.png" alt="" className="w-3 h-3 rounded-full object-cover" />
+                  <span className="font-display text-[11px] font-semibold">{KORIS_COSTS.test}</span>
+                </span>
+              </>
+            )}
           </button>
         )}
       </div>

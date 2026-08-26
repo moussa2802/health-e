@@ -461,18 +461,25 @@ const AssessmentHomePage: React.FC = () => {
             </div>
 
             {isUnlocked ? (
-              <button
-                onClick={() => navigate('/assessment/compatibility')}
-                className={`w-full py-3 rounded-[14px] border-none text-sm font-bold cursor-pointer flex items-center justify-center gap-2 transition-colors ${
-                  hasKoris ? 'bg-accent text-white hover:bg-accent/90' : 'bg-white/20 text-white/60 cursor-not-allowed'
-                }`}
-              >
-                Tester la compatibilité
-                <span className="inline-flex items-center gap-1 bg-white/20 px-2 py-0.5 rounded-[10px] text-xs font-extrabold">
-                  <img src="/kori.png" alt="" className="w-3.5 h-3.5 rounded-full object-cover" />
-                  {compatCost} · reste {balance - compatCost}
-                </span>
-              </button>
+              <>
+                <button
+                  onClick={() => navigate('/assessment/compatibility')}
+                  className={`w-full rounded-[16px] border-none text-[15px] font-bold cursor-pointer flex items-center justify-between gap-3 transition-colors ${
+                    hasKoris ? 'bg-accent text-white hover:bg-accent/90 shadow-soft' : 'bg-white/20 text-white/60 cursor-not-allowed'
+                  }`}
+                  style={{ padding: '6px 6px 6px 20px' }}
+                >
+                  <span className="tracking-tight">Tester la compatibilité</span>
+                  <span className="inline-flex items-center gap-1.5 rounded-xl px-3 py-2" style={{ background: 'rgba(255,255,255,.14)', border: '1px solid rgba(255,255,255,.16)' }}>
+                    <img src="/kori.png" alt="" className="w-6 h-6 rounded-full object-cover" />
+                    <span className="font-display text-[17px] font-semibold leading-none">{compatCost}</span>
+                  </span>
+                </button>
+                <p className="flex items-center justify-center gap-1.5 mt-2 mb-0 text-xs font-semibold text-white/60">
+                  <img src="/kori.png" alt="" className="w-4 h-4 rounded-full object-cover" />
+                  Ton solde : <b className="text-white/80">{balance} Koris</b>
+                </p>
+              </>
             ) : (
               <div>
                 {isClose && (

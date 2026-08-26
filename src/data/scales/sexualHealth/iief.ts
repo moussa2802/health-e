@@ -2,6 +2,7 @@ import type { AssessmentScale } from '../../../types/assessment';
 
 export const IIEF: AssessmentScale = {
   id: 'iief',
+  code: 'V5',
   name: "Fonctionnement Sexuel Masculin",
   shortName: "IIEF",
   category: 'sexual_health',

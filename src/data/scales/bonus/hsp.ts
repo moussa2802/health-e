@@ -15,6 +15,7 @@ const opts = [
 
 export const BONUS_HSP: AssessmentScale = {
   id: 'bonus_hsp',
+  code: 'B3',
   name: 'Hypersensibilité (HSP)',
   shortName: 'HSP Scale',
   category: 'bonus',

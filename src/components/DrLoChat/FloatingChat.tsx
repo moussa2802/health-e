@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { collection, query, orderBy, getDocs, doc, setDoc, getDoc, limit } from 'firebase/firestore';
 import { MessageCircle, History, X, ArrowRight, ArrowLeft, Zap } from 'lucide-react';
 import { db } from '../../utils/firebase';
@@ -324,7 +324,43 @@ const FloatingChat: React.FC<Props> = ({ userId }) => {
     return new Date(iso).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
   };
 
+  // ── Pill FAB state ──────────────────────────────────────────────────────────
+  const SESSION_KEY = 'drlo_pill_shown';
+  const [pillExpanded, setPillExpanded] = useState(() => {
+    if (typeof sessionStorage === 'undefined') return true;
+    return !sessionStorage.getItem(SESSION_KEY);
+  });
+  const collapseTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const prefersReducedMotion = useRef(
+    typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  );
+
+  useEffect(() => {
+    if (pillExpanded && !sessionStorage.getItem(SESSION_KEY)) {
+      collapseTimer.current = setTimeout(() => {
+        setPillExpanded(false);
+        sessionStorage.setItem(SESSION_KEY, '1');
+      }, 4200);
+    }
+    return () => { if (collapseTimer.current) clearTimeout(collapseTimer.current); };
+  }, []);
+
+  const handlePillClick = useCallback(() => {
+    if (collapseTimer.current) { clearTimeout(collapseTimer.current); collapseTimer.current = null; }
+    setOpen(o => !o);
+  }, []);
+
+  const handlePillHover = useCallback(() => {
+    if (!open) setPillExpanded(true);
+  }, [open]);
+
+  const handlePillLeave = useCallback(() => {
+    if (!open && sessionStorage.getItem(SESSION_KEY)) setPillExpanded(false);
+  }, [open]);
+
   // ── Render ─────────────────────────────────────────────────────────────────
+
+  const transitionStyle = prefersReducedMotion.current ? 'none' : undefined;
 
   return (
     <>
@@ -337,9 +373,29 @@ const FloatingChat: React.FC<Props> = ({ userId }) => {
           0%,100% { opacity: 0.3; transform: translateY(0); }
           50% { opacity: 1; transform: translateY(-3px); }
         }
-        .dr-lo-fab { transition: transform 0.15s ease, box-shadow 0.15s ease; }
-        .dr-lo-fab:hover { transform: scale(1.07); }
+        @keyframes fabPulse {
+          0% { transform: scale(1); opacity: 0.8; }
+          70% { transform: scale(1.13); opacity: 0; }
+          100% { opacity: 0; }
+        }
+        .dr-lo-pill {
+          transition: padding 0.3s cubic-bezier(.3,.9,.3,1);
+        }
+        .dr-lo-pill-text {
+          overflow: hidden;
+          white-space: nowrap;
+          transition: max-width 0.32s cubic-bezier(.3,.9,.3,1), opacity 0.22s;
+        }
+        .dr-lo-pill-text.collapsed {
+          max-width: 0 !important;
+          opacity: 0;
+          padding-right: 0 !important;
+        }
         .conv-item:hover { background: #F3F1EA; }
+        @media (prefers-reduced-motion: reduce) {
+          .dr-lo-pill, .dr-lo-pill-text { transition: none !important; }
+          .fab-pulse-ring { display: none; }
+        }
       `}</style>
 
       {/* ── Fenêtre ── */}
@@ -555,34 +611,55 @@ const FloatingChat: React.FC<Props> = ({ userId }) => {
         </div>
       )}
 
-      {/* ── Bouton flottant ── */}
-      <button
-        className="dr-lo-fab fixed bottom-5 right-5 w-[58px] h-[58px] rounded-full border-0 bg-sage shadow-lift cursor-pointer z-[10000] p-0 overflow-hidden"
-        onClick={() => setOpen(o => !o)}
-        title="Parler à Dr Lô"
+      {/* ── Pill FAB ── */}
+      <div
+        className="dr-lo-pill fixed bottom-5 right-5 z-[10000] flex items-center rounded-full bg-ink cursor-pointer select-none"
+        style={{ padding: '6px', boxShadow: '0 6px 22px rgba(23,24,27,.28)', transition: transitionStyle }}
+        onClick={handlePillClick}
+        onMouseEnter={handlePillHover}
+        onMouseLeave={handlePillLeave}
+        role="button"
+        aria-label={`Parler à Dr Lô, ${KORIS_COSTS.chat} Kori par message`}
+        tabIndex={0}
       >
-        <img
-          src={DR_LO_PHOTO}
-          alt="Dr Lô"
-          className="w-full h-full object-cover rounded-full"
-          onError={e => {
-            (e.target as HTMLImageElement).style.display = 'none';
-            const btn = (e.target as HTMLImageElement).parentElement!;
-            if (!btn.querySelector('.drlo-fallback')) {
-              btn.classList.add('flex', 'items-center', 'justify-center');
-              const span = document.createElement('span');
-              span.className = 'drlo-fallback text-white';
-              span.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4.8 2.3A.3.3 0 1 0 4.8 2.3z"/><path d="M8 15v1a6 6 0 0 0 6 6v0a6 6 0 0 0 6-6v-3"/><path d="M15 2v6a3 3 0 0 0 3 3v0a3 3 0 0 0 3-3V2"/><path d="M18 2v6"/><path d="M2 15h.01M8 15a5 5 0 0 1-5-5V4"/></svg>';
-              btn.appendChild(span);
-            }
-          }}
-        />
-        {unread > 0 && (
-          <span className="absolute -top-0.5 -right-0.5 w-[18px] h-[18px] rounded-full bg-danger text-white text-[10px] font-bold flex items-center justify-center border-2 border-card">
-            {unread}
+        {/* Avatar */}
+        <div className="relative w-[46px] h-[46px] flex-shrink-0">
+          <img
+            src={DR_LO_PHOTO}
+            alt="Dr Lô"
+            className="w-full h-full rounded-full object-cover"
+            onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
+          />
+          <span className="absolute top-[3px] right-[3px] w-[11px] h-[11px] rounded-full bg-ok" style={{ border: '2.5px solid #17181B' }} />
+          {!pillExpanded && (
+            <span
+              className="fab-pulse-ring absolute rounded-full pointer-events-none"
+              style={{
+                inset: '-4px',
+                border: '2px solid rgba(159,188,175,.55)',
+                animation: 'fabPulse 2.4s ease-out infinite',
+              }}
+            />
+          )}
+          {unread > 0 && (
+            <span className="absolute -top-1 -right-1 w-[18px] h-[18px] rounded-full bg-danger text-white text-[10px] font-bold flex items-center justify-center" style={{ border: '2.5px solid #17181B' }}>
+              {unread}
+            </span>
+          )}
+        </div>
+
+        {/* Text */}
+        <div
+          className={`dr-lo-pill-text text-[#F4F1E9] ${pillExpanded ? '' : 'collapsed'}`}
+          style={{ maxWidth: pillExpanded ? '190px' : '0', paddingRight: pillExpanded ? '8px' : '0', paddingLeft: pillExpanded ? '10px' : '0', transition: transitionStyle }}
+        >
+          <b className="block text-[13.5px] font-bold leading-tight">Parler à Dr Lô</b>
+          <span className="flex items-center gap-1 text-[11px] mt-0.5" style={{ color: '#BFB7A6' }}>
+            <img src="/kori.png" alt="" className="w-[13px] h-[13px] rounded-full object-cover" />
+            {KORIS_COSTS.chat} Kori par message
           </span>
-        )}
-      </button>
+        </div>
+      </div>
     </>
   );
 };

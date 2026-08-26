@@ -10,6 +10,7 @@ const agree5 = [
 
 export const SOCIAL_PRESSURE: AssessmentScale = {
   id: 'social_pressure',
+  code: 'P12',
   name: "Pression Sociale, Mariage et Genre",
   shortName: "Pression Sociale",
   category: 'mental_health',

@@ -60,8 +60,23 @@ export const ALL_SCALES: AssessmentScale[] = [
   ...BONUS_SCALES,
 ];
 
+// Guard: every scale must have a unique, non-empty code
+(function assertUniqueCodes() {
+  const seen = new Set<string>();
+  for (const s of ALL_SCALES) {
+    if (!s.code) throw new Error(`Scale "${s.id}" has no code`);
+    if (seen.has(s.code)) throw new Error(`Duplicate scale code "${s.code}" on "${s.id}"`);
+    seen.add(s.code);
+  }
+})();
+
 export function getScaleById(id: string): AssessmentScale | undefined {
   return ALL_SCALES.find(s => s.id === id);
+}
+
+export function getScaleByCode(code: string): AssessmentScale | undefined {
+  const upper = code.toUpperCase();
+  return ALL_SCALES.find(s => s.code === upper);
 }
 
 export function getBonusScaleById(id: string): AssessmentScale | undefined {

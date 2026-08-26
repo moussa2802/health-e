@@ -25,6 +25,7 @@ const opts = [
 
 export const ECR_R: AssessmentScale = {
   id: 'ecr_r',
+  code: 'P4',
   name: "Style d'Attachement Adulte",
   shortName: "ECR-R",
   category: 'mental_health',

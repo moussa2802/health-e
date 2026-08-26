@@ -14,6 +14,7 @@ const yesNoSexual = [
 
 export const CECA_Q: AssessmentScale = {
   id: 'ceca_q',
+  code: 'P11',
   name: "Carences Affectives de l'Enfance",
   shortName: "CECA-Q",
   category: 'mental_health',

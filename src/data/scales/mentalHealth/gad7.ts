@@ -21,6 +21,7 @@ const functionalOpts = [
 
 export const GAD7: AssessmentScale = {
   id: 'gad7',
+  code: 'P1',
   name: "Trouble Anxieux Généralisé",
   shortName: "GAD-7",
   category: 'mental_health',
