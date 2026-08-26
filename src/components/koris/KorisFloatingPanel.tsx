@@ -7,7 +7,8 @@
  */
 
 import React, { useEffect, useState } from 'react';
-import { Gift, Check } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Gift, Check, Zap } from 'lucide-react';
 import { useKoris } from '../../contexts/KorisContext';
 import { getKorisHistory, getFeatureLabel, KORIS_COSTS, type KorisTransaction } from '../../services/korisService';
 import { useAuth } from '../../contexts/AuthContext';
@@ -21,6 +22,7 @@ interface Props {
 const KorisFloatingPanel: React.FC<Props> = ({ onClose }) => {
   const { balance, welcomeBonusActive } = useKoris();
   const { currentUser } = useAuth();
+  const navigate = useNavigate();
   const [history, setHistory] = useState<KorisTransaction[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -35,7 +37,7 @@ const KorisFloatingPanel: React.FC<Props> = ({ onClose }) => {
     switch (type) {
       case 'spend': return 'text-danger';
       case 'refill': case 'daily_reset': case 'purchase': return 'text-ok';
-      case 'bonus': case 'phase_switch': return 'text-gold';
+      case 'bonus': case 'phase_switch': case 'transition_bonus': return 'text-gold';
       case 'refund': return 'text-accent';
       default: return 'text-muted';
     }
@@ -95,6 +97,16 @@ const KorisFloatingPanel: React.FC<Props> = ({ onClose }) => {
               Recharge tes Koris pour continuer à utiliser Dr Lô et les analyses.
             </div>
           )}
+        </div>
+
+        {/* Buy button */}
+        <div className="px-4 py-3 border-b border-line">
+          <button
+            onClick={() => { onClose(); navigate('/acheter-koris'); }}
+            className="w-full py-2.5 rounded-xl border-0 bg-gold text-white text-sm font-semibold cursor-pointer hover:bg-gold/90 transition-colors flex items-center justify-center gap-2"
+          >
+            <Zap size={15} /> Acheter des Koris
+          </button>
         </div>
 
         {/* Recent transactions */}
