@@ -16,11 +16,12 @@ const KORIS_COSTS = {
  * Returns { holdId, cost } on success, { error: 'insufficient_balance' } if short.
  * Free features (cost=0) return { holdId: null, cost: 0 }.
  */
-async function reserveKoris(userId, feature) {
-  const cost = KORIS_COSTS[feature];
-  if (cost === undefined) {
+async function reserveKoris(userId, feature, quantity = 1) {
+  const unitCost = KORIS_COSTS[feature];
+  if (unitCost === undefined) {
     throw new Error(`Unknown feature: ${feature}`);
   }
+  const cost = unitCost * quantity;
   if (cost === 0) return { holdId: null, cost: 0 };
 
   const patientRef = db.collection("patients").doc(userId);
@@ -43,6 +44,7 @@ async function reserveKoris(userId, feature) {
         userId,
         feature,
         amount: cost,
+        quantity,
         status: "pending",
         createdAt: admin.firestore.FieldValue.serverTimestamp(),
       });
@@ -51,7 +53,7 @@ async function reserveKoris(userId, feature) {
     return { holdId: holdRef.id, cost };
   } catch (err) {
     if (err.message === "INSUFFICIENT_BALANCE") {
-      return { error: "insufficient_balance" };
+      return { error: "insufficient_balance", required: cost };
     }
     throw err;
   }

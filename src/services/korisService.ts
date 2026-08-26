@@ -165,6 +165,49 @@ export async function checkDailyReset(_userId: string): Promise<DailyResetResult
 }
 
 
+// ── Test spend ──────────────────────────────────────────────────────────────
+
+export interface TestSpendResult {
+  ok: boolean;
+  cost: number;
+  free_retake?: boolean;
+  error?: string;
+  required?: number;
+}
+
+const FREE_RETAKE_DAYS = 30;
+
+export function isTestFreeRetake(lastTakenAt: string | Date | undefined): boolean {
+  if (!lastTakenAt) return false;
+  const ts = lastTakenAt instanceof Date ? lastTakenAt.getTime() : new Date(lastTakenAt).getTime();
+  const daysSince = (Date.now() - ts) / (1000 * 60 * 60 * 24);
+  return daysSince >= FREE_RETAKE_DAYS;
+}
+
+export async function spendKorisForTest(
+  scaleLastTakenMap: Record<string, string | Date | null>,
+): Promise<TestSpendResult> {
+  const serialized: Record<string, string | null> = {};
+  for (const [k, v] of Object.entries(scaleLastTakenMap)) {
+    serialized[k] = v instanceof Date ? v.toISOString() : v;
+  }
+  try {
+    const res = await authedFetch('/.netlify/functions/koris-spend', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ feature: 'test', scaleLastTakenMap: serialized }),
+    });
+
+    const data = await res.json();
+    if (res.status === 402) {
+      return { ok: false, cost: 0, error: data.error, required: data.required };
+    }
+    return { ok: true, cost: data.cost ?? 0, free_retake: data.free_retake ?? false };
+  } catch {
+    return { ok: false, cost: 0, error: 'Erreur réseau' };
+  }
+}
+
 // ── Transaction history ──────────────────────────────────────────────────────
 
 /**
@@ -269,7 +312,7 @@ export function getFeatureLabel(feature: string): string {
     refresh_synthesis: 'Rafraîchir synthèse',
     conseils: 'Conseils personnalisés',
     compatibility: 'Test de compatibilité',
-    test: 'Test (gratuit)',
+    test: 'Test',
     daily_reset: 'Reset quotidien',
     daily_refill: 'Recharge quotidienne',
     welcome_bonus: 'Bonus de bienvenue',

@@ -6,6 +6,8 @@ import type { AssessmentScale } from '../../types/assessment';
 import ScaleCard from '../../components/assessment/ScaleCard';
 import { useAuth } from '../../contexts/AuthContext';
 import { createSession } from '../../services/evaluationService';
+import { useKoris } from '../../contexts/KorisContext';
+import { KORIS_COSTS, spendKorisForTest } from '../../services/korisService';
 
 const MIN_SELECTION = 2;
 const MAX_SELECTION = 10;
@@ -13,6 +15,7 @@ const MAX_SELECTION = 10;
 const AssessmentSelectPage: React.FC = () => {
   const navigate = useNavigate();
   const { currentUser, isAuthenticated } = useAuth();
+  const { balance, refreshBalance, setShowNoKorisModal } = useKoris();
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -46,12 +49,21 @@ const AssessmentSelectPage: React.FC = () => {
 
     setLoading(true);
     try {
+      const scaleMap: Record<string, null> = {};
+      for (const id of selected) scaleMap[id] = null;
+      const spendResult = await spendKorisForTest(scaleMap);
+      if (!spendResult.ok) {
+        setShowNoKorisModal(true);
+        setError(`Solde insuffisant (${spendResult.required ?? count} Koris requis, solde : ${balance}).`);
+        return;
+      }
       const session = await createSession(currentUser.id, [...selected]);
       navigate(`/assessment/quiz/${session.id}`);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Une erreur est survenue. Veuillez réessayer.');
     } finally {
       setLoading(false);
+      refreshBalance();
     }
   };
 
@@ -94,8 +106,7 @@ const AssessmentSelectPage: React.FC = () => {
                 </>
               ) : (
                 <>
-                  Démarrer
-                  {count >= MIN_SELECTION && <span>({count})</span>}
+                  Démarrer ({count} · {count * KORIS_COSTS.test} Kori{count * KORIS_COSTS.test > 1 ? 's' : ''})
                   <ChevronRight size={15} />
                 </>
               )}
@@ -193,7 +204,7 @@ const AssessmentSelectPage: React.FC = () => {
                 </>
               ) : (
                 <>
-                  Démarrer {count} évaluation{count > 1 ? 's' : ''}
+                  Démarrer {count} évaluation{count > 1 ? 's' : ''} · {count * KORIS_COSTS.test} Kori{count * KORIS_COSTS.test > 1 ? 's' : ''}
                   <ChevronRight size={18} />
                 </>
               )}

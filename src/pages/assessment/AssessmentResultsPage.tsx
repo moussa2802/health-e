@@ -23,6 +23,8 @@ import ResultCard from '../../components/assessment/ResultCard';
 import { getResultCardConfig } from '../../data/experiences';
 import { shareResultCard } from '../../utils/shareCard';
 import { getScaleMeta, getScaleCategory, getCategoryColor } from '../../utils/scaleMeta';
+import { useKoris } from '../../contexts/KorisContext';
+import { KORIS_COSTS, spendKorisForTest, isTestFreeRetake } from '../../services/korisService';
 
 const EMERGENCY_CONTACTS = getCrisisResources().map(r => ({
   label: r.label,
@@ -207,6 +209,7 @@ const AssessmentResultsPage: React.FC = () => {
   const [searchParams] = useSearchParams();
   const isGuestMode = searchParams.get('guest') === 'true';
   const { currentUser, isAuthenticated } = useAuth();
+  const { refreshBalance, setShowNoKorisModal } = useKoris();
   const location = useLocation();
   const responseQuality = (location.state as any)?.responseQuality;
 
@@ -304,11 +307,19 @@ const AssessmentResultsPage: React.FC = () => {
     setRetaking(true);
     try {
       const sid = session.selectedScaleIds[0];
+      const lastTakenAt = result?.completedAt ?? null;
+      const spendResult = await spendKorisForTest({ [sid]: lastTakenAt });
+      if (!spendResult.ok) {
+        setShowNoKorisModal(true);
+        setRetaking(false);
+        return;
+      }
       const answers = await getAnswersFromSession(session.id, sid);
       await archiveCurrentResult(currentUser.id, sid, answers ?? {});
       const newSession = await createSession(currentUser.id, [sid]);
       navigate(`/assessment/quiz/${newSession.id}`);
     } catch { setRetaking(false); }
+    finally { refreshBalance(); }
   };
 
   const handleDelete = async () => {
@@ -394,6 +405,9 @@ const AssessmentResultsPage: React.FC = () => {
   const crumbLabel = scale.category === 'mental_health' ? 'Profil psychologique'
     : scale.category === 'bonus' ? 'Test bonus' : 'Vie intime';
 
+  const retakeFree = isTestFreeRetake(result.completedAt);
+  const retakeCostLabel = retakeFree ? 'gratuit' : `${KORIS_COSTS.test} Kori`;
+
   const alertLevel = result.alertLevel ?? 0;
   const criticalAlerts = (result.alertsTriggered ?? []).filter(a => a.alertLevel === 3)
     .map(a => ({ ...a, message: rg(a.message) }));
@@ -470,7 +484,7 @@ const AssessmentResultsPage: React.FC = () => {
                   opacity: retaking ? 0.6 : 1,
                 }}
               >
-                <RefreshCw size={15} />{retaking ? 'Préparation...' : 'Refaire'}
+                <RefreshCw size={15} />{retaking ? 'Préparation...' : `Refaire — ${retakeCostLabel}`}
               </button>
             )}
           </div>

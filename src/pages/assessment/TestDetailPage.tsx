@@ -27,6 +27,8 @@ import { getResultCardConfig } from '../../data/experiences';
 import { shareResultCard } from '../../utils/shareCard';
 import type { ScaleResult, ItemSeverity } from '../../types/assessment';
 import { getBigFiveProfile, getBigFiveSummary, BAND_LABEL, type Band } from '../../utils/bigFiveProfile';
+import { useKoris } from '../../contexts/KorisContext';
+import { KORIS_COSTS, spendKorisForTest, isTestFreeRetake } from '../../services/korisService';
 
 const CATEGORY_LABELS: Record<ScaleCategory, string> = {
   mental: 'Psychologique',
@@ -192,6 +194,7 @@ const TestDetailPage: React.FC = () => {
   const { scaleId } = useParams<{ scaleId: string }>();
   const navigate = useNavigate();
   const { currentUser, isAuthenticated } = useAuth();
+  const { balance, refreshBalance, setShowNoKorisModal } = useKoris();
 
   const [result, setResult] = useState<ScaleResult | null>(null);
   const [history, setHistory] = useState<ScaleResultHistoryEntry[]>([]);
@@ -277,6 +280,13 @@ const TestDetailPage: React.FC = () => {
       ?? scale.interpretation[scale.interpretation.length - 1]
     : null;
 
+  const isFreeRetake = isDone && isTestFreeRetake(result?.completedAt);
+  const testCostLabel = isGuest
+    ? ''
+    : isFreeRetake
+      ? ' — gratuit'
+      : ` — ${KORIS_COSTS.test} Kori`;
+
   const startTest = async () => {
     setErrorMsg(null);
 
@@ -302,8 +312,20 @@ const TestDetailPage: React.FC = () => {
       return;
     }
 
+    await doStartTest();
+  };
+
+  const doStartTest = async () => {
+    if (!currentUser || !scaleId) return;
     setStarting(true);
     try {
+      const lastTakenAt = result?.completedAt ?? null;
+      const spendResult = await spendKorisForTest({ [scaleId]: lastTakenAt });
+      if (!spendResult.ok) {
+        setShowNoKorisModal(true);
+        setErrorMsg(`Solde insuffisant (${spendResult.required ?? KORIS_COSTS.test} Koris requis).`);
+        return;
+      }
       const session = await createSession(currentUser.id, [scaleId]);
       navigate(`/assessment/quiz/${session.id}`);
     } catch {
@@ -316,21 +338,14 @@ const TestDetailPage: React.FC = () => {
       }
     } finally {
       setStarting(false);
+      refreshBalance();
     }
   };
 
   const handleGateGranted = async () => {
     setShowGate(false);
     if (!currentUser) return;
-    setStarting(true);
-    try {
-      const session = await createSession(currentUser.id, [scaleId]);
-      navigate(`/assessment/quiz/${session.id}`);
-    } catch {
-      setErrorMsg('Connexion instable. Réessaie dans quelques secondes.');
-    } finally {
-      setStarting(false);
-    }
+    await doStartTest();
   };
 
   if (showGate) {
@@ -419,9 +434,9 @@ const TestDetailPage: React.FC = () => {
             {starting ? (
               <><Loader2 size={17} className="animate-spin" /> Chargement…</>
             ) : isDone ? (
-              <><RefreshCw size={17} /> Refaire le test</>
+              <><RefreshCw size={17} /> Refaire le test{testCostLabel}</>
             ) : (
-              'Faire le test'
+              <>Faire le test{testCostLabel}</>
             )}
           </button>
         )}

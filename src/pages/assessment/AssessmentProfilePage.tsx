@@ -30,6 +30,8 @@ import {
   getCategoryColor,
   type ScaleCategory,
 } from '../../utils/scaleMeta';
+import { useKoris } from '../../contexts/KorisContext';
+import { KORIS_COSTS, spendKorisForTest, isTestFreeRetake } from '../../services/korisService';
 import {
   Brain,
   Heart,
@@ -115,6 +117,7 @@ interface ScaleRowProps {
 
 const ScaleRow: React.FC<ScaleRowProps> = ({ scale, result, onStart, loading }) => {
   const isCompleted = !!result;
+  const freeRetake = isCompleted && isTestFreeRetake(result?.completedAt);
   const meta = getScaleMeta(scale.id);
   const Icon = meta.icon;
   const category = getScaleCategory(scale.id);
@@ -204,7 +207,7 @@ const ScaleRow: React.FC<ScaleRowProps> = ({ scale, result, onStart, loading }) 
             disabled={loading}
             className={`flex items-center gap-1 rounded-pill border bg-transparent px-3 py-1.5 text-[11px] font-semibold disabled:opacity-60 ${catColor.border} ${catColor.text}`}
           >
-            {loading ? <Loader2 size={12} className="animate-spin" /> : 'Refaire'}
+            {loading ? <Loader2 size={12} className="animate-spin" /> : freeRetake ? 'Refaire — gratuit' : `Refaire — ${KORIS_COSTS.test}K`}
           </button>
         ) : (
           <button
@@ -214,7 +217,7 @@ const ScaleRow: React.FC<ScaleRowProps> = ({ scale, result, onStart, loading }) 
               category
             )}`}
           >
-            {loading ? <Loader2 size={12} className="animate-spin" /> : 'Commencer'}
+            {loading ? <Loader2 size={12} className="animate-spin" /> : `Commencer — ${KORIS_COSTS.test}K`}
           </button>
         )}
       </div>
@@ -523,6 +526,7 @@ const CompatibilityCodeCard: React.FC<CodeCardProps> = ({
 const AssessmentProfilePage: React.FC = () => {
   const navigate = useNavigate();
   const { currentUser, isAuthenticated, loading: authLoading } = useAuth();
+  const { refreshBalance, setShowNoKorisModal } = useKoris();
 
   const [scaleResults, setScaleResults] = useState<Record<string, ScaleResult>>({});
   const [signatures, setSignatures] = useState<Record<string, { value: number; max: number }[]>>({});
@@ -647,6 +651,12 @@ const AssessmentProfilePage: React.FC = () => {
     setLoadingCard(scaleId);
     setErrorMsg(null);
     try {
+      const lastTakenAt = scaleResults[scaleId]?.completedAt ?? null;
+      const spendResult = await spendKorisForTest({ [scaleId]: lastTakenAt });
+      if (!spendResult.ok) {
+        setShowNoKorisModal(true);
+        return;
+      }
       const session = await createSession(currentUser.id, [scaleId]);
       navigate(`/assessment/quiz/${session.id}`);
     } catch (err) {
@@ -654,6 +664,7 @@ const AssessmentProfilePage: React.FC = () => {
       setErrorMsg(msg);
     } finally {
       setLoadingCard(null);
+      refreshBalance();
     }
   };
 

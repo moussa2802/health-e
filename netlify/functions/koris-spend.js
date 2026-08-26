@@ -1,6 +1,8 @@
 const { verifyAuth } = require("./_firebase");
 const { reserveKoris, commitKoris, releaseKoris } = require("./_koris");
 
+const FREE_RETAKE_AFTER_DAYS = 30;
+
 exports.handler = async (event) => {
   const headers = {
     "Access-Control-Allow-Origin": "*",
@@ -29,22 +31,51 @@ exports.handler = async (event) => {
     return { statusCode: 400, headers, body: JSON.stringify({ error: "JSON invalide" }) };
   }
 
-  const { feature, lastTakenAt } = body;
+  const { feature, quantity = 1, lastTakenAt, scaleLastTakenMap } = body;
   if (!feature) {
     return { statusCode: 400, headers, body: JSON.stringify({ error: "feature manquant" }) };
   }
 
-  const FREE_RETAKE_AFTER_DAYS = 30;
-  if (feature === "test" && lastTakenAt) {
-    const daysSince = (Date.now() - new Date(lastTakenAt).getTime()) / (1000 * 60 * 60 * 24);
-    if (daysSince >= FREE_RETAKE_AFTER_DAYS) {
-      return { statusCode: 200, headers, body: JSON.stringify({ ok: true, koris_debited: false, cost: 0, free_retake: true }) };
+  if (feature === "test") {
+    if (scaleLastTakenMap && typeof scaleLastTakenMap === "object") {
+      let billableCount = 0;
+      const freeScales = [];
+      for (const [scaleId, takenAt] of Object.entries(scaleLastTakenMap)) {
+        if (takenAt) {
+          const daysSince = (Date.now() - new Date(takenAt).getTime()) / (1000 * 60 * 60 * 24);
+          if (daysSince >= FREE_RETAKE_AFTER_DAYS) {
+            freeScales.push(scaleId);
+            continue;
+          }
+        }
+        billableCount++;
+      }
+
+      if (billableCount === 0) {
+        return { statusCode: 200, headers, body: JSON.stringify({ ok: true, koris_debited: false, cost: 0, free_retake: true, freeScales }) };
+      }
+
+      const reservation = await reserveKoris(user.uid, feature, billableCount);
+      if (reservation.error === "insufficient_balance") {
+        return { statusCode: 402, headers, body: JSON.stringify({ error: "Solde Koris insuffisant", koris_debited: false, required: reservation.required }) };
+      }
+
+      await commitKoris(reservation.holdId);
+      return { statusCode: 200, headers, body: JSON.stringify({ ok: true, koris_debited: true, cost: reservation.cost, freeScales }) };
+    }
+
+    if (lastTakenAt) {
+      const daysSince = (Date.now() - new Date(lastTakenAt).getTime()) / (1000 * 60 * 60 * 24);
+      if (daysSince >= FREE_RETAKE_AFTER_DAYS) {
+        return { statusCode: 200, headers, body: JSON.stringify({ ok: true, koris_debited: false, cost: 0, free_retake: true }) };
+      }
     }
   }
 
-  const reservation = await reserveKoris(user.uid, feature);
+  const qty = Math.max(1, Math.floor(Number(quantity) || 1));
+  const reservation = await reserveKoris(user.uid, feature, qty);
   if (reservation.error === "insufficient_balance") {
-    return { statusCode: 402, headers, body: JSON.stringify({ error: "Solde Koris insuffisant", koris_debited: false }) };
+    return { statusCode: 402, headers, body: JSON.stringify({ error: "Solde Koris insuffisant", koris_debited: false, required: reservation.required }) };
   }
 
   await commitKoris(reservation.holdId);
