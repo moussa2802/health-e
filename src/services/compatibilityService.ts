@@ -2,6 +2,7 @@ import { collection, doc, setDoc, getDoc, updateDoc, deleteDoc, serverTimestamp,
 import { db } from '../utils/firebase';
 import type { CompatibilityRequest, CompatibilityResult, ScaleResult } from '../types/assessment';
 import { getUserProfileByCompatibilityId, getProfileProgress } from './evaluationService';
+import { authedFetch } from '../utils/authedFetch';
 
 const COL = 'compatibilityRequests';
 const HISTORY_COL = 'compatibilityHistory';
@@ -298,7 +299,7 @@ export async function computeCompatibility(requestId: string): Promise<Compatibi
 
   let claudeNarrative = '';
   try {
-    const aiResponse = await fetch('/.netlify/functions/compatibility-analysis', {
+    const aiResponse = await authedFetch('/.netlify/functions/compatibility-analysis', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -420,7 +421,7 @@ export async function computeMergedCompatibility(
 
   let claudeNarrative = '';
   try {
-    const aiResponse = await fetch('/.netlify/functions/compatibility-analysis', {
+    const aiResponse = await authedFetch('/.netlify/functions/compatibility-analysis', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({

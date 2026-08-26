@@ -1,5 +1,6 @@
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { db } from '../utils/firebase';
+import { authedFetch } from '../utils/authedFetch';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -91,7 +92,7 @@ export async function getOrGenerateConseils(
   }
 
   // ── 2. Call AI endpoint ──
-  const response = await fetch('/.netlify/functions/dr-lo-conseils', {
+  const response = await authedFetch('/.netlify/functions/dr-lo-conseils', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({

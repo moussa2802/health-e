@@ -8,6 +8,7 @@ import {
 import { buildDemographique, getOnboardingProfile } from './onboardingProfile';
 import { ALL_SCALES, MENTAL_HEALTH_SCALES, SEXUAL_HEALTH_SCALES, BONUS_SCALES } from '../data/scales';
 import { getScaleMeta } from './scaleMeta';
+import { authedFetch } from './authedFetch';
 
 /** IDs des scales par catégorie */
 const MENTAL_IDS = new Set(MENTAL_HEALTH_SCALES.map(s => s.id));
@@ -96,7 +97,7 @@ export async function triggerDrLoMentalHealth(userId: string): Promise<void> {
 
   const bonus_completes = buildBonusCompletes(progress.scaleResults);
 
-  const response = await fetch('/.netlify/functions/dr-lo-analysis', {
+  const response = await authedFetch('/.netlify/functions/dr-lo-analysis', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -158,7 +159,7 @@ export async function triggerDrLoSexualHealth(userId: string): Promise<void> {
 
   const bonus_completes = buildBonusCompletes(progress.scaleResults);
 
-  const response = await fetch('/.netlify/functions/dr-lo-analysis', {
+  const response = await authedFetch('/.netlify/functions/dr-lo-analysis', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -209,7 +210,7 @@ export async function triggerDrLoSynthesis(userId: string): Promise<void> {
     };
   });
 
-  const response = await fetch('/.netlify/functions/dr-lo-synthesis', {
+  const response = await authedFetch('/.netlify/functions/dr-lo-synthesis', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -255,7 +256,7 @@ export async function triggerDrLoAnalysis(userId: string): Promise<void> {
     };
   });
 
-  const response = await fetch('/.netlify/functions/dr-lo-analysis', {
+  const response = await authedFetch('/.netlify/functions/dr-lo-analysis', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({

@@ -8,6 +8,8 @@ import { getCompatibilityHistory } from '../../services/compatibilityService';
 import { useKoris } from '../../contexts/KorisContext';
 import { KORIS_COSTS } from '../../services/korisService';
 import { KORIS_CONFIG } from '../../utils/korisConfig';
+import { authedFetch } from '../../utils/authedFetch';
+import { isAiAvailable } from '../../utils/aiCircuitBreaker';
 
 const DAILY_MESSAGE_LIMIT = 10;
 
@@ -162,7 +164,7 @@ const FloatingChat: React.FC<Props> = ({ userId }) => {
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const conversationId = useRef<string>(`conv_${Date.now()}`);
-  const { spend, refund, canAfford, balance } = useKoris();
+  const { canAfford, balance, refreshBalance } = useKoris();
 
   const onboarding = getOnboardingProfile();
   const prenom = onboarding?.prenom ?? '';
@@ -222,14 +224,9 @@ const FloatingChat: React.FC<Props> = ({ userId }) => {
 
   const sendMessage = async () => {
     const text = input.trim();
-    if (!text || loading) return;
+    if (!text || loading || !isAiAvailable()) return;
 
-    // Daily message limit check
     if (limitReached) return;
-
-    // Koris check — spend before API call
-    const spendResult = await spend('chat', 'Message Dr Lô');
-    if (!spendResult.allowed) return; // NoKorisModal shown by context
 
     const userMsg: ChatMessage = { role: 'user', content: text, timestamp: new Date().toISOString() };
     const newMessages = [...messages, userMsg];
@@ -246,19 +243,18 @@ const FloatingChat: React.FC<Props> = ({ userId }) => {
         .map(m => ({ role: m.role, content: m.content }));
       const historique = allHistory.slice(-10); // Last 5 exchanges (user+assistant pairs)
 
-      const res = await fetch('/.netlify/functions/dr-lo-chat', {
+      const res = await authedFetch('/.netlify/functions/dr-lo-chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ message: text, historique, context }),
       });
 
       if (!res.ok) {
-        // Refund on API failure
-        await refund('chat');
         throw new Error('API error');
       }
 
       const data = await res.json();
+      await refreshBalance();
       const assistantMsg: ChatMessage = {
         role: 'assistant',
         content: data.response ?? "Je n'ai pas pu répondre. Réessaie dans un instant.",
@@ -453,14 +449,14 @@ const FloatingChat: React.FC<Props> = ({ userId }) => {
                     onKeyDown={handleKeyDown}
                     placeholder={`Ecrire un message... (${KORIS_COSTS.chat}/msg • ${DAILY_MESSAGE_LIMIT - dailyCount} restants)`}
                     rows={1}
-                    disabled={loading}
+                    disabled={loading || !isAiAvailable()}
                     className="flex-1 resize-none border-[1.5px] border-line rounded-xl px-2.5 py-2 text-[13px] font-sans bg-paper text-ink leading-5 overflow-y-auto min-h-9 max-h-[116px] outline-none focus:border-sage/60 transition-colors"
                   />
                   <button
                     onClick={sendMessage}
-                    disabled={loading || !input.trim()}
+                    disabled={loading || !input.trim() || !isAiAvailable()}
                     className={`w-9 h-9 rounded-xl border-0 flex-shrink-0 flex items-center justify-center transition-colors ${
-                      loading || !input.trim() ? 'bg-line text-muted cursor-default' : 'bg-sage text-white cursor-pointer hover:bg-sage/90'
+                      loading || !input.trim() || !isAiAvailable() ? 'bg-line text-muted cursor-default' : 'bg-sage text-white cursor-pointer hover:bg-sage/90'
                     }`}
                   >
                     <ArrowRight size={16} />

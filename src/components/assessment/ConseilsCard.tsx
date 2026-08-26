@@ -2,6 +2,7 @@ import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { Lightbulb, RefreshCw, AlertTriangle, Loader2, Check, Dumbbell, Pin, Stethoscope } from 'lucide-react';
 import { getOrGenerateConseils, type CachedConseils, type GenerateConseilsParams } from '../../services/conseilsService';
 import { useKoris } from '../../contexts/KorisContext';
+import { isAiAvailable } from '../../utils/aiCircuitBreaker';
 
 type CardState = 'idle' | 'loading' | 'success' | 'error';
 
@@ -43,7 +44,7 @@ const ConseilsCard: React.FC<ConseilsCardProps> = ({
   const [data, setData] = useState<CachedConseils | null>(null);
   const [error, setError] = useState<string | null>(null);
   const autoLoaded = useRef(false);
-  const { spend, canAfford, getCost } = useKoris();
+  const { canAfford, getCost, refreshBalance } = useKoris();
   const conseilsCost = getCost('conseils');
 
   const load = useCallback(async (forceRefresh = false) => {
@@ -57,11 +58,15 @@ const ConseilsCard: React.FC<ConseilsCardProps> = ({
       const result = await getOrGenerateConseils(params);
       setData(result);
       setState('success');
+      if (!result.fromCache) {
+        await refreshBalance();
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Erreur inconnue');
       setState('error');
+      await refreshBalance();
     }
-  }, [userId, scaleId, scaleName, score, scoreMax, niveau, severity, prenom, genre, interpretation]);
+  }, [userId, scaleId, scaleName, score, scoreMax, niveau, severity, prenom, genre, interpretation, refreshBalance]);
 
   useEffect(() => {
     if (autoLoad && !autoLoaded.current) {
@@ -71,15 +76,11 @@ const ConseilsCard: React.FC<ConseilsCardProps> = ({
   }, [autoLoad, load]);
 
   const handleGenerateConseils = async () => {
-    if (conseilsCost > 0) {
-      const spendResult = await spend('conseils', `Conseils: ${scaleName}`);
-      if (!spendResult.allowed) return;
-    }
     load(false);
   };
 
   if (state === 'idle') {
-    const affordable = canAfford('conseils');
+    const affordable = canAfford('conseils') && isAiAvailable();
     return (
       <button
         onClick={handleGenerateConseils}
@@ -213,9 +214,14 @@ const ConseilsCard: React.FC<ConseilsCardProps> = ({
           </p>
           <button
             onClick={() => load(true)}
-            className="flex items-center gap-1.5 bg-transparent border border-sage/20 text-sage text-[11px] font-semibold px-3 py-1.5 rounded-lg cursor-pointer hover:bg-sage-soft transition-colors"
+            disabled={!canAfford('conseils') || !isAiAvailable()}
+            className={`flex items-center gap-1.5 bg-transparent border text-[11px] font-semibold px-3 py-1.5 rounded-lg transition-colors ${
+              canAfford('conseils') && isAiAvailable()
+                ? 'border-sage/20 text-sage cursor-pointer hover:bg-sage-soft'
+                : 'border-line text-muted cursor-not-allowed'
+            }`}
           >
-            <RefreshCw size={11} /> Actualiser
+            <RefreshCw size={11} /> Actualiser {conseilsCost > 0 && `(${conseilsCost}K)`}
           </button>
         </div>
       </div>

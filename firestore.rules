@@ -64,7 +64,11 @@ service cloud.firestore {
 
     // ─── PATIENTS ─────────────────────────────────────────────────────────────
     match /patients/{patientId} {
-      allow read, write: if isOwner(patientId);
+      allow read: if isOwner(patientId);
+      allow create: if isOwner(patientId);
+      allow update: if isOwner(patientId)
+        && (!('korisWallet' in request.resource.data) ||
+            request.resource.data.korisWallet == resource.data.korisWallet);
     }
 
     // ─── COMPANION APP (/app) — check-ins quotidiens ──────────────────────────

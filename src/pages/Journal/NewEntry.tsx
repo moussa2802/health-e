@@ -8,6 +8,8 @@ import { getProfileProgress } from '../../services/evaluationService';
 import { useKoris } from '../../contexts/KorisContext';
 import { KORIS_COSTS } from '../../services/korisService';
 import { KORIS_CONFIG } from '../../utils/korisConfig';
+import { authedFetch } from '../../utils/authedFetch';
+import { isAiAvailable } from '../../utils/aiCircuitBreaker';
 
 const HUMEURS = [
   { emoji: '😊', label: 'Heureux(se)', icon: Smile },
@@ -26,7 +28,7 @@ interface Props {
 
 const NewEntry: React.FC<Props> = ({ userId }) => {
   const navigate = useNavigate();
-  const { spend, refund } = useKoris();
+  const { refreshBalance } = useKoris();
   const onboarding = getOnboardingProfile();
   const prenom = onboarding?.prenom ?? '';
 
@@ -77,10 +79,6 @@ const NewEntry: React.FC<Props> = ({ userId }) => {
   const handleAskDrLo = async () => {
     if (!contenu.trim()) { setError("Écris quelque chose d'abord."); return; }
 
-    // Koris check
-    const spendResult = await spend('journal', 'Avis Dr Lô (journal)');
-    if (!spendResult.allowed) return;
-
     setAskingDrLo(true);
     setError(null);
     try {
@@ -112,7 +110,7 @@ const NewEntry: React.FC<Props> = ({ userId }) => {
         contenu,
       };
 
-      const res = await fetch('/.netlify/functions/dr-lo-journal', {
+      const res = await authedFetch('/.netlify/functions/dr-lo-journal', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ entry, context }),
@@ -120,9 +118,10 @@ const NewEntry: React.FC<Props> = ({ userId }) => {
 
       const data = await res.json();
       setDrLoResponse(data.response ?? "Je n'ai pas pu répondre. Réessaie dans un instant.");
+      await refreshBalance();
     } catch {
       setError("Erreur lors de la demande à Dr Lô.");
-      await refund('journal');
+      await refreshBalance();
     } finally {
       setAskingDrLo(false);
     }
@@ -247,9 +246,9 @@ const NewEntry: React.FC<Props> = ({ userId }) => {
 
           <button
             onClick={handleAskDrLo}
-            disabled={askingDrLo || !contenu.trim()}
+            disabled={askingDrLo || !contenu.trim() || !isAiAvailable()}
             className={`w-full py-3 rounded-xl border-0 text-[13px] font-bold mb-2 flex items-center justify-center gap-2 transition-colors ${
-              askingDrLo || !contenu.trim() ? 'bg-line text-muted cursor-default' : 'bg-sage text-white cursor-pointer hover:bg-sage/90'
+              askingDrLo || !contenu.trim() || !isAiAvailable() ? 'bg-line text-muted cursor-default' : 'bg-sage text-white cursor-pointer hover:bg-sage/90'
             }`}
           >
             {askingDrLo ? (

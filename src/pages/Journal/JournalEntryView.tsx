@@ -7,6 +7,8 @@ import { getOnboardingProfile } from '../../utils/onboardingProfile';
 import { getProfileProgress } from '../../services/evaluationService';
 import { useKoris } from '../../contexts/KorisContext';
 import { KORIS_CONFIG } from '../../utils/korisConfig';
+import { authedFetch } from '../../utils/authedFetch';
+import { isAiAvailable } from '../../utils/aiCircuitBreaker';
 import type { JournalEntry } from './JournalPage';
 
 interface Props {
@@ -20,7 +22,7 @@ function formatDate(iso: string) {
 }
 
 const JournalEntryView: React.FC<Props> = ({ userId }) => {
-  const { spend, refund } = useKoris();
+  const { refreshBalance } = useKoris();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const onboarding = getOnboardingProfile();
@@ -44,10 +46,6 @@ const JournalEntryView: React.FC<Props> = ({ userId }) => {
   const handleAskDrLo = async () => {
     if (!entry || !userId) return;
 
-    // Koris check
-    const spendResult = await spend('journal', 'Avis Dr Lô (journal)');
-    if (!spendResult.allowed) return;
-
     setAskingDrLo(true);
     setError(null);
 
@@ -69,7 +67,7 @@ const JournalEntryView: React.FC<Props> = ({ userId }) => {
         resume_profil: resumeProfil,
       };
 
-      const res = await fetch('/.netlify/functions/dr-lo-journal', {
+      const res = await authedFetch('/.netlify/functions/dr-lo-journal', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -95,9 +93,10 @@ const JournalEntryView: React.FC<Props> = ({ userId }) => {
       });
 
       setEntry(prev => prev ? { ...prev, dr_lo_response: response, dr_lo_requested_at: now } : prev);
+      await refreshBalance();
     } catch {
       setError("Erreur lors de la demande à Dr Lô.");
-      await refund('journal');
+      await refreshBalance();
     } finally {
       setAskingDrLo(false);
     }
@@ -197,9 +196,9 @@ const JournalEntryView: React.FC<Props> = ({ userId }) => {
         <div className="bg-card rounded-block px-4.5 py-4.5 border border-line">
           <button
             onClick={handleAskDrLo}
-            disabled={askingDrLo}
+            disabled={askingDrLo || !isAiAvailable()}
             className={`w-full py-3 rounded-xl border-0 text-[13px] font-bold mb-2 flex items-center justify-center gap-2 transition-colors ${
-              askingDrLo ? 'bg-line text-muted cursor-default' : 'bg-sage text-white cursor-pointer hover:bg-sage/90'
+              askingDrLo || !isAiAvailable() ? 'bg-line text-muted cursor-default' : 'bg-sage text-white cursor-pointer hover:bg-sage/90'
             }`}
           >
             {askingDrLo ? (

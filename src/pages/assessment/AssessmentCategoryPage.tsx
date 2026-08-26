@@ -45,6 +45,7 @@ import type { ProfilePDFData } from '../../services/pdfProfileService';
 import ConfirmResetModal from '../../components/assessment/ConfirmResetModal';
 import GoogleLinkBanner from '../../components/auth/GoogleLinkBanner';
 import { useKoris } from '../../contexts/KorisContext';
+import { isAiAvailable } from '../../utils/aiCircuitBreaker';
 import KorisCostBadge from '../../components/koris/KorisCostBadge';
 import type { ScaleResult, AssessmentScale } from '../../types/assessment';
 import type { SexualHealthFilter } from '../../types/onboarding';
@@ -661,7 +662,7 @@ const AssessmentCategoryPage: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
   const { currentUser, isAuthenticated } = useAuth();
-  const { spend, refund } = useKoris();
+  const { canAfford, refreshBalance } = useKoris();
 
   const isMental = category === 'mental';
   const isValidCategory = category === 'mental' || category === 'sexual';
@@ -827,18 +828,8 @@ const AssessmentCategoryPage: React.FC = () => {
   };
 
   const handleUpdateDrLo = async () => {
-    if (!currentUser || drLoUpdating) return;
-
-    // Spend Koris for analysis (1) + synthesis (3) = 4 total
-    const analysisSpend = await spend('analysis', `Analyse ${isMental ? 'mentale' : 'sexuelle'}`);
-    if (!analysisSpend.allowed) return;
-
-    const synthesisSpend = await spend('synthesis', 'Synthèse Dr Lô');
-    if (!synthesisSpend.allowed) {
-      // Refund the analysis if synthesis can't be afforded
-      await refund('analysis');
-      return;
-    }
+    if (!currentUser || drLoUpdating || !isAiAvailable()) return;
+    if (!canAfford('analysis') || !canAfford('synthesis')) return;
 
     setDrLoUpdating(true);
     try {
@@ -847,16 +838,11 @@ const AssessmentCategoryPage: React.FC = () => {
       } else {
         await triggerDrLoSexualHealth(currentUser.id);
       }
-      triggerDrLoSynthesis(currentUser.id).catch(async () => {
-        // Refund synthesis on failure
-        await refund('synthesis');
-      });
-      // onSnapshot will update drLoAnalysis, drLoUpdatedAt and reset drLoUpdating
+      triggerDrLoSynthesis(currentUser.id).catch(() => {});
+      await refreshBalance();
     } catch (err) {
       console.error('Dr Lô update error:', err);
-      // Refund both on failure
-      await refund('analysis');
-      await refund('synthesis');
+      await refreshBalance();
       setDrLoUpdating(false);
     }
   };
@@ -884,9 +870,7 @@ const AssessmentCategoryPage: React.FC = () => {
         if (cached) {
           setCachedConseilsMap(prev => ({ ...prev, [scaleId]: cached }));
         } else {
-          // No cache — generate via AI (costs Koris)
-          const conseilsSpend = await spend('conseils', 'Conseils personnalisés');
-          if (!conseilsSpend.allowed) {
+          if (!canAfford('conseils')) {
             setConseilsLoadingId(null);
             return;
           }
@@ -907,14 +891,14 @@ const AssessmentCategoryPage: React.FC = () => {
               interpretation: result.interpretation?.description ?? '',
             });
             setCachedConseilsMap(prev => ({ ...prev, [scaleId]: generated }));
+            await refreshBalance();
           } else {
             setCachedConseilsMap(prev => ({ ...prev, [scaleId]: null }));
           }
         }
       } catch {
         setCachedConseilsMap(prev => ({ ...prev, [scaleId]: null }));
-        // Refund conseils on failure (only if not from cache)
-        await refund('conseils');
+        await refreshBalance();
       } finally {
         setConseilsLoadingId(null);
       }

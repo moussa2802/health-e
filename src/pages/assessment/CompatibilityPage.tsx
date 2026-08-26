@@ -25,6 +25,7 @@ import type { CompatibilityResult } from '../../types/assessment';
 import { RELATIONSHIP_CATEGORIES, getRelationshipLabel } from '../../utils/relationshipTypes';
 import { useKoris } from '../../contexts/KorisContext';
 import { KORIS_COSTS } from '../../services/korisService';
+import { isAiAvailable } from '../../utils/aiCircuitBreaker';
 
 // Icon for each top-level relationship category (relationshipTypes.ts carries an
 // `emoji` field used as raw data, but the UI never renders emoji as icons).
@@ -43,7 +44,7 @@ function scoreStyle(score: number) {
 
 const CompatibilityPage: React.FC = () => {
   const { currentUser, isAuthenticated } = useAuth();
-  const { spend, canAfford, refund } = useKoris();
+  const { canAfford, refreshBalance } = useKoris();
 
   const [myIdMental, setMyIdMental] = useState<string | null>(null);
   const [myIdSexual, setMyIdSexual] = useState<string | null>(null);
@@ -160,39 +161,27 @@ const CompatibilityPage: React.FC = () => {
 
   const handleRecalculate = async (entry: CompatibilityHistoryEntry) => {
     if (!isAuthenticated || !currentUser || recalculatingId) return;
-
-    const spendResult = await spend('compatibility', `Recalcul compatibilité — ${entry.partnerPrenom || entry.partnerCode}`);
-    if (!spendResult.allowed) return;
+    if (!canAfford('compatibility')) return;
 
     setRecalculatingId(entry.id);
     try {
       let res: CompatibilityResult;
 
       if (entry.codeType === 'merged' && entry.mentalCode && entry.intimateCode) {
-        // Merged recalculation
-        try {
-          res = await computeMergedCompatibility(currentUser.id, entry.relationshipType, entry.mentalCode, entry.intimateCode);
-        } catch (computeErr) {
-          await refund('compatibility');
-          throw computeErr;
-        }
+        res = await computeMergedCompatibility(currentUser.id, entry.relationshipType, entry.mentalCode, entry.intimateCode);
         await saveCompatibilityHistory(currentUser.id, entry.relationshipType, entry.mentalCode, 'merged', res, entry.partnerPrenom, entry.mentalCode, entry.intimateCode).catch(() => {});
       } else {
-        // Single code recalculation
         const req = await createCompatibilityRequest(currentUser.id, entry.partnerCode, entry.relationshipType);
-        try {
-          res = await computeCompatibility(req.id);
-        } catch (computeErr) {
-          await refund('compatibility');
-          throw computeErr;
-        }
+        res = await computeCompatibility(req.id);
         await saveCompatibilityHistory(currentUser.id, entry.relationshipType, entry.partnerCode, entry.codeType === 'merged' ? 'mental' : entry.codeType, res, entry.partnerPrenom).catch(() => {});
       }
 
       const updated = await getCompatibilityHistory(currentUser.id);
       setHistory(updated);
+      await refreshBalance();
     } catch (err: unknown) {
       alert(err instanceof Error ? err.message : 'Erreur lors du recalcul.');
+      await refreshBalance();
     } finally {
       setRecalculatingId(null);
     }
@@ -219,9 +208,10 @@ const CompatibilityPage: React.FC = () => {
     if (!isRomantic && !mentalTrimmed) { setFormError("Saisis le code mental de cette personne."); return; }
     if (mentalTrimmed === myIdMental || sexualTrimmed === myIdSexual) { setFormError("Tu ne peux pas te comparer à toi-même."); return; }
 
-    // Check Koris — ONE spend for the whole analysis (3 Koris)
-    const spendResult = await spend('compatibility', `Compatibilité${isRomantic && mentalTrimmed && sexualTrimmed ? ' fusionnée' : ''} — ${mentalValidation?.prenom || sexualValidation?.prenom || 'partenaire'}`);
-    if (!spendResult.allowed) return;
+    if (!canAfford('compatibility')) {
+      setFormError(`Solde Koris insuffisant (${KORIS_COSTS.compatibility} Koris requis).`);
+      return;
+    }
 
     setCalculating(true);
     try {
@@ -229,18 +219,12 @@ const CompatibilityPage: React.FC = () => {
       const partnerPrenom = mentalValidation?.prenom || sexualValidation?.prenom;
 
       if (isRomantic && (mentalTrimmed || sexualTrimmed)) {
-        // Romantic: use merged computation (handles 1 or 2 codes)
-        try {
-          result = await computeMergedCompatibility(
-            currentUser.id,
-            selectedSubTypeId,
-            mentalTrimmed || null,
-            sexualTrimmed || null,
-          );
-        } catch (computeErr) {
-          await refund('compatibility');
-          throw computeErr;
-        }
+        result = await computeMergedCompatibility(
+          currentUser.id,
+          selectedSubTypeId,
+          mentalTrimmed || null,
+          sexualTrimmed || null,
+        );
 
         const codeType: 'merged' | 'mental' | 'sexual' = (mentalTrimmed && sexualTrimmed) ? 'merged' : (mentalTrimmed ? 'mental' : 'sexual');
         await saveCompatibilityHistory(
@@ -250,22 +234,18 @@ const CompatibilityPage: React.FC = () => {
           mentalTrimmed || undefined, sexualTrimmed || undefined,
         ).catch(() => {});
       } else {
-        // Non-romantic: mental only
         const req = await createCompatibilityRequest(currentUser.id, mentalTrimmed, selectedSubTypeId);
-        try {
-          result = await computeCompatibility(req.id);
-        } catch (computeErr) {
-          await refund('compatibility');
-          throw computeErr;
-        }
+        result = await computeCompatibility(req.id);
         await saveCompatibilityHistory(currentUser.id, selectedSubTypeId, mentalTrimmed, 'mental', result, partnerPrenom).catch(() => {});
       }
 
       setCurrentResult(result);
       setCurrentPartnerPrenom(partnerPrenom || '');
       getCompatibilityHistory(currentUser.id).then(setHistory).catch(() => {});
+      await refreshBalance();
     } catch (err: unknown) {
       setFormError(err instanceof Error ? err.message : 'Erreur lors du calcul. Réessaie.');
+      await refreshBalance();
     } finally {
       setCalculating(false);
     }

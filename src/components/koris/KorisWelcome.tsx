@@ -1,31 +1,23 @@
 /**
- * KorisWelcome — Toast animé pour welcome bonus et reset quotidien.
- *
- * Phase Bienvenue (nouveau wallet): "Bienvenue ! 25 Koris offerts"
- * Phase Quotidienne (daily reset):  "Tes 10 Koris du jour sont prêts !"
- * Phase switch (welcome→daily):     "Phase quotidienne activée — 10 Koris/jour"
+ * KorisWelcome — Toast animé pour le bonus de bienvenue.
  */
 
 import React, { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 import { useKoris } from '../../contexts/KorisContext';
-import { KORIS_WELCOME_BONUS, KORIS_DAILY_AMOUNT } from '../../services/korisService';
+import { KORIS_WELCOME_BONUS } from '../../services/korisService';
 
 const KORI_IMG = '/kori.png';
 
 const KorisWelcome: React.FC = () => {
-  const { walletJustCreated, dailyResetAmount, phaseSwitched, walletInitialized, dailyRefillAmount } = useKoris();
+  const { walletJustCreated, walletInitialized } = useKoris();
   const [visible, setVisible] = useState(false);
   const [exiting, setExiting] = useState(false);
 
   const isWelcome = walletJustCreated || walletInitialized;
-  const isDailyReset = !isWelcome && (dailyResetAmount > 0 || dailyRefillAmount > 0) && !phaseSwitched;
-  const isPhaseSwitch = phaseSwitched && !isWelcome;
-
-  const shouldShow = isWelcome || isDailyReset || isPhaseSwitch;
 
   useEffect(() => {
-    if (!shouldShow) return;
+    if (!isWelcome) return;
 
     const showTimer = setTimeout(() => setVisible(true), 800);
     const hideTimer = setTimeout(() => {
@@ -34,23 +26,9 @@ const KorisWelcome: React.FC = () => {
     }, 5500);
 
     return () => { clearTimeout(showTimer); clearTimeout(hideTimer); };
-  }, [shouldShow]);
+  }, [isWelcome]);
 
   if (!visible) return null;
-
-  let title: string;
-  let subtitle: string;
-
-  if (isWelcome) {
-    title = `Bienvenue ! +${KORIS_WELCOME_BONUS} Koris offerts`;
-    subtitle = 'Utilise-les pour discuter avec Dr Lô';
-  } else if (isPhaseSwitch) {
-    title = `Phase quotidienne activée`;
-    subtitle = `${KORIS_DAILY_AMOUNT} Koris par jour — bonne continuation !`;
-  } else {
-    title = `Tes ${KORIS_DAILY_AMOUNT} Koris du jour sont prêts !`;
-    subtitle = 'Ta recharge quotidienne est arrivée';
-  }
 
   return (
     <div
@@ -68,8 +46,8 @@ const KorisWelcome: React.FC = () => {
         className="w-9 h-9 rounded-full object-cover border-2 border-white/30"
       />
       <div>
-        <div className="text-[13px] font-bold">{title}</div>
-        <div className="text-[11px] opacity-85 mt-0.5">{subtitle}</div>
+        <div className="text-[13px] font-bold">Bienvenue ! +{KORIS_WELCOME_BONUS} Koris offerts</div>
+        <div className="text-[11px] opacity-85 mt-0.5">Utilise-les pour discuter avec Dr Lô</div>
       </div>
       <button
         onClick={() => { setExiting(true); setTimeout(() => setVisible(false), 300); }}

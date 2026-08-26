@@ -1,6 +1,9 @@
+const { verifyAuth } = require('./_firebase');
+const { reserveKoris, commitKoris, releaseKoris } = require('./_koris');
+
 const headers = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'Content-Type',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
   'Content-Type': 'application/json',
 };
@@ -82,6 +85,11 @@ exports.handler = async (event) => {
     return { statusCode: 405, headers, body: JSON.stringify({ error: 'Method not allowed' }) };
   }
 
+  const user = await verifyAuth(event);
+  if (!user) {
+    return { statusCode: 401, headers, body: JSON.stringify({ error: 'Non authentifié' }) };
+  }
+
   let body;
   try {
     body = JSON.parse(event.body || '{}');
@@ -106,8 +114,15 @@ exports.handler = async (event) => {
 
   const apiKey = process.env.ANTHROPIC_KEY || process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
-    return { statusCode: 500, headers, body: JSON.stringify({ error: 'Clé API manquante' }) };
+    return { statusCode: 500, headers, body: JSON.stringify({ error: 'Clé API manquante', koris_debited: false }) };
   }
+
+  // ── Reserve Koris ──
+  const reservation = await reserveKoris(user.uid, 'conseils');
+  if (reservation.error === 'insufficient_balance') {
+    return { statusCode: 402, headers, body: JSON.stringify({ error: 'Solde Koris insuffisant', koris_debited: false }) };
+  }
+  const { holdId } = reservation;
 
   const prompt = buildConseilsPrompt({ scaleName, score, scoreMax, niveau, severity, prenom, genre, interpretation });
 
@@ -134,11 +149,11 @@ exports.handler = async (event) => {
         const data = await response.json();
         const text = data?.content?.[0]?.text ?? '';
 
-        // Extract JSON between delimiters
         const match = text.match(/---DEBUT_CONSEILS---\s*([\s\S]*?)\s*---FIN_CONSEILS---/);
         if (!match) {
           console.error('Réponse brute sans délimiteurs:', text.substring(0, 500));
-          return { statusCode: 500, headers, body: JSON.stringify({ error: 'Format de réponse invalide — délimiteurs manquants' }) };
+          await releaseKoris(holdId);
+          return { statusCode: 500, headers, body: JSON.stringify({ error: 'Format de réponse invalide', koris_debited: false }) };
         }
 
         let conseils;
@@ -146,15 +161,19 @@ exports.handler = async (event) => {
           conseils = JSON.parse(match[1].trim());
         } catch (parseErr) {
           console.error('JSON invalide extrait:', match[1].substring(0, 500));
-          return { statusCode: 500, headers, body: JSON.stringify({ error: 'JSON invalide dans la réponse IA' }) };
+          await releaseKoris(holdId);
+          return { statusCode: 500, headers, body: JSON.stringify({ error: 'JSON invalide dans la réponse IA', koris_debited: false }) };
         }
 
         if (!conseils.signification || !Array.isArray(conseils.conseils) || conseils.conseils.length < 3 || !conseils.exercice) {
-          return { statusCode: 500, headers, body: JSON.stringify({ error: 'Structure JSON incomplète' }) };
+          await releaseKoris(holdId);
+          return { statusCode: 500, headers, body: JSON.stringify({ error: 'Structure JSON incomplète', koris_debited: false }) };
         }
 
+        // ── AI succeeded → commit the hold ──
+        await commitKoris(holdId);
         console.log(`dr-lo-conseils OK with model ${model}`);
-        return { statusCode: 200, headers, body: JSON.stringify(conseils) };
+        return { statusCode: 200, headers, body: JSON.stringify({ ...conseils, koris_debited: true }) };
       }
 
       const err = await response.text();
@@ -162,17 +181,20 @@ exports.handler = async (event) => {
       console.warn(`dr-lo-conseils model ${model} failed (${response.status}): ${err.substring(0, 200)}`);
 
       if (!isOverloaded) {
-        return { statusCode: 502, headers, body: JSON.stringify({ error: 'Erreur API Claude', detail: err }) };
+        await releaseKoris(holdId);
+        return { statusCode: 502, headers, body: JSON.stringify({ error: 'Erreur API Claude', error_code: 'ai_unavailable', koris_debited: false }) };
       }
 
       if (attempt < MODELS.length - 1) await new Promise(r => setTimeout(r, 1000));
     } catch (e) {
       console.error(`dr-lo-conseils fetch error (model ${model}):`, e.message);
       if (attempt === MODELS.length - 1) {
-        return { statusCode: 500, headers, body: JSON.stringify({ error: e.message }) };
+        await releaseKoris(holdId);
+        return { statusCode: 500, headers, body: JSON.stringify({ error: e.message, error_code: 'ai_unavailable', koris_debited: false }) };
       }
     }
   }
 
-  return { statusCode: 500, headers, body: JSON.stringify({ error: 'Tous les modèles sont indisponibles' }) };
+  await releaseKoris(holdId);
+  return { statusCode: 500, headers, body: JSON.stringify({ error: 'Tous les modèles sont indisponibles', error_code: 'ai_unavailable', koris_debited: false }) };
 };

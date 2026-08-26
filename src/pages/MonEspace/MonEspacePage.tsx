@@ -19,6 +19,8 @@ import { useKoris } from '../../contexts/KorisContext';
 import { KORIS_COSTS } from '../../services/korisService';
 import { KORIS_CONFIG } from '../../utils/korisConfig';
 import { loadPendingPrompts, ignorePrompt, type PendingPrompt } from '../../utils/journalPrompts';
+import { authedFetch } from '../../utils/authedFetch';
+import { isAiAvailable } from '../../utils/aiCircuitBreaker';
 import PageTooltips from '../../components/Onboarding/PageTooltips';
 import type { JournalEntry } from '../Journal/JournalPage';
 
@@ -310,7 +312,7 @@ async function loadConversations(userId: string): Promise<SavedConversation[]> {
 
 const MonEspacePage: React.FC<Props> = ({ userId }) => {
   const navigate = useNavigate();
-  const { spend, refund } = useKoris();
+  const { refreshBalance } = useKoris();
   const [tab, setTab] = useState<Tab>('journal');
   const [drLoPreFill, setDrLoPreFill] = useState<string>('');
 
@@ -535,11 +537,7 @@ const MonEspacePage: React.FC<Props> = ({ userId }) => {
 
   const sendMessage = useCallback(async (text?: string) => {
     const msgText = (text ?? chatInput).trim();
-    if (!msgText || chatLoading) return;
-
-    // Koris check
-    const spendResult = await spend('chat', 'Message Dr Lô');
-    if (!spendResult.allowed) return;
+    if (!msgText || chatLoading || !isAiAvailable()) return;
 
     const userMsg: ChatMessage = { role: 'user', content: msgText, timestamp: new Date().toISOString() };
     const newMessages = [...messages, userMsg];
@@ -553,18 +551,18 @@ const MonEspacePage: React.FC<Props> = ({ userId }) => {
         .filter((_, i) => i > 0)
         .map(m => ({ role: m.role, content: m.content }));
 
-      const res = await fetch('/.netlify/functions/dr-lo-chat', {
+      const res = await authedFetch('/.netlify/functions/dr-lo-chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ message: msgText, historique, context }),
       });
 
       if (!res.ok) {
-        await refund('chat');
         throw new Error('API error');
       }
 
       const data = await res.json();
+      await refreshBalance();
       const assistantMsg: ChatMessage = {
         role: 'assistant',
         content: data.response ?? "Je n'ai pas pu repondre. Reessaie dans un instant.",
@@ -1260,9 +1258,9 @@ const MonEspacePage: React.FC<Props> = ({ userId }) => {
                 />
                 <button
                   onClick={() => sendMessage()}
-                  disabled={chatLoading || !chatInput.trim()}
+                  disabled={chatLoading || !chatInput.trim() || !isAiAvailable()}
                   className={`w-[38px] h-[38px] rounded-xl border-0 flex-shrink-0 flex items-center justify-center transition-colors ${
-                    chatLoading || !chatInput.trim()
+                    chatLoading || !chatInput.trim() || !isAiAvailable()
                       ? 'bg-line text-muted cursor-default'
                       : 'bg-sage text-white cursor-pointer hover:bg-sage/90'
                   }`}

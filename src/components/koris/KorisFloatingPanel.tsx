@@ -9,7 +9,7 @@
 import React, { useEffect, useState } from 'react';
 import { Gift, Check } from 'lucide-react';
 import { useKoris } from '../../contexts/KorisContext';
-import { getKorisHistory, getFeatureLabel, KORIS_COSTS, KORIS_DAILY_AMOUNT, type KorisTransaction } from '../../services/korisService';
+import { getKorisHistory, getFeatureLabel, KORIS_COSTS, type KorisTransaction } from '../../services/korisService';
 import { useAuth } from '../../contexts/AuthContext';
 
 const KORI_IMG = '/kori.png';
@@ -19,7 +19,7 @@ interface Props {
 }
 
 const KorisFloatingPanel: React.FC<Props> = ({ onClose }) => {
-  const { balance, welcomeBonusActive, todaySpent } = useKoris();
+  const { balance, welcomeBonusActive } = useKoris();
   const { currentUser } = useAuth();
   const [history, setHistory] = useState<KorisTransaction[]>([]);
   const [loading, setLoading] = useState(true);
@@ -31,19 +31,10 @@ const KorisFloatingPanel: React.FC<Props> = ({ onClose }) => {
       .finally(() => setLoading(false));
   }, [currentUser?.id]);
 
-  // Countdown to midnight (only relevant in daily phase)
-  const now = new Date();
-  const midnight = new Date(now);
-  midnight.setDate(midnight.getDate() + 1);
-  midnight.setHours(0, 0, 0, 0);
-  const msLeft = midnight.getTime() - now.getTime();
-  const hoursLeft = Math.floor(msLeft / (1000 * 60 * 60));
-  const minsLeft = Math.floor((msLeft % (1000 * 60 * 60)) / (1000 * 60));
-
   const typeTextClass = (type: string) => {
     switch (type) {
       case 'spend': return 'text-danger';
-      case 'refill': case 'daily_reset': return 'text-ok';
+      case 'refill': case 'daily_reset': case 'purchase': return 'text-ok';
       case 'bonus': case 'phase_switch': return 'text-gold';
       case 'refund': return 'text-accent';
       default: return 'text-muted';
@@ -53,8 +44,6 @@ const KorisFloatingPanel: React.FC<Props> = ({ onClose }) => {
   const typeSign = (type: string) => {
     return type === 'spend' ? '−' : '+';
   };
-
-  const usageBarClass = todaySpent >= 8 ? 'bg-danger' : todaySpent >= 5 ? 'bg-warn' : 'bg-gold';
 
   return (
     <>
@@ -90,7 +79,6 @@ const KorisFloatingPanel: React.FC<Props> = ({ onClose }) => {
         {/* Phase-dependent section */}
         <div className="px-4 py-3 border-b border-line">
           {welcomeBonusActive ? (
-            /* ── Phase Bienvenue ── */
             <div className="flex items-center gap-2">
               <Gift size={18} className="text-gold flex-shrink-0" />
               <div>
@@ -98,28 +86,14 @@ const KorisFloatingPanel: React.FC<Props> = ({ onClose }) => {
                   Koris de bienvenue
                 </div>
                 <div className="text-[11px] text-muted mt-0.5">
-                  Profite de tes Koris offerts — pas de limite journalière
+                  Profite de tes Koris offerts
                 </div>
               </div>
             </div>
           ) : (
-            /* ── Phase Quotidienne ── */
-            <>
-              <div className="flex justify-between items-center mb-1.5">
-                <span className="text-[11px] text-ink-soft font-semibold">
-                  Utilisés : {todaySpent} / {KORIS_DAILY_AMOUNT}
-                </span>
-                <span className="text-[11px] text-ok font-semibold">
-                  Recharge dans {hoursLeft}h{minsLeft > 0 ? ` ${minsLeft}min` : ''}
-                </span>
-              </div>
-              <div className="h-1.5 rounded-full bg-line overflow-hidden">
-                <div
-                  className={`h-full rounded-full transition-all duration-300 ${usageBarClass}`}
-                  style={{ width: `${Math.min(100, (todaySpent / KORIS_DAILY_AMOUNT) * 100)}%` }}
-                />
-              </div>
-            </>
+            <div className="text-[11px] text-ink-soft leading-relaxed">
+              Recharge tes Koris pour continuer à utiliser Dr Lô et les analyses.
+            </div>
           )}
         </div>
 

@@ -1,26 +1,19 @@
 /**
  * NoKorisModal — Modal quand l'utilisateur n'a plus assez de Koris.
- *
- * Phase Quotidienne: "Tes 10 Koris quotidiens seront rechargés demain" + countdown
- * Phase Bienvenue: Ne devrait pas se produire (bascule auto), mais cas de secours inclus.
+ * Propose d'acheter des Koris via PayTech.
  */
 
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useKoris } from '../../contexts/KorisContext';
-import { KORIS_DAILY_AMOUNT } from '../../services/korisService';
 
 const KORI_IMG = '/kori.png';
 
 const NoKorisModal: React.FC = () => {
-  const { showNoKorisModal, setShowNoKorisModal, balance, welcomeBonusActive } = useKoris();
+  const { showNoKorisModal, setShowNoKorisModal, balance } = useKoris();
+  const navigate = useNavigate();
 
   if (!showNoKorisModal) return null;
-
-  const now = new Date();
-  const midnight = new Date(now);
-  midnight.setDate(midnight.getDate() + 1);
-  midnight.setHours(0, 0, 0, 0);
-  const hoursLeft = Math.ceil((midnight.getTime() - now.getTime()) / (1000 * 60 * 60));
 
   return (
     <div
@@ -32,7 +25,6 @@ const NoKorisModal: React.FC = () => {
         onClick={e => e.stopPropagation()}
         className="bg-card rounded-block px-6 py-8 max-w-[380px] w-full text-center shadow-lift"
       >
-        {/* Kori image */}
         <img
           src={KORI_IMG}
           alt="Kori"
@@ -51,34 +43,24 @@ const NoKorisModal: React.FC = () => {
             {balance}
           </strong>{' '}
           Kori{balance !== 1 ? 's' : ''}.
-          {welcomeBonusActive
-            ? ' Tes Koris de bienvenue sont presque épuisés.'
-            : ` Tes ${KORIS_DAILY_AMOUNT} Koris quotidiens seront rechargés demain.`
-          }
+          {' '}Recharge ton solde pour continuer à utiliser Dr Lô et les analyses.
         </p>
 
-        {/* Timer — only in daily phase */}
-        {!welcomeBonusActive && (
-          <div className="bg-paper rounded-xl px-4 py-3 mb-5">
-            <div className="text-xs text-muted mb-1">Prochaine recharge dans</div>
-            <div className="text-xl font-bold text-ok">~{hoursLeft}h</div>
-            <div className="text-[11px] text-muted">{KORIS_DAILY_AMOUNT} Koris à minuit</div>
-          </div>
-        )}
-
-        {/* Astuce */}
-        <div className="bg-accent-soft rounded-xl px-4 py-3 mb-5 text-left">
-          <div className="text-xs font-semibold text-accent mb-1">Astuce</div>
-          <div className="text-xs text-ink-soft leading-relaxed">
-            Les tests d'évaluation sont toujours gratuits. Tu peux continuer tes évaluations sans Koris.
-          </div>
-        </div>
+        <button
+          onClick={() => {
+            setShowNoKorisModal(false);
+            navigate('/acheter-koris');
+          }}
+          className="w-full py-3 rounded-xl border-0 bg-gold text-white text-sm font-semibold cursor-pointer hover:bg-gold/90 transition-colors mb-3"
+        >
+          Acheter des Koris
+        </button>
 
         <button
           onClick={() => setShowNoKorisModal(false)}
-          className="w-full py-3 rounded-xl border-0 bg-gold text-white text-sm font-semibold cursor-pointer hover:bg-gold/90 transition-colors"
+          className="w-full py-2.5 rounded-xl border border-line bg-transparent text-sm text-ink-soft font-medium cursor-pointer hover:bg-paper transition-colors"
         >
-          Compris
+          Plus tard
         </button>
       </div>
     </div>

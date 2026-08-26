@@ -1,14 +1,22 @@
+const { verifyAuth } = require('./_firebase');
+const { reserveKoris, commitKoris, releaseKoris } = require('./_koris');
+
 exports.handler = async (event) => {
 
   const headers = {
     'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Headers': 'Content-Type',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
     'Content-Type': 'application/json'
   }
 
   if (event.httpMethod === 'OPTIONS') {
     return { statusCode: 200, headers, body: '' }
+  }
+
+  const user = await verifyAuth(event);
+  if (!user) {
+    return { statusCode: 401, headers, body: JSON.stringify({ error: 'Non authentifié' }) }
   }
 
   if (!event.body) {
@@ -79,12 +87,15 @@ Génère UNIQUEMENT la synthèse courte (5-6 phrases max). Commence directement 
   const apiKey = process.env.ANTHROPIC_KEY || process.env.ANTHROPIC_API_KEY
 
   if (!apiKey) {
-    return {
-      statusCode: 500,
-      headers,
-      body: JSON.stringify({ error: 'Clé API manquante' })
-    }
+    return { statusCode: 500, headers, body: JSON.stringify({ error: 'Clé API manquante', koris_debited: false }) }
   }
+
+  // ── Reserve Koris ──
+  const reservation = await reserveKoris(user.uid, 'synthesis')
+  if (reservation.error === 'insufficient_balance') {
+    return { statusCode: 402, headers, body: JSON.stringify({ error: 'Solde Koris insuffisant', koris_debited: false }) }
+  }
+  const { holdId } = reservation
 
   const MODELS = [
     'claude-sonnet-4-20250514',
@@ -115,8 +126,9 @@ Génère UNIQUEMENT la synthèse courte (5-6 phrases max). Commence directement 
       if (response.ok) {
         const data = await response.json()
         const synthesis = data?.content?.[0]?.text ?? ''
+        await commitKoris(holdId)
         console.log(`dr-lo-synthesis OK with model ${model}`)
-        return { statusCode: 200, headers, body: JSON.stringify({ synthesis }) }
+        return { statusCode: 200, headers, body: JSON.stringify({ synthesis, koris_debited: true }) }
       }
 
       const errText = await response.text()
@@ -124,7 +136,8 @@ Génère UNIQUEMENT la synthèse courte (5-6 phrases max). Commence directement 
       console.warn(`dr-lo-synthesis model ${model} failed (${response.status}): ${errText.substring(0, 200)}`)
 
       if (!isOverloaded) {
-        return { statusCode: 500, headers, body: JSON.stringify({ error: 'Erreur API Anthropic', detail: errText }) }
+        await releaseKoris(holdId)
+        return { statusCode: 500, headers, body: JSON.stringify({ error: 'Erreur API Anthropic', error_code: 'ai_unavailable', koris_debited: false }) }
       }
 
       if (attempt < MODELS.length - 1) {
@@ -133,10 +146,12 @@ Génère UNIQUEMENT la synthèse courte (5-6 phrases max). Commence directement 
     } catch (e) {
       console.error(`dr-lo-synthesis fetch error (model ${model}):`, e.message)
       if (attempt === MODELS.length - 1) {
-        return { statusCode: 500, headers, body: JSON.stringify({ error: e.message }) }
+        await releaseKoris(holdId)
+        return { statusCode: 500, headers, body: JSON.stringify({ error: e.message, error_code: 'ai_unavailable', koris_debited: false }) }
       }
     }
   }
 
-  return { statusCode: 500, headers, body: JSON.stringify({ error: 'Tous les modèles sont indisponibles' }) }
+  await releaseKoris(holdId)
+  return { statusCode: 500, headers, body: JSON.stringify({ error: 'Tous les modèles sont indisponibles', error_code: 'ai_unavailable', koris_debited: false }) }
 }

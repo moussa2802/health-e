@@ -310,6 +310,65 @@ exports.handler = async (event, context) => {
         }
       }
 
+      // Koris purchase
+      if (paymentType === "koris_purchase" && customData.orderId && customData.userId) {
+        const { orderId, userId, koris } = customData;
+        const ipnRef = db.collection("ipn_processed").doc(String(paymentRef || orderId));
+        const ipnSnap = await ipnRef.get();
+        if (ipnSnap.exists) {
+          return { statusCode: 200, headers, body: JSON.stringify({ success: true, message: "IPN already processed" }) };
+        }
+
+        try {
+          const patientRef = db.collection("patients").doc(userId);
+          await db.runTransaction(async (tx) => {
+            const patientDoc = await tx.get(patientRef);
+            const wallet = patientDoc.data()?.korisWallet;
+            const currentBalance = wallet?.balance ?? 0;
+
+            tx.update(patientRef, {
+              "korisWallet.balance": admin.firestore.FieldValue.increment(koris),
+              "korisWallet.welcomeBonusActive": false,
+            });
+
+            const historyRef = patientRef.collection("korisHistory").doc();
+            tx.set(historyRef, {
+              type: "purchase",
+              amount: koris,
+              feature: "purchase",
+              balanceBefore: currentBalance,
+              balanceAfter: currentBalance + koris,
+              timestamp: new Date().toISOString(),
+              details: `Achat ${koris.toLocaleString()} Koris (${paymentData.item_price} FCFA)`,
+            });
+          });
+
+          const orderRef = db.collection("koris_orders").doc(orderId);
+          await orderRef.update({ status: "completed", completedAt: new Date().toISOString() });
+
+          await ipnRef.set({
+            processedAt: admin.firestore.FieldValue.serverTimestamp(),
+            paymentType: "koris_purchase",
+            userId,
+            koris,
+          });
+
+          console.log(`Koris purchase OK: ${koris} koris for user ${userId}`);
+          return { statusCode: 200, headers, body: JSON.stringify({ success: true }) };
+        } catch (err) {
+          console.error("Koris purchase IPN error:", err);
+          await db.collection("payment_logs").add({
+            type_event: paymentData.type_event,
+            ref_command: paymentRef,
+            customData,
+            error: err.message,
+            receivedAt: admin.firestore.FieldValue.serverTimestamp(),
+            source: "paytech_ipn_koris",
+          });
+          return { statusCode: 200, headers, body: JSON.stringify({ success: true, message: "Error logged" }) };
+        }
+      }
+
       // Traitement normal pour les bookings
       // 1) Source fiable: custom_field.booking_id
       let tempId = (customData && typeof customData.booking_id === "string" && customData.booking_id.startsWith("temp_"))

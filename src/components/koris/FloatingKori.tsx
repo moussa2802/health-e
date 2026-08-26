@@ -15,15 +15,14 @@ const GOLD = '#8F6A1F';
 const OK = '#3C7A5A';
 
 const FloatingKori: React.FC = () => {
-  const { balance, loading, spendTick, lastSpentCost, dailyRefillAmount, walletInitialized } = useKoris();
+  const { balance, loading, spendTick, lastSpentCost, walletInitialized } = useKoris();
   const [panelOpen, setPanelOpen] = useState(false);
   const [shaking, setShaking] = useState(false);
   const [floatAnim, setFloatAnim] = useState<{ text: string; color: string } | null>(null);
   const [pulseGreen, setPulseGreen] = useState(false);
   const prevSpendTick = useRef(spendTick);
-  const prevRefill = useRef(0);
+  const prevWelcome = useRef(false);
 
-  // Spend animation: shake + "-N" float
   useEffect(() => {
     if (spendTick > prevSpendTick.current && lastSpentCost > 0) {
       setShaking(true);
@@ -35,23 +34,18 @@ const FloatingKori: React.FC = () => {
     prevSpendTick.current = spendTick;
   }, [spendTick, lastSpentCost]);
 
-  // Refill / reset animation: pulse green + "10 ✓" or "+25" float
   useEffect(() => {
-    const amount = walletInitialized ? 25 : dailyRefillAmount;
-    if (amount > 0 && amount !== prevRefill.current) {
-      prevRefill.current = amount;
+    if (walletInitialized && !prevWelcome.current) {
+      prevWelcome.current = true;
       const timer = setTimeout(() => {
         setPulseGreen(true);
-        // Daily reset: show "10 ✓" (not "+10" since it's a reset, not an addition)
-        // Welcome bonus: show "+25"
-        const text = walletInitialized ? `+${amount}` : `${amount} ✓`;
-        setFloatAnim({ text, color: OK });
+        setFloatAnim({ text: '+25', color: OK });
         setTimeout(() => setPulseGreen(false), 800);
         setTimeout(() => setFloatAnim(null), 1500);
       }, 1200);
       return () => clearTimeout(timer);
     }
-  }, [dailyRefillAmount, walletInitialized]);
+  }, [walletInitialized]);
 
   if (loading) return null;
 

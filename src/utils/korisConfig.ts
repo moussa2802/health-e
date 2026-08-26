@@ -15,11 +15,11 @@ export const KORIS_CONFIG = {
   costs: {
     chat_dr_lo_message: 1,
     journal_dr_lo_response: 1,
-    generer_analyse: 1,
-    test_compatibilite: 0,
+    generer_analyse: 2,
+    test_compatibilite: 4,
     telecharger_profil: 0,
-    test_principal: 0,
-    test_bonus: 0,
+    test_principal: 1,
+    test_bonus: 1,
   },
 } as const;
 

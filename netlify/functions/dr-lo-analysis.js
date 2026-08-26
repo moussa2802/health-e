@@ -139,17 +139,25 @@ function isTooLong(text) {
   return words.length > 160
 }
 
+const { verifyAuth } = require('./_firebase');
+const { reserveKoris, commitKoris, releaseKoris } = require('./_koris');
+
 exports.handler = async (event) => {
 
   const headers = {
     'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Headers': 'Content-Type',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
     'Content-Type': 'application/json'
   }
 
   if (event.httpMethod === 'OPTIONS') {
     return { statusCode: 200, headers, body: '' }
+  }
+
+  const user = await verifyAuth(event);
+  if (!user) {
+    return { statusCode: 401, headers, body: JSON.stringify({ error: 'Non authentifié' }) }
   }
 
   if (!event.body) {
@@ -231,12 +239,15 @@ exports.handler = async (event) => {
   const apiKey = process.env.ANTHROPIC_KEY || process.env.ANTHROPIC_API_KEY
 
   if (!apiKey) {
-    return {
-      statusCode: 500,
-      headers,
-      body: JSON.stringify({ error: 'Clé API manquante' })
-    }
+    return { statusCode: 500, headers, body: JSON.stringify({ error: 'Clé API manquante', koris_debited: false }) }
   }
+
+  // ── Reserve Koris ──
+  const reservation = await reserveKoris(user.uid, 'analysis')
+  if (reservation.error === 'insufficient_balance') {
+    return { statusCode: 402, headers, body: JSON.stringify({ error: 'Solde Koris insuffisant', koris_debited: false }) }
+  }
+  const { holdId } = reservation
 
   const MODELS = [
     'claude-haiku-4-5-20251001',
@@ -272,12 +283,9 @@ exports.handler = async (event) => {
         const data = await response.json()
         const analysis = data?.content?.[0]?.text ?? ''
         const finalText = (!analysis || isTooLong(analysis)) ? FALLBACK_MESSAGE : analysis
+        await commitKoris(holdId)
         console.log(`dr-lo-analysis OK with model ${model}`)
-        return {
-          statusCode: 200,
-          headers,
-          body: JSON.stringify({ analysis: finalText })
-        }
+        return { statusCode: 200, headers, body: JSON.stringify({ analysis: finalText, koris_debited: true }) }
       }
 
       const errText = await response.text()
@@ -285,7 +293,8 @@ exports.handler = async (event) => {
       console.warn(`dr-lo-analysis model ${model} failed (${response.status}): ${errText.substring(0, 200)}`)
 
       if (!isOverloaded) {
-        return { statusCode: 500, headers, body: JSON.stringify({ error: 'Erreur API Anthropic', detail: errText }) }
+        await releaseKoris(holdId)
+        return { statusCode: 500, headers, body: JSON.stringify({ error: 'Erreur API Anthropic', error_code: 'ai_unavailable', koris_debited: false }) }
       }
 
       if (attempt < MODELS.length - 1) {
@@ -294,10 +303,12 @@ exports.handler = async (event) => {
     } catch (e) {
       console.error(`dr-lo-analysis fetch error (model ${model}):`, e.message)
       if (attempt === MODELS.length - 1) {
-        return { statusCode: 500, headers, body: JSON.stringify({ error: e.message }) }
+        await releaseKoris(holdId)
+        return { statusCode: 500, headers, body: JSON.stringify({ error: e.message, error_code: 'ai_unavailable', koris_debited: false }) }
       }
     }
   }
 
-  return { statusCode: 500, headers, body: JSON.stringify({ error: 'Tous les modèles sont indisponibles' }) }
+  await releaseKoris(holdId)
+  return { statusCode: 500, headers, body: JSON.stringify({ error: 'Tous les modèles sont indisponibles', error_code: 'ai_unavailable', koris_debited: false }) }
 }

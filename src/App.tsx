@@ -32,6 +32,7 @@ import HelpButton from "./components/Onboarding/HelpButton";
 import NoKorisModal from "./components/koris/NoKorisModal";
 import KorisWelcome from "./components/koris/KorisWelcome";
 import FloatingKori from "./components/koris/FloatingKori";
+import KorisTransitionToast from "./components/koris/KorisTransitionToast";
 import { useAuth } from "./contexts/AuthContext";
 import { cleanupAllProfessionalsListeners } from "./hooks/useProfessionals";
 import { cleanupAllBookingListeners } from "./hooks/useBookings";
@@ -131,6 +132,7 @@ const JournalPage = lazy(() => import("./pages/Journal/JournalPage"));
 const NewEntry = lazy(() => import("./pages/Journal/NewEntry"));
 const JournalEntryView = lazy(() => import("./pages/Journal/JournalEntryView"));
 const MonEspacePage = lazy(() => import("./pages/MonEspace/MonEspacePage"));
+const AcheterKorisPage = lazy(() => import("./pages/AcheterKorisPage"));
 
 // Assessment pages
 const AssessmentHomePage = lazy(() => import("./pages/assessment/AssessmentHomePage"));
@@ -458,6 +460,7 @@ const AppChrome: React.FC = () => {
 
             {/* Mon Espace */}
             <Route path="/mon-espace" element={<MonEspacePage userId={userId} />} />
+            <Route path="/acheter-koris" element={<AcheterKorisPage />} />
 
             {/* Assessment Routes */}
             <Route path="/assessment" element={<AssessmentHomePage />} />
@@ -479,6 +482,7 @@ const AppChrome: React.FC = () => {
       {!isChromeless && !!currentUser && <FloatingKori />}
       {!isChromeless && <NoKorisModal />}
       {!isChromeless && <KorisWelcome />}
+      {!isChromeless && <KorisTransitionToast />}
       {!isChromeless && <WelcomeFlow />}
     </>
   );

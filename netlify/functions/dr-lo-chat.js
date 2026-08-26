@@ -1,6 +1,9 @@
+const { verifyAuth } = require('./_firebase');
+const { reserveKoris, commitKoris, releaseKoris } = require('./_koris');
+
 const headers = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'Content-Type',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
   'Content-Type': 'application/json',
 };
 
@@ -196,6 +199,11 @@ exports.handler = async (event) => {
     return { statusCode: 405, headers, body: JSON.stringify({ error: 'Method not allowed' }) };
   }
 
+  const user = await verifyAuth(event);
+  if (!user) {
+    return { statusCode: 401, headers, body: JSON.stringify({ error: 'Non authentifié' }) };
+  }
+
   let body;
   try {
     body = JSON.parse(event.body || '{}');
@@ -211,8 +219,15 @@ exports.handler = async (event) => {
 
   const apiKey = process.env.ANTHROPIC_KEY || process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
-    return { statusCode: 500, headers, body: JSON.stringify({ error: 'Clé API manquante' }) };
+    return { statusCode: 500, headers, body: JSON.stringify({ error: 'Clé API manquante', koris_debited: false }) };
   }
+
+  // ── Reserve Koris ──
+  const reservation = await reserveKoris(user.uid, 'chat');
+  if (reservation.error === 'insufficient_balance') {
+    return { statusCode: 402, headers, body: JSON.stringify({ error: 'Solde Koris insuffisant', koris_debited: false }) };
+  }
+  const { holdId } = reservation;
 
   const prompt = buildPrompt(context, message, historique);
   const messages = [
@@ -242,8 +257,9 @@ exports.handler = async (event) => {
       if (response.ok) {
         const data = await response.json();
         const text = data?.content?.[0]?.text ?? '';
+        await commitKoris(holdId);
         console.log(`dr-lo-chat OK with model ${model}`);
-        return { statusCode: 200, headers, body: JSON.stringify({ response: text, koris_consumed: 0 }) };
+        return { statusCode: 200, headers, body: JSON.stringify({ response: text, koris_debited: true }) };
       }
 
       const err = await response.text();
@@ -251,17 +267,20 @@ exports.handler = async (event) => {
       console.warn(`dr-lo-chat model ${model} failed (${response.status}): ${err.substring(0, 200)}`);
 
       if (!isOverloaded) {
-        return { statusCode: 502, headers, body: JSON.stringify({ error: 'Erreur API Claude', detail: err }) };
+        await releaseKoris(holdId);
+        return { statusCode: 502, headers, body: JSON.stringify({ error: 'Erreur API Claude', error_code: 'ai_unavailable', koris_debited: false }) };
       }
 
       if (attempt < MODELS.length - 1) await new Promise(r => setTimeout(r, 1000));
     } catch (e) {
       console.error(`dr-lo-chat fetch error (model ${model}):`, e.message);
       if (attempt === MODELS.length - 1) {
-        return { statusCode: 500, headers, body: JSON.stringify({ error: e.message }) };
+        await releaseKoris(holdId);
+        return { statusCode: 500, headers, body: JSON.stringify({ error: e.message, error_code: 'ai_unavailable', koris_debited: false }) };
       }
     }
   }
 
-  return { statusCode: 500, headers, body: JSON.stringify({ error: 'Tous les modèles sont indisponibles' }) };
+  await releaseKoris(holdId);
+  return { statusCode: 500, headers, body: JSON.stringify({ error: 'Tous les modèles sont indisponibles', error_code: 'ai_unavailable', koris_debited: false }) };
 };
