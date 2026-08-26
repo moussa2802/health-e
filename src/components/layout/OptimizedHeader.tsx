@@ -1,6 +1,6 @@
 import React, { useState, useEffect, memo, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Menu, X, Globe, User, HelpCircle, Sparkles } from "lucide-react";
+import { Menu, X, Globe, User, HelpCircle } from "lucide-react";
 import { useAuth } from "../../contexts/AuthContext";
 import { useLanguage } from "../../contexts/LanguageContext";
 import { useDebounce } from "../../hooks/useDebounce";
@@ -76,16 +76,6 @@ const OptimizedHeader: React.FC = memo(() => {
                   Mon Espace
                 </Link>
 
-                {currentUser.type === "patient" && (
-                  <Link
-                    to="/app"
-                    className="flex items-center gap-1.5 text-sm font-semibold px-3 py-1.5 rounded-pill bg-sage text-white no-underline hover:bg-sage/90 transition-colors"
-                  >
-                    <Sparkles className="w-3.5 h-3.5" />
-                    Compagnon
-                  </Link>
-                )}
-
                 <div style={{ position: 'relative' }}>
                   <KoriBalance />
                 </div>
@@ -123,13 +113,6 @@ const OptimizedHeader: React.FC = memo(() => {
               <div className="flex items-center gap-3">
                 <Link to="/assessment" className={navLinkClass}>
                   Évaluations
-                </Link>
-                <Link
-                  to="/app"
-                  className="flex items-center gap-1.5 text-sm font-semibold px-3 py-1.5 rounded-pill bg-sage text-white no-underline hover:bg-sage/90 transition-colors"
-                >
-                  <Sparkles className="w-3.5 h-3.5" />
-                  Compagnon
                 </Link>
                 <Link
                   to="/patient/access"
@@ -187,16 +170,6 @@ const OptimizedHeader: React.FC = memo(() => {
                 <Link to="/mon-espace" className={mobileLinkClass} onClick={() => setIsMenuOpen(false)}>
                   Mon Espace
                 </Link>
-                {currentUser.type === "patient" && (
-                  <Link
-                    to="/app"
-                    className="flex items-center gap-1.5 py-2.5 px-3 rounded-xl text-sm font-semibold bg-sage text-white no-underline"
-                    onClick={() => setIsMenuOpen(false)}
-                  >
-                    <Sparkles className="w-3.5 h-3.5" />
-                    Compagnon
-                  </Link>
-                )}
                 <Link to="/faq" className={`${mobileLinkClass} text-muted`} onClick={() => setIsMenuOpen(false)}>
                   Aide
                 </Link>
@@ -211,14 +184,6 @@ const OptimizedHeader: React.FC = memo(() => {
               <>
                 <Link to="/assessment" className={mobileLinkClass} onClick={() => setIsMenuOpen(false)}>
                   Évaluations
-                </Link>
-                <Link
-                  to="/app"
-                  className="flex items-center gap-1.5 py-2.5 px-3 rounded-xl text-sm font-semibold bg-sage text-white no-underline"
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  <Sparkles className="w-3.5 h-3.5" />
-                  Compagnon
                 </Link>
                 <Link
                   to="/patient/access"

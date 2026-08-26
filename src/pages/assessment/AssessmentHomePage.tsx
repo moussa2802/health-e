@@ -29,6 +29,7 @@ import type { OnboardingProfile as OnboardingProfileType } from '../../types/onb
 import { useKoris } from '../../contexts/KorisContext';
 import { KORIS_COSTS } from '../../services/korisService';
 import { getScaleMeta, type ScaleCategory, CATEGORY_COLORS } from '../../utils/scaleMeta';
+import TestCode from '../../components/assessment/TestCode';
 
 const MENTAL_THRESHOLD = 8;
 const SEXUAL_THRESHOLD = 5;
@@ -226,7 +227,7 @@ const AssessmentHomePage: React.FC = () => {
       </div>
 
       {/* ── Content ── */}
-      <div className="max-w-[600px] mx-auto px-5 pt-6 pb-12">
+      <div className="max-w-[600px] mx-auto px-5 pt-6 pb-24">
 
         {/* Guest banner */}
         {!isAuthenticated && (
@@ -364,7 +365,8 @@ const AssessmentHomePage: React.FC = () => {
 
                   {/* Text */}
                   <div className="flex-1 min-w-0">
-                    <p className="text-[15px] font-bold text-ink m-0 truncate">
+                    <p className="text-[15px] font-bold text-ink m-0 truncate flex items-center gap-2">
+                      <TestCode scaleId={scale.id} />
                       {meta.label}
                     </p>
                     <p className="text-xs text-muted m-0 mt-0.5 truncate">
@@ -377,16 +379,15 @@ const AssessmentHomePage: React.FC = () => {
                       <span className="text-[10px] text-muted font-semibold bg-paper px-2 py-0.5 rounded-md">
                         {scale.items.length} q
                       </span>
-                      {isDone && (
-                        <span className="text-[10px] text-ok font-bold bg-ok/10 px-2 py-0.5 rounded-md flex items-center gap-1">
-                          <Check size={10} /> Terminé
-                        </span>
-                      )}
-                      {isInProgress && (
+                      {isInProgress && !isDone ? (
                         <span className="text-[10px] font-bold px-2 py-0.5 rounded-md flex items-center gap-1 whitespace-nowrap" style={{ color: '#B78A2E', background: 'rgba(183,138,46,0.1)' }}>
                           <Play size={8} fill="currentColor" /> En cours
                         </span>
-                      )}
+                      ) : isDone ? (
+                        <span className="text-[10px] text-ok font-bold bg-ok/10 px-2 py-0.5 rounded-md flex items-center gap-1">
+                          <Check size={10} /> Terminé
+                        </span>
+                      ) : null}
                     </div>
                   </div>
 

@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { Sparkles, Droplet, Heart, Shield } from 'lucide-react';
 import type { Archetype, KeyDimension } from '../../utils/profileArchetype';
 import TestSignature from './TestSignature';
@@ -15,8 +15,56 @@ const TRAIT_ICONS: Record<string, React.FC<{ size?: number; className?: string }
   'En chemin': Sparkles,
 };
 
+const DIM_NAME_MAP: Record<string, string> = {
+  'Stabilité émotionnelle': 'Stabilité émot.',
+};
+
+function shortDimName(name: string): string {
+  return DIM_NAME_MAP[name] ?? name;
+}
+
+function shortDimLabel(label: string, dimName: string): string {
+  const lower = label.toLowerCase();
+  if (lower.includes('élev') || lower.includes('haute') || lower.includes('fort') || lower.includes('haut')) return 'Élevée';
+  if (lower.includes('modér') || lower.includes('moyen') || lower.includes('normal')) return 'Moyenne';
+  if (lower.includes('basse') || lower.includes('bas') || lower.includes('faible') || lower.includes('minim')) return 'Basse';
+  const cleaned = label.replace(new RegExp(dimName, 'i'), '').trim();
+  return cleaned || label;
+}
+
+const DrLoAvatar: React.FC<{ size: number; fontSize: number }> = ({ size, fontSize }) => {
+  const [failed, setFailed] = useState(false);
+  const handleError = useCallback(() => setFailed(true), []);
+
+  if (failed) {
+    return (
+      <div
+        className="flex items-center justify-center font-display font-semibold flex-shrink-0"
+        style={{
+          width: size, height: size, borderRadius: '50%',
+          background: '#F5E4DC', color: '#C9603F', fontSize,
+        }}
+      >
+        DL
+      </div>
+    );
+  }
+
+  return (
+    <img
+      src="/dr-lo.png"
+      alt="Dr Lô"
+      onError={handleError}
+      className="flex-shrink-0"
+      style={{
+        width: size, height: size, borderRadius: '50%',
+        objectFit: 'cover', background: '#F5E4DC',
+      }}
+    />
+  );
+};
+
 interface ShareableProfileCardProps {
-  prenom: string;
   archetype: Archetype;
   dimensions: KeyDimension[];
   quote: string;
@@ -192,7 +240,7 @@ const ShareableProfileCard: React.FC<ShareableProfileCardProps> = ({
             key={dim.scaleId}
             style={{
               display: 'grid',
-              gridTemplateColumns: isExport ? '275px 1fr auto' : '110px 1fr auto',
+              gridTemplateColumns: isExport ? 'auto minmax(120px,1fr) 80px' : 'auto minmax(48px,1fr) 52px',
               alignItems: 'center',
               gap: isExport ? 28 : 11,
             }}
@@ -201,10 +249,10 @@ const ShareableProfileCard: React.FC<ShareableProfileCardProps> = ({
               style={{
                 fontSize: isExport ? 31 : 12.5,
                 color: '#D8D0C2', fontWeight: 600,
-                overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                whiteSpace: 'nowrap',
               }}
             >
-              {dim.name}
+              {shortDimName(dim.name)}
             </span>
             <div
               style={{
@@ -218,7 +266,7 @@ const ShareableProfileCard: React.FC<ShareableProfileCardProps> = ({
                 style={{
                   height: '100%', borderRadius: 20,
                   backgroundColor: dim.color,
-                  width: mounted ? `${dim.pct}%` : '0%',
+                  width: mounted ? `${Math.max(dim.pct, 4)}%` : '0%',
                   transition: variant === 'export' ? 'none' : 'width 1s cubic-bezier(.2,.8,.2,1)',
                 }}
               />
@@ -227,10 +275,10 @@ const ShareableProfileCard: React.FC<ShareableProfileCardProps> = ({
               style={{
                 fontSize: isExport ? 28 : 11,
                 fontWeight: 700, color: '#EDE7DB',
-                minWidth: isExport ? 140 : 56, textAlign: 'right',
+                textAlign: 'right',
               }}
             >
-              {dim.label}
+              {shortDimLabel(dim.label, dim.name)}
             </span>
           </div>
         ))}
@@ -249,17 +297,7 @@ const ShareableProfileCard: React.FC<ShareableProfileCardProps> = ({
             gap: isExport ? 28 : 11,
           }}
         >
-          <div
-            className="flex items-center justify-center font-display font-semibold flex-shrink-0"
-            style={{
-              width: isExport ? 85 : 34, height: isExport ? 85 : 34,
-              borderRadius: '50%',
-              background: '#F5E4DC', color: '#C9603F',
-              fontSize: isExport ? 38 : 15,
-            }}
-          >
-            L
-          </div>
+          <DrLoAvatar size={isExport ? 85 : 34} fontSize={isExport ? 38 : 15} />
           <p
             style={{
               margin: 0, lineHeight: 1.5, color: '#E7E0D3',

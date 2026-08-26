@@ -48,6 +48,12 @@ const CAT_LABEL: Record<string, string> = {
   sexual: 'Vie intime',
 };
 
+const BADGE_CAT: Record<string, string> = {
+  mental: 'PSY',
+  bonus: 'BONUS',
+  sexual: 'INTIME',
+};
+
 function toDate(d: Date | string | any): Date {
   if (d && typeof d.toDate === 'function') return d.toDate();
   if (typeof d === 'string') return new Date(d);
@@ -267,7 +273,7 @@ const ResultCard = React.forwardRef<HTMLDivElement, ResultCardProps>(({ scale, r
         border: '1px solid rgba(241,236,225,.2)', borderRadius: 7, padding: '4px 7px',
         lineHeight: 1,
       }}>
-        {isSober ? 'Espace confidentiel' : `${scale.code} · ${(CAT_LABEL[cat] ?? 'PROFIL PSY').toUpperCase()}`}
+        {isSober ? 'Espace confidentiel' : `${scale.code} · ${BADGE_CAT[cat] ?? 'PSY'}`}
       </span>
     </div>
   );
@@ -389,6 +395,20 @@ const ResultCard = React.forwardRef<HTMLDivElement, ResultCardProps>(({ scale, r
             </>
           )}
         </>
+      )}
+
+      {/* ── Code badge on compact cards ── */}
+      {isCompact && !isEmpty && (
+        <span style={{
+          position: 'absolute', top: 18, right: 18, zIndex: 3,
+          fontFamily: "'JetBrains Mono', ui-monospace, monospace",
+          fontSize: 10.5, fontWeight: 700, letterSpacing: '0.04em',
+          color: '#EDE7DB', background: 'rgba(241,236,225,.14)',
+          border: '1px solid rgba(241,236,225,.2)', borderRadius: 7, padding: '3px 7px',
+          lineHeight: 1,
+        }}>
+          {isSober ? 'Confidentiel' : `${scale.code} · ${BADGE_CAT[cat] ?? 'PSY'}`}
+        </span>
       )}
 
       {/* ═══ COMPACT SIZE ═══ */}

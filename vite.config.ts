@@ -16,6 +16,7 @@ export default defineConfig(({ mode }) => {
     react(),
     VitePWA({
       registerType: 'prompt',
+      injectRegister: false,
       scope: '/',
       manifest: {
         name: 'Health-e',

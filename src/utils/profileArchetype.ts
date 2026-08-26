@@ -180,17 +180,43 @@ export function getArchetype(scaleResults: Record<string, ScaleResult>): Archety
   };
 }
 
-export function getShortQuote(text: string | null, max = 160): string {
+const GREETING_RE = /^(mon\s+fr[èe]re|ma\s+s[oœ]ur|salut|bonjour|cher|ch[èe]re|hey)\b/i;
+
+function isFluffSentence(s: string, nameTokens: string[]): boolean {
+  const trimmed = s.trim();
+  if (GREETING_RE.test(trimmed)) return true;
+  if (nameTokens.some(t => trimmed.toLowerCase().includes(t))) return true;
+  if (trimmed.length < 60 && trimmed.endsWith('!')) return true;
+  return false;
+}
+
+export function getShortQuote(
+  text: string | null,
+  max = 160,
+  prenom = '',
+): string {
   if (!text) return '';
   const sentences = text.match(/[^.!?]+[.!?]+/g);
-  if (!sentences) return text.slice(0, max);
+  if (!sentences) return '';
+
+  const nameTokens = prenom
+    .trim()
+    .split(/\s+/)
+    .filter(t => t.length >= 2)
+    .map(t => t.toLowerCase());
+
+  const useful = sentences.filter(s => !isFluffSentence(s, nameTokens));
+  if (useful.length === 0) return '';
 
   let quote = '';
-  for (const s of sentences) {
+  for (const s of useful) {
     if (quote.length + s.length > max && quote.length > 0) break;
     quote += s;
   }
-  return quote.trim();
+
+  const result = quote.trim();
+  if (nameTokens.some(t => result.toLowerCase().includes(t))) return '';
+  return result;
 }
 
 export function getIntimateTraits(scaleResults: Record<string, ScaleResult>): string[] {

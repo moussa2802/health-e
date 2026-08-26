@@ -1121,7 +1121,7 @@ const AssessmentCategoryPage: React.FC = () => {
       )}
 
       {/* ── Contenu ─────────────────────────────────────────────────────────── */}
-      <div className="max-w-[600px] mx-auto px-5 pt-4 pb-[60px]">
+      <div className="max-w-[600px] mx-auto px-5 pt-4 pb-[120px]">
 
         {/* Onglet Évaluations */}
         {activeTab === 'evaluations' && (

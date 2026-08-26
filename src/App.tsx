@@ -27,6 +27,7 @@ import LoadingSpinner from "./components/ui/LoadingSpinner";
 import ErrorBoundary from "./components/ui/ErrorBoundary";
 import ScrollToTop from "./components/utils/ScrollToTop";
 import FloatingChat from "./components/DrLoChat/FloatingChat";
+import UpdateBanner from "./components/ui/UpdateBanner";
 import WelcomeFlow from "./components/Onboarding/WelcomeFlow";
 import HelpButton from "./components/Onboarding/HelpButton";
 import NoKorisModal from "./components/koris/NoKorisModal";
@@ -652,6 +653,7 @@ function App() {
           <LanguageProvider>
             <TermsProvider>
               <ScrollToTop />
+              <UpdateBanner />
               {/* Mettre ceci UNE SEULE FOIS dans App() (en dehors des pages) */}
               <div
                 id="recaptcha-container"

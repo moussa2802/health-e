@@ -714,7 +714,7 @@ const AssessmentProfilePage: React.FC = () => {
 
   const archetype = getArchetype(scaleResults);
   const mentalDimensions = getKeyDimensions(scaleResults, 'mental');
-  const drLoQuote = getShortQuote(drLoSynthesis);
+  const drLoQuote = getShortQuote(drLoSynthesis, 160, prenom);
   const intimateTraits = getIntimateTraits(scaleResults);
   const firstSignature = Object.values(signatures).find(s => s?.length >= 3);
 
@@ -730,7 +730,7 @@ const AssessmentProfilePage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-paper pb-[60px]">
+    <div className="min-h-screen bg-paper pb-[120px]">
       {/* ── Header ────────────────────────────────────────────────────── */}
       <div className="mb-7 bg-card pb-[18px] pt-5 shadow-soft">
         <div className="mx-auto max-w-[720px] px-5">
@@ -785,7 +785,6 @@ const AssessmentProfilePage: React.FC = () => {
 
               <div className="mb-0 max-w-[432px] mx-auto">
                 <ShareableProfileCard
-                  prenom={prenom}
                   archetype={archetype}
                   dimensions={mentalDimensions}
                   quote={drLoQuote}
