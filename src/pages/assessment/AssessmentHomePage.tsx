@@ -60,7 +60,7 @@ function getCategoryForTab(tab: 'mental' | 'intime' | 'bonus'): ScaleCategory {
 const AssessmentHomePage: React.FC = () => {
   const navigate = useNavigate();
   const { currentUser, isAuthenticated } = useAuth();
-  const { canAfford } = useKoris();
+  const { canAfford, balance } = useKoris();
 
   const [showOnboarding, setShowOnboarding] = useState(() =>
     isAuthenticated ? false : !isOnboardingComplete()
@@ -470,7 +470,7 @@ const AssessmentHomePage: React.FC = () => {
                 Tester la compatibilité
                 <span className="inline-flex items-center gap-1 bg-white/20 px-2 py-0.5 rounded-[10px] text-xs font-extrabold">
                   <img src="/kori.png" alt="" className="w-3.5 h-3.5 rounded-full object-cover" />
-                  {compatCost}
+                  {compatCost} · reste {balance - compatCost}
                 </span>
               </button>
             ) : (

@@ -44,7 +44,7 @@ function scoreStyle(score: number) {
 
 const CompatibilityPage: React.FC = () => {
   const { currentUser, isAuthenticated } = useAuth();
-  const { canAfford, refreshBalance } = useKoris();
+  const { canAfford, refreshBalance, balance, getCost } = useKoris();
 
   const [myIdMental, setMyIdMental] = useState<string | null>(null);
   const [myIdSexual, setMyIdSexual] = useState<string | null>(null);
@@ -209,7 +209,7 @@ const CompatibilityPage: React.FC = () => {
     if (mentalTrimmed === myIdMental || sexualTrimmed === myIdSexual) { setFormError("Tu ne peux pas te comparer à toi-même."); return; }
 
     if (!canAfford('compatibility')) {
-      setFormError(`Solde Koris insuffisant (${KORIS_COSTS.compatibility} Koris requis).`);
+      setFormError(`Solde Koris insuffisant (${KORIS_COSTS.compatibility} Koris requis, solde : ${balance}).`);
       return;
     }
 
@@ -809,7 +809,7 @@ const CompatibilityPage: React.FC = () => {
                   Découvrir notre compatibilité
                   <span className="inline-flex items-center gap-1 bg-white/20 px-2 py-0.5 rounded-full text-[11px] font-extrabold">
                     <img src="/kori.png" alt="" className="w-3.5 h-3.5 rounded-full object-cover" />
-                    {KORIS_COSTS.compatibility}
+                    {KORIS_COSTS.compatibility} · reste {balance - KORIS_COSTS.compatibility}
                   </span>
                 </span>
               )}

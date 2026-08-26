@@ -332,7 +332,9 @@ const ProfileCard: React.FC<{
   isAuthenticated: boolean;
   cardRef: React.RefObject<HTMLDivElement>;
   sexualFilter?: SexualHealthFilter | null;
-}> = ({ isMental, prenom, profileResults, scales, allScalesForCategory, drLoAnalysis, drLoUpdatedAt, drLoUpdating, onUpdateDrLo, compatibilityId, isAuthenticated, cardRef, sexualFilter }) => {
+  balance: number;
+  analysisCost: number;
+}> = ({ isMental, prenom, profileResults, scales, allScalesForCategory, drLoAnalysis, drLoUpdatedAt, drLoUpdating, onUpdateDrLo, compatibilityId, isAuthenticated, cardRef, sexualFilter, balance, analysisCost }) => {
 
   const catColor = getCategoryColor(isMental ? 'mental' : 'sexual');
   const accentColor = catColor.accent;
@@ -494,7 +496,7 @@ const ProfileCard: React.FC<{
                         className="text-white border-0 rounded-lg px-3.5 py-1.5 text-[11px] font-bold cursor-pointer flex items-center gap-1.5"
                         style={{ background: accentColor }}
                       >
-                        <RefreshCw size={12} /> Mettre à jour l'analyse
+                        <RefreshCw size={12} /> Actualiser ({analysisCost}K · reste {balance - analysisCost})
                       </button>
                     </>
                   ) : (
@@ -662,7 +664,7 @@ const AssessmentCategoryPage: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
   const { currentUser, isAuthenticated } = useAuth();
-  const { canAfford, refreshBalance } = useKoris();
+  const { canAfford, refreshBalance, balance, getCost } = useKoris();
 
   const isMental = category === 'mental';
   const isValidCategory = category === 'mental' || category === 'sexual';
@@ -1194,6 +1196,8 @@ const AssessmentCategoryPage: React.FC = () => {
               isAuthenticated={isAuthenticated}
               cardRef={cardRef}
               sexualFilter={sexualFilter}
+              balance={balance}
+              analysisCost={getCost('analysis') + getCost('synthesis')}
             />
 
             {/* ── Résultats Tests Bonus (mental uniquement) ── */}

@@ -7,9 +7,10 @@ import { authedFetch } from '../utils/authedFetch';
 const KORI_IMG = '/kori.png';
 
 const PACKS = [
-  { id: 'pack_25', koris: 25_000, price: 1_000, popular: false },
-  { id: 'pack_60', koris: 60_000, price: 2_000, popular: true },
-  { id: 'pack_150', koris: 150_000, price: 4_000, popular: false },
+  { id: 'pack_decouverte', koris: 25, price: 500, popular: false, label: 'Découverte' },
+  { id: 'pack_populaire', koris: 55, price: 1_000, popular: true, label: 'Populaire' },
+  { id: 'pack_confort', koris: 150, price: 2_500, popular: false, label: 'Confort' },
+  { id: 'pack_grand', koris: 350, price: 5_000, popular: false, label: 'Grand' },
 ] as const;
 
 function formatNumber(n: number) {
@@ -92,7 +93,7 @@ const AcheterKorisPage: React.FC = () => {
           <img src={KORI_IMG} alt="Kori" className="w-12 h-12 rounded-full object-cover border-2 border-gold/20" />
           <div>
             <div className="text-[11px] text-muted">Mon solde actuel</div>
-            <div className="text-2xl font-extrabold text-gold">{formatNumber(balance)} <span className="text-sm font-medium">Koris</span></div>
+            <div className="text-2xl font-extrabold text-gold">{balance} <span className="text-sm font-medium">Koris</span></div>
           </div>
         </div>
 
@@ -116,14 +117,18 @@ const AcheterKorisPage: React.FC = () => {
               } ${loading !== null ? 'opacity-60 cursor-default' : 'cursor-pointer hover-lift'}`}
             >
               <div>
-                {pack.popular && (
+                {pack.popular ? (
                   <span className="text-[10px] font-bold text-gold bg-gold/10 px-2 py-0.5 rounded-pill mb-1.5 inline-block">
                     POPULAIRE
                   </span>
+                ) : (
+                  <span className="text-[10px] font-semibold text-muted mb-1.5 inline-block">
+                    {pack.label}
+                  </span>
                 )}
-                <div className="text-lg font-bold text-ink">{formatNumber(pack.koris)} Koris</div>
+                <div className="text-lg font-bold text-ink">{pack.koris} Koris</div>
                 <div className="text-xs text-muted mt-0.5">
-                  {(pack.price / pack.koris * 1000).toFixed(1)} F / 1000 Koris
+                  {(pack.price / pack.koris).toFixed(0)} F / Kori
                 </div>
               </div>
               <div className="text-right">

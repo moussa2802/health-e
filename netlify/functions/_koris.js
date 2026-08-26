@@ -4,11 +4,11 @@ const KORIS_COSTS = {
   test: 1,
   chat: 1,
   journal: 1,
-  conseils: 1,
-  analysis: 2,
-  refresh_synthesis: 2,
-  synthesis: 3,
-  compatibility: 4,
+  conseils: 2,
+  analysis: 3,
+  refresh_synthesis: 3,
+  synthesis: 5,
+  compatibility: 6,
 };
 
 /**

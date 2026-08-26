@@ -46,8 +46,8 @@ const KorisWelcome: React.FC = () => {
         className="w-9 h-9 rounded-full object-cover border-2 border-white/30"
       />
       <div>
-        <div className="text-[13px] font-bold">Bienvenue ! +{KORIS_WELCOME_BONUS} Koris offerts</div>
-        <div className="text-[11px] opacity-85 mt-0.5">Utilise-les pour discuter avec Dr Lô</div>
+        <div className="text-[13px] font-bold">On t'offre 500 F de Koris pour commencer</div>
+        <div className="text-[11px] opacity-85 mt-0.5">+{KORIS_WELCOME_BONUS} Koris — discute avec Dr Lô, fais tes tests</div>
       </div>
       <button
         onClick={() => { setExiting(true); setTimeout(() => setVisible(false), 300); }}

@@ -447,7 +447,7 @@ const FloatingChat: React.FC<Props> = ({ userId }) => {
                     value={input}
                     onChange={e => setInput(e.target.value)}
                     onKeyDown={handleKeyDown}
-                    placeholder={`Ecrire un message... (${KORIS_COSTS.chat}/msg • ${DAILY_MESSAGE_LIMIT - dailyCount} restants)`}
+                    placeholder={`Ecrire un message... (${KORIS_COSTS.chat} Kori/msg · solde ${balance})`}
                     rows={1}
                     disabled={loading || !isAiAvailable()}
                     className="flex-1 resize-none border-[1.5px] border-line rounded-xl px-2.5 py-2 text-[13px] font-sans bg-paper text-ink leading-5 overflow-y-auto min-h-9 max-h-[116px] outline-none focus:border-sage/60 transition-colors"

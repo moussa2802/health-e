@@ -44,7 +44,7 @@ const ConseilsCard: React.FC<ConseilsCardProps> = ({
   const [data, setData] = useState<CachedConseils | null>(null);
   const [error, setError] = useState<string | null>(null);
   const autoLoaded = useRef(false);
-  const { canAfford, getCost, refreshBalance } = useKoris();
+  const { canAfford, getCost, refreshBalance, balance } = useKoris();
   const conseilsCost = getCost('conseils');
 
   const load = useCallback(async (forceRefresh = false) => {
@@ -104,7 +104,7 @@ const ConseilsCard: React.FC<ConseilsCardProps> = ({
           </span>
           {conseilsCost > 0 && (
             <span className={`text-[10px] font-bold ${affordable ? 'text-sage' : 'text-muted'}`}>
-              {conseilsCost} Kori{conseilsCost > 1 ? 's' : ''}
+              {conseilsCost} Kori{conseilsCost > 1 ? 's' : ''} · reste {balance - conseilsCost}
             </span>
           )}
         </div>
@@ -221,7 +221,7 @@ const ConseilsCard: React.FC<ConseilsCardProps> = ({
                 : 'border-line text-muted cursor-not-allowed'
             }`}
           >
-            <RefreshCw size={11} /> Actualiser {conseilsCost > 0 && `(${conseilsCost}K)`}
+            <RefreshCw size={11} /> Actualiser {conseilsCost > 0 && `(${conseilsCost}K · reste ${balance - conseilsCost})`}
           </button>
         </div>
       </div>
