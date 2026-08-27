@@ -584,10 +584,7 @@ const AssessmentResultsPage: React.FC = () => {
           {/* Dr Lo full analysis */}
           {!isGuestMode && isAuthenticated && (
             <button
-              onClick={() => {
-                const cat = scale.category === 'mental_health' || scale.category === 'bonus' ? 'mental' : 'sexual';
-                navigate(`/assessment/${cat}?tab=profil`);
-              }}
+              onClick={() => navigate('/assessment/profile')}
               style={{ ...SEC, width: '100%', cursor: 'pointer', textAlign: 'left' }}
             >
               <div style={AROW}>
@@ -595,7 +592,7 @@ const AssessmentResultsPage: React.FC = () => {
                 <div style={{ flex: 1 }}>
                   <h3 style={{ margin: 0, fontSize: 14, fontWeight: 700, color: '#17181B' }}>Voir l'analyse complète</h3>
                   <p style={{ margin: '2px 0 0', fontSize: 12, color: '#8A8C95', lineHeight: 1.4 }}>
-                    Synthèse globale de ton profil {scale.category === 'mental_health' || scale.category === 'bonus' ? 'psychologique' : 'intime'}
+                    Synthèse globale de ton profil
                   </p>
                 </div>
                 <ChevronRight size={17} style={{ color: '#8A8C95', flexShrink: 0 }} />

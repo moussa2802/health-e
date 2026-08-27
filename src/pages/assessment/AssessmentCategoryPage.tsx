@@ -679,9 +679,13 @@ const AssessmentCategoryPage: React.FC = () => {
 
   // ── TOUS les hooks en premier — jamais après un early return ──────────────
 
-  const [activeTab, setActiveTab] = useState<'evaluations' | 'profil'>(
-    searchParams.get('tab') === 'profil' ? 'profil' : 'evaluations'
-  );
+  const [activeTab, setActiveTab] = useState<'evaluations' | 'profil'>('evaluations');
+
+  useEffect(() => {
+    if (searchParams.get('tab') === 'profil') {
+      navigate('/assessment/profile', { replace: true });
+    }
+  }, [searchParams, navigate]);
   const [profileResults, setProfileResults] = useState<Record<string, ScaleResult>>({});
   const [drLoAnalysis, setDrLoAnalysis] = useState<string | null>(null);
   const [drLoUpdatedAt, setDrLoUpdatedAt] = useState<Date | null>(null);
@@ -869,6 +873,10 @@ const AssessmentCategoryPage: React.FC = () => {
   };
 
   const switchTab = (tab: 'evaluations' | 'profil') => {
+    if (tab === 'profil') {
+      navigate('/assessment/profile');
+      return;
+    }
     setActiveTab(tab);
     setSearchParams({ tab });
   };

@@ -87,6 +87,38 @@ function shortSubscaleLabel(label: string): string {
   return label.split(/\s+/)[0].replace(/'$/, '');
 }
 
+function shortBandLabel(label: string): string {
+  if (label.length <= 13) return label;
+  const dashIdx = label.indexOf('—');
+  if (dashIdx > 0) {
+    const before = label.substring(0, dashIdx).trim();
+    if (before.length <= 13) return before;
+    label = before;
+  }
+  const estMatch = label.match(/\best\s+(.+)/i);
+  if (estMatch) {
+    let after = estMatch[1].trim()
+      .replace(/\s+en\s+ce\s+moment$/i, '')
+      .replace(/\s+actuellement$/i, '')
+      .trim();
+    const dansMatch = after.match(/^dans\s+la\s+(\w+)/i);
+    if (dansMatch) return dansMatch[1].charAt(0).toUpperCase() + dansMatch[1].slice(1);
+    after = after.replace(/^plutôt\s+/i, '').trim();
+    return after.charAt(0).toUpperCase() + after.slice(1);
+  }
+  const tuAsMatch = label.match(/^tu\s+as\s+une?\s+(\w+)/i);
+  if (tuAsMatch) return tuAsMatch[1].charAt(0).toUpperCase() + tuAsMatch[1].slice(1);
+  const words = label.trim().split(/\s+/);
+  const last = words[words.length - 1];
+  if (words.length >= 3) {
+    const prev = words[words.length - 2].toLowerCase();
+    if (['très', 'plutôt', 'assez', 'trop', 'peu', 'en', 'à'].includes(prev)) {
+      return prev.charAt(0).toUpperCase() + prev.slice(1) + ' ' + last;
+    }
+  }
+  return last.charAt(0).toUpperCase() + last.slice(1);
+}
+
 interface DimRow {
   label: string;
   pct: number;
@@ -211,7 +243,7 @@ const ResultCard = React.forwardRef<HTMLDivElement, ResultCardProps>(({ scale, r
               textAlign: i === 0 ? 'left' : i === bands.length - 1 ? 'right' : 'center',
               overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
             }}>
-              {b.label}
+              {shortBandLabel(b.label)}
             </span>
           );
         })}

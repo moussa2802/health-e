@@ -25,9 +25,9 @@ function shortDimName(name: string): string {
 
 function shortDimLabel(label: string, dimName: string): string {
   const lower = label.toLowerCase();
-  if (lower.includes('élev') || lower.includes('haute') || lower.includes('fort') || lower.includes('haut')) return 'Élevée';
-  if (lower.includes('modér') || lower.includes('moyen') || lower.includes('normal')) return 'Moyenne';
-  if (lower.includes('basse') || lower.includes('bas') || lower.includes('faible') || lower.includes('minim')) return 'Basse';
+  if (lower.includes('élev') || lower.includes('haute') || lower.includes('fort') || lower.includes('haut') || lower.includes('solid') || lower.includes('bon')) return 'Élevée';
+  if (lower.includes('modér') || lower.includes('moyen') || lower.includes('normal') || lower.includes('dans la moyenne')) return 'Moyenne';
+  if (lower.includes('basse') || lower.includes('bas') || lower.includes('faible') || lower.includes('minim') || lower.includes('fragile')) return 'Basse';
   const cleaned = label.replace(new RegExp(dimName, 'i'), '').trim();
   return cleaned || label;
 }
