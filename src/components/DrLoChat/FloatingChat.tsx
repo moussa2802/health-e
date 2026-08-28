@@ -358,7 +358,7 @@ const FloatingChat: React.FC<Props> = ({ userId }) => {
 
   const handleUnlockChat = async () => {
     if (!userId || unlocking || dailyUnlocks >= MAX_DAILY_UNLOCKS) return;
-    if (!canAfford(KORIS_COSTS.unlock_chat)) return;
+    if (!canAfford('unlock_chat')) return;
     setUnlocking(true);
     try {
       const result = await spendKorisForUnlock();
@@ -563,14 +563,14 @@ const FloatingChat: React.FC<Props> = ({ userId }) => {
                       </p>
                       <button
                         onClick={handleUnlockChat}
-                        disabled={unlocking || !canAfford(KORIS_COSTS.unlock_chat)}
+                        disabled={unlocking || !canAfford('unlock_chat')}
                         className={`w-full py-2 rounded-xl border-0 text-xs font-bold flex items-center justify-center gap-1.5 transition-colors ${
-                          unlocking || !canAfford(KORIS_COSTS.unlock_chat)
+                          unlocking || !canAfford('unlock_chat')
                             ? 'bg-line text-muted cursor-default'
                             : 'bg-sage text-white cursor-pointer hover:bg-sage/90'
                         }`}
                       >
-                        {unlocking ? 'Déblocage…' : !canAfford(KORIS_COSTS.unlock_chat) ? 'Pas assez de Koris' : (
+                        {unlocking ? 'Déblocage…' : !canAfford('unlock_chat') ? 'Pas assez de Koris' : (
                           <>Débloquer {UNLOCK_MESSAGES} messages · {KORIS_COSTS.unlock_chat} <Zap size={11} /></>
                         )}
                       </button>
