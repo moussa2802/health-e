@@ -39,6 +39,7 @@ export const KORIS_COSTS = {
   refresh_synthesis: 3,
   synthesis: 5,
   compatibility: 6,
+  unlock_chat: 3,
 } as const;
 
 export type KorisFeatureType = keyof typeof KORIS_COSTS;
@@ -203,6 +204,23 @@ export async function spendKorisForTest(
       return { ok: false, cost: 0, error: data.error, required: data.required };
     }
     return { ok: true, cost: data.cost ?? 0, free_retake: data.free_retake ?? false };
+  } catch {
+    return { ok: false, cost: 0, error: 'Erreur réseau' };
+  }
+}
+
+export async function spendKorisForUnlock(): Promise<{ ok: boolean; cost: number; error?: string }> {
+  try {
+    const res = await authedFetch('/.netlify/functions/koris-spend', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ feature: 'unlock_chat' }),
+    });
+    const data = await res.json();
+    if (res.status === 402) {
+      return { ok: false, cost: 0, error: data.error };
+    }
+    return { ok: true, cost: data.cost ?? KORIS_COSTS.unlock_chat };
   } catch {
     return { ok: false, cost: 0, error: 'Erreur réseau' };
   }

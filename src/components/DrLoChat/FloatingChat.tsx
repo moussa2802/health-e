@@ -8,12 +8,14 @@ import { getCompatibilityHistory } from '../../services/compatibilityService';
 import { MENTAL_HEALTH_SCALES, SEXUAL_HEALTH_SCALES, BONUS_SCALES } from '../../data/scales';
 import type { ScaleResult } from '../../types/assessment';
 import { useKoris } from '../../contexts/KorisContext';
-import { KORIS_COSTS } from '../../services/korisService';
+import { KORIS_COSTS, spendKorisForUnlock } from '../../services/korisService';
 import { KORIS_CONFIG } from '../../utils/korisConfig';
 import { authedFetch } from '../../utils/authedFetch';
 import { isAiAvailable } from '../../utils/aiCircuitBreaker';
 
 const DAILY_MESSAGE_LIMIT = 10;
+const UNLOCK_MESSAGES = 5;
+const MAX_DAILY_UNLOCKS = 3;
 
 const DR_LO_PHOTO = '/dr-lo.png';
 
@@ -181,6 +183,9 @@ const FloatingChat: React.FC<Props> = ({ userId }) => {
   const [selectedConv, setSelectedConv] = useState<SavedConversation | null>(null);
   const [dailyCount, setDailyCount] = useState(0);
   const [limitReached, setLimitReached] = useState(false);
+  const [dailyUnlocks, setDailyUnlocks] = useState(0);
+  const [unlocking, setUnlocking] = useState(false);
+  const [dailyLimit, setDailyLimit] = useState(DAILY_MESSAGE_LIMIT);
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const conversationId = useRef<string>(`conv_${Date.now()}`);
@@ -198,8 +203,12 @@ const FloatingChat: React.FC<Props> = ({ userId }) => {
       const data = snap.data();
       if (data.chatLastDate === today) {
         const count = data.chatDailyCount ?? 0;
+        const unlocks = data.chatDailyUnlocks ?? 0;
+        const effectiveLimit = DAILY_MESSAGE_LIMIT + unlocks * UNLOCK_MESSAGES;
         setDailyCount(count);
-        if (count >= DAILY_MESSAGE_LIMIT) setLimitReached(true);
+        setDailyUnlocks(unlocks);
+        setDailyLimit(effectiveLimit);
+        if (count >= effectiveLimit) setLimitReached(true);
       }
     }).catch(() => {});
   }, [userId]);
@@ -289,7 +298,7 @@ const FloatingChat: React.FC<Props> = ({ userId }) => {
       // Update daily message counter
       const newCount = dailyCount + 1;
       setDailyCount(newCount);
-      if (newCount >= DAILY_MESSAGE_LIMIT) setLimitReached(true);
+      if (newCount >= dailyLimit) setLimitReached(true);
       if (userId) {
         const today = new Date().toISOString().split('T')[0];
         setDoc(doc(db, 'users', userId), {
@@ -345,6 +354,29 @@ const FloatingChat: React.FC<Props> = ({ userId }) => {
     setMessages(conv.messages);
     setSelectedConv(null);
     setView('chat');
+  };
+
+  const handleUnlockChat = async () => {
+    if (!userId || unlocking || dailyUnlocks >= MAX_DAILY_UNLOCKS) return;
+    if (!canAfford(KORIS_COSTS.unlock_chat)) return;
+    setUnlocking(true);
+    try {
+      const result = await spendKorisForUnlock();
+      if (!result.ok) return;
+      await refreshBalance();
+      const newUnlocks = dailyUnlocks + 1;
+      const newLimit = DAILY_MESSAGE_LIMIT + newUnlocks * UNLOCK_MESSAGES;
+      setDailyUnlocks(newUnlocks);
+      setDailyLimit(newLimit);
+      setLimitReached(false);
+      const today = new Date().toISOString().split('T')[0];
+      setDoc(doc(db, 'users', userId), {
+        chatDailyUnlocks: newUnlocks,
+        chatLastDate: today,
+      }, { merge: true }).catch(() => {});
+    } finally {
+      setUnlocking(false);
+    }
   };
 
   const formatDate = (iso: string) => {
@@ -519,10 +551,31 @@ const FloatingChat: React.FC<Props> = ({ userId }) => {
               )}
 
               {limitReached ? (
-                <div className="px-4 py-3 border-t border-line text-center flex-shrink-0">
-                  <p className="m-0 text-[13px] text-ink-soft leading-snug">
-                    Tu as atteint la limite de messages pour aujourd'hui. Reviens demain pour continuer avec Dr Lo.
-                  </p>
+                <div className="px-4 py-3 border-t border-line flex-shrink-0">
+                  {dailyUnlocks >= MAX_DAILY_UNLOCKS ? (
+                    <p className="m-0 text-[13px] text-ink-soft leading-snug text-center">
+                      Tu as beaucoup échangé avec Dr Lô aujourd'hui. Reviens demain pour continuer 🌙
+                    </p>
+                  ) : (
+                    <div className="flex flex-col gap-2">
+                      <p className="m-0 text-[12px] text-muted text-center">
+                        Limite atteinte — reviens demain ou débloque maintenant
+                      </p>
+                      <button
+                        onClick={handleUnlockChat}
+                        disabled={unlocking || !canAfford(KORIS_COSTS.unlock_chat)}
+                        className={`w-full py-2 rounded-xl border-0 text-xs font-bold flex items-center justify-center gap-1.5 transition-colors ${
+                          unlocking || !canAfford(KORIS_COSTS.unlock_chat)
+                            ? 'bg-line text-muted cursor-default'
+                            : 'bg-sage text-white cursor-pointer hover:bg-sage/90'
+                        }`}
+                      >
+                        {unlocking ? 'Déblocage…' : !canAfford(KORIS_COSTS.unlock_chat) ? 'Pas assez de Koris' : (
+                          <>Débloquer {UNLOCK_MESSAGES} messages · {KORIS_COSTS.unlock_chat} <Zap size={11} /></>
+                        )}
+                      </button>
+                    </div>
+                  )}
                 </div>
               ) : (
                 <div className="px-2.5 pt-2 pb-3 border-t border-line flex gap-1.5 items-end flex-shrink-0">
