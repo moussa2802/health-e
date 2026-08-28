@@ -336,6 +336,14 @@ const FloatingChat: React.FC<Props> = ({ userId }) => {
       content: `Salut ${prenom || 'toi'} ! Comment puis-je t'aider aujourd'hui ?`,
       timestamp: new Date().toISOString(),
     }]);
+    setSelectedConv(null);
+    setView('chat');
+  };
+
+  const continueConversation = (conv: SavedConversation) => {
+    conversationId.current = conv.id;
+    setMessages(conv.messages);
+    setSelectedConv(null);
     setView('chat');
   };
 
@@ -620,7 +628,7 @@ const FloatingChat: React.FC<Props> = ({ userId }) => {
               </div>
               <div className="px-3 py-2.5 border-t border-line flex-shrink-0">
                 <button
-                  onClick={startNewConversation}
+                  onClick={() => continueConversation(selectedConv)}
                   className="w-full py-2 rounded-xl border-0 bg-sage text-white text-xs font-bold cursor-pointer flex items-center justify-center gap-1.5 hover:bg-sage/90 transition-colors"
                 >
                   Continuer avec Dr Lô <ArrowRight size={13} />
