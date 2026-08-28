@@ -5,6 +5,8 @@ import { db } from '../../utils/firebase';
 import { getOnboardingProfile } from '../../utils/onboardingProfile';
 import { getProfileProgress } from '../../services/evaluationService';
 import { getCompatibilityHistory } from '../../services/compatibilityService';
+import { MENTAL_HEALTH_SCALES, SEXUAL_HEALTH_SCALES, BONUS_SCALES } from '../../data/scales';
+import type { ScaleResult } from '../../types/assessment';
 import { useKoris } from '../../contexts/KorisContext';
 import { KORIS_COSTS } from '../../services/korisService';
 import { KORIS_CONFIG } from '../../utils/korisConfig';
@@ -38,15 +40,31 @@ interface Props {
 
 // ── Build full context ────────────────────────────────────────────────────────
 
+const ALL_SCALES = [...MENTAL_HEALTH_SCALES, ...SEXUAL_HEALTH_SCALES, ...BONUS_SCALES];
+const SCALE_MAP = new Map(ALL_SCALES.map(s => [s.id, s]));
+
+function formatResult(id: string, r: ScaleResult) {
+  const scale = SCALE_MAP.get(id);
+  return {
+    scaleName: scale?.name ?? id,
+    label: r.interpretation?.label ?? '',
+    score: r.totalScore,
+    scoreMax: scale?.scoreRange?.max ?? 0,
+    description: r.interpretation?.description ?? '',
+    severity: r.interpretation?.severity ?? '',
+    subscaleScores: r.subscaleScores ?? {},
+    category: scale?.category ?? 'bonus',
+    completedAt: r.completedAt,
+  };
+}
+
 async function buildFullContext(userId: string | null) {
   const onboarding = getOnboardingProfile();
 
-  let scaleResults: Record<string, unknown> = {};
+  let scaleResults: Record<string, ScaleResult> = {};
   let drLoMentalAnalysis: string | null = null;
   let drLoSexualAnalysis: string | null = null;
   let drLoAnalysis: string | null = null;
-  let compatibilityIdMental: string | null = null;
-  let compatibilityIdSexual: string | null = null;
 
   if (userId) {
     try {
@@ -55,33 +73,36 @@ async function buildFullContext(userId: string | null) {
       drLoMentalAnalysis = progress.drLoMentalAnalysis;
       drLoSexualAnalysis = progress.drLoSexualAnalysis;
       drLoAnalysis = progress.drLoAnalysis;
-      compatibilityIdMental = progress.compatibilityIdMental;
-      compatibilityIdSexual = progress.compatibilityIdSexual;
     } catch { /* ignore */ }
   }
 
-  // Séparer les résultats par catégorie
   const scores_mentaux: Record<string, unknown> = {};
   const scores_intimes: Record<string, unknown> = {};
   const tests_bonus: Record<string, unknown> = {};
 
-  for (const [id, v] of Object.entries(scaleResults)) {
-    const val = v as { category?: string };
-    if (val.category === 'mental_health') scores_mentaux[id] = v;
-    else if (val.category === 'sexual_health') scores_intimes[id] = v;
-    else tests_bonus[id] = v;
+  for (const [id, r] of Object.entries(scaleResults)) {
+    const formatted = formatResult(id, r);
+    const cat = SCALE_MAP.get(id)?.category;
+    if (cat === 'mental_health') scores_mentaux[id] = formatted;
+    else if (cat === 'sexual_health') scores_intimes[id] = formatted;
+    else tests_bonus[id] = formatted;
   }
 
   // Historique compatibilité (3 derniers)
-  let compat_history: unknown[] = [];
+  let tests_compatibilite: unknown[] = [];
   if (userId) {
     try {
       const hist = await getCompatibilityHistory(userId);
-      compat_history = hist.slice(0, 3).map(h => ({
-        date: h.createdAt,
-        score: h.result?.overallScore,
-        label: h.result?.overallLabel,
-        type: h.result?.compatibilityType,
+      tests_compatibilite = hist.slice(0, 3).map(h => ({
+        date: h.createdAt instanceof Date ? h.createdAt.toLocaleDateString('fr-FR') : String(h.createdAt),
+        type_relation: h.relationshipType ?? '',
+        type_profil: h.codeType ?? '',
+        code_partenaire: h.partnerCode ?? '',
+        score_global: h.result?.globalScore ?? 0,
+        points_forts: [] as string[],
+        zones_tension: [] as string[],
+        recommandations: [] as string[],
+        narrative: '',
       }));
     } catch { /* ignore */ }
   }
@@ -117,11 +138,10 @@ async function buildFullContext(userId: string | null) {
     scores_mentaux,
     scores_intimes,
     tests_bonus,
-    dr_lo_mental_analysis: drLoMentalAnalysis,
-    dr_lo_sexual_analysis: drLoSexualAnalysis,
-    dr_lo_general_analysis: drLoAnalysis,
-    compat_codes: { mental: compatibilityIdMental, sexual: compatibilityIdSexual },
-    compat_history,
+    analyse_mentale: drLoMentalAnalysis,
+    analyse_intime: drLoSexualAnalysis,
+    analyse_generale: drLoAnalysis,
+    tests_compatibilite,
     journal_recent,
   };
 }

@@ -137,6 +137,7 @@ ${conseilsSection}
 ━━━ ANALYSES DR LÔ EXISTANTES ━━━
 Analyse psychologique : ${context.analyse_mentale || 'Pas encore générée'}
 Analyse intime : ${context.analyse_intime || 'Pas encore générée'}
+Synthèse globale : ${context.analyse_generale || 'Pas encore générée'}
 
 ━━━ CONVERSATION EN COURS ━━━
 ${historiqueSection}
