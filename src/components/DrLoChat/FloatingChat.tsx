@@ -270,7 +270,7 @@ const FloatingChat: React.FC<Props> = ({ userId }) => {
       const allHistory = messages
         .filter((_, i) => i > 0)
         .map(m => ({ role: m.role, content: m.content }));
-      const historique = allHistory.slice(-10); // Last 5 exchanges (user+assistant pairs)
+      const historique = allHistory.slice(-8);
 
       const res = await authedFetch('/.netlify/functions/dr-lo-chat', {
         method: 'POST',
