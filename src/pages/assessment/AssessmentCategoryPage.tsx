@@ -13,6 +13,7 @@ import {
   getProfileProgress,
   createSession,
   saveSexualFilterToProfile,
+  saveOnboardingToProfile,
 } from '../../services/evaluationService';
 import {
   getGuestCount,
@@ -23,15 +24,20 @@ import {
 } from '../../utils/guestSession';
 import {
   getOnboardingProfile,
-  getHiddenScaleIds,
+  saveOnboardingProfile,
 } from '../../utils/onboardingProfile';
 import {
   getSexualHealthFilter,
   saveSexualHealthFilter,
   isSexualFilterComplete,
-  getHiddenSexualScaleIds,
   getSexualRequired,
 } from '../../utils/sexualHealthFilter';
+import {
+  getGenderHiddenIds,
+  getGreyedScales,
+  hasPartnerStatus,
+  type GreyedInfo,
+} from '../../utils/scaleVisibility';
 import SexualHealthFilterWizard from '../../components/assessment/SexualHealthFilter';
 import SexualAccessGate from '../../components/assessment/SexualAccessGate';
 import { MENTAL_HEALTH_SCALES, SEXUAL_HEALTH_SCALES, BONUS_SCALES } from '../../data/scales';
@@ -106,10 +112,43 @@ const ScaleRow: React.FC<{
   attemptCount?: number;
   cachedConseils?: CachedConseils | null;
   conseilsLoading?: boolean;
-}> = ({ scale, result, onStart, onDelete, deleteConfirm, loading, expandedTestId, onToggle, expandedAdviceId, onToggleAdvice, attemptCount, cachedConseils, conseilsLoading }) => {
-  const isCompleted = !!result;
+  greyedInfo?: GreyedInfo;
+  onGreyedClick?: (scaleId: string, info: GreyedInfo) => void;
+}> = ({ scale, result, onStart, onDelete, deleteConfirm, loading, expandedTestId, onToggle, expandedAdviceId, onToggleAdvice, attemptCount, cachedConseils, conseilsLoading, greyedInfo, onGreyedClick }) => {
   const meta = getScaleMeta(scale.id);
   const catColor = getCategoryColor(getScaleCategory(scale.id));
+
+  if (greyedInfo) {
+    return (
+      <div
+        className="flex items-center gap-3 rounded-2xl p-4 bg-white cursor-pointer"
+        style={{ border: '1.5px solid #E7E4DA', opacity: 0.55 }}
+        onClick={() => onGreyedClick?.(scale.id, greyedInfo)}
+      >
+        <div
+          className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+          style={{ background: '#F3F1EA' }}
+        >
+          <meta.icon size={18} color="#9CA3AF" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-1.5 mb-0.5 flex-wrap">
+            <TestCode scaleId={scale.id} />
+            <span className="text-[11px] font-bold" style={{ color: '#9CA3AF' }}>{scale.shortName}</span>
+          </div>
+          <p className="m-0 text-[13px] font-semibold overflow-hidden text-ellipsis whitespace-nowrap" style={{ color: '#9CA3AF' }}>
+            {meta.label}
+          </p>
+          <p className="m-0 text-[11px] mt-0.5 leading-tight italic" style={{ color: '#B0A890' }}>
+            {greyedInfo.reason}
+          </p>
+        </div>
+        <Lock size={14} className="flex-shrink-0" style={{ color: '#C4B99A' }} />
+      </div>
+    );
+  }
+
+  const isCompleted = !!result;
   const fullComment = result ? getShortComment(result) : '';
   const isExpanded = expandedTestId === scale.id;
   const isAdviceExpanded = expandedAdviceId === scale.id;
@@ -312,11 +351,6 @@ const MENTAL_REQUIRED = [
   { id: 'gad7',    label: 'Anxiété' },
   { id: 'phq9',    label: 'Humeur & Dépression' },
 ];
-const SEXUAL_REQUIRED = [
-  { id: 'nsss', label: 'Satisfaction sexuelle' },
-  { id: 'sdi2', label: 'Désir sexuel' },
-  { id: 'pair', label: 'Intimité de couple' },
-];
 
 // ── ProfileCard ───────────────────────────────────────────────────────────────
 
@@ -336,7 +370,8 @@ const ProfileCard: React.FC<{
   sexualFilter?: SexualHealthFilter | null;
   balance: number;
   analysisCost: number;
-}> = ({ isMental, prenom, profileResults, scales, allScalesForCategory, drLoAnalysis, drLoUpdatedAt, drLoUpdating, onUpdateDrLo, compatibilityId, isAuthenticated, cardRef, sexualFilter, balance, analysisCost }) => {
+  hasPartner?: boolean;
+}> = ({ isMental, prenom, profileResults, scales, allScalesForCategory, drLoAnalysis, drLoUpdatedAt, drLoUpdating, onUpdateDrLo, compatibilityId, isAuthenticated, cardRef, sexualFilter, balance, analysisCost, hasPartner = true }) => {
 
   const catColor = getCategoryColor(isMental ? 'mental' : 'sexual');
   const accentColor = catColor.accent;
@@ -378,7 +413,7 @@ const ProfileCard: React.FC<{
     : null;
 
   // Compatibility lock status
-  const required = isMental ? MENTAL_REQUIRED : getSexualRequired(sexualFilter ?? null);
+  const required = isMental ? MENTAL_REQUIRED : getSexualRequired(sexualFilter ?? null, hasPartner);
   const doneRequired = required.filter(r => profileResults[r.id]).length;
   const totalRequired = required.length;
   const isUnlocked = !!compatibilityId;
@@ -715,12 +750,17 @@ const AssessmentCategoryPage: React.FC = () => {
   const [sexualAccessGranted, setSexualAccessGranted] = useState(isMental);
   const [scaleSearch, setScaleSearch] = useState('');
 
+  const [unlockModal, setUnlockModal] = useState<{ scaleId: string; info: GreyedInfo } | null>(null);
+  const [profileVersion, setProfileVersion] = useState(0);
+
   const onboardingProfile = getOnboardingProfile();
-  const hiddenIds = onboardingProfile ? getHiddenScaleIds(onboardingProfile) : [];
-  const hiddenSexualIds = sexualFilter ? getHiddenSexualScaleIds(sexualFilter) : [];
   const allScales = isMental ? MENTAL_HEALTH_SCALES : SEXUAL_HEALTH_SCALES;
-  const scales = allScales.filter(s => !hiddenIds.includes(s.id) && !hiddenSexualIds.includes(s.id));
-  const completedCount = scales.filter(s => profileResults[s.id]).length;
+  const genderHidden = onboardingProfile ? getGenderHiddenIds(onboardingProfile) : [];
+  const greyedMap = onboardingProfile ? getGreyedScales(onboardingProfile, isMental ? null : sexualFilter) : {};
+  const visibleScales = allScales.filter(s => !genderHidden.includes(s.id));
+  const activeScales = visibleScales.filter(s => !greyedMap[s.id]);
+  const completedCount = activeScales.filter(s => profileResults[s.id]).length;
+  void profileVersion;
   const bonusCompleted = isMental ? BONUS_SCALES.filter(s => profileResults[s.id]).length : 0;
 
   const filterScale = (s: AssessmentScale) => {
@@ -732,7 +772,7 @@ const AssessmentCategoryPage: React.FC = () => {
       || s.name.toLowerCase().includes(q)
       || m.label.toLowerCase().includes(q);
   };
-  const filteredScales = scales.filter(filterScale);
+  const filteredScales = visibleScales.filter(filterScale);
   const filteredBonus = BONUS_SCALES.filter(filterScale);
 
   // Redirect si catégorie invalide
@@ -1068,7 +1108,7 @@ const AssessmentCategoryPage: React.FC = () => {
             className="text-[11px] font-bold rounded-full px-2.5 py-1 whitespace-nowrap"
             style={{ background: `${accentColor}18`, color: accentColor, border: `1px solid ${accentColor}30` }}
           >
-            {completedCount}/{scales.length}
+            {completedCount}/{activeScales.length}
           </span>
         </div>
       </div>
@@ -1161,6 +1201,8 @@ const AssessmentCategoryPage: React.FC = () => {
                   attemptCount={attemptCounts[scale.id]}
                   cachedConseils={cachedConseilsMap[scale.id]}
                   conseilsLoading={conseilsLoadingId === scale.id}
+                  greyedInfo={greyedMap[scale.id]}
+                  onGreyedClick={(id, info) => setUnlockModal({ scaleId: id, info })}
                 />
               </div>
             ))}
@@ -1224,7 +1266,7 @@ const AssessmentCategoryPage: React.FC = () => {
               isMental={isMental}
               prenom={onboardingProfile?.prenom ?? (currentUser?.name ?? '')}
               profileResults={profileResults}
-              scales={scales}
+              scales={activeScales}
               allScalesForCategory={allScales}
               drLoAnalysis={drLoAnalysis}
               drLoUpdatedAt={drLoUpdatedAt}
@@ -1236,6 +1278,7 @@ const AssessmentCategoryPage: React.FC = () => {
               sexualFilter={sexualFilter}
               balance={balance}
               analysisCost={getCost('analysis') + getCost('synthesis')}
+              hasPartner={hasPartnerStatus(onboardingProfile?.situation_relationnelle ?? 'celibataire')}
             />
 
             {/* ── Résultats Tests Bonus (mental uniquement) ── */}
@@ -1346,6 +1389,74 @@ const AssessmentCategoryPage: React.FC = () => {
         onConfirm={handleResetProfile}
         loading={resetting}
       />
+
+      {/* ── Modale déblocage test grisé ────────────────────────────────────── */}
+      {unlockModal && (
+        <div
+          className="fixed inset-0 z-[100] flex items-end justify-center"
+          onClick={() => setUnlockModal(null)}
+        >
+          <div className="absolute inset-0" style={{ background: 'rgba(0,0,0,0.3)' }} />
+          <div
+            className="relative w-full bg-white rounded-t-3xl px-5 py-6 shadow-xl"
+            style={{ maxWidth: 500 }}
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="flex items-center gap-2.5 mb-4">
+              <div className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(183,138,46,0.1)' }}>
+                <Lock size={16} style={{ color: '#8F6A1F' }} />
+              </div>
+              <div>
+                <p className="m-0 text-[13px] font-bold text-ink">{unlockModal.info.unlockPrompt}</p>
+                <p className="m-0 text-[11px] text-muted">{unlockModal.info.reason}</p>
+              </div>
+            </div>
+            <div className="flex flex-col gap-2">
+              {unlockModal.info.options.map(opt => (
+                <button
+                  key={opt.value}
+                  onClick={() => {
+                    const { info } = unlockModal;
+                    if (info.intakeField === 'experienceProfile') {
+                      const filter = getSexualHealthFilter();
+                      if (filter) {
+                        (filter as Record<string, unknown>).experienceProfile = opt.value;
+                        saveSexualHealthFilter(filter);
+                        setSexualFilter({ ...filter });
+                        if (currentUser) {
+                          saveSexualFilterToProfile(currentUser.id, filter as unknown as Record<string, unknown>).catch(() => {});
+                        }
+                      }
+                    } else {
+                      const profile = getOnboardingProfile();
+                      if (profile) {
+                        (profile as unknown as Record<string, string>)[info.intakeField] = opt.value;
+                        saveOnboardingProfile(profile);
+                        if (currentUser) {
+                          saveOnboardingToProfile(currentUser.id, profile as unknown as Record<string, string>).catch(() => {});
+                        }
+                      }
+                    }
+                    setProfileVersion(v => v + 1);
+                    setUnlockModal(null);
+                  }}
+                  className="w-full text-left px-4 py-3 rounded-xl bg-white text-[13px] font-medium text-ink cursor-pointer transition-colors"
+                  style={{ border: '1.5px solid #E7E4DA' }}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+            <button
+              onClick={() => setUnlockModal(null)}
+              className="w-full mt-3 py-2.5 rounded-xl border-0 bg-transparent text-[13px] font-semibold cursor-pointer"
+              style={{ color: '#8A8C95' }}
+            >
+              Annuler
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* ── Modale login wall ──────────────────────────────────────────────── */}
       {showLoginWall && (

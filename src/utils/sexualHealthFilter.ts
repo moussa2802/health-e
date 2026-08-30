@@ -38,7 +38,10 @@ export function getHiddenSexualScaleIds(filter: SexualHealthFilter): string[] {
   return [...new Set(hidden)];
 }
 
-export function getSexualRequired(filter: SexualHealthFilter | null): Array<{ id: string; label: string }> {
+export function getSexualRequired(
+  filter: SexualHealthFilter | null,
+  hasPartner: boolean = true,
+): Array<{ id: string; label: string }> {
   const profile = filter?.experienceProfile;
   if (profile === 'no_experience' || profile === 'prefer_not_answer') {
     return [
@@ -48,6 +51,13 @@ export function getSexualRequired(filter: SexualHealthFilter | null): Array<{ id
     ];
   }
   if (profile === 'partial_experience') {
+    if (!hasPartner) {
+      return [
+        { id: 'sdi2',    label: 'Désir sexuel' },
+        { id: 'sis_ses', label: 'Excitation & Inhibition' },
+        { id: 'sise',    label: 'Identité & Valeurs intimes' },
+      ];
+    }
     return [
       { id: 'nsss',    label: 'Satisfaction sexuelle' },
       { id: 'sdi2',    label: 'Désir sexuel' },
@@ -55,6 +65,13 @@ export function getSexualRequired(filter: SexualHealthFilter | null): Array<{ id
     ];
   }
   // full_experience or null
+  if (!hasPartner) {
+    return [
+      { id: 'sdi2',    label: 'Désir sexuel' },
+      { id: 'sis_ses', label: 'Excitation & Inhibition' },
+      { id: 'sise',    label: 'Identité & Valeurs intimes' },
+    ];
+  }
   return [
     { id: 'nsss', label: 'Satisfaction sexuelle' },
     { id: 'sdi2', label: 'Désir sexuel' },
