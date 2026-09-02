@@ -672,7 +672,17 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         return;
       }
       console.error("Google link error:", popupError);
-      throw new Error("Erreur lors de l'association du compte Google. Veuillez réessayer.");
+      if (popupError?.code === "auth/credential-already-in-use") {
+        const err = new Error("Ce compte Google est déjà utilisé par un autre utilisateur Health-e.");
+        (err as any).code = "auth/credential-already-in-use";
+        throw err;
+      }
+      if (popupError?.code === "auth/provider-already-linked") {
+        const err = new Error("Un compte Google est déjà associé.");
+        (err as any).code = "auth/provider-already-linked";
+        throw err;
+      }
+      throw popupError;
     }
   };
 
