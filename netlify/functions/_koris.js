@@ -9,7 +9,7 @@ const KORIS_COSTS = {
   analysis_refresh: 2,
   refresh_synthesis: 3,
   synthesis: 0,
-  compatibility: 6,
+  compatibility: 4,
   unlock_chat: 3,
 };
 
