@@ -249,16 +249,16 @@ const AssessmentHomePage: React.FC = () => {
         {isAuthenticated && needsAuthMigration() && (
           <Link
             to="/patient/profile"
-            className="flex items-center gap-3 bg-warm-amber/10 border border-warm-amber/25 rounded-[14px] px-4 py-3 mb-5 no-underline hover:bg-warm-amber/15 transition-colors"
+            className="flex items-center gap-3 bg-gradient-to-r from-amber-50 to-orange-50 border-2 border-amber-300 rounded-[14px] px-4 py-4 mb-5 no-underline hover:from-amber-100 hover:to-orange-100 transition-all shadow-sm"
           >
-            <div className="w-9 h-9 rounded-[10px] bg-warm-amber/20 flex items-center justify-center flex-shrink-0">
-              <Shield className="h-[18px] w-[18px] text-warm-amber" />
+            <div className="w-10 h-10 rounded-xl bg-amber-400 flex items-center justify-center flex-shrink-0 shadow-sm">
+              <Shield className="h-5 w-5 text-white" />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-ink m-0">Sécurise ton compte</p>
-              <p className="text-xs text-ink-soft m-0 mt-0.5">Associe Google ou un email pour ne pas perdre l'accès</p>
+              <p className="text-sm font-bold text-gray-900 m-0">⚠️ Sécurise ton compte</p>
+              <p className="text-xs text-gray-600 m-0 mt-0.5">Associe <strong>Google</strong> ou un <strong>email + mot de passe</strong> pour ne pas perdre l'accès</p>
             </div>
-            <ChevronRight className="h-4 w-4 text-muted flex-shrink-0" />
+            <ChevronRight className="h-5 w-5 text-amber-500 flex-shrink-0" />
           </Link>
         )}
 

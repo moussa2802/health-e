@@ -80,7 +80,7 @@ const OptimizedHeader: React.FC = memo(() => {
                   <KoriBalance />
                 </div>
 
-                <div className="flex items-center gap-2">
+                <Link to="/patient/profile" className="flex items-center gap-2 no-underline hover:opacity-75 transition-opacity">
                   {currentUser.profileImage ? (
                     <img
                       src={currentUser.profileImage}
@@ -96,7 +96,7 @@ const OptimizedHeader: React.FC = memo(() => {
                   <span className="text-sm font-medium max-w-[120px] truncate text-ink">
                     {currentUser.name}
                   </span>
-                </div>
+                </Link>
 
                 <button
                   onClick={handleLogout}
@@ -169,6 +169,9 @@ const OptimizedHeader: React.FC = memo(() => {
                 </Link>
                 <Link to="/mon-espace" className={mobileLinkClass} onClick={() => setIsMenuOpen(false)}>
                   Mon Espace
+                </Link>
+                <Link to="/patient/profile" className={mobileLinkClass} onClick={() => setIsMenuOpen(false)}>
+                  Mon Profil
                 </Link>
                 <Link to="/faq" className={`${mobileLinkClass} text-muted`} onClick={() => setIsMenuOpen(false)}>
                   Aide
