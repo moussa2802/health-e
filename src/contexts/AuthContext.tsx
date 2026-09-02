@@ -20,6 +20,7 @@ import {
   linkWithPopup,
   linkWithRedirect,
   linkWithCredential,
+  unlink,
   getRedirectResult,
   GoogleAuthProvider,
   EmailAuthProvider,
@@ -86,6 +87,8 @@ interface AuthContextType {
   linkEmailToAccount: (email: string, password: string) => Promise<void>;
   isPhoneOnlyUser: () => boolean;
   needsAuthMigration: () => boolean;
+  getProviders: () => string[];
+  unlinkPhone: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -727,6 +730,35 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     }
   };
 
+  const getProviders = (): string[] => {
+    const firebaseUser = auth.currentUser;
+    if (!firebaseUser) return [];
+    return firebaseUser.providerData.map((p) => p.providerId);
+  };
+
+  const unlinkPhone = async (): Promise<void> => {
+    const firebaseUser = auth.currentUser;
+    if (!firebaseUser) throw new Error("Utilisateur non authentifié.");
+
+    const providers = firebaseUser.providerData.map((p) => p.providerId);
+    if (!providers.includes("phone")) throw new Error("Aucun numéro de téléphone associé.");
+
+    const otherProviders = providers.filter((p) => p !== "phone");
+    if (otherProviders.length === 0) {
+      throw new Error("Impossible de retirer le téléphone : associez d'abord un email ou Google.");
+    }
+
+    await unlink(firebaseUser, "phone");
+
+    const db = getFirestoreInstance();
+    if (db) {
+      const userRef = doc(db, "users", firebaseUser.uid);
+      await setDoc(userRef, { phoneUnlinked: true, phoneUnlinkedAt: serverTimestamp(), updatedAt: serverTimestamp() }, { merge: true });
+    }
+
+    console.log("[AUTH] Provider phone retiré avec succès");
+  };
+
   const register = async (
     email: string,
     password: string,
@@ -1089,6 +1121,8 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       linkEmailToAccount,
       isPhoneOnlyUser,
       needsAuthMigration,
+      getProviders,
+      unlinkPhone,
     }),
     [
       currentUser,

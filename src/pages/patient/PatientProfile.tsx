@@ -23,7 +23,17 @@ import {
   Shield,
   Users,
   ArrowLeft,
+  Key,
+  Unlink2,
+  Eye,
+  EyeOff,
+  Coins,
+  ClipboardList,
 } from "lucide-react";
+import { getOnboardingProfile, saveOnboardingProfile, getHiddenScaleIds } from "../../utils/onboardingProfile";
+import { saveOnboardingToProfile } from "../../services/evaluationService";
+import { getKorisBalance } from "../../services/korisService";
+import type { OnboardingProfile as OnboardingProfileType, Genre, SituationRelationnelle, DeuilVecu, EvenementDifficile, SituationMariage, SituationEnfants } from "../../types/onboarding";
 import {
   getPatientProfile,
   updatePatientProfile,
@@ -94,7 +104,7 @@ function normalizeProfile(p: any, currentUser?: any) {
 }
 
 const PatientProfile: React.FC = () => {
-  const { currentUser } = useAuth();
+  const { currentUser, getProviders, linkGoogleAccount, linkEmailToAccount, unlinkPhone } = useAuth();
   console.log("currentUser:", currentUser);
   const navigate = useNavigate();
   const [isEditing, setIsEditing] = useState(false);
@@ -112,6 +122,26 @@ const PatientProfile: React.FC = () => {
   const [isLocalEnvironment, setIsLocalEnvironment] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [retryCount, setRetryCount] = useState(0); // Added retry counter
+
+  // Compte & Connexion state
+  const [linkingGoogle, setLinkingGoogle] = useState(false);
+  const [linkingEmail, setLinkingEmail] = useState(false);
+  const [unlinkingPhone, setUnlinkingPhone] = useState(false);
+  const [showLinkEmailForm, setShowLinkEmailForm] = useState(false);
+  const [linkEmail, setLinkEmail] = useState("");
+  const [linkPassword, setLinkPassword] = useState("");
+  const [linkPasswordConfirm, setLinkPasswordConfirm] = useState("");
+  const [showLinkPassword, setShowLinkPassword] = useState(false);
+  const [authActionMsg, setAuthActionMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
+
+  // Profil d'évaluation state
+  const [intakeProfile, setIntakeProfile] = useState<OnboardingProfileType | null>(null);
+  const [editingIntake, setEditingIntake] = useState(false);
+  const [intakeForm, setIntakeForm] = useState<Partial<OnboardingProfileType>>({});
+  const [savingIntake, setSavingIntake] = useState(false);
+
+  // Koris state
+  const [korisBalance, setKorisBalance] = useState<number | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const isMountedRef = useRef(true);
@@ -350,6 +380,118 @@ const PatientProfile: React.FC = () => {
       unsub?.();
     };
   }, [currentUser?.id]);
+
+  // Load onboarding profile and Koris balance
+  useEffect(() => {
+    const profile = getOnboardingProfile();
+    setIntakeProfile(profile);
+    if (profile) setIntakeForm({ ...profile });
+  }, []);
+
+  useEffect(() => {
+    if (!currentUser?.id) return;
+    getKorisBalance(currentUser.id).then((b) => {
+      if (isMountedRef.current) setKorisBalance(b);
+    });
+  }, [currentUser?.id]);
+
+  // Auth section handlers
+  const handleLinkGoogle = async () => {
+    setLinkingGoogle(true);
+    setAuthActionMsg(null);
+    try {
+      await linkGoogleAccount();
+      setAuthActionMsg({ type: "success", text: "Compte Google associé avec succès !" });
+    } catch (e: any) {
+      const msg = e?.code === "auth/provider-already-linked"
+        ? "Ce compte Google est déjà associé."
+        : e?.code === "auth/credential-already-in-use"
+        ? "Ce compte Google est déjà utilisé par un autre utilisateur."
+        : e?.message || "Erreur lors de l'association Google.";
+      setAuthActionMsg({ type: "error", text: msg });
+    } finally {
+      setLinkingGoogle(false);
+    }
+  };
+
+  const handleLinkEmail = async () => {
+    if (!linkEmail || !linkPassword) return;
+    if (linkPassword.length < 6) {
+      setAuthActionMsg({ type: "error", text: "Le mot de passe doit contenir au moins 6 caractères." });
+      return;
+    }
+    if (linkPassword !== linkPasswordConfirm) {
+      setAuthActionMsg({ type: "error", text: "Les mots de passe ne correspondent pas." });
+      return;
+    }
+    setLinkingEmail(true);
+    setAuthActionMsg(null);
+    try {
+      await linkEmailToAccount(linkEmail, linkPassword);
+      setAuthActionMsg({ type: "success", text: "Email et mot de passe associés avec succès !" });
+      setShowLinkEmailForm(false);
+      setLinkEmail("");
+      setLinkPassword("");
+      setLinkPasswordConfirm("");
+    } catch (e: any) {
+      const msg = e?.code === "auth/email-already-in-use"
+        ? "Cet email est déjà utilisé par un autre compte."
+        : e?.code === "auth/invalid-email"
+        ? "Adresse email invalide."
+        : e?.code === "auth/provider-already-linked"
+        ? "Un email est déjà associé à ce compte."
+        : e?.message || "Erreur lors de l'association email.";
+      setAuthActionMsg({ type: "error", text: msg });
+    } finally {
+      setLinkingEmail(false);
+    }
+  };
+
+  const handleUnlinkPhone = async () => {
+    setUnlinkingPhone(true);
+    setAuthActionMsg(null);
+    try {
+      await unlinkPhone();
+      setAuthActionMsg({ type: "success", text: "Numéro de téléphone retiré avec succès." });
+    } catch (e: any) {
+      setAuthActionMsg({ type: "error", text: e?.message || "Erreur lors du retrait du téléphone." });
+    } finally {
+      setUnlinkingPhone(false);
+    }
+  };
+
+  // Intake profile save handler
+  const handleSaveIntake = async () => {
+    if (!currentUser?.id || !intakeForm.genre) return;
+    setSavingIntake(true);
+    try {
+      const updatedProfile: OnboardingProfileType = {
+        prenom: intakeForm.prenom || intakeProfile?.prenom || "",
+        age: intakeForm.age || intakeProfile?.age || "18-25",
+        genre: intakeForm.genre as Genre,
+        situation_relationnelle: (intakeForm.situation_relationnelle || intakeProfile?.situation_relationnelle || "celibataire") as SituationRelationnelle,
+        deuil: (intakeForm.deuil || intakeProfile?.deuil || "non") as DeuilVecu,
+        evenement_traumatisant: (intakeForm.evenement_traumatisant || intakeProfile?.evenement_traumatisant || "non") as EvenementDifficile,
+        situation_mariage: (intakeForm.situation_mariage || intakeProfile?.situation_mariage || "jamais") as SituationMariage,
+        enfants: (intakeForm.enfants || intakeProfile?.enfants || "non") as SituationEnfants,
+        completedAt: new Date().toISOString(),
+      };
+      saveOnboardingProfile(updatedProfile);
+      await saveOnboardingToProfile(currentUser.id, updatedProfile as unknown as Record<string, string>);
+      setIntakeProfile(updatedProfile);
+      setIntakeForm({ ...updatedProfile });
+      setEditingIntake(false);
+    } catch (e) {
+      console.error("Erreur sauvegarde profil intake:", e);
+    } finally {
+      setSavingIntake(false);
+    }
+  };
+
+  const providers = getProviders();
+  const hasGoogle = providers.includes("google.com");
+  const hasEmail = providers.includes("password");
+  const hasPhone = providers.includes("phone");
 
   const handleRetry = async () => {
     setIsRetrying(true);
@@ -1196,6 +1338,302 @@ const PatientProfile: React.FC = () => {
               </div>
             </div>
           </div>
+
+          {/* Compte & Connexion */}
+          <div className="p-8 border-t border-gray-100">
+            <h2 className="text-xl font-bold text-gray-900 mb-6 flex items-center">
+              <Key className="h-6 w-6 mr-3 text-indigo-600" />
+              Compte &amp; Connexion
+            </h2>
+
+            {authActionMsg && (
+              <div className={`mb-4 p-3 rounded-lg text-sm flex items-center gap-2 ${
+                authActionMsg.type === "success" ? "bg-green-50 text-green-700 border border-green-200" : "bg-red-50 text-red-700 border border-red-200"
+              }`}>
+                {authActionMsg.type === "success" ? <CheckCircle className="h-4 w-4 flex-shrink-0" /> : <AlertCircle className="h-4 w-4 flex-shrink-0" />}
+                {authActionMsg.text}
+              </div>
+            )}
+
+            <div className="space-y-3">
+              {/* Google provider */}
+              <div className="flex items-center justify-between bg-gray-50 rounded-xl p-4">
+                <div className="flex items-center gap-3">
+                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${hasGoogle ? "bg-green-100" : "bg-gray-200"}`}>
+                    <svg className="w-4 h-4" viewBox="0 0 24 24"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-gray-900">Google</p>
+                    <p className="text-xs text-gray-500">{hasGoogle ? "Connecté" : "Non associé"}</p>
+                  </div>
+                </div>
+                {hasGoogle ? (
+                  <span className="px-3 py-1 bg-green-100 text-green-700 text-xs font-semibold rounded-full">Actif</span>
+                ) : (
+                  <button
+                    onClick={handleLinkGoogle}
+                    disabled={linkingGoogle}
+                    className="px-4 py-2 bg-indigo-600 text-white text-sm font-semibold rounded-lg hover:bg-indigo-700 disabled:opacity-50 transition-colors"
+                  >
+                    {linkingGoogle ? "Association..." : "Associer"}
+                  </button>
+                )}
+              </div>
+
+              {/* Email provider */}
+              <div className="bg-gray-50 rounded-xl p-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${hasEmail ? "bg-green-100" : "bg-gray-200"}`}>
+                      <Mail className="h-4 w-4 text-gray-700" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-gray-900">Email &amp; Mot de passe</p>
+                      <p className="text-xs text-gray-500">{hasEmail ? "Connecté" : "Non associé"}</p>
+                    </div>
+                  </div>
+                  {hasEmail ? (
+                    <span className="px-3 py-1 bg-green-100 text-green-700 text-xs font-semibold rounded-full">Actif</span>
+                  ) : (
+                    <button
+                      onClick={() => setShowLinkEmailForm(!showLinkEmailForm)}
+                      className="px-4 py-2 bg-indigo-600 text-white text-sm font-semibold rounded-lg hover:bg-indigo-700 transition-colors"
+                    >
+                      Associer
+                    </button>
+                  )}
+                </div>
+                {showLinkEmailForm && !hasEmail && (
+                  <div className="mt-4 space-y-3 border-t border-gray-200 pt-4">
+                    <input
+                      type="email"
+                      placeholder="Adresse email"
+                      value={linkEmail}
+                      onChange={(e) => setLinkEmail(e.target.value)}
+                      className="w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 bg-white text-sm px-3 py-2"
+                    />
+                    <div className="relative">
+                      <input
+                        type={showLinkPassword ? "text" : "password"}
+                        placeholder="Mot de passe (6 caractères min.)"
+                        value={linkPassword}
+                        onChange={(e) => setLinkPassword(e.target.value)}
+                        className="w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 bg-white text-sm px-3 py-2 pr-10"
+                      />
+                      <button type="button" onClick={() => setShowLinkPassword(!showLinkPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">
+                        {showLinkPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </button>
+                    </div>
+                    <input
+                      type={showLinkPassword ? "text" : "password"}
+                      placeholder="Confirmer le mot de passe"
+                      value={linkPasswordConfirm}
+                      onChange={(e) => setLinkPasswordConfirm(e.target.value)}
+                      className="w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 bg-white text-sm px-3 py-2"
+                    />
+                    <button
+                      onClick={handleLinkEmail}
+                      disabled={linkingEmail || !linkEmail || !linkPassword || !linkPasswordConfirm}
+                      className="w-full py-2 bg-indigo-600 text-white text-sm font-semibold rounded-lg hover:bg-indigo-700 disabled:opacity-50 transition-colors"
+                    >
+                      {linkingEmail ? "Association en cours..." : "Associer l'email"}
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {/* Phone provider */}
+              <div className="flex items-center justify-between bg-gray-50 rounded-xl p-4">
+                <div className="flex items-center gap-3">
+                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${hasPhone ? "bg-green-100" : "bg-gray-200"}`}>
+                    <Phone className="h-4 w-4 text-gray-700" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-gray-900">Téléphone (SMS)</p>
+                    <p className="text-xs text-gray-500">{hasPhone ? "Connecté" : "Non associé"}</p>
+                  </div>
+                </div>
+                {hasPhone ? (
+                  <div className="flex items-center gap-2">
+                    <span className="px-3 py-1 bg-green-100 text-green-700 text-xs font-semibold rounded-full">Actif</span>
+                    {(hasGoogle || hasEmail) && (
+                      <button
+                        onClick={handleUnlinkPhone}
+                        disabled={unlinkingPhone}
+                        className="px-3 py-1.5 text-xs font-medium text-red-600 border border-red-200 rounded-lg hover:bg-red-50 disabled:opacity-50 transition-colors flex items-center gap-1"
+                      >
+                        <Unlink2 className="h-3 w-3" />
+                        {unlinkingPhone ? "Retrait..." : "Retirer"}
+                      </button>
+                    )}
+                  </div>
+                ) : (
+                  <span className="px-3 py-1 bg-gray-100 text-gray-500 text-xs font-medium rounded-full">Inactif</span>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Profil d'évaluation */}
+          {intakeProfile && (
+            <div className="p-8 border-t border-gray-100">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-xl font-bold text-gray-900 flex items-center">
+                  <ClipboardList className="h-6 w-6 mr-3 text-teal-600" />
+                  Mon profil d'évaluation
+                </h2>
+                <button
+                  onClick={() => {
+                    if (editingIntake) {
+                      setIntakeForm({ ...intakeProfile });
+                      setEditingIntake(false);
+                    } else {
+                      setIntakeForm({ ...intakeProfile });
+                      setEditingIntake(true);
+                    }
+                  }}
+                  className={`px-4 py-2 text-sm font-semibold rounded-lg transition-colors ${
+                    editingIntake ? "bg-gray-200 text-gray-700 hover:bg-gray-300" : "bg-teal-600 text-white hover:bg-teal-700"
+                  }`}
+                >
+                  {editingIntake ? "Annuler" : "Modifier"}
+                </button>
+              </div>
+              <p className="text-xs text-gray-500 mb-4">
+                Ces informations influencent les tests proposés et ton totem. Les modifier recalcule tes résultats.
+              </p>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Genre */}
+                <div className="bg-gray-50 rounded-xl p-4">
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">Genre</label>
+                  {editingIntake ? (
+                    <select value={intakeForm.genre || ""} onChange={(e) => setIntakeForm((f) => ({ ...f, genre: e.target.value as Genre }))} className="w-full rounded-lg border-gray-300 shadow-sm focus:border-teal-500 focus:ring-teal-500 bg-white text-sm">
+                      <option value="homme">Homme</option>
+                      <option value="femme">Femme</option>
+                    </select>
+                  ) : (
+                    <p className="text-gray-900 font-medium">{intakeProfile.genre === "homme" ? "Homme" : "Femme"}</p>
+                  )}
+                </div>
+
+                {/* Situation relationnelle */}
+                <div className="bg-gray-50 rounded-xl p-4">
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">Situation relationnelle</label>
+                  {editingIntake ? (
+                    <select value={intakeForm.situation_relationnelle || ""} onChange={(e) => setIntakeForm((f) => ({ ...f, situation_relationnelle: e.target.value as SituationRelationnelle }))} className="w-full rounded-lg border-gray-300 shadow-sm focus:border-teal-500 focus:ring-teal-500 bg-white text-sm">
+                      <option value="celibataire">Célibataire</option>
+                      <option value="en_couple">En couple</option>
+                      <option value="marie">Marié(e)</option>
+                      <option value="polygamie">Polygamie</option>
+                      <option value="separe_divorce">Séparé(e)/Divorcé(e)</option>
+                      <option value="veuf">Veuf(ve)</option>
+                      <option value="complique">Situation complexe</option>
+                    </select>
+                  ) : (
+                    <p className="text-gray-900 font-medium">
+                      {{ celibataire: "Célibataire", en_couple: "En couple", marie: "Marié(e)", polygamie: "Polygamie", separe_divorce: "Séparé(e)/Divorcé(e)", veuf: "Veuf(ve)", complique: "Situation complexe" }[intakeProfile.situation_relationnelle] || intakeProfile.situation_relationnelle}
+                    </p>
+                  )}
+                </div>
+
+                {/* Deuil */}
+                <div className="bg-gray-50 rounded-xl p-4">
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">Deuil vécu</label>
+                  {editingIntake ? (
+                    <select value={intakeForm.deuil || ""} onChange={(e) => setIntakeForm((f) => ({ ...f, deuil: e.target.value as DeuilVecu }))} className="w-full rounded-lg border-gray-300 shadow-sm focus:border-teal-500 focus:ring-teal-500 bg-white text-sm">
+                      <option value="non">Non</option>
+                      <option value="recent">Oui, récent</option>
+                      <option value="ancien">Oui, ancien</option>
+                    </select>
+                  ) : (
+                    <p className="text-gray-900 font-medium">
+                      {{ non: "Non", recent: "Oui, récent", ancien: "Oui, ancien" }[intakeProfile.deuil] || intakeProfile.deuil}
+                    </p>
+                  )}
+                </div>
+
+                {/* Événement traumatisant */}
+                <div className="bg-gray-50 rounded-xl p-4">
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">Événement traumatisant</label>
+                  {editingIntake ? (
+                    <select value={intakeForm.evenement_traumatisant || ""} onChange={(e) => setIntakeForm((f) => ({ ...f, evenement_traumatisant: e.target.value as EvenementDifficile }))} className="w-full rounded-lg border-gray-300 shadow-sm focus:border-teal-500 focus:ring-teal-500 bg-white text-sm">
+                      <option value="non">Non</option>
+                      <option value="oui">Oui</option>
+                      <option value="np">Préfère ne pas répondre</option>
+                    </select>
+                  ) : (
+                    <p className="text-gray-900 font-medium">
+                      {{ non: "Non", oui: "Oui", np: "Préfère ne pas répondre" }[intakeProfile.evenement_traumatisant] || intakeProfile.evenement_traumatisant}
+                    </p>
+                  )}
+                </div>
+
+                {/* Situation mariage */}
+                <div className="bg-gray-50 rounded-xl p-4">
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">Mariage</label>
+                  {editingIntake ? (
+                    <select value={intakeForm.situation_mariage || ""} onChange={(e) => setIntakeForm((f) => ({ ...f, situation_mariage: e.target.value as SituationMariage }))} className="w-full rounded-lg border-gray-300 shadow-sm focus:border-teal-500 focus:ring-teal-500 bg-white text-sm">
+                      <option value="jamais">Jamais marié(e)</option>
+                      <option value="actuellement">Actuellement marié(e)</option>
+                      <option value="plus_maintenant">Plus maintenant</option>
+                    </select>
+                  ) : (
+                    <p className="text-gray-900 font-medium">
+                      {{ jamais: "Jamais marié(e)", actuellement: "Actuellement marié(e)", plus_maintenant: "Plus maintenant" }[intakeProfile.situation_mariage] || intakeProfile.situation_mariage}
+                    </p>
+                  )}
+                </div>
+
+                {/* Enfants */}
+                <div className="bg-gray-50 rounded-xl p-4">
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">Enfants</label>
+                  {editingIntake ? (
+                    <select value={intakeForm.enfants || ""} onChange={(e) => setIntakeForm((f) => ({ ...f, enfants: e.target.value as SituationEnfants }))} className="w-full rounded-lg border-gray-300 shadow-sm focus:border-teal-500 focus:ring-teal-500 bg-white text-sm">
+                      <option value="oui">Oui</option>
+                      <option value="non">Non</option>
+                      <option value="perte">Perte d'un enfant</option>
+                    </select>
+                  ) : (
+                    <p className="text-gray-900 font-medium">
+                      {{ oui: "Oui", non: "Non", perte: "Perte d'un enfant" }[intakeProfile.enfants] || intakeProfile.enfants}
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              {editingIntake && (
+                <div className="mt-4 flex justify-end">
+                  <button
+                    onClick={handleSaveIntake}
+                    disabled={savingIntake}
+                    className="px-6 py-2.5 bg-teal-600 text-white font-semibold rounded-lg hover:bg-teal-700 disabled:opacity-50 transition-colors flex items-center gap-2"
+                  >
+                    <Save className="h-4 w-4" />
+                    {savingIntake ? "Sauvegarde..." : "Enregistrer"}
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Solde Koris */}
+          {korisBalance !== null && (
+            <div className="p-8 border-t border-gray-100">
+              <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center">
+                <Coins className="h-6 w-6 mr-3 text-amber-500" />
+                Mes Koris
+              </h2>
+              <div className="bg-amber-50 rounded-xl p-6 border border-amber-100 flex items-center gap-4">
+                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center shadow-md">
+                  <Coins className="h-7 w-7 text-white" />
+                </div>
+                <div>
+                  <p className="text-3xl font-bold text-gray-900">{korisBalance}</p>
+                  <p className="text-sm text-gray-500">Koris disponibles</p>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -1203,10 +1641,3 @@ const PatientProfile: React.FC = () => {
 };
 
 export default PatientProfile;
-// Firestore doc helper for compatibility (if not imported from firebase/firestore)
-
-import type { Firestore } from "firebase/firestore";
-
-function doc(db: Firestore, collectionPath: string, id: string) {
-  return firestoreDoc(db, collectionPath, id);
-}

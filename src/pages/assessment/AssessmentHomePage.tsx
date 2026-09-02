@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Brain, Heart, Users, NotebookPen, ChevronRight, Lock, Check, Play } from 'lucide-react';
+import { Brain, Heart, Users, NotebookPen, ChevronRight, Lock, Check, Play, Shield } from 'lucide-react';
 import TotemCard from '../../components/assessment/TotemCard';
 import { useAuth } from '../../contexts/AuthContext';
 import {
@@ -61,7 +61,7 @@ function getCategoryForTab(tab: 'mental' | 'intime' | 'bonus'): ScaleCategory {
 
 const AssessmentHomePage: React.FC = () => {
   const navigate = useNavigate();
-  const { currentUser, isAuthenticated } = useAuth();
+  const { currentUser, isAuthenticated, needsAuthMigration } = useAuth();
   const { canAfford, balance } = useKoris();
 
   const [showOnboarding, setShowOnboarding] = useState(() =>
@@ -243,6 +243,23 @@ const AssessmentHomePage: React.FC = () => {
               {guestCount >= GUEST_MAX_TESTS ? 'Créer un compte' : 'Se connecter'}
             </Link>
           </div>
+        )}
+
+        {/* ── Migration banner (phone-only users) ── */}
+        {isAuthenticated && needsAuthMigration() && (
+          <Link
+            to="/patient/profile"
+            className="flex items-center gap-3 bg-warm-amber/10 border border-warm-amber/25 rounded-[14px] px-4 py-3 mb-5 no-underline hover:bg-warm-amber/15 transition-colors"
+          >
+            <div className="w-9 h-9 rounded-[10px] bg-warm-amber/20 flex items-center justify-center flex-shrink-0">
+              <Shield className="h-[18px] w-[18px] text-warm-amber" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold text-ink m-0">Sécurise ton compte</p>
+              <p className="text-xs text-ink-soft m-0 mt-0.5">Associe Google ou un email pour ne pas perdre l'accès</p>
+            </div>
+            <ChevronRight className="h-4 w-4 text-muted flex-shrink-0" />
+          </Link>
         )}
 
         {/* ── 2. Hero card (ink) ── */}
