@@ -19,6 +19,8 @@ const MigrationGate: React.FC = () => {
     setError("");
     try {
       await linkGoogleAccount();
+      setSuccess(true);
+      setTimeout(() => window.location.reload(), 1500);
     } catch (e: any) {
       setError(e?.message || "Erreur lors de l'association Google.");
       setLoading(false);
@@ -46,6 +48,7 @@ const MigrationGate: React.FC = () => {
     try {
       await linkEmailToAccount(email.trim(), password);
       setSuccess(true);
+      setTimeout(() => window.location.reload(), 1500);
     } catch (e: any) {
       const code = e?.code || "";
       if (code === "auth/email-already-in-use") {
@@ -68,7 +71,7 @@ const MigrationGate: React.FC = () => {
           <CheckCircle2 className="h-16 w-16 text-sage mx-auto mb-4" />
           <h2 className="text-xl font-bold text-ink mb-2">Migration réussie !</h2>
           <p className="text-sm text-ink-soft mb-6">
-            Votre compte est maintenant sécurisé. Vous pouvez vous reconnecter avec votre email et mot de passe.
+            Votre compte est maintenant sécurisé. Vous allez être redirigé automatiquement.
           </p>
           <p className="text-xs text-muted">Redirection en cours...</p>
         </div>
