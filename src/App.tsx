@@ -145,6 +145,7 @@ const CompatibilityPage = lazy(() => import("./pages/assessment/CompatibilityPag
 const TestDetailPage = lazy(() => import("./pages/assessment/TestDetailPage"));
 const TestCodeRedirect = lazy(() => import("./pages/assessment/TestDetailPage").then(m => ({ default: m.TestCodeRedirect })));
 const AssessmentProfilePage = lazy(() => import("./pages/assessment/AssessmentProfilePage"));
+const TotemProfilePage = lazy(() => import("./pages/assessment/TotemProfilePage"));
 
 // Loading fallback component
 const PageLoader = () => (
@@ -472,6 +473,7 @@ const AppChrome: React.FC = () => {
             <Route path="/assessment/compatibility" element={<CompatibilityPage />} />
             <Route path="/assessment/test/:scaleId" element={<TestCodeRedirect />} />
             <Route path="/assessment/profile" element={<AssessmentProfilePage />} />
+            <Route path="/assessment/totem" element={<TotemProfilePage />} />
             <Route path="/assessment/:category" element={<AssessmentCategoryPage />} />
 
             {/* Fallback route - évite les 404 "profonds" */}

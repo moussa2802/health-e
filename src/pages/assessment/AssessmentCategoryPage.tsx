@@ -369,9 +369,10 @@ const ProfileCard: React.FC<{
   cardRef: React.RefObject<HTMLDivElement>;
   sexualFilter?: SexualHealthFilter | null;
   balance: number;
-  analysisCost: number;
+  generateCost: number;
+  refreshCost: number;
   hasPartner?: boolean;
-}> = ({ isMental, prenom, profileResults, scales, allScalesForCategory, drLoAnalysis, drLoUpdatedAt, drLoUpdating, onUpdateDrLo, compatibilityId, isAuthenticated, cardRef, sexualFilter, balance, analysisCost, hasPartner = true }) => {
+}> = ({ isMental, prenom, profileResults, scales, allScalesForCategory, drLoAnalysis, drLoUpdatedAt, drLoUpdating, onUpdateDrLo, compatibilityId, isAuthenticated, cardRef, sexualFilter, balance, generateCost, refreshCost, hasPartner = true }) => {
 
   const catColor = getCategoryColor(isMental ? 'mental' : 'sexual');
   const accentColor = catColor.accent;
@@ -536,7 +537,7 @@ const ProfileCard: React.FC<{
                         <RefreshCw size={12} /> Actualiser
                         <span className="inline-flex items-center gap-1 bg-white/20 rounded-lg px-1.5 py-0.5 ml-1">
                           <img src="/kori.png" alt="" className="w-3.5 h-3.5 rounded-full object-cover" />
-                          <span className="font-display text-[11px] font-semibold">{analysisCost}</span>
+                          <span className="font-display text-[11px] font-semibold">{refreshCost}</span>
                         </span>
                       </button>
                     </>
@@ -559,7 +560,11 @@ const ProfileCard: React.FC<{
                   className="text-white border-0 rounded-xl px-5 py-2.5 text-[13px] font-bold cursor-pointer inline-flex items-center gap-1.5"
                   style={{ background: accentColor, boxShadow: '0 2px 10px rgba(0,0,0,0.15)' }}
                 >
-                  <Stethoscope size={14} /> Générer l'analyse Dr Lô
+                  <Stethoscope size={14} /> Générer mon analyse
+                  <span className="inline-flex items-center gap-1 bg-white/20 rounded-lg px-1.5 py-0.5 ml-1">
+                    <img src="/kori.png" alt="" className="w-3.5 h-3.5 rounded-full object-cover" />
+                    <span className="font-display text-[11px] font-semibold">{generateCost}</span>
+                  </span>
                 </button>
               </div>
             )}
@@ -705,7 +710,7 @@ const AssessmentCategoryPage: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
   const { currentUser, isAuthenticated } = useAuth();
-  const { canAfford, refreshBalance, balance, getCost } = useKoris();
+  const { canAfford, refreshBalance, balance, getCost, setShowNoKorisModal } = useKoris();
 
   const isMental = category === 'mental';
   const isValidCategory = category === 'mental' || category === 'sexual';
@@ -894,14 +899,16 @@ const AssessmentCategoryPage: React.FC = () => {
 
   const handleUpdateDrLo = async () => {
     if (!currentUser || drLoUpdating || !isAiAvailable()) return;
-    if (!canAfford('analysis') || !canAfford('synthesis')) return;
+    const isRefresh = !!drLoAnalysis;
+    const cost = getCost(isRefresh ? 'analysis_refresh' : 'analysis');
+    if (balance < cost) { setShowNoKorisModal(true); return; }
 
     setDrLoUpdating(true);
     try {
       if (isMental) {
-        await triggerDrLoMentalHealth(currentUser.id);
+        await triggerDrLoMentalHealth(currentUser.id, isRefresh);
       } else {
-        await triggerDrLoSexualHealth(currentUser.id);
+        await triggerDrLoSexualHealth(currentUser.id, isRefresh);
       }
       triggerDrLoSynthesis(currentUser.id).catch(() => {});
       await refreshBalance();
@@ -1277,7 +1284,8 @@ const AssessmentCategoryPage: React.FC = () => {
               cardRef={cardRef}
               sexualFilter={sexualFilter}
               balance={balance}
-              analysisCost={getCost('analysis') + getCost('synthesis')}
+              generateCost={getCost('analysis')}
+              refreshCost={getCost('analysis_refresh')}
               hasPartner={hasPartnerStatus(onboardingProfile?.situation_relationnelle ?? 'celibataire')}
             />
 

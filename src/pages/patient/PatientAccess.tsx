@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
-import { ArrowLeft, ArrowRight, ChevronLeft, AlertCircle, Heart, User } from "lucide-react";
+import { ArrowLeft, ArrowRight, ChevronLeft, AlertCircle, Heart, User, Eye, EyeOff, Mail } from "lucide-react";
 import PhoneInput, { isValidPhoneNumber } from "react-phone-number-input";
 import "react-phone-number-input/style.css";
 
@@ -32,7 +32,7 @@ const PatientAccess: React.FC = () => {
   const [hasProcessedPendingRegistration, setHasProcessedPendingRegistration] =
     useState(false);
 
-  const { isAuthenticated, currentUser, createUserWithPhone, loginWithPhone, signInWithGoogle } =
+  const { isAuthenticated, currentUser, createUserWithPhone, loginWithPhone, signInWithGoogle, login, register } =
     useAuth();
   const { hasAgreedToTerms, setShowTermsModal } = useTerms();
 
@@ -51,6 +51,14 @@ const PatientAccess: React.FC = () => {
   const [code, setCode] = useState<string>("");
   const [showSmsForm, setShowSmsForm] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
+
+  // Email auth state
+  const [emailMode, setEmailMode] = useState<"login" | "register">("login");
+  const [emailValue, setEmailValue] = useState("");
+  const [passwordValue, setPasswordValue] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [emailFullName, setEmailFullName] = useState("");
+  const [emailGender, setEmailGender] = useState<"homme" | "femme" | "">("");
 
   // Profil (si nécessaire)
   const [fullName, setFullName] = useState<string>("");
@@ -207,7 +215,81 @@ const PatientAccess: React.FC = () => {
     }
   };
 
-  // ---- Étape 1: envoi du SMS ----
+  // ---- Email login ----
+  const onEmailLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setErr("");
+    if (!emailValue.trim() || !passwordValue) {
+      setErr("Veuillez remplir tous les champs.");
+      return;
+    }
+    setLoading(true);
+    try {
+      await login(emailValue.trim(), passwordValue, "patient");
+      const pendingSessionId = getPendingGroupTherapySessionId();
+      if (pendingSessionId && !hasProcessedPendingRegistration) {
+        setHasProcessedPendingRegistration(true);
+        await handlePostAuthGroupTherapyRegistration(pendingSessionId);
+      } else {
+        navigate(postLoginPath);
+      }
+    } catch (e: any) {
+      const msg = e?.message || "Erreur lors de la connexion.";
+      if (msg.includes("mot de passe") || msg.includes("password") || e?.code === "auth/wrong-password" || e?.code === "auth/invalid-credential") {
+        setErr("Email ou mot de passe incorrect.");
+      } else if (e?.code === "auth/user-not-found") {
+        setErr("Aucun compte trouvé avec cet email. Créez un compte.");
+        setEmailMode("register");
+      } else {
+        setErr(msg);
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ---- Email register ----
+  const onEmailRegister = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setErr("");
+    if (!emailValue.trim() || !passwordValue || !emailFullName.trim() || !emailGender) {
+      setErr("Veuillez remplir tous les champs.");
+      return;
+    }
+    if (passwordValue.length < 6) {
+      setErr("Le mot de passe doit contenir au moins 6 caractères.");
+      return;
+    }
+    if (!hasAgreedToTerms) {
+      setShowTermsModal(true);
+      setErr("Vous devez accepter les conditions d'utilisation.");
+      return;
+    }
+    setLoading(true);
+    try {
+      await register(emailValue.trim(), passwordValue, "patient", {
+        name: emailFullName.trim(),
+        displayName: emailFullName.trim(),
+        gender: emailGender,
+        type: "patient",
+      });
+      await login(emailValue.trim(), passwordValue, "patient");
+      localStorage.setItem("he_new_account", "true");
+      const pendingSessionId = getPendingGroupTherapySessionId();
+      if (pendingSessionId && !hasProcessedPendingRegistration) {
+        setHasProcessedPendingRegistration(true);
+        await handlePostAuthGroupTherapyRegistration(pendingSessionId);
+      } else {
+        navigate(postLoginPath);
+      }
+    } catch (e: any) {
+      setErr(e?.message || "Erreur lors de la création du compte.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ---- Étape 1: envoi du SMS (ancien utilisateurs seulement) ----
   const onSubmitPhone = async (e: React.FormEvent) => {
     e.preventDefault();
     setErr("");
@@ -489,7 +571,8 @@ const PatientAccess: React.FC = () => {
               Espace Patient
             </h1>
             <p className="text-sm text-ink-soft mt-1 text-center">
-              {step === "enterPhone" && "Connectez-vous en un clic avec Google ou par SMS."}
+              {step === "enterPhone" && !showSmsForm && (emailMode === "login" ? "Connectez-vous avec Google ou votre email." : "Créez votre compte en quelques secondes.")}
+              {step === "enterPhone" && showSmsForm && "Connectez-vous avec votre numéro existant."}
               {step === "verify" && "Entrez le code reçu par SMS."}
               {step === "completeProfile" && "Finalisez votre inscription."}
               {step === "alreadyAuthenticated" && "Vous êtes déjà connecté(e)."}
@@ -522,10 +605,10 @@ const PatientAccess: React.FC = () => {
             </div>
           )}
 
-          {/* ── STEP 1: Google + téléphone ── */}
-          {step === "enterPhone" && (
+          {/* ── STEP 1: Google + Email (primary) / SMS (legacy) ── */}
+          {step === "enterPhone" && !showSmsForm && (
             <div className="space-y-5">
-              {/* ── Google Sign-In (Primary) ── */}
+              {/* ── Google Sign-In ── */}
               <button
                 type="button"
                 onClick={onGoogleSignIn}
@@ -554,50 +637,184 @@ const PatientAccess: React.FC = () => {
                 <div className="flex-1 h-px bg-line" />
               </div>
 
-              {/* ── SMS toggle / form ── */}
-              {!showSmsForm ? (
+              {/* ── Email login / register form ── */}
+              <form onSubmit={emailMode === "login" ? onEmailLogin : onEmailRegister} className="space-y-3.5">
+                {emailMode === "register" && (
+                  <>
+                    <div>
+                      <label className="block text-xs font-semibold text-ink-soft mb-1.5">Nom et prénom</label>
+                      <input
+                        type="text"
+                        value={emailFullName}
+                        onChange={(e) => setEmailFullName(e.target.value)}
+                        className={inputCls}
+                        placeholder="Votre nom complet"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-ink-soft mb-1.5">Genre</label>
+                      <div className="grid grid-cols-2 gap-2.5">
+                        {(["homme", "femme"] as const).map(g => (
+                          <button
+                            key={g}
+                            type="button"
+                            onClick={() => setEmailGender(g)}
+                            className={`flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-sm font-medium border transition-colors ${
+                              emailGender === g
+                                ? "border-accent bg-accent-soft text-accent"
+                                : "border-line bg-card text-ink-soft hover:bg-paper"
+                            }`}
+                          >
+                            <User className="h-4 w-4" />
+                            {g === "homme" ? "Homme" : "Femme"}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </>
+                )}
+
+                <div>
+                  <label className="block text-xs font-semibold text-ink-soft mb-1.5">Email</label>
+                  <input
+                    type="email"
+                    value={emailValue}
+                    onChange={(e) => setEmailValue(e.target.value)}
+                    className={inputCls}
+                    placeholder="votre@email.com"
+                    autoComplete="email"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-ink-soft mb-1.5">Mot de passe</label>
+                  <div className="relative">
+                    <input
+                      type={showPassword ? "text" : "password"}
+                      value={passwordValue}
+                      onChange={(e) => setPasswordValue(e.target.value)}
+                      className={`${inputCls} pr-10`}
+                      placeholder={emailMode === "register" ? "6 caractères minimum" : "Votre mot de passe"}
+                      autoComplete={emailMode === "register" ? "new-password" : "current-password"}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted hover:text-ink-soft transition-colors bg-transparent border-none cursor-pointer p-0"
+                    >
+                      {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                    </button>
+                  </div>
+                </div>
+
+                {emailMode === "register" && (
+                  <div className="flex items-center justify-between rounded-xl p-3 bg-paper border border-line">
+                    <div className="flex items-center gap-2">
+                      <input
+                        id="terms-email"
+                        type="checkbox"
+                        checked={hasAgreedToTerms}
+                        readOnly
+                        className="h-4 w-4 text-accent border-line rounded"
+                      />
+                      <label htmlFor="terms-email" className="text-xs text-ink-soft">
+                        J'accepte les conditions & confidentialité
+                      </label>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setShowTermsModal(true)}
+                      className="text-accent hover:text-accent/80 text-xs font-medium underline ml-2 flex-shrink-0"
+                    >
+                      Lire
+                    </button>
+                  </div>
+                )}
+
+                <button
+                  type="submit"
+                  disabled={loading || !emailValue.trim() || !passwordValue}
+                  className={primaryBtnCls}
+                >
+                  {loading ? (emailMode === "login" ? "Connexion..." : "Création...") : (
+                    <>
+                      <Mail className="h-4 w-4" />
+                      {emailMode === "login" ? "Se connecter" : "Créer mon compte"}
+                    </>
+                  )}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => { setEmailMode(emailMode === "login" ? "register" : "login"); setErr(""); }}
+                  className="w-full text-center text-xs text-accent hover:text-accent/80 font-medium py-1 bg-transparent border-none cursor-pointer transition-colors"
+                >
+                  {emailMode === "login" ? "Pas de compte ? Créer un compte" : "Déjà un compte ? Se connecter"}
+                </button>
+              </form>
+
+              {/* ── Legacy SMS link ── */}
+              <div className="pt-2 border-t border-line">
                 <button
                   type="button"
                   onClick={() => setShowSmsForm(true)}
-                  className="w-full text-sm text-ink-soft hover:text-ink font-medium py-2.5 rounded-pill bg-paper border border-line transition-colors"
+                  className="w-full text-xs text-muted hover:text-ink-soft font-medium py-1.5 bg-transparent border-none cursor-pointer transition-colors"
                 >
-                  Continuer par SMS
+                  Ancien compte SMS ? Se connecter par téléphone →
                 </button>
-              ) : (
-                <form onSubmit={onSubmitPhone} className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-ink-soft mb-1.5">
-                      Numero de telephone
-                    </label>
-                    <PhoneInput
-                      international
-                      defaultCountry="SN"
-                      value={phone}
-                      onChange={(v) => setPhone(v || "")}
-                      className="w-full rounded-xl border border-line bg-card px-3 py-3 focus-within:border-accent transition-colors"
-                      placeholder="Ex: +221 77 123 45 67"
-                    />
-                    <p className="text-xs text-muted mt-1.5">
-                      Format international requis (ex: +221...).
-                    </p>
-                  </div>
+              </div>
+            </div>
+          )}
 
-                  <button
-                    type="submit"
-                    disabled={
-                      loading || phoneLoading || !phone ||
-                      !isValidPhoneNumber(toE164(phone)) || isInCooldown
-                    }
-                    className={primaryBtnCls}
-                  >
-                    {loading || phoneLoading
-                      ? "Envoi du code..."
-                      : isInCooldown
-                      ? `Reessayez dans ${cooldownTime}s`
-                      : "Recevoir le code"}
-                  </button>
-                </form>
-              )}
+          {/* ── STEP 1b: SMS form (legacy, existing users only) ── */}
+          {step === "enterPhone" && showSmsForm && (
+            <div className="space-y-5">
+              <div className="text-xs text-center rounded-xl py-2.5 px-4 bg-warm-amber/10 text-warm-amber border border-warm-amber/20">
+                Réservé aux comptes existants. La connexion SMS sera bientôt désactivée.
+              </div>
+
+              <form onSubmit={onSubmitPhone} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-ink-soft mb-1.5">
+                    Numéro de téléphone
+                  </label>
+                  <PhoneInput
+                    international
+                    defaultCountry="SN"
+                    value={phone}
+                    onChange={(v) => setPhone(v || "")}
+                    className="w-full rounded-xl border border-line bg-card px-3 py-3 focus-within:border-accent transition-colors"
+                    placeholder="Ex: +221 77 123 45 67"
+                  />
+                  <p className="text-xs text-muted mt-1.5">
+                    Format international requis (ex: +221...).
+                  </p>
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={
+                    loading || phoneLoading || !phone ||
+                    !isValidPhoneNumber(toE164(phone)) || isInCooldown
+                  }
+                  className={primaryBtnCls}
+                >
+                  {loading || phoneLoading
+                    ? "Envoi du code..."
+                    : isInCooldown
+                    ? `Réessayez dans ${cooldownTime}s`
+                    : "Recevoir le code"}
+                </button>
+              </form>
+
+              <button
+                type="button"
+                onClick={() => setShowSmsForm(false)}
+                className={backLinkCls}
+              >
+                <ChevronLeft className="h-4 w-4" />
+                Retour à la connexion principale
+              </button>
             </div>
           )}
 

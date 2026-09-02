@@ -7,6 +7,7 @@ import { getProfileProgress } from '../../services/evaluationService';
 import { getCompatibilityHistory } from '../../services/compatibilityService';
 import { MENTAL_HEALTH_SCALES, SEXUAL_HEALTH_SCALES, BONUS_SCALES } from '../../data/scales';
 import type { ScaleResult } from '../../types/assessment';
+import { getTotemSignature, computeDimensionGauges, type TotemAnimal } from '../../utils/totemAlgorithm';
 import { useKoris } from '../../contexts/KorisContext';
 import { KORIS_COSTS, spendKorisForUnlock } from '../../services/korisService';
 import { KORIS_CONFIG } from '../../utils/korisConfig';
@@ -60,6 +61,22 @@ function formatResult(id: string, r: ScaleResult) {
   };
 }
 
+function buildTotemResume(
+  animal: string | null,
+  scaleResults: Record<string, ScaleResult>,
+): string | null {
+  if (!animal) return null;
+  const sig = getTotemSignature(animal as TotemAnimal);
+  const gauges = computeDimensionGauges(scaleResults);
+  if (!gauges.length) return `Totem : ${sig.label} — ${sig.meaning}`;
+
+  const tierLabel = (pct: number) =>
+    pct >= 67 ? 'force' : pct >= 34 ? 'moyen' : 'à améliorer';
+
+  const lines = gauges.map(g => `${g.label}: ${g.fillPercent}% (${tierLabel(g.fillPercent)})`);
+  return `Totem : ${sig.label} — ${sig.meaning}\nProfil 7 aspects : ${lines.join(' · ')}`;
+}
+
 async function buildFullContext(userId: string | null) {
   const onboarding = getOnboardingProfile();
 
@@ -67,6 +84,7 @@ async function buildFullContext(userId: string | null) {
   let drLoMentalAnalysis: string | null = null;
   let drLoSexualAnalysis: string | null = null;
   let drLoAnalysis: string | null = null;
+  let totemAnimal: string | null = null;
 
   if (userId) {
     try {
@@ -75,6 +93,7 @@ async function buildFullContext(userId: string | null) {
       drLoMentalAnalysis = progress.drLoMentalAnalysis;
       drLoSexualAnalysis = progress.drLoSexualAnalysis;
       drLoAnalysis = progress.drLoAnalysis;
+      totemAnimal = (progress.totem?.animal as string) ?? null;
     } catch { /* ignore */ }
   }
 
@@ -145,6 +164,7 @@ async function buildFullContext(userId: string | null) {
     analyse_generale: drLoAnalysis,
     tests_compatibilite,
     journal_recent,
+    totem_resume: buildTotemResume(totemAnimal, scaleResults),
   };
 }
 

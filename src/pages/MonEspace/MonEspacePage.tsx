@@ -15,6 +15,7 @@ import { getOnboardingProfile } from '../../utils/onboardingProfile';
 import { getProfileProgress } from '../../services/evaluationService';
 import { getCompatibilityHistory } from '../../services/compatibilityService';
 import { getScaleById } from '../../data/scales';
+import { getTotemSignature, computeDimensionGauges, type TotemAnimal } from '../../utils/totemAlgorithm';
 import { useKoris } from '../../contexts/KorisContext';
 import { KORIS_COSTS } from '../../services/korisService';
 import { KORIS_CONFIG } from '../../utils/korisConfig';
@@ -183,6 +184,7 @@ async function buildFullContext(userId: string | null) {
   const scaleResults = progress.status === 'fulfilled' ? (progress.value.scaleResults ?? {}) : {};
   const drLoMentalAnalysis = progress.status === 'fulfilled' ? progress.value.drLoMentalAnalysis : null;
   const drLoSexualAnalysis = progress.status === 'fulfilled' ? progress.value.drLoSexualAnalysis : null;
+  const totemAnimal = progress.status === 'fulfilled' ? ((progress.value.totem?.animal as string) ?? null) : null;
 
   type ScoreEntry = {
     scaleName: string;
@@ -273,6 +275,16 @@ async function buildFullContext(userId: string | null) {
     }
   }
 
+  // ── Résumé totem ──
+  let totem_resume: string | null = null;
+  if (totemAnimal) {
+    const sig = getTotemSignature(totemAnimal as TotemAnimal);
+    const gauges = computeDimensionGauges(scaleResults as Record<string, import('../../types/assessment').ScaleResult>);
+    const tierLabel = (pct: number) => pct >= 67 ? 'force' : pct >= 34 ? 'moyen' : 'à améliorer';
+    const lines = gauges.map(g => `${g.label}: ${g.fillPercent}% (${tierLabel(g.fillPercent)})`);
+    totem_resume = `Totem : ${sig.label} — ${sig.meaning}` + (lines.length ? `\nProfil 7 aspects : ${lines.join(' · ')}` : '');
+  }
+
   return {
     prenom: onboarding?.prenom ?? '',
     age: onboarding?.age ?? '',
@@ -286,6 +298,7 @@ async function buildFullContext(userId: string | null) {
     conseils_generes,
     analyse_mentale: drLoMentalAnalysis,
     analyse_intime: drLoSexualAnalysis,
+    totem_resume,
   };
 }
 

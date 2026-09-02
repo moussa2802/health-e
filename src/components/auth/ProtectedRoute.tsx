@@ -2,6 +2,7 @@
 import React from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import LoadingSpinner from "../ui/LoadingSpinner";
+import MigrationGate from "./MigrationGate";
 import { useAuth } from "../../contexts/AuthContext";
 
 type Props = {
@@ -15,6 +16,7 @@ export default function ProtectedRoute({ children, userType }: Props) {
     loadingUserData, // ✅ Firestore user en cours de chargement
     isAuthenticated,
     currentUser,
+    needsAuthMigration,
   } = useAuth();
 
   const location = useLocation();
@@ -44,7 +46,12 @@ export default function ProtectedRoute({ children, userType }: Props) {
     return <>{children}</>;
   }
 
-  // 3) Connecté mais mauvais rôle -> envoie vers le "home" du rôle réel (sans boucle)
+  // 3) Phone-only user who hasn't migrated → force migration before any app access
+  if (userType === "patient" && needsAuthMigration()) {
+    return <MigrationGate />;
+  }
+
+  // 4) Connecté mais mauvais rôle -> envoie vers le "home" du rôle réel (sans boucle)
   if (userType && currentUser?.type !== userType) {
     const home =
       currentUser?.type === "admin"
@@ -58,6 +65,6 @@ export default function ProtectedRoute({ children, userType }: Props) {
     }
   }
 
-  // 4) OK
+  // 5) OK
   return <>{children}</>;
 }

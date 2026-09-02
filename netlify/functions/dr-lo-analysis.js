@@ -190,7 +190,8 @@ exports.handler = async (event) => {
     nombre_items_total = 24,
     bloc = 'mental',
     bonus_completes = [],
-    experience_profile = null
+    experience_profile = null,
+    totem_resume = null
   } = payload
 
   if (!items_completes || items_completes.length === 0) {
@@ -225,11 +226,15 @@ exports.handler = async (event) => {
   const bonusPrompt = bonus_completes.length > 0
     ? `Prends en compte les éléments suivants issus des tests bonus : ${bonus_completes.map((t) => `${t.nom ?? 'Bonus'} : ${t.niveau ?? 'N/A'}`).join(' | ')}`
     : 'Aucun test bonus disponible.'
+  const totemPrompt = totem_resume
+    ? `Totem attribué : ${totem_resume}. Si pertinent, réfère-toi au totem naturellement et appuie-toi sur les forces pour encourager sur les zones à travailler — sans réciter toutes les jauges.`
+    : '';
   const messageContent = [
     `Prénom : ${prenom}.`,
     genre ? `Genre : ${genre}.` : null,
     age ? `Âge : ${age}.` : null,
     situation_relationnelle ? `Situation : ${situation_relationnelle}.` : null,
+    totemPrompt || null,
     '',
     structuredText,
     '',
@@ -243,7 +248,8 @@ exports.handler = async (event) => {
   }
 
   // ── Reserve Koris ──
-  const reservation = await reserveKoris(user.uid, 'analysis')
+  const korisFeature = payload.isRefresh ? 'analysis_refresh' : 'analysis'
+  const reservation = await reserveKoris(user.uid, korisFeature)
   if (reservation.error === 'insufficient_balance') {
     return { statusCode: 402, headers, body: JSON.stringify({ error: 'Solde Koris insuffisant', koris_debited: false }) }
   }

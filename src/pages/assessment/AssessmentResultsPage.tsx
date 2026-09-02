@@ -218,9 +218,6 @@ const AssessmentResultsPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [criticalAlertDismissed, setCriticalAlertDismissed] = useState(false);
   const journalPromptSavedRef = useRef(false);
-  const [drLoNarrative, setDrLoNarrative] = useState<string | null>(null);
-  const [drLoLoading, setDrLoLoading] = useState(false);
-  const drLoPollingRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [history, setHistory] = useState<ScaleResultHistoryEntry[]>([]);
   const [showHistory, setShowHistory] = useState(false);
   const [retaking, setRetaking] = useState(false);
@@ -247,35 +244,6 @@ const AssessmentResultsPage: React.FC = () => {
       .catch(() => setError('Erreur lors du chargement des résultats.'))
       .finally(() => setLoading(false));
   }, [sessionId, isGuestMode]);
-
-  useEffect(() => {
-    if (isGuestMode || !isAuthenticated || !currentUser || !session) return;
-    const completedScaleId = session.selectedScaleIds[0];
-    const completedScale = getScaleById(completedScaleId);
-    if (completedScale?.category === 'bonus') return;
-    const isMentalScale = completedScale?.category === 'mental_health';
-    const sessionStartedAt = session.startedAt instanceof Date
-      ? session.startedAt : new Date(session.startedAt as unknown as string);
-
-    setDrLoLoading(true);
-    let attempts = 0;
-    const poll = async () => {
-      attempts++;
-      try {
-        const progress = await getProfileProgress(currentUser.id);
-        const analysis = isMentalScale ? progress.drLoMentalAnalysis : progress.drLoSexualAnalysis;
-        const updatedAt = isMentalScale ? progress.drLoMentalUpdatedAt : progress.drLoSexualUpdatedAt;
-        if (analysis && updatedAt && updatedAt >= sessionStartedAt) {
-          setDrLoNarrative(analysis);
-          setDrLoLoading(false);
-          return;
-        }
-      } catch { /* silencieux */ }
-      if (attempts < 12) { drLoPollingRef.current = setTimeout(poll, 2500); } else { setDrLoLoading(false); }
-    };
-    poll();
-    return () => { if (drLoPollingRef.current) clearTimeout(drLoPollingRef.current); };
-  }, [session, isGuestMode, isAuthenticated, currentUser]);
 
   useEffect(() => {
     if (!session || !currentUser || isGuestMode || journalPromptSavedRef.current) return;

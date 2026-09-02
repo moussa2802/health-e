@@ -6,8 +6,9 @@ const KORIS_COSTS = {
   journal: 1,
   conseils: 2,
   analysis: 3,
+  analysis_refresh: 2,
   refresh_synthesis: 3,
-  synthesis: 5,
+  synthesis: 0,
   compatibility: 6,
   unlock_chat: 3,
 };

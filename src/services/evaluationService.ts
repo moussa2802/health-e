@@ -8,6 +8,7 @@ import type {
 } from '../types/assessment';
 import { ALL_SCALES, MENTAL_HEALTH_SCALES, SEXUAL_HEALTH_SCALES, BONUS_SCALES } from '../data/scales';
 import { generateMentalCompatibilityId, generateSexualCompatibilityId } from '../utils/idGenerator';
+import { computeTotem, TOTEM_REQUIRED_SCALES, classifyDomain, getTotemDomain } from '../utils/totemAlgorithm';
 
 const SESSIONS_COL = 'assessmentSessions';
 const PROFILES_COL = 'userProfiles';
@@ -296,6 +297,7 @@ export async function resetUserProfile(userId: string): Promise<void> {
     drLoSexualUpdatedAt: null,
     drLoSynthesisUpdatedAt: null,
     lastAssessmentDate: null,
+    totem: null,
     updatedAt: serverTimestamp(),
   });
 }
@@ -369,6 +371,54 @@ export async function saveScaleResultToProfile(
   } catch {
     // Stats update is non-critical
   }
+
+  // Totem improvement detection: compare old vs new classification
+  if ((TOTEM_REQUIRED_SCALES as readonly string[]).includes(scaleId) && existing[scaleId]) {
+    try {
+      const oldCls = classifyDomain(existing[scaleId]);
+      const newCls = classifyDomain(result);
+      const domain = getTotemDomain(scaleId);
+      if (domain && oldCls === 'grow' && (newCls === 'force' || newCls === 'neutral')) {
+        await updateDoc(ref, {
+          'totem.lastImprovement': {
+            scaleId,
+            domainLabel: newCls === 'force' ? domain.forceLabel : domain.label,
+            from: oldCls,
+            to: newCls,
+            at: serverTimestamp(),
+          },
+        });
+      }
+    } catch {
+      // Improvement tracking is non-critical
+    }
+  }
+
+  // Totem recalculation when a required test is re-completed
+  if ((TOTEM_REQUIRED_SCALES as readonly string[]).includes(scaleId)) {
+    try {
+      const allDone = TOTEM_REQUIRED_SCALES.every(id => !!updated[id]);
+      if (allDone) {
+        const currentTotem = snap.data().totem as Record<string, unknown> | undefined;
+        const newAnimal = computeTotem(updated as Record<string, ScaleResult>);
+        if (newAnimal && currentTotem?.animal) {
+          if (newAnimal !== currentTotem.animal && newAnimal !== currentTotem.pendingAnimal) {
+            await updateDoc(ref, { 'totem.pendingAnimal': newAnimal, updatedAt: serverTimestamp() });
+          }
+        } else if (newAnimal && !currentTotem?.animal) {
+          await updateDoc(ref, {
+            'totem.animal': newAnimal,
+            'totem.computedAt': serverTimestamp(),
+            'totem.revealedAt': null,
+            'totem.pendingAnimal': null,
+            updatedAt: serverTimestamp(),
+          });
+        }
+      }
+    } catch {
+      // Totem recalculation is non-critical
+    }
+  }
 }
 
 export async function getProfileProgress(userId: string): Promise<{
@@ -393,6 +443,7 @@ export async function getProfileProgress(userId: string): Promise<{
   onboardingProfile: Record<string, string> | null;
   sexualHealthFilter: Record<string, unknown> | null;
   signatures: Record<string, { value: number; max: number }[]>;
+  totem: { animal: string; computedAt: Date; revealedAt: Date | null; pendingAnimal: string | null; lastImprovement: { scaleId: string; domainLabel: string; from: string; to: string; at: Date } | null } | null;
 }> {
   const ref = doc(db, PROFILES_COL, userId);
   const snap = await getDoc(ref);
@@ -419,6 +470,7 @@ export async function getProfileProgress(userId: string): Promise<{
       onboardingProfile: null,
       sexualHealthFilter: null,
       signatures: {},
+      totem: null,
     };
   }
   const data = snap.data();
@@ -453,6 +505,23 @@ export async function getProfileProgress(userId: string): Promise<{
     onboardingProfile: (data.onboardingProfile as Record<string, string> | null) ?? null,
     sexualHealthFilter: (data.sexualHealthFilter as Record<string, unknown> | null) ?? null,
     signatures: (data.signatures as Record<string, { value: number; max: number }[]>) ?? {},
+    totem: data.totem ? (() => {
+      const t = data.totem as Record<string, unknown>;
+      const li = t.lastImprovement as Record<string, unknown> | undefined;
+      return {
+        animal: t.animal as string,
+        computedAt: t.computedAt instanceof Timestamp ? (t.computedAt as Timestamp).toDate() : new Date(),
+        revealedAt: t.revealedAt instanceof Timestamp ? (t.revealedAt as Timestamp).toDate() : null,
+        pendingAnimal: (t.pendingAnimal as string) ?? null,
+        lastImprovement: li ? {
+          scaleId: li.scaleId as string,
+          domainLabel: li.domainLabel as string,
+          from: li.from as string,
+          to: li.to as string,
+          at: li.at instanceof Timestamp ? (li.at as Timestamp).toDate() : new Date(),
+        } : null,
+      };
+    })() : null,
   };
 }
 
@@ -460,4 +529,30 @@ export async function getProfileProgress(userId: string): Promise<{
 export async function isProfileCompleteById(id: string): Promise<boolean> {
   const profile = await getUserProfileByCompatibilityId(id);
   return profile !== null;
+}
+
+export async function saveTotem(userId: string, animal: string): Promise<void> {
+  await updateDoc(doc(db, PROFILES_COL, userId), {
+    'totem.animal': animal,
+    'totem.computedAt': serverTimestamp(),
+    'totem.revealedAt': null,
+    updatedAt: serverTimestamp(),
+  });
+}
+
+export async function revealTotem(userId: string): Promise<void> {
+  await updateDoc(doc(db, PROFILES_COL, userId), {
+    'totem.revealedAt': serverTimestamp(),
+    updatedAt: serverTimestamp(),
+  });
+}
+
+export async function acceptPendingTotem(userId: string, newAnimal: string): Promise<void> {
+  await updateDoc(doc(db, PROFILES_COL, userId), {
+    'totem.animal': newAnimal,
+    'totem.pendingAnimal': null,
+    'totem.computedAt': serverTimestamp(),
+    'totem.revealedAt': serverTimestamp(),
+    updatedAt: serverTimestamp(),
+  });
 }

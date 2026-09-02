@@ -9,11 +9,26 @@ import { buildDemographique, getOnboardingProfile } from './onboardingProfile';
 import { ALL_SCALES, MENTAL_HEALTH_SCALES, SEXUAL_HEALTH_SCALES, BONUS_SCALES } from '../data/scales';
 import { getScaleMeta } from './scaleMeta';
 import { authedFetch } from './authedFetch';
+import { getTotemSignature, computeDimensionGauges, type TotemAnimal } from './totemAlgorithm';
+import type { ScaleResult } from '../types/assessment';
 
 /** IDs des scales par catégorie */
 const MENTAL_IDS = new Set(MENTAL_HEALTH_SCALES.map(s => s.id));
 const SEXUAL_IDS = new Set(SEXUAL_HEALTH_SCALES.map(s => s.id));
 const BONUS_IDS = new Set(BONUS_SCALES.map(s => s.id));
+
+function buildTotemResume(
+  animal: string | null,
+  scaleResults: Record<string, ScaleResult>,
+): string | null {
+  if (!animal) return null;
+  const sig = getTotemSignature(animal as TotemAnimal);
+  const gauges = computeDimensionGauges(scaleResults);
+  if (!gauges.length) return `${sig.label} — ${sig.meaning}`;
+  const tierLabel = (pct: number) => pct >= 67 ? 'force' : pct >= 34 ? 'moyen' : 'à améliorer';
+  const lines = gauges.map(g => `${g.label}: ${g.fillPercent}% (${tierLabel(g.fillPercent)})`);
+  return `${sig.label} — ${sig.meaning}\nProfil 7 aspects : ${lines.join(' · ')}`;
+}
 
 /**
  * Résout le profil démographique de l'utilisateur.
@@ -65,7 +80,7 @@ function buildBonusCompletes(scaleResults: Record<string, { totalScore: number; 
  * Déclenche l'analyse Dr Lo SANTÉ MENTALE uniquement.
  * N'envoie que les items mentaux complétés — jamais les items sexuels.
  */
-export async function triggerDrLoMentalHealth(userId: string): Promise<void> {
+export async function triggerDrLoMentalHealth(userId: string, isRefresh = false): Promise<void> {
   const progress = await getProfileProgress(userId);
   if (progress.mentalCompletedCount === 0) return;
 
@@ -96,6 +111,10 @@ export async function triggerDrLoMentalHealth(userId: string): Promise<void> {
     .map(s => s.shortName);
 
   const bonus_completes = buildBonusCompletes(progress.scaleResults);
+  const totem_resume = buildTotemResume(
+    (progress.totem?.animal as string) ?? null,
+    progress.scaleResults as Record<string, ScaleResult>,
+  );
 
   const response = await authedFetch('/.netlify/functions/dr-lo-analysis', {
     method: 'POST',
@@ -106,11 +125,13 @@ export async function triggerDrLoMentalHealth(userId: string): Promise<void> {
       genre,
       situation_relationnelle,
       bloc: 'mental',
+      isRefresh,
       items_completes,
       items_restants,
       nombre_items_faits: items_completes.length,
       nombre_items_total: MENTAL_HEALTH_SCALES.length,
       bonus_completes,
+      totem_resume,
     }),
   });
 
@@ -127,7 +148,7 @@ export async function triggerDrLoMentalHealth(userId: string): Promise<void> {
  * Déclenche l'analyse Dr Lo SANTÉ SEXUELLE uniquement.
  * N'envoie que les items sexuels complétés — jamais les items mentaux.
  */
-export async function triggerDrLoSexualHealth(userId: string): Promise<void> {
+export async function triggerDrLoSexualHealth(userId: string, isRefresh = false): Promise<void> {
   const progress = await getProfileProgress(userId);
   if (progress.sexualCompletedCount === 0) return;
 
@@ -159,6 +180,11 @@ export async function triggerDrLoSexualHealth(userId: string): Promise<void> {
 
   const bonus_completes = buildBonusCompletes(progress.scaleResults);
 
+  const totem_resume = buildTotemResume(
+    (progress.totem?.animal as string) ?? null,
+    progress.scaleResults as Record<string, ScaleResult>,
+  );
+
   const response = await authedFetch('/.netlify/functions/dr-lo-analysis', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -168,12 +194,14 @@ export async function triggerDrLoSexualHealth(userId: string): Promise<void> {
       genre,
       situation_relationnelle,
       bloc: 'sexual',
+      isRefresh,
       experience_profile: (progress.sexualHealthFilter?.experienceProfile as string | undefined) ?? null,
       items_completes,
       items_restants,
       nombre_items_faits: items_completes.length,
       nombre_items_total: SEXUAL_HEALTH_SCALES.length,
       bonus_completes,
+      totem_resume,
     }),
   });
 
@@ -210,6 +238,11 @@ export async function triggerDrLoSynthesis(userId: string): Promise<void> {
     };
   });
 
+  const totem_resume = buildTotemResume(
+    (progress.totem?.animal as string) ?? null,
+    progress.scaleResults as Record<string, ScaleResult>,
+  );
+
   const response = await authedFetch('/.netlify/functions/dr-lo-synthesis', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -219,6 +252,7 @@ export async function triggerDrLoSynthesis(userId: string): Promise<void> {
       items_completes,
       nombre_items_faits: progress.completedCount,
       nombre_items_total: progress.totalCount,
+      totem_resume,
     }),
   });
 
@@ -256,6 +290,11 @@ export async function triggerDrLoAnalysis(userId: string): Promise<void> {
     };
   });
 
+  const totem_resume = buildTotemResume(
+    (progress.totem?.animal as string) ?? null,
+    progress.scaleResults as Record<string, ScaleResult>,
+  );
+
   const response = await authedFetch('/.netlify/functions/dr-lo-analysis', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -264,6 +303,7 @@ export async function triggerDrLoAnalysis(userId: string): Promise<void> {
       items_completes, items_restants: [],
       nombre_items_faits: progress.completedCount,
       nombre_items_total: progress.totalCount,
+      totem_resume,
     }),
   });
 

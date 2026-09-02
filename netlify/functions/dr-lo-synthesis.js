@@ -43,7 +43,8 @@ exports.handler = async (event) => {
     genre = '',
     items_completes = [],
     nombre_items_faits = 0,
-    nombre_items_total = 24
+    nombre_items_total = 24,
+    totem_resume = null
   } = payload
 
   if (!items_completes || items_completes.length === 0) {
@@ -77,8 +78,9 @@ RÈGLES ABSOLUES :
 - Fais une lecture croisée des résultats : cherche les liens, ne les liste pas un par un
 - Si alerte ⚠️ : orienter avec douceur vers un professionnel
 - JAMAIS de diagnostic explicite
+- Si un totem est attribué, tu peux t'y référer naturellement (ex: "toi qui es un Cerf...") et t'appuyer sur les forces pour encourager sur les zones à travailler — sans réciter toutes les jauges
 - Signe TOUJOURS "— Dr Lo 🩺" à la fin
-
+${totem_resume ? `\nTotem : ${totem_resume}` : ''}
 ${nombre_items_faits} évaluation(s) complétée(s) sur ${nombre_items_total} :
 ${itemsText}
 

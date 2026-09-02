@@ -36,8 +36,9 @@ export const KORIS_COSTS = {
   journal: 1,
   conseils: 2,
   analysis: 3,
+  analysis_refresh: 2,
   refresh_synthesis: 3,
-  synthesis: 5,
+  synthesis: 0,
   compatibility: 6,
   unlock_chat: 3,
 } as const;
@@ -326,6 +327,7 @@ export function getFeatureLabel(feature: string): string {
     chat: 'Message Dr Lô',
     journal: 'Avis Dr Lô (journal)',
     analysis: 'Analyse Dr Lô',
+    analysis_refresh: 'Actualisation analyse Dr Lô',
     synthesis: 'Synthèse Dr Lô',
     refresh_synthesis: 'Rafraîchir synthèse',
     conseils: 'Conseils personnalisés',

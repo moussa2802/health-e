@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Brain, Heart, Sparkles, Users, NotebookPen, MessageSquare, ChevronRight, Lock, Check, Play } from 'lucide-react';
+import { Brain, Heart, Users, NotebookPen, ChevronRight, Lock, Check, Play } from 'lucide-react';
+import TotemCard from '../../components/assessment/TotemCard';
 import { useAuth } from '../../contexts/AuthContext';
 import {
   getOrCreateUserProfile,
@@ -77,6 +78,7 @@ const AssessmentHomePage: React.FC = () => {
   const [ringMounted, setRingMounted] = useState(false);
   const [barsMounted, setBarsMounted] = useState(false);
   const [inProgressScales, setInProgressScales] = useState<Set<string>>(new Set());
+  const [totemData, setTotemData] = useState<{ animal: string; computedAt: Date; revealedAt: Date | null; pendingAnimal: string | null } | null>(null);
   const ringRef = useRef<SVGCircleElement>(null);
 
   useEffect(() => {
@@ -98,6 +100,7 @@ const AssessmentHomePage: React.FC = () => {
       .then(p => {
         setProfileResults(p.scaleResults);
         setBonusCompleted(p.bonusCompletedCount);
+        setTotemData(p.totem);
         if (p.onboardingProfile) {
           saveOnboardingProfile(p.onboardingProfile as Parameters<typeof saveOnboardingProfile>[0]);
           setOnboardingProfile(p.onboardingProfile as OnboardingProfileType);
@@ -153,11 +156,14 @@ const AssessmentHomePage: React.FC = () => {
   const sexualCompleted = SEXUAL_HEALTH_SCALES.filter(s => profileResults[s.id]).length;
   const mentalTotal = MENTAL_HEALTH_SCALES.length;
   const sexualTotal = SEXUAL_HEALTH_SCALES.length;
-  const bonusTotal = BONUS_SCALES.length;
 
   const doneCore = mentalCompleted + sexualCompleted;
   const totalCore = mentalTotal + sexualTotal;
   const pct = totalCore > 0 ? Math.round((doneCore / totalCore) * 100) : 0;
+
+  const RING_R = 30;
+  const RING_C = 2 * Math.PI * RING_R;
+  const ringOffset = RING_C - (pct / 100) * RING_C;
 
   const currentScales = getScalesForTab(activeTab);
   const currentCategory = getCategoryForTab(activeTab);
@@ -173,10 +179,6 @@ const AssessmentHomePage: React.FC = () => {
   const totalMissing = mentalMissing + sexualMissing;
   const isClose = totalMissing > 0 && totalMissing <= 3;
   const worstCategory = mentalMissing >= sexualMissing ? '/assessment/mental' : '/assessment/sexual';
-
-  const RING_R = 30;
-  const RING_C = 2 * Math.PI * RING_R;
-  const ringOffset = RING_C - (pct / 100) * RING_C;
 
   return (
     <>
@@ -244,8 +246,7 @@ const AssessmentHomePage: React.FC = () => {
         )}
 
         {/* ── 2. Hero card (ink) ── */}
-        <div className="relative bg-ink rounded-block p-[22px] shadow-soft overflow-hidden mb-6">
-          {/* Decorative halo */}
+        <div className="relative bg-ink rounded-block p-[22px] shadow-soft overflow-hidden mb-5">
           <div
             className="absolute -top-10 -right-10 w-40 h-40 rounded-full opacity-20 pointer-events-none"
             style={{ background: 'radial-gradient(circle, #B5522F 0%, transparent 70%)' }}
@@ -262,14 +263,10 @@ const AssessmentHomePage: React.FC = () => {
             )}
           </h2>
 
-          {/* Ring + meta row */}
           <div className="flex items-center gap-5 relative z-10">
             <div className="flex-shrink-0">
               <svg width="74" height="74" viewBox="0 0 74 74" className="block">
-                <circle
-                  cx="37" cy="37" r={RING_R}
-                  fill="none" stroke="rgba(244,241,233,.16)" strokeWidth="5"
-                />
+                <circle cx="37" cy="37" r={RING_R} fill="none" stroke="rgba(244,241,233,.16)" strokeWidth="5" />
                 <circle
                   ref={ringRef}
                   cx="37" cy="37" r={RING_R}
@@ -280,11 +277,7 @@ const AssessmentHomePage: React.FC = () => {
                   transform="rotate(-90 37 37)"
                   style={{ transition: 'stroke-dashoffset 1.3s cubic-bezier(.2,.7,.3,1)' }}
                 />
-                <text
-                  x="37" y="37"
-                  textAnchor="middle" dominantBaseline="central"
-                  className="font-display" fill="#F4F1E9" fontSize="17" fontWeight="700"
-                >
+                <text x="37" y="37" textAnchor="middle" dominantBaseline="central" className="font-display" fill="#F4F1E9" fontSize="17" fontWeight="700">
                   {pct}%
                 </text>
               </svg>
@@ -301,7 +294,6 @@ const AssessmentHomePage: React.FC = () => {
             </p>
           </div>
 
-          {/* Bouton vers l'analyse globale */}
           <button
             onClick={() => navigate('/assessment/profile')}
             className="mt-5 w-full flex items-center justify-center gap-2 rounded-[14px] border border-white/15 bg-white/10 py-2.5 text-[13px] font-bold text-[#F4F1E9] cursor-pointer transition-colors hover:bg-white/15 relative z-10"
@@ -310,6 +302,14 @@ const AssessmentHomePage: React.FC = () => {
             <ChevronRight size={15} />
           </button>
         </div>
+
+        {/* ── 2b. Totem ── */}
+        <TotemCard
+          profileResults={profileResults}
+          totem={totemData}
+          userId={currentUser?.id ?? null}
+          onTotemUpdate={() => setLoadRetry(r => r + 1)}
+        />
 
         {/* ── 3. Segmented control ── */}
         <div className="flex gap-1 bg-[#EAE7DD] p-[5px] rounded-[16px] mb-5">

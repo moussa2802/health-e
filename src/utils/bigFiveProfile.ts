@@ -63,7 +63,7 @@ function resolveSubscaleScores(result: ScaleResult): Record<string, number> | un
   if (!scores) return undefined;
   if (scores.emotional_stability !== undefined) return scores;
   if (scores.neuroticism !== undefined) {
-    const patched = { ...scores, emotional_stability: scores.neuroticism };
+    const patched = { ...scores, emotional_stability: 12 - scores.neuroticism };
     delete patched.neuroticism;
     return patched;
   }

@@ -4,7 +4,7 @@ import { toPng } from 'html-to-image';
 import { doc, onSnapshot } from 'firebase/firestore';
 import { db } from '../../utils/firebase';
 import { useAuth } from '../../contexts/AuthContext';
-import { triggerDrLoAnalysis } from '../../utils/drLoAnalysis';
+import { triggerDrLoMentalHealth, triggerDrLoSexualHealth, triggerDrLoSynthesis } from '../../utils/drLoAnalysis';
 import {
   getOrCreateUserProfile,
   getProfileProgress,
@@ -87,6 +87,21 @@ function getShortComment(result: ScaleResult): string {
   const recommendation = result.interpretation?.recommendation ?? '';
   if (description && recommendation) return `${description} ${recommendation}`;
   return description || recommendation || '';
+}
+
+function getLatestTestDate(scales: AssessmentScale[], results: Record<string, ScaleResult>): Date | null {
+  return scales.reduce<Date | null>((best, s) => {
+    const r = results[s.id];
+    if (!r?.completedAt) return best;
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const d = typeof (r.completedAt as any).toDate === 'function'
+        ? (r.completedAt as any).toDate()
+        : new Date(r.completedAt as string);
+      if (isNaN(d.getTime())) return best;
+      return !best || d > best ? d : best;
+    } catch { return best; }
+  }, null);
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -257,23 +272,18 @@ const DrLoPanel: React.FC<{
   completedCount: number;
 }> = ({ bloc, analysis, completedCount }) => {
   const [open, setOpen] = React.useState(false);
-  if (completedCount === 0) return null;
+  if (completedCount === 0 || !analysis) return null;
   const catColor = getCategoryColor(bloc);
   const title = bloc === 'mental' ? 'Dr Lô — Profil psychologique' : 'Dr Lô — Vie intime';
 
   return (
     <div className={`mt-2 overflow-hidden rounded-block border ${catColor.border} ${catColor.bg}`}>
-      {/* En-tête cliquable */}
       <button
         onClick={() => setOpen(v => !v)}
         className="flex w-full items-center gap-2.5 bg-transparent px-[18px] py-4 text-left"
       >
         <div className={`h-9 w-9 flex-shrink-0 overflow-hidden rounded-full border-2 ${catColor.border}`}>
-          <img
-            src="/dr-lo.png"
-            alt="Dr. Lô"
-            className="h-full w-full object-cover object-top"
-          />
+          <img src="/dr-lo.png" alt="Dr. Lô" className="h-full w-full object-cover object-top" />
         </div>
         <div className="flex-1">
           <p className="m-0 text-[13px] font-extrabold text-ink">{title}</p>
@@ -281,28 +291,14 @@ const DrLoPanel: React.FC<{
             {open ? "Masquer l'analyse" : 'Afficher mon analyse'}
           </p>
         </div>
-        {open ? (
-          <ChevronUp size={16} className={catColor.text} />
-        ) : (
-          <ChevronDown size={16} className={catColor.text} />
-        )}
+        {open ? <ChevronUp size={16} className={catColor.text} /> : <ChevronDown size={16} className={catColor.text} />}
       </button>
 
-      {/* Contenu collapsible */}
       {open && (
         <div className="px-[18px] pb-4">
-          {analysis ? (
-            <div className="whitespace-pre-line text-[13px] leading-relaxed text-ink-soft">
-              {analysis}
-            </div>
-          ) : (
-            <div className="flex items-center gap-2.5">
-              <Loader2 size={16} className={`flex-shrink-0 animate-spin ${catColor.text}`} />
-              <p className="m-0 text-[13px] italic text-muted">
-                Dr. Lô prépare ton analyse… reviens dans quelques secondes
-              </p>
-            </div>
-          )}
+          <div className="whitespace-pre-line text-[13px] leading-relaxed text-ink-soft">
+            {analysis}
+          </div>
         </div>
       )}
     </div>
@@ -316,7 +312,12 @@ const MentalProfileCard: React.FC<{
   compatibilityIdMental: string | null;
   copiedMental: boolean;
   onCopyMental: () => void;
-}> = ({ archetype, drLoMentalAnalysis, compatibilityIdMental, copiedMental, onCopyMental }) => {
+  updating: boolean;
+  onUpdate: () => void;
+  generateCost: number;
+  refreshCost: number;
+  isOutdated: boolean;
+}> = ({ archetype, drLoMentalAnalysis, compatibilityIdMental, copiedMental, onCopyMental, updating, onUpdate, generateCost, refreshCost, isOutdated }) => {
   const [revealed, setRevealed] = React.useState(false);
 
   return (
@@ -339,7 +340,12 @@ const MentalProfileCard: React.FC<{
         {archetype.title} {archetype.subtitle}
       </span>
 
-      {drLoMentalAnalysis ? (
+      {updating ? (
+        <div className="mt-4 flex items-center gap-2.5">
+          <Loader2 size={16} className="flex-shrink-0 animate-spin text-sage" />
+          <p className="m-0 text-[13px] italic text-muted">Dr. Lô met à jour ton analyse…</p>
+        </div>
+      ) : drLoMentalAnalysis ? (
         revealed ? (
           <div className="mt-4 whitespace-pre-line text-[13px] leading-relaxed text-ink-soft">
             {drLoMentalAnalysis}
@@ -351,17 +357,48 @@ const MentalProfileCard: React.FC<{
         )
       ) : (
         <p className="mt-4 text-[13px] text-muted italic m-0">
-          Complète des tests psychologiques pour obtenir ton analyse.
+          Génère ton analyse personnalisée avec Dr Lô.
         </p>
       )}
 
+      {isOutdated && drLoMentalAnalysis && !updating && (
+        <div className="mt-3 flex items-center justify-between flex-wrap gap-2 pt-2.5" style={{ borderTop: '1px solid rgba(0,0,0,0.06)' }}>
+          <p className="m-0 text-[11px] font-semibold flex items-center gap-1" style={{ color: '#8F6A1F' }}>
+            <span className="w-1.5 h-1.5 rounded-full inline-block" style={{ background: '#8F6A1F' }} />
+            Profil modifié depuis cette analyse
+          </p>
+          <button
+            onClick={onUpdate}
+            className="text-white border-0 rounded-lg px-3 py-1.5 text-[11px] font-bold cursor-pointer flex items-center gap-1.5 bg-sage"
+          >
+            <RefreshCw size={12} /> Actualiser
+            <span className="inline-flex items-center gap-1 bg-white/20 rounded-lg px-1.5 py-0.5 ml-0.5">
+              <img src="/kori.png" alt="" className="w-3.5 h-3.5 rounded-full object-cover" />
+              <span className="font-display text-[11px] font-semibold">{refreshCost}</span>
+            </span>
+          </button>
+        </div>
+      )}
+
       <div className="flex gap-2.5 mt-4">
-        {drLoMentalAnalysis && (
+        {drLoMentalAnalysis ? (
           <button
             onClick={() => setRevealed(v => !v)}
             className="flex-1 flex items-center justify-center gap-2 rounded-[12px] border-none bg-sage py-3 px-3 text-[13px] font-bold text-white cursor-pointer transition-colors hover:bg-sage/90 text-center"
           >
             {revealed ? 'Masquer' : 'Lire mon analyse psychologique'}
+          </button>
+        ) : (
+          <button
+            onClick={onUpdate}
+            disabled={updating}
+            className="flex-1 flex items-center justify-center gap-2 rounded-[12px] border-none bg-sage py-3 px-3 text-[13px] font-bold text-white cursor-pointer transition-colors hover:bg-sage/90 text-center disabled:opacity-60"
+          >
+            Générer mon analyse
+            <span className="inline-flex items-center gap-1 bg-white/20 rounded-lg px-1.5 py-0.5">
+              <img src="/kori.png" alt="" className="w-3.5 h-3.5 rounded-full object-cover" />
+              <span className="font-display text-[11px] font-semibold">{generateCost}</span>
+            </span>
           </button>
         )}
         {compatibilityIdMental && (
@@ -385,7 +422,12 @@ const IntimatePrivateCard: React.FC<{
   compatibilityIdSexual: string | null;
   copiedSexual: boolean;
   onCopySexual: () => void;
-}> = ({ intimateTraits, drLoSexualAnalysis, compatibilityIdSexual, copiedSexual, onCopySexual }) => {
+  updating: boolean;
+  onUpdate: () => void;
+  generateCost: number;
+  refreshCost: number;
+  isOutdated: boolean;
+}> = ({ intimateTraits, drLoSexualAnalysis, compatibilityIdSexual, copiedSexual, onCopySexual, updating, onUpdate, generateCost, refreshCost, isOutdated }) => {
   const [revealed, setRevealed] = React.useState(false);
 
   return (
@@ -409,7 +451,12 @@ const IntimatePrivateCard: React.FC<{
         Jamais partagé publiquement
       </span>
 
-      {drLoSexualAnalysis ? (
+      {updating ? (
+        <div className="mt-4 flex items-center gap-2.5">
+          <Loader2 size={16} className="flex-shrink-0 animate-spin text-accent" />
+          <p className="m-0 text-[13px] italic text-muted">Dr. Lô met à jour ton analyse…</p>
+        </div>
+      ) : drLoSexualAnalysis ? (
         revealed ? (
           <div className="mt-4 whitespace-pre-line text-[13px] leading-relaxed text-ink-soft">
             {drLoSexualAnalysis}
@@ -421,17 +468,48 @@ const IntimatePrivateCard: React.FC<{
         )
       ) : (
         <p className="mt-4 text-[13px] text-muted italic m-0">
-          Complète des tests intimes pour obtenir ton analyse.
+          Génère ton analyse personnalisée avec Dr Lô.
         </p>
       )}
 
+      {isOutdated && drLoSexualAnalysis && !updating && (
+        <div className="mt-3 flex items-center justify-between flex-wrap gap-2 pt-2.5" style={{ borderTop: '1px solid rgba(0,0,0,0.06)' }}>
+          <p className="m-0 text-[11px] font-semibold flex items-center gap-1" style={{ color: '#8F6A1F' }}>
+            <span className="w-1.5 h-1.5 rounded-full inline-block" style={{ background: '#8F6A1F' }} />
+            Profil modifié depuis cette analyse
+          </p>
+          <button
+            onClick={onUpdate}
+            className="text-white border-0 rounded-lg px-3 py-1.5 text-[11px] font-bold cursor-pointer flex items-center gap-1.5 bg-accent"
+          >
+            <RefreshCw size={12} /> Actualiser
+            <span className="inline-flex items-center gap-1 bg-white/20 rounded-lg px-1.5 py-0.5 ml-0.5">
+              <img src="/kori.png" alt="" className="w-3.5 h-3.5 rounded-full object-cover" />
+              <span className="font-display text-[11px] font-semibold">{refreshCost}</span>
+            </span>
+          </button>
+        </div>
+      )}
+
       <div className="flex gap-2.5 mt-4">
-        {drLoSexualAnalysis && (
+        {drLoSexualAnalysis ? (
           <button
             onClick={() => setRevealed(v => !v)}
             className="flex-1 flex items-center justify-center gap-2 rounded-[12px] border-none bg-accent py-3 px-3 text-[13px] font-bold text-white cursor-pointer transition-colors hover:bg-accent/90 text-center"
           >
             {revealed ? 'Masquer' : 'Lire mon analyse intime'}
+          </button>
+        ) : (
+          <button
+            onClick={onUpdate}
+            disabled={updating}
+            className="flex-1 flex items-center justify-center gap-2 rounded-[12px] border-none bg-accent py-3 px-3 text-[13px] font-bold text-white cursor-pointer transition-colors hover:bg-accent/90 text-center disabled:opacity-60"
+          >
+            Générer mon analyse
+            <span className="inline-flex items-center gap-1 bg-white/20 rounded-lg px-1.5 py-0.5">
+              <img src="/kori.png" alt="" className="w-3.5 h-3.5 rounded-full object-cover" />
+              <span className="font-display text-[11px] font-semibold">{generateCost}</span>
+            </span>
           </button>
         )}
         {compatibilityIdSexual && (
@@ -550,7 +628,7 @@ const CompatibilityCodeCard: React.FC<CodeCardProps> = ({
 const AssessmentProfilePage: React.FC = () => {
   const navigate = useNavigate();
   const { currentUser, isAuthenticated, loading: authLoading } = useAuth();
-  const { refreshBalance, setShowNoKorisModal } = useKoris();
+  const { refreshBalance, setShowNoKorisModal, balance, getCost } = useKoris();
 
   const [scaleResults, setScaleResults] = useState<Record<string, ScaleResult>>({});
   const [signatures, setSignatures] = useState<Record<string, { value: number; max: number }[]>>({});
@@ -565,7 +643,10 @@ const AssessmentProfilePage: React.FC = () => {
   const [drLoMentalAnalysis, setDrLoMentalAnalysis] = useState<string | null>(null);
   const [drLoSexualAnalysis, setDrLoSexualAnalysis] = useState<string | null>(null);
   const [drLoSynthesis, setDrLoSynthesis] = useState<string | null>(null);
-  const [updatingAnalysis, setUpdatingAnalysis] = useState(false);
+  const [drLoMentalUpdatedAt, setDrLoMentalUpdatedAt] = useState<Date | null>(null);
+  const [drLoSexualUpdatedAt, setDrLoSexualUpdatedAt] = useState<Date | null>(null);
+  const [updatingMental, setUpdatingMental] = useState(false);
+  const [updatingSexual, setUpdatingSexual] = useState(false);
   const [loadingProfile, setLoadingProfile] = useState(true);
   const [loadingCard, setLoadingCard] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -634,17 +715,41 @@ const AssessmentProfilePage: React.FC = () => {
       if (data.drLoMentalAnalysis) setDrLoMentalAnalysis(data.drLoMentalAnalysis as string);
       if (data.drLoSexualAnalysis) setDrLoSexualAnalysis(data.drLoSexualAnalysis as string);
       if (data.drLoSynthesis) setDrLoSynthesis(data.drLoSynthesis as string);
+      if (data.drLoMentalUpdatedAt) {
+        const ts = data.drLoMentalUpdatedAt;
+        setDrLoMentalUpdatedAt(typeof ts?.toDate === 'function' ? ts.toDate() : new Date(ts));
+        setUpdatingMental(false);
+      }
+      if (data.drLoSexualUpdatedAt) {
+        const ts = data.drLoSexualUpdatedAt;
+        setDrLoSexualUpdatedAt(typeof ts?.toDate === 'function' ? ts.toDate() : new Date(ts));
+        setUpdatingSexual(false);
+      }
     }, () => { /* silencieux */ });
     return () => unsubscribe();
   }, [isAuthenticated, currentUser?.id]);
 
-  const handleUpdateAnalysis = async () => {
-    if (!currentUser || updatingAnalysis) return;
-    setUpdatingAnalysis(true);
+  const handleUpdateAnalysis = async (bloc: 'mental' | 'sexual') => {
+    if (!currentUser) return;
+    if (bloc === 'mental' && updatingMental) return;
+    if (bloc === 'sexual' && updatingSexual) return;
+    const isRefresh = bloc === 'mental' ? !!drLoMentalAnalysis : !!drLoSexualAnalysis;
+    const cost = getCost(isRefresh ? 'analysis_refresh' : 'analysis');
+    if (balance < cost) { setShowNoKorisModal(true); return; }
+
+    if (bloc === 'mental') setUpdatingMental(true); else setUpdatingSexual(true);
     try {
-      await triggerDrLoAnalysis(currentUser.id);
-    } catch { /* silencieux */ }
-    finally { setUpdatingAnalysis(false); }
+      if (bloc === 'mental') {
+        await triggerDrLoMentalHealth(currentUser.id, isRefresh);
+      } else {
+        await triggerDrLoSexualHealth(currentUser.id, isRefresh);
+      }
+      triggerDrLoSynthesis(currentUser.id).catch(() => {});
+      await refreshBalance();
+    } catch {
+      await refreshBalance();
+      if (bloc === 'mental') setUpdatingMental(false); else setUpdatingSexual(false);
+    }
   };
 
   const handleShareCard = useCallback(async () => {
@@ -717,6 +822,11 @@ const AssessmentProfilePage: React.FC = () => {
   const drLoQuote = getShortQuote(drLoSynthesis, 160, prenom);
   const intimateTraits = getIntimateTraits(scaleResults);
   const firstSignature = Object.values(signatures).find(s => s?.length >= 3);
+
+  const mentalLatestTestDate = getLatestTestDate(MENTAL_HEALTH_SCALES, scaleResults);
+  const sexualLatestTestDate = getLatestTestDate(SEXUAL_HEALTH_SCALES, scaleResults);
+  const isMentalOutdated = !!drLoMentalAnalysis && (!drLoMentalUpdatedAt || (!!mentalLatestTestDate && mentalLatestTestDate.getTime() > drLoMentalUpdatedAt.getTime()));
+  const isSexualOutdated = !!drLoSexualAnalysis && (!drLoSexualUpdatedAt || (!!sexualLatestTestDate && sexualLatestTestDate.getTime() > drLoSexualUpdatedAt.getTime()));
 
   if (authLoading || loadingProfile) {
     return (
@@ -809,18 +919,6 @@ const AssessmentProfilePage: React.FC = () => {
                     <><Upload size={16} /> Partager ma carte</>
                   )}
                 </button>
-                <button
-                  onClick={handleUpdateAnalysis}
-                  disabled={updatingAnalysis}
-                  className="flex-1 flex items-center justify-center gap-2 rounded-[14px] border border-line bg-card py-[13px] text-[13.5px] font-bold text-ink cursor-pointer transition-colors hover:bg-paper disabled:opacity-60"
-                  aria-label="Mettre à jour l'analyse"
-                >
-                  {updatingAnalysis ? (
-                    <><Loader2 size={16} className="animate-spin" /> Analyse…</>
-                  ) : (
-                    <><RefreshCw size={16} /> Actualiser</>
-                  )}
-                </button>
               </div>
 
               {/* ── Cartes profil psycho + intime ───────────────────── */}
@@ -831,6 +929,11 @@ const AssessmentProfilePage: React.FC = () => {
                   compatibilityIdMental={compatibilityIdMental}
                   copiedMental={copiedMental}
                   onCopyMental={handleCopyMental}
+                  updating={updatingMental}
+                  onUpdate={() => handleUpdateAnalysis('mental')}
+                  generateCost={getCost('analysis')}
+                  refreshCost={getCost('analysis_refresh')}
+                  isOutdated={isMentalOutdated}
                 />
               )}
               {sexualCompletedCount > 0 && (
@@ -840,6 +943,11 @@ const AssessmentProfilePage: React.FC = () => {
                   compatibilityIdSexual={compatibilityIdSexual}
                   copiedSexual={copiedSexual}
                   onCopySexual={handleCopySexual}
+                  updating={updatingSexual}
+                  onUpdate={() => handleUpdateAnalysis('sexual')}
+                  generateCost={getCost('analysis')}
+                  refreshCost={getCost('analysis_refresh')}
+                  isOutdated={isSexualOutdated}
                 />
               )}
             </>

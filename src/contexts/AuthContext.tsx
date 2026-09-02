@@ -19,8 +19,10 @@ import {
   signInWithRedirect,
   linkWithPopup,
   linkWithRedirect,
+  linkWithCredential,
   getRedirectResult,
   GoogleAuthProvider,
+  EmailAuthProvider,
   User as FirebaseUser,
 } from "firebase/auth";
 import { FirebaseError } from "firebase/app";
@@ -81,7 +83,9 @@ interface AuthContextType {
   verifyPhoneCode: (verificationId: string, code: string) => Promise<void>;
   signInWithGoogle: () => Promise<void>;
   linkGoogleAccount: () => Promise<void>;
+  linkEmailToAccount: (email: string, password: string) => Promise<void>;
   isPhoneOnlyUser: () => boolean;
+  needsAuthMigration: () => boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -387,17 +391,9 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         );
         const firebaseUser = userCredential.user;
 
-        // Check if email is verified (skip for professionals)
-        if (
-          !firebaseUser.emailVerified &&
-          userType !== "professional"
-        ) {
-          console.warn("E-mail non vérifié, bloquant la connexion.");
-          await signOut(auth);
-          throw new Error(
-            "Veuillez confirmer votre e-mail avant de vous connecter. Vérifiez votre boîte de réception."
-          );
-        }
+        // Email verification is non-blocking: the verification email is sent
+        // on registration, but we don't prevent login for unverified emails.
+        // This maintains parity with the SMS flow (no verification needed).
 
         // Verify user type matches
         await ensureFirestoreReady();
@@ -446,6 +442,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
               profileImage: userData.profileImage,
               serviceType: userData.serviceType,
               specialty: userData.specialty,
+              authMigrated: userData.authMigrated || false,
             })
           );
 
@@ -639,11 +636,19 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       if (db) {
         await setDoc(doc(db, "users", linked.uid), {
           email, profileImage: photoURL || null, googleLinked: true,
-          googleLinkedAt: serverTimestamp(), updatedAt: serverTimestamp(),
+          googleLinkedAt: serverTimestamp(), authMigrated: true, authMigratedAt: serverTimestamp(), updatedAt: serverTimestamp(),
         }, { merge: true });
         await setDoc(doc(db, "patients", linked.uid), {
-          email, profileImage: photoURL || null, updatedAt: serverTimestamp(),
+          email, profileImage: photoURL || null, authMigrated: true, updatedAt: serverTimestamp(),
         }, { merge: true });
+      }
+      const cached = localStorage.getItem("health-e-user");
+      if (cached) {
+        try {
+          const parsed = JSON.parse(cached);
+          parsed.authMigrated = true;
+          localStorage.setItem("health-e-user", JSON.stringify(parsed));
+        } catch { /* ignore */ }
       }
       console.log("[GOOGLE] Compte Google associé via popup");
     } catch (popupError: any) {
@@ -674,6 +679,52 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     if (!firebaseUser) return false;
     const providers = firebaseUser.providerData.map((p) => p.providerId);
     return providers.includes("phone") && !providers.includes("google.com") && !providers.includes("password");
+  };
+
+  const needsAuthMigration = (): boolean => {
+    if (!currentUser?.id) return false;
+    if (!isPhoneOnlyUser()) return false;
+    const cached = localStorage.getItem("health-e-user");
+    if (cached) {
+      try {
+        const parsed = JSON.parse(cached);
+        if (parsed.authMigrated) return false;
+      } catch { /* ignore */ }
+    }
+    return true;
+  };
+
+  const linkEmailToAccount = async (email: string, password: string): Promise<void> => {
+    const firebaseUser = auth.currentUser;
+    if (!firebaseUser) throw new Error("Utilisateur non authentifié.");
+
+    const credential = EmailAuthProvider.credential(email, password);
+    await linkWithCredential(firebaseUser, credential);
+
+    const db = getFirestoreInstance();
+    if (db) {
+      const userRef = doc(db, "users", firebaseUser.uid);
+      await setDoc(userRef, { email, authMigrated: true, authMigratedAt: serverTimestamp() }, { merge: true });
+      const patientRef = doc(db, "patients", firebaseUser.uid);
+      const patientSnap = await getDoc(patientRef);
+      if (patientSnap.exists()) {
+        await setDoc(patientRef, { email, authMigrated: true }, { merge: true });
+      }
+    }
+
+    const cached = localStorage.getItem("health-e-user");
+    if (cached) {
+      try {
+        const parsed = JSON.parse(cached);
+        parsed.email = email;
+        parsed.authMigrated = true;
+        localStorage.setItem("health-e-user", JSON.stringify(parsed));
+      } catch { /* ignore */ }
+    }
+
+    if (currentUser) {
+      setCurrentUser({ ...currentUser, email });
+    }
   };
 
   const register = async (
@@ -1035,7 +1086,9 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       },
       signInWithGoogle: signInWithGoogleHandler,
       linkGoogleAccount,
+      linkEmailToAccount,
       isPhoneOnlyUser,
+      needsAuthMigration,
     }),
     [
       currentUser,

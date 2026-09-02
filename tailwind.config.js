@@ -52,6 +52,10 @@ export default {
           from: { transform: 'scaleX(0)' },
           to:   { transform: 'scaleX(1)' },
         },
+        slideUp: {
+          from: { opacity: '0', transform: 'translateY(40px)' },
+          to:   { opacity: '1', transform: 'translateY(0)' },
+        },
       },
       animation: {
         pop:          'pop .35s cubic-bezier(.2,.7,.3,1) both',
@@ -59,6 +63,7 @@ export default {
         fadeInScale:  'fadeInScale .35s ease-out both',
         ringGrow:     'ringGrow .8s ease-out both',
         barGrow:      'barGrow .6s ease-out both',
+        slideUp:      'slideUp .25s ease-out both',
       },
       transitionTimingFunction: {
         bounce: 'cubic-bezier(.2,.7,.3,1)',
