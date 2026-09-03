@@ -257,8 +257,6 @@ exports.handler = async (event) => {
 
   const MODELS = [
     'claude-haiku-4-5-20251001',
-    'claude-3-5-haiku-20241022',
-    'claude-3-haiku-20240307',
   ]
 
   for (let attempt = 0; attempt < MODELS.length; attempt++) {

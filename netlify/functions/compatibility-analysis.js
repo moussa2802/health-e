@@ -215,9 +215,8 @@ exports.handler = async (event) => {
   ].filter(v => v !== null && v !== '').join('\n')
 
   const MODELS = [
-    'claude-sonnet-4-20250514',
-    'claude-3-5-sonnet-20241022',
-    'claude-3-haiku-20240307',
+    'claude-sonnet-5',
+    'claude-haiku-4-5-20251001',
   ]
 
   for (let attempt = 0; attempt < MODELS.length; attempt++) {

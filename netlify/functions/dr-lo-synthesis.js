@@ -100,8 +100,7 @@ Génère UNIQUEMENT la synthèse courte (5-6 phrases max). Commence directement 
   const { holdId } = reservation
 
   const MODELS = [
-    'claude-sonnet-4-20250514',
-    'claude-3-5-sonnet-20241022',
+    'claude-sonnet-5',
     'claude-haiku-4-5-20251001',
   ]
 
