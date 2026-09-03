@@ -16,6 +16,7 @@ export interface Archetype {
   title: string;
   subtitle: string;
   traits: string[];
+  description: string;
 }
 
 const SEVERITY_COLORS: Record<string, string> = {
@@ -150,33 +151,34 @@ export function getArchetype(scaleResults: Record<string, ScaleResult>): Archety
   }
 
   if (hpiHigh && hspHigh) {
-    return { title: 'Le Sensible', subtitle: 'Lucide', traits: traits.slice(0, 4) };
+    return { title: 'Le Sensible', subtitle: 'Lucide', traits: traits.slice(0, 4), description: 'Tu perçois le monde avec une intensité rare — une sensibilité profonde alliée à une clarté de pensée qui te permet de tout analyser finement.' };
   }
 
   if (eqHigh && attachSecure) {
-    return { title: "L'Empathique", subtitle: 'Ancré', traits: traits.slice(0, 4) };
+    return { title: "L'Empathique", subtitle: 'Ancré', traits: traits.slice(0, 4), description: 'Tu allies une grande sensibilité aux autres à une solidité intérieure qui te garde stable — tu ressens beaucoup, mais tu restes ancré.' };
   }
 
   if (resilHigh && estimeHigh) {
-    return { title: 'Le Roc', subtitle: 'Serein', traits: traits.slice(0, 4) };
+    return { title: 'Le Roc', subtitle: 'Serein', traits: traits.slice(0, 4), description: 'Tu as une capacité naturelle à rebondir et une confiance en toi solide — les épreuves te renforcent plus qu\'elles ne t\'ébranlent.' };
   }
 
   if ((anxHigh || stressHigh) && hspHigh) {
-    return { title: "L'Intense", subtitle: 'Vibrant', traits: traits.slice(0, 4) };
+    return { title: "L'Intense", subtitle: 'Vibrant', traits: traits.slice(0, 4), description: 'Tu vis tout à fond — tes émotions sont puissantes et ta sensibilité amplifie chaque expérience. C\'est une force, même quand ça secoue.' };
   }
 
   if (confianceHigh && resilHigh) {
-    return { title: 'Le Solide', subtitle: 'Équilibré', traits: traits.slice(0, 4) };
+    return { title: 'Le Solide', subtitle: 'Équilibré', traits: traits.slice(0, 4), description: 'Tu avances avec assurance et tu te relèves facilement — un équilibre entre confiance en toi et capacité d\'adaptation.' };
   }
 
   if (anxHigh && stressHigh) {
-    return { title: 'Le Combatif', subtitle: 'en Éveil', traits: traits.slice(0, 4) };
+    return { title: 'Le Combatif', subtitle: 'en Éveil', traits: traits.slice(0, 4), description: 'Tu traverses une période où le stress et l\'anxiété sont présents, mais ta vigilance montre que tu te bats pour aller mieux.' };
   }
 
   return {
     title: "L'Explorateur",
     subtitle: 'Singulier',
     traits: traits.length > 0 ? traits.slice(0, 4) : ['Curieux', 'En chemin'],
+    description: 'Ton profil est unique et ne rentre pas dans une case — tu es en chemin, et chaque test te rapproche d\'une image plus claire de toi.',
   };
 }
 

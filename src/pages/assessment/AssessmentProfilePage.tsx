@@ -13,6 +13,7 @@ import {
 import ConfirmResetModal from '../../components/assessment/ConfirmResetModal';
 import TestCode from '../../components/assessment/TestCode';
 import ShareableProfileCard from '../../components/assessment/ShareableProfileCard';
+import InfoTip from '../../components/Onboarding/InfoTip';
 import { resetFullProfile } from '../../services/testManagementService';
 import { MENTAL_HEALTH_SCALES, SEXUAL_HEALTH_SCALES } from '../../data/scales';
 import {
@@ -336,8 +337,11 @@ const MentalProfileCard: React.FC<{
         </div>
       </div>
 
-      <span className="inline-flex items-center gap-1.5 text-[10.5px] font-bold text-sage bg-sage-soft rounded-[20px] px-2.5 py-1 mt-3">
-        {archetype.title} {archetype.subtitle}
+      <span className="inline-flex items-center gap-1.5 mt-3">
+        <span className="inline-flex items-center text-[10.5px] font-bold text-sage bg-sage-soft rounded-[20px] px-2.5 py-1">
+          {archetype.title} {archetype.subtitle}
+        </span>
+        <InfoTip text={`Ton archétype résume ta personnalité en une identité, calculée à partir de tes résultats. ${archetype.description} Ton totem (l'animal) et ton archétype sont deux façons complémentaires de te comprendre — l'un en image, l'autre en mots.`} />
       </span>
 
       {updating ? (
