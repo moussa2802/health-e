@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { Sparkles, Droplet, Heart, Shield } from 'lucide-react';
 import type { Archetype, KeyDimension } from '../../utils/profileArchetype';
 import TestSignature from './TestSignature';
+import InfoTip from '../Onboarding/InfoTip';
 
 const TRAIT_ICONS: Record<string, React.FC<{ size?: number; className?: string }>> = {
   'Haut potentiel': Sparkles,
@@ -167,12 +168,19 @@ const ShareableProfileCard: React.FC<ShareableProfileCardProps> = ({
       {/* Archetype */}
       <div className="relative z-10" style={{ marginTop: isExport ? 45 : 18 }}>
         <div
+          className="flex items-center gap-1.5"
           style={{
             fontSize: isExport ? 31 : 12.5,
             color: '#C9B7A6', fontWeight: 600, letterSpacing: '0.02em',
           }}
         >
           Ton archétype
+          {!isExport && (
+            <InfoTip
+              variant="dark"
+              text={`Ton archétype résume ta personnalité en une identité, calculée à partir de tes résultats. ${archetype.description} Ton totem (l'animal) et ton archétype sont deux façons complémentaires de te comprendre — l'un en image, l'autre en mots.`}
+            />
+          )}
         </div>
         <h1
           className="font-display"
