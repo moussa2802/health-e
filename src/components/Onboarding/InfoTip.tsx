@@ -69,25 +69,17 @@ const InfoTip: React.FC<InfoTipProps> = ({ text, variant = 'light' }) => {
       {open && (
         <div
           ref={popoverRef}
-          className={`rounded-xl shadow-lift px-3.5 py-3 text-left ${
-            isDark
-              ? 'bg-[#2A2926] border border-white/10'
-              : 'bg-card border border-line'
-          }`}
+          className="rounded-xl shadow-lift px-3.5 py-3 text-left bg-card border border-line"
           style={popStyle}
           onClick={e => e.stopPropagation()}
         >
           <div className="flex items-start justify-between gap-2">
-            <p className={`m-0 text-[12px] leading-relaxed ${isDark ? 'text-white/75' : 'text-ink-soft'}`}>
+            <p className="m-0 text-[12px] leading-relaxed text-ink-soft">
               {text}
             </p>
             <button
               onClick={() => setOpen(false)}
-              className={`flex-shrink-0 p-0.5 rounded-md cursor-pointer border-0 transition-colors ${
-                isDark
-                  ? 'bg-white/10 text-white/50 hover:bg-white/15'
-                  : 'bg-ink/5 text-muted hover:bg-ink/10'
-              }`}
+              className="flex-shrink-0 p-0.5 rounded-md cursor-pointer border-0 transition-colors bg-ink/5 text-muted hover:bg-ink/10"
             >
               <X size={12} />
             </button>

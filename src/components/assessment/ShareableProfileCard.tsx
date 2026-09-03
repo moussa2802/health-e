@@ -178,7 +178,7 @@ const ShareableProfileCard: React.FC<ShareableProfileCardProps> = ({
           {!isExport && (
             <InfoTip
               variant="dark"
-              text={`Ton archétype résume ta personnalité en une identité, calculée à partir de tes résultats. ${archetype.description} Ton totem (l'animal) et ton archétype sont deux façons complémentaires de te comprendre — l'un en image, l'autre en mots.`}
+              text={archetype.description}
             />
           )}
         </div>

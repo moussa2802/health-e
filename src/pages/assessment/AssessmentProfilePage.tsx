@@ -341,7 +341,7 @@ const MentalProfileCard: React.FC<{
         <span className="inline-flex items-center text-[10.5px] font-bold text-sage bg-sage-soft rounded-[20px] px-2.5 py-1">
           {archetype.title} {archetype.subtitle}
         </span>
-        <InfoTip text={`Ton archétype résume ta personnalité en une identité, calculée à partir de tes résultats. ${archetype.description} Ton totem (l'animal) et ton archétype sont deux façons complémentaires de te comprendre — l'un en image, l'autre en mots.`} />
+        <InfoTip text={archetype.description} />
       </span>
 
       {updating ? (
