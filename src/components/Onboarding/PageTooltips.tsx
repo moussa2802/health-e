@@ -8,64 +8,47 @@ import { TOOLTIPS, type TooltipConfig } from '../../utils/onboardingConfig';
 
 // ── Helpers de positionnement ─────────────────────────────────────────────────
 
-interface PositionStyle {
-  position: 'fixed';
-  top?: number | string;
-  bottom?: number | string;
-  left?: number | string;
-  right?: number | string;
-  transform?: string;
+const EDGE_PAD = 12;
+const GAP = 12;
+
+interface BubbleLayout {
+  top?: number;
+  bottom?: number;
+  left: number;
+  width: number;
+  arrowLeft: number;
+  arrowSide: 'top' | 'bottom';
 }
 
-function getTooltipStyle(rect: DOMRect, position: string): PositionStyle {
-  const PAD = 14;
-  const W = 280; // largeur fixe du tooltip
+function computeLayout(rect: DOMRect, position: string): BubbleLayout {
+  const vw = window.innerWidth;
+  const maxW = Math.min(300, vw - EDGE_PAD * 2);
 
-  // Centre horizontal de l'élément, clampé aux bords de l'écran
-  const centerX = Math.max(16, Math.min(window.innerWidth - W - 16, rect.left + rect.width / 2 - W / 2));
-  // Centre vertical
-  const centerY = rect.top + rect.height / 2;
+  const targetCenterX = rect.left + rect.width / 2;
+  let left = targetCenterX - maxW / 2;
 
-  switch (position) {
-    case 'bottom':
-      return { position: 'fixed', top: rect.bottom + PAD, left: centerX };
-    case 'top':
-      return { position: 'fixed', bottom: window.innerHeight - rect.top + PAD, left: centerX };
-    case 'right':
-      return { position: 'fixed', top: centerY - 80, left: rect.right + PAD };
-    case 'left':
-      return { position: 'fixed', top: centerY - 80, right: window.innerWidth - rect.left + PAD };
-    default:
-      return { position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%, -50%)' };
+  if (left < EDGE_PAD) left = EDGE_PAD;
+  if (left + maxW > vw - EDGE_PAD) left = vw - EDGE_PAD - maxW;
+
+  const arrowLeft = Math.max(16, Math.min(maxW - 16, targetCenterX - left));
+
+  if (position === 'top') {
+    return {
+      bottom: window.innerHeight - rect.top + GAP,
+      left,
+      width: maxW,
+      arrowLeft,
+      arrowSide: 'bottom',
+    };
   }
-}
 
-// ── Arrow direction inverse ────────────────────────────────────────────────────
-
-function ArrowUp() {
-  return (
-    <div style={{
-      position: 'absolute', top: -8, left: '50%', transform: 'translateX(-50%)',
-      width: 0, height: 0,
-      borderLeft: '8px solid transparent',
-      borderRight: '8px solid transparent',
-      borderBottom: '8px solid white',
-      filter: 'drop-shadow(0 -2px 2px rgba(0,0,0,0.08))',
-    }} />
-  );
-}
-
-function ArrowDown() {
-  return (
-    <div style={{
-      position: 'absolute', bottom: -8, left: '50%', transform: 'translateX(-50%)',
-      width: 0, height: 0,
-      borderLeft: '8px solid transparent',
-      borderRight: '8px solid transparent',
-      borderTop: '8px solid white',
-      filter: 'drop-shadow(0 2px 2px rgba(0,0,0,0.08))',
-    }} />
-  );
+  return {
+    top: rect.bottom + GAP,
+    left,
+    width: maxW,
+    arrowLeft,
+    arrowSide: 'top',
+  };
 }
 
 // ── Spotlight SVG overlay ─────────────────────────────────────────────────────
@@ -75,7 +58,7 @@ const SpotlightOverlay: React.FC<{
   onClick: () => void;
 }> = ({ targetRect, onClick }) => {
   const pad = 10;
-  const r = 10; // border-radius du spotlight
+  const r = 10;
 
   return (
     <svg
@@ -120,46 +103,80 @@ const TooltipBubble: React.FC<{
   onNext: () => void;
   onSkip: () => void;
 }> = ({ tooltip, targetRect, current, total, onNext, onSkip }) => {
-  const posStyle = targetRect
-    ? getTooltipStyle(targetRect, tooltip.position)
-    : { position: 'fixed' as const, top: '50%', left: '50%', transform: 'translate(-50%, -50%)' };
+  const layout = targetRect
+    ? computeLayout(targetRect, tooltip.position)
+    : null;
 
-  const showArrowUp = tooltip.position === 'bottom';
-  const showArrowDown = tooltip.position === 'top';
+  const style: React.CSSProperties = layout
+    ? {
+        position: 'fixed',
+        zIndex: 10001,
+        pointerEvents: 'all',
+        left: layout.left,
+        width: layout.width,
+        ...(layout.top != null ? { top: layout.top } : {}),
+        ...(layout.bottom != null ? { bottom: layout.bottom } : {}),
+      }
+    : {
+        position: 'fixed',
+        zIndex: 10001,
+        pointerEvents: 'all',
+        top: '50%',
+        left: '50%',
+        transform: 'translate(-50%, -50%)',
+        width: Math.min(300, window.innerWidth - EDGE_PAD * 2),
+      };
 
   return (
     <div
-      style={{ ...posStyle, zIndex: 10001, pointerEvents: 'all' }}
-      className="w-[280px] bg-card rounded-block px-4.5 py-4 shadow-lift"
+      style={style}
+      className="bg-card rounded-block px-4 py-3.5 shadow-lift"
       onClick={e => e.stopPropagation()}
     >
-      {showArrowUp && <ArrowUp />}
-      {showArrowDown && <ArrowDown />}
+      {/* Arrow */}
+      {layout && (
+        <div
+          style={{
+            position: 'absolute',
+            ...(layout.arrowSide === 'top' ? { top: -7 } : { bottom: -7 }),
+            left: layout.arrowLeft,
+            transform: 'translateX(-50%)',
+            width: 0,
+            height: 0,
+            borderLeft: '7px solid transparent',
+            borderRight: '7px solid transparent',
+            ...(layout.arrowSide === 'top'
+              ? { borderBottom: '7px solid white' }
+              : { borderTop: '7px solid white' }),
+            filter: 'drop-shadow(0 -1px 1px rgba(0,0,0,0.06))',
+          }}
+        />
+      )}
 
-      {/* Badge numéro */}
-      <div className="flex items-center justify-between mb-2.5">
+      {/* Badge + skip */}
+      <div className="flex items-center justify-between mb-2">
         <span className="bg-sage text-white text-[10px] font-bold px-2 py-0.5 rounded-pill">
           {current} / {total}
         </span>
         <button
           onClick={onSkip}
-          className="bg-transparent border-0 text-muted text-[11px] cursor-pointer font-semibold hover:text-ink-soft transition-colors"
+          className="bg-transparent border-0 text-muted text-[11px] cursor-pointer font-semibold hover:text-ink-soft transition-colors p-0"
         >
           Passer tout
         </button>
       </div>
 
       {/* Titre */}
-      <p className="m-0 mb-1.5 text-sm font-extrabold text-ink">
+      <p className="m-0 mb-1 text-sm font-extrabold text-ink">
         {tooltip.titre}
       </p>
 
       {/* Texte */}
-      <p className="m-0 mb-3.5 text-[13px] text-ink-soft leading-relaxed">
+      <p className="m-0 mb-3 text-[13px] text-ink-soft leading-relaxed">
         {tooltip.texte}
       </p>
 
-      {/* Bouton Compris */}
+      {/* Bouton */}
       <button
         onClick={onNext}
         className="w-full py-2.5 rounded-xl border-0 bg-sage text-white text-[13px] font-bold cursor-pointer flex items-center justify-center gap-1.5 hover:bg-sage/90 transition-colors"
@@ -186,32 +203,27 @@ const PageTooltips: React.FC<PageTooltipsProps> = ({ pageKey }) => {
 
   const pageTooltips = TOOLTIPS[pageKey] ?? [];
 
-  // ── Trouver l'élément DOM et sa position ────────────────────────────────────
   const findTarget = useCallback((tooltip: TooltipConfig) => {
     const el = document.querySelector(`[data-tooltip-id="${tooltip.target}"]`);
     if (el) {
-      el.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
-      // Attendre que le scroll soit fini avant de lire getBoundingClientRect
-      setTimeout(() => {
+      el.scrollIntoView({ behavior: 'instant', block: 'center', inline: 'nearest' });
+      requestAnimationFrame(() => {
         setTargetRect(el.getBoundingClientRect());
-      }, 350);
+      });
     } else {
       setTargetRect(null);
     }
   }, []);
 
-  // ── Démarrer les tooltips ───────────────────────────────────────────────────
   const startTooltips = useCallback((list: TooltipConfig[]) => {
     if (!list.length) return;
     const sorted = [...list].sort((a, b) => a.ordre - b.ordre);
     setTooltips(sorted);
     setIndex(0);
     setActive(true);
-    // Attendre que la page charge
     setTimeout(() => findTarget(sorted[0]), 400);
   }, [findTarget]);
 
-  // ── Check première visite ───────────────────────────────────────────────────
   useEffect(() => {
     if (!isAuthenticated || !currentUser?.id || !pageTooltips.length || checkedRef.current) return;
     checkedRef.current = true;
@@ -219,15 +231,12 @@ const PageTooltips: React.FC<PageTooltipsProps> = ({ pageKey }) => {
     getOnboardingState(currentUser.id).then(state => {
       const visited = state?.pages_visited?.[pageKey];
       if (!visited) {
-        // Marquer la page comme visitée immédiatement (même si on ferme avant la fin)
         markPageVisited(currentUser.id!, pageKey);
-        // Délai pour laisser la page se rendre
         setTimeout(() => startTooltips(pageTooltips), 1200);
       }
     });
   }, [isAuthenticated, currentUser?.id, pageKey, pageTooltips, startTooltips]);
 
-  // ── Écouter le replay depuis HelpButton ────────────────────────────────────
   useEffect(() => {
     const handler = (e: Event) => {
       const detail = (e as CustomEvent).detail as { pageKey: string };
@@ -243,14 +252,12 @@ const PageTooltips: React.FC<PageTooltipsProps> = ({ pageKey }) => {
     return () => window.removeEventListener('he:replay-tooltips', handler);
   }, [pageKey, currentUser?.id, pageTooltips, startTooltips]);
 
-  // ── Mettre à jour la position quand l'index change ─────────────────────────
   useEffect(() => {
     if (active && tooltips[index]) {
       findTarget(tooltips[index]);
     }
   }, [index, active, tooltips, findTarget]);
 
-  // ── Gérer le resize ────────────────────────────────────────────────────────
   useEffect(() => {
     if (!active || !tooltips[index]) return;
     const handleResize = () => findTarget(tooltips[index]);

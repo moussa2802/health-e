@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Sparkles, RefreshCw, ChevronRight } from 'lucide-react';
+import InfoTip from '../Onboarding/InfoTip';
 import {
   getTotemProgress,
   getTotemSignature,
@@ -60,7 +61,10 @@ const TotemCard: React.FC<TotemCardProps> = ({
             <Sparkles size={18} className="text-gold" />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-[14px] font-bold text-ink m-0">Ton Totem</p>
+            <div className="flex items-center gap-1.5">
+              <p className="text-[14px] font-bold text-ink m-0">Ton Totem</p>
+              <InfoTip text="Ton totem est un animal qui reflète ta personnalité psychologique profonde. Complète les évaluations pour le découvrir — deux personnes avec le même totem se ressemblent vraiment !" />
+            </div>
             <p className="text-[11px] text-muted m-0 mt-0.5">
               Encore {remaining} test{remaining > 1 ? 's' : ''} pour le révéler
             </p>

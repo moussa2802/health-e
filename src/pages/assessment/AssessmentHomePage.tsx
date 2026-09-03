@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Brain, Heart, Users, NotebookPen, ChevronRight, Lock, Check, Play, Shield } from 'lucide-react';
+import { Brain, Heart, Users, NotebookPen, ChevronRight, Lock, Check, Play, Shield, Stethoscope } from 'lucide-react';
 import TotemCard from '../../components/assessment/TotemCard';
+import InfoTip from '../../components/Onboarding/InfoTip';
 import { useAuth } from '../../contexts/AuthContext';
 import {
   getOrCreateUserProfile,
@@ -315,9 +316,13 @@ const AssessmentHomePage: React.FC = () => {
             onClick={() => navigate('/assessment/profile')}
             className="mt-5 w-full flex items-center justify-center gap-2 rounded-[14px] border border-white/15 bg-white/10 py-2.5 text-[13px] font-bold text-[#F4F1E9] cursor-pointer transition-colors hover:bg-white/15 relative z-10"
           >
-            Voir mon analyse globale
+            <Stethoscope size={14} />
+            Voir mon analyse Dr Lô
             <ChevronRight size={15} />
           </button>
+          <p className="mt-2 mb-0 text-[10px] text-white/35 text-center relative z-10">
+            Dr Lô croise tous tes résultats pour une analyse personnalisée qui s'enrichit à chaque test.
+          </p>
         </div>
 
         {/* ── 2b. Totem ── */}
@@ -424,8 +429,14 @@ const AssessmentHomePage: React.FC = () => {
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-3">
                 <Users size={20} className="text-[#F4F1E9]/80" />
-                <div>
-                  <h3 className="font-display text-base font-semibold text-[#F4F1E9] m-0">Compatibilité</h3>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-1.5">
+                    <h3 className="font-display text-base font-semibold text-[#F4F1E9] m-0">Compatibilité</h3>
+                    <InfoTip
+                      variant="dark"
+                      text="Compare ton profil psychologique et intime avec celui de ton/ta partenaire. Chacun fait ses tests de son côté, puis vous croisez vos résultats pour une analyse relationnelle personnalisée."
+                    />
+                  </div>
                   <p className="text-xs text-white/50 m-0 mt-0.5">
                     Compare ton profil avec ton/ta partenaire — mental et intime.
                   </p>
@@ -493,10 +504,14 @@ const AssessmentHomePage: React.FC = () => {
                     <span className="font-display text-[17px] font-semibold leading-none">{compatCost}</span>
                   </span>
                 </button>
-                <p className="flex items-center justify-center gap-1.5 mt-2 mb-0 text-xs font-semibold text-white/60">
+                <span className="flex items-center justify-center gap-1.5 mt-2 mb-0 text-xs font-semibold text-white/60">
                   <img src="/kori.png" alt="" className="w-4 h-4 rounded-full object-cover" />
                   Ton solde : <b className="text-white/80">{balance} Koris</b>
-                </p>
+                  <InfoTip
+                    variant="dark"
+                    text="Les Koris sont ta monnaie Health-e. Tu en gagnes en complétant des tests et tu les utilises pour les analyses Dr Lô, le journal et la compatibilité."
+                  />
+                </span>
               </>
             ) : (
               <div>
