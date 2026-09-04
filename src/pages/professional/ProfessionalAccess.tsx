@@ -14,6 +14,8 @@ import {
 import { useAuth } from "../../contexts/AuthContext";
 import { useLanguage } from "../../contexts/LanguageContext";
 import { useTerms } from "../../contexts/TermsContext";
+import { validateEmail } from "../../utils/emailValidation";
+import EmailInput from "../../components/auth/EmailInput";
 import {
   CATEGORIES,
   SPECIALTIES,
@@ -217,6 +219,11 @@ const ProfessionalAccess: React.FC = () => {
         setLoginError("Veuillez remplir tous les champs");
         return;
       }
+      const emailCheck = validateEmail(loginEmail);
+      if (!emailCheck.valid) {
+        setLoginError(emailCheck.error!);
+        return;
+      }
 
       try {
         setLoginError("");
@@ -249,6 +256,12 @@ const ProfessionalAccess: React.FC = () => {
         !registerPasswordConfirm
       ) {
         setRegisterError("Veuillez remplir tous les champs");
+        return;
+      }
+
+      const emailCheck = validateEmail(registerEmail);
+      if (!emailCheck.valid) {
+        setRegisterError(emailCheck.error!);
         return;
       }
 
@@ -439,11 +452,10 @@ const ProfessionalAccess: React.FC = () => {
                     >
                       Adresse email
                     </label>
-                    <input
+                    <EmailInput
                       id="login-email"
-                      type="email"
                       value={loginEmail}
-                      onChange={(e) => setLoginEmail(e.target.value)}
+                      onChange={setLoginEmail}
                       className="w-full px-4 py-3 rounded-card border border-line focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent transition-colors"
                       placeholder="Votre email"
                       required
@@ -565,11 +577,10 @@ const ProfessionalAccess: React.FC = () => {
                     >
                       Adresse email
                     </label>
-                    <input
+                    <EmailInput
                       id="register-email"
-                      type="email"
                       value={registerEmail}
-                      onChange={(e) => setRegisterEmail(e.target.value)}
+                      onChange={setRegisterEmail}
                       className="w-full px-4 py-3 rounded-card border border-line focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent transition-colors"
                       placeholder="Votre email"
                       required

@@ -1,6 +1,8 @@
 import React, { useState } from "react";
 import { useAuth } from "../../contexts/AuthContext";
 import { Mail, Eye, EyeOff, CheckCircle2, AlertTriangle } from "lucide-react";
+import { validateEmail } from "../../utils/emailValidation";
+import EmailInput from "./EmailInput";
 
 const MigrationGate: React.FC = () => {
   const { linkGoogleAccount, linkEmailToAccount, logout } = useAuth();
@@ -33,6 +35,11 @@ const MigrationGate: React.FC = () => {
 
     if (!email.trim() || !password) {
       setError("Veuillez remplir tous les champs.");
+      return;
+    }
+    const emailCheck = validateEmail(email);
+    if (!emailCheck.valid) {
+      setError(emailCheck.error!);
       return;
     }
     if (password.length < 6) {
@@ -145,10 +152,9 @@ const MigrationGate: React.FC = () => {
               <label className="block text-xs font-semibold text-ink-soft mb-1.5">
                 Adresse email
               </label>
-              <input
-                type="email"
+              <EmailInput
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={setEmail}
                 placeholder="votre@email.com"
                 className="w-full px-3.5 py-2.5 rounded-xl bg-card border border-line text-sm text-ink placeholder:text-muted focus:outline-none focus:border-accent/50 transition-colors"
                 autoComplete="email"

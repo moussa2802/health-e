@@ -2,6 +2,8 @@ import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { ArrowLeft, Mail, CheckCircle2, AlertCircle, Loader2 } from "lucide-react";
 import { useAuth } from "../../contexts/AuthContext";
+import { validateEmail } from "../../utils/emailValidation";
+import EmailInput from "./EmailInput";
 
 const ForgotPasswordProfessional: React.FC = () => {
   const [email, setEmail] = useState("");
@@ -15,6 +17,11 @@ const ForgotPasswordProfessional: React.FC = () => {
 
     if (!email.trim()) {
       setError("Veuillez entrer votre adresse email");
+      return;
+    }
+    const emailCheck = validateEmail(email);
+    if (!emailCheck.valid) {
+      setError(emailCheck.error!);
       return;
     }
 
@@ -92,14 +99,12 @@ const ForgotPasswordProfessional: React.FC = () => {
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                 <Mail className="h-5 w-5 text-muted" />
               </div>
-              <input
+              <EmailInput
                 id="email"
-                name="email"
-                type="email"
                 autoComplete="email"
                 required
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={setEmail}
                 className="block w-full pl-10 pr-3 py-2 border border-line rounded-xl bg-card placeholder-muted focus:outline-none focus:border-sage"
                 placeholder="votre@email.com"
               />

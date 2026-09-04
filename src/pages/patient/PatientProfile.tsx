@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
+import { validateEmail } from "../../utils/emailValidation";
+import EmailInput from "../../components/auth/EmailInput";
 import {
   ArrowLeft,
   User,
@@ -203,6 +205,8 @@ const PatientProfile: React.FC = () => {
   };
 
   const handleLinkEmail = async () => {
+    const emailCheck = validateEmail(linkEmail);
+    if (!emailCheck.valid) { setAuthMsg({ type: "err", text: emailCheck.error! }); return; }
     if (linkPassword.length < 6) { setAuthMsg({ type: "err", text: "Mot de passe : 6 caractères minimum." }); return; }
     if (linkPassword !== linkPasswordConfirm) { setAuthMsg({ type: "err", text: "Les mots de passe ne correspondent pas." }); return; }
     setLinkingEmail(true);
@@ -412,7 +416,7 @@ const PatientProfile: React.FC = () => {
                 </div>
                 {showLinkEmailForm && !hasEmail && (
                   <div className="px-3 pb-3 space-y-2.5 border-t border-line pt-3 mx-3">
-                    <input type="email" placeholder="Adresse email" value={linkEmail} onChange={(e) => setLinkEmail(e.target.value)} className={inputClass} />
+                    <EmailInput placeholder="Adresse email" value={linkEmail} onChange={setLinkEmail} className={inputClass} />
                     <div className="relative">
                       <input type={showLinkPassword ? "text" : "password"} placeholder="Mot de passe (6 car. min)" value={linkPassword} onChange={(e) => setLinkPassword(e.target.value)} className={`${inputClass} pr-10`} />
                       <button type="button" onClick={() => setShowLinkPassword(!showLinkPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted bg-transparent border-none cursor-pointer p-0">

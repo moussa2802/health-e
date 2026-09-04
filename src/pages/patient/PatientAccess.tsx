@@ -7,6 +7,8 @@ import "react-phone-number-input/style.css";
 import { useAuth } from "../../contexts/AuthContext";
 import { useTerms } from "../../contexts/TermsContext";
 import { usePhoneAuth } from "../../hooks/usePhoneAuth";
+import { validateEmail } from "../../utils/emailValidation";
+import EmailInput from "../../components/auth/EmailInput";
 
 import { getFirestore, doc, getDoc } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
@@ -223,6 +225,11 @@ const PatientAccess: React.FC = () => {
       setErr("Veuillez remplir tous les champs.");
       return;
     }
+    const emailCheck = validateEmail(emailValue);
+    if (!emailCheck.valid) {
+      setErr(emailCheck.error!);
+      return;
+    }
     setLoading(true);
     try {
       await login(emailValue.trim(), passwordValue, "patient");
@@ -254,6 +261,11 @@ const PatientAccess: React.FC = () => {
     setErr("");
     if (!emailValue.trim() || !passwordValue || !emailFullName.trim() || !emailGender) {
       setErr("Veuillez remplir tous les champs.");
+      return;
+    }
+    const emailCheck = validateEmail(emailValue);
+    if (!emailCheck.valid) {
+      setErr(emailCheck.error!);
       return;
     }
     if (passwordValue.length < 6) {
@@ -676,10 +688,9 @@ const PatientAccess: React.FC = () => {
 
                 <div>
                   <label className="block text-xs font-semibold text-ink-soft mb-1.5">Email</label>
-                  <input
-                    type="email"
+                  <EmailInput
                     value={emailValue}
-                    onChange={(e) => setEmailValue(e.target.value)}
+                    onChange={setEmailValue}
                     className={inputCls}
                     placeholder="votre@email.com"
                     autoComplete="email"
