@@ -33,8 +33,8 @@ import { KORIS_COSTS } from '../../services/korisService';
 import { getScaleMeta, type ScaleCategory, CATEGORY_COLORS } from '../../utils/scaleMeta';
 import TestCode from '../../components/assessment/TestCode';
 
-const MENTAL_THRESHOLD = 8;
-const SEXUAL_THRESHOLD = 5;
+const PSY_THRESHOLD = 7;
+const INTIMATE_THRESHOLD = 5;
 
 const TAB_CONFIG: { id: 'mental' | 'intime' | 'bonus'; label: string }[] = [
   { id: 'mental', label: 'Psychologique' },
@@ -170,16 +170,15 @@ const AssessmentHomePage: React.FC = () => {
   const currentCategory = getCategoryForTab(activeTab);
   const catColors = CATEGORY_COLORS[currentCategory];
 
-  const mentalOk = mentalCompleted >= MENTAL_THRESHOLD;
-  const sexualOk = sexualCompleted >= SEXUAL_THRESHOLD;
-  const isUnlocked = mentalOk && sexualOk;
+  const psyOk = mentalCompleted >= PSY_THRESHOLD;
+  const intimateOk = sexualCompleted >= INTIMATE_THRESHOLD;
+  const isUnlocked = psyOk;
+  const hasBothProfiles = psyOk && intimateOk;
   const compatCost = KORIS_COSTS.compatibility;
   const hasKoris = canAfford('compatibility');
-  const mentalMissing = Math.max(0, MENTAL_THRESHOLD - mentalCompleted);
-  const sexualMissing = Math.max(0, SEXUAL_THRESHOLD - sexualCompleted);
-  const totalMissing = mentalMissing + sexualMissing;
-  const isClose = totalMissing > 0 && totalMissing <= 3;
-  const worstCategory = mentalMissing >= sexualMissing ? '/assessment/mental' : '/assessment/sexual';
+  const psyMissing = Math.max(0, PSY_THRESHOLD - mentalCompleted);
+  const intimateMissing = Math.max(0, INTIMATE_THRESHOLD - sexualCompleted);
+  const isClose = psyMissing > 0 && psyMissing <= 3;
 
   return (
     <>
@@ -424,113 +423,120 @@ const AssessmentHomePage: React.FC = () => {
         </div>
 
         {/* ── 6. Compatibility card (ink) ── */}
-        {isAuthenticated && (
-          <div className="rounded-block p-5 shadow-soft overflow-hidden mb-5" style={{ background: 'linear-gradient(160deg, #20211F 0%, #33322C 100%)' }}>
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-3">
-                <Users size={20} className="text-[#F4F1E9]/80" />
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-1.5">
-                    <h3 className="font-display text-base font-semibold text-[#F4F1E9] m-0">Compatibilité</h3>
-                    <InfoTip
-                      variant="dark"
-                      text="Compare ton profil psychologique et intime avec celui de ton/ta partenaire. Chacun fait ses tests de son côté, puis vous croisez vos résultats pour une analyse relationnelle personnalisée."
-                    />
-                  </div>
-                  <p className="text-xs text-white/50 m-0 mt-0.5">
-                    Compare ton profil avec ton/ta partenaire — mental et intime.
-                  </p>
-                </div>
-              </div>
-              {!isUnlocked && <Lock size={16} className="text-white/30 flex-shrink-0" />}
-            </div>
-
-            {/* Progress bars */}
-            <div className="flex gap-4 mb-4">
-              <div className="flex-1">
-                <div className="flex items-center justify-between mb-1.5">
-                  <span className="text-[11px] text-white/60 font-medium flex items-center gap-1.5">
-                    <Brain size={12} /> Psychologique
-                  </span>
-                  <span className={`text-[11px] font-bold ${mentalOk ? 'text-[#E9A88C]' : 'text-white/40'}`}>
-                    {mentalOk && <Check size={10} className="inline -mt-0.5 mr-0.5" />}
-                    {mentalCompleted}/{MENTAL_THRESHOLD}
-                  </span>
-                </div>
-                <div className="h-[5px] rounded-full overflow-hidden" style={{ background: 'rgba(244,241,233,.15)' }}>
-                  <div
-                    className="h-full rounded-full bg-accent"
-                    style={{
-                      width: barsMounted ? `${Math.min(100, (mentalCompleted / MENTAL_THRESHOLD) * 100)}%` : '0%',
-                      transition: 'width 1s cubic-bezier(.2,.7,.3,1)',
-                    }}
-                  />
-                </div>
-              </div>
-              <div className="flex-1">
-                <div className="flex items-center justify-between mb-1.5">
-                  <span className="text-[11px] text-white/60 font-medium flex items-center gap-1.5">
-                    <Heart size={12} /> Vie intime
-                  </span>
-                  <span className={`text-[11px] font-bold ${sexualOk ? 'text-[#E9A88C]' : 'text-white/40'}`}>
-                    {sexualOk && <Check size={10} className="inline -mt-0.5 mr-0.5" />}
-                    {sexualCompleted}/{SEXUAL_THRESHOLD}
-                  </span>
-                </div>
-                <div className="h-[5px] rounded-full overflow-hidden" style={{ background: 'rgba(244,241,233,.15)' }}>
-                  <div
-                    className="h-full rounded-full bg-accent"
-                    style={{
-                      width: barsMounted ? `${Math.min(100, (sexualCompleted / SEXUAL_THRESHOLD) * 100)}%` : '0%',
-                      transition: 'width 1s cubic-bezier(.2,.7,.3,1) .15s',
-                    }}
-                  />
-                </div>
-              </div>
-            </div>
-
-            {isUnlocked ? (
-              <>
-                <button
-                  onClick={() => navigate('/assessment/compatibility')}
-                  className={`w-full rounded-[16px] border-none text-[15px] font-bold cursor-pointer flex items-center justify-between gap-3 transition-colors ${
-                    hasKoris ? 'bg-accent text-white hover:bg-accent/90 shadow-soft' : 'bg-white/20 text-white/60 cursor-not-allowed'
-                  }`}
-                  style={{ padding: '6px 6px 6px 20px' }}
-                >
-                  <span className="tracking-tight">Tester la compatibilité</span>
-                  <span className="inline-flex items-center gap-1.5 rounded-xl px-3 py-2" style={{ background: 'rgba(255,255,255,.14)', border: '1px solid rgba(255,255,255,.16)' }}>
-                    <img src="/kori.png" alt="" className="w-6 h-6 rounded-full object-cover" />
-                    <span className="font-display text-[17px] font-semibold leading-none">{compatCost}</span>
-                  </span>
-                </button>
-                <span className="flex items-center justify-center gap-1.5 mt-2 mb-0 text-xs font-semibold text-white/60">
-                  <img src="/kori.png" alt="" className="w-4 h-4 rounded-full object-cover" />
-                  Ton solde : <b className="text-white/80">{balance} Koris</b>
+        <div className={`rounded-block p-5 shadow-soft overflow-hidden mb-5 ${!isAuthenticated ? 'opacity-50 pointer-events-none' : ''}`} style={{ background: 'linear-gradient(160deg, #20211F 0%, #33322C 100%)' }}>
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-3">
+              <Users size={20} className="text-[#F4F1E9]/80" />
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-1.5">
+                  <h3 className="font-display text-base font-semibold text-[#F4F1E9] m-0">Compatibilité</h3>
                   <InfoTip
                     variant="dark"
-                    text="Les Koris sont ta monnaie Health-e. Tu en gagnes en complétant des tests et tu les utilises pour les analyses Dr Lô, le journal et la compatibilité."
+                    text="Compare ton profil psychologique et intime avec celui de ton/ta partenaire. Chacun fait ses tests de son côté, puis vous croisez vos résultats pour une analyse relationnelle personnalisée."
                   />
-                </span>
-              </>
-            ) : (
-              <div>
-                {isClose && (
-                  <p className="text-xs font-semibold text-[#E9A88C] text-center mb-3 m-0">
-                    Plus que {totalMissing} test{totalMissing > 1 ? 's' : ''} et tu débloqueras la compatibilité !
-                  </p>
-                )}
-                <button
-                  onClick={() => navigate(worstCategory)}
-                  className="w-full py-2.5 rounded-xl border border-white/12 bg-white/6 text-white/80 text-[13px] font-semibold cursor-pointer hover:bg-white/10 transition-colors"
-                >
-                  Continuer mes évaluations
-                  <ChevronRight size={14} className="inline ml-1 -mt-0.5" />
-                </button>
+                </div>
+                <p className="text-xs text-white/50 m-0 mt-0.5">
+                  Compare ton profil avec ton/ta partenaire — mental et intime.
+                </p>
               </div>
-            )}
+            </div>
+            {!isUnlocked && <Lock size={16} className="text-white/30 flex-shrink-0" />}
           </div>
-        )}
+
+          {/* Progress bars */}
+          <div className="flex gap-4 mb-4">
+            <div className="flex-1">
+              <div className="flex items-center justify-between mb-1.5">
+                <span className="text-[11px] text-white/60 font-medium flex items-center gap-1.5">
+                  <Brain size={12} /> Psychologique
+                </span>
+                <span className={`text-[11px] font-bold ${psyOk ? 'text-[#E9A88C]' : 'text-white/40'}`}>
+                  {psyOk && <Check size={10} className="inline -mt-0.5 mr-0.5" />}
+                  {mentalCompleted}/{PSY_THRESHOLD}
+                </span>
+              </div>
+              <div className="h-[5px] rounded-full overflow-hidden" style={{ background: 'rgba(244,241,233,.15)' }}>
+                <div
+                  className="h-full rounded-full bg-accent"
+                  style={{
+                    width: barsMounted ? `${Math.min(100, (mentalCompleted / PSY_THRESHOLD) * 100)}%` : '0%',
+                    transition: 'width 1s cubic-bezier(.2,.7,.3,1)',
+                  }}
+                />
+              </div>
+            </div>
+            <div className="flex-1">
+              <div className="flex items-center justify-between mb-1.5">
+                <span className="text-[11px] text-white/60 font-medium flex items-center gap-1.5">
+                  <Heart size={12} /> Vie intime
+                </span>
+                <span className={`text-[11px] font-bold ${intimateOk ? 'text-[#E9A88C]' : 'text-white/40'}`}>
+                  {intimateOk && <Check size={10} className="inline -mt-0.5 mr-0.5" />}
+                  {sexualCompleted}/{INTIMATE_THRESHOLD}
+                </span>
+              </div>
+              <div className="h-[5px] rounded-full overflow-hidden" style={{ background: 'rgba(244,241,233,.15)' }}>
+                <div
+                  className="h-full rounded-full bg-accent"
+                  style={{
+                    width: barsMounted ? `${Math.min(100, (sexualCompleted / INTIMATE_THRESHOLD) * 100)}%` : '0%',
+                    transition: 'width 1s cubic-bezier(.2,.7,.3,1) .15s',
+                  }}
+                />
+              </div>
+            </div>
+          </div>
+
+          {!isAuthenticated ? (
+            <p className="text-xs text-white/50 text-center m-0">
+              Connecte-toi pour débloquer la compatibilité.
+            </p>
+          ) : isUnlocked ? (
+            <>
+              {!intimateOk && (
+                <p className="text-xs text-white/50 text-center mb-3 m-0">
+                  Compatibilité psychologique débloquée. Complète {intimateMissing} test{intimateMissing > 1 ? 's' : ''} intime{intimateMissing > 1 ? 's' : ''} pour l'analyse complète.
+                </p>
+              )}
+              <button
+                onClick={() => navigate('/assessment/compatibility')}
+                className={`w-full rounded-[16px] border-none text-[15px] font-bold cursor-pointer flex items-center justify-between gap-3 transition-colors ${
+                  hasKoris ? 'bg-accent text-white hover:bg-accent/90 shadow-soft' : 'bg-white/20 text-white/60 cursor-not-allowed'
+                }`}
+                style={{ padding: '6px 6px 6px 20px' }}
+              >
+                <span className="tracking-tight">Tester la compatibilité</span>
+                <span className="inline-flex items-center gap-1.5 rounded-xl px-3 py-2" style={{ background: 'rgba(255,255,255,.14)', border: '1px solid rgba(255,255,255,.16)' }}>
+                  <img src="/kori.png" alt="" className="w-6 h-6 rounded-full object-cover" />
+                  <span className="font-display text-[17px] font-semibold leading-none">{compatCost}</span>
+                </span>
+              </button>
+              <span className="flex items-center justify-center gap-1.5 mt-2 mb-0 text-xs font-semibold text-white/60">
+                <img src="/kori.png" alt="" className="w-4 h-4 rounded-full object-cover" />
+                Ton solde : <b className="text-white/80">{balance} Koris</b>
+                <InfoTip
+                  variant="dark"
+                  text="Les Koris sont ta monnaie Health-e. Tu en gagnes en complétant des tests et tu les utilises pour les analyses Dr Lô, le journal et la compatibilité."
+                />
+              </span>
+            </>
+          ) : (
+            <div>
+              {isClose && (
+                <p className="text-xs font-semibold text-[#E9A88C] text-center mb-3 m-0">
+                  Plus que {psyMissing} test{psyMissing > 1 ? 's' : ''} psy et tu débloqueras la compatibilité !
+                </p>
+              )}
+              <button
+                onClick={() => navigate('/assessment/mental')}
+                className="w-full py-2.5 rounded-xl border border-white/12 bg-white/6 text-white/80 text-[13px] font-semibold cursor-pointer hover:bg-white/10 transition-colors"
+              >
+                Continuer mes évaluations
+                <ChevronRight size={14} className="inline ml-1 -mt-0.5" />
+              </button>
+            </div>
+          )}
+        </div>
 
         {/* ── 7. Mon Espace card ── */}
         <button

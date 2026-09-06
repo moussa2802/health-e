@@ -3,6 +3,7 @@ import { db } from '../utils/firebase';
 import type { CompatibilityRequest, CompatibilityResult, ScaleResult } from '../types/assessment';
 import { getUserProfileByCompatibilityId, getProfileProgress } from './evaluationService';
 import { authedFetch } from '../utils/authedFetch';
+import { getRelationshipSubType } from '../utils/relationshipTypes';
 
 const COL = 'compatibilityRequests';
 const HISTORY_COL = 'compatibilityHistory';
@@ -293,9 +294,12 @@ export async function computeCompatibility(requestId: string): Promise<Compatibi
   const bonusResults2 = extractBonus(partnerProfile.scaleResults);
 
   const prenom1: string = (initiatorProfile.onboardingProfile?.prenom as string | undefined) ?? 'Toi';
-  const prenom2: string = (partnerProfile.onboardingProfile?.prenom as string | undefined) ?? 'Partenaire';
+  const prenom2: string = (partnerProfile.onboardingProfile?.prenom as string | undefined) ?? (partnerProfile as any).displayName?.split(' ')[0] ?? 'Partenaire';
   const genre1: string = (initiatorProfile.onboardingProfile?.genre as string | undefined) ?? '';
   const genre2: string = (partnerProfile.onboardingProfile?.genre as string | undefined) ?? '';
+
+  const relMeta = getRelationshipSubType(req.relationshipType);
+  const drLoContext = relMeta?.subType.drLoContext ?? null;
 
   let claudeNarrative = '';
   try {
@@ -306,6 +310,8 @@ export async function computeCompatibility(requestId: string): Promise<Compatibi
         prenom1, prenom2, genre1, genre2,
         codeType,
         relationshipType: req.relationshipType,
+        relationshipLabel: relMeta ? `${relMeta.category.label} — ${relMeta.subType.label}` : undefined,
+        drLoContext,
         scaleResults1, scaleResults2,
         bonusResults1, bonusResults2,
         dimensionScores, globalScore,
@@ -415,9 +421,12 @@ export async function computeMergedCompatibility(
   const bonusResults2 = extractBonus(partnerProfile.scaleResults);
 
   const prenom1: string = (initiatorProfile.onboardingProfile?.prenom as string | undefined) ?? 'Toi';
-  const prenom2: string = (partnerProfile.onboardingProfile?.prenom as string | undefined) ?? 'Partenaire';
+  const prenom2: string = (partnerProfile.onboardingProfile?.prenom as string | undefined) ?? (partnerProfile as any).displayName?.split(' ')[0] ?? 'Partenaire';
   const genre1: string = (initiatorProfile.onboardingProfile?.genre as string | undefined) ?? '';
   const genre2: string = (partnerProfile.onboardingProfile?.genre as string | undefined) ?? '';
+
+  const relMeta = getRelationshipSubType(relationshipType);
+  const drLoContext = relMeta?.subType.drLoContext ?? null;
 
   let claudeNarrative = '';
   try {
@@ -428,12 +437,12 @@ export async function computeMergedCompatibility(
         prenom1, prenom2, genre1, genre2,
         codeType: hasMental && hasIntimate ? 'merged' : (hasMental ? 'mental' : 'sexual'),
         relationshipType,
-        // For merged: send both profile types
+        relationshipLabel: relMeta ? `${relMeta.category.label} — ${relMeta.subType.label}` : undefined,
+        drLoContext,
         mentalScaleResults1: mentalScales1,
         mentalScaleResults2: mentalScales2,
         intimateScaleResults1: intimateScales1,
         intimateScaleResults2: intimateScales2,
-        // Legacy fields for backward compat with single-type calls
         scaleResults1: { ...mentalScales1, ...intimateScales1 },
         scaleResults2: { ...mentalScales2, ...intimateScales2 },
         bonusResults1,

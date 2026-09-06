@@ -14,6 +14,7 @@ import {
   Bell,
   UsersRound,
   ClipboardCheck,
+  Coins,
 } from "lucide-react";
 import { useLanguage } from "../../contexts/LanguageContext";
 
@@ -87,6 +88,11 @@ const AdminSidebar = () => {
       path: "/admin/group-therapy",
       icon: UsersRound,
       label: language === "fr" ? "Thérapie de groupe" : "Group Therapy",
+    },
+    {
+      path: "/admin/koris-credit",
+      icon: Coins,
+      label: language === "fr" ? "Créditer Koris" : "Credit Koris",
     },
     // Item externe pour Health-eShare intégré dans le menu principal
     {

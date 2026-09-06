@@ -337,13 +337,13 @@ export async function saveScaleResultToProfile(
     updateData[`signatures.${scaleId}`] = signatureValues;
   }
 
-  // Generate compatibility codes based on count thresholds (8 mental + 5 sexual)
+  // Generate compatibility codes based on count thresholds (7 mental + 5 sexual)
   const MENTAL_IDS = MENTAL_HEALTH_SCALES.map(s => s.id);
   const SEXUAL_IDS = SEXUAL_HEALTH_SCALES.map(s => s.id);
   const mentalDone = MENTAL_IDS.filter(id => !!updated[id]).length;
   const sexualDone = SEXUAL_IDS.filter(id => !!updated[id]).length;
 
-  if (mentalDone >= 8 && !snap.data().compatibilityIdMental) {
+  if (mentalDone >= 7 && !snap.data().compatibilityIdMental) {
     updateData.compatibilityIdMental = generateMentalCompatibilityId();
   }
   if (sexualDone >= 5 && !snap.data().compatibilityIdSexual) {

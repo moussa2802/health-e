@@ -120,6 +120,9 @@ const AdminGroupTherapy = lazy(
 const AdminEvaluations = lazy(
   () => import("./pages/admin/AdminEvaluations")
 );
+const AdminKorisCredit = lazy(
+  () => import("./pages/admin/AdminKorisCredit")
+);
 const FAQ = lazy(() => import("./pages/FAQ"));
 const Contact = lazy(() => import("./pages/Contact"));
 const Privacy = lazy(() => import("./pages/Privacy"));
@@ -442,6 +445,14 @@ const AppChrome: React.FC = () => {
               element={
                 <ProtectedRoute userType="admin">
                   <AdminEvaluations />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/koris-credit"
+              element={
+                <ProtectedRoute userType="admin">
+                  <AdminKorisCredit />
                 </ProtectedRoute>
               }
             />

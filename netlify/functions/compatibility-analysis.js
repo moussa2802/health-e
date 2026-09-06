@@ -100,6 +100,8 @@ exports.handler = async (event) => {
     genre2 = '',
     codeType = 'mental',
     relationshipType = '',
+    relationshipLabel = '',
+    drLoContext = null,
     // Merged fields
     mentalScaleResults1 = {},
     mentalScaleResults2 = {},
@@ -198,12 +200,28 @@ exports.handler = async (event) => {
     ? `\n\nNOTE : Cette analyse est PARTIELLE car seul le profil ${hasMentalData ? 'psychologique' : 'intime'} est disponible. Mentionne-le brièvement dans ta conclusion en suggérant de compléter ${hasMentalData ? 'le profil intime' : 'le profil psychologique'} pour une analyse complète.`
     : ''
 
+  let relationContext = `Type de relation : ${relationshipLabel || relationshipType || 'non précisé'}`
+  if (drLoContext) {
+    relationContext += `\nAngle d'analyse : ${drLoContext.angleAnalyse}`
+    relationContext += `\nTon attendu : ${drLoContext.ton}`
+    if (drLoContext.focus?.length) {
+      relationContext += `\nPoints de focus : ${drLoContext.focus.join(', ')}`
+    }
+    if (drLoContext.exempleIntroDrLo) {
+      relationContext += `\nExemple d'accroche (inspire-toi du style, ne copie pas mot pour mot) : ${drLoContext.exempleIntroDrLo}`
+    }
+  }
+
+  const nameNote = prenom2 === 'Partenaire'
+    ? `IMPORTANT : Le prénom du partenaire n'est pas connu. Utilise "${prenom1}" pour la première personne et des formulations neutres ("l'autre personne", "ton/ta partenaire") pour la seconde. NE PAS écrire "Partenaire" comme un prénom.`
+    : `IMPORTANT : Utilise UNIQUEMENT les prénoms "${prenom1}" et "${prenom2}" dans ton analyse. JAMAIS "ton/ta partenaire" ou "l'autre".`
+
   const messageContent = [
-    `Type de relation : ${relationshipType || 'non précisé'}`,
+    relationContext,
     isMerged ? 'ANALYSE FUSIONNÉE : Tu as les profils psychologiques ET intimes des deux personnes. Croise les deux dimensions dans une analyse relationnelle unique.' : '',
     scoreSummary,
     '',
-    `IMPORTANT : Utilise UNIQUEMENT les prénoms "${prenom1}" et "${prenom2}" dans ton analyse. JAMAIS "ton/ta partenaire" ou "l'autre".`,
+    nameNote,
     `Genre de ${prenom1} : ${genreLabel(genre1)}`,
     `Genre de ${prenom2} : ${genreLabel(genre2)}`,
     '',
