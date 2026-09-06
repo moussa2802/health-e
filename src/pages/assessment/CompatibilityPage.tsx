@@ -4,11 +4,14 @@ import {
   Heart, Home, Users, Briefcase, Key, Brain, Flame, Copy, Check, Lock,
   ChevronRight, ChevronDown, Sparkles, Loader2, AlertCircle, AlertTriangle,
   ThumbsUp, Stethoscope, Zap, RefreshCw, Trash2, TrendingUp, TrendingDown,
-  Clock as ClockIcon, CheckCircle2, XCircle, BarChart3,
+  Clock as ClockIcon, CheckCircle2, XCircle, BarChart3, Share2,
 } from 'lucide-react';
+import ShareableCompatibilityCard from '../../components/assessment/ShareableCompatibilityCard';
+import { shareResultCard } from '../../utils/shareCard';
 import { useAuth } from '../../contexts/AuthContext';
 import PageTooltips from '../../components/Onboarding/PageTooltips';
 import { getOrCreateUserProfile, getProfileProgress } from '../../services/evaluationService';
+import { getOnboardingProfile } from '../../utils/onboardingProfile';
 import {
   computeCompatibility,
   computeMergedCompatibility,
@@ -66,6 +69,9 @@ const CompatibilityPage: React.FC = () => {
   const [historyLoading, setHistoryLoading] = useState(false);
   const [expandedHistory, setExpandedHistory] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [sharing, setSharing] = useState(false);
+  const [shareData, setShareData] = useState<{ prenom2: string; globalScore: number; relType: string; strengths: string[]; claudeNarrative: string } | null>(null);
+  const shareCardRef = useRef<HTMLDivElement>(null);
 
   // Code validation state
   const [mentalValidation, setMentalValidation] = useState<CodeValidationResult | null>(null);
@@ -253,6 +259,22 @@ const CompatibilityPage: React.FC = () => {
   };
 
   const isFamilyCategory = mainCategoryId === 'famille';
+
+  const handleShare = async (result: CompatibilityResult, partnerPrenom: string, relType: string) => {
+    setShareData({ prenom2: partnerPrenom || 'Partenaire', globalScore: result.globalScore, relType, strengths: result.strengths, claudeNarrative: result.claudeNarrative ?? '' });
+    setSharing(true);
+    await new Promise(r => setTimeout(r, 150));
+    if (!shareCardRef.current) { setSharing(false); return; }
+    try {
+      await shareResultCard(shareCardRef.current, 'compatibilite');
+    } finally {
+      setSharing(false);
+    }
+  };
+
+  const myPrenom = getOnboardingProfile()?.prenom as string | undefined
+    ?? currentUser?.name?.split(' ')[0]
+    ?? 'Toi';
 
   // ── Render helpers ──
 
@@ -809,12 +831,26 @@ const CompatibilityPage: React.FC = () => {
         {currentResult && (
           <>
             {renderMergedResult(currentResult, currentPartnerPrenom)}
-            <button
-              onClick={() => { setCurrentResult(null); setCurrentPartnerPrenom(''); setPartnerMentalId(''); setPartnerSexualId(''); setFormError(null); setSelectedSubTypeId(null); setMainCategoryId(null); }}
-              className="w-full mt-4 py-3.5 rounded-2xl border border-line bg-card text-ink text-sm font-bold cursor-pointer flex items-center justify-center gap-1.5 hover:bg-paper transition-colors"
-            >
-              <RefreshCw size={15} /> Nouveau calcul
-            </button>
+
+            {/* Share + Reset buttons */}
+            <div className="flex gap-3 mt-4">
+              <button
+                onClick={() => handleShare(currentResult, currentPartnerPrenom, selectedSubTypeId ?? '')}
+                disabled={sharing}
+                className="flex-1 py-3.5 rounded-2xl border-none bg-accent text-white text-sm font-bold cursor-pointer flex items-center justify-center gap-2 hover:bg-accent/90 transition-colors disabled:opacity-60"
+              >
+                {sharing ? <Loader2 size={15} className="animate-spin" /> : <Share2 size={15} />}
+                {sharing ? 'Export...' : 'Partager'}
+              </button>
+              <button
+                onClick={() => { setCurrentResult(null); setCurrentPartnerPrenom(''); setPartnerMentalId(''); setPartnerSexualId(''); setFormError(null); setSelectedSubTypeId(null); setMainCategoryId(null); }}
+                className="flex-1 py-3.5 rounded-2xl border border-line bg-card text-ink text-sm font-bold cursor-pointer flex items-center justify-center gap-1.5 hover:bg-paper transition-colors"
+              >
+                <RefreshCw size={15} /> Nouveau calcul
+              </button>
+            </div>
+
+            {/* Hidden shareable card rendered at page level */}
           </>
         )}
 
@@ -1006,6 +1042,16 @@ const CompatibilityPage: React.FC = () => {
                               <p className="m-0 text-[13px] text-ink-soft leading-[1.75] whitespace-pre-wrap">{entry.result.claudeNarrative}</p>
                             </div>
                           )}
+
+                          {/* Share button */}
+                          <button
+                            onClick={(e) => { e.stopPropagation(); handleShare(entry.result, entry.partnerPrenom ?? '', entry.relationshipType); }}
+                            disabled={sharing}
+                            className="w-full mt-3 py-2.5 rounded-xl border-none bg-accent text-white text-xs font-bold cursor-pointer flex items-center justify-center gap-1.5 hover:bg-accent/90 transition-colors disabled:opacity-60"
+                          >
+                            {sharing ? <Loader2 size={13} className="animate-spin" /> : <Share2 size={13} />}
+                            {sharing ? 'Export...' : 'Partager notre compatibilité'}
+                          </button>
                         </div>
                       )}
                     </div>
@@ -1029,6 +1075,22 @@ const CompatibilityPage: React.FC = () => {
 
       {/* Tooltips onboarding */}
       <PageTooltips pageKey="compatibility" />
+
+      {/* Hidden shareable card for image export */}
+      {shareData && (
+        <div style={{ position: 'fixed', left: '-9999px', top: 0 }} aria-hidden="true">
+          <div ref={shareCardRef}>
+            <ShareableCompatibilityCard
+              prenom1={myPrenom}
+              prenom2={shareData.prenom2}
+              globalScore={shareData.globalScore}
+              relationshipType={shareData.relType}
+              strengths={shareData.strengths}
+              claudeNarrative={shareData.claudeNarrative}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 };
