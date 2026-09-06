@@ -8,6 +8,19 @@ import { getRelationshipSubType } from '../utils/relationshipTypes';
 const COL = 'compatibilityRequests';
 const HISTORY_COL = 'compatibilityHistory';
 
+function stripUndefined<T extends Record<string, unknown>>(obj: T): T {
+  const clean = {} as T;
+  for (const [k, v] of Object.entries(obj)) {
+    if (v === undefined) continue;
+    if (v !== null && typeof v === 'object' && !Array.isArray(v) && !(v instanceof Date) && typeof (v as any).isEqual !== 'function') {
+      (clean as any)[k] = stripUndefined(v as Record<string, unknown>);
+    } else {
+      (clean as any)[k] = v;
+    }
+  }
+  return clean;
+}
+
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 export interface CompatibilityHistoryEntry {
@@ -44,7 +57,7 @@ export async function saveCompatibilityHistory(
   intimateCode?: string,
 ): Promise<void> {
   const ref = doc(collection(db, HISTORY_COL));
-  await setDoc(ref, {
+  await setDoc(ref, stripUndefined({
     userId,
     relationshipType,
     partnerCode,
@@ -54,7 +67,7 @@ export async function saveCompatibilityHistory(
     intimateCode: intimateCode ?? null,
     result,
     createdAt: serverTimestamp(),
-  });
+  }));
 }
 
 export async function deleteCompatibilityHistory(entryId: string): Promise<void> {
@@ -481,7 +494,7 @@ export async function computeMergedCompatibility(
 
   // Store in compatibilityRequests collection
   const ref = doc(collection(db, COL));
-  await setDoc(ref, {
+  await setDoc(ref, stripUndefined({
     id: ref.id,
     initiatorUserId,
     partnerCompatibilityId: primaryCode,
@@ -489,7 +502,7 @@ export async function computeMergedCompatibility(
     status: 'completed',
     result,
     createdAt: serverTimestamp(),
-  });
+  }));
 
   return result;
 }
