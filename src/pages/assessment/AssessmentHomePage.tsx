@@ -436,7 +436,7 @@ const AssessmentHomePage: React.FC = () => {
                   />
                 </div>
                 <p className="text-xs text-white/50 m-0 mt-0.5">
-                  Compare ton profil avec ton/ta partenaire — mental et intime.
+                  Compare ton profil avec ton/ta partenaire. 7 tests psy suffisent pour débloquer.
                 </p>
               </div>
             </div>
@@ -444,11 +444,12 @@ const AssessmentHomePage: React.FC = () => {
           </div>
 
           {/* Progress bars */}
-          <div className="flex gap-4 mb-4">
-            <div className="flex-1">
+          <div className="flex flex-col gap-3 mb-4">
+            {/* Psy — obligatoire */}
+            <div>
               <div className="flex items-center justify-between mb-1.5">
                 <span className="text-[11px] text-white/60 font-medium flex items-center gap-1.5">
-                  <Brain size={12} /> Psychologique
+                  <Brain size={12} /> Psychologique <span className="text-[9px] text-white/35 uppercase tracking-wider ml-1">obligatoire</span>
                 </span>
                 <span className={`text-[11px] font-bold ${psyOk ? 'text-[#E9A88C]' : 'text-white/40'}`}>
                   {psyOk && <Check size={10} className="inline -mt-0.5 mr-0.5" />}
@@ -465,10 +466,11 @@ const AssessmentHomePage: React.FC = () => {
                 />
               </div>
             </div>
-            <div className="flex-1">
+            {/* Intime — optionnel (bonus) */}
+            <div style={{ opacity: psyOk ? 1 : 0.45 }}>
               <div className="flex items-center justify-between mb-1.5">
                 <span className="text-[11px] text-white/60 font-medium flex items-center gap-1.5">
-                  <Heart size={12} /> Vie intime
+                  <Heart size={12} /> Vie intime <span className="text-[9px] text-white/35 uppercase tracking-wider ml-1">optionnel</span>
                 </span>
                 <span className={`text-[11px] font-bold ${intimateOk ? 'text-[#E9A88C]' : 'text-white/40'}`}>
                   {intimateOk && <Check size={10} className="inline -mt-0.5 mr-0.5" />}
