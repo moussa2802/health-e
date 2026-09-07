@@ -843,7 +843,7 @@ const UserDetailPanel: React.FC<{ userId: string; onClose: () => void }> = ({ us
 // MAIN COMPONENT
 // ══════════════════════════════════════════════════════════════════════════════
 
-const AdminEvaluations: React.FC = () => {
+export const EvaluationsDashboardContent: React.FC = () => {
   const [activeTab, setActiveTab] = useState<SubTab>('overview');
   const [stats, setStats] = useState<EvaluationStats | null>(null);
   const [weeklySignups, setWeeklySignups] = useState<WeeklySignup[]>([]);
@@ -916,64 +916,56 @@ const AdminEvaluations: React.FC = () => {
 
   if (loading) {
     return (
-      <AdminLayout>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 400 }}>
-          <div style={{ textAlign: 'center' }}>
-            <div style={{
-              width: 40, height: 40, border: '3px solid #E2E8F0',
-              borderTop: '3px solid #3B82F6', borderRadius: '50%',
-              animation: 'spin 0.8s linear infinite', margin: '0 auto 12px',
-            }} />
-            <p style={{ color: '#64748B', fontSize: 14 }}>
-              {initializing ? 'Initialisation des statistiques...' : 'Chargement...'}
-            </p>
-          </div>
-          <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 400 }}>
+        <div style={{ textAlign: 'center' }}>
+          <div style={{
+            width: 40, height: 40, border: '3px solid #E2E8F0',
+            borderTop: '3px solid #3B82F6', borderRadius: '50%',
+            animation: 'spin 0.8s linear infinite', margin: '0 auto 12px',
+          }} />
+          <p style={{ color: '#64748B', fontSize: 14 }}>
+            {initializing ? 'Initialisation des statistiques...' : 'Chargement...'}
+          </p>
         </div>
-      </AdminLayout>
+        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      </div>
     );
   }
 
   if (error) {
     return (
-      <AdminLayout>
-        <div style={{ textAlign: 'center', padding: 40 }}>
-          <p style={{ color: '#DC2626', marginBottom: 12 }}>{error}</p>
-          <button onClick={loadDashboard} style={{
-            padding: '8px 20px', borderRadius: 10, border: 'none',
-            background: '#3B82F6', color: 'white', fontWeight: 600, cursor: 'pointer',
-          }}>Reessayer</button>
-        </div>
-      </AdminLayout>
+      <div style={{ textAlign: 'center', padding: 40 }}>
+        <p style={{ color: '#DC2626', marginBottom: 12 }}>{error}</p>
+        <button onClick={loadDashboard} style={{
+          padding: '8px 20px', borderRadius: 10, border: 'none',
+          background: '#3B82F6', color: 'white', fontWeight: 600, cursor: 'pointer',
+        }}>Reessayer</button>
+      </div>
     );
   }
 
   return (
-    <AdminLayout>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-        {/* Header */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
-          <div>
-            <h2 style={{ margin: 0, fontSize: 20, fontWeight: 800, color: '#0A2342' }}>
-              Tableau de bord Evaluations
-            </h2>
-            <p style={{ margin: '2px 0 0', fontSize: 12, color: '#64748B' }}>
-              Statistiques anonymes Health-e 2.0
-            </p>
-          </div>
-          <button
-            onClick={handleRefreshStats}
-            disabled={initializing}
-            style={{
-              padding: '6px 14px', borderRadius: 8, border: '1px solid rgba(59,130,246,0.2)',
-              background: 'rgba(59,130,246,0.05)', color: '#3B82F6', fontWeight: 600,
-              fontSize: 12, cursor: initializing ? 'not-allowed' : 'pointer',
-              opacity: initializing ? 0.5 : 1,
-            }}
-          >
-            {initializing ? 'Recalcul...' : 'Recalculer'}
-          </button>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+      {/* Header */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
+        <div>
+          <p style={{ margin: '2px 0 0', fontSize: 12, color: '#64748B' }}>
+            Statistiques anonymes Health-e 2.0
+          </p>
         </div>
+        <button
+          onClick={handleRefreshStats}
+          disabled={initializing}
+          style={{
+            padding: '6px 14px', borderRadius: 8, border: '1px solid rgba(59,130,246,0.2)',
+            background: 'rgba(59,130,246,0.05)', color: '#3B82F6', fontWeight: 600,
+            fontSize: 12, cursor: initializing ? 'not-allowed' : 'pointer',
+            opacity: initializing ? 0.5 : 1,
+          }}
+        >
+          {initializing ? 'Recalcul...' : 'Recalculer'}
+        </button>
+      </div>
 
         {/* Sub-tab navigation */}
         <SubTabNav active={activeTab} onChange={setActiveTab} />
@@ -1019,8 +1011,14 @@ const AdminEvaluations: React.FC = () => {
           )}
         </p>
       </div>
-    </AdminLayout>
+    </div>
   );
 };
+
+const AdminEvaluations: React.FC = () => (
+  <AdminLayout>
+    <EvaluationsDashboardContent />
+  </AdminLayout>
+);
 
 export default AdminEvaluations;
