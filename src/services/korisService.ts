@@ -19,7 +19,9 @@
 import {
   doc,
   getDoc,
+  setDoc,
   collection,
+  collectionGroup,
   query,
   orderBy,
   limit,
@@ -250,6 +252,8 @@ export async function getKorisHistory(
 
 /**
  * Récupère les statistiques globales Koris pour l'admin dashboard.
+ * Si le document agrégé stats/koris est vide ou a totalSpent=0,
+ * recalcule à partir des données brutes (korisHistory de tous les patients).
  */
 export async function getGlobalKorisStats(): Promise<{
   totalSpent: number;
@@ -258,34 +262,83 @@ export async function getGlobalKorisStats(): Promise<{
   totalTransactions: number;
   spendingByType: Record<string, number>;
 }> {
+  const empty = { totalSpent: 0, totalRefilled: 0, totalRefunded: 0, totalTransactions: 0, spendingByType: {} };
   try {
     const statsRef = doc(db, 'stats', 'koris');
     const snap = await getDoc(statsRef);
-    if (!snap.exists()) {
-      return { totalSpent: 0, totalRefilled: 0, totalRefunded: 0, totalTransactions: 0, spendingByType: {} };
+    if (snap.exists()) {
+      const data = snap.data();
+      if ((data.totalSpent ?? 0) > 0 || (data.totalTransactions ?? 0) > 0) {
+        return {
+          totalSpent: data.totalSpent ?? 0,
+          totalRefilled: data.totalRefilled ?? 0,
+          totalRefunded: data.totalRefunded ?? 0,
+          totalTransactions: data.totalTransactions ?? 0,
+          spendingByType: data.spendingByType ?? {},
+        };
+      }
     }
-    const data = snap.data();
-    return {
-      totalSpent: data.totalSpent ?? 0,
-      totalRefilled: data.totalRefilled ?? 0,
-      totalRefunded: data.totalRefunded ?? 0,
-      totalTransactions: data.totalTransactions ?? 0,
-      spendingByType: data.spendingByType ?? {},
-    };
+
+    // Stats doc empty or missing — compute from raw korisHistory
+    const computed = await computeGlobalKorisStatsFromRaw();
+    // Persist so future loads are fast
+    await setDoc(statsRef, { ...computed, lastUpdated: new Date().toISOString() }, { merge: true }).catch(() => {});
+    return computed;
   } catch {
-    return { totalSpent: 0, totalRefilled: 0, totalRefunded: 0, totalTransactions: 0, spendingByType: {} };
+    return empty;
   }
 }
 
 /**
+ * Scanne tous les patients pour recalculer les stats Koris globales
+ * à partir de korisHistory et des wallets individuels.
+ */
+async function computeGlobalKorisStatsFromRaw(): Promise<{
+  totalSpent: number;
+  totalRefilled: number;
+  totalRefunded: number;
+  totalTransactions: number;
+  spendingByType: Record<string, number>;
+}> {
+  let totalSpent = 0;
+  let totalRefilled = 0;
+  let totalRefunded = 0;
+  let totalTransactions = 0;
+  const spendingByType: Record<string, number> = {};
+
+  // Use collectionGroup to read all korisHistory subcollections at once
+  const historySnap = await getDocs(collectionGroup(db, 'korisHistory'));
+
+  historySnap.forEach(d => {
+    const tx = d.data();
+    const amount = tx.amount ?? 0;
+
+    if (tx.type === 'spend') {
+      totalSpent += amount;
+      totalTransactions++;
+      const feature = tx.feature || 'unknown';
+      spendingByType[feature] = (spendingByType[feature] || 0) + amount;
+    } else if (tx.type === 'refill' || tx.type === 'bonus' || tx.type === 'daily_reset' || tx.type === 'transition_bonus' || tx.type === 'purchase') {
+      totalRefilled += amount;
+    } else if (tx.type === 'refund') {
+      totalRefunded += amount;
+    }
+  });
+
+  return { totalSpent, totalRefilled, totalRefunded, totalTransactions, spendingByType };
+}
+
+/**
  * Récupère les stats de phases (bienvenue vs quotidienne) pour le dashboard admin.
- * Scan tous les patients pour compter.
+ * Un utilisateur est en "phase bienvenue" s'il a welcomeBonusActive ET
+ * n'a pas encore dépensé la totalité de son bonus initial (25 Koris).
+ * Sinon il est en "phase quotidienne".
  */
 export async function getKorisPhaseStats(): Promise<{
   welcomePhaseCount: number;
   dailyPhaseCount: number;
   totalWithWallet: number;
-  bonusExhaustedRate: number; // % qui ont fini leurs 25 Koris (sont en phase quotidienne)
+  bonusExhaustedRate: number;
 }> {
   try {
     const patientsRef = collection(db, 'patients');
@@ -300,7 +353,13 @@ export async function getKorisPhaseStats(): Promise<{
       const w = data.korisWallet;
       if (!w) return;
       totalWithWallet++;
-      if (w.welcomeBonusActive) {
+      // welcomeBonusActive is the source of truth for the phase flag.
+      // But many wallets never had it flipped because the transition bonus
+      // kept the balance > 0. So we also check totalSpent vs the welcome bonus:
+      // if they spent >= 25 Koris, they're effectively past the welcome phase.
+      const spent = w.totalSpent ?? 0;
+      const stillInWelcome = w.welcomeBonusActive && spent < KORIS_WELCOME_BONUS;
+      if (stillInWelcome) {
         welcomePhaseCount++;
       } else {
         dailyPhaseCount++;

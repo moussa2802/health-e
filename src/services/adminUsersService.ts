@@ -4,7 +4,7 @@
  */
 
 import {
-  collection, doc, getDoc, getDocs, query, orderBy,
+  collection, collectionGroup, doc, getDoc, getDocs, query, orderBy,
   limit as firestoreLimit, Timestamp, startAfter,
 } from 'firebase/firestore';
 import { db } from '../utils/firebase';
@@ -108,8 +108,11 @@ const TOTAL_MAIN_SCALES = MENTAL_HEALTH_SCALES.length + SEXUAL_HEALTH_SCALES.len
 // ── Get all users (loaded once, sorted/filtered client-side) ─────────────
 
 export async function getAllUsersForAdmin(): Promise<TopUser[]> {
-  const patientsSnap = await getDocs(collection(db, 'patients'));
-  const profilesSnap = await getDocs(collection(db, 'userProfiles'));
+  const [patientsSnap, profilesSnap, historySnap] = await Promise.all([
+    getDocs(collection(db, 'patients')),
+    getDocs(collection(db, 'userProfiles')),
+    getDocs(collectionGroup(db, 'korisHistory')).catch(() => null),
+  ]);
 
   // Build profile map: userId -> completed tests count
   const profileMap = new Map<string, number>();
@@ -117,6 +120,20 @@ export async function getAllUsersForAdmin(): Promise<TopUser[]> {
     const results = d.data().scaleResults ?? {};
     profileMap.set(d.id, Object.keys(results).length);
   });
+
+  // Build per-user spending map from korisHistory
+  const spentMap = new Map<string, number>();
+  if (historySnap) {
+    historySnap.forEach(d => {
+      const tx = d.data();
+      if (tx.type === 'spend') {
+        // Extract userId from path: patients/{userId}/korisHistory/{docId}
+        const pathParts = d.ref.path.split('/');
+        const userId = pathParts[1];
+        spentMap.set(userId, (spentMap.get(userId) || 0) + (tx.amount ?? 0));
+      }
+    });
+  }
 
   const users: TopUser[] = [];
 
@@ -126,13 +143,15 @@ export async function getAllUsersForAdmin(): Promise<TopUser[]> {
     const lastActivity = toDate(data.lastActivityAt) || toDate(data.updatedAt) || createdAt;
     const testsFromProfile = profileMap.get(d.id) ?? 0;
     const testsFromCounter = (data.completedTestsCount as number) ?? 0;
+    const walletSpent = data.korisWallet?.totalSpent ?? 0;
+    const historySpent = spentMap.get(d.id) ?? 0;
 
     users.push({
       id: d.id,
       name: formatName({ ...data, id: d.id }),
       registeredAt: createdAt?.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }) ?? '—',
       completedTests: Math.max(testsFromProfile, testsFromCounter),
-      korisSpent: data.korisWallet?.totalSpent ?? 0,
+      korisSpent: Math.max(walletSpent, historySpent),
       lastActivity: formatRelativeDate(lastActivity),
       lastActivityRaw: lastActivity,
       authProvider: data.googleLinked ? 'Google' : data.authProvider === 'google' ? 'Google' : 'SMS',
@@ -200,17 +219,26 @@ export async function getUserDetail(userId: string): Promise<UserDetail | null> 
       })
       .sort((a, b) => b.completedAt.localeCompare(a.completedAt));
 
-    // Fetch recent Koris history (activity)
+    // Fetch ALL Koris history to compute accurate totalSpent/totalEarned
     let recentActivity: UserActivity[] = [];
+    let computedSpent = 0;
+    let computedEarned = 0;
     try {
-      const historySnap = await getDocs(
+      const allHistorySnap = await getDocs(
         query(
           collection(db, 'patients', userId, 'korisHistory'),
           orderBy('timestamp', 'desc'),
-          firestoreLimit(10)
         )
       );
-      recentActivity = historySnap.docs.map(d => {
+      allHistorySnap.docs.forEach(d => {
+        const data = d.data();
+        if (data.type === 'spend') {
+          computedSpent += data.amount ?? 0;
+        } else if (data.type === 'refill' || data.type === 'bonus' || data.type === 'transition_bonus' || data.type === 'purchase' || data.type === 'daily_reset') {
+          computedEarned += data.amount ?? 0;
+        }
+      });
+      recentActivity = allHistorySnap.docs.slice(0, 10).map(d => {
         const data = d.data();
         return {
           type: data.type ?? '',
@@ -225,6 +253,8 @@ export async function getUserDetail(userId: string): Promise<UserDetail | null> 
     }
 
     const createdAt = toDate(patient.createdAt);
+    const walletSpent = patient.korisWallet?.totalSpent ?? 0;
+    const walletEarned = patient.korisWallet?.totalEarned ?? 0;
 
     return {
       id: userId,
@@ -235,8 +265,8 @@ export async function getUserDetail(userId: string): Promise<UserDetail | null> 
       authProvider: patient.googleLinked ? 'Google + SMS' : patient.authProvider === 'google' ? 'Google' : 'SMS',
       googleLinked: !!patient.googleLinked,
       korisBalance: patient.korisWallet?.balance ?? 0,
-      korisSpent: patient.korisWallet?.totalSpent ?? 0,
-      korisEarned: patient.korisWallet?.totalEarned ?? 0,
+      korisSpent: Math.max(walletSpent, computedSpent),
+      korisEarned: Math.max(walletEarned, computedEarned),
       completedTests: Object.keys(scaleResults).length,
       totalScales: TOTAL_MAIN_SCALES,
       tests,

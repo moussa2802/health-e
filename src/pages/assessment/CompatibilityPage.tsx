@@ -494,7 +494,7 @@ const CompatibilityPage: React.FC = () => {
             Test de <span className="text-accent">compatibilité</span>
           </h1>
           <p className="m-0 mx-auto text-[15px] text-ink-soft leading-relaxed max-w-[460px]">
-            Comparez vos profils psychologiques avec un proche — identifiez vos forces communes et les zones à explorer ensemble.
+            Couple, crush, ami(e), famille, collègue… Découvre ce qui vous rapproche et ce qui peut coincer.
           </p>
         </div>
 

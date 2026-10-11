@@ -1,7 +1,6 @@
 const { admin, db, verifyAuth } = require("./_firebase");
 
 const KORIS_WELCOME_BONUS = 25;
-const KORIS_TRANSITION_BONUS = 50;
 
 exports.handler = async (event) => {
   if (event.httpMethod === "OPTIONS") {
@@ -67,6 +66,15 @@ exports.handler = async (event) => {
           serverTimestamp: admin.firestore.FieldValue.serverTimestamp(),
         });
 
+      // Update global stats
+      await db.collection("stats").doc("koris").set(
+        {
+          totalRefilled: admin.firestore.FieldValue.increment(KORIS_WELCOME_BONUS),
+          lastUpdated: admin.firestore.FieldValue.serverTimestamp(),
+        },
+        { merge: true }
+      );
+
       return respond(200, {
         newBalance: KORIS_WELCOME_BONUS,
         wasReset: false,
@@ -75,36 +83,6 @@ exports.handler = async (event) => {
         walletJustCreated: true,
         transitionBonusGranted: false,
       });
-    }
-
-    let transitionBonusGranted = false;
-
-    // Transition bonus: existing wallets that haven't received it yet
-    if (!wallet.transitionBonusGrantedAt) {
-      const now = new Date().toISOString();
-      const oldBalance = Math.max(0, wallet.balance);
-      const newBal = oldBalance + KORIS_TRANSITION_BONUS;
-
-      await patientRef.update({
-        "korisWallet.balance": newBal,
-        "korisWallet.transitionBonusGrantedAt": now,
-      });
-
-      await patientRef
-        .collection("korisHistory")
-        .add({
-          type: "transition_bonus",
-          amount: KORIS_TRANSITION_BONUS,
-          feature: "transition_bonus",
-          balanceBefore: oldBalance,
-          balanceAfter: newBal,
-          timestamp: now,
-          details: "Bonus de transition — nouvelle économie Koris",
-          serverTimestamp: admin.firestore.FieldValue.serverTimestamp(),
-        });
-
-      wallet = { ...wallet, balance: newBal, transitionBonusGrantedAt: now };
-      transitionBonusGranted = true;
     }
 
     // Phase switch: welcome bonus exhausted
@@ -132,7 +110,7 @@ exports.handler = async (event) => {
         phaseSwitched: true,
         welcomeBonusActive: false,
         walletJustCreated: false,
-        transitionBonusGranted,
+        transitionBonusGranted: false,
       });
     }
 
@@ -142,7 +120,7 @@ exports.handler = async (event) => {
       phaseSwitched: false,
       welcomeBonusActive: wallet.welcomeBonusActive ?? false,
       walletJustCreated: false,
-      transitionBonusGranted,
+      transitionBonusGranted: false,
     });
   } catch (err) {
     console.error("koris-init error:", err);

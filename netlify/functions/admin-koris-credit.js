@@ -72,6 +72,13 @@ exports.handler = async (event) => {
         details: `Crédit admin par ${user.email || user.uid} — ${reason.trim()}`,
       })
 
+      // Update global stats
+      const statsRef = db.collection('stats').doc('koris')
+      tx.set(statsRef, {
+        totalRefilled: admin.firestore.FieldValue.increment(amount),
+        lastUpdated: admin.firestore.FieldValue.serverTimestamp(),
+      }, { merge: true })
+
       return currentBalance + amount
     })
 

@@ -11,7 +11,7 @@ import {
   Stethoscope,
 } from "lucide-react";
 import AdminLayout from "../../components/admin/AdminLayout";
-import { EvaluationsDashboardContent } from "./AdminEvaluations";
+import EvaluationsDashboardContent from "./EvaluationsDashboardContent";
 import {
   getStatistics,
   getRecentTransactions,

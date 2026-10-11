@@ -341,6 +341,13 @@ exports.handler = async (event, context) => {
               timestamp: new Date().toISOString(),
               details: `Achat ${koris.toLocaleString()} Koris (${paymentData.item_price} FCFA)`,
             });
+
+            // Update global stats
+            const statsRef = db.collection("stats").doc("koris");
+            tx.set(statsRef, {
+              totalRefilled: admin.firestore.FieldValue.increment(koris),
+              lastUpdated: admin.firestore.FieldValue.serverTimestamp(),
+            }, { merge: true });
           });
 
           const orderRef = db.collection("koris_orders").doc(orderId);

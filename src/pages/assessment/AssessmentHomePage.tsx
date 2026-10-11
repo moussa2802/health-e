@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Brain, Heart, Users, NotebookPen, ChevronRight, Lock, Check, Play, Shield, Stethoscope } from 'lucide-react';
+import { Brain, Heart, Users, ChevronRight, Lock, Check, Play, Shield, Stethoscope, Sparkles, NotebookPen } from 'lucide-react';
 import TotemCard from '../../components/assessment/TotemCard';
+import GameTeaser from '../../components/assessment/GameTeaser';
 import InfoTip from '../../components/Onboarding/InfoTip';
 import { useAuth } from '../../contexts/AuthContext';
 import {
@@ -28,13 +29,36 @@ import { MENTAL_HEALTH_SCALES, SEXUAL_HEALTH_SCALES, BONUS_SCALES } from '../../
 import type { AssessmentScale } from '../../types/assessment';
 import type { ScaleResult } from '../../types/assessment';
 import type { OnboardingProfile as OnboardingProfileType } from '../../types/onboarding';
-import { useKoris } from '../../contexts/KorisContext';
-import { KORIS_COSTS } from '../../services/korisService';
-import { getScaleMeta, type ScaleCategory, CATEGORY_COLORS } from '../../utils/scaleMeta';
+import { getScaleMeta } from '../../utils/scaleMeta';
 import TestCode from '../../components/assessment/TestCode';
+import {
+  getTotemProgress,
+  getTotemSignature,
+  type TotemAnimal,
+} from '../../utils/totemAlgorithm';
+import { collection, query, orderBy, limit, getDocs } from 'firebase/firestore';
+import { db } from '../../utils/firebase';
+
+import lionImg from '../../assets/totems/lion.jpg';
+import loupImg from '../../assets/totems/loup.jpg';
+import cerfImg from '../../assets/totems/cerf.jpg';
+import dauphinImg from '../../assets/totems/dauphin.jpg';
+import tortueImg from '../../assets/totems/tortue.jpg';
+import hibouImg from '../../assets/totems/hibou.jpg';
+import aigleImg from '../../assets/totems/aigle.jpg';
+import elephantImg from '../../assets/totems/elephant.jpg';
+import panthereImg from '../../assets/totems/panthere.jpg';
+import renardImg from '../../assets/totems/renard.jpg';
+import chevalImg from '../../assets/totems/cheval.jpg';
+import oursImg from '../../assets/totems/ours.jpg';
+
+const TOTEM_TILE_IMAGES: Record<TotemAnimal, string> = {
+  lion: lionImg, loup: loupImg, cerf: cerfImg, dauphin: dauphinImg,
+  tortue: tortueImg, hibou: hibouImg, aigle: aigleImg, elephant: elephantImg,
+  panthere: panthereImg, renard: renardImg, cheval: chevalImg, ours: oursImg,
+};
 
 const PSY_THRESHOLD = 7;
-const INTIMATE_THRESHOLD = 5;
 
 const TAB_CONFIG: { id: 'mental' | 'intime' | 'bonus'; label: string }[] = [
   { id: 'mental', label: 'Psychologique' },
@@ -54,16 +78,9 @@ function getScalesForTab(tab: 'mental' | 'intime' | 'bonus'): AssessmentScale[] 
   return BONUS_SCALES;
 }
 
-function getCategoryForTab(tab: 'mental' | 'intime' | 'bonus'): ScaleCategory {
-  if (tab === 'mental') return 'mental';
-  if (tab === 'intime') return 'sexual';
-  return 'bonus';
-}
-
 const AssessmentHomePage: React.FC = () => {
   const navigate = useNavigate();
   const { currentUser, isAuthenticated, needsAuthMigration } = useAuth();
-  const { canAfford, balance } = useKoris();
 
   const [showOnboarding, setShowOnboarding] = useState(() =>
     isAuthenticated ? false : !isOnboardingComplete()
@@ -80,7 +97,11 @@ const AssessmentHomePage: React.FC = () => {
   const [barsMounted, setBarsMounted] = useState(false);
   const [inProgressScales, setInProgressScales] = useState<Set<string>>(new Set());
   const [totemData, setTotemData] = useState<{ animal: string; computedAt: Date; revealedAt: Date | null; pendingAnimal: string | null } | null>(null);
+  const [journalToday, setJournalToday] = useState<boolean | null>(null);
+  const [tilesLoaded, setTilesLoaded] = useState(false);
   const ringRef = useRef<SVGCircleElement>(null);
+  const segmentedRef = useRef<HTMLDivElement>(null);
+  const totemRevealRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -91,6 +112,7 @@ const AssessmentHomePage: React.FC = () => {
         if (getGuestInProgressSession(s.id)) ipSet.add(s.id);
       });
       setInProgressScales(ipSet);
+      setTilesLoaded(true);
     }
   }, [isAuthenticated]);
 
@@ -102,6 +124,7 @@ const AssessmentHomePage: React.FC = () => {
         setProfileResults(p.scaleResults);
         setBonusCompleted(p.bonusCompletedCount);
         setTotemData(p.totem);
+        setTilesLoaded(true);
         if (p.onboardingProfile) {
           saveOnboardingProfile(p.onboardingProfile as Parameters<typeof saveOnboardingProfile>[0]);
           setOnboardingProfile(p.onboardingProfile as OnboardingProfileType);
@@ -118,6 +141,7 @@ const AssessmentHomePage: React.FC = () => {
         if (isTransient && loadRetry < 5) {
           setTimeout(() => setLoadRetry(r => r + 1), 4000);
         }
+        setTilesLoaded(true);
       });
     getInProgressSessions(currentUser.id)
       .then(sessions => {
@@ -127,6 +151,33 @@ const AssessmentHomePage: React.FC = () => {
       })
       .catch(() => {});
   }, [isAuthenticated, currentUser?.id, loadRetry]);
+
+  // Journal: check if user wrote today
+  useEffect(() => {
+    if (!isAuthenticated || !currentUser) {
+      setJournalToday(false);
+      return;
+    }
+    const q = query(
+      collection(db, 'users', currentUser.id, 'journal'),
+      orderBy('created_at', 'desc'),
+      limit(1),
+    );
+    getDocs(q)
+      .then(snap => {
+        if (snap.empty) {
+          setJournalToday(false);
+          return;
+        }
+        const entry = snap.docs[0].data();
+        const createdAt = entry.created_at?.toDate?.() ?? new Date(entry.created_at);
+        const now = new Date();
+        const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+        const entryStr = `${createdAt.getFullYear()}-${String(createdAt.getMonth() + 1).padStart(2, '0')}-${String(createdAt.getDate()).padStart(2, '0')}`;
+        setJournalToday(todayStr === entryStr);
+      })
+      .catch(() => setJournalToday(false));
+  }, [isAuthenticated, currentUser?.id]);
 
   useEffect(() => {
     const t = setTimeout(() => setRingMounted(true), 100);
@@ -167,18 +218,34 @@ const AssessmentHomePage: React.FC = () => {
   const ringOffset = RING_C - (pct / 100) * RING_C;
 
   const currentScales = getScalesForTab(activeTab);
-  const currentCategory = getCategoryForTab(activeTab);
-  const catColors = CATEGORY_COLORS[currentCategory];
-
   const psyOk = mentalCompleted >= PSY_THRESHOLD;
-  const intimateOk = sexualCompleted >= INTIMATE_THRESHOLD;
   const isUnlocked = psyOk;
-  const hasBothProfiles = psyOk && intimateOk;
-  const compatCost = KORIS_COSTS.compatibility;
-  const hasKoris = canAfford('compatibility');
   const psyMissing = Math.max(0, PSY_THRESHOLD - mentalCompleted);
-  const intimateMissing = Math.max(0, INTIMATE_THRESHOLD - sexualCompleted);
-  const isClose = psyMissing > 0 && psyMissing <= 3;
+  // Totem tile state
+  const totemProgress = getTotemProgress(profileResults);
+  const totemIsReady = totemProgress.missing.length === 0;
+  const totemIsComputed = !!totemData?.animal;
+  const totemIsRevealed = !!totemData?.revealedAt;
+  const totemHasPending = !!totemData?.pendingAnimal && totemData.pendingAnimal !== totemData.animal;
+  const totemAnimal = totemData?.animal as TotemAnimal | undefined;
+  const totemSig = totemAnimal ? getTotemSignature(totemAnimal) : null;
+  const totemImg = totemAnimal ? TOTEM_TILE_IMAGES[totemAnimal] : null;
+
+  const handleCompatLockedClick = () => {
+    setActiveTab('mental');
+    setTimeout(() => {
+      segmentedRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 50);
+  };
+
+  // Skeleton tile
+  const SkeletonTile = () => (
+    <div className="bg-card border border-line rounded-[14px] p-3.5 shadow-soft animate-pulse" style={{ minHeight: 96 }}>
+      <div className="w-6 h-6 rounded-lg bg-line mb-2" />
+      <div className="w-3/4 h-3 rounded bg-line mb-1.5" />
+      <div className="w-1/2 h-2.5 rounded bg-line" />
+    </div>
+  );
 
   return (
     <>
@@ -262,27 +329,16 @@ const AssessmentHomePage: React.FC = () => {
           </Link>
         )}
 
-        {/* ── 2. Hero card (ink) ── */}
-        <div className="relative bg-ink rounded-block p-[22px] shadow-soft overflow-hidden mb-5">
+        {/* ── Hero card (lightened) ── */}
+        <div className="relative bg-ink rounded-block p-5 shadow-soft overflow-hidden mb-5">
           <div
             className="absolute -top-10 -right-10 w-40 h-40 rounded-full opacity-20 pointer-events-none"
             style={{ background: 'radial-gradient(circle, #B5522F 0%, transparent 70%)' }}
           />
 
-          <p className="text-[10px] font-bold tracking-[0.15em] uppercase text-white/40 mb-1 relative z-10">
-            TON PROFIL
-          </p>
-          <h2 className="font-display text-xl font-semibold text-[#F4F1E9] leading-snug mb-5 relative z-10">
-            {prenom ? (
-              <>Bonjour {prenom},<br />continuons à te <em className="not-italic text-[#E9A88C]">comprendre</em>.</>
-            ) : (
-              <>Continuons à te <em className="not-italic text-[#E9A88C]">comprendre</em>.</>
-            )}
-          </h2>
-
-          <div className="flex items-center gap-5 relative z-10">
+          <div className="flex items-center gap-4 relative z-10">
             <div className="flex-shrink-0">
-              <svg width="74" height="74" viewBox="0 0 74 74" className="block">
+              <svg width="64" height="64" viewBox="0 0 74 74" className="block">
                 <circle cx="37" cy="37" r={RING_R} fill="none" stroke="rgba(244,241,233,.16)" strokeWidth="5" />
                 <circle
                   ref={ringRef}
@@ -299,41 +355,255 @@ const AssessmentHomePage: React.FC = () => {
                 </text>
               </svg>
             </div>
-            <p className="text-[13px] text-white/60 leading-relaxed m-0">
-              <span className="text-white/90 font-bold">{doneCore} tests</span> sur{' '}
-              <span className="text-white/90 font-bold">{totalCore}</span> complétés.{' '}
-              {!isUnlocked && (
-                <>Encore quelques-uns et tu débloques ta <span className="text-[#E9A88C] font-semibold">compatibilité</span>.</>
-              )}
-              {isUnlocked && (
-                <span className="text-[#E9A88C] font-semibold">Compatibilité débloquée !</span>
-              )}
-            </p>
+            <div className="flex-1 min-w-0">
+              <h2 className="font-display text-[17px] font-semibold text-[#F4F1E9] leading-snug m-0">
+                {prenom ? (
+                  <>Bonjour {prenom} 👋</>
+                ) : (
+                  <>Ton profil</>
+                )}
+              </h2>
+              <p className="text-[12px] text-white/50 m-0 mt-0.5">
+                <span className="text-white/80 font-bold">{doneCore}</span>/{totalCore} tests complétés
+              </p>
+            </div>
+            <button
+              onClick={() => navigate('/assessment/profile')}
+              className="flex-shrink-0 flex items-center gap-1.5 rounded-xl border border-white/15 bg-white/10 px-3 py-2 text-[12px] font-bold text-[#F4F1E9] cursor-pointer transition-colors hover:bg-white/15"
+            >
+              <Stethoscope size={13} />
+              Dr Lô
+              <ChevronRight size={13} />
+            </button>
           </div>
-
-          <button
-            onClick={() => navigate('/assessment/profile')}
-            className="mt-5 w-full flex items-center justify-center gap-2 rounded-[14px] border border-white/15 bg-white/10 py-2.5 text-[13px] font-bold text-[#F4F1E9] cursor-pointer transition-colors hover:bg-white/15 relative z-10"
-          >
-            <Stethoscope size={14} />
-            Voir mon analyse Dr Lô
-            <ChevronRight size={15} />
-          </button>
-          <p className="mt-2 mb-0 text-[10px] text-white/35 text-center relative z-10">
-            Dr Lô croise tous tes résultats pour une analyse personnalisée qui s'enrichit à chaque test.
-          </p>
         </div>
 
-        {/* ── 2b. Totem ── */}
-        <TotemCard
-          profileResults={profileResults}
-          totem={totemData}
-          userId={currentUser?.id ?? null}
-          onTotemUpdate={() => setLoadRetry(r => r + 1)}
-        />
+        {/* ── 2×2 Tile grid ── */}
+        <div className="grid grid-cols-2 gap-3 mb-5">
 
-        {/* ── 3. Segmented control ── */}
-        <div className="flex gap-1 bg-[#EAE7DD] p-[5px] rounded-[16px] mb-5">
+          {/* ── Tile A: TOTEM ── */}
+          {!tilesLoaded ? (
+            <SkeletonTile />
+          ) : !totemIsReady ? (
+            // Progress state
+            <div
+              className="bg-card border border-line rounded-[14px] p-3.5 shadow-soft flex flex-col justify-between cursor-pointer hover:shadow-lift hover:-translate-y-[1px] transition-all"
+              style={{ minHeight: 96 }}
+              onClick={() => {
+                setActiveTab('mental');
+                setTimeout(() => segmentedRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
+              }}
+            >
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <Sparkles size={18} className="text-gold" />
+                  <div className="flex items-center gap-0.5">
+                    {Array.from({ length: totemProgress.total }).map((_, i) => (
+                      <div
+                        key={i}
+                        className={`w-[5px] h-[5px] rounded-full ${i < totemProgress.completed ? 'bg-gold' : 'bg-line'}`}
+                      />
+                    ))}
+                  </div>
+                </div>
+                <p className="text-[13px] font-bold text-ink m-0 mt-1.5 leading-tight">
+                  Ton Totem
+                </p>
+              </div>
+              <p className="text-[11px] text-muted m-0 mt-1.5 leading-snug">
+                Encore {totemProgress.total - totemProgress.completed} test{totemProgress.total - totemProgress.completed > 1 ? 's' : ''}
+              </p>
+            </div>
+          ) : totemIsComputed && !totemIsRevealed ? (
+            // Ready to reveal — gold glow pulsation
+            <div
+              className="relative rounded-[14px] p-3.5 shadow-soft flex flex-col justify-between cursor-pointer overflow-hidden hover:shadow-lift transition-all"
+              style={{
+                minHeight: 96,
+                background: 'linear-gradient(160deg, #2A2520 0%, #3D352C 100%)',
+                animation: 'totemGlow 2.5s ease-in-out infinite',
+              }}
+              onClick={() => {
+                totemRevealRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              }}
+            >
+              <style>{`
+                @keyframes totemGlow {
+                  0%, 100% { box-shadow: 0 0 8px rgba(212,173,90,.25), 0 1px 3px rgba(0,0,0,.12); }
+                  50% { box-shadow: 0 0 20px rgba(212,173,90,.45), 0 0 40px rgba(212,173,90,.15), 0 1px 3px rgba(0,0,0,.12); }
+                }
+              `}</style>
+              <div>
+                <div className="flex items-center gap-1.5 mb-1">
+                  <Sparkles size={16} className="text-gold" />
+                  <span className="text-[9px] font-bold uppercase tracking-wider text-gold/70">Prêt</span>
+                </div>
+                <p className="text-[13px] font-bold text-[#F4F1E9] m-0 mt-1 leading-tight">
+                  Ton Totem
+                </p>
+              </div>
+              <p className="text-[11px] text-gold/80 font-semibold m-0 mt-1.5 leading-snug">
+                Révéler →
+              </p>
+            </div>
+          ) : totemIsRevealed && totemImg && totemSig ? (
+            // Revealed — show animal
+            <div
+              className="relative rounded-[14px] p-3.5 shadow-soft flex flex-col justify-between cursor-pointer overflow-hidden hover:shadow-lift hover:-translate-y-[1px] transition-all"
+              style={{ minHeight: 96, background: 'linear-gradient(160deg, #2A2520 0%, #3D352C 100%)' }}
+              onClick={() => navigate('/assessment/totem')}
+            >
+              <div className="flex items-center gap-2.5">
+                <div className="w-10 h-10 rounded-xl overflow-hidden flex-shrink-0 border border-gold/20">
+                  <img src={totemImg} alt={totemSig.label} className="w-full h-full object-cover" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-gold/60 m-0">Totem</p>
+                  <p className="text-[13px] font-bold text-[#F4F1E9] m-0 mt-0.5 truncate">{totemSig.label}</p>
+                </div>
+              </div>
+              <p className="text-[11px] text-white/45 m-0 mt-2 leading-snug line-clamp-2">
+                {totemSig.meaning}
+              </p>
+            </div>
+          ) : (
+            // Fallback (computing / no userId)
+            <div className="bg-card border border-line rounded-[14px] p-3.5 shadow-soft flex flex-col justify-between" style={{ minHeight: 96 }}>
+              <Sparkles size={18} className="text-gold" />
+              <div>
+                <p className="text-[13px] font-bold text-ink m-0 mt-1.5 leading-tight">Ton Totem</p>
+                <p className="text-[11px] text-muted m-0 mt-1 leading-snug">Calcul en cours…</p>
+              </div>
+            </div>
+          )}
+
+          {/* ── Tile B: COMPATIBILITÉ ── */}
+          {!tilesLoaded ? (
+            <SkeletonTile />
+          ) : isUnlocked ? (
+            <div
+              className={`rounded-[14px] p-3.5 shadow-soft flex flex-col justify-between cursor-pointer overflow-hidden hover:shadow-lift hover:-translate-y-[1px] transition-all ${!isAuthenticated ? 'opacity-50 pointer-events-none' : ''}`}
+              style={{ minHeight: 96, background: 'linear-gradient(160deg, #20211F 0%, #33322C 100%)' }}
+              onClick={() => navigate('/assessment/compatibility')}
+            >
+              <div>
+                <div className="flex items-center gap-1.5 mb-1">
+                  <Users size={16} className="text-[#F4F1E9]/70" />
+                  <InfoTip
+                    variant="dark"
+                    text="Croise ton profil avec celui de n'importe qui — crush, ami(e), frère, sœur, collègue… Chacun fait ses tests de son côté, puis Dr Lô analyse votre compatibilité. Tes réponses restent privées : seul le résultat commun est partagé."
+                  />
+                </div>
+                <p className="text-[13px] font-bold text-[#F4F1E9] m-0 mt-1 leading-tight">
+                  Compatibilité
+                </p>
+              </div>
+              <p className="text-[11px] text-white/45 m-0 mt-1 leading-snug">
+                Couple, ami(e), famille…
+              </p>
+              <p className="text-[11px] text-[#E9A88C] font-semibold m-0 mt-1">
+                Teste-la ✨
+              </p>
+            </div>
+          ) : (
+            <div
+              className={`bg-card border border-line rounded-[14px] p-3.5 shadow-soft flex flex-col justify-between cursor-pointer hover:shadow-lift hover:-translate-y-[1px] transition-all ${!isAuthenticated ? 'opacity-50 pointer-events-none' : ''}`}
+              style={{ minHeight: 96 }}
+              onClick={handleCompatLockedClick}
+            >
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <Users size={16} className="text-muted" />
+                  <span className="flex items-center gap-1 text-[10px] font-semibold text-muted">
+                    <Lock size={10} />
+                  </span>
+                </div>
+                <p className="text-[13px] font-bold text-ink m-0 mt-1 leading-tight">
+                  Compatibilité
+                </p>
+              </div>
+              <p className="text-[11px] text-muted m-0 mt-1.5 leading-snug">
+                Encore {psyMissing} test{psyMissing > 1 ? 's' : ''} psy
+              </p>
+            </div>
+          )}
+
+          {/* ── Tile C: JOURNAL ── */}
+          {!tilesLoaded ? (
+            <SkeletonTile />
+          ) : !isAuthenticated ? (
+            <div
+              className="bg-card border border-line rounded-[14px] p-3.5 shadow-soft flex flex-col justify-between cursor-pointer hover:shadow-lift hover:-translate-y-[1px] transition-all"
+              style={{ minHeight: 96 }}
+              onClick={() => navigate('/patient/access')}
+            >
+              <div>
+                <NotebookPen size={18} className="text-sage mb-1" />
+                <p className="text-[13px] font-bold text-ink m-0 mt-1.5 leading-tight">
+                  Journal
+                </p>
+              </div>
+              <p className="text-[11px] text-muted m-0 mt-1.5 leading-snug">
+                Connecte-toi
+              </p>
+            </div>
+          ) : (
+            <div
+              className="bg-card border border-line rounded-[14px] p-3.5 shadow-soft flex flex-col justify-between cursor-pointer hover:shadow-lift hover:-translate-y-[1px] transition-all"
+              style={{ minHeight: 96 }}
+              onClick={() => navigate('/mon-espace')}
+            >
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <NotebookPen size={18} className="text-sage" />
+                  {journalToday && (
+                    <span className="flex items-center gap-0.5 text-[9px] font-bold text-sage">
+                      <Check size={10} /> Aujourd'hui
+                    </span>
+                  )}
+                </div>
+                <p className="text-[13px] font-bold text-ink m-0 mt-1.5 leading-tight">
+                  Journal
+                </p>
+              </div>
+              <p className="text-[11px] text-muted m-0 mt-1.5 leading-snug">
+                {journalToday ? 'Voir mon espace' : 'Comment tu te sens aujourd\'hui ?'}
+              </p>
+            </div>
+          )}
+
+          {/* ── Tile D: GAME TEASER ── */}
+          {!tilesLoaded ? (
+            <SkeletonTile />
+          ) : (
+            <GameTeaser />
+          )}
+        </div>
+
+        {/* ── Full TotemCard (reveal / evolution experience) ── */}
+        {tilesLoaded && totemIsReady && totemIsComputed && !totemIsRevealed && (
+          <div ref={totemRevealRef}>
+            <TotemCard
+              profileResults={profileResults}
+              totem={totemData}
+              userId={currentUser?.id ?? null}
+              onTotemUpdate={() => setLoadRetry(r => r + 1)}
+            />
+          </div>
+        )}
+        {tilesLoaded && totemHasPending && (
+          <div ref={totemRevealRef}>
+            <TotemCard
+              profileResults={profileResults}
+              totem={totemData}
+              userId={currentUser?.id ?? null}
+              onTotemUpdate={() => setLoadRetry(r => r + 1)}
+            />
+          </div>
+        )}
+
+        {/* ── Segmented control ── */}
+        <div ref={segmentedRef} className="flex gap-1 bg-[#EAE7DD] p-[5px] rounded-[16px] mb-5">
           {TAB_CONFIG.map(tab => (
             <button
               key={tab.id}
@@ -350,7 +620,7 @@ const AssessmentHomePage: React.FC = () => {
           ))}
         </div>
 
-        {/* ── 4. Section title + count ── */}
+        {/* ── Section title + count ── */}
         <div className="flex items-center justify-between mb-4">
           <h3 className="font-display text-lg font-semibold text-ink m-0">
             {SECTION_TITLES[activeTab]}
@@ -360,7 +630,7 @@ const AssessmentHomePage: React.FC = () => {
           </span>
         </div>
 
-        {/* ── 5. Scale list ── */}
+        {/* ── Scale list ── */}
         <div className="flex flex-col gap-3 mb-6">
           {currentScales.map((scale, index) => {
             const meta = getScaleMeta(scale.id);
@@ -421,142 +691,6 @@ const AssessmentHomePage: React.FC = () => {
             );
           })}
         </div>
-
-        {/* ── 6. Compatibility card (ink) ── */}
-        <div className={`rounded-block p-5 shadow-soft overflow-hidden mb-5 ${!isAuthenticated ? 'opacity-50 pointer-events-none' : ''}`} style={{ background: 'linear-gradient(160deg, #20211F 0%, #33322C 100%)' }}>
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-3">
-              <Users size={20} className="text-[#F4F1E9]/80" />
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-1.5">
-                  <h3 className="font-display text-base font-semibold text-[#F4F1E9] m-0">Compatibilité</h3>
-                  <InfoTip
-                    variant="dark"
-                    text="Compare ton profil psychologique et intime avec celui de ton/ta partenaire. Chacun fait ses tests de son côté, puis vous croisez vos résultats pour une analyse relationnelle personnalisée."
-                  />
-                </div>
-                <p className="text-xs text-white/50 m-0 mt-0.5">
-                  Compare ton profil avec ton/ta partenaire. 7 tests psy suffisent pour débloquer.
-                </p>
-              </div>
-            </div>
-            {!isUnlocked && <Lock size={16} className="text-white/30 flex-shrink-0" />}
-          </div>
-
-          {/* Progress bars */}
-          <div className="flex flex-col gap-3 mb-4">
-            {/* Psy — obligatoire */}
-            <div>
-              <div className="flex items-center justify-between mb-1.5">
-                <span className="text-[11px] text-white/60 font-medium flex items-center gap-1.5">
-                  <Brain size={12} /> Psychologique <span className="text-[9px] text-white/35 uppercase tracking-wider ml-1">obligatoire</span>
-                </span>
-                <span className={`text-[11px] font-bold ${psyOk ? 'text-[#E9A88C]' : 'text-white/40'}`}>
-                  {psyOk && <Check size={10} className="inline -mt-0.5 mr-0.5" />}
-                  {mentalCompleted}/{PSY_THRESHOLD}
-                </span>
-              </div>
-              <div className="h-[5px] rounded-full overflow-hidden" style={{ background: 'rgba(244,241,233,.15)' }}>
-                <div
-                  className="h-full rounded-full bg-accent"
-                  style={{
-                    width: barsMounted ? `${Math.min(100, (mentalCompleted / PSY_THRESHOLD) * 100)}%` : '0%',
-                    transition: 'width 1s cubic-bezier(.2,.7,.3,1)',
-                  }}
-                />
-              </div>
-            </div>
-            {/* Intime — optionnel (bonus) */}
-            <div style={{ opacity: psyOk ? 1 : 0.45 }}>
-              <div className="flex items-center justify-between mb-1.5">
-                <span className="text-[11px] text-white/60 font-medium flex items-center gap-1.5">
-                  <Heart size={12} /> Vie intime <span className="text-[9px] text-white/35 uppercase tracking-wider ml-1">optionnel</span>
-                </span>
-                <span className={`text-[11px] font-bold ${intimateOk ? 'text-[#E9A88C]' : 'text-white/40'}`}>
-                  {intimateOk && <Check size={10} className="inline -mt-0.5 mr-0.5" />}
-                  {sexualCompleted}/{INTIMATE_THRESHOLD}
-                </span>
-              </div>
-              <div className="h-[5px] rounded-full overflow-hidden" style={{ background: 'rgba(244,241,233,.15)' }}>
-                <div
-                  className="h-full rounded-full bg-accent"
-                  style={{
-                    width: barsMounted ? `${Math.min(100, (sexualCompleted / INTIMATE_THRESHOLD) * 100)}%` : '0%',
-                    transition: 'width 1s cubic-bezier(.2,.7,.3,1) .15s',
-                  }}
-                />
-              </div>
-            </div>
-          </div>
-
-          {!isAuthenticated ? (
-            <p className="text-xs text-white/50 text-center m-0">
-              Connecte-toi pour débloquer la compatibilité.
-            </p>
-          ) : isUnlocked ? (
-            <>
-              {!intimateOk && (
-                <p className="text-xs text-white/50 text-center mb-3 m-0">
-                  Compatibilité psychologique débloquée. Complète {intimateMissing} test{intimateMissing > 1 ? 's' : ''} intime{intimateMissing > 1 ? 's' : ''} pour l'analyse complète.
-                </p>
-              )}
-              <button
-                onClick={() => navigate('/assessment/compatibility')}
-                className={`w-full rounded-[16px] border-none text-[15px] font-bold cursor-pointer flex items-center justify-between gap-3 transition-colors ${
-                  hasKoris ? 'bg-accent text-white hover:bg-accent/90 shadow-soft' : 'bg-white/20 text-white/60 cursor-not-allowed'
-                }`}
-                style={{ padding: '6px 6px 6px 20px' }}
-              >
-                <span className="tracking-tight">Tester la compatibilité</span>
-                <span className="inline-flex items-center gap-1.5 rounded-xl px-3 py-2" style={{ background: 'rgba(255,255,255,.14)', border: '1px solid rgba(255,255,255,.16)' }}>
-                  <img src="/kori.png" alt="" className="w-6 h-6 rounded-full object-cover" />
-                  <span className="font-display text-[17px] font-semibold leading-none">{compatCost}</span>
-                </span>
-              </button>
-              <span className="flex items-center justify-center gap-1.5 mt-2 mb-0 text-xs font-semibold text-white/60">
-                <img src="/kori.png" alt="" className="w-4 h-4 rounded-full object-cover" />
-                Ton solde : <b className="text-white/80">{balance} Koris</b>
-                <InfoTip
-                  variant="dark"
-                  text="Les Koris sont ta monnaie Health-e. Tu en gagnes en complétant des tests et tu les utilises pour les analyses Dr Lô, le journal et la compatibilité."
-                />
-              </span>
-            </>
-          ) : (
-            <div>
-              {isClose && (
-                <p className="text-xs font-semibold text-[#E9A88C] text-center mb-3 m-0">
-                  Plus que {psyMissing} test{psyMissing > 1 ? 's' : ''} psy et tu débloqueras la compatibilité !
-                </p>
-              )}
-              <button
-                onClick={() => navigate('/assessment/mental')}
-                className="w-full py-2.5 rounded-xl border border-white/12 bg-white/6 text-white/80 text-[13px] font-semibold cursor-pointer hover:bg-white/10 transition-colors"
-              >
-                Continuer mes évaluations
-                <ChevronRight size={14} className="inline ml-1 -mt-0.5" />
-              </button>
-            </div>
-          )}
-        </div>
-
-        {/* ── 7. Mon Espace card ── */}
-        <button
-          data-tooltip-id="btn-mon-espace"
-          onClick={() => navigate('/mon-espace')}
-          className="w-full bg-card border border-line rounded-card p-4 text-left cursor-pointer shadow-soft hover:shadow-lift hover:-translate-y-[3px] transition-all duration-200 group mb-5"
-        >
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-sage-soft flex items-center justify-center flex-shrink-0">
-              <NotebookPen size={18} className="text-sage" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-[15px] font-bold text-ink m-0">Mon Espace</p>
-              <p className="text-xs text-muted m-0 mt-0.5">Ton journal & Dr Lô, rien que pour toi</p>
-            </div>
-            <ChevronRight size={18} className="text-muted group-hover:text-ink transition-colors flex-shrink-0" />
-          </div>
-        </button>
 
       </div>
     </div>

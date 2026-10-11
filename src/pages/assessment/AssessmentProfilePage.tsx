@@ -761,7 +761,36 @@ const AssessmentProfilePage: React.FC = () => {
     setSharing(true);
     try {
       await document.fonts.ready;
-      const dataUrl = await toPng(exportRef.current, { pixelRatio: 2 });
+      const el = exportRef.current;
+
+      // Inline external images as data URLs so canvas isn't tainted
+      const imgs = el.querySelectorAll('img');
+      const origSrcs: { img: HTMLImageElement; src: string }[] = [];
+      await Promise.all(
+        Array.from(imgs).map(async (img) => {
+          if (img.src.startsWith('data:')) return;
+          try {
+            const r = await fetch(img.src);
+            const blob = await r.blob();
+            const dataUrl: string = await new Promise((resolve) => {
+              const reader = new FileReader();
+              reader.onloadend = () => resolve(reader.result as string);
+              reader.readAsDataURL(blob);
+            });
+            origSrcs.push({ img, src: img.src });
+            img.src = dataUrl;
+          } catch { /* keep original */ }
+        })
+      );
+
+      const opts = { pixelRatio: 2, cacheBust: true, backgroundColor: '#201F1C' };
+      // Safari/WebKit first toPng call often blank — warm up then capture
+      await toPng(el, opts).catch(() => {});
+      const dataUrl = await toPng(el, opts);
+
+      // Restore original image sources
+      origSrcs.forEach(({ img, src }) => { img.src = src; });
+
       const res = await fetch(dataUrl);
       const blob = await res.blob();
       const file = new File([blob], 'mon-profil-health-e.png', { type: 'image/png' });
@@ -1089,22 +1118,20 @@ const AssessmentProfilePage: React.FC = () => {
       </div>
 
       {/* Hidden export card for image generation */}
-      <div
-        ref={exportRef}
-        aria-hidden="true"
-        style={{ position: 'fixed', top: 0, left: '-9999px', zIndex: -1, pointerEvents: 'none' }}
-      >
-        <ShareableProfileCard
-          prenom={prenom}
-          archetype={archetype}
-          dimensions={mentalDimensions}
-          quote={drLoQuote}
-          completedCount={completedCount}
-          totalCount={totalCount}
-          pct={progressPct}
-          variant="export"
-          signatureValues={firstSignature}
-        />
+      <div style={{ position: 'fixed', left: '-9999px', top: 0 }} aria-hidden="true">
+        <div ref={exportRef}>
+          <ShareableProfileCard
+            prenom={prenom}
+            archetype={archetype}
+            dimensions={mentalDimensions}
+            quote={drLoQuote}
+            completedCount={completedCount}
+            totalCount={totalCount}
+            pct={progressPct}
+            variant="export"
+            signatureValues={firstSignature}
+          />
+        </div>
       </div>
     </div>
   );

@@ -62,7 +62,7 @@ async function reserveKoris(userId, feature, quantity = 1) {
 }
 
 /**
- * Commit a hold: mark as committed and log the transaction in korisHistory.
+ * Commit a hold: mark as committed, log in korisHistory, and update global stats.
  */
 async function commitKoris(holdId) {
   if (!holdId) return;
@@ -91,6 +91,25 @@ async function commitKoris(holdId) {
     feature: hold.feature,
     amount: hold.amount,
     timestamp: admin.firestore.FieldValue.serverTimestamp(),
+  });
+
+  // Update global stats aggregate
+  const statsRef = db.collection("stats").doc("koris");
+  batch.set(
+    statsRef,
+    {
+      totalSpent: admin.firestore.FieldValue.increment(hold.amount),
+      totalTransactions: admin.firestore.FieldValue.increment(1),
+      [`spendingByType.${hold.feature}`]: admin.firestore.FieldValue.increment(hold.amount),
+      lastUpdated: admin.firestore.FieldValue.serverTimestamp(),
+    },
+    { merge: true }
+  );
+
+  // Update per-user totalSpent
+  const patientRef = db.collection("patients").doc(hold.userId);
+  batch.update(patientRef, {
+    "korisWallet.totalSpent": admin.firestore.FieldValue.increment(hold.amount),
   });
 
   await batch.commit();

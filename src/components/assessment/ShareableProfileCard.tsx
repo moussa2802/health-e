@@ -99,7 +99,7 @@ const ShareableProfileCard: React.FC<ShareableProfileCardProps> = ({
 
   const isExport = variant === 'export';
   const wrapStyle: React.CSSProperties = isExport
-    ? { width: 1080, height: 1350, fontSize: '2.5em' }
+    ? { width: 1080, fontSize: '2.5em' }
     : {};
 
   return (
@@ -241,7 +241,7 @@ const ShareableProfileCard: React.FC<ShareableProfileCardProps> = ({
       {/* Dimensions */}
       <div
         className="relative z-10 flex flex-col"
-        style={{ marginTop: isExport ? 'auto' : 20, paddingTop: isExport ? 50 : 0, gap: isExport ? 28 : 11 }}
+        style={{ marginTop: isExport ? 50 : 20, gap: isExport ? 28 : 11 }}
       >
         {dimensions.map((dim, i) => (
           <div
