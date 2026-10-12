@@ -65,7 +65,7 @@ async function reserveKoris(userId, feature, quantity = 1, metadata = {}) {
 /**
  * Commit a hold: mark as committed, log in korisHistory, and update global stats.
  */
-async function commitKoris(holdId) {
+async function commitKoris(holdId, patientUpdates = {}) {
   if (!holdId) return;
 
   const holdRef = db.collection("koris_holds").doc(holdId);
@@ -114,6 +114,7 @@ async function commitKoris(holdId) {
 
   batch.update(patientRef, {
     "korisWallet.totalSpent": admin.firestore.FieldValue.increment(hold.amount),
+    ...patientUpdates,
   });
 
   await batch.commit();

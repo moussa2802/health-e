@@ -7,19 +7,19 @@ async function filterFreeRetakes(userId, scaleIds) {
   const freeScales = [];
   const billableScales = [];
 
-  let lastPaidAt = {};
+  let lastTakenAt = {};
   try {
     const patientDoc = await db.collection("patients").doc(userId).get();
-    lastPaidAt = patientDoc.data()?.korisWallet?.lastPaidAt ?? {};
+    lastTakenAt = patientDoc.data()?.korisWallet?.lastTakenAt ?? {};
   } catch {
     // If read fails, all scales are billable — never block
   }
 
   for (const scaleId of scaleIds) {
-    const paidTs = lastPaidAt[scaleId];
-    if (paidTs) {
-      const paidDate = paidTs.toDate ? paidTs.toDate() : new Date(paidTs);
-      const daysSince = (Date.now() - paidDate.getTime()) / (1000 * 60 * 60 * 24);
+    const takenTs = lastTakenAt[scaleId];
+    if (takenTs) {
+      const takenDate = takenTs.toDate ? takenTs.toDate() : new Date(takenTs);
+      const daysSince = (Date.now() - takenDate.getTime()) / (1000 * 60 * 60 * 24);
       if (daysSince < FREE_RETAKE_DAYS) {
         freeScales.push(scaleId);
         continue;
@@ -31,10 +31,10 @@ async function filterFreeRetakes(userId, scaleIds) {
   return { freeScales, billableScales };
 }
 
-function buildLastPaidAtUpdate(scaleIds) {
+function buildLastTakenAtUpdate(scaleIds) {
   const update = {};
   for (const scaleId of scaleIds) {
-    update[`korisWallet.lastPaidAt.${scaleId}`] = admin.firestore.FieldValue.serverTimestamp();
+    update[`korisWallet.lastTakenAt.${scaleId}`] = admin.firestore.FieldValue.serverTimestamp();
   }
   return update;
 }
@@ -81,6 +81,8 @@ exports.handler = async (event) => {
       const { freeScales, billableScales } = await filterFreeRetakes(user.uid, scaleIds);
 
       if (billableScales.length === 0) {
+        // All free — still write lastTakenAt for every scale so free window resets
+        await db.collection("patients").doc(user.uid).update(buildLastTakenAtUpdate(scaleIds));
         return { statusCode: 200, headers, body: JSON.stringify({ ok: true, koris_debited: false, cost: 0, free_retake: true, freeScales }) };
       }
 
@@ -89,9 +91,8 @@ exports.handler = async (event) => {
         return { statusCode: 402, headers, body: JSON.stringify({ error: "Solde Koris insuffisant", koris_debited: false, required: reservation.required }) };
       }
 
-      await commitKoris(reservation.holdId);
-
-      await db.collection("patients").doc(user.uid).update(buildLastPaidAtUpdate(billableScales));
+      // Atomic: lastTakenAt for ALL scales written in the same batch as the commit
+      await commitKoris(reservation.holdId, buildLastTakenAtUpdate(scaleIds));
 
       return { statusCode: 200, headers, body: JSON.stringify({ ok: true, koris_debited: true, cost: reservation.cost, freeScales }) };
     }
