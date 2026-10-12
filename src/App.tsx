@@ -150,6 +150,9 @@ const TestCodeRedirect = lazy(() => import("./pages/assessment/TestDetailPage").
 const AssessmentProfilePage = lazy(() => import("./pages/assessment/AssessmentProfilePage"));
 const TotemProfilePage = lazy(() => import("./pages/assessment/TotemProfilePage"));
 const DefiPage = lazy(() => import("./pages/DefiPage"));
+const DefiCreerPage = lazy(() => import("./pages/DefiCreerPage"));
+const DefiPartagePage = lazy(() => import("./pages/DefiPartagePage"));
+const DefiJouerPage = lazy(() => import("./pages/DefiJouerPage"));
 
 // Loading fallback component
 const PageLoader = () => (
@@ -166,7 +169,8 @@ const AppChrome: React.FC = () => {
   const { pathname } = useLocation();
   const isAdminRoute = pathname.startsWith("/admin");
   const isAppRoute = pathname.startsWith("/app");
-  const isChromeless = isAdminRoute || isAppRoute;
+  const isDefiJouer = pathname.startsWith("/d/");
+  const isChromeless = isAdminRoute || isAppRoute || isDefiJouer;
   const { currentUser } = useAuth();
   const userId = currentUser?.id ?? null;
 
@@ -479,6 +483,9 @@ const AppChrome: React.FC = () => {
 
             {/* Défi */}
             <Route path="/defi" element={<DefiPage />} />
+            <Route path="/defi/creer" element={<DefiCreerPage />} />
+            <Route path="/defi/:slug/partage" element={<DefiPartagePage />} />
+            <Route path="/d/:slug" element={<DefiJouerPage />} />
 
             {/* Assessment Routes */}
             <Route path="/assessment" element={<AssessmentHomePage />} />

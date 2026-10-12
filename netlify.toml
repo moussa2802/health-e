@@ -68,6 +68,11 @@
   to = "/index.html"
   status = 200
 
+# Edge Functions
+[[edge_functions]]
+  path = "/d/*"
+  function = "og-defi"
+
 # Functions configuration
 [functions]
   directory = "netlify/functions"
