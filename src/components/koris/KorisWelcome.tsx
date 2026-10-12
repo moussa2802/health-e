@@ -10,11 +10,11 @@ import { KORIS_WELCOME_BONUS } from '../../services/korisService';
 const KORI_IMG = '/kori.png';
 
 const KorisWelcome: React.FC = () => {
-  const { walletJustCreated, walletInitialized } = useKoris();
+  const { walletJustCreated } = useKoris();
   const [visible, setVisible] = useState(false);
   const [exiting, setExiting] = useState(false);
 
-  const isWelcome = walletJustCreated || walletInitialized;
+  const isWelcome = walletJustCreated;
 
   useEffect(() => {
     if (!isWelcome) return;

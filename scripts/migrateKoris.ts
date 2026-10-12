@@ -1,5 +1,9 @@
 /**
- * Migration Script: Met à jour les wallets Koris existants vers le nouveau modèle 2 phases.
+ * @deprecated — Ce script correspond à l'ancien modèle 2 phases (bienvenue/quotidien).
+ * Le modèle actuel est : 25 Koris offerts à l'inscription, puis achat de packs.
+ * Ne pas exécuter sans accord explicite.
+ *
+ * Migration Script (obsolète): Met à jour les wallets Koris existants vers le nouveau modèle 2 phases.
  *
  * Usage:
  *   npx ts-node scripts/migrateKoris.ts

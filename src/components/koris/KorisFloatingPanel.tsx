@@ -1,14 +1,11 @@
 /**
  * KorisFloatingPanel — Panneau ouvert depuis le FloatingKori.
  * Bottom-sheet sur mobile, dropdown sur desktop.
- *
- * Phase Bienvenue: affiche "Koris de bienvenue", pas de countdown.
- * Phase Quotidienne: affiche countdown "Recharge dans Xh Xmin" et barre "Utilisés: X / 10".
  */
 
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Gift, Check, Zap } from 'lucide-react';
+import { AlertTriangle, Check, Zap } from 'lucide-react';
 import { useKoris } from '../../contexts/KorisContext';
 import { getKorisHistory, getFeatureLabel, KORIS_COSTS, type KorisTransaction } from '../../services/korisService';
 import { useAuth } from '../../contexts/AuthContext';
@@ -20,7 +17,7 @@ interface Props {
 }
 
 const KorisFloatingPanel: React.FC<Props> = ({ onClose }) => {
-  const { balance, welcomeBonusActive } = useKoris();
+  const { balance, lowBalance } = useKoris();
   const { currentUser } = useAuth();
   const navigate = useNavigate();
   const [history, setHistory] = useState<KorisTransaction[]>([]);
@@ -36,8 +33,8 @@ const KorisFloatingPanel: React.FC<Props> = ({ onClose }) => {
   const typeTextClass = (type: string) => {
     switch (type) {
       case 'spend': return 'text-danger';
-      case 'refill': case 'daily_reset': case 'purchase': return 'text-ok';
-      case 'bonus': case 'phase_switch': case 'transition_bonus': return 'text-gold';
+      case 'refill': case 'purchase': return 'text-ok';
+      case 'bonus': return 'text-gold';
       case 'refund': return 'text-accent';
       default: return 'text-muted';
     }
@@ -78,26 +75,19 @@ const KorisFloatingPanel: React.FC<Props> = ({ onClose }) => {
           </div>
         </div>
 
-        {/* Phase-dependent section */}
-        <div className="px-4 py-3 border-b border-line">
-          {welcomeBonusActive ? (
+        {/* Low/zero balance banner */}
+        {(balance === 0 || lowBalance) && (
+          <div className="px-4 py-3 border-b border-line">
             <div className="flex items-center gap-2">
-              <Gift size={18} className="text-gold flex-shrink-0" />
-              <div>
-                <div className="text-xs font-bold text-gold">
-                  Koris de bienvenue
-                </div>
-                <div className="text-[11px] text-muted mt-0.5">
-                  Profite de tes Koris offerts
-                </div>
+              <AlertTriangle size={16} className={balance === 0 ? 'text-danger flex-shrink-0' : 'text-warn flex-shrink-0'} />
+              <div className="text-[11px] text-ink-soft leading-relaxed">
+                {balance === 0
+                  ? 'Plus de Koris · Recharger dès 500 FCFA'
+                  : `Il te reste ${balance} Kori${balance > 1 ? 's' : ''} · Recharger`}
               </div>
             </div>
-          ) : (
-            <div className="text-[11px] text-ink-soft leading-relaxed">
-              Recharge tes Koris pour continuer à utiliser Dr Lô et les analyses.
-            </div>
-          )}
-        </div>
+          </div>
+        )}
 
         {/* Buy button */}
         <div className="px-4 py-3 border-b border-line">

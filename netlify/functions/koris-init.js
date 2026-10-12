@@ -24,11 +24,7 @@ exports.handler = async (event) => {
     if (!snap.exists) {
       return respond(200, {
         newBalance: 0,
-        wasReset: false,
-        phaseSwitched: false,
-        welcomeBonusActive: false,
         walletJustCreated: false,
-        transitionBonusGranted: false,
         error: "no_patient",
       });
     }
@@ -36,19 +32,13 @@ exports.handler = async (event) => {
     const data = snap.data();
     let wallet = data.korisWallet;
 
-    // No wallet → initialize with welcome bonus
     if (!wallet) {
       const now = new Date().toISOString();
-      const today = now.split("T")[0];
 
       wallet = {
         balance: KORIS_WELCOME_BONUS,
-        welcomeBonusActive: true,
-        lastDailyReset: today,
-        todaySpent: 0,
         totalSpent: 0,
         createdAt: now,
-        transitionBonusGrantedAt: now,
       };
 
       await patientRef.update({ korisWallet: wallet });
@@ -66,7 +56,6 @@ exports.handler = async (event) => {
           serverTimestamp: admin.firestore.FieldValue.serverTimestamp(),
         });
 
-      // Update global stats
       await db.collection("stats").doc("koris").set(
         {
           totalRefilled: admin.firestore.FieldValue.increment(KORIS_WELCOME_BONUS),
@@ -77,50 +66,13 @@ exports.handler = async (event) => {
 
       return respond(200, {
         newBalance: KORIS_WELCOME_BONUS,
-        wasReset: false,
-        phaseSwitched: false,
-        welcomeBonusActive: true,
         walletJustCreated: true,
-        transitionBonusGranted: false,
-      });
-    }
-
-    // Phase switch: welcome bonus exhausted
-    if (wallet.welcomeBonusActive && wallet.balance <= 0) {
-      await patientRef.update({
-        "korisWallet.welcomeBonusActive": false,
-      });
-
-      await patientRef
-        .collection("korisHistory")
-        .add({
-          type: "phase_switch",
-          amount: 0,
-          feature: "phase_switch",
-          balanceBefore: 0,
-          balanceAfter: 0,
-          timestamp: new Date().toISOString(),
-          details: "Bonus de bienvenue épuisé — acheter des Koris pour continuer",
-          serverTimestamp: admin.firestore.FieldValue.serverTimestamp(),
-        });
-
-      return respond(200, {
-        newBalance: 0,
-        wasReset: false,
-        phaseSwitched: true,
-        welcomeBonusActive: false,
-        walletJustCreated: false,
-        transitionBonusGranted: false,
       });
     }
 
     return respond(200, {
       newBalance: wallet.balance,
-      wasReset: false,
-      phaseSwitched: false,
-      welcomeBonusActive: wallet.welcomeBonusActive ?? false,
       walletJustCreated: false,
-      transitionBonusGranted: false,
     });
   } catch (err) {
     console.error("koris-init error:", err);

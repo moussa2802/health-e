@@ -328,7 +328,6 @@ exports.handler = async (event, context) => {
 
             tx.update(patientRef, {
               "korisWallet.balance": admin.firestore.FieldValue.increment(koris),
-              "korisWallet.welcomeBonusActive": false,
             });
 
             const historyRef = patientRef.collection("korisHistory").doc();

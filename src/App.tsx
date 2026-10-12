@@ -33,7 +33,7 @@ import HelpButton from "./components/Onboarding/HelpButton";
 import NoKorisModal from "./components/koris/NoKorisModal";
 import KorisWelcome from "./components/koris/KorisWelcome";
 import FloatingKori from "./components/koris/FloatingKori";
-import KorisTransitionToast from "./components/koris/KorisTransitionToast";
+
 import { useAuth } from "./contexts/AuthContext";
 import { cleanupAllProfessionalsListeners } from "./hooks/useProfessionals";
 import { cleanupAllBookingListeners } from "./hooks/useBookings";
@@ -497,7 +497,6 @@ const AppChrome: React.FC = () => {
       {!isChromeless && !!currentUser && <FloatingKori />}
       {!isChromeless && <NoKorisModal />}
       {!isChromeless && <KorisWelcome />}
-      {!isChromeless && <KorisTransitionToast />}
       {!isChromeless && <WelcomeFlow />}
     </>
   );

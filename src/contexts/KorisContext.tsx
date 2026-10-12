@@ -6,7 +6,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback, use
 import { useAuth } from './AuthContext';
 import {
   getKorisWallet,
-  checkDailyReset,
+  initKoris,
   KORIS_COSTS,
   type KorisFeatureType,
 } from '../services/korisService';
@@ -18,15 +18,14 @@ interface KorisContextType {
   canAfford: (feature: KorisFeatureType) => boolean;
   getCost: (feature: KorisFeatureType) => number;
   showNoKorisModal: boolean;
-  setShowNoKorisModal: (show: boolean) => void;
-  welcomeBonusActive: boolean;
+  openNoKorisModal: (action: string, cost: number) => void;
+  closeNoKorisModal: () => void;
+  noKorisAction: string;
+  noKorisCost: number;
   walletJustCreated: boolean;
-  phaseSwitched: boolean;
-  todaySpent: number;
   spendTick: number;
   lastSpentCost: number;
-  transitionBonusGranted: boolean;
-  walletInitialized: boolean;
+  lowBalance: boolean;
 }
 
 const KorisContext = createContext<KorisContextType>({
@@ -36,15 +35,14 @@ const KorisContext = createContext<KorisContextType>({
   canAfford: () => true,
   getCost: () => 0,
   showNoKorisModal: false,
-  setShowNoKorisModal: () => {},
-  welcomeBonusActive: true,
+  openNoKorisModal: () => {},
+  closeNoKorisModal: () => {},
+  noKorisAction: '',
+  noKorisCost: 0,
   walletJustCreated: false,
-  phaseSwitched: false,
-  todaySpent: 0,
   spendTick: 0,
   lastSpentCost: 0,
-  transitionBonusGranted: false,
-  walletInitialized: false,
+  lowBalance: false,
 });
 
 export const useKoris = () => useContext(KorisContext);
@@ -54,13 +52,11 @@ export const KorisProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [balance, setBalance] = useState(0);
   const [loading, setLoading] = useState(true);
   const [showNoKorisModal, setShowNoKorisModal] = useState(false);
-  const [welcomeBonusActive, setWelcomeBonusActive] = useState(true);
+  const [noKorisAction, setNoKorisAction] = useState('');
+  const [noKorisCost, setNoKorisCost] = useState(0);
   const [walletJustCreated, setWalletJustCreated] = useState(false);
-  const [phaseSwitched, setPhaseSwitched] = useState(false);
-  const [todaySpent, setTodaySpent] = useState(0);
   const [spendTick, setSpendTick] = useState(0);
   const [lastSpentCost, setLastSpentCost] = useState(0);
-  const [transitionBonusGranted, setTransitionBonusGranted] = useState(false);
   const initDoneRef = useRef(false);
 
   useEffect(() => {
@@ -76,18 +72,10 @@ export const KorisProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
     const init = async () => {
       try {
-        const result = await checkDailyReset(currentUser.id);
+        const result = await initKoris(currentUser.id);
 
         setBalance(result.newBalance);
-        setWelcomeBonusActive(result.welcomeBonusActive);
         setWalletJustCreated(result.walletJustCreated);
-        setPhaseSwitched(result.phaseSwitched);
-        setTransitionBonusGranted(result.transitionBonusGranted);
-
-        const wallet = await getKorisWallet(currentUser.id);
-        if (wallet) {
-          setTodaySpent(wallet.todaySpent);
-        }
       } catch (e) {
         console.error('Koris init error:', e);
       } finally {
@@ -104,8 +92,6 @@ export const KorisProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       const wallet = await getKorisWallet(currentUser.id);
       if (wallet) {
         setBalance(wallet.balance);
-        setWelcomeBonusActive(wallet.welcomeBonusActive);
-        setTodaySpent(wallet.todaySpent);
       }
     } catch {
       // Silently fail
@@ -120,6 +106,18 @@ export const KorisProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     return KORIS_COSTS[feature];
   }, []);
 
+  const openNoKorisModal = useCallback((action: string, cost: number) => {
+    setNoKorisAction(action);
+    setNoKorisCost(cost);
+    setShowNoKorisModal(true);
+  }, []);
+
+  const closeNoKorisModal = useCallback(() => {
+    setShowNoKorisModal(false);
+  }, []);
+
+  const lowBalance = balance > 0 && balance < 5;
+
   return (
     <KorisContext.Provider
       value={{
@@ -129,15 +127,14 @@ export const KorisProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         canAfford,
         getCost,
         showNoKorisModal,
-        setShowNoKorisModal,
-        welcomeBonusActive,
+        openNoKorisModal,
+        closeNoKorisModal,
+        noKorisAction,
+        noKorisCost,
         walletJustCreated,
-        phaseSwitched,
-        todaySpent,
         spendTick,
         lastSpentCost,
-        transitionBonusGranted,
-        walletInitialized: walletJustCreated,
+        lowBalance,
       }}
     >
       {children}

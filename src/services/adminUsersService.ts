@@ -234,7 +234,7 @@ export async function getUserDetail(userId: string): Promise<UserDetail | null> 
         const data = d.data();
         if (data.type === 'spend') {
           computedSpent += data.amount ?? 0;
-        } else if (data.type === 'refill' || data.type === 'bonus' || data.type === 'transition_bonus' || data.type === 'purchase' || data.type === 'daily_reset') {
+        } else if (data.type === 'refill' || data.type === 'bonus' || data.type === 'purchase') {
           computedEarned += data.amount ?? 0;
         }
       });

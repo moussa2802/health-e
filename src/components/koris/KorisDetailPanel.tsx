@@ -84,7 +84,7 @@ const KorisDetailPanel: React.FC<Props> = ({ onClose }) => {
             {balance}
             <span className="text-[13px] font-medium ml-1 opacity-85">Koris</span>
           </div>
-          <div className="text-[10px] opacity-75">+10 chaque jour à minuit</div>
+          <div className="text-[10px] opacity-75">25 Koris offerts, puis achat de packs</div>
         </div>
       </div>
 

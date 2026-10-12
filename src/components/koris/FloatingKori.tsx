@@ -15,7 +15,7 @@ const GOLD = '#8F6A1F';
 const OK = '#3C7A5A';
 
 const FloatingKori: React.FC = () => {
-  const { balance, loading, spendTick, lastSpentCost, walletInitialized } = useKoris();
+  const { balance, loading, spendTick, lastSpentCost, walletJustCreated } = useKoris();
   const [panelOpen, setPanelOpen] = useState(false);
   const [shaking, setShaking] = useState(false);
   const [floatAnim, setFloatAnim] = useState<{ text: string; color: string } | null>(null);
@@ -35,7 +35,7 @@ const FloatingKori: React.FC = () => {
   }, [spendTick, lastSpentCost]);
 
   useEffect(() => {
-    if (walletInitialized && !prevWelcome.current) {
+    if (walletJustCreated && !prevWelcome.current) {
       prevWelcome.current = true;
       const timer = setTimeout(() => {
         setPulseGreen(true);
@@ -45,7 +45,7 @@ const FloatingKori: React.FC = () => {
       }, 1200);
       return () => clearTimeout(timer);
     }
-  }, [walletInitialized]);
+  }, [walletJustCreated]);
 
   if (loading) return null;
 

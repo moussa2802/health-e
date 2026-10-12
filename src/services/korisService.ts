@@ -1,18 +1,11 @@
 /**
  * Koris Service — Gestion de l'économie de crédits virtuels Health-e
  *
- * Deux phases:
- *   Phase "Bienvenue" (welcomeBonusActive: true):
- *     - 25 Koris offerts, pas de recharge quotidienne
- *     - Quand balance atteint 0 → bascule en Phase Quotidienne avec 10 Koris
- *
- *   Phase "Quotidienne" (welcomeBonusActive: false):
- *     - Solde REMIS à 10 chaque jour (pas additionné)
- *     - Max 10 Koris/jour, non utilisés perdus au reset
+ * Modèle : 25 Koris offerts à l'inscription, puis achat de packs via PayTech.
  *
  * Firestore data model:
- *   patients/{userId}.korisWallet: { balance, welcomeBonusActive, lastDailyReset, todaySpent, totalSpent }
- *   patients/{userId}/korisHistory/{docId}: { type, amount, feature, balanceBefore, balanceAfter, timestamp, details? }
+ *   patients/{userId}.korisWallet: { balance, totalSpent, lastPaidAt, ... }
+ *   patients/{userId}/korisHistory/{docId}: { type, amount, feature, balanceBefore, balanceAfter, timestamp, details?, metadata? }
  *   stats/koris: { totalSpent, totalRefilled, activeUsers, spendingByType, ... }
  */
 
@@ -48,28 +41,20 @@ export const KORIS_COSTS = {
 export type KorisFeatureType = keyof typeof KORIS_COSTS;
 
 export const KORIS_WELCOME_BONUS = 25;
-export const KORIS_TRANSITION_BONUS = 50;
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
 export interface KorisWallet {
   balance: number;
-  welcomeBonusActive: boolean;
-  lastDailyReset: string;   // YYYY-MM-DD
-  todaySpent: number;
   totalSpent: number;
   createdAt?: string;
-  transitionBonusGrantedAt?: string;
-  // Legacy fields (kept for backward compat reads)
-  totalEarned?: number;
-  lastRefillDate?: string;
 }
 
 export interface KorisTransaction {
   id?: string;
-  type: 'spend' | 'refill' | 'bonus' | 'refund' | 'daily_reset' | 'phase_switch' | 'transition_bonus' | 'purchase';
+  type: 'spend' | 'refill' | 'bonus' | 'refund' | 'purchase';
   amount: number;
-  feature: KorisFeatureType | 'daily_reset' | 'welcome_bonus' | 'refund' | 'phase_switch' | 'transition_bonus' | 'purchase';
+  feature: KorisFeatureType | 'welcome_bonus' | 'refund' | 'purchase';
   balanceBefore: number;
   balanceAfter: number;
   timestamp: string;
@@ -84,14 +69,9 @@ export interface KorisSpendResult {
   newBalance: number;
 }
 
-/** Result returned by checkDailyReset to the context */
-export interface DailyResetResult {
+export interface KorisInitResult {
   newBalance: number;
-  wasReset: boolean;
-  phaseSwitched: boolean;
-  welcomeBonusActive: boolean;
   walletJustCreated: boolean;
-  transitionBonusGranted: boolean;
 }
 
 // ── Wallet operations ────────────────────────────────────────────────────────
@@ -110,12 +90,8 @@ export async function getKorisWallet(userId: string): Promise<KorisWallet | null
 
     return {
       balance: w.balance ?? 0,
-      welcomeBonusActive: w.welcomeBonusActive ?? false,
-      lastDailyReset: w.lastDailyReset ?? w.lastRefillDate ?? '',
-      todaySpent: w.todaySpent ?? 0,
       totalSpent: w.totalSpent ?? 0,
       createdAt: w.createdAt,
-      transitionBonusGrantedAt: w.transitionBonusGrantedAt,
     };
   } catch {
     return null;
@@ -131,19 +107,10 @@ export async function getKorisBalance(userId: string): Promise<number> {
 }
 
 
-/**
- * Vérifie l'état du wallet et l'initialise si nécessaire (via le serveur).
- * Le serveur gère l'init, le bonus de transition et le phase switch
- * pour respecter les règles Firestore qui bloquent les écritures client sur korisWallet.
- */
-export async function checkDailyReset(_userId: string): Promise<DailyResetResult> {
-  const NO_OP: DailyResetResult = {
+export async function initKoris(_userId: string): Promise<KorisInitResult> {
+  const NO_OP: KorisInitResult = {
     newBalance: 0,
-    wasReset: false,
-    phaseSwitched: false,
-    welcomeBonusActive: false,
     walletJustCreated: false,
-    transitionBonusGranted: false,
   };
 
   try {
@@ -156,14 +123,10 @@ export async function checkDailyReset(_userId: string): Promise<DailyResetResult
     const data = await res.json();
     return {
       newBalance: data.newBalance ?? 0,
-      wasReset: data.wasReset ?? false,
-      phaseSwitched: data.phaseSwitched ?? false,
-      welcomeBonusActive: data.welcomeBonusActive ?? false,
       walletJustCreated: data.walletJustCreated ?? false,
-      transitionBonusGranted: data.transitionBonusGranted ?? false,
     };
   } catch (e) {
-    console.error('Error in checkDailyReset:', e);
+    console.error('Koris init error:', e);
     return NO_OP;
   }
 }
@@ -318,7 +281,7 @@ async function computeGlobalKorisStatsFromRaw(): Promise<{
       totalTransactions++;
       const feature = tx.feature || 'unknown';
       spendingByType[feature] = (spendingByType[feature] || 0) + amount;
-    } else if (tx.type === 'refill' || tx.type === 'bonus' || tx.type === 'daily_reset' || tx.type === 'transition_bonus' || tx.type === 'purchase') {
+    } else if (tx.type === 'refill' || tx.type === 'bonus' || tx.type === 'purchase') {
       totalRefilled += amount;
     } else if (tx.type === 'refund') {
       totalRefunded += amount;
@@ -326,57 +289,6 @@ async function computeGlobalKorisStatsFromRaw(): Promise<{
   });
 
   return { totalSpent, totalRefilled, totalRefunded, totalTransactions, spendingByType };
-}
-
-/**
- * Récupère les stats de phases (bienvenue vs quotidienne) pour le dashboard admin.
- * Un utilisateur est en "phase bienvenue" s'il a welcomeBonusActive ET
- * n'a pas encore dépensé la totalité de son bonus initial (25 Koris).
- * Sinon il est en "phase quotidienne".
- */
-export async function getKorisPhaseStats(): Promise<{
-  welcomePhaseCount: number;
-  dailyPhaseCount: number;
-  totalWithWallet: number;
-  bonusExhaustedRate: number;
-}> {
-  try {
-    const patientsRef = collection(db, 'patients');
-    const snap = await getDocs(patientsRef);
-
-    let welcomePhaseCount = 0;
-    let dailyPhaseCount = 0;
-    let totalWithWallet = 0;
-
-    snap.forEach(docSnap => {
-      const data = docSnap.data();
-      const w = data.korisWallet;
-      if (!w) return;
-      totalWithWallet++;
-      // welcomeBonusActive is the source of truth for the phase flag.
-      // But many wallets never had it flipped because the transition bonus
-      // kept the balance > 0. So we also check totalSpent vs the welcome bonus:
-      // if they spent >= 25 Koris, they're effectively past the welcome phase.
-      const spent = w.totalSpent ?? 0;
-      const stillInWelcome = w.welcomeBonusActive && spent < KORIS_WELCOME_BONUS;
-      if (stillInWelcome) {
-        welcomePhaseCount++;
-      } else {
-        dailyPhaseCount++;
-      }
-    });
-
-    return {
-      welcomePhaseCount,
-      dailyPhaseCount,
-      totalWithWallet,
-      bonusExhaustedRate: totalWithWallet > 0
-        ? Math.round((dailyPhaseCount / totalWithWallet) * 100)
-        : 0,
-    };
-  } catch {
-    return { welcomePhaseCount: 0, dailyPhaseCount: 0, totalWithWallet: 0, bonusExhaustedRate: 0 };
-  }
 }
 
 // ── Feature label mapping ────────────────────────────────────────────────────
@@ -392,13 +304,10 @@ export function getFeatureLabel(feature: string): string {
     conseils: 'Conseils personnalisés',
     compatibility: 'Test de compatibilité',
     test: 'Test',
-    daily_reset: 'Reset quotidien',
-    daily_refill: 'Recharge quotidienne',
     welcome_bonus: 'Bonus de bienvenue',
-    phase_switch: 'Passage phase quotidienne',
-    transition_bonus: 'Bonus de transition',
     purchase: 'Achat de Koris',
     refund: 'Remboursement',
+    unlock_chat: 'Débloquer chat',
   };
   return labels[feature] ?? feature;
 }
