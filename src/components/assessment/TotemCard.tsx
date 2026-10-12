@@ -9,6 +9,7 @@ import {
   type TotemAnimal,
 } from '../../utils/totemAlgorithm';
 import { saveTotem, revealTotem, acceptPendingTotem } from '../../services/evaluationService';
+import { getArchetype, getArchetypeId } from '../../utils/profileArchetype';
 import type { ScaleResult } from '../../types/assessment';
 
 import lionImg from '../../assets/totems/lion.jpg';
@@ -88,7 +89,9 @@ const TotemCard: React.FC<TotemCardProps> = ({
   if (!isComputed && userId) {
     const animal = computeTotem(profileResults);
     if (animal) {
-      saveTotem(userId, animal).then(onTotemUpdate).catch(() => {});
+      const archetype = getArchetype(profileResults);
+      const archId = getArchetypeId(archetype);
+      saveTotem(userId, animal, archId ?? undefined).then(onTotemUpdate).catch(() => {});
     }
     return (
       <div className="bg-card border border-line rounded-[14px] px-4 py-3.5 mb-5 shadow-soft animate-fadeIn">
@@ -168,7 +171,9 @@ const TotemCard: React.FC<TotemCardProps> = ({
     const handleAccept = async () => {
       setRevealing(true);
       if (userId) {
-        try { await acceptPendingTotem(userId, pending); } catch { /* non-critical */ }
+        const archetype = getArchetype(profileResults);
+        const archId = getArchetypeId(archetype);
+        try { await acceptPendingTotem(userId, pending, archId ?? undefined); } catch { /* non-critical */ }
       }
       setTimeout(() => {
         setRevealing(false);
