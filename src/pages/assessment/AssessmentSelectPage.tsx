@@ -16,7 +16,7 @@ const MAX_SELECTION = 10;
 const AssessmentSelectPage: React.FC = () => {
   const navigate = useNavigate();
   const { currentUser, isAuthenticated } = useAuth();
-  const { balance, refreshBalance, setShowNoKorisModal } = useKoris();
+  const { balance, refreshBalance, openNoKorisModal } = useKoris();
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -54,8 +54,7 @@ const AssessmentSelectPage: React.FC = () => {
       for (const id of selected) scaleMap[id] = null;
       const spendResult = await spendKorisForTest(scaleMap);
       if (!spendResult.ok) {
-        setShowNoKorisModal(true);
-        setError(`Solde insuffisant (${spendResult.required ?? count} Koris requis, solde : ${balance}).`);
+        openNoKorisModal('Ce test', spendResult.required ?? count);
         return;
       }
       const session = await createSession(currentUser.id, [...selected]);

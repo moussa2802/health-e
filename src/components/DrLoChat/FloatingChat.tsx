@@ -209,7 +209,7 @@ const FloatingChat: React.FC<Props> = ({ userId }) => {
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const conversationId = useRef<string>(`conv_${Date.now()}`);
-  const { canAfford, balance, refreshBalance } = useKoris();
+  const { canAfford, balance, refreshBalance, openNoKorisModal, getCost } = useKoris();
 
   const onboarding = getOnboardingProfile();
   const prenom = onboarding?.prenom ?? '';
@@ -378,11 +378,17 @@ const FloatingChat: React.FC<Props> = ({ userId }) => {
 
   const handleUnlockChat = async () => {
     if (!userId || unlocking || dailyUnlocks >= MAX_DAILY_UNLOCKS) return;
-    if (!canAfford('unlock_chat')) return;
+    if (!canAfford('unlock_chat')) {
+      openNoKorisModal('Débloquer le chat', getCost('unlock_chat'));
+      return;
+    }
     setUnlocking(true);
     try {
       const result = await spendKorisForUnlock();
-      if (!result.ok) return;
+      if (!result.ok) {
+        openNoKorisModal('Débloquer le chat', getCost('unlock_chat'));
+        return;
+      }
       await refreshBalance();
       const newUnlocks = dailyUnlocks + 1;
       const newLimit = DAILY_MESSAGE_LIMIT + newUnlocks * UNLOCK_MESSAGES;

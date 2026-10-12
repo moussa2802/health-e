@@ -710,7 +710,7 @@ const AssessmentCategoryPage: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
   const { currentUser, isAuthenticated } = useAuth();
-  const { canAfford, refreshBalance, balance, getCost, setShowNoKorisModal } = useKoris();
+  const { canAfford, refreshBalance, balance, getCost, openNoKorisModal } = useKoris();
 
   const isMental = category === 'mental';
   const isValidCategory = category === 'mental' || category === 'sexual';
@@ -901,7 +901,7 @@ const AssessmentCategoryPage: React.FC = () => {
     if (!currentUser || drLoUpdating || !isAiAvailable()) return;
     const isRefresh = !!drLoAnalysis;
     const cost = getCost(isRefresh ? 'analysis_refresh' : 'analysis');
-    if (balance < cost) { setShowNoKorisModal(true); return; }
+    if (balance < cost) { openNoKorisModal(isRefresh ? 'Actualisation analyse' : 'Analyse Dr Lô', cost); return; }
 
     setDrLoUpdating(true);
     try {

@@ -48,7 +48,7 @@ exports.handler = async (event) => {
     return { statusCode: 400, headers, body: JSON.stringify({ error: "JSON invalide" }) };
   }
 
-  const { packId } = body;
+  const { packId, returnTo } = body;
   const pack = KORIS_PACKS[packId];
   if (!pack) {
     return { statusCode: 400, headers, body: JSON.stringify({ error: "Pack invalide" }) };
@@ -79,8 +79,8 @@ exports.handler = async (event) => {
     command_name: `Achat ${pack.label}`,
     currency: "XOF",
     env: PAYTECH_CONFIG.env,
-    success_url: `${siteUrl}/acheter-koris?success=true&order=${orderId}`,
-    cancel_url: `${siteUrl}/acheter-koris?cancelled=true`,
+    success_url: `${siteUrl}/acheter-koris?success=true&order=${orderId}${returnTo ? `&returnTo=${encodeURIComponent(returnTo)}` : ''}`,
+    cancel_url: `${siteUrl}/acheter-koris?cancelled=true${returnTo ? `&returnTo=${encodeURIComponent(returnTo)}` : ''}`,
     ipn_url: PAYTECH_CONFIG.ipnUrl,
     custom_field: JSON.stringify({
       paymentType: "koris_purchase",

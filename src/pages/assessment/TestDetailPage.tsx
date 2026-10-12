@@ -203,7 +203,7 @@ const TestDetailPage: React.FC = () => {
   const { scaleId } = useParams<{ scaleId: string }>();
   const navigate = useNavigate();
   const { currentUser, isAuthenticated } = useAuth();
-  const { balance, refreshBalance, setShowNoKorisModal } = useKoris();
+  const { balance, refreshBalance, openNoKorisModal } = useKoris();
 
   const [result, setResult] = useState<ScaleResult | null>(null);
   const [history, setHistory] = useState<ScaleResultHistoryEntry[]>([]);
@@ -331,8 +331,7 @@ const TestDetailPage: React.FC = () => {
       const lastTakenAt = result?.completedAt ?? null;
       const spendResult = await spendKorisForTest({ [scaleId]: lastTakenAt });
       if (!spendResult.ok) {
-        setShowNoKorisModal(true);
-        setErrorMsg(`Solde insuffisant (${spendResult.required ?? KORIS_COSTS.test} Koris requis).`);
+        openNoKorisModal('Ce test', spendResult.required ?? KORIS_COSTS.test);
         return;
       }
       const session = await createSession(currentUser.id, [scaleId]);

@@ -209,7 +209,7 @@ const AssessmentResultsPage: React.FC = () => {
   const [searchParams] = useSearchParams();
   const isGuestMode = searchParams.get('guest') === 'true';
   const { currentUser, isAuthenticated } = useAuth();
-  const { refreshBalance, setShowNoKorisModal } = useKoris();
+  const { refreshBalance, openNoKorisModal } = useKoris();
   const location = useLocation();
   const responseQuality = (location.state as any)?.responseQuality;
 
@@ -278,7 +278,7 @@ const AssessmentResultsPage: React.FC = () => {
       const lastTakenAt = result?.completedAt ?? null;
       const spendResult = await spendKorisForTest({ [sid]: lastTakenAt });
       if (!spendResult.ok) {
-        setShowNoKorisModal(true);
+        openNoKorisModal('Ce retest', spendResult.required ?? 1);
         setRetaking(false);
         return;
       }

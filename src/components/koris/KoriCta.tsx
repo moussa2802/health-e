@@ -1,7 +1,6 @@
 import React from 'react';
 import { Loader2 } from 'lucide-react';
 import { useKoris } from '../../contexts/KorisContext';
-import { useNavigate } from 'react-router-dom';
 
 const KORI_IMG = '/kori.png';
 
@@ -30,8 +29,7 @@ const KoriCta: React.FC<Props> = ({
   variant = 'primary',
   className = '',
 }) => {
-  const { balance, setShowNoKorisModal } = useKoris();
-  const navigate = useNavigate();
+  const { balance, openNoKorisModal } = useKoris();
 
   const effectiveCost = isFree ? 0 : cost;
   const insufficient = !isFree && balance < effectiveCost;
@@ -39,8 +37,7 @@ const KoriCta: React.FC<Props> = ({
   const handleClick = () => {
     if (loading || disabled) return;
     if (insufficient) {
-      setShowNoKorisModal(true);
-      navigate('/acheter-koris');
+      openNoKorisModal(label, effectiveCost);
       return;
     }
     onClick();

@@ -632,7 +632,7 @@ const CompatibilityCodeCard: React.FC<CodeCardProps> = ({
 const AssessmentProfilePage: React.FC = () => {
   const navigate = useNavigate();
   const { currentUser, isAuthenticated, loading: authLoading } = useAuth();
-  const { refreshBalance, setShowNoKorisModal, balance, getCost } = useKoris();
+  const { refreshBalance, openNoKorisModal, balance, getCost } = useKoris();
 
   const [scaleResults, setScaleResults] = useState<Record<string, ScaleResult>>({});
   const [signatures, setSignatures] = useState<Record<string, { value: number; max: number }[]>>({});
@@ -739,7 +739,7 @@ const AssessmentProfilePage: React.FC = () => {
     if (bloc === 'sexual' && updatingSexual) return;
     const isRefresh = bloc === 'mental' ? !!drLoMentalAnalysis : !!drLoSexualAnalysis;
     const cost = getCost(isRefresh ? 'analysis_refresh' : 'analysis');
-    if (balance < cost) { setShowNoKorisModal(true); return; }
+    if (balance < cost) { openNoKorisModal(isRefresh ? 'Actualisation analyse' : 'Analyse Dr Lô', cost); return; }
 
     if (bloc === 'mental') setUpdatingMental(true); else setUpdatingSexual(true);
     try {
@@ -816,7 +816,7 @@ const AssessmentProfilePage: React.FC = () => {
       const lastTakenAt = scaleResults[scaleId]?.completedAt ?? null;
       const spendResult = await spendKorisForTest({ [scaleId]: lastTakenAt });
       if (!spendResult.ok) {
-        setShowNoKorisModal(true);
+        openNoKorisModal('Ce test', spendResult.required ?? 1);
         return;
       }
       const session = await createSession(currentUser.id, [scaleId]);

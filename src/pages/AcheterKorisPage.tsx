@@ -26,12 +26,17 @@ const AcheterKorisPage: React.FC = () => {
 
   const isSuccess = searchParams.get('success') === 'true';
   const isCancelled = searchParams.get('cancelled') === 'true';
+  const returnTo = searchParams.get('returnTo');
 
   React.useEffect(() => {
     if (isSuccess) {
       refreshBalance();
+      if (returnTo) {
+        const timer = setTimeout(() => navigate(returnTo), 2000);
+        return () => clearTimeout(timer);
+      }
     }
-  }, [isSuccess, refreshBalance]);
+  }, [isSuccess, refreshBalance, returnTo, navigate]);
 
   const handlePurchase = async (packId: string) => {
     setLoading(packId);
