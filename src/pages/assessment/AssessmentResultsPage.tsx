@@ -25,6 +25,8 @@ import { shareResultCard } from '../../utils/shareCard';
 import { getScaleMeta, getScaleCategory, getCategoryColor } from '../../utils/scaleMeta';
 import { useKoris } from '../../contexts/KorisContext';
 import { KORIS_COSTS, spendKorisForTest, isTestFreeRetake } from '../../services/korisService';
+import { useDefiFlag } from '../../hooks/useDefiFlag';
+import { isScaleEligible } from '../../config/defiConfig';
 
 const EMERGENCY_CONTACTS = getCrisisResources().map(r => ({
   label: r.label,
@@ -210,6 +212,7 @@ const AssessmentResultsPage: React.FC = () => {
   const isGuestMode = searchParams.get('guest') === 'true';
   const { currentUser, isAuthenticated } = useAuth();
   const { refreshBalance, openNoKorisModal } = useKoris();
+  const { defiEnabled } = useDefiFlag();
   const location = useLocation();
   const responseQuality = (location.state as any)?.responseQuality;
 
@@ -224,6 +227,7 @@ const AssessmentResultsPage: React.FC = () => {
   const [deleting, setDeleting] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [signatureValues, setSignatureValues] = useState<{ value: number; max: number }[] | undefined>();
+  const [totemRevealed, setTotemRevealed] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
 
   const guestCount = isGuestMode ? getGuestCount() : 0;
@@ -266,7 +270,10 @@ const AssessmentResultsPage: React.FC = () => {
     if (isGuestMode || !isAuthenticated || !currentUser || !session) return;
     const sid = session.selectedScaleIds[0];
     getProfileProgress(currentUser.id)
-      .then(p => setSignatureValues(p.signatures?.[sid] ?? undefined))
+      .then(p => {
+        setSignatureValues(p.signatures?.[sid] ?? undefined);
+        setTotemRevealed(!!p.totem?.revealedAt);
+      })
       .catch(() => {});
   }, [session, isGuestMode, isAuthenticated, currentUser]);
 
@@ -712,6 +719,24 @@ const AssessmentResultsPage: React.FC = () => {
                 </p>
               </div>
               <ChevronRight size={16} style={{ opacity: 0.5 }} />
+            </button>
+          )}
+
+          {defiEnabled && totemRevealed && result && isScaleEligible(result, 'public') && (
+            <button onClick={() => navigate('/defi')} style={{
+              width: '100%', marginTop: 14, padding: '14px 18px', borderRadius: 14, border: 'none',
+              background: 'linear-gradient(160deg, #2A2520 0%, #3D352C 100%)',
+              color: '#F4F1E9', cursor: 'pointer', textAlign: 'left',
+              display: 'flex', alignItems: 'center', gap: 12, fontFamily: 'inherit',
+            }}>
+              <Sparkles size={20} color="#D4AD5A" />
+              <div style={{ flex: 1 }}>
+                <p style={{ margin: 0, fontSize: 13, fontWeight: 700 }}>Tes proches auraient-ils deviné ça ?</p>
+                <p style={{ margin: '2px 0 0', fontSize: 11, color: 'rgba(212,173,90,0.7)' }}>
+                  Teste-les 👀
+                </p>
+              </div>
+              <ChevronRight size={16} style={{ opacity: 0.4, color: '#fff' }} />
             </button>
           )}
 

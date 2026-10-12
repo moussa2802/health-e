@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Sparkles, Stethoscope, Share2 } from 'lucide-react';
+import { ArrowLeft, Sparkles, Stethoscope, Share2, ChevronRight } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
+import { useDefiFlag } from '../../hooks/useDefiFlag';
 import { getProfileProgress } from '../../services/evaluationService';
 import { shareResultCard } from '../../utils/shareCard';
 import {
@@ -167,6 +168,7 @@ const GaugeRow: React.FC<{ gauge: DimensionGauge }> = ({ gauge }) => {
 const TotemProfilePage: React.FC = () => {
   const navigate = useNavigate();
   const { currentUser, isAuthenticated } = useAuth();
+  const { defiEnabled } = useDefiFlag();
   const cardRef = useRef<HTMLDivElement>(null);
 
   const [animal, setAnimal] = useState<TotemAnimal | null>(null);
@@ -358,6 +360,27 @@ const TotemProfilePage: React.FC = () => {
             « {drLoMessage} »
           </p>
         </div>
+
+        {defiEnabled && (
+          <div
+            className="mt-4 rounded-[16px] p-4 shadow-soft cursor-pointer flex items-center gap-3"
+            style={{ background: 'linear-gradient(160deg, #2A2520 0%, #3D352C 100%)' }}
+            onClick={() => navigate('/defi')}
+          >
+            <div className="w-10 h-10 rounded-xl bg-gold-soft flex items-center justify-center flex-shrink-0">
+              <Sparkles size={18} className="text-gold" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-[13px] font-bold text-[#F4F1E9] m-0">
+                Tes proches auraient-ils deviné ton totem ?
+              </p>
+              <p className="text-[11px] text-gold/70 m-0 mt-0.5">
+                Teste-les 👀
+              </p>
+            </div>
+            <ChevronRight size={16} className="text-white/30 flex-shrink-0" />
+          </div>
+        )}
       </div>
     </div>
   );
