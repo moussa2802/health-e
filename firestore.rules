@@ -78,6 +78,10 @@ service cloud.firestore {
       allow read, write: if isOwner(patientId);
     }
 
+    match /patients/{patientId}/korisHistory/{entryId} {
+      allow read: if isOwner(patientId);
+    }
+
     // ─── MEDICAL RECORDS ──────────────────────────────────────────────────────
     match /patients/{patientId}/medicalRecords/{recordId} {
       allow read: if request.auth != null &&

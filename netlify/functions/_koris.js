@@ -18,7 +18,7 @@ const KORIS_COSTS = {
  * Returns { holdId, cost } on success, { error: 'insufficient_balance' } if short.
  * Free features (cost=0) return { holdId: null, cost: 0 }.
  */
-async function reserveKoris(userId, feature, quantity = 1) {
+async function reserveKoris(userId, feature, quantity = 1, metadata = {}) {
   const unitCost = KORIS_COSTS[feature];
   if (unitCost === undefined) {
     throw new Error(`Unknown feature: ${feature}`);
@@ -48,6 +48,7 @@ async function reserveKoris(userId, feature, quantity = 1) {
         amount: cost,
         quantity,
         status: "pending",
+        metadata,
         createdAt: admin.firestore.FieldValue.serverTimestamp(),
       });
     });
@@ -72,6 +73,9 @@ async function commitKoris(holdId) {
   if (!holdDoc.exists || holdDoc.data().status !== "pending") return;
 
   const hold = holdDoc.data();
+  const patientRef = db.collection("patients").doc(hold.userId);
+  const patientDoc = await patientRef.get();
+  const balanceBefore = patientDoc.data()?.korisWallet?.balance ?? 0;
 
   const batch = db.batch();
 
@@ -90,10 +94,12 @@ async function commitKoris(holdId) {
     type: "spend",
     feature: hold.feature,
     amount: hold.amount,
+    balanceBefore: balanceBefore + hold.amount,
+    balanceAfter: balanceBefore,
+    ...(hold.metadata && Object.keys(hold.metadata).length > 0 ? { metadata: hold.metadata } : {}),
     timestamp: admin.firestore.FieldValue.serverTimestamp(),
   });
 
-  // Update global stats aggregate
   const statsRef = db.collection("stats").doc("koris");
   batch.set(
     statsRef,
@@ -106,8 +112,6 @@ async function commitKoris(holdId) {
     { merge: true }
   );
 
-  // Update per-user totalSpent
-  const patientRef = db.collection("patients").doc(hold.userId);
   batch.update(patientRef, {
     "korisWallet.totalSpent": admin.firestore.FieldValue.increment(hold.amount),
   });
@@ -129,6 +133,8 @@ async function releaseKoris(holdId) {
 
     const hold = holdDoc.data();
     const patientRef = db.collection("patients").doc(hold.userId);
+    const patientDoc = await tx.get(patientRef);
+    const balanceBefore = patientDoc.data()?.korisWallet?.balance ?? 0;
 
     tx.update(patientRef, {
       "korisWallet.balance": admin.firestore.FieldValue.increment(hold.amount),
@@ -137,6 +143,22 @@ async function releaseKoris(holdId) {
     tx.update(holdRef, {
       status: "released",
       resolvedAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
+
+    const historyRef = db
+      .collection("patients")
+      .doc(hold.userId)
+      .collection("korisHistory")
+      .doc();
+
+    tx.set(historyRef, {
+      type: "refund",
+      feature: hold.feature,
+      amount: hold.amount,
+      balanceBefore,
+      balanceAfter: balanceBefore + hold.amount,
+      details: "Koris restitués — opération annulée",
+      timestamp: admin.firestore.FieldValue.serverTimestamp(),
     });
   });
 }
