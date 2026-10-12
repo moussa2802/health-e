@@ -1,7 +1,43 @@
-const { verifyAuth } = require("./_firebase");
+const { verifyAuth, db, admin } = require("./_firebase");
 const { reserveKoris, commitKoris, releaseKoris } = require("./_koris");
 
-const FREE_RETAKE_AFTER_DAYS = 30;
+const FREE_RETAKE_DAYS = 30;
+
+async function filterFreeRetakes(userId, scaleIds) {
+  const freeScales = [];
+  const billableScales = [];
+
+  let lastPaidAt = {};
+  try {
+    const patientDoc = await db.collection("patients").doc(userId).get();
+    lastPaidAt = patientDoc.data()?.korisWallet?.lastPaidAt ?? {};
+  } catch {
+    // If read fails, all scales are billable — never block
+  }
+
+  for (const scaleId of scaleIds) {
+    const paidTs = lastPaidAt[scaleId];
+    if (paidTs) {
+      const paidDate = paidTs.toDate ? paidTs.toDate() : new Date(paidTs);
+      const daysSince = (Date.now() - paidDate.getTime()) / (1000 * 60 * 60 * 24);
+      if (daysSince < FREE_RETAKE_DAYS) {
+        freeScales.push(scaleId);
+        continue;
+      }
+    }
+    billableScales.push(scaleId);
+  }
+
+  return { freeScales, billableScales };
+}
+
+function buildLastPaidAtUpdate(scaleIds) {
+  const update = {};
+  for (const scaleId of scaleIds) {
+    update[`korisWallet.lastPaidAt.${scaleId}`] = admin.firestore.FieldValue.serverTimestamp();
+  }
+  return update;
+}
 
 exports.handler = async (event) => {
   const headers = {
@@ -31,44 +67,33 @@ exports.handler = async (event) => {
     return { statusCode: 400, headers, body: JSON.stringify({ error: "JSON invalide" }) };
   }
 
-  const { feature, quantity = 1, lastTakenAt, scaleLastTakenMap } = body;
+  const { feature, quantity = 1, scaleLastTakenMap } = body;
   if (!feature) {
     return { statusCode: 400, headers, body: JSON.stringify({ error: "feature manquant" }) };
   }
 
   if (feature === "test") {
-    if (scaleLastTakenMap && typeof scaleLastTakenMap === "object") {
-      let billableCount = 0;
-      const freeScales = [];
-      for (const [scaleId, takenAt] of Object.entries(scaleLastTakenMap)) {
-        if (takenAt) {
-          const daysSince = (Date.now() - new Date(takenAt).getTime()) / (1000 * 60 * 60 * 24);
-          if (daysSince >= FREE_RETAKE_AFTER_DAYS) {
-            freeScales.push(scaleId);
-            continue;
-          }
-        }
-        billableCount++;
-      }
+    const scaleIds = scaleLastTakenMap && typeof scaleLastTakenMap === "object"
+      ? Object.keys(scaleLastTakenMap)
+      : [];
 
-      if (billableCount === 0) {
+    if (scaleIds.length > 0) {
+      const { freeScales, billableScales } = await filterFreeRetakes(user.uid, scaleIds);
+
+      if (billableScales.length === 0) {
         return { statusCode: 200, headers, body: JSON.stringify({ ok: true, koris_debited: false, cost: 0, free_retake: true, freeScales }) };
       }
 
-      const reservation = await reserveKoris(user.uid, feature, billableCount);
+      const reservation = await reserveKoris(user.uid, feature, billableScales.length, { scaleIds: billableScales });
       if (reservation.error === "insufficient_balance") {
         return { statusCode: 402, headers, body: JSON.stringify({ error: "Solde Koris insuffisant", koris_debited: false, required: reservation.required }) };
       }
 
       await commitKoris(reservation.holdId);
-      return { statusCode: 200, headers, body: JSON.stringify({ ok: true, koris_debited: true, cost: reservation.cost, freeScales }) };
-    }
 
-    if (lastTakenAt) {
-      const daysSince = (Date.now() - new Date(lastTakenAt).getTime()) / (1000 * 60 * 60 * 24);
-      if (daysSince >= FREE_RETAKE_AFTER_DAYS) {
-        return { statusCode: 200, headers, body: JSON.stringify({ ok: true, koris_debited: false, cost: 0, free_retake: true }) };
-      }
+      await db.collection("patients").doc(user.uid).update(buildLastPaidAtUpdate(billableScales));
+
+      return { statusCode: 200, headers, body: JSON.stringify({ ok: true, koris_debited: true, cost: reservation.cost, freeScales }) };
     }
   }
 
