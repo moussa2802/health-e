@@ -20,7 +20,7 @@ async function filterFreeRetakes(userId, scaleIds) {
     if (takenTs) {
       const takenDate = takenTs.toDate ? takenTs.toDate() : new Date(takenTs);
       const daysSince = (Date.now() - takenDate.getTime()) / (1000 * 60 * 60 * 24);
-      if (daysSince < FREE_RETAKE_DAYS) {
+      if (daysSince >= FREE_RETAKE_DAYS) {
         freeScales.push(scaleId);
         continue;
       }
