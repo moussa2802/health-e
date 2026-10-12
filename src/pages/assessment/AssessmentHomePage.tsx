@@ -11,6 +11,7 @@ import {
   saveOnboardingToProfile,
   resetUserProfile,
   getInProgressSessions,
+  backfillArchetypeId,
 } from '../../services/evaluationService';
 import {
   getGuestCount,
@@ -36,6 +37,8 @@ import {
   getTotemSignature,
   type TotemAnimal,
 } from '../../utils/totemAlgorithm';
+import { getArchetype, getArchetypeId } from '../../utils/profileArchetype';
+import { useDefiFlag } from '../../hooks/useDefiFlag';
 import { collection, query, orderBy, limit, getDocs } from 'firebase/firestore';
 import { db } from '../../utils/firebase';
 
@@ -81,6 +84,7 @@ function getScalesForTab(tab: 'mental' | 'intime' | 'bonus'): AssessmentScale[] 
 const AssessmentHomePage: React.FC = () => {
   const navigate = useNavigate();
   const { currentUser, isAuthenticated, needsAuthMigration } = useAuth();
+  const { defiEnabled } = useDefiFlag();
 
   const [showOnboarding, setShowOnboarding] = useState(() =>
     isAuthenticated ? false : !isOnboardingComplete()
@@ -125,6 +129,13 @@ const AssessmentHomePage: React.FC = () => {
         setBonusCompleted(p.bonusCompletedCount);
         setTotemData(p.totem);
         setTilesLoaded(true);
+        if (p.totem?.revealedAt && !p.archetypeId && currentUser) {
+          const arch = getArchetype(p.scaleResults);
+          const archId = getArchetypeId(arch);
+          if (archId) {
+            backfillArchetypeId(currentUser.id, archId).catch(() => {});
+          }
+        }
         if (p.onboardingProfile) {
           saveOnboardingProfile(p.onboardingProfile as Parameters<typeof saveOnboardingProfile>[0]);
           setOnboardingProfile(p.onboardingProfile as OnboardingProfileType);
@@ -576,7 +587,12 @@ const AssessmentHomePage: React.FC = () => {
           {!tilesLoaded ? (
             <SkeletonTile />
           ) : (
-            <GameTeaser />
+            <GameTeaser
+              defiEnabled={defiEnabled}
+              totemProgress={totemProgress}
+              totemRevealed={totemIsRevealed}
+              onLockedClick={handleCompatLockedClick}
+            />
           )}
         </div>
 

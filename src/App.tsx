@@ -149,6 +149,7 @@ const TestDetailPage = lazy(() => import("./pages/assessment/TestDetailPage"));
 const TestCodeRedirect = lazy(() => import("./pages/assessment/TestDetailPage").then(m => ({ default: m.TestCodeRedirect })));
 const AssessmentProfilePage = lazy(() => import("./pages/assessment/AssessmentProfilePage"));
 const TotemProfilePage = lazy(() => import("./pages/assessment/TotemProfilePage"));
+const DefiPage = lazy(() => import("./pages/DefiPage"));
 
 // Loading fallback component
 const PageLoader = () => (
@@ -475,6 +476,9 @@ const AppChrome: React.FC = () => {
             {/* Mon Espace */}
             <Route path="/mon-espace" element={<MonEspacePage userId={userId} />} />
             <Route path="/acheter-koris" element={<AcheterKorisPage />} />
+
+            {/* Défi */}
+            <Route path="/defi" element={<DefiPage />} />
 
             {/* Assessment Routes */}
             <Route path="/assessment" element={<AssessmentHomePage />} />
