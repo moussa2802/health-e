@@ -444,6 +444,7 @@ export async function getProfileProgress(userId: string): Promise<{
   sexualHealthFilter: Record<string, unknown> | null;
   signatures: Record<string, { value: number; max: number }[]>;
   totem: { animal: string; computedAt: Date; revealedAt: Date | null; pendingAnimal: string | null; lastImprovement: { scaleId: string; domainLabel: string; from: string; to: string; at: Date } | null } | null;
+  archetypeId: string | null;
 }> {
   const ref = doc(db, PROFILES_COL, userId);
   const snap = await getDoc(ref);
@@ -471,6 +472,7 @@ export async function getProfileProgress(userId: string): Promise<{
       sexualHealthFilter: null,
       signatures: {},
       totem: null,
+      archetypeId: null,
     };
   }
   const data = snap.data();
@@ -522,6 +524,7 @@ export async function getProfileProgress(userId: string): Promise<{
         } : null,
       };
     })() : null,
+    archetypeId: (data.archetypeId as string | null) ?? null,
   };
 }
 
@@ -531,13 +534,15 @@ export async function isProfileCompleteById(id: string): Promise<boolean> {
   return profile !== null;
 }
 
-export async function saveTotem(userId: string, animal: string): Promise<void> {
-  await updateDoc(doc(db, PROFILES_COL, userId), {
+export async function saveTotem(userId: string, animal: string, archetypeId?: string): Promise<void> {
+  const update: Record<string, unknown> = {
     'totem.animal': animal,
     'totem.computedAt': serverTimestamp(),
     'totem.revealedAt': null,
     updatedAt: serverTimestamp(),
-  });
+  };
+  if (archetypeId) update.archetypeId = archetypeId;
+  await updateDoc(doc(db, PROFILES_COL, userId), update);
 }
 
 export async function revealTotem(userId: string): Promise<void> {
@@ -547,12 +552,21 @@ export async function revealTotem(userId: string): Promise<void> {
   });
 }
 
-export async function acceptPendingTotem(userId: string, newAnimal: string): Promise<void> {
-  await updateDoc(doc(db, PROFILES_COL, userId), {
+export async function acceptPendingTotem(userId: string, newAnimal: string, archetypeId?: string): Promise<void> {
+  const update: Record<string, unknown> = {
     'totem.animal': newAnimal,
     'totem.pendingAnimal': null,
     'totem.computedAt': serverTimestamp(),
     'totem.revealedAt': serverTimestamp(),
+    updatedAt: serverTimestamp(),
+  };
+  if (archetypeId) update.archetypeId = archetypeId;
+  await updateDoc(doc(db, PROFILES_COL, userId), update);
+}
+
+export async function backfillArchetypeId(userId: string, archetypeId: string): Promise<void> {
+  await updateDoc(doc(db, PROFILES_COL, userId), {
+    archetypeId,
     updatedAt: serverTimestamp(),
   });
 }

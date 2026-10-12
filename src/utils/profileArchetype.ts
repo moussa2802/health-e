@@ -182,6 +182,25 @@ export function getArchetype(scaleResults: Record<string, ScaleResult>): Archety
   };
 }
 
+const ARCHETYPE_ID_MAP: Record<string, string> = {
+  'Le Sensible':     'sensible',
+  "L'Empathique":    'empathique',
+  'Le Roc':          'roc',
+  "L'Intense":       'intense',
+  'Le Solide':       'solide',
+  'Le Combatif':     'combatif',
+  "L'Explorateur":   'explorateur',
+};
+
+export function getArchetypeId(archetype: Archetype): string | null {
+  const id = ARCHETYPE_ID_MAP[archetype.title];
+  if (!id) {
+    console.warn(`[profileArchetype] Archétype non reconnu : "${archetype.title}"`);
+    return null;
+  }
+  return id;
+}
+
 const GREETING_RE = /^(mon\s+fr[èe]re|ma\s+s[oœ]ur|salut|bonjour|cher|ch[èe]re|hey)\b/i;
 
 function isFluffSentence(s: string, nameTokens: string[]): boolean {
