@@ -14,9 +14,14 @@ module.exports = {
   apiUrl: "https://paytech.sn/api/payment/request-payment",
 
   // Clés API de production (à remplacer par vos vraies clés)
-  apiKey: process.env.PAYTECH_API_KEY || "your_production_api_key_here",
-  apiSecret:
-    process.env.PAYTECH_API_SECRET || "your_production_api_secret_here",
+  apiKey: (() => {
+    if (!process.env.PAYTECH_API_KEY) throw new Error("PAYTECH_API_KEY manquante — configurez la variable d'environnement");
+    return process.env.PAYTECH_API_KEY;
+  })(),
+  apiSecret: (() => {
+    if (!process.env.PAYTECH_API_SECRET) throw new Error("PAYTECH_API_SECRET manquante — configurez la variable d'environnement");
+    return process.env.PAYTECH_API_SECRET;
+  })(),
 
   // Environnement
   env: "prod",

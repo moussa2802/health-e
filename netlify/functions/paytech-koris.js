@@ -1,6 +1,10 @@
 const fetch = require("node-fetch");
 const { verifyAuth, db } = require("./_firebase");
 
+if (!process.env.PAYTECH_API_KEY || !process.env.PAYTECH_API_SECRET) {
+  throw new Error("PAYTECH_API_KEY ou PAYTECH_API_SECRET manquante — configurez les variables d'environnement");
+}
+
 const PAYTECH_CONFIG = {
   apiUrl: "https://paytech.sn/api/payment/request-payment",
   apiKey: process.env.PAYTECH_API_KEY,
