@@ -13,6 +13,18 @@ globalThis.Buffer = BufferModule.Buffer;
 // Initialize Sentry before rendering (no-op in dev or if VITE_SENTRY_DSN is missing)
 initSentry();
 
+// Reload once when Vite preload fails (old chunks deleted after deploy)
+window.addEventListener('vite:preloadError', () => {
+  const key = 'he-sw-reload-ts';
+  try {
+    const now = Date.now();
+    const last = Number(sessionStorage.getItem(key) || 0);
+    if (now - last < 10_000) return;
+    sessionStorage.setItem(key, String(now));
+  } catch { /* sessionStorage indisponible */ }
+  window.location.reload();
+});
+
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <Sentry.ErrorBoundary fallback={<p>Une erreur inattendue s'est produite. Veuillez recharger la page.</p>}>

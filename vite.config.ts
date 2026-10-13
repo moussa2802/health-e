@@ -1,4 +1,5 @@
 import { defineConfig, loadEnv } from 'vite';
+import { execSync } from 'child_process';
 import react from '@vitejs/plugin-react';
 import { sentryVitePlugin } from '@sentry/vite-plugin';
 import { VitePWA } from 'vite-plugin-pwa';
@@ -12,10 +13,13 @@ export default defineConfig(({ mode }) => {
     // Ignorer les erreurs de lecture du .env (problème de permissions iCloud)
   }
 
+  let gitHash = 'dev';
+  try { gitHash = execSync('git rev-parse --short HEAD').toString().trim(); } catch { /* CI sans git */ }
+
   const plugins = [
     react(),
     VitePWA({
-      registerType: 'prompt',
+      registerType: 'autoUpdate',
       injectRegister: false,
       scope: '/',
       manifest: {
@@ -77,6 +81,7 @@ export default defineConfig(({ mode }) => {
     plugins,
     define: {
       global: 'globalThis',
+      __APP_VERSION__: JSON.stringify(gitHash),
     },
     resolve: {
       alias: {

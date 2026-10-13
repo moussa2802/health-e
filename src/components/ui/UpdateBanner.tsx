@@ -2,12 +2,12 @@ import { useState, useEffect, useRef } from 'react';
 import { useRegisterSW } from 'virtual:pwa-register/react';
 import { Info } from 'lucide-react';
 
-const CHECK_INTERVAL = 60 * 60 * 1000; // 1h
+const CHECK_INTERVAL = 30 * 60 * 1000; // 30 min
 const RELOAD_KEY = 'he-sw-reload-ts';
 const RELOAD_COOLDOWN = 10_000; // 10s anti-boucle
 
 function isLocked(): boolean {
-  return ((window as any).__heReloadLocks ?? 0) > 0;
+  return ((window as unknown as { __heReloadLocks?: number }).__heReloadLocks ?? 0) > 0;
 }
 
 function safeReload() {
@@ -16,7 +16,7 @@ function safeReload() {
     const last = Number(sessionStorage.getItem(RELOAD_KEY) || 0);
     if (now - last < RELOAD_COOLDOWN) return;
     sessionStorage.setItem(RELOAD_KEY, String(now));
-  } catch {}
+  } catch { /* sessionStorage indisponible en navigation privée */ }
   window.location.reload();
 }
 
@@ -27,9 +27,11 @@ export default function UpdateBanner() {
 
   useRegisterSW({
     onRegisteredSW(_url, registration) {
-      if (registration) {
-        setInterval(() => registration.update(), CHECK_INTERVAL);
-      }
+      if (!registration) return;
+      setInterval(() => registration.update(), CHECK_INTERVAL);
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') registration.update();
+      });
     },
   });
 

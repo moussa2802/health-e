@@ -18,7 +18,6 @@ class ErrorBoundary extends Component<Props, State> {
   }
 
   static getDerivedStateFromError(error: Error): State {
-    // Ignorer les erreurs DOM spécifiques qui ne sont pas critiques
     if (
       error.message &&
       (error.message.includes("insertBefore") ||
@@ -30,7 +29,24 @@ class ErrorBoundary extends Component<Props, State> {
       return { hasError: false, error: undefined };
     }
 
+    if (ErrorBoundary.isChunkError(error)) {
+      const key = 'he-sw-reload-ts';
+      try {
+        const now = Date.now();
+        const last = Number(sessionStorage.getItem(key) || 0);
+        if (now - last < 10_000) return { hasError: true, error };
+        sessionStorage.setItem(key, String(now));
+      } catch { /* ignore */ }
+      window.location.reload();
+      return { hasError: false, error: undefined };
+    }
+
     return { hasError: true, error };
+  }
+
+  private static isChunkError(error: Error): boolean {
+    const msg = error.message || '';
+    return /Failed to fetch dynamically imported module|ChunkLoadError|Loading chunk .* failed|CSS_CHUNK_LOAD_FAILED/i.test(msg);
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {

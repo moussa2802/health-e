@@ -280,6 +280,7 @@ const AssessmentHomePage: React.FC = () => {
             </h1>
             <p className="text-xs text-muted mt-0.5">
               24 outils cliniquement validés
+              <span className="ml-1.5 opacity-40 text-[10px]">v.{__APP_VERSION__}</span>
             </p>
           </div>
           <div className="flex items-center gap-3">
