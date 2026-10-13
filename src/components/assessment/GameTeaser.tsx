@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Lock, Sparkles, Users, ArrowRight } from 'lucide-react';
+import { Lock, Sparkles, Target, ArrowRight } from 'lucide-react';
 import { doc, onSnapshot } from 'firebase/firestore';
 import { db } from '../../utils/firebase';
 
@@ -55,7 +55,7 @@ const GameTeaser: React.FC<GameTeaserProps> = ({
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: 'rgba(212,150,90,0.15)' }}>
-              <span className="text-[13px] leading-none">👀</span>
+              <Target size={14} style={{ color: TILE_AMBER }} />
             </div>
             <span className="text-[10px] font-bold uppercase tracking-[0.08em]" style={{ color: TILE_AMBER }}>Le jeu</span>
           </div>
@@ -134,7 +134,7 @@ const GameTeaser: React.FC<GameTeaserProps> = ({
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: 'rgba(212,150,90,0.15)' }}>
-              <Users size={14} style={{ color: TILE_AMBER }} />
+              <Target size={14} style={{ color: TILE_AMBER }} />
             </div>
             <span className="text-[10px] font-bold uppercase tracking-[0.08em]" style={{ color: TILE_AMBER }}>Le jeu</span>
           </div>
@@ -163,7 +163,7 @@ const GameTeaser: React.FC<GameTeaserProps> = ({
     >
       <div className="flex items-center gap-2">
         <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: 'rgba(212,150,90,0.15)' }}>
-          <span className="text-[13px] leading-none">👀</span>
+          <Target size={14} style={{ color: TILE_AMBER }} />
         </div>
         <span className="text-[10px] font-bold uppercase tracking-[0.08em]" style={{ color: TILE_AMBER }}>Le jeu</span>
       </div>

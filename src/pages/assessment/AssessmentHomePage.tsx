@@ -66,6 +66,7 @@ const TILE_BG = 'linear-gradient(160deg, #2A2520 0%, #3D352C 100%)';
 const TILE_GOLD = '#D4AD5A';
 const TILE_TERRACOTTA = '#D4896B';
 const TILE_SAGE = '#8BA59B';
+const TILE_SAGE_ACTION = '#A3BDB3';
 
 const TAB_CONFIG: { id: 'mental' | 'intime' | 'bonus'; label: string }[] = [
   { id: 'mental', label: 'Psychologique' },
@@ -591,7 +592,7 @@ const AssessmentHomePage: React.FC = () => {
               <p className="text-[11px] m-0 mt-1 leading-snug" style={{ color: 'rgba(244,241,233,0.65)' }}>
                 {journalToday ? 'Tu as déjà noté ton humeur' : '30 secondes pour noter ton humeur'}
               </p>
-              <p className="text-[12px] font-semibold m-0 mt-auto pt-2 flex items-center gap-1" style={{ color: TILE_SAGE }}>
+              <p className="text-[12px] font-semibold m-0 mt-auto pt-2 flex items-center gap-1" style={{ color: TILE_SAGE_ACTION }}>
                 {journalToday ? 'Voir mon espace' : 'Écrire'} <ArrowRight size={12} />
               </p>
             </div>

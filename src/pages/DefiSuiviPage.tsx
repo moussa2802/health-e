@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Navigate } from 'react-router-dom';
 import { doc, onSnapshot, getDoc, collection, query as fsQuery, orderBy, getDocs, updateDoc } from 'firebase/firestore';
-import { ArrowLeft, Copy, Check, Clock, Share2, EyeOff, Flag, Loader2 } from 'lucide-react';
+import { ArrowLeft, Copy, Check, Clock, Share2, EyeOff, Eye, Flag, Loader2 } from 'lucide-react';
 import { db } from '../utils/firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { authedFetch } from '../utils/authedFetch';
@@ -240,10 +240,12 @@ const DefiSuiviPage: React.FC = () => {
         )}
 
         {/* Petits mots */}
-        {defi.petitsMots && messages.length > 0 && (
+        {defi.petitsMots && messages.length > 0 && (() => {
+          const masqueCount = messages.filter(m => m.masque).length;
+          return (
           <div className="mb-6">
             <h3 className="text-sm font-bold text-ink m-0 mb-3">
-              💌 Petits mots ({messages.filter(m => !m.masque).length})
+              💌 Petits mots ({messages.length}{masqueCount > 0 ? ` · ${masqueCount} masqué${masqueCount > 1 ? 's' : ''}` : ''})
             </h3>
             {msgError && (
               <p className="text-[12px] text-red-500 m-0 mb-2">{msgError}</p>
@@ -255,7 +257,34 @@ const DefiSuiviPage: React.FC = () => {
                   className={`bg-card border border-line rounded-2xl p-4 ${msg.masque ? 'opacity-50' : ''}`}
                 >
                   {msg.masque ? (
-                    <p className="text-sm text-muted italic m-0">Message masqué</p>
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm text-muted italic m-0">Message masqué</p>
+                      <button
+                        disabled={msgBusy === msg.id}
+                        onClick={async (e) => {
+                          e.stopPropagation();
+                          if (msgBusy) return;
+                          setMessages(prev => prev.map(m => m.id === msg.id ? { ...m, masque: false } : m));
+                          setMsgBusy(msg.id);
+                          setMsgError('');
+                          try {
+                            const ref = doc(db, 'userProfiles', currentUser!.id, 'defiMessages', msg.id);
+                            const timeout = new Promise<never>((_, rej) => setTimeout(() => rej(new Error('TIMEOUT')), 8000));
+                            await Promise.race([updateDoc(ref, { masque: false }), timeout]);
+                          } catch (err) {
+                            setMessages(prev => prev.map(m => m.id === msg.id ? { ...m, masque: true } : m));
+                            setMsgError(err instanceof Error && err.message === 'TIMEOUT'
+                              ? 'Délai dépassé — vérifie ta connexion'
+                              : 'Impossible d\'afficher ce message');
+                          } finally {
+                            setMsgBusy(null);
+                          }
+                        }}
+                        className="text-[11px] text-sage flex items-center gap-1 bg-transparent border-none cursor-pointer p-0 disabled:opacity-50"
+                      >
+                        {msgBusy === msg.id ? <Loader2 size={12} className="animate-spin" /> : <Eye size={12} />} Afficher
+                      </button>
+                    </div>
                   ) : (
                     <>
                       <div className="flex items-center justify-between mb-1">
@@ -271,18 +300,15 @@ const DefiSuiviPage: React.FC = () => {
                           onClick={async (e) => {
                             e.stopPropagation();
                             if (msgBusy) return;
-                            console.debug('[MASQUER] clicked', { msgId: msg.id, uid: currentUser?.id, slug });
+                            setMessages(prev => prev.map(m => m.id === msg.id ? { ...m, masque: true } : m));
                             setMsgBusy(msg.id);
                             setMsgError('');
                             try {
                               const ref = doc(db, 'userProfiles', currentUser!.id, 'defiMessages', msg.id);
-                              console.debug('[MASQUER] updateDoc →', ref.path);
                               const timeout = new Promise<never>((_, rej) => setTimeout(() => rej(new Error('TIMEOUT')), 8000));
                               await Promise.race([updateDoc(ref, { masque: true }), timeout]);
-                              console.debug('[MASQUER] ok');
-                              setMessages(prev => prev.map(m => m.id === msg.id ? { ...m, masque: true } : m));
                             } catch (err) {
-                              console.error('[MASQUER] error', err);
+                              setMessages(prev => prev.map(m => m.id === msg.id ? { ...m, masque: false } : m));
                               setMsgError(err instanceof Error && err.message === 'TIMEOUT'
                                 ? 'Délai dépassé — vérifie ta connexion'
                                 : 'Impossible de masquer ce message');
@@ -300,18 +326,15 @@ const DefiSuiviPage: React.FC = () => {
                             onClick={async (e) => {
                               e.stopPropagation();
                               if (msgBusy) return;
-                              console.debug('[SIGNALER] clicked', { msgId: msg.id, uid: currentUser?.id, slug });
+                              setMessages(prev => prev.map(m => m.id === msg.id ? { ...m, signale: true } : m));
                               setMsgBusy(msg.id);
                               setMsgError('');
                               try {
                                 const ref = doc(db, 'userProfiles', currentUser!.id, 'defiMessages', msg.id);
-                                console.debug('[SIGNALER] updateDoc →', ref.path);
                                 const timeout = new Promise<never>((_, rej) => setTimeout(() => rej(new Error('TIMEOUT')), 8000));
                                 await Promise.race([updateDoc(ref, { signale: true }), timeout]);
-                                console.debug('[SIGNALER] ok');
-                                setMessages(prev => prev.map(m => m.id === msg.id ? { ...m, signale: true } : m));
                               } catch (err) {
-                                console.error('[SIGNALER] error', err);
+                                setMessages(prev => prev.map(m => m.id === msg.id ? { ...m, signale: false } : m));
                                 setMsgError(err instanceof Error && err.message === 'TIMEOUT'
                                   ? 'Délai dépassé — vérifie ta connexion'
                                   : 'Impossible de signaler ce message');
@@ -331,7 +354,8 @@ const DefiSuiviPage: React.FC = () => {
               ))}
             </div>
           </div>
-        )}
+          );
+        })()}
 
         {/* Actions partage */}
         {!expired && (

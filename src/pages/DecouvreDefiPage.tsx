@@ -46,7 +46,7 @@ const DecouvreDefiPage: React.FC = () => {
   const creatorName = state.creatorName || null;
   const totemData = creatorTotem ? TOTEMS.find(t => t.key === creatorTotem) : null;
 
-  const signupUrl = `/patient/access?mode=signup${ref ? `&returnTo=/defi` : ''}`;
+  const signupUrl = `/patient/access?mode=signup&returnTo=/assessment`;
 
   return (
     <div className="min-h-screen bg-paper">
