@@ -107,6 +107,30 @@ describe('buildDevoilement (extracted from defi-respond)', () => {
   });
 });
 
+describe('transaction reads-before-writes (structural)', () => {
+  const fs = require('fs');
+  const path = require('path');
+  const source = fs.readFileSync(path.join(__dirname, '../defi-respond.js'), 'utf-8');
+
+  it('all tx.get() calls appear before any tx.set()/tx.update()', () => {
+    const txMatch = source.match(/db\.runTransaction\(async \(tx\) => \{([\s\S]*?)\n    \}\)/);
+    assert.ok(txMatch, 'transaction block found');
+    const txBody = txMatch[1];
+    const lines = txBody.split('\n');
+
+    let lastGetLine = -1;
+    let firstWriteLine = Infinity;
+
+    lines.forEach((line, i) => {
+      if (/tx\.get\(/.test(line)) lastGetLine = i;
+      if (/tx\.set\(|tx\.update\(/.test(line) && i < firstWriteLine) firstWriteLine = i;
+    });
+
+    assert.ok(lastGetLine < firstWriteLine,
+      `Last tx.get at line ${lastGetLine} must be before first tx.set/tx.update at line ${firstWriteLine}`);
+  });
+});
+
 describe('answer validation', () => {
   it('optionId from wrong question should be detectable', () => {
     const questions = [
@@ -122,10 +146,10 @@ describe('answer validation', () => {
     assert.ok(!q0ValidIds.includes(answers[0].optionId), 'o_c does not belong to Q1');
   });
 
-  it('ms > 16000 should be capped', () => {
-    const ms = 25000;
-    const capped = Math.min(ms, 16000);
-    assert.equal(capped, 16000);
+  it('ms > 26000 should be capped', () => {
+    const ms = 30000;
+    const capped = Math.min(ms, 26000);
+    assert.equal(capped, 26000);
   });
 
   it('null optionId is valid (timeout)', () => {

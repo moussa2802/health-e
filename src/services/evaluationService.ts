@@ -454,6 +454,7 @@ export async function getProfileProgress(userId: string): Promise<{
   totem: { animal: string; computedAt: Date; revealedAt: Date | null; pendingAnimal: string | null; lastImprovement: { scaleId: string; domainLabel: string; from: string; to: string; at: Date } | null } | null;
   archetypeId: string | null;
   activeDefi: { slug: string; expiresAt: Date } | null;
+  defiGenre: string | null;
 }> {
   const ref = doc(db, PROFILES_COL, userId);
   const snap = await getDoc(ref);
@@ -483,6 +484,7 @@ export async function getProfileProgress(userId: string): Promise<{
       totem: null,
       archetypeId: null,
       activeDefi: null,
+      defiGenre: null,
     };
   }
   const data = snap.data();
@@ -542,6 +544,7 @@ export async function getProfileProgress(userId: string): Promise<{
         expiresAt: ad.expiresAt instanceof Timestamp ? (ad.expiresAt as Timestamp).toDate() : new Date(),
       };
     })() : null,
+    defiGenre: (data.defiGenre as string | null) ?? null,
   };
 }
 

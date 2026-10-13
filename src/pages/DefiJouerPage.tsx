@@ -25,7 +25,7 @@ const TOTEM_IMAGES: Record<string, string> = {
   panthere: panthereImg, renard: renardImg, tortue: tortueImg, ours: oursImg,
 };
 
-const TIMER_SECONDS = 15;
+const TIMER_SECONDS = 25;
 const API_BASE = '/.netlify/functions';
 
 type Phase = 'loading' | 'notFound' | 'expired' | 'isCreator' | 'accueil' | 'playing' | 'submitting' | 'result' | 'alreadyResponded' | 'error';
@@ -198,7 +198,7 @@ export default function DefiJouerPage() {
   const handleAnswer = useCallback((optionId: string | null) => {
     if (timerRef.current) clearInterval(timerRef.current);
 
-    const ms = Math.min(Date.now() - questionStartRef.current, 16000);
+    const ms = Math.min(Date.now() - questionStartRef.current, 26000);
     setSelectedId(optionId);
 
     const newAnswers = [...answers, { questionIndex: currentQ, optionId, ms }];
@@ -370,6 +370,7 @@ export default function DefiJouerPage() {
 
   // ── ERROR ─────────────────────────────────────────────────────────────
   if (phase === 'error') {
+    const canRetry = answers.length > 0 && startToken;
     return (
       <div className="min-h-screen bg-paper">
         <MiniHeader />
@@ -377,9 +378,15 @@ export default function DefiJouerPage() {
           <p className="text-4xl mb-4">😕</p>
           <h1 className="font-display text-xl font-bold text-ink mb-2">Oups</h1>
           <p className="text-muted mb-8">{errorMsg || 'Une erreur est survenue.'}</p>
-          <button onClick={() => setPhase('accueil')} className="bg-gold text-white font-semibold px-6 py-3 rounded-xl">
-            Réessayer
-          </button>
+          {canRetry ? (
+            <button onClick={() => submitAnswers(answers)} className="bg-gold text-white font-semibold px-6 py-3 rounded-xl">
+              Réessayer l'envoi
+            </button>
+          ) : (
+            <button onClick={() => setPhase('accueil')} className="bg-gold text-white font-semibold px-6 py-3 rounded-xl">
+              Recommencer
+            </button>
+          )}
         </div>
       </div>
     );
@@ -398,7 +405,7 @@ export default function DefiJouerPage() {
               {defi.displayName} veut savoir qui {pronoun} connaît le mieux 👀
             </h1>
             <p className="text-muted">
-              {defi.questions.length} questions · 15 secondes chacune · 1 minute rekk ⏱️
+              {defi.questions.length} questions · 25 secondes chacune ⏱️
             </p>
           </div>
 
@@ -462,21 +469,23 @@ export default function DefiJouerPage() {
         <MiniHeader />
 
         {/* Progress + timer */}
-        <div className="px-4 pt-3 pb-2">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-xs text-muted font-medium">{currentQ + 1} / {defi.questions.length}</span>
+        <div className="px-4 pt-3 pb-2 space-y-2">
+          <div>
+            <span className="text-xs text-muted font-medium">Question {currentQ + 1}/{defi.questions.length}</span>
+            <div className="h-1.5 bg-gray-200 rounded-full overflow-hidden mt-1">
+              <div className="h-full bg-gold/30 rounded-full transition-none" style={{ width: `${progress}%` }} />
+            </div>
+          </div>
+          <div>
             <span className={`text-xs font-bold tabular-nums ${isRedZone ? 'text-red-500' : 'text-muted'}`}>
-              {Math.ceil(timeLeft)}s
+              {Math.ceil(timeLeft)}
             </span>
-          </div>
-          <div className="h-1.5 bg-gray-200 rounded-full overflow-hidden">
-            <div className="h-full bg-gold/30 rounded-full transition-none" style={{ width: `${progress}%` }} />
-          </div>
-          <div className="h-1 bg-gray-200 rounded-full overflow-hidden mt-1">
-            <div
-              className={`h-full rounded-full transition-none ${isRedZone ? 'bg-red-500' : 'bg-gold'}`}
-              style={{ width: `${timerPct}%` }}
-            />
+            <div className="h-1.5 bg-gray-200 rounded-full overflow-hidden mt-1">
+              <div
+                className={`h-full rounded-full transition-none ${isRedZone ? 'bg-red-500' : 'bg-sage'}`}
+                style={{ width: `${timerPct}%` }}
+              />
+            </div>
           </div>
         </div>
 

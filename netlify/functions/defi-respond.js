@@ -11,7 +11,7 @@ const headers = {
 };
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-const MAX_MS = 16000;
+const MAX_MS = 26000;
 const RATE_LIMIT = 10;
 const CLASSEMENT_MAX = 50;
 
@@ -128,16 +128,11 @@ exports.handler = async (event) => {
       }
     }
 
-    // ── 5. Rate limit ───────────────────────────────────────────────────
+    // ── 5. Rate limit (refs only; read inside transaction) ────────────────
     const clientIp = (event.headers['x-forwarded-for'] || event.headers['client-ip'] || '0.0.0.0').split(',')[0].trim();
     const hourBucket = Math.floor(Date.now() / 3600000);
     const rateLimitId = `${sha256(clientIp)}_${hourBucket}`;
     const rateLimitRef = db.collection('rate_limits').doc(rateLimitId);
-    const rateLimitDoc = await rateLimitRef.get();
-
-    if (rateLimitDoc.exists && (rateLimitDoc.data().count || 0) >= RATE_LIMIT) {
-      return { statusCode: 429, headers, body: JSON.stringify({ error: 'Trop de réponses depuis cette adresse. Réessaie dans une heure.' }) };
-    }
 
     // ── 6. Créateur interdit ────────────────────────────────────────────
     const privateDoc = await db.collection('defis_private').doc(slug).get();
@@ -163,27 +158,41 @@ exports.handler = async (event) => {
     let nbRepondants;
 
     await db.runTransaction(async (tx) => {
-      // Unicité device
+      // ── ALL READS FIRST (Firestore requirement) ────────────────────────
       const existingRef = db.collection('defi_reponses').doc(responseId);
       const existingDoc = await tx.get(existingRef);
-      if (existingDoc.exists) {
-        throw new Error('ALREADY_RESPONDED');
-      }
 
-      // Unicité uid
+      let uidLockRef = null;
+      let uidLockDoc = null;
       if (user) {
         const uidLockId = `${slug}_${sha256(user.uid)}`;
         if (uidLockId !== responseId) {
-          const uidLockRef = db.collection('defi_reponses').doc(uidLockId);
-          const uidLockDoc = await tx.get(uidLockRef);
-          if (uidLockDoc.exists) {
-            throw new Error('ALREADY_RESPONDED');
-          }
-          tx.set(uidLockRef, { slug, uid: user.uid, deviceHash, lockOnly: true, createdAt: respondedAt });
+          uidLockRef = db.collection('defi_reponses').doc(uidLockId);
+          uidLockDoc = await tx.get(uidLockRef);
         }
       }
 
-      // Écrire la réponse
+      const defiRef = db.collection('defis').doc(slug);
+      const freshDefi = await tx.get(defiRef);
+
+      const rateLimitDoc = await tx.get(rateLimitRef);
+
+      // ── VALIDATION (after reads, before writes) ────────────────────────
+      if (rateLimitDoc.exists && (rateLimitDoc.data().count || 0) >= RATE_LIMIT) {
+        throw new Error('RATE_LIMITED');
+      }
+      if (existingDoc.exists) {
+        throw new Error('ALREADY_RESPONDED');
+      }
+      if (uidLockDoc && uidLockDoc.exists) {
+        throw new Error('ALREADY_RESPONDED');
+      }
+
+      // ── ALL WRITES ─────────────────────────────────────────────────────
+      if (uidLockRef) {
+        tx.set(uidLockRef, { slug, uid: user.uid, deviceHash, lockOnly: true, createdAt: respondedAt });
+      }
+
       tx.set(existingRef, {
         slug,
         deviceHash,
@@ -199,9 +208,6 @@ exports.handler = async (event) => {
         ipHash: sha256(clientIp),
       });
 
-      // Mettre à jour le classement
-      const defiRef = db.collection('defis').doc(slug);
-      const freshDefi = await tx.get(defiRef);
       const currentData = freshDefi.data();
       const classement = currentData.classement || [];
 
@@ -234,7 +240,6 @@ exports.handler = async (event) => {
         scoreMoyen: Math.round(newScoreSum / newNbReponses),
       });
 
-      // Rate limit
       if (rateLimitDoc.exists) {
         tx.update(rateLimitRef, {
           count: admin.firestore.FieldValue.increment(1),
@@ -284,6 +289,9 @@ exports.handler = async (event) => {
     return { statusCode: 200, headers, body: JSON.stringify(responseBody) };
 
   } catch (err) {
+    if (err.message === 'RATE_LIMITED') {
+      return { statusCode: 429, headers, body: JSON.stringify({ error: 'Trop de réponses depuis cette adresse. Réessaie dans une heure.' }) };
+    }
     if (err.message === 'ALREADY_RESPONDED') {
       return { statusCode: 409, headers, body: JSON.stringify({ error: 'Tu as déjà répondu à ce défi' }) };
     }

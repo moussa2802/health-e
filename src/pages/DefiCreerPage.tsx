@@ -38,6 +38,8 @@ const DefiCreerPage: React.FC = () => {
   const [profileLoading, setProfileLoading] = useState(true);
 
   const [displayName, setDisplayName] = useState('');
+  const [genre, setGenre] = useState<'masculin' | 'feminin' | null>(null);
+  const [genreKnown, setGenreKnown] = useState(true);
   const [optinScales, setOptinScales] = useState<string[]>([]);
   const [duration, setDuration] = useState(72);
   const [devoilement, setDevoilement] = useState('aucun');
@@ -54,6 +56,13 @@ const DefiCreerPage: React.FC = () => {
       .then(p => {
         setScaleResults(p.scaleResults);
         setTotemRevealed(!!p.totem?.revealedAt);
+        const g = p.onboardingProfile?.genre || p.defiGenre;
+        if (g === 'masculin' || g === 'feminin') {
+          setGenre(g);
+          setGenreKnown(true);
+        } else {
+          setGenreKnown(false);
+        }
         if (p.activeDefi && p.activeDefi.expiresAt > new Date()) {
           navigate(`/defi/${p.activeDefi.slug}/partage`, { replace: true });
           return;
@@ -89,9 +98,10 @@ const DefiCreerPage: React.FC = () => {
   const nameClean = displayName.trim().replace(/\s+/g, ' ');
   const nameValid = nameClean.length >= 2 && nameClean.length <= 20 &&
     !/<|>/.test(nameClean) && !/https?:\/\//i.test(nameClean);
+  const formValid = nameValid && (genreKnown || genre !== null);
 
   const handleSubmit = async () => {
-    if (!nameValid || submitting) return;
+    if (!formValid || submitting) return;
     setSubmitting(true);
     setError(null);
 
@@ -99,7 +109,13 @@ const DefiCreerPage: React.FC = () => {
       const res = await authedFetch('/.netlify/functions/defi-create', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ displayName: nameClean, optinScales, duration, devoilement }),
+        body: JSON.stringify({
+          displayName: nameClean,
+          optinScales,
+          duration,
+          devoilement,
+          ...(!genreKnown && genre ? { genre } : {}),
+        }),
       });
 
       const data = await res.json();
@@ -145,6 +161,30 @@ const DefiCreerPage: React.FC = () => {
             {nameClean.length > 0 && !nameValid && ' — pseudo invalide'}
           </p>
         </div>
+
+        {/* Genre (si inconnu) */}
+        {!genreKnown && (
+          <div>
+            <label className="block text-[13px] font-semibold text-ink mb-2">
+              Tes amis vont parler de toi au…
+            </label>
+            <div className="flex gap-2">
+              {([['masculin', 'Masculin'], ['feminin', 'Féminin']] as const).map(([val, label]) => (
+                <button
+                  key={val}
+                  onClick={() => setGenre(val)}
+                  className={`flex-1 py-2.5 rounded-[10px] border text-[14px] font-medium cursor-pointer transition-colors ${
+                    genre === val
+                      ? 'border-gold bg-gold text-white'
+                      : 'border-line bg-white text-ink'
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* optinScales */}
         {availableOptins.length > 0 && (
@@ -241,9 +281,9 @@ const DefiCreerPage: React.FC = () => {
         {/* Submit */}
         <button
           onClick={handleSubmit}
-          disabled={!nameValid || submitting}
+          disabled={!formValid || submitting}
           className={`w-full py-3.5 rounded-[14px] border-none text-white text-[15px] font-bold cursor-pointer shadow-soft flex items-center justify-center gap-2 transition-opacity ${
-            !nameValid || submitting ? 'bg-muted opacity-60 cursor-not-allowed' : 'bg-gold'
+            !formValid || submitting ? 'bg-muted opacity-60 cursor-not-allowed' : 'bg-gold'
           }`}
         >
           {submitting ? (

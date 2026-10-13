@@ -135,9 +135,13 @@ exports.handler = async (event) => {
     const duration = VALID_DURATIONS.includes(payload.duration) ? payload.duration : 72;
     const devoilement = VALID_DEVOILEMENTS.includes(payload.devoilement) ? payload.devoilement : 'aucun';
 
-    // ── 5. Construction des questions ────────────────────────────────────
+    // ── 5. Genre (sauvegarde dans defiGenre si inconnu) ────────────────────
     const scaleResults = profile.scaleResults || {};
-    const genre = profile.onboardingProfile?.genre || null;
+    let genre = profile.onboardingProfile?.genre || profile.defiGenre || null;
+    if (!genre && (payload.genre === 'masculin' || payload.genre === 'feminin')) {
+      genre = payload.genre;
+      await db.collection('userProfiles').doc(user.uid).update({ defiGenre: genre });
+    }
     const totemAnimal = profile.totem.animal;
 
     const defiBandsDoc = await db.collection('config').doc('defiBands').get();

@@ -156,7 +156,7 @@ const DefiSuiviPage: React.FC = () => {
             </div>
           </div>
           <div className="bg-card border border-line rounded-2xl p-4 text-center">
-            <div className="text-3xl font-display font-bold text-gold">{scoreMoyen} %</div>
+            <div className="text-3xl font-display font-bold text-gold">{nbReponses > 0 ? `${scoreMoyen} %` : '—'}</div>
             <div className="text-xs text-muted mt-1">score moyen</div>
           </div>
         </div>
