@@ -35,7 +35,7 @@ export default async (request, context) => {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 1500);
 
-    const firestoreUrl = `${FIRESTORE_BASE}/defis/${slug}?mask.fieldPaths=displayName&mask.fieldPaths=genre&mask.fieldPaths=statut&mask.fieldPaths=questions`;
+    const firestoreUrl = `${FIRESTORE_BASE}/defis/${slug}?mask.fieldPaths=displayName&mask.fieldPaths=genre&mask.fieldPaths=statut&mask.fieldPaths=questions&mask.fieldPaths=titre`;
     const res = await fetch(firestoreUrl, { signal: controller.signal });
     clearTimeout(timeout);
 
@@ -46,10 +46,15 @@ export default async (request, context) => {
       const displayName = fields.displayName?.stringValue;
       const genre = fields.genre?.stringValue || null;
       const questions = fields.questions?.arrayValue?.values;
+      const titre = fields.titre?.stringValue;
 
       if (displayName) {
-        const pron = genderPronoun(genre);
-        title = `${escapeHtml(displayName)} veut savoir qui ${pron} connaît le mieux 👀`;
+        if (titre) {
+          title = `${escapeHtml(titre)} par ${escapeHtml(displayName)} 👀`;
+        } else {
+          const pron = genderPronoun(genre);
+          title = `${escapeHtml(displayName)} veut savoir qui ${pron} connaît le mieux 👀`;
+        }
       }
       if (questions) {
         questionCount = ` ${questions.length}`;

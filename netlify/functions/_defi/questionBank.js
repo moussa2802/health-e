@@ -445,13 +445,13 @@ function collectDimensions(eligibleResults, mode) {
   return dims;
 }
 
-function selectQuestions(eligibleResults, genre, prenom, mode = 'public', totemAnimal, defiBands) {
+function selectDimensions(eligibleResults, mode = 'public') {
   const TARGET = 8;
   const MIN = 6;
 
   const allDims = collectDimensions(eligibleResults, mode);
   if (allDims.length === 0) {
-    return { error: 'no_eligible_scales', questions: [], truths: [] };
+    return { error: 'no_eligible_scales', selected: [], available: [] };
   }
 
   const autoDims = allDims.filter(d => d.level === 'auto');
@@ -491,18 +491,70 @@ function selectQuestions(eligibleResults, genre, prenom, mode = 'public', totemA
   }
 
   if (selected.length < MIN) {
-    return { error: 'not_enough_scales', questions: [], truths: [] };
+    return { error: 'not_enough_scales', selected: [], available: [] };
   }
 
   selected = selected.slice(0, TARGET);
 
+  const selectedKeys = new Set(selected.map(d => d.subscaleKey ? `${d.scaleId}.${d.subscaleKey}` : d.scaleId));
+  const available = allDims.filter(d => {
+    const key = d.subscaleKey ? `${d.scaleId}.${d.subscaleKey}` : d.scaleId;
+    return !selectedKeys.has(key) && DEFS_BY_KEY[key];
+  });
+
+  return { error: null, selected, available };
+}
+
+function dimKey(dim) {
+  return dim.subscaleKey ? `${dim.scaleId}.${dim.subscaleKey}` : dim.scaleId;
+}
+
+function buildQuestionsFromKeys(selectedKeys, eligibleResults, genre, prenom, mode = 'public', totemAnimal, defiBands) {
+  if (!Array.isArray(selectedKeys)) {
+    return { error: 'invalid_keys', questions: [], truths: [] };
+  }
+
+  if (selectedKeys.length < 6 || selectedKeys.length > 8) {
+    return { error: 'invalid_key_count', questions: [], truths: [] };
+  }
+
+  if (new Set(selectedKeys).size !== selectedKeys.length) {
+    return { error: 'duplicate_keys', questions: [], truths: [] };
+  }
+
+  const TOTEM_KEY = '__totem__';
+  if (selectedKeys.includes(TOTEM_KEY)) {
+    return { error: 'totem_in_keys', questions: [], truths: [] };
+  }
+
+  const allDims = collectDimensions(eligibleResults, mode);
+  const dimsByKey = new Map();
+  for (const d of allDims) {
+    dimsByKey.set(dimKey(d), d);
+  }
+
+  const bigFiveCount = selectedKeys.filter(k => k.startsWith('big_five.')).length;
+  const nonBfAutoAvailable = allDims.filter(d => !d.isBigFive && d.level === 'auto' && DEFS_BY_KEY[dimKey(d)]).length;
+  if (bigFiveCount > 3 && nonBfAutoAvailable + 3 >= selectedKeys.length) {
+    return { error: 'too_many_big_five', questions: [], truths: [] };
+  }
+
+  for (const key of selectedKeys) {
+    if (!DEFS_BY_KEY[key]) {
+      return { error: 'unknown_key', detail: key, questions: [], truths: [] };
+    }
+    const dim = dimsByKey.get(key);
+    if (!dim) {
+      return { error: 'ineligible_key', detail: key, questions: [], truths: [] };
+    }
+  }
+
   const questions = [];
   const truths = [];
 
-  for (const dim of shuffleArray(selected)) {
-    const key = dim.subscaleKey ? `${dim.scaleId}.${dim.subscaleKey}` : dim.scaleId;
+  for (const key of shuffleArray(selectedKeys)) {
+    const dim = dimsByKey.get(key);
     const def = DEFS_BY_KEY[key];
-    if (!def) continue;
 
     const band = computeBand(dim.scaleId, dim.score, dim.subscaleKey, defiBands);
     if (!band) continue;
@@ -548,6 +600,22 @@ function selectQuestions(eligibleResults, genre, prenom, mode = 'public', totemA
   }
 
   return { error: null, questions, truths };
+}
+
+function getQuestionText(key, genre, prenom) {
+  const def = DEFS_BY_KEY[key];
+  if (!def) return null;
+  return resolveGender(def.questionTemplate.replace(/\{prenom\}/g, prenom), genre);
+}
+
+function selectQuestions(eligibleResults, genre, prenom, mode = 'public', totemAnimal, defiBands) {
+  const { error, selected } = selectDimensions(eligibleResults, mode);
+  if (error) {
+    return { error, questions: [], truths: [] };
+  }
+
+  const keys = selected.map(d => dimKey(d));
+  return buildQuestionsFromKeys(keys, eligibleResults, genre, prenom, mode, totemAnimal, defiBands);
 }
 
 // ── Scoring ──────────────────────────────────────────────────────────────────
@@ -616,6 +684,9 @@ function scoreResponse(truths, responses) {
 module.exports = {
   computeBand,
   selectQuestions,
+  selectDimensions,
+  buildQuestionsFromKeys,
+  getQuestionText,
   scoreResponse,
   buildTotemQuestion,
   resolveGender,

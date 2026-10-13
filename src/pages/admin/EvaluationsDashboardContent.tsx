@@ -163,6 +163,8 @@ interface DefiStatsData {
   activeDefis: number;
   moyenneReponses: number;
   inscriptionsViaDefi: number;
+  totalMessages?: number;
+  reportedMessages?: Array<{ pseudo: string; texte: string; slug: string; createdAt: string }>;
 }
 
 const OverviewTab: React.FC<{
@@ -290,7 +292,33 @@ const OverviewTab: React.FC<{
               </p>
               <p className="m-0 text-[11px] text-muted">Ratio inscriptions / réponses</p>
             </div>
+            <div className="text-center">
+              <p className="m-0 font-display text-2xl font-extrabold text-ink">{defiStats.totalMessages ?? 0}</p>
+              <p className="m-0 text-[11px] text-muted">Messages 💌</p>
+            </div>
+            <div className="text-center">
+              <p className={`m-0 font-display text-2xl font-extrabold ${(defiStats.reportedMessages?.length ?? 0) > 0 ? 'text-red-500' : 'text-ink'}`}>
+                {defiStats.reportedMessages?.length ?? 0}
+              </p>
+              <p className="m-0 text-[11px] text-muted">Signalés 🚩</p>
+            </div>
           </div>
+          {defiStats.reportedMessages && defiStats.reportedMessages.length > 0 && (
+            <div className="mt-4">
+              <p className="text-[12px] font-bold text-red-500 mb-2">Messages signalés</p>
+              <div className="flex flex-col gap-2">
+                {defiStats.reportedMessages.map((m, i) => (
+                  <div key={i} className="bg-red-50 border border-red-200 rounded-xl p-3 text-sm">
+                    <div className="flex justify-between mb-1">
+                      <span className="font-medium text-ink">{m.pseudo}</span>
+                      <span className="text-[11px] text-muted">{m.slug}</span>
+                    </div>
+                    <p className="m-0 text-ink truncate">{m.texte}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </Section>
       )}
     </div>
@@ -896,7 +924,7 @@ const EvaluationsDashboardContent: React.FC = () => {
   const [alerts, setAlerts] = useState<AnonymousAlert[]>([]);
   const [allUsers, setAllUsers] = useState<TopUser[]>([]);
   const [userMetrics, setUserMetrics] = useState<UserMetrics | null>(null);
-  const [defiStats, setDefiStats] = useState<{ totalDefis: number; totalReponses: number; activeDefis: number; moyenneReponses: number } | null>(null);
+  const [defiStats, setDefiStats] = useState<DefiStatsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [initializing, setInitializing] = useState(false);

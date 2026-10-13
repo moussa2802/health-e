@@ -102,7 +102,7 @@ const AssessmentHomePage: React.FC = () => {
   const [inProgressScales, setInProgressScales] = useState<Set<string>>(new Set());
   const [totemData, setTotemData] = useState<{ animal: string; computedAt: Date; revealedAt: Date | null; pendingAnimal: string | null } | null>(null);
   const [journalToday, setJournalToday] = useState<boolean | null>(null);
-  const [activeDefi, setActiveDefi] = useState<{ slug: string; expiresAt: Date } | null>(null);
+  const [activeDefis, setActiveDefis] = useState<Array<{ slug: string; titre: string; audience: string; expiresAt: Date }>>([]);
   const [tilesLoaded, setTilesLoaded] = useState(false);
   const ringRef = useRef<SVGCircleElement>(null);
   const segmentedRef = useRef<HTMLDivElement>(null);
@@ -129,11 +129,7 @@ const AssessmentHomePage: React.FC = () => {
         setProfileResults(p.scaleResults);
         setBonusCompleted(p.bonusCompletedCount);
         setTotemData(p.totem);
-        if (p.activeDefi && p.activeDefi.expiresAt > new Date()) {
-          setActiveDefi(p.activeDefi);
-        } else {
-          setActiveDefi(p.activeDefi ?? null);
-        }
+        setActiveDefis(p.activeDefis);
         setTilesLoaded(true);
         if (p.totem?.revealedAt && !p.archetypeId && currentUser) {
           const arch = getArchetype(p.scaleResults);
@@ -598,7 +594,7 @@ const AssessmentHomePage: React.FC = () => {
               totemProgress={totemProgress}
               totemRevealed={totemIsRevealed}
               onLockedClick={handleCompatLockedClick}
-              activeDefi={activeDefi}
+              activeDefis={activeDefis}
             />
           )}
         </div>

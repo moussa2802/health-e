@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Navigate } from 'react-router-dom';
-import { doc, onSnapshot, getDoc } from 'firebase/firestore';
-import { ArrowLeft, Copy, Check, Clock, Share2 } from 'lucide-react';
+import { doc, onSnapshot, getDoc, collection, query as fsQuery, orderBy, getDocs, updateDoc } from 'firebase/firestore';
+import { ArrowLeft, Copy, Check, Clock, Share2, EyeOff, Flag, Loader2 } from 'lucide-react';
 import { db } from '../utils/firebase';
 import { useAuth } from '../contexts/AuthContext';
+import { authedFetch } from '../utils/authedFetch';
 
 interface ClassementEntry {
   pseudo: string;
@@ -19,6 +20,17 @@ interface DefiLive {
   scoreMoyen: number;
   classement: ClassementEntry[];
   expiresAt: unknown;
+  titre?: string;
+  petitsMots?: boolean;
+}
+
+interface DefiMessage {
+  id: string;
+  pseudo: string;
+  texte: string;
+  createdAt: Date;
+  masque: boolean;
+  signale: boolean;
 }
 
 function toDate(val: unknown): Date {
@@ -49,6 +61,9 @@ const DefiSuiviPage: React.FC = () => {
   const [isOwner, setIsOwner] = useState<boolean | null>(null);
   const [copied, setCopied] = useState(false);
   const [countdown, setCountdown] = useState('');
+  const [messages, setMessages] = useState<DefiMessage[]>([]);
+  const [closingDefi, setClosingDefi] = useState(false);
+  const [closeError, setCloseError] = useState('');
 
   useEffect(() => {
     if (!currentUser || !slug) return;
@@ -76,6 +91,28 @@ const DefiSuiviPage: React.FC = () => {
     const id = setInterval(update, 60_000);
     return () => clearInterval(id);
   }, [defi]);
+
+  useEffect(() => {
+    if (!currentUser || !slug || !defi?.petitsMots) return;
+    const msgRef = collection(db, 'userProfiles', currentUser.id, 'defiMessages');
+    const q = fsQuery(msgRef, orderBy('createdAt', 'desc'));
+    getDocs(q).then(snap => {
+      const msgs: DefiMessage[] = [];
+      snap.forEach(d => {
+        const data = d.data();
+        if (data.slug !== slug) return;
+        msgs.push({
+          id: d.id,
+          pseudo: data.pseudo,
+          texte: data.texte,
+          createdAt: toDate(data.createdAt),
+          masque: data.masque || false,
+          signale: data.signale || false,
+        });
+      });
+      setMessages(msgs);
+    }).catch(() => {});
+  }, [currentUser?.id, slug, defi?.petitsMots]);
 
   if (authLoading) {
     return (
@@ -137,7 +174,7 @@ const DefiSuiviPage: React.FC = () => {
         {/* Header */}
         <div className="text-center mb-6">
           <h2 className="font-display text-xl font-semibold text-ink m-0 mb-1">
-            Kan moo ma gën a xam ?
+            {defi.titre || 'Kan moo ma gën a xam ?'}
           </h2>
           <div className="flex items-center justify-center gap-2 mt-2">
             <Clock size={14} className={expired ? 'text-muted' : 'text-gold'} />
@@ -200,6 +237,59 @@ const DefiSuiviPage: React.FC = () => {
           </div>
         )}
 
+        {/* Petits mots */}
+        {defi.petitsMots && messages.length > 0 && (
+          <div className="mb-6">
+            <h3 className="text-sm font-bold text-ink m-0 mb-3">
+              💌 Petits mots ({messages.filter(m => !m.masque).length})
+            </h3>
+            <div className="flex flex-col gap-2">
+              {messages.map(msg => (
+                <div
+                  key={msg.id}
+                  className={`bg-card border border-line rounded-2xl p-4 ${msg.masque ? 'opacity-50' : ''}`}
+                >
+                  {msg.masque ? (
+                    <p className="text-sm text-muted italic m-0">Message masqué</p>
+                  ) : (
+                    <>
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-sm font-medium text-ink">{msg.pseudo}</span>
+                        <span className="text-[11px] text-muted">
+                          {msg.createdAt.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}
+                        </span>
+                      </div>
+                      <p className="text-sm text-ink m-0 mb-2">{msg.texte}</p>
+                      <div className="flex gap-3">
+                        <button
+                          onClick={async () => {
+                            await updateDoc(doc(db, 'userProfiles', currentUser!.id, 'defiMessages', msg.id), { masque: true });
+                            setMessages(prev => prev.map(m => m.id === msg.id ? { ...m, masque: true } : m));
+                          }}
+                          className="text-[11px] text-muted flex items-center gap-1 bg-transparent border-none cursor-pointer p-0"
+                        >
+                          <EyeOff size={12} /> Masquer
+                        </button>
+                        {!msg.signale && (
+                          <button
+                            onClick={async () => {
+                              await updateDoc(doc(db, 'userProfiles', currentUser!.id, 'defiMessages', msg.id), { signale: true });
+                              setMessages(prev => prev.map(m => m.id === msg.id ? { ...m, signale: true } : m));
+                            }}
+                            className="text-[11px] text-red-400 flex items-center gap-1 bg-transparent border-none cursor-pointer p-0"
+                          >
+                            <Flag size={12} /> Signaler
+                          </button>
+                        )}
+                      </div>
+                    </>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Actions partage */}
         {!expired && (
           <div className="space-y-3 mb-6">
@@ -246,12 +336,46 @@ const DefiSuiviPage: React.FC = () => {
             Lancer un nouveau défi
           </button>
         ) : (
-          <button
-            onClick={() => navigate('/defi/mes-defis')}
-            className="w-full py-3 rounded-[14px] border border-line bg-card text-ink text-sm font-medium cursor-pointer"
-          >
-            Mes défis
-          </button>
+          <div className="space-y-3">
+            <button
+              onClick={() => navigate('/defi/mes-defis')}
+              className="w-full py-3 rounded-[14px] border border-line bg-card text-ink text-sm font-medium cursor-pointer"
+            >
+              Mes défis
+            </button>
+            <button
+              onClick={async () => {
+                if (closingDefi) return;
+                setClosingDefi(true);
+                setCloseError('');
+                try {
+                  const res = await authedFetch('/.netlify/functions/defi-close', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ slug }),
+                  });
+                  if (!res.ok) {
+                    const data = await res.json();
+                    setCloseError(data.error || 'Erreur');
+                    setClosingDefi(false);
+                    return;
+                  }
+                  navigate('/defi', { replace: true });
+                } catch {
+                  setCloseError('Erreur réseau');
+                  setClosingDefi(false);
+                }
+              }}
+              disabled={closingDefi}
+              className="w-full py-3 rounded-[14px] border border-red-200 bg-white text-red-500 text-sm font-medium cursor-pointer flex items-center justify-center gap-2"
+            >
+              {closingDefi ? <Loader2 size={14} className="animate-spin" /> : null}
+              Terminer ce défi
+            </button>
+            {closeError && (
+              <p className="text-[12px] text-red-500 text-center m-0">{closeError}</p>
+            )}
+          </div>
         )}
       </div>
     </div>

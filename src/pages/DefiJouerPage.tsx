@@ -47,6 +47,8 @@ interface DefiData {
   nbReponses: number;
   classement: { pseudo: string; score: number }[];
   questions: DefiQuestion[];
+  titre?: string;
+  petitsMots?: boolean;
 }
 
 interface ResultData {
@@ -113,6 +115,12 @@ export default function DefiJouerPage() {
   // Result
   const [result, setResult] = useState<ResultData | null>(null);
 
+  // Petit mot
+  const [petitMot, setPetitMot] = useState('');
+  const [petitMotSent, setPetitMotSent] = useState(false);
+  const [petitMotSending, setPetitMotSending] = useState(false);
+  const [petitMotError, setPetitMotError] = useState('');
+
   // ── Load défi ─────────────────────────────────────────────────────────
   useEffect(() => {
     if (!slug) { setPhase('notFound'); return; }
@@ -134,7 +142,7 @@ export default function DefiJouerPage() {
         if (currentUser) {
           try {
             const profile = await getProfileProgress(currentUser.id);
-            if (profile.activeDefi?.slug === slug) {
+            if (profile.activeDefis?.some(d => d.slug === slug)) {
               setPhase('isCreator');
               return;
             }
@@ -252,6 +260,33 @@ export default function DefiJouerPage() {
       setPhase('error');
     }
   }, [slug, pseudo, startToken, currentUser]);
+
+  // ── Send petit mot ────────────────────────────────────────────────────
+  const handleSendPetitMot = useCallback(async () => {
+    if (!slug || petitMotSending || !petitMot.trim()) return;
+    setPetitMotSending(true);
+    setPetitMotError('');
+
+    try {
+      const deviceId = getDeviceId();
+      const res = await fetch(`${API_BASE}/defi-message`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ slug, deviceId, texte: petitMot.trim() }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setPetitMotError(data.error || 'Erreur');
+        setPetitMotSending(false);
+        return;
+      }
+      setPetitMotSent(true);
+    } catch {
+      setPetitMotError('Erreur réseau');
+    } finally {
+      setPetitMotSending(false);
+    }
+  }, [slug, petitMot, petitMotSending]);
 
   // ── Render helpers ────────────────────────────────────────────────────
   const pronoun = defi ? genderPronoun(defi.genre) : 'le';
@@ -402,7 +437,9 @@ export default function DefiJouerPage() {
         <div className="max-w-md mx-auto px-5 pt-8 pb-12">
           <div className="text-center mb-8">
             <h1 className="font-display text-2xl font-bold text-ink leading-tight mb-2">
-              {defi.displayName} veut savoir qui {pronoun} connaît le mieux 👀
+              {defi.titre
+                ? `${defi.titre} par ${defi.displayName} 👀`
+                : `${defi.displayName} veut savoir qui ${pronoun} connaît le mieux 👀`}
             </h1>
             <p className="text-muted">
               {defi.questions.length} questions · 25 secondes chacune ⏱️
@@ -593,6 +630,47 @@ export default function DefiJouerPage() {
                   </div>
                 );
               })}
+            </div>
+          )}
+
+          {defi.petitsMots && !petitMotSent && (
+            <div className="bg-white/60 rounded-2xl p-4 mb-6 border border-line">
+              <h3 className="font-display font-bold text-ink text-sm mb-2">💌 Un petit mot pour {defi.displayName} ?</h3>
+              <textarea
+                value={petitMot}
+                onChange={e => setPetitMot(e.target.value)}
+                placeholder="Bravo pour ton défi ! Tu me connais trop bien..."
+                maxLength={200}
+                rows={3}
+                className="w-full px-3 py-2.5 rounded-xl border border-line bg-white text-ink text-sm resize-none focus:outline-none focus:border-gold"
+              />
+              <p className="text-[11px] text-muted mt-1 mb-2 text-right">{petitMot.length}/200</p>
+              {petitMotError && (
+                <p className="text-[12px] text-red-500 mb-2">{petitMotError}</p>
+              )}
+              <div className="flex gap-2">
+                <button
+                  onClick={handleSendPetitMot}
+                  disabled={!petitMot.trim() || petitMotSending}
+                  className="flex-1 bg-gold text-white font-semibold py-2.5 rounded-xl text-sm disabled:opacity-40"
+                >
+                  {petitMotSending ? 'Envoi...' : 'Envoyer 💌'}
+                </button>
+                <button
+                  onClick={() => setPetitMotSent(true)}
+                  className="px-4 py-2.5 rounded-xl border border-line text-muted text-sm"
+                >
+                  Non merci
+                </button>
+              </div>
+            </div>
+          )}
+
+          {petitMotSent && defi.petitsMots && (
+            <div className="bg-gold-soft rounded-2xl p-4 mb-6 text-center">
+              <p className="text-sm text-ink font-medium">
+                {petitMot.trim() ? 'Merci pour ton petit mot 💌' : ''}
+              </p>
             </div>
           )}
 

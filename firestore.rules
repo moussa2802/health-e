@@ -318,6 +318,16 @@ service cloud.firestore {
         allow read: if request.auth != null && request.auth.uid == userId;
         allow write: if false;
       }
+
+      // Sous-collection des petits mots reçus par le créateur
+      match /defiMessages/{msgId} {
+        allow read: if request.auth != null && request.auth.uid == userId;
+        allow update: if request.auth != null && request.auth.uid == userId
+          && request.resource.data.diff(resource.data).changedKeys().hasOnly(['masque', 'signale'])
+          && request.resource.data.masque is bool
+          && request.resource.data.signale is bool;
+        allow create, delete: if false;
+      }
     }
 
     match /compatibilityRequests/{requestId} {

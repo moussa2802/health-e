@@ -10,6 +10,8 @@ interface MeDefi {
   displayName: string;
   createdAt: unknown;
   expiresAt?: unknown;
+  titre?: string;
+  audience?: string;
 }
 
 function toDate(val: unknown): Date {
@@ -90,7 +92,7 @@ const DefiMesDefisPage: React.FC = () => {
                 >
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-ink m-0 truncate">
-                      Défi de {d.displayName}
+                      {d.titre || `Défi de ${d.displayName}`}
                     </p>
                     <p className="text-xs text-muted m-0 mt-1">
                       {created.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })}

@@ -453,7 +453,7 @@ export async function getProfileProgress(userId: string): Promise<{
   signatures: Record<string, { value: number; max: number }[]>;
   totem: { animal: string; computedAt: Date; revealedAt: Date | null; pendingAnimal: string | null; lastImprovement: { scaleId: string; domainLabel: string; from: string; to: string; at: Date } | null } | null;
   archetypeId: string | null;
-  activeDefi: { slug: string; expiresAt: Date } | null;
+  activeDefis: Array<{ slug: string; titre: string; audience: string; expiresAt: Date }>;
   defiGenre: string | null;
 }> {
   const ref = doc(db, PROFILES_COL, userId);
@@ -483,7 +483,7 @@ export async function getProfileProgress(userId: string): Promise<{
       signatures: {},
       totem: null,
       archetypeId: null,
-      activeDefi: null,
+      activeDefis: [],
       defiGenre: null,
     };
   }
@@ -537,13 +537,31 @@ export async function getProfileProgress(userId: string): Promise<{
       };
     })() : null,
     archetypeId: (data.archetypeId as string | null) ?? null,
-    activeDefi: data.activeDefi ? (() => {
-      const ad = data.activeDefi as Record<string, unknown>;
-      return {
-        slug: ad.slug as string,
-        expiresAt: ad.expiresAt instanceof Timestamp ? (ad.expiresAt as Timestamp).toDate() : new Date(),
-      };
-    })() : null,
+    activeDefis: (() => {
+      const now = new Date();
+      const toDate = (v: unknown): Date => v instanceof Timestamp ? (v as Timestamp).toDate() : new Date(v as string);
+
+      if (Array.isArray(data.activeDefis)) {
+        return (data.activeDefis as Array<Record<string, unknown>>)
+          .map(ad => ({
+            slug: ad.slug as string,
+            titre: (ad.titre as string) || 'Mon défi',
+            audience: (ad.audience as string) || 'tous',
+            expiresAt: toDate(ad.expiresAt),
+          }))
+          .filter(ad => ad.expiresAt > now);
+      }
+
+      if (data.activeDefi) {
+        const ad = data.activeDefi as Record<string, unknown>;
+        const exp = toDate(ad.expiresAt);
+        if (exp > now) {
+          return [{ slug: ad.slug as string, titre: 'Mon défi', audience: 'tous', expiresAt: exp }];
+        }
+      }
+
+      return [];
+    })(),
     defiGenre: (data.defiGenre as string | null) ?? null,
   };
 }

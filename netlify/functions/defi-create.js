@@ -1,5 +1,6 @@
 const { admin, db, verifyAuth } = require('./_firebase');
-const { selectQuestions, generateSlug } = require('./_defi/questionBank');
+const { selectQuestions, buildQuestionsFromKeys, generateSlug } = require('./_defi/questionBank');
+const { getActiveDefis, canCreateDefi, buildActiveDefisUpdate } = require('./_defi/activeDefisHelper');
 
 const headers = {
   'Access-Control-Allow-Origin': '*',
@@ -31,6 +32,19 @@ const DEFI_SCALE_CONFIG = {
 
 const VALID_DURATIONS = [48, 72, 168];
 const VALID_DEVOILEMENTS = ['aucun', 'auto'];
+const VALID_AUDIENCES = ['famille', 'amis', 'couple', 'collegues', 'tous'];
+
+function sanitizeTitre(raw) {
+  if (typeof raw !== 'string') return null;
+  let name = raw.trim().replace(/\s+/g, ' ');
+  if (name.length < 3 || name.length > 30) return null;
+  if (/<|>/.test(name)) return null;
+  if (/https?:\/\//i.test(name)) return null;
+  if (/\d/.test(name)) return null;
+  // eslint-disable-next-line no-control-regex
+  if (/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/.test(name)) return null;
+  return name;
+}
 
 function sanitizeDisplayName(raw) {
   if (typeof raw !== 'string') return null;
@@ -112,18 +126,14 @@ exports.handler = async (event) => {
       return { statusCode: 403, headers, body: JSON.stringify({ error: 'Tu dois révéler ton totem avant de créer un défi' }) };
     }
 
-    // ── 3. Défi actif existant (via userProfiles, pas de query composite) ─
-    const activeDefi = profile.activeDefi;
-    if (activeDefi && activeDefi.slug) {
-      const expTs = activeDefi.expiresAt;
-      const expDate = expTs && expTs.toDate ? expTs.toDate() : expTs;
-      if (expDate && expDate > new Date()) {
-        return {
-          statusCode: 200,
-          headers,
-          body: JSON.stringify({ existing: true, slug: activeDefi.slug, url: `https://health-e.sn/api/d/${activeDefi.slug}` }),
-        };
-      }
+    // ── 3. Multi-défi : max 3 actifs simultanés ────────────────────────
+    const currentActiveDefis = getActiveDefis(profile);
+    if (!canCreateDefi(currentActiveDefis)) {
+      return {
+        statusCode: 400,
+        headers,
+        body: JSON.stringify({ error: 'Tu as déjà 3 défis actifs. Termine ou attends l\'expiration d\'un défi avant d\'en créer un nouveau.' }),
+      };
     }
 
     // ── 4. Validation des entrées ────────────────────────────────────────
@@ -132,12 +142,20 @@ exports.handler = async (event) => {
       return { statusCode: 400, headers, body: JSON.stringify({ error: 'Pseudo invalide (2-20 caractères, pas de HTML ni de liens)' }) };
     }
 
+    const titre = sanitizeTitre(payload.titre || 'Mon défi');
+    if (!titre) {
+      return { statusCode: 400, headers, body: JSON.stringify({ error: 'Titre invalide (3-30 caractères, pas de chiffres, HTML ou liens)' }) };
+    }
+
+    const audience = VALID_AUDIENCES.includes(payload.audience) ? payload.audience : 'tous';
+    const petitsMots = payload.petitsMots !== false;
+
     const duration = VALID_DURATIONS.includes(payload.duration) ? payload.duration : 72;
     const devoilement = VALID_DEVOILEMENTS.includes(payload.devoilement) ? payload.devoilement : 'aucun';
 
     // ── 5. Genre (sauvegarde dans defiGenre si inconnu) ────────────────────
     const scaleResults = profile.scaleResults || {};
-    let genre = profile.onboardingProfile?.genre || profile.defiGenre || null;
+    let genre = profile.defiGenre || profile.onboardingProfile?.genre || null;
     if (!genre && (payload.genre === 'masculin' || payload.genre === 'feminin')) {
       genre = payload.genre;
       await db.collection('userProfiles').doc(user.uid).update({ defiGenre: genre });
@@ -149,12 +167,35 @@ exports.handler = async (event) => {
 
     const eligibleResults = buildEligibleResults(scaleResults, payload.optinScales, 'public');
 
-    const { error: qError, questions, truths } = selectQuestions(
-      eligibleResults, genre, displayName, 'public', totemAnimal, defiBands
-    );
+    let qResult;
+    if (Array.isArray(payload.selectedKeys) && payload.selectedKeys.length > 0) {
+      qResult = buildQuestionsFromKeys(
+        payload.selectedKeys, eligibleResults, genre, displayName, 'public', totemAnimal, defiBands
+      );
+    } else {
+      qResult = selectQuestions(
+        eligibleResults, genre, displayName, 'public', totemAnimal, defiBands
+      );
+    }
+    const { error: qError, questions, truths } = qResult;
 
     if (qError) {
-      return { statusCode: 400, headers, body: JSON.stringify({ error: 'Pas assez de tests complétés pour créer un défi' }) };
+      const errorMessages = {
+        invalid_keys: 'Clés de questions invalides',
+        invalid_key_count: 'Il faut entre 6 et 8 questions',
+        duplicate_keys: 'Clés de questions en double',
+        totem_in_keys: 'Le totem ne doit pas figurer dans les clés',
+        unknown_key: `Question inconnue : ${qResult.detail || ''}`,
+        ineligible_key: `Question non éligible : ${qResult.detail || ''}`,
+        too_many_big_five: 'Trop de questions Big Five (max 3)',
+        no_eligible_scales: 'Pas assez de tests complétés pour créer un défi',
+        not_enough_scales: 'Pas assez de tests complétés pour créer un défi',
+      };
+      return {
+        statusCode: 400,
+        headers,
+        body: JSON.stringify({ error: errorMessages[qError] || 'Erreur de sélection des questions' }),
+      };
     }
 
     // ── 6. Slug unique ───────────────────────────────────────────────────
@@ -194,6 +235,9 @@ exports.handler = async (event) => {
       tx.set(defiRef, {
         slug,
         displayName,
+        titre,
+        audience,
+        petitsMots,
         genre,
         mode: 'public',
         statut: 'actif',
@@ -221,7 +265,14 @@ exports.handler = async (event) => {
         optionBandMap,
       });
 
+      const newActiveDefis = buildActiveDefisUpdate(currentActiveDefis, {
+        slug, titre, audience, expiresAt,
+      });
+
       tx.update(profileRef, {
+        activeDefis: newActiveDefis.map(ad => ({
+          slug: ad.slug, titre: ad.titre, audience: ad.audience, expiresAt: ad.expiresAt,
+        })),
         activeDefi: { slug, expiresAt },
         updatedAt: createdAt,
       });
@@ -229,6 +280,8 @@ exports.handler = async (event) => {
       tx.set(db.collection('userProfiles').doc(user.uid).collection('mesDefis').doc(slug), {
         slug,
         displayName,
+        titre,
+        audience,
         createdAt,
         expiresAt,
       });

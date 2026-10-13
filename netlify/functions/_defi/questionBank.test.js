@@ -1,6 +1,9 @@
 const {
   computeBand,
   selectQuestions,
+  selectDimensions,
+  buildQuestionsFromKeys,
+  getQuestionText,
   scoreResponse,
   buildTotemQuestion,
   resolveGender,
@@ -703,6 +706,255 @@ test("docs/defi-questions-revue.md is up to date with code", () => {
   const freshContent = fs.readFileSync(docPath, "utf-8");
   fs.writeFileSync(docPath, currentContent, "utf-8");
   assert(currentContent === freshContent, "docs/defi-questions-revue.md is OUT OF SYNC. Run: npm run defi:revue");
+});
+
+// ── selectDimensions ────────────────────────────────────────────────────────
+
+console.log("\n── selectDimensions ──");
+
+test("selectDimensions returns selected + available", () => {
+  const results = makeTotemOnlyResults();
+  const { error, selected, available } = selectDimensions(results, 'public');
+  assertEq(error, null, "no error");
+  assert(selected.length >= 6 && selected.length <= 8, `selected count 6-8: got ${selected.length}`);
+  assert(Array.isArray(available), "available is array");
+});
+
+test("selectDimensions: selected and available don't overlap", () => {
+  const results = makeTotemOnlyResults();
+  const { selected, available } = selectDimensions(results, 'public');
+  const selectedKeys = new Set(selected.map(d => d.subscaleKey ? `${d.scaleId}.${d.subscaleKey}` : d.scaleId));
+  for (const d of available) {
+    const key = d.subscaleKey ? `${d.scaleId}.${d.subscaleKey}` : d.scaleId;
+    assert(!selectedKeys.has(key), `available dim ${key} should not be in selected`);
+  }
+});
+
+test("selectDimensions: available only includes dims with question defs", () => {
+  const results = makeTotemOnlyResults();
+  const { available } = selectDimensions(results, 'public');
+  for (const d of available) {
+    const key = d.subscaleKey ? `${d.scaleId}.${d.subscaleKey}` : d.scaleId;
+    assert(_DEFS_BY_KEY[key], `available dim ${key} must have a question def`);
+  }
+});
+
+test("selectDimensions: empty results → error", () => {
+  const { error } = selectDimensions([], 'public');
+  assertEq(error, 'no_eligible_scales', "should error");
+});
+
+test("selectDimensions: not enough scales → error", () => {
+  const { error } = selectDimensions([{ scaleId: 'brs', totalScore: 3.5, alertLevel: 0 }], 'public');
+  assertEq(error, 'not_enough_scales', "should error");
+});
+
+test("selectDimensions: rich profile → max 3 BF initially", () => {
+  const results = [
+    { scaleId: 'big_five', totalScore: 30, alertLevel: 0,
+      subscaleScores: { extraversion: 6, agreeableness: 5, conscientiousness: 7, emotional_stability: 4, openness: 8 } },
+    { scaleId: 'ecr_r', totalScore: 100, alertLevel: 0,
+      subscaleScores: { anxiety: 3, avoidance: 4 } },
+    { scaleId: 'brs', totalScore: 3.5, alertLevel: 0 },
+    { scaleId: 'bonus_hsp', totalScore: 30, alertLevel: 0 },
+    { scaleId: 'bonus_narcissisme', totalScore: 6, alertLevel: 0 },
+    { scaleId: 'bonus_jalousie', totalScore: 20, alertLevel: 0 },
+    { scaleId: 'bonus_confiance', totalScore: 32, alertLevel: 0 },
+    { scaleId: 'bonus_manipulation', totalScore: 25, alertLevel: 0 },
+  ];
+  const { selected } = selectDimensions(results, 'public');
+  const bfCount = selected.filter(d => d.isBigFive).length;
+  assert(bfCount <= 3, `rich profile should have <=3 BF initially: got ${bfCount}`);
+});
+
+// ── buildQuestionsFromKeys ─────────────────────────────────────────────────
+
+console.log("\n── buildQuestionsFromKeys ──");
+
+test("buildQuestionsFromKeys: valid keys → questions + truths", () => {
+  const results = makeTotemOnlyResults();
+  const { selected } = selectDimensions(results, 'public');
+  const keys = selected.map(d => d.subscaleKey ? `${d.scaleId}.${d.subscaleKey}` : d.scaleId);
+  const { error, questions, truths } = buildQuestionsFromKeys(keys, results, 'M', 'Moussa', 'public', 'lion');
+  assertEq(error, null, "no error");
+  assertEq(questions.length, keys.length + 1, "scale questions + totem");
+  assertEq(truths.length, questions.length, "truths match questions");
+  assertEq(questions[questions.length - 1].source, 'totem', "last is totem");
+});
+
+test("buildQuestionsFromKeys: not an array → error", () => {
+  const { error } = buildQuestionsFromKeys("not_array", [], 'M', 'Test');
+  assertEq(error, 'invalid_keys', "should reject non-array");
+});
+
+test("buildQuestionsFromKeys: too few keys → error", () => {
+  const { error } = buildQuestionsFromKeys(['brs', 'big_five.extraversion'], makeTotemOnlyResults(), 'M', 'Test');
+  assertEq(error, 'invalid_key_count', "should reject < 6 keys");
+});
+
+test("buildQuestionsFromKeys: too many keys → error", () => {
+  const keys = ['brs', 'big_five.extraversion', 'big_five.agreeableness', 'big_five.conscientiousness',
+    'big_five.emotional_stability', 'big_five.openness', 'ecr_r.anxiety', 'ecr_r.avoidance', 'bonus_hsp'];
+  const results = [...makeTotemOnlyResults(), { scaleId: 'bonus_hsp', totalScore: 30, alertLevel: 0 }];
+  const { error } = buildQuestionsFromKeys(keys, results, 'M', 'Test');
+  assertEq(error, 'invalid_key_count', "should reject > 8 keys");
+});
+
+test("buildQuestionsFromKeys: duplicate keys → error", () => {
+  const keys = ['brs', 'brs', 'big_five.extraversion', 'big_five.agreeableness',
+    'big_five.conscientiousness', 'ecr_r.anxiety'];
+  const { error } = buildQuestionsFromKeys(keys, makeTotemOnlyResults(), 'M', 'Test');
+  assertEq(error, 'duplicate_keys', "should reject duplicates");
+});
+
+test("buildQuestionsFromKeys: totem key rejected", () => {
+  const keys = ['__totem__', 'brs', 'big_five.extraversion', 'big_five.agreeableness',
+    'big_five.conscientiousness', 'ecr_r.anxiety'];
+  const { error } = buildQuestionsFromKeys(keys, makeTotemOnlyResults(), 'M', 'Test');
+  assertEq(error, 'totem_in_keys', "totem must not be in keys");
+});
+
+test("buildQuestionsFromKeys: unknown key → error", () => {
+  const keys = ['brs', 'big_five.extraversion', 'big_five.agreeableness',
+    'big_five.conscientiousness', 'ecr_r.anxiety', 'fake_scale'];
+  const { error, detail } = buildQuestionsFromKeys(keys, makeTotemOnlyResults(), 'M', 'Test');
+  assertEq(error, 'unknown_key', "should reject unknown");
+  assertEq(detail, 'fake_scale', "should name the bad key");
+});
+
+test("buildQuestionsFromKeys: forbidden scale with no question def → unknown_key", () => {
+  const keys = ['brs', 'big_five.extraversion', 'big_five.agreeableness',
+    'big_five.conscientiousness', 'ecr_r.anxiety', 'phq9'];
+  const results = [...makeTotemOnlyResults()];
+  const { error } = buildQuestionsFromKeys(keys, results, 'M', 'Test', 'public');
+  assertEq(error, 'unknown_key', "phq9 has no question def");
+});
+
+test("buildQuestionsFromKeys: optin scale not in eligible results → ineligible_key", () => {
+  const keys = ['brs', 'big_five.extraversion', 'big_five.agreeableness',
+    'big_five.conscientiousness', 'ecr_r.anxiety', 'gad7'];
+  const results = [
+    { scaleId: 'big_five', totalScore: 30, alertLevel: 0,
+      subscaleScores: { extraversion: 6, agreeableness: 5, conscientiousness: 7, emotional_stability: 4, openness: 8 } },
+    { scaleId: 'ecr_r', totalScore: 100, alertLevel: 0,
+      subscaleScores: { anxiety: 3, avoidance: 4 } },
+    { scaleId: 'brs', totalScore: 3.5, alertLevel: 0 },
+  ];
+  const { error, detail } = buildQuestionsFromKeys(keys, results, 'M', 'Test', 'public');
+  assertEq(error, 'ineligible_key', "gad7 not in eligible results");
+  assertEq(detail, 'gad7', "should name gad7");
+});
+
+test("buildQuestionsFromKeys: ineligible key (alertLevel >= 3) → error", () => {
+  const keys = ['brs', 'big_five.extraversion', 'big_five.agreeableness',
+    'big_five.conscientiousness', 'ecr_r.anxiety', 'ecr_r.avoidance'];
+  const results = [
+    { scaleId: 'big_five', totalScore: 30, alertLevel: 3,
+      subscaleScores: { extraversion: 6, agreeableness: 5, conscientiousness: 7, emotional_stability: 4, openness: 8 } },
+    { scaleId: 'ecr_r', totalScore: 100, alertLevel: 0,
+      subscaleScores: { anxiety: 3, avoidance: 4 } },
+    { scaleId: 'brs', totalScore: 3.5, alertLevel: 0 },
+  ];
+  const { error } = buildQuestionsFromKeys(keys, results, 'M', 'Test', 'public');
+  assertEq(error, 'ineligible_key', "alertLevel 3 should reject");
+});
+
+test("buildQuestionsFromKeys: >3 BF with rich pool → error", () => {
+  const results = [
+    { scaleId: 'big_five', totalScore: 30, alertLevel: 0,
+      subscaleScores: { extraversion: 6, agreeableness: 5, conscientiousness: 7, emotional_stability: 4, openness: 8 } },
+    { scaleId: 'ecr_r', totalScore: 100, alertLevel: 0,
+      subscaleScores: { anxiety: 3, avoidance: 4 } },
+    { scaleId: 'brs', totalScore: 3.5, alertLevel: 0 },
+    { scaleId: 'bonus_hsp', totalScore: 30, alertLevel: 0 },
+    { scaleId: 'bonus_narcissisme', totalScore: 6, alertLevel: 0 },
+    { scaleId: 'bonus_jalousie', totalScore: 20, alertLevel: 0 },
+  ];
+  const keys = ['big_five.extraversion', 'big_five.agreeableness', 'big_five.conscientiousness',
+    'big_five.emotional_stability', 'ecr_r.anxiety', 'brs'];
+  const { error } = buildQuestionsFromKeys(keys, results, 'M', 'Test', 'public');
+  assertEq(error, 'too_many_big_five', "4 BF with rich pool should reject");
+});
+
+test("buildQuestionsFromKeys: >3 BF with small pool → allowed", () => {
+  const results = makeTotemOnlyResults();
+  const keys = ['big_five.extraversion', 'big_five.agreeableness', 'big_five.conscientiousness',
+    'big_five.emotional_stability', 'big_five.openness', 'ecr_r.anxiety', 'ecr_r.avoidance', 'brs'];
+  const { error } = buildQuestionsFromKeys(keys, results, 'M', 'Test', 'public', 'lion');
+  assertEq(error, null, "5 BF with small pool should be allowed");
+});
+
+test("buildQuestionsFromKeys: no totem → no totem question", () => {
+  const results = makeTotemOnlyResults();
+  const { selected } = selectDimensions(results, 'public');
+  const keys = selected.map(d => d.subscaleKey ? `${d.scaleId}.${d.subscaleKey}` : d.scaleId);
+  const { questions } = buildQuestionsFromKeys(keys, results, 'M', 'Moussa', 'public', null);
+  assertEq(questions.length, keys.length, "no totem appended");
+  assert(questions.every(q => q.source === 'scale'), "all scale questions");
+});
+
+test("buildQuestionsFromKeys: options have opaque IDs, no _band exposed", () => {
+  const results = makeTotemOnlyResults();
+  const { selected } = selectDimensions(results, 'public');
+  const keys = selected.map(d => d.subscaleKey ? `${d.scaleId}.${d.subscaleKey}` : d.scaleId);
+  const { questions } = buildQuestionsFromKeys(keys, results, 'M', 'Moussa', 'public', 'lion');
+  for (const q of questions) {
+    for (const opt of q.options) {
+      assert(opt.id.startsWith('o_'), `option id should start with o_: ${opt.id}`);
+      assert(!opt._band, "option should not expose _band");
+    }
+  }
+});
+
+// ── getQuestionText ─────────────────────────────────────────────────────────
+
+console.log("\n── getQuestionText ──");
+
+test("getQuestionText: known key → resolved text", () => {
+  const text = getQuestionText('big_five.extraversion', 'M', 'Moussa');
+  assert(typeof text === 'string', "should return string");
+  assert(text.includes('Moussa'), "should include prenom");
+  assert(!text.includes('{prenom}'), "should resolve {prenom}");
+  assert(!text.includes('{{'), "should resolve gender markers");
+});
+
+test("getQuestionText: feminine resolution", () => {
+  const text = getQuestionText('big_five.extraversion', 'F', 'Aminata');
+  assert(text.includes('Aminata'), "should include prenom");
+});
+
+test("getQuestionText: unknown key → null", () => {
+  const text = getQuestionText('nonexistent_scale', 'M', 'Test');
+  assertEq(text, null, "should return null");
+});
+
+test("getQuestionText: returns text only, no options/truths/bands", () => {
+  const text = getQuestionText('brs', 'M', 'Moussa');
+  assert(typeof text === 'string', "should be string");
+  assert(text.length > 0, "should not be empty");
+});
+
+test("getQuestionText: every selected dim key returns valid text", () => {
+  const results = makeTotemOnlyResults();
+  const { selected } = selectDimensions(results, 'public');
+  for (const d of selected) {
+    const key = d.subscaleKey ? `${d.scaleId}.${d.subscaleKey}` : d.scaleId;
+    const text = getQuestionText(key, 'M', 'Test');
+    assert(text && text.length > 0, `getQuestionText should return text for ${key}`);
+  }
+});
+
+// ── selectQuestions backward compat ──────────────────────────────────────────
+
+console.log("\n── selectQuestions backward compat ──");
+
+test("selectQuestions still works as wrapper (same API contract)", () => {
+  const results = makeTotemOnlyResults();
+  const { error, questions, truths } = selectQuestions(results, 'M', 'Moussa', 'public', 'lion');
+  assertEq(error, null, "no error");
+  assert(questions.length >= 7, `at least 7 questions: got ${questions.length}`);
+  assertEq(questions[questions.length - 1].source, 'totem', "last is totem");
+  assertEq(questions.length, truths.length, "truths match questions");
 });
 
 // ── Summary ──────────────────────────────────────────────────────────────────

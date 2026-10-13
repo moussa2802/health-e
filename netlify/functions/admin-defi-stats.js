@@ -47,6 +47,26 @@ exports.handler = async (event) => {
       .get();
     const inscriptionsViaDefi = profilesSnap.size;
 
+    let totalMessages = 0;
+    const reportedMessages = [];
+    try {
+      const messagesSnap = await db.collectionGroup('defiMessages').get();
+      messagesSnap.forEach(doc => {
+        totalMessages++;
+        const m = doc.data();
+        if (m.signale === true) {
+          reportedMessages.push({
+            pseudo: m.pseudo,
+            texte: (m.texte || '').slice(0, 80),
+            slug: m.slug,
+            createdAt: m.createdAt?.toDate ? m.createdAt.toDate().toISOString() : null,
+          });
+        }
+      });
+    } catch (msgErr) {
+      console.warn('admin-defi-stats messages error (non-blocking):', msgErr.message);
+    }
+
     return {
       statusCode: 200,
       headers,
@@ -56,6 +76,8 @@ exports.handler = async (event) => {
         activeDefis,
         moyenneReponses: totalDefis > 0 ? Math.round(totalReponses / totalDefis * 10) / 10 : 0,
         inscriptionsViaDefi,
+        totalMessages,
+        reportedMessages,
       }),
     };
   } catch (err) {

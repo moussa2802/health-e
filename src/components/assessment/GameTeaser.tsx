@@ -9,7 +9,7 @@ interface GameTeaserProps {
   totemProgress: { completed: number; total: number; missing: string[] };
   totemRevealed: boolean;
   onLockedClick: () => void;
-  activeDefi?: { slug: string; expiresAt: Date } | null;
+  activeDefis?: Array<{ slug: string; titre: string; audience: string; expiresAt: Date }>;
 }
 
 const THREE_DAYS_MS = 3 * 24 * 60 * 60 * 1000;
@@ -19,27 +19,30 @@ const GameTeaser: React.FC<GameTeaserProps> = ({
   totemProgress,
   totemRevealed,
   onLockedClick,
-  activeDefi,
+  activeDefis = [],
 }) => {
   const navigate = useNavigate();
   const missing = totemProgress.total - totemProgress.completed;
 
-  const [liveStats, setLiveStats] = useState<{ nbReponses: number; scoreMoyen: number } | null>(null);
+  const [reponsesBySlug, setReponsesBySlug] = useState<Record<string, number>>({});
 
   const now = Date.now();
-  const expired = activeDefi ? activeDefi.expiresAt.getTime() <= now : true;
-  const expiredOver3Days = activeDefi ? (now - activeDefi.expiresAt.getTime()) > THREE_DAYS_MS : true;
-  const showActiveTile = !!activeDefi && !expiredOver3Days;
+  const hasActive = activeDefis.length > 0;
+  const allExpiredOver3Days = !hasActive || activeDefis.every(d => (now - d.expiresAt.getTime()) > THREE_DAYS_MS);
+  const showActiveTile = hasActive && !allExpiredOver3Days;
 
   useEffect(() => {
-    if (!showActiveTile || !activeDefi) return;
-    const unsub = onSnapshot(doc(db, 'defis', activeDefi.slug), snap => {
-      if (!snap.exists()) return;
-      const d = snap.data();
-      setLiveStats({ nbReponses: d.nbReponses || 0, scoreMoyen: d.scoreMoyen || 0 });
-    });
-    return unsub;
-  }, [showActiveTile, activeDefi?.slug]);
+    if (!showActiveTile || activeDefis.length === 0) return;
+    const unsubs = activeDefis.map(ad =>
+      onSnapshot(doc(db, 'defis', ad.slug), snap => {
+        if (!snap.exists()) return;
+        setReponsesBySlug(prev => ({ ...prev, [ad.slug]: snap.data().nbReponses || 0 }));
+      })
+    );
+    return () => unsubs.forEach(u => u());
+  }, [showActiveTile, activeDefis.map(d => d.slug).join(',')]);
+
+  const totalReponses = Object.values(reponsesBySlug).reduce((s, n) => s + n, 0);
 
   if (!defiEnabled) {
     return (
@@ -119,7 +122,6 @@ const GameTeaser: React.FC<GameTeaserProps> = ({
   }
 
   if (showActiveTile) {
-    const nb = liveStats?.nbReponses ?? 0;
     return (
       <div
         className="rounded-[14px] p-3.5 shadow-soft flex flex-col justify-between cursor-pointer"
@@ -127,7 +129,7 @@ const GameTeaser: React.FC<GameTeaserProps> = ({
           minHeight: 96,
           background: 'linear-gradient(160deg, #2A2520 0%, #3D352C 100%)',
         }}
-        onClick={() => navigate(`/defi/${activeDefi!.slug}/suivi`)}
+        onClick={() => navigate('/defi')}
       >
         <div>
           <div className="flex items-center justify-between mb-1">
@@ -136,15 +138,15 @@ const GameTeaser: React.FC<GameTeaserProps> = ({
               className="text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full"
               style={{ background: 'rgba(201,168,100,.2)', color: '#C9A864' }}
             >
-              {expired ? 'Terminé' : 'En cours'}
+              {activeDefis.length === 1 ? 'En cours' : `${activeDefis.length} défis`}
             </span>
           </div>
           <p className="text-[13px] font-bold text-[#F4F1E9] m-0 mt-1.5 leading-tight">
-            {nb === 0 ? 'Aucune réponse' : `${nb} réponse${nb > 1 ? 's' : ''}`}
+            {totalReponses === 0 ? 'Aucune réponse' : `Tes défis · ${totalReponses} réponse${totalReponses > 1 ? 's' : ''} 👀`}
           </p>
         </div>
         <p className="text-[11px] text-gold m-0 mt-1.5 leading-snug">
-          {expired ? 'Voir les résultats' : 'Voir le suivi →'}
+          Voir le suivi →
         </p>
       </div>
     );

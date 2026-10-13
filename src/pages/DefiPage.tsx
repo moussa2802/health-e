@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Navigate } from 'react-router-dom';
-import { ArrowLeft, Sparkles, Users, Crown, Eye } from 'lucide-react';
+import { ArrowLeft, Sparkles, Users, Crown, Eye, Plus, Clock } from 'lucide-react';
+import { doc, onSnapshot } from 'firebase/firestore';
+import { db } from '../utils/firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { useDefiFlag } from '../hooks/useDefiFlag';
 import { getProfileProgress } from '../services/evaluationService';
@@ -41,7 +43,7 @@ const DefiPage: React.FC = () => {
   const [totemData, setTotemData] = useState<{
     animal: string; revealedAt: Date | null;
   } | null>(null);
-  const [activeDefi, setActiveDefi] = useState<{ slug: string; expiresAt: Date } | null>(null);
+  const [activeDefis, setActiveDefis] = useState<Array<{ slug: string; titre: string; audience: string; expiresAt: Date }>>([]);
   const [profileLoading, setProfileLoading] = useState(true);
 
   useEffect(() => {
@@ -53,9 +55,7 @@ const DefiPage: React.FC = () => {
       .then(p => {
         setProfileResults(p.scaleResults);
         setTotemData(p.totem ? { animal: p.totem.animal, revealedAt: p.totem.revealedAt } : null);
-        if (p.activeDefi && p.activeDefi.expiresAt > new Date()) {
-          setActiveDefi(p.activeDefi);
-        }
+        setActiveDefis(p.activeDefis);
         setProfileLoading(false);
       })
       .catch(() => setProfileLoading(false));
@@ -119,7 +119,30 @@ const DefiPage: React.FC = () => {
   const sig = getTotemSignature(animal);
   const img = TOTEM_IMAGES[animal];
 
-  const hasActiveDefi = !!activeDefi;
+  const hasActiveDefis = activeDefis.length > 0;
+  const canCreate = activeDefis.length < 3;
+
+  const [reponsesBySlug, setReponsesBySlug] = useState<Record<string, number>>({});
+
+  useEffect(() => {
+    if (!hasActiveDefis) return;
+    const unsubs = activeDefis.map(ad =>
+      onSnapshot(doc(db, 'defis', ad.slug), snap => {
+        if (!snap.exists()) return;
+        setReponsesBySlug(prev => ({ ...prev, [ad.slug]: snap.data().nbReponses || 0 }));
+      })
+    );
+    return () => unsubs.forEach(u => u());
+  }, [hasActiveDefis, activeDefis.map(d => d.slug).join(',')]);
+
+  function formatTimeLeft(expiresAt: Date): string {
+    const diff = expiresAt.getTime() - Date.now();
+    if (diff <= 0) return 'Terminé';
+    const hours = Math.floor(diff / (1000 * 60 * 60));
+    if (hours < 24) return `${hours}h restantes`;
+    const days = Math.floor(hours / 24);
+    return `${days}j restant${days > 1 ? 's' : ''}`;
+  }
 
   return (
     <div className="min-h-screen bg-paper">
@@ -159,48 +182,77 @@ const DefiPage: React.FC = () => {
           </div>
         </div>
 
-        <div className="mb-8">
-          <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-muted m-0 mb-4">
-            Comment ça marche
-          </p>
-          <div className="flex flex-col gap-4">
-            {STEPS.map((step, i) => (
-              <div key={i} className="flex items-start gap-3">
-                <div className="w-10 h-10 rounded-xl bg-gold-soft flex items-center justify-center flex-shrink-0">
-                  {step.icon}
+        {hasActiveDefis && (
+          <div className="mb-6">
+            <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-muted m-0 mb-3">
+              Tes défis en cours
+            </p>
+            <div className="flex flex-col gap-3">
+              {activeDefis.map(ad => (
+                <div
+                  key={ad.slug}
+                  className="rounded-[14px] border border-line bg-card p-4 cursor-pointer shadow-soft"
+                  onClick={() => navigate(`/defi/${ad.slug}/suivi`)}
+                >
+                  <div className="flex items-center justify-between mb-1.5">
+                    <h4 className="font-display text-[15px] font-semibold text-ink m-0 truncate">
+                      {ad.titre || 'Mon défi'}
+                    </h4>
+                    <span className="text-[11px] text-muted flex items-center gap-1 flex-shrink-0 ml-2">
+                      <Clock size={12} />
+                      {formatTimeLeft(ad.expiresAt)}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-[13px] text-muted">
+                      {(reponsesBySlug[ad.slug] || 0) === 0
+                        ? 'Aucune réponse'
+                        : `${reponsesBySlug[ad.slug]} réponse${reponsesBySlug[ad.slug] > 1 ? 's' : ''}`}
+                    </span>
+                    <Eye size={14} className="text-muted" />
+                  </div>
                 </div>
-                <div className="flex-1 pt-2">
-                  <p className="text-[14px] text-ink m-0 leading-snug font-medium">{step.text}</p>
-                </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
-        </div>
+        )}
 
-        {hasActiveDefi ? (
-          <div className="space-y-3">
-            <button
-              onClick={() => navigate(`/defi/${activeDefi!.slug}/suivi`)}
-              className="w-full py-3.5 rounded-[14px] border-none bg-ink text-white text-[15px] font-bold cursor-pointer shadow-soft flex items-center justify-center gap-2"
-            >
-              <Eye size={16} />
-              Suivre mon défi en cours
-            </button>
-            <button
-              onClick={() => navigate(`/defi/${activeDefi!.slug}/partage`)}
-              className="w-full py-3 rounded-[14px] border border-line bg-card text-ink text-[14px] font-medium cursor-pointer flex items-center justify-center gap-2"
-            >
-              Partager le lien
-            </button>
+        {!hasActiveDefis && (
+          <div className="mb-8">
+            <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-muted m-0 mb-4">
+              Comment ça marche
+            </p>
+            <div className="flex flex-col gap-4">
+              {STEPS.map((step, i) => (
+                <div key={i} className="flex items-start gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-gold-soft flex items-center justify-center flex-shrink-0">
+                    {step.icon}
+                  </div>
+                  <div className="flex-1 pt-2">
+                    <p className="text-[14px] text-ink m-0 leading-snug font-medium">{step.text}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
-        ) : (
-          <button
-            onClick={() => navigate('/defi/creer')}
-            className="w-full py-3.5 rounded-[14px] border-none bg-gold text-white text-[15px] font-bold cursor-pointer shadow-soft flex items-center justify-center gap-2"
-          >
-            <Sparkles size={16} />
-            Créer mon défi
-          </button>
+        )}
+
+        <button
+          onClick={() => navigate('/defi/creer')}
+          disabled={!canCreate}
+          className={`w-full py-3.5 rounded-[14px] border-none text-[15px] font-bold cursor-pointer shadow-soft flex items-center justify-center gap-2 ${
+            canCreate
+              ? 'bg-gold text-white'
+              : 'bg-line text-muted cursor-not-allowed'
+          }`}
+        >
+          {hasActiveDefis ? <Plus size={16} /> : <Sparkles size={16} />}
+          {hasActiveDefis ? 'Créer un nouveau défi' : 'Créer mon défi'}
+        </button>
+        {!canCreate && (
+          <p className="text-[12px] text-muted text-center m-0 mt-2">
+            Maximum 3 défis actifs simultanément
+          </p>
         )}
       </div>
     </div>
