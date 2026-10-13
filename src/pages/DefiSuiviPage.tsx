@@ -65,6 +65,7 @@ const DefiSuiviPage: React.FC = () => {
   const [closingDefi, setClosingDefi] = useState(false);
   const [closeError, setCloseError] = useState('');
   const [msgError, setMsgError] = useState('');
+  const [msgBusy, setMsgBusy] = useState<string | null>(null);
 
   useEffect(() => {
     if (!currentUser || !slug) return;
@@ -266,33 +267,61 @@ const DefiSuiviPage: React.FC = () => {
                       <p className="text-sm text-ink m-0 mb-2">{msg.texte}</p>
                       <div className="flex gap-3">
                         <button
-                          onClick={async () => {
+                          disabled={msgBusy === msg.id}
+                          onClick={async (e) => {
+                            e.stopPropagation();
+                            if (msgBusy) return;
+                            console.debug('[MASQUER] clicked', { msgId: msg.id, uid: currentUser?.id, slug });
+                            setMsgBusy(msg.id);
                             setMsgError('');
                             try {
-                              await updateDoc(doc(db, 'userProfiles', currentUser!.id, 'defiMessages', msg.id), { masque: true });
+                              const ref = doc(db, 'userProfiles', currentUser!.id, 'defiMessages', msg.id);
+                              console.debug('[MASQUER] updateDoc →', ref.path);
+                              const timeout = new Promise<never>((_, rej) => setTimeout(() => rej(new Error('TIMEOUT')), 8000));
+                              await Promise.race([updateDoc(ref, { masque: true }), timeout]);
+                              console.debug('[MASQUER] ok');
                               setMessages(prev => prev.map(m => m.id === msg.id ? { ...m, masque: true } : m));
-                            } catch {
-                              setMsgError('Impossible de masquer ce message');
+                            } catch (err) {
+                              console.error('[MASQUER] error', err);
+                              setMsgError(err instanceof Error && err.message === 'TIMEOUT'
+                                ? 'Délai dépassé — vérifie ta connexion'
+                                : 'Impossible de masquer ce message');
+                            } finally {
+                              setMsgBusy(null);
                             }
                           }}
-                          className="text-[11px] text-muted flex items-center gap-1 bg-transparent border-none cursor-pointer p-0"
+                          className="text-[11px] text-muted flex items-center gap-1 bg-transparent border-none cursor-pointer p-0 disabled:opacity-50"
                         >
-                          <EyeOff size={12} /> Masquer
+                          {msgBusy === msg.id ? <Loader2 size={12} className="animate-spin" /> : <EyeOff size={12} />} Masquer
                         </button>
                         {!msg.signale && (
                           <button
-                            onClick={async () => {
+                            disabled={msgBusy === msg.id}
+                            onClick={async (e) => {
+                              e.stopPropagation();
+                              if (msgBusy) return;
+                              console.debug('[SIGNALER] clicked', { msgId: msg.id, uid: currentUser?.id, slug });
+                              setMsgBusy(msg.id);
                               setMsgError('');
                               try {
-                                await updateDoc(doc(db, 'userProfiles', currentUser!.id, 'defiMessages', msg.id), { signale: true });
+                                const ref = doc(db, 'userProfiles', currentUser!.id, 'defiMessages', msg.id);
+                                console.debug('[SIGNALER] updateDoc →', ref.path);
+                                const timeout = new Promise<never>((_, rej) => setTimeout(() => rej(new Error('TIMEOUT')), 8000));
+                                await Promise.race([updateDoc(ref, { signale: true }), timeout]);
+                                console.debug('[SIGNALER] ok');
                                 setMessages(prev => prev.map(m => m.id === msg.id ? { ...m, signale: true } : m));
-                              } catch {
-                                setMsgError('Impossible de signaler ce message');
+                              } catch (err) {
+                                console.error('[SIGNALER] error', err);
+                                setMsgError(err instanceof Error && err.message === 'TIMEOUT'
+                                  ? 'Délai dépassé — vérifie ta connexion'
+                                  : 'Impossible de signaler ce message');
+                              } finally {
+                                setMsgBusy(null);
                               }
                             }}
-                            className="text-[11px] text-red-400 flex items-center gap-1 bg-transparent border-none cursor-pointer p-0"
+                            className="text-[11px] text-red-400 flex items-center gap-1 bg-transparent border-none cursor-pointer p-0 disabled:opacity-50"
                           >
-                            <Flag size={12} /> Signaler
+                            {msgBusy === msg.id ? <Loader2 size={12} className="animate-spin" /> : <Flag size={12} />} Signaler
                           </button>
                         )}
                       </div>

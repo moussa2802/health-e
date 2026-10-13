@@ -1,9 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Brain, Heart, Users, ChevronRight, Lock, Check, Play, Shield, Stethoscope, Sparkles, NotebookPen } from 'lucide-react';
+import { Users, ChevronRight, Lock, Check, Play, Shield, Stethoscope, Sparkles, NotebookPen, ArrowRight } from 'lucide-react';
 import TotemCard from '../../components/assessment/TotemCard';
 import GameTeaser from '../../components/assessment/GameTeaser';
-import InfoTip from '../../components/Onboarding/InfoTip';
 import { useAuth } from '../../contexts/AuthContext';
 import {
   getOrCreateUserProfile,
@@ -62,6 +61,11 @@ const TOTEM_TILE_IMAGES: Record<TotemAnimal, string> = {
 };
 
 const PSY_THRESHOLD = 7;
+
+const TILE_BG = 'linear-gradient(160deg, #2A2520 0%, #3D352C 100%)';
+const TILE_GOLD = '#D4AD5A';
+const TILE_TERRACOTTA = '#D4896B';
+const TILE_SAGE = '#8BA59B';
 
 const TAB_CONFIG: { id: 'mental' | 'intime' | 'bonus'; label: string }[] = [
   { id: 'mental', label: 'Psychologique' },
@@ -251,12 +255,14 @@ const AssessmentHomePage: React.FC = () => {
     }, 50);
   };
 
-  // Skeleton tile
   const SkeletonTile = () => (
-    <div className="bg-card border border-line rounded-[14px] p-3.5 shadow-soft animate-pulse" style={{ minHeight: 96 }}>
-      <div className="w-6 h-6 rounded-lg bg-line mb-2" />
-      <div className="w-3/4 h-3 rounded bg-line mb-1.5" />
-      <div className="w-1/2 h-2.5 rounded bg-line" />
+    <div className="rounded-[14px] p-4 shadow-soft animate-pulse" style={{ background: TILE_BG }}>
+      <div className="flex items-center gap-2 mb-3">
+        <div className="w-7 h-7 rounded-lg bg-white/10" />
+        <div className="w-16 h-2.5 rounded bg-white/10" />
+      </div>
+      <div className="w-3/4 h-3 rounded bg-white/10 mb-1.5" />
+      <div className="w-1/2 h-2.5 rounded bg-white/10" />
     </div>
   );
 
@@ -398,47 +404,40 @@ const AssessmentHomePage: React.FC = () => {
           {!tilesLoaded ? (
             <SkeletonTile />
           ) : !totemIsReady ? (
-            // Progress state
             <div
-              className="bg-card border border-line rounded-[14px] p-3.5 shadow-soft flex flex-col justify-between cursor-pointer hover:shadow-lift hover:-translate-y-[1px] transition-all"
-              style={{ minHeight: 96 }}
+              className="rounded-[14px] p-4 shadow-soft flex flex-col overflow-hidden cursor-pointer hover:shadow-lift hover:-translate-y-[1px] transition-all"
+              style={{ background: TILE_BG }}
               onClick={() => {
                 setActiveTab('mental');
                 setTimeout(() => segmentedRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
               }}
             >
-              <div>
-                <div className="flex items-center justify-between mb-1">
-                  <Sparkles size={18} className="text-gold" />
-                  <div className="flex items-center gap-0.5">
-                    {Array.from({ length: totemProgress.total }).map((_, i) => (
-                      <div
-                        key={i}
-                        className={`w-[5px] h-[5px] rounded-full ${i < totemProgress.completed ? 'bg-gold' : 'bg-line'}`}
-                      />
-                    ))}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: 'rgba(212,173,90,0.15)' }}>
+                    <Sparkles size={14} style={{ color: TILE_GOLD }} />
                   </div>
+                  <span className="text-[10px] font-bold uppercase tracking-[0.08em]" style={{ color: TILE_GOLD }}>Ton totem</span>
                 </div>
-                <p className="text-[13px] font-bold text-ink m-0 mt-1.5 leading-tight">
-                  Ton Totem
-                </p>
+                <div className="flex items-center gap-0.5">
+                  {Array.from({ length: totemProgress.total }).map((_, i) => (
+                    <div key={i} className="w-[5px] h-[5px] rounded-full" style={{ background: i < totemProgress.completed ? TILE_GOLD : 'rgba(244,241,233,0.15)' }} />
+                  ))}
+                </div>
               </div>
-              <p className="text-[11px] text-muted m-0 mt-1.5 leading-snug">
+              <p className="text-[14px] font-bold text-[#F4F1E9] m-0 mt-2.5 leading-tight">Ton Totem</p>
+              <p className="text-[11px] m-0 mt-1 leading-snug" style={{ color: 'rgba(244,241,233,0.65)' }}>
                 Encore {totemProgress.total - totemProgress.completed} test{totemProgress.total - totemProgress.completed > 1 ? 's' : ''}
+              </p>
+              <p className="text-[12px] font-semibold m-0 mt-auto pt-2 flex items-center gap-1" style={{ color: TILE_GOLD }}>
+                Compléter <ArrowRight size={12} />
               </p>
             </div>
           ) : totemIsComputed && !totemIsRevealed ? (
-            // Ready to reveal — gold glow pulsation
             <div
-              className="relative rounded-[14px] p-3.5 shadow-soft flex flex-col justify-between cursor-pointer overflow-hidden hover:shadow-lift transition-all"
-              style={{
-                minHeight: 96,
-                background: 'linear-gradient(160deg, #2A2520 0%, #3D352C 100%)',
-                animation: 'totemGlow 2.5s ease-in-out infinite',
-              }}
-              onClick={() => {
-                totemRevealRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-              }}
+              className="relative rounded-[14px] p-4 shadow-soft flex flex-col overflow-hidden cursor-pointer transition-all"
+              style={{ background: TILE_BG, animation: 'totemGlow 2.5s ease-in-out infinite' }}
+              onClick={() => totemRevealRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })}
             >
               <style>{`
                 @keyframes totemGlow {
@@ -446,47 +445,55 @@ const AssessmentHomePage: React.FC = () => {
                   50% { box-shadow: 0 0 20px rgba(212,173,90,.45), 0 0 40px rgba(212,173,90,.15), 0 1px 3px rgba(0,0,0,.12); }
                 }
               `}</style>
-              <div>
-                <div className="flex items-center gap-1.5 mb-1">
-                  <Sparkles size={16} className="text-gold" />
-                  <span className="text-[9px] font-bold uppercase tracking-wider text-gold/70">Prêt</span>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: 'rgba(212,173,90,0.15)' }}>
+                    <Sparkles size={14} style={{ color: TILE_GOLD }} />
+                  </div>
+                  <span className="text-[10px] font-bold uppercase tracking-[0.08em]" style={{ color: TILE_GOLD }}>Ton totem</span>
                 </div>
-                <p className="text-[13px] font-bold text-[#F4F1E9] m-0 mt-1 leading-tight">
-                  Ton Totem
-                </p>
+                <span className="text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full" style={{ background: 'rgba(212,173,90,0.2)', color: TILE_GOLD }}>
+                  Prêt
+                </span>
               </div>
-              <p className="text-[11px] text-gold/80 font-semibold m-0 mt-1.5 leading-snug">
-                Révéler →
+              <p className="text-[14px] font-bold text-[#F4F1E9] m-0 mt-2.5 leading-tight">Ton Totem</p>
+              <p className="text-[11px] m-0 mt-1 leading-snug" style={{ color: 'rgba(244,241,233,0.65)' }}>
+                Tous les tests sont faits !
+              </p>
+              <p className="text-[12px] font-semibold m-0 mt-auto pt-2 flex items-center gap-1" style={{ color: TILE_GOLD }}>
+                Révéler <ArrowRight size={12} />
               </p>
             </div>
           ) : totemIsRevealed && totemImg && totemSig ? (
-            // Revealed — show animal
             <div
-              className="relative rounded-[14px] p-3.5 shadow-soft flex flex-col justify-between cursor-pointer overflow-hidden hover:shadow-lift hover:-translate-y-[1px] transition-all"
-              style={{ minHeight: 96, background: 'linear-gradient(160deg, #2A2520 0%, #3D352C 100%)' }}
+              className="rounded-[14px] p-4 shadow-soft flex flex-col overflow-hidden cursor-pointer hover:shadow-lift hover:-translate-y-[1px] transition-all"
+              style={{ background: TILE_BG }}
               onClick={() => navigate('/assessment/totem')}
             >
-              <div className="flex items-center gap-2.5">
-                <div className="w-10 h-10 rounded-xl overflow-hidden flex-shrink-0 border border-gold/20">
+              <div className="flex items-center gap-2">
+                <div className="w-7 h-7 rounded-lg overflow-hidden flex-shrink-0" style={{ border: '1px solid rgba(212,173,90,0.25)' }}>
                   <img src={totemImg} alt={totemSig.label} className="w-full h-full object-cover" />
                 </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-[10px] font-bold uppercase tracking-wider text-gold/60 m-0">Totem</p>
-                  <p className="text-[13px] font-bold text-[#F4F1E9] m-0 mt-0.5 truncate">{totemSig.label}</p>
-                </div>
+                <span className="text-[10px] font-bold uppercase tracking-[0.08em]" style={{ color: TILE_GOLD }}>Totem</span>
               </div>
-              <p className="text-[11px] text-white/45 m-0 mt-2 leading-snug line-clamp-2">
+              <p className="text-[14px] font-bold text-[#F4F1E9] m-0 mt-2.5 leading-tight">{totemSig.label}</p>
+              <p className="text-[11px] m-0 mt-1 leading-snug line-clamp-2" style={{ color: 'rgba(244,241,233,0.65)' }}>
                 {totemSig.meaning}
+              </p>
+              <p className="text-[12px] font-semibold m-0 mt-auto pt-2 flex items-center gap-1" style={{ color: TILE_GOLD }}>
+                Voir ma carte <ArrowRight size={12} />
               </p>
             </div>
           ) : (
-            // Fallback (computing / no userId)
-            <div className="bg-card border border-line rounded-[14px] p-3.5 shadow-soft flex flex-col justify-between" style={{ minHeight: 96 }}>
-              <Sparkles size={18} className="text-gold" />
-              <div>
-                <p className="text-[13px] font-bold text-ink m-0 mt-1.5 leading-tight">Ton Totem</p>
-                <p className="text-[11px] text-muted m-0 mt-1 leading-snug">Calcul en cours…</p>
+            <div className="rounded-[14px] p-4 shadow-soft flex flex-col overflow-hidden" style={{ background: TILE_BG }}>
+              <div className="flex items-center gap-2">
+                <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: 'rgba(212,173,90,0.15)' }}>
+                  <Sparkles size={14} style={{ color: TILE_GOLD }} />
+                </div>
+                <span className="text-[10px] font-bold uppercase tracking-[0.08em]" style={{ color: TILE_GOLD }}>Ton totem</span>
               </div>
+              <p className="text-[14px] font-bold text-[#F4F1E9] m-0 mt-2.5 leading-tight">Ton Totem</p>
+              <p className="text-[11px] m-0 mt-1 leading-snug" style={{ color: 'rgba(244,241,233,0.65)' }}>Calcul en cours…</p>
             </div>
           )}
 
@@ -495,47 +502,43 @@ const AssessmentHomePage: React.FC = () => {
             <SkeletonTile />
           ) : isUnlocked ? (
             <div
-              className={`rounded-[14px] p-3.5 shadow-soft flex flex-col justify-between cursor-pointer overflow-hidden hover:shadow-lift hover:-translate-y-[1px] transition-all ${!isAuthenticated ? 'opacity-50 pointer-events-none' : ''}`}
-              style={{ minHeight: 96, background: 'linear-gradient(160deg, #20211F 0%, #33322C 100%)' }}
+              className={`rounded-[14px] p-4 shadow-soft flex flex-col overflow-hidden cursor-pointer hover:shadow-lift hover:-translate-y-[1px] transition-all ${!isAuthenticated ? 'opacity-50 pointer-events-none' : ''}`}
+              style={{ background: TILE_BG }}
               onClick={() => navigate('/assessment/compatibility')}
             >
-              <div>
-                <div className="flex items-center gap-1.5 mb-1">
-                  <Users size={16} className="text-[#F4F1E9]/70" />
-                  <InfoTip
-                    variant="dark"
-                    text="Croise ton profil avec celui de n'importe qui — crush, ami(e), frère, sœur, collègue… Chacun fait ses tests de son côté, puis Dr Lô analyse votre compatibilité. Tes réponses restent privées : seul le résultat commun est partagé."
-                  />
+              <div className="flex items-center gap-2">
+                <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: 'rgba(212,137,107,0.15)' }}>
+                  <Users size={14} style={{ color: TILE_TERRACOTTA }} />
                 </div>
-                <p className="text-[13px] font-bold text-[#F4F1E9] m-0 mt-1 leading-tight">
-                  Compatibilité
-                </p>
+                <span className="text-[10px] font-bold uppercase tracking-[0.08em]" style={{ color: TILE_TERRACOTTA }}>Compatibilité</span>
               </div>
-              <p className="text-[11px] text-white/45 m-0 mt-1 leading-snug">
+              <p className="text-[14px] font-bold text-[#F4F1E9] m-0 mt-2.5 leading-tight">Compare-toi à un proche</p>
+              <p className="text-[11px] m-0 mt-1 leading-snug" style={{ color: 'rgba(244,241,233,0.65)' }}>
                 Couple, ami(e), famille…
               </p>
-              <p className="text-[11px] text-[#E9A88C] font-semibold m-0 mt-1">
-                Teste-la ✨
+              <p className="text-[12px] font-semibold m-0 mt-auto pt-2 flex items-center gap-1" style={{ color: TILE_TERRACOTTA }}>
+                Tester <ArrowRight size={12} />
               </p>
             </div>
           ) : (
             <div
-              className={`bg-card border border-line rounded-[14px] p-3.5 shadow-soft flex flex-col justify-between cursor-pointer hover:shadow-lift hover:-translate-y-[1px] transition-all ${!isAuthenticated ? 'opacity-50 pointer-events-none' : ''}`}
-              style={{ minHeight: 96 }}
+              className={`rounded-[14px] p-4 shadow-soft flex flex-col overflow-hidden cursor-pointer hover:shadow-lift hover:-translate-y-[1px] transition-all ${!isAuthenticated ? 'opacity-50 pointer-events-none' : ''}`}
+              style={{ background: TILE_BG }}
               onClick={handleCompatLockedClick}
             >
-              <div>
-                <div className="flex items-center justify-between mb-1">
-                  <Users size={16} className="text-muted" />
-                  <span className="flex items-center gap-1 text-[10px] font-semibold text-muted">
-                    <Lock size={10} />
-                  </span>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: 'rgba(244,241,233,0.08)' }}>
+                    <Users size={14} style={{ color: 'rgba(244,241,233,0.4)' }} />
+                  </div>
+                  <span className="text-[10px] font-bold uppercase tracking-[0.08em]" style={{ color: 'rgba(244,241,233,0.4)' }}>Compatibilité</span>
                 </div>
-                <p className="text-[13px] font-bold text-ink m-0 mt-1 leading-tight">
-                  Compatibilité
-                </p>
+                <span className="flex items-center gap-1 text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full" style={{ background: 'rgba(244,241,233,0.08)', color: 'rgba(244,241,233,0.4)' }}>
+                  <Lock size={9} /> Verrouillé
+                </span>
               </div>
-              <p className="text-[11px] text-muted m-0 mt-1.5 leading-snug">
+              <p className="text-[14px] font-bold text-[#F4F1E9] m-0 mt-2.5 leading-tight">Compatibilité</p>
+              <p className="text-[11px] m-0 mt-1 leading-snug" style={{ color: 'rgba(244,241,233,0.65)' }}>
                 Encore {psyMissing} test{psyMissing > 1 ? 's' : ''} psy
               </p>
             </div>
@@ -546,41 +549,50 @@ const AssessmentHomePage: React.FC = () => {
             <SkeletonTile />
           ) : !isAuthenticated ? (
             <div
-              className="bg-card border border-line rounded-[14px] p-3.5 shadow-soft flex flex-col justify-between cursor-pointer hover:shadow-lift hover:-translate-y-[1px] transition-all"
-              style={{ minHeight: 96 }}
+              className="rounded-[14px] p-4 shadow-soft flex flex-col overflow-hidden cursor-pointer opacity-60"
+              style={{ background: TILE_BG }}
               onClick={() => navigate('/patient/access')}
             >
-              <div>
-                <NotebookPen size={18} className="text-sage mb-1" />
-                <p className="text-[13px] font-bold text-ink m-0 mt-1.5 leading-tight">
-                  Journal
-                </p>
+              <div className="flex items-center gap-2">
+                <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: 'rgba(139,165,155,0.15)' }}>
+                  <NotebookPen size={14} style={{ color: TILE_SAGE }} />
+                </div>
+                <span className="text-[10px] font-bold uppercase tracking-[0.08em]" style={{ color: TILE_SAGE }}>Journal</span>
               </div>
-              <p className="text-[11px] text-muted m-0 mt-1.5 leading-snug">
-                Connecte-toi
+              <p className="text-[14px] font-bold text-[#F4F1E9] m-0 mt-2.5 leading-tight">Comment tu te sens ?</p>
+              <p className="text-[11px] m-0 mt-1 leading-snug" style={{ color: 'rgba(244,241,233,0.65)' }}>
+                Connecte-toi pour commencer
               </p>
             </div>
           ) : (
             <div
-              className="bg-card border border-line rounded-[14px] p-3.5 shadow-soft flex flex-col justify-between cursor-pointer hover:shadow-lift hover:-translate-y-[1px] transition-all"
-              style={{ minHeight: 96 }}
+              className="rounded-[14px] p-4 shadow-soft flex flex-col overflow-hidden cursor-pointer hover:shadow-lift hover:-translate-y-[1px] transition-all"
+              style={{ background: TILE_BG }}
               onClick={() => navigate('/mon-espace')}
             >
-              <div>
-                <div className="flex items-center justify-between mb-1">
-                  <NotebookPen size={18} className="text-sage" />
-                  {journalToday && (
-                    <span className="flex items-center gap-0.5 text-[9px] font-bold text-sage">
-                      <Check size={10} /> Aujourd'hui
-                    </span>
-                  )}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: 'rgba(139,165,155,0.15)' }}>
+                    <NotebookPen size={14} style={{ color: TILE_SAGE }} />
+                  </div>
+                  <span className="text-[10px] font-bold uppercase tracking-[0.08em]" style={{ color: TILE_SAGE }}>Journal</span>
                 </div>
-                <p className="text-[13px] font-bold text-ink m-0 mt-1.5 leading-tight">
-                  Journal
-                </p>
+                {journalToday ? (
+                  <span className="flex items-center gap-0.5 text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full" style={{ background: 'rgba(139,165,155,0.15)', color: TILE_SAGE }}>
+                    <Check size={9} /> Noté
+                  </span>
+                ) : (
+                  <span className="text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full" style={{ background: 'rgba(139,165,155,0.15)', color: TILE_SAGE }}>
+                    Privé
+                  </span>
+                )}
               </div>
-              <p className="text-[11px] text-muted m-0 mt-1.5 leading-snug">
-                {journalToday ? 'Voir mon espace' : 'Comment tu te sens aujourd\'hui ?'}
+              <p className="text-[14px] font-bold text-[#F4F1E9] m-0 mt-2.5 leading-tight">Comment tu te sens ?</p>
+              <p className="text-[11px] m-0 mt-1 leading-snug" style={{ color: 'rgba(244,241,233,0.65)' }}>
+                {journalToday ? 'Tu as déjà noté ton humeur' : '30 secondes pour noter ton humeur'}
+              </p>
+              <p className="text-[12px] font-semibold m-0 mt-auto pt-2 flex items-center gap-1" style={{ color: TILE_SAGE }}>
+                {journalToday ? 'Voir mon espace' : 'Écrire'} <ArrowRight size={12} />
               </p>
             </div>
           )}
