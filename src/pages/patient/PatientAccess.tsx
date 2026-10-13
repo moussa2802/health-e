@@ -12,6 +12,7 @@ import EmailInput from "../../components/auth/EmailInput";
 
 import { getFirestore, doc, getDoc } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
+import { sanitizeReturnTo } from "../../utils/sanitizeReturnTo";
 
 type Step =
   | "enterPhone"
@@ -30,7 +31,12 @@ const PatientAccess: React.FC = () => {
   // sinon comportement historique inchangé (toujours /assessment).
   const fromPath = (location.state as { from?: { pathname?: string } } | null)
     ?.from?.pathname;
-  const postLoginPath = fromPath?.startsWith("/app") ? fromPath : "/assessment";
+  const searchParams = new URLSearchParams(location.search);
+  const returnToParam = searchParams.get("returnTo");
+  const modeParam = searchParams.get("mode");
+  const savedReturnTo = (() => { try { return localStorage.getItem("he_auth_return_to"); } catch { return null; } })();
+  const returnTo = returnToParam || savedReturnTo;
+  const postLoginPath = returnTo ? sanitizeReturnTo(returnTo) : fromPath?.startsWith("/app") ? fromPath : "/assessment";
   const [hasProcessedPendingRegistration, setHasProcessedPendingRegistration] =
     useState(false);
 
@@ -55,7 +61,7 @@ const PatientAccess: React.FC = () => {
   const [googleLoading, setGoogleLoading] = useState(false);
 
   // Email auth state
-  const [emailMode, setEmailMode] = useState<"login" | "register">("login");
+  const [emailMode, setEmailMode] = useState<"login" | "register">(modeParam === "signup" ? "register" : "login");
   const [emailValue, setEmailValue] = useState("");
   const [passwordValue, setPasswordValue] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -194,6 +200,7 @@ const PatientAccess: React.FC = () => {
       !pendingSessionId
     ) {
       // Si authentifié sans pendingSessionId, rediriger vers Healt-e 2.0
+      try { localStorage.removeItem("he_auth_return_to"); } catch {}
       navigate(postLoginPath);
     }
   }, [isAuthenticated, currentUser, step, navigate, postLoginPath]);
@@ -207,6 +214,9 @@ const PatientAccess: React.FC = () => {
       const pendingSessionId = getPendingGroupTherapySessionId();
       if (pendingSessionId) {
         localStorage.setItem("he_google_pending_group_session", pendingSessionId);
+      }
+      if (returnToParam) {
+        localStorage.setItem("he_auth_return_to", sanitizeReturnTo(returnToParam));
       }
       await signInWithGoogle();
       // Popup succeeded — navigate directly to assessment

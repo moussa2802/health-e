@@ -270,7 +270,16 @@ exports.handler = async (event) => {
       console.warn('defi-respond notification error (non-blocking):', notifErr.message);
     }
 
-    // ── 10. Réponse ──────────────────────────────────────────────────────
+    // ── 10. Creator totem (post-game, no longer a secret) ────────────────
+    let creatorTotem = null;
+    try {
+      const creatorProfile = await db.collection('userProfiles').doc(defiPrivate.uid).get();
+      if (creatorProfile.exists && creatorProfile.data().totem?.animal) {
+        creatorTotem = creatorProfile.data().totem.animal;
+      }
+    } catch {}
+
+    // ── 11. Réponse ──────────────────────────────────────────────────────
     const responseBody = {
       score: result.score,
       bonnes: result.bonnes,
@@ -280,6 +289,10 @@ exports.handler = async (event) => {
       rang: rang || 1,
       nbRepondants,
     };
+
+    if (creatorTotem) {
+      responseBody.creatorTotem = creatorTotem;
+    }
 
     const devoilement = buildDevoilement(defi, defiPrivate.truths);
     if (devoilement) {

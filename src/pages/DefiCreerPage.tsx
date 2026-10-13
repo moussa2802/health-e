@@ -51,6 +51,7 @@ const MAX_REPLACEMENTS = 3;
 interface PreviewQuestion {
   key: string;
   text: string;
+  theme?: string | null;
 }
 
 const DefiCreerPage: React.FC = () => {
@@ -106,6 +107,10 @@ const DefiCreerPage: React.FC = () => {
         if (p.activeDefis.length >= 3) {
           setTooManyDefis(true);
         }
+        try {
+          const saved = localStorage.getItem('he_defi_pseudo');
+          if (saved) setDisplayName(saved);
+        } catch {}
         setProfileLoading(false);
       })
       .catch(() => setProfileLoading(false));
@@ -270,6 +275,7 @@ const DefiCreerPage: React.FC = () => {
         return;
       }
 
+      try { localStorage.setItem('he_defi_pseudo', nameClean); } catch {}
       navigate(`/defi/${data.slug}/partage`, { replace: true });
     } catch {
       setError('Erreur réseau — vérifie ta connexion');
@@ -301,6 +307,11 @@ const DefiCreerPage: React.FC = () => {
             {selected.map((q, i) => (
               <div key={q.key} className="rounded-[14px] border border-line bg-card p-4">
                 <p className="text-[14px] text-ink m-0 leading-snug">{q.text}</p>
+                {q.theme && (
+                  <span className="inline-block mt-1.5 px-2 py-0.5 rounded-md bg-gold-soft text-[11px] font-medium text-gold">
+                    {q.theme}
+                  </span>
+                )}
                 {replacements < MAX_REPLACEMENTS && available.length > 0 && (
                   <button
                     onClick={() => setReplacingIndex(replacingIndex === i ? null : i)}
@@ -332,6 +343,11 @@ const DefiCreerPage: React.FC = () => {
                           className="text-left px-3 py-2.5 rounded-[10px] border border-line bg-white text-[13px] text-ink cursor-pointer hover:border-gold transition-colors"
                         >
                           {aq.text}
+                          {aq.theme && (
+                            <span className="inline-block ml-1.5 px-1.5 py-0.5 rounded bg-gold-soft text-[10px] font-medium text-gold align-middle">
+                              {aq.theme}
+                            </span>
+                          )}
                         </button>
                       ))}
                     </div>

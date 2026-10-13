@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Navigate } from 'react-router-dom';
 import { ArrowLeft, Copy, Check, Share2, ExternalLink } from 'lucide-react';
+import { doc, getDoc } from 'firebase/firestore';
+import { db } from '../utils/firebase';
 import { useAuth } from '../contexts/AuthContext';
 
 const DefiPartagePage: React.FC = () => {
@@ -8,6 +10,7 @@ const DefiPartagePage: React.FC = () => {
   const navigate = useNavigate();
   const { isAuthenticated } = useAuth();
   const [copied, setCopied] = useState(false);
+  const [titre, setTitre] = useState('Mon défi');
 
   const defiUrl = `https://health-e.sn/api/d/${slug}`;
 
@@ -25,6 +28,15 @@ const DefiPartagePage: React.FC = () => {
       setCopied(true);
     }
   };
+
+  useEffect(() => {
+    if (!slug) return;
+    getDoc(doc(db, 'defis', slug))
+      .then(snap => {
+        if (snap.exists() && snap.data().titre) setTitre(snap.data().titre);
+      })
+      .catch(() => {});
+  }, [slug]);
 
   useEffect(() => {
     if (copied) {
@@ -47,7 +59,7 @@ const DefiPartagePage: React.FC = () => {
           <button onClick={() => navigate('/defi')} className="p-0 border-none bg-transparent cursor-pointer text-ink">
             <ArrowLeft size={20} />
           </button>
-          <h1 className="font-display text-[18px] font-semibold text-ink m-0">Mon défi</h1>
+          <h1 className="font-display text-[18px] font-semibold text-ink m-0 truncate">{titre}</h1>
         </div>
       </div>
 

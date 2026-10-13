@@ -60,6 +60,7 @@ interface ResultData {
   rang: number;
   nbRepondants: number;
   devoilement?: { questionIndex: number; correctOptionId: string }[];
+  creatorTotem?: string;
 }
 
 function getDeviceId(): string {
@@ -88,6 +89,13 @@ function savePseudo(v: string) {
 
 function genderPronoun(genre: string | null): string {
   return genre === 'feminin' ? 'la' : 'le';
+}
+
+function scoreMessage(score: number, name: string, genre: string | null): string {
+  const le = genre === 'feminin' ? 'la' : 'le';
+  if (score >= 70) return `Tu connais vraiment ${name} par coeur ! ${le.charAt(0).toUpperCase() + le.slice(1)} ${genre === 'feminin' ? 'connaître' : 'connaître'} aussi bien, c'est rare`;
+  if (score >= 40) return `Tu connais ${name} plutôt bien, mais ${genre === 'feminin' ? 'elle' : 'il'} garde encore des mystères`;
+  return `Tu as encore beaucoup à découvrir sur ${name}`;
 }
 
 export default function DefiJouerPage() {
@@ -592,7 +600,7 @@ export default function DefiJouerPage() {
           <div className="text-center mb-8">
             <p className="text-5xl font-display font-bold text-gold mb-2">{result.score} %</p>
             <h1 className="font-display text-xl font-bold text-ink">
-              Tu connais {defi.displayName} à {result.score} % 🔥
+              {scoreMessage(result.score, defi.displayName, defi.genre)} {result.score >= 70 ? '🔥' : result.score >= 40 ? '👀' : '🤔'}
             </h1>
           </div>
 
@@ -686,11 +694,16 @@ export default function DefiJouerPage() {
           <button
             onClick={() => {
               try { localStorage.setItem('he_acq_src', `defi:${slug}`); } catch {}
-              navigate('/patient/access?src=defi&ref=' + slug);
+              navigate(`/decouvre?src=defi&ref=${slug}`, {
+                state: {
+                  creatorTotem: result.creatorTotem || null,
+                  creatorName: defi.displayName,
+                },
+              });
             }}
-            className="w-full bg-gold text-white font-bold py-4 rounded-xl"
+            className="w-full bg-gold text-white font-bold py-4 rounded-xl text-[14px] leading-snug px-4"
           >
-            Et toi, kan moo la gën a xam ? Découvre ton totem 🐾
+            Et toi, découvre ton totem 🐾
           </button>
         </div>
       </div>

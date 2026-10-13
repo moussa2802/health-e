@@ -1,6 +1,31 @@
 const { db, verifyAuth } = require('./_firebase');
 const { selectDimensions, getQuestionText, DEFI_SCALE_CONFIG } = require('./_defi/questionBank');
 
+const DIMENSION_THEMES = {
+  'big_five.extraversion': 'Sociabilité',
+  'big_five.agreeableness': 'Relations',
+  'big_five.conscientiousness': 'Organisation',
+  'big_five.emotional_stability': 'Gestion du stress',
+  'big_five.openness': 'Curiosité',
+  'ecr_r.anxiety': 'Attachement',
+  'ecr_r.avoidance': 'Intimité',
+  brs: 'Résilience',
+  bonus_tdah: 'Concentration',
+  bonus_hsp: 'Sensibilité',
+  bonus_hpi: 'Cognition',
+  bonus_jalousie: 'Jalousie',
+  bonus_eq: 'Intelligence émotionnelle',
+  bonus_confiance: 'Confiance en soi',
+  bonus_narcissisme: 'Ego',
+  bonus_manipulation: 'Stratégie',
+  gad7: 'Anxiété',
+  rses: 'Estime de soi',
+  pss10: 'Stress',
+  social_pressure: 'Pression sociale',
+  bonus_burnout: 'Énergie',
+  bonus_dependance: 'Dépendance affective',
+};
+
 const headers = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'Content-Type, Authorization',
@@ -104,7 +129,7 @@ exports.handler = async (event) => {
 
     const dimToPreview = (dim) => {
       const key = dim.subscaleKey ? `${dim.scaleId}.${dim.subscaleKey}` : dim.scaleId;
-      return { key, text: getQuestionText(key, genre, displayName) };
+      return { key, text: getQuestionText(key, genre, displayName), theme: DIMENSION_THEMES[key] || null };
     };
 
     const totemText = getQuestionText('__totem__', genre, displayName);

@@ -64,6 +64,7 @@ const DefiSuiviPage: React.FC = () => {
   const [messages, setMessages] = useState<DefiMessage[]>([]);
   const [closingDefi, setClosingDefi] = useState(false);
   const [closeError, setCloseError] = useState('');
+  const [msgError, setMsgError] = useState('');
 
   useEffect(() => {
     if (!currentUser || !slug) return;
@@ -243,6 +244,9 @@ const DefiSuiviPage: React.FC = () => {
             <h3 className="text-sm font-bold text-ink m-0 mb-3">
               💌 Petits mots ({messages.filter(m => !m.masque).length})
             </h3>
+            {msgError && (
+              <p className="text-[12px] text-red-500 m-0 mb-2">{msgError}</p>
+            )}
             <div className="flex flex-col gap-2">
               {messages.map(msg => (
                 <div
@@ -263,8 +267,13 @@ const DefiSuiviPage: React.FC = () => {
                       <div className="flex gap-3">
                         <button
                           onClick={async () => {
-                            await updateDoc(doc(db, 'userProfiles', currentUser!.id, 'defiMessages', msg.id), { masque: true });
-                            setMessages(prev => prev.map(m => m.id === msg.id ? { ...m, masque: true } : m));
+                            setMsgError('');
+                            try {
+                              await updateDoc(doc(db, 'userProfiles', currentUser!.id, 'defiMessages', msg.id), { masque: true });
+                              setMessages(prev => prev.map(m => m.id === msg.id ? { ...m, masque: true } : m));
+                            } catch {
+                              setMsgError('Impossible de masquer ce message');
+                            }
                           }}
                           className="text-[11px] text-muted flex items-center gap-1 bg-transparent border-none cursor-pointer p-0"
                         >
@@ -273,8 +282,13 @@ const DefiSuiviPage: React.FC = () => {
                         {!msg.signale && (
                           <button
                             onClick={async () => {
-                              await updateDoc(doc(db, 'userProfiles', currentUser!.id, 'defiMessages', msg.id), { signale: true });
-                              setMessages(prev => prev.map(m => m.id === msg.id ? { ...m, signale: true } : m));
+                              setMsgError('');
+                              try {
+                                await updateDoc(doc(db, 'userProfiles', currentUser!.id, 'defiMessages', msg.id), { signale: true });
+                                setMessages(prev => prev.map(m => m.id === msg.id ? { ...m, signale: true } : m));
+                              } catch {
+                                setMsgError('Impossible de signaler ce message');
+                              }
                             }}
                             className="text-[11px] text-red-400 flex items-center gap-1 bg-transparent border-none cursor-pointer p-0"
                           >
