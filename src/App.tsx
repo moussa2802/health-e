@@ -169,7 +169,7 @@ const AppChrome: React.FC = () => {
   const { pathname } = useLocation();
   const isAdminRoute = pathname.startsWith("/admin");
   const isAppRoute = pathname.startsWith("/app");
-  const isDefiJouer = pathname.startsWith("/d/");
+  const isDefiJouer = pathname.startsWith("/d/") || pathname.startsWith("/api/d/");
   const isChromeless = isAdminRoute || isAppRoute || isDefiJouer;
   const { currentUser } = useAuth();
   const userId = currentUser?.id ?? null;
@@ -486,6 +486,7 @@ const AppChrome: React.FC = () => {
             <Route path="/defi/creer" element={<DefiCreerPage />} />
             <Route path="/defi/:slug/partage" element={<DefiPartagePage />} />
             <Route path="/d/:slug" element={<DefiJouerPage />} />
+            <Route path="/api/d/:slug" element={<DefiJouerPage />} />
 
             {/* Assessment Routes */}
             <Route path="/assessment" element={<AssessmentHomePage />} />

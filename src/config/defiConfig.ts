@@ -33,7 +33,7 @@ export const DEFI_SCALE_CONFIG: Record<string, ScaleDefiConfig> = {
   bonus_jalousie:      { public: 'auto',     intime: 'auto' },
   bonus_eq:            { public: 'auto',     intime: 'auto' },
   bonus_confiance:     { public: 'auto',     intime: 'auto' },
-  bonus_personnalite:  { public: 'auto',     intime: 'auto' },
+  bonus_personnalite:  { public: 'interdit', intime: 'optin' },
   bonus_narcissisme:   { public: 'auto',     intime: 'auto' },
   bonus_manipulation:  { public: 'auto',     intime: 'auto' },
 
@@ -86,7 +86,7 @@ export function getScaleDefiLevel(
   return config ? config[mode] : null;
 }
 
-if (import.meta.env.DEV) {
+if (typeof import.meta.env !== 'undefined' && import.meta.env.DEV) {
   import('../data/scales').then(({ ALL_SCALES }) => {
     const configKeys = new Set(Object.keys(DEFI_SCALE_CONFIG));
     const scaleIds = new Set(ALL_SCALES.map(s => s.id));

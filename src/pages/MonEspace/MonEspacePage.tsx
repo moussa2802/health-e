@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import useReloadLock from '../../hooks/useReloadLock';
 import {
   collection, query, orderBy, onSnapshot, deleteDoc, doc,
   addDoc, updateDoc, getDocs, setDoc, limit,
@@ -341,6 +342,8 @@ const MonEspacePage: React.FC<Props> = ({ userId }) => {
   const [contenu, setContenu] = useState('');
   const [themes, setThemes] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
+
+  useReloadLock(saving || editSaving || contenu.trim().length > 0 || editingEntry !== null);
   const [savedMsg, setSavedMsg] = useState<string | null>(null);
   const [journalError, setJournalError] = useState<string | null>(null);
   const [placeholder] = useState(getTimePlaceholder);

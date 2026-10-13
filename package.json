@@ -5,7 +5,9 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "prebuild:defi": "npx tsx scripts/generateScaleDefs.ts",
+    "defi:revue": "node scripts/generateRevue.cjs",
+    "build": "npm run prebuild:defi && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
     "test:e2e": "playwright test",

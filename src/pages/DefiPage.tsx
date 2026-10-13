@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Navigate } from 'react-router-dom';
-import { ArrowLeft, Sparkles, Users, Crown } from 'lucide-react';
+import { ArrowLeft, Sparkles, Users, Crown, Eye } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useDefiFlag } from '../hooks/useDefiFlag';
 import { getProfileProgress } from '../services/evaluationService';
@@ -41,8 +41,8 @@ const DefiPage: React.FC = () => {
   const [totemData, setTotemData] = useState<{
     animal: string; revealedAt: Date | null;
   } | null>(null);
+  const [activeDefi, setActiveDefi] = useState<{ slug: string; expiresAt: Date } | null>(null);
   const [profileLoading, setProfileLoading] = useState(true);
-  const [toastVisible, setToastVisible] = useState(false);
 
   useEffect(() => {
     if (!isAuthenticated || !currentUser) {
@@ -53,6 +53,9 @@ const DefiPage: React.FC = () => {
       .then(p => {
         setProfileResults(p.scaleResults);
         setTotemData(p.totem ? { animal: p.totem.animal, revealedAt: p.totem.revealedAt } : null);
+        if (p.activeDefi && p.activeDefi.expiresAt > new Date()) {
+          setActiveDefi(p.activeDefi);
+        }
         setProfileLoading(false);
       })
       .catch(() => setProfileLoading(false));
@@ -116,10 +119,7 @@ const DefiPage: React.FC = () => {
   const sig = getTotemSignature(animal);
   const img = TOTEM_IMAGES[animal];
 
-  const handleCreate = () => {
-    setToastVisible(true);
-    setTimeout(() => setToastVisible(false), 2500);
-  };
+  const hasActiveDefi = !!activeDefi;
 
   return (
     <div className="min-h-screen bg-paper">
@@ -177,20 +177,24 @@ const DefiPage: React.FC = () => {
           </div>
         </div>
 
-        <button
-          onClick={handleCreate}
-          className="w-full py-3.5 rounded-[14px] border-none bg-gold text-white text-[15px] font-bold cursor-pointer shadow-soft flex items-center justify-center gap-2"
-        >
-          <Sparkles size={16} />
-          Créer mon défi
-        </button>
+        {hasActiveDefi ? (
+          <button
+            onClick={() => navigate(`/defi/${activeDefi!.slug}/partage`)}
+            className="w-full py-3.5 rounded-[14px] border-none bg-ink text-white text-[15px] font-bold cursor-pointer shadow-soft flex items-center justify-center gap-2"
+          >
+            <Eye size={16} />
+            Voir mon défi en cours
+          </button>
+        ) : (
+          <button
+            onClick={() => navigate('/defi/creer')}
+            className="w-full py-3.5 rounded-[14px] border-none bg-gold text-white text-[15px] font-bold cursor-pointer shadow-soft flex items-center justify-center gap-2"
+          >
+            <Sparkles size={16} />
+            Créer mon défi
+          </button>
+        )}
       </div>
-
-      {toastVisible && (
-        <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50 px-5 py-3 rounded-xl bg-ink text-white text-[14px] font-medium shadow-lift animate-fadeIn">
-          Arrive très bientôt 👀
-        </div>
-      )}
     </div>
   );
 };

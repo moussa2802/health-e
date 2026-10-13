@@ -21,7 +21,7 @@ export default async (request, context) => {
   }
 
   const url = new URL(request.url);
-  const match = url.pathname.match(/^\/d\/([a-z0-9]+)$/i);
+  const match = url.pathname.match(/^\/(?:api\/)?d\/([a-z0-9]+)$/i);
   if (!match) {
     return context.next();
   }
@@ -59,7 +59,7 @@ export default async (request, context) => {
   } catch {}
 
   const ogImage = `${url.origin}/og-defi.png`;
-  const ogUrl = `${url.origin}/d/${slug}`;
+  const ogUrl = `${url.origin}${url.pathname}`;
 
   const html = `<!DOCTYPE html>
 <html lang="fr">
@@ -87,4 +87,3 @@ export default async (request, context) => {
   });
 };
 
-export const config = { path: '/d/*' };

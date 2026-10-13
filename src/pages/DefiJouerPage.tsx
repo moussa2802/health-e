@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import useReloadLock from '../hooks/useReloadLock';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../utils/firebase';
 import { useAuth } from '../contexts/AuthContext';
@@ -93,6 +94,7 @@ export default function DefiJouerPage() {
   const { currentUser } = useAuth();
 
   const [phase, setPhase] = useState<Phase>('loading');
+  useReloadLock(phase === 'playing' || phase === 'submitting');
   const [defi, setDefi] = useState<DefiData | null>(null);
   const [errorMsg, setErrorMsg] = useState('');
 
@@ -255,7 +257,7 @@ export default function DefiJouerPage() {
   const pronoun = defi ? genderPronoun(defi.genre) : 'le';
 
   const whatsappShare = (score: number) => {
-    const text = `J'ai eu ${score} % au défi de ${defi?.displayName} 😎 Et toi, tu ${pronoun} connais vraiment ? 👉 https://health-e.sn/d/${slug}`;
+    const text = `J'ai eu ${score} % au défi de ${defi?.displayName} 😎 Et toi, tu ${pronoun} connais vraiment ? 👉 https://health-e.sn/api/d/${slug}`;
     return `https://wa.me/?text=${encodeURIComponent(text)}`;
   };
 

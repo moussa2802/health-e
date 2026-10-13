@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
+import useReloadLock from '../../hooks/useReloadLock';
 import { X, ArrowLeft, ChevronRight, Loader2, Phone, Upload } from 'lucide-react';
 import {
   getSession,
@@ -62,6 +63,7 @@ function computeResumePosition(
 }
 
 const AssessmentQuizPage: React.FC = () => {
+  useReloadLock(true);
   const { sessionId } = useParams<{ sessionId: string }>();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { collection, query, orderBy, getDocs, doc, setDoc, getDoc, limit } from 'firebase/firestore';
 import { MessageCircle, History, X, ArrowRight, ArrowLeft, Zap } from 'lucide-react';
+import useReloadLock from '../../hooks/useReloadLock';
 import { db } from '../../utils/firebase';
 import { getOnboardingProfile } from '../../utils/onboardingProfile';
 import { getProfileProgress } from '../../services/evaluationService';
@@ -197,6 +198,7 @@ const FloatingChat: React.FC<Props> = ({ userId }) => {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
+  useReloadLock(open && loading);
   const [unread, setUnread] = useState(0);
   const [conversations, setConversations] = useState<SavedConversation[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(false);

@@ -1,16 +1,31 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRegisterSW } from 'virtual:pwa-register/react';
-import { useLocation } from 'react-router-dom';
-import { RefreshCw, X } from 'lucide-react';
+import { Info } from 'lucide-react';
 
-const DISMISS_KEY = 'he-update-dismissed';
 const CHECK_INTERVAL = 60 * 60 * 1000; // 1h
+const RELOAD_KEY = 'he-sw-reload-ts';
+const RELOAD_COOLDOWN = 10_000; // 10s anti-boucle
+
+function isLocked(): boolean {
+  return ((window as any).__heReloadLocks ?? 0) > 0;
+}
+
+function safeReload() {
+  try {
+    const now = Date.now();
+    const last = Number(sessionStorage.getItem(RELOAD_KEY) || 0);
+    if (now - last < RELOAD_COOLDOWN) return;
+    sessionStorage.setItem(RELOAD_KEY, String(now));
+  } catch {}
+  window.location.reload();
+}
 
 export default function UpdateBanner() {
-  const {
-    needRefresh: [needRefresh],
-    updateServiceWorker,
-  } = useRegisterSW({
+  const [deferred, setDeferred] = useState(false);
+  const hadController = useRef(!!navigator.serviceWorker?.controller);
+  const refreshing = useRef(false);
+
+  useRegisterSW({
     onRegisteredSW(_url, registration) {
       if (registration) {
         setInterval(() => registration.update(), CHECK_INTERVAL);
@@ -18,54 +33,59 @@ export default function UpdateBanner() {
     },
   });
 
-  const location = useLocation();
-  const [dismissed, setDismissed] = useState(() => {
-    try { return sessionStorage.getItem(DISMISS_KEY) === '1'; }
-    catch { return false; }
-  });
+  useEffect(() => {
+    const sw = navigator.serviceWorker;
+    if (!sw) return;
 
-  const isInQuiz = location.pathname.startsWith('/assessment/quiz/');
-  const [deferredFromQuiz, setDeferredFromQuiz] = useState(false);
+    const onControllerChange = () => {
+      if (refreshing.current) return;
+      if (!hadController.current) {
+        hadController.current = true;
+        return;
+      }
+      refreshing.current = true;
+      if (isLocked()) {
+        setDeferred(true);
+      } else {
+        safeReload();
+      }
+    };
+
+    sw.addEventListener('controllerchange', onControllerChange);
+    return () => sw.removeEventListener('controllerchange', onControllerChange);
+  }, []);
 
   useEffect(() => {
-    if (needRefresh && isInQuiz) setDeferredFromQuiz(true);
-  }, [needRefresh, isInQuiz]);
+    if (!deferred) return;
+    const onLockChange = () => {
+      if (!isLocked()) safeReload();
+    };
+    window.addEventListener('he-reload-locks-changed', onLockChange);
+    return () => window.removeEventListener('he-reload-locks-changed', onLockChange);
+  }, [deferred]);
 
   useEffect(() => {
-    if (deferredFromQuiz && !isInQuiz) setDeferredFromQuiz(false);
-  }, [deferredFromQuiz, isInQuiz]);
+    if (!deferred) return;
+    const onVisChange = () => {
+      if (document.visibilityState === 'hidden' && !isLocked()) {
+        safeReload();
+      }
+    };
+    document.addEventListener('visibilitychange', onVisChange);
+    return () => document.removeEventListener('visibilitychange', onVisChange);
+  }, [deferred]);
 
-  const shouldShow = needRefresh && !dismissed && !isInQuiz;
-  if (!shouldShow) return null;
-
-  const handleDismiss = () => {
-    setDismissed(true);
-    try { sessionStorage.setItem(DISMISS_KEY, '1'); } catch {}
-  };
+  if (!deferred) return null;
 
   return (
     <div
-      className="fixed top-0 left-0 right-0 z-[9999] flex items-center justify-center gap-3 bg-card border-b border-line px-4 py-3"
-      style={{ boxShadow: '0 2px 8px rgba(0,0,0,.08)' }}
-      role="alert"
+      className="fixed bottom-4 left-4 right-4 z-[9999] flex items-center gap-2 bg-card border border-line rounded-xl px-4 py-3 shadow-lg max-w-sm mx-auto"
+      role="status"
     >
-      <RefreshCw size={14} className="text-accent flex-shrink-0" />
+      <Info size={14} className="text-accent flex-shrink-0" />
       <span className="text-sm text-ink">
-        Nouvelle version disponible
+        Mise à jour prête — elle s'appliquera quand tu auras terminé.
       </span>
-      <button
-        onClick={() => updateServiceWorker(true)}
-        className="text-sm font-bold text-white bg-accent rounded-lg px-3 py-1.5 border-none cursor-pointer hover:opacity-90 transition-opacity"
-      >
-        Actualiser
-      </button>
-      <button
-        onClick={handleDismiss}
-        className="text-muted bg-transparent border-none cursor-pointer p-1 hover:text-ink transition-colors"
-        aria-label="Fermer"
-      >
-        <X size={14} />
-      </button>
     </div>
   );
 }
