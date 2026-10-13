@@ -45,6 +45,7 @@ const DefiPage: React.FC = () => {
   } | null>(null);
   const [activeDefis, setActiveDefis] = useState<Array<{ slug: string; titre: string; audience: string; expiresAt: Date }>>([]);
   const [profileLoading, setProfileLoading] = useState(true);
+  const [reponsesBySlug, setReponsesBySlug] = useState<Record<string, number>>({});
 
   useEffect(() => {
     if (!isAuthenticated || !currentUser) {
@@ -60,6 +61,18 @@ const DefiPage: React.FC = () => {
       })
       .catch(() => setProfileLoading(false));
   }, [isAuthenticated, currentUser?.id]);
+
+  const activeDefiSlugs = activeDefis.map(d => d.slug).join(',');
+  useEffect(() => {
+    if (activeDefis.length === 0) return;
+    const unsubs = activeDefis.map(ad =>
+      onSnapshot(doc(db, 'defis', ad.slug), snap => {
+        if (!snap.exists()) return;
+        setReponsesBySlug(prev => ({ ...prev, [ad.slug]: snap.data().nbReponses || 0 }));
+      })
+    );
+    return () => unsubs.forEach(u => u());
+  }, [activeDefiSlugs]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!isAuthenticated) {
     return <Navigate to="/patient/access" replace />;
@@ -121,19 +134,6 @@ const DefiPage: React.FC = () => {
 
   const hasActiveDefis = activeDefis.length > 0;
   const canCreate = activeDefis.length < 3;
-
-  const [reponsesBySlug, setReponsesBySlug] = useState<Record<string, number>>({});
-
-  useEffect(() => {
-    if (!hasActiveDefis) return;
-    const unsubs = activeDefis.map(ad =>
-      onSnapshot(doc(db, 'defis', ad.slug), snap => {
-        if (!snap.exists()) return;
-        setReponsesBySlug(prev => ({ ...prev, [ad.slug]: snap.data().nbReponses || 0 }));
-      })
-    );
-    return () => unsubs.forEach(u => u());
-  }, [hasActiveDefis, activeDefis.map(d => d.slug).join(',')]);
 
   function formatTimeLeft(expiresAt: Date): string {
     const diff = expiresAt.getTime() - Date.now();
