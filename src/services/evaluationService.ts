@@ -30,7 +30,15 @@ export async function getOrCreateUserProfile(uid: string, displayName: string): 
     createdAt: new Date(),
     updatedAt: new Date(),
   };
-  await setDoc(ref, { ...profile, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
+  const extra: Record<string, string> = {};
+  try {
+    const acqSrc = localStorage.getItem('he_acq_src');
+    if (acqSrc) {
+      extra.acquisition = acqSrc;
+      localStorage.removeItem('he_acq_src');
+    }
+  } catch {}
+  await setDoc(ref, { ...profile, ...extra, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
   return profile;
 }
 

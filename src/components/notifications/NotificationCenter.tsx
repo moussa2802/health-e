@@ -7,6 +7,7 @@ import {
   Calendar,
   CheckCircle,
   Check,
+  Sparkles,
 } from "lucide-react";
 import { useAuth } from "../../contexts/AuthContext";
 import LoadingSpinner from "../ui/LoadingSpinner";
@@ -233,6 +234,8 @@ const NotificationCenter: React.FC = () => {
         navigate("/professional/dashboard");
       } else if (notification.type === "appointment_confirmed") {
         navigate("/patient/dashboard");
+      } else if (notification.type === "defi_response") {
+        navigate(`/defi/${notification.sourceId}/suivi`);
       }
 
       setIsOpen(false);
@@ -287,7 +290,9 @@ const NotificationCenter: React.FC = () => {
       case "professional_registration":
         return <Bell className="h-5 w-5 text-blue-500" />; // Bleu pour les inscriptions
       case "support_message":
-        return <MessageSquare className="h-5 w-5 text-red-500" />; // Rouge pour le support
+        return <MessageSquare className="h-5 w-5 text-red-500" />;
+      case "defi_response":
+        return <Sparkles className="h-5 w-5 text-amber-500" />;
       default:
         return <Bell className="h-5 w-5 text-gray-500" />;
     }
@@ -308,6 +313,8 @@ const NotificationCenter: React.FC = () => {
         return "bg-orange-50";
       case "appointment_confirmed":
         return "bg-green-50";
+      case "defi_response":
+        return "bg-amber-50";
       default:
         return "bg-gray-50";
     }
@@ -317,15 +324,17 @@ const NotificationCenter: React.FC = () => {
   const getNotificationBorderColor = (type: string) => {
     switch (type) {
       case "message":
-        return "border-l-4 border-l-green-500"; // Vert pour les messages
+        return "border-l-4 border-l-green-500";
       case "professional_registration":
-        return "border-l-4 border-l-blue-500"; // Bleu pour les inscriptions
+        return "border-l-4 border-l-blue-500";
       case "support_message":
-        return "border-l-4 border-l-red-500"; // Rouge pour le support
+        return "border-l-4 border-l-red-500";
       case "appointment_request":
         return "border-l-4 border-l-orange-500";
       case "appointment_confirmed":
         return "border-l-4 border-l-green-500";
+      case "defi_response":
+        return "border-l-4 border-l-amber-500";
       default:
         return "border-l-4 border-l-gray-500";
     }

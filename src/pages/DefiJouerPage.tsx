@@ -597,7 +597,10 @@ export default function DefiJouerPage() {
           </a>
 
           <button
-            onClick={() => navigate('/assessment')}
+            onClick={() => {
+              try { localStorage.setItem('he_acq_src', `defi:${slug}`); } catch {}
+              navigate('/patient/access?src=defi&ref=' + slug);
+            }}
             className="w-full bg-gold text-white font-bold py-4 rounded-xl"
           >
             Et toi, kan moo la gën a xam ? Découvre ton totem 🐾

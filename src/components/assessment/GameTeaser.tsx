@@ -1,22 +1,45 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Lock, Sparkles, ChevronRight } from 'lucide-react';
+import { Lock, Sparkles, ChevronRight, Users } from 'lucide-react';
+import { doc, onSnapshot } from 'firebase/firestore';
+import { db } from '../../utils/firebase';
 
 interface GameTeaserProps {
   defiEnabled: boolean;
   totemProgress: { completed: number; total: number; missing: string[] };
   totemRevealed: boolean;
   onLockedClick: () => void;
+  activeDefi?: { slug: string; expiresAt: Date } | null;
 }
+
+const THREE_DAYS_MS = 3 * 24 * 60 * 60 * 1000;
 
 const GameTeaser: React.FC<GameTeaserProps> = ({
   defiEnabled,
   totemProgress,
   totemRevealed,
   onLockedClick,
+  activeDefi,
 }) => {
   const navigate = useNavigate();
   const missing = totemProgress.total - totemProgress.completed;
+
+  const [liveStats, setLiveStats] = useState<{ nbReponses: number; scoreMoyen: number } | null>(null);
+
+  const now = Date.now();
+  const expired = activeDefi ? activeDefi.expiresAt.getTime() <= now : true;
+  const expiredOver3Days = activeDefi ? (now - activeDefi.expiresAt.getTime()) > THREE_DAYS_MS : true;
+  const showActiveTile = !!activeDefi && !expiredOver3Days;
+
+  useEffect(() => {
+    if (!showActiveTile || !activeDefi) return;
+    const unsub = onSnapshot(doc(db, 'defis', activeDefi.slug), snap => {
+      if (!snap.exists()) return;
+      const d = snap.data();
+      setLiveStats({ nbReponses: d.nbReponses || 0, scoreMoyen: d.scoreMoyen || 0 });
+    });
+    return unsub;
+  }, [showActiveTile, activeDefi?.slug]);
 
   if (!defiEnabled) {
     return (
@@ -90,6 +113,38 @@ const GameTeaser: React.FC<GameTeaserProps> = ({
         </div>
         <p className="text-[11px] text-gold m-0 mt-1.5 leading-snug">
           Révèle ton totem d'abord
+        </p>
+      </div>
+    );
+  }
+
+  if (showActiveTile) {
+    const nb = liveStats?.nbReponses ?? 0;
+    return (
+      <div
+        className="rounded-[14px] p-3.5 shadow-soft flex flex-col justify-between cursor-pointer"
+        style={{
+          minHeight: 96,
+          background: 'linear-gradient(160deg, #2A2520 0%, #3D352C 100%)',
+        }}
+        onClick={() => navigate(`/defi/${activeDefi!.slug}/suivi`)}
+      >
+        <div>
+          <div className="flex items-center justify-between mb-1">
+            <Users size={14} className="text-gold" />
+            <span
+              className="text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full"
+              style={{ background: 'rgba(201,168,100,.2)', color: '#C9A864' }}
+            >
+              {expired ? 'Terminé' : 'En cours'}
+            </span>
+          </div>
+          <p className="text-[13px] font-bold text-[#F4F1E9] m-0 mt-1.5 leading-tight">
+            {nb === 0 ? 'Aucune réponse' : `${nb} réponse${nb > 1 ? 's' : ''}`}
+          </p>
+        </div>
+        <p className="text-[11px] text-gold m-0 mt-1.5 leading-snug">
+          {expired ? 'Voir les résultats' : 'Voir le suivi →'}
         </p>
       </div>
     );

@@ -19,7 +19,9 @@ import {
   BarChart3,
   ArrowLeft,
 } from 'lucide-react';
+import { Sparkles } from 'lucide-react';
 import AdminKorisSection from '../../components/admin/AdminKorisSection';
+import { authedFetch } from '../../utils/authedFetch';
 import {
   getEvaluationStats,
   computeEvaluationStatsFromRaw,
@@ -155,14 +157,23 @@ const SubTabNav: React.FC<{ active: SubTab; onChange: (tab: SubTab) => void }> =
 // TAB 1 — VUE D'ENSEMBLE
 // ══════════════════════════════════════════════════════════════════════════════
 
+interface DefiStatsData {
+  totalDefis: number;
+  totalReponses: number;
+  activeDefis: number;
+  moyenneReponses: number;
+  inscriptionsViaDefi: number;
+}
+
 const OverviewTab: React.FC<{
   stats: EvaluationStats;
   weeklySignups: WeeklySignup[];
   dailyTests: DailyTests[];
   popularity: TestPop[];
   alerts: AnonymousAlert[];
+  defiStats: DefiStatsData | null;
   onNavigate: (tab: SubTab) => void;
-}> = ({ stats, weeklySignups, dailyTests, popularity, alerts, onNavigate }) => {
+}> = ({ stats, weeklySignups, dailyTests, popularity, alerts, defiStats, onNavigate }) => {
   const totalAlerts = (stats.alertsLevel2 ?? 0) + (stats.alertsLevel3 ?? 0);
   const googlePct = stats.totalUsers > 0 ? Math.round((stats.googleUsers / stats.totalUsers) * 100) : 0;
 
@@ -247,6 +258,41 @@ const OverviewTab: React.FC<{
           }
         </div>
       </div>
+
+      {defiStats && (
+        <Section title="Défis — Kan moo ma gën a xam ?">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+            <div className="text-center">
+              <p className="m-0 font-display text-2xl font-extrabold text-ink">{defiStats.totalDefis}</p>
+              <p className="m-0 text-[11px] text-muted">Défis créés</p>
+            </div>
+            <div className="text-center">
+              <p className="m-0 font-display text-2xl font-extrabold text-sage">{defiStats.totalReponses}</p>
+              <p className="m-0 text-[11px] text-muted">Réponses totales</p>
+            </div>
+            <div className="text-center">
+              <p className="m-0 font-display text-2xl font-extrabold text-gold">{defiStats.moyenneReponses}</p>
+              <p className="m-0 text-[11px] text-muted">Moy. réponses / défi</p>
+            </div>
+            <div className="text-center">
+              <p className="m-0 font-display text-2xl font-extrabold text-accent">{defiStats.activeDefis}</p>
+              <p className="m-0 text-[11px] text-muted">Défis en cours</p>
+            </div>
+            <div className="text-center">
+              <p className="m-0 font-display text-2xl font-extrabold text-ink">{defiStats.inscriptionsViaDefi}</p>
+              <p className="m-0 text-[11px] text-muted">Inscriptions via défi</p>
+            </div>
+            <div className="text-center">
+              <p className="m-0 font-display text-2xl font-extrabold text-ink">
+                {defiStats.totalReponses > 0
+                  ? Math.round((defiStats.inscriptionsViaDefi / defiStats.totalReponses) * 100) + ' %'
+                  : '—'}
+              </p>
+              <p className="m-0 text-[11px] text-muted">Ratio inscriptions / réponses</p>
+            </div>
+          </div>
+        </Section>
+      )}
     </div>
   );
 };
@@ -850,6 +896,7 @@ const EvaluationsDashboardContent: React.FC = () => {
   const [alerts, setAlerts] = useState<AnonymousAlert[]>([]);
   const [allUsers, setAllUsers] = useState<TopUser[]>([]);
   const [userMetrics, setUserMetrics] = useState<UserMetrics | null>(null);
+  const [defiStats, setDefiStats] = useState<{ totalDefis: number; totalReponses: number; activeDefis: number; moyenneReponses: number } | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [initializing, setInitializing] = useState(false);
@@ -892,6 +939,12 @@ const EvaluationsDashboardContent: React.FC = () => {
 
       const metrics = await getUserMetrics(users);
       setUserMetrics(metrics);
+
+      try {
+        const defiResp = await authedFetch('/.netlify/functions/admin-defi-stats');
+        if (defiResp.ok) setDefiStats(await defiResp.json());
+      } catch {}
+
     } catch (e: unknown) {
       console.error('Dashboard load error:', e);
       setError((e as Error)?.message || 'Erreur de chargement');
@@ -978,6 +1031,7 @@ const EvaluationsDashboardContent: React.FC = () => {
           dailyTests={dailyTests}
           popularity={popularity}
           alerts={alerts}
+          defiStats={defiStats}
           onNavigate={setActiveTab}
         />
       )}

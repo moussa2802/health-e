@@ -153,6 +153,8 @@ const DefiPage = lazy(() => import("./pages/DefiPage"));
 const DefiCreerPage = lazy(() => import("./pages/DefiCreerPage"));
 const DefiPartagePage = lazy(() => import("./pages/DefiPartagePage"));
 const DefiJouerPage = lazy(() => import("./pages/DefiJouerPage"));
+const DefiSuiviPage = lazy(() => import("./pages/DefiSuiviPage"));
+const DefiMesDefisPage = lazy(() => import("./pages/DefiMesDefisPage"));
 
 // Loading fallback component
 const PageLoader = () => (
@@ -485,6 +487,8 @@ const AppChrome: React.FC = () => {
             <Route path="/defi" element={<DefiPage />} />
             <Route path="/defi/creer" element={<DefiCreerPage />} />
             <Route path="/defi/:slug/partage" element={<DefiPartagePage />} />
+            <Route path="/defi/:slug/suivi" element={<DefiSuiviPage />} />
+            <Route path="/defi/mes-defis" element={<DefiMesDefisPage />} />
             <Route path="/d/:slug" element={<DefiJouerPage />} />
             <Route path="/api/d/:slug" element={<DefiJouerPage />} />
 

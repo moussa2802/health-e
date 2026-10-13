@@ -178,13 +178,21 @@ const DefiPage: React.FC = () => {
         </div>
 
         {hasActiveDefi ? (
-          <button
-            onClick={() => navigate(`/defi/${activeDefi!.slug}/partage`)}
-            className="w-full py-3.5 rounded-[14px] border-none bg-ink text-white text-[15px] font-bold cursor-pointer shadow-soft flex items-center justify-center gap-2"
-          >
-            <Eye size={16} />
-            Voir mon défi en cours
-          </button>
+          <div className="space-y-3">
+            <button
+              onClick={() => navigate(`/defi/${activeDefi!.slug}/suivi`)}
+              className="w-full py-3.5 rounded-[14px] border-none bg-ink text-white text-[15px] font-bold cursor-pointer shadow-soft flex items-center justify-center gap-2"
+            >
+              <Eye size={16} />
+              Suivre mon défi en cours
+            </button>
+            <button
+              onClick={() => navigate(`/defi/${activeDefi!.slug}/partage`)}
+              className="w-full py-3 rounded-[14px] border border-line bg-card text-ink text-[14px] font-medium cursor-pointer flex items-center justify-center gap-2"
+            >
+              Partager le lien
+            </button>
+          </div>
         ) : (
           <button
             onClick={() => navigate('/defi/creer')}

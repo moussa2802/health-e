@@ -221,6 +221,13 @@ exports.handler = async (event) => {
         activeDefi: { slug, expiresAt },
         updatedAt: createdAt,
       });
+
+      tx.set(db.collection('userProfiles').doc(user.uid).collection('mesDefis').doc(slug), {
+        slug,
+        displayName,
+        createdAt,
+        expiresAt,
+      });
     });
 
     return {

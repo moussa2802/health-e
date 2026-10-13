@@ -102,11 +102,11 @@ const DefiPartagePage: React.FC = () => {
           </a>
 
           <button
-            onClick={() => navigate(`/d/${slug}`)}
+            onClick={() => navigate(`/defi/${slug}/suivi`)}
             className="w-full py-3 rounded-[14px] border border-line bg-white text-ink text-[14px] font-medium cursor-pointer flex items-center justify-center gap-2"
           >
             <ExternalLink size={14} />
-            Voir mon défi
+            Suivre les réponses
           </button>
         </div>
       </div>

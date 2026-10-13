@@ -39,7 +39,8 @@ export interface Notification {
     | "professional_approval"
     | "withdrawal_request"
     | "withdrawal_status_update"
-    | "support_message";
+    | "support_message"
+    | "defi_response";
   title: string;
   content: string;
   sourceId: string; // ID of the message, booking, etc.
@@ -49,7 +50,8 @@ export interface Notification {
     | "professional"
     | "professional_approval"
     | "withdrawal"
-    | "support";
+    | "support"
+    | "defi";
   read: boolean;
   createdAt: Timestamp;
   timestamp?: Date; // For component compatibility

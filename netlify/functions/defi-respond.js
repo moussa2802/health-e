@@ -224,9 +224,14 @@ exports.handler = async (event) => {
       rang = trimmed.findIndex(e => e.pseudo === escapeHtml(pseudo) && e.tempsServeur === tempsServeur) + 1;
       nbRepondants = (currentData.nbReponses || 0) + 1;
 
+      const newNbReponses = (currentData.nbReponses || 0) + 1;
+      const newScoreSum = (currentData.scoreSum || 0) + result.score;
+
       tx.update(defiRef, {
         classement: trimmed,
         nbReponses: admin.firestore.FieldValue.increment(1),
+        scoreSum: admin.firestore.FieldValue.increment(result.score),
+        scoreMoyen: Math.round(newScoreSum / newNbReponses),
       });
 
       // Rate limit
@@ -242,7 +247,25 @@ exports.handler = async (event) => {
       }
     });
 
-    // ── 9. Réponse ──────────────────────────────────────────────────────
+    // ── 9. Notification créateur (fire-and-forget) ───────────────────────
+    try {
+      const creatorUid = defiPrivate.uid;
+      await db.collection('notifications').add({
+        userId: creatorUid,
+        type: 'defi_response',
+        title: 'Nouvelle réponse à ton défi',
+        content: `${pseudo} vient de répondre : ${result.score} % 👀`,
+        sourceId: slug,
+        sourceType: 'defi',
+        read: false,
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        priority: 'medium',
+      });
+    } catch (notifErr) {
+      console.warn('defi-respond notification error (non-blocking):', notifErr.message);
+    }
+
+    // ── 10. Réponse ──────────────────────────────────────────────────────
     const responseBody = {
       score: result.score,
       bonnes: result.bonnes,

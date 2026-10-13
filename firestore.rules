@@ -312,6 +312,12 @@ service cloud.firestore {
       match /scaleResultHistory/{entryId} {
         allow read, write, delete: if request.auth != null && request.auth.uid == userId;
       }
+
+      // Sous-collection des défis créés par l'utilisateur
+      match /mesDefis/{slug} {
+        allow read: if request.auth != null && request.auth.uid == userId;
+        allow write: if false;
+      }
     }
 
     match /compatibilityRequests/{requestId} {
