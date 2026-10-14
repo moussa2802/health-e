@@ -115,8 +115,12 @@ exports.handler = async (event) => {
 
       if (cfg.subscales && sr.subscaleScores) {
         for (const sk of cfg.subscales) {
-          if (sr.subscaleScores[sk] != null) {
-            scores[`${scaleId}.${sk}`].push(sr.subscaleScores[sk]);
+          let val = sr.subscaleScores[sk];
+          if (val == null && sk === 'emotional_stability' && scaleId === 'big_five' && sr.subscaleScores.neuroticism != null) {
+            val = 12 - sr.subscaleScores.neuroticism;
+          }
+          if (val != null) {
+            scores[`${scaleId}.${sk}`].push(val);
           }
         }
       } else if (!cfg.subscales && sr.totalScore != null) {
