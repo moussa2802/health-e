@@ -22,7 +22,7 @@ function toDate(val: unknown): Date {
 
 const DefiMesDefisPage: React.FC = () => {
   const navigate = useNavigate();
-  const { currentUser, isAuthenticated, loading: authLoading } = useAuth();
+  const { currentUser, isAuthenticated, authReady } = useAuth();
 
   const [defis, setDefis] = useState<MeDefi[]>([]);
   const [loading, setLoading] = useState(true);
@@ -41,7 +41,7 @@ const DefiMesDefisPage: React.FC = () => {
       .finally(() => setLoading(false));
   }, [currentUser?.id]);
 
-  if (authLoading) {
+  if (!authReady) {
     return (
       <div className="min-h-screen bg-paper flex items-center justify-center">
         <div className="w-10 h-10 rounded-full border-[3px] border-line border-t-gold animate-spin" />

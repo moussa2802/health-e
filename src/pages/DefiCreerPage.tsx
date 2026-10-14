@@ -27,7 +27,7 @@ const DURATION_OPTIONS = [
 
 const DEVOILEMENT_OPTIONS = [
   { value: 'aucun', label: 'Aucun', desc: 'Tes proches ne voient jamais les vraies réponses' },
-  { value: 'auto', label: 'Automatique', desc: 'Les réponses sont dévoilées à la fin du défi' },
+  { value: 'auto', label: 'Automatique', desc: 'Tes proches voient les bonnes réponses juste après avoir joué' },
 ];
 
 const AUDIENCE_OPTIONS = [
@@ -56,7 +56,7 @@ interface PreviewQuestion {
 
 const DefiCreerPage: React.FC = () => {
   const navigate = useNavigate();
-  const { currentUser, isAuthenticated, loading: authLoading } = useAuth();
+  const { currentUser, isAuthenticated, authReady } = useAuth();
   const { defiEnabled, loading: flagLoading } = useDefiFlag();
 
   const [scaleResults, setScaleResults] = useState<Record<string, ScaleResult>>({});
@@ -90,7 +90,7 @@ const DefiCreerPage: React.FC = () => {
 
   useEffect(() => {
     if (!isAuthenticated || !currentUser) {
-      setProfileLoading(false);
+      if (authReady) setProfileLoading(false);
       return;
     }
     getProfileProgress(currentUser.id)
@@ -114,7 +114,7 @@ const DefiCreerPage: React.FC = () => {
         setProfileLoading(false);
       })
       .catch(() => setProfileLoading(false));
-  }, [isAuthenticated, currentUser?.id]);
+  }, [isAuthenticated, currentUser?.id, authReady]);
 
   const handleGenreSelect = async (val: 'masculin' | 'feminin') => {
     setGenre(val);
@@ -130,7 +130,7 @@ const DefiCreerPage: React.FC = () => {
     }
   };
 
-  if (authLoading || flagLoading || profileLoading) {
+  if (!authReady || flagLoading || profileLoading) {
     return (
       <div className="min-h-screen bg-paper flex items-center justify-center">
         <div className="w-10 h-10 rounded-full border-[3px] border-line border-t-gold animate-spin" />

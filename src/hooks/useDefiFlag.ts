@@ -9,18 +9,19 @@ interface DefiFlag {
 }
 
 export function useDefiFlag(): DefiFlag {
-  const { currentUser } = useAuth();
+  const { currentUser, authReady } = useAuth();
   const [state, setState] = useState<DefiFlag>({ defiEnabled: false, loading: true });
   const fetched = useRef<string | null>(null);
 
   useEffect(() => {
     if (!currentUser) {
-      setState({ defiEnabled: false, loading: false });
+      if (authReady) setState({ defiEnabled: false, loading: false });
       return;
     }
 
     if (fetched.current === currentUser.id) return;
     fetched.current = currentUser.id;
+    setState(prev => ({ ...prev, loading: true }));
 
     getDoc(doc(db, 'config', 'features'))
       .then(snap => {
@@ -41,7 +42,7 @@ export function useDefiFlag(): DefiFlag {
       .catch(() => {
         setState({ defiEnabled: false, loading: false });
       });
-  }, [currentUser]);
+  }, [currentUser, authReady]);
 
   return state;
 }

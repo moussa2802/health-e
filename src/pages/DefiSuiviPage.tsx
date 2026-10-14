@@ -56,7 +56,7 @@ const MEDAL = ['🥇', '🥈', '🥉'];
 const DefiSuiviPage: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
-  const { currentUser, isAuthenticated, loading: authLoading } = useAuth();
+  const { currentUser, isAuthenticated, authReady } = useAuth();
 
   const [defi, setDefi] = useState<DefiLive | null>(null);
   const [isOwner, setIsOwner] = useState<boolean | null>(null);
@@ -121,7 +121,7 @@ const DefiSuiviPage: React.FC = () => {
     }).catch(() => {});
   }, [currentUser?.id, slug, defi?.petitsMots]);
 
-  if (authLoading) {
+  if (!authReady) {
     return (
       <div className="min-h-screen bg-paper flex items-center justify-center">
         <div className="w-10 h-10 rounded-full border-[3px] border-line border-t-gold animate-spin" />

@@ -36,7 +36,7 @@ const STEPS = [
 
 const DefiPage: React.FC = () => {
   const navigate = useNavigate();
-  const { currentUser, isAuthenticated, loading: authLoading } = useAuth();
+  const { currentUser, isAuthenticated, authReady } = useAuth();
   const { defiEnabled, loading: flagLoading } = useDefiFlag();
 
   const [profileResults, setProfileResults] = useState<Record<string, ScaleResult>>({});
@@ -64,7 +64,7 @@ const DefiPage: React.FC = () => {
 
   useEffect(() => {
     if (!isAuthenticated || !currentUser) {
-      setProfileLoading(false);
+      if (authReady) setProfileLoading(false);
       return;
     }
     getProfileProgress(currentUser.id)
@@ -75,7 +75,7 @@ const DefiPage: React.FC = () => {
         setProfileLoading(false);
       })
       .catch(() => setProfileLoading(false));
-  }, [isAuthenticated, currentUser?.id]);
+  }, [isAuthenticated, currentUser?.id, authReady]);
 
   function toDate(val: unknown): Date {
     if (!val) return new Date(0);
@@ -116,7 +116,7 @@ const DefiPage: React.FC = () => {
         if (terminated.length < 10) {
           const idx = terminated.length;
           terminated.push(entry);
-          if (entry.nbReponses == null) {
+          if (entry.nbReponses == null || !entry.titre) {
             fallbackPromises.push({ idx, slug });
           }
         }
@@ -131,8 +131,14 @@ const DefiPage: React.FC = () => {
         results.forEach((defiSnap, i) => {
           if (defiSnap?.exists()) {
             const d = defiSnap.data();
-            terminated[fallbackPromises[i].idx].nbReponses = d.nbReponses || 0;
-            terminated[fallbackPromises[i].idx].scoreMoyen = d.scoreMoyen || 0;
+            const t = terminated[fallbackPromises[i].idx];
+            if (t.nbReponses == null) {
+              t.nbReponses = d.nbReponses || 0;
+              t.scoreMoyen = d.scoreMoyen || 0;
+            }
+            if (!t.titre && d.titre) t.titre = d.titre;
+            if (!t.displayName && d.displayName) t.displayName = d.displayName;
+            if (!t.endedAt && d.endedAt) t.endedAt = toDate(d.endedAt);
           }
         });
       }
@@ -169,7 +175,7 @@ const DefiPage: React.FC = () => {
     return () => unsubs.forEach(u => u());
   }, [activeDefiSlugs]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  if (authLoading || flagLoading || profileLoading) {
+  if (!authReady || flagLoading || profileLoading) {
     return (
       <div className="min-h-screen bg-paper flex items-center justify-center">
         <div className="w-10 h-10 rounded-full border-[3px] border-line border-t-gold animate-spin" />
@@ -346,7 +352,7 @@ const DefiPage: React.FC = () => {
                 >
                   <div className="flex items-center justify-between mb-1.5">
                     <h4 className="font-display text-[15px] font-semibold text-ink m-0 truncate">
-                      {td.titre || td.displayName ? `Défi de ${td.displayName}` : 'Mon défi'}
+                      {td.titre ? td.titre : td.displayName ? `Défi de ${td.displayName}` : 'Mon défi'}
                     </h4>
                     <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-line text-muted flex-shrink-0 ml-2 flex items-center gap-1">
                       <CheckCircle size={10} />
@@ -364,7 +370,7 @@ const DefiPage: React.FC = () => {
                     <span className="text-[11px] text-muted">
                       {td.endedAt
                         ? td.endedAt.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })
-                        : td.expiresAt
+                        : td.expiresAt && td.expiresAt.getTime() < Date.now()
                           ? td.expiresAt.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })
                           : ''}
                     </span>
