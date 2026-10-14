@@ -1,4 +1,11 @@
 const { SCALE_DEFS } = require("./scaleDefinitions");
+const {
+  QUESTION_DEFS_V4,
+  AUDIENCE_EXCLUSIONS,
+  DIMENSION_THEMES,
+  RESULT_TITLES,
+  PERSO_QUESTIONS,
+} = require('./questionVariants');
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -113,246 +120,47 @@ function rangeCount(scaleId) {
   return def?.ranges?.length ?? 3;
 }
 
-// ── Question definitions ─────────────────────────────────────────────────────
-
-const QUESTION_DEFS = [
-  // ── Big Five (5 subscales) ──
-  {
-    scaleId: 'big_five', subscaleKey: 'extraversion',
-    questionTemplate: "D'après toi, {prenom} est plutôt…",
-    options: {
-      bas:   "{{Réservé|Réservée}} et {{discret|discrète}} — préfère les petits comités",
-      moyen: "Sociable en groupe, mais recharge ses batteries {{seul|seule}}",
-      haut:  "{{Extraverti|Extravertie}} et sociable — adore être {{entouré|entourée}}",
-    },
-  },
-  {
-    scaleId: 'big_five', subscaleKey: 'agreeableness',
-    questionTemplate: "Dans ses relations, {prenom} c'est plutôt…",
-    options: {
-      bas:   "{{Direct|Directe}} et {{franc|franche}} — dit ce qu'{{il|elle}} pense",
-      moyen: "Diplomate — sait doser franchise et douceur",
-      haut:  "{{Doux|Douce}} et {{conciliant|conciliante}} — cherche toujours l'harmonie",
-    },
-  },
-  {
-    scaleId: 'big_five', subscaleKey: 'conscientiousness',
-    questionTemplate: "Au quotidien, {prenom} est plutôt…",
-    options: {
-      bas:   "{{Spontané|Spontanée}} et flexible — va où le vent {{le|la}} mène",
-      moyen: "Fiable sur l'essentiel, {{décontracté|décontractée}} sur le reste",
-      haut:  "{{Organisé|Organisée}} et {{rigoureux|rigoureuse}} — tout est carré",
-    },
-  },
-  {
-    scaleId: 'big_five', subscaleKey: 'emotional_stability',
-    questionTemplate: "Face au stress, {prenom} est plutôt…",
-    options: {
-      bas:   "{{Réactif|Réactive}} — ça {{le|la}} touche vite et fort",
-      moyen: "Encaisse bien au quotidien, mais craque sur les gros coups",
-      haut:  "Zen et {{détendu|détendue}} — gère bien la pression",
-    },
-  },
-  {
-    scaleId: 'big_five', subscaleKey: 'openness',
-    questionTemplate: "Côté curiosité, {prenom} c'est plutôt…",
-    options: {
-      bas:   "Terre à terre et {{concret|concrète}} — préfère le pratique",
-      moyen: "{{Ouvert|Ouverte}} aux idées nouvelles, mais garde les pieds sur terre",
-      haut:  "{{Créatif|Créative}} et {{curieux|curieuse}} — toujours en exploration",
-    },
-  },
-
-  // ── ECR-R (2 subscales) ──
-  {
-    scaleId: 'ecr_r', subscaleKey: 'anxiety',
-    questionTemplate: "En amour ou en amitié proche, {prenom} est plutôt…",
-    options: {
-      bas:   "{{Serein|Sereine}} — fait confiance naturellement",
-      moyen: "{{Confiant|Confiante}}, mais aime être {{rassuré|rassurée}} aux moments clés",
-      haut:  "A besoin d'être {{rassuré|rassurée}} — la distance l'inquiète",
-    },
-  },
-  {
-    scaleId: 'ecr_r', subscaleKey: 'avoidance',
-    questionTemplate: "Dans ses relations proches, {prenom} c'est plutôt…",
-    options: {
-      bas:   "Aime la proximité — à l'aise avec l'intimité",
-      moyen: "Proche de ceux qu'{{il|elle}} aime, mais garde son jardin secret",
-      haut:  "{{Indépendant|Indépendante}} — préfère garder ses distances",
-    },
-  },
-
-  // ── BRS (3 ranges) ──
-  {
-    scaleId: 'brs',
-    questionTemplate: "Quand {prenom} traverse un coup dur, {{il|elle}} est plutôt…",
-    options: {
-      bas:   "Encaisse fort — met du temps à remonter la pente",
-      moyen: "Se relève, mais a besoin de digérer d'abord",
-      haut:  "Un vrai ressort — {{il|elle}} rebondit toujours",
-    },
-  },
-
-  // ── Bonus TDAH ──
-  {
-    scaleId: 'bonus_tdah',
-    questionTemplate: "D'après toi, {prenom} c'est plutôt…",
-    options: {
-      bas:   "{{Concentré|Concentrée}} et {{posé|posée}} — focus quand il faut",
-      moyen: "Capable de se concentrer, mais papillonne dès que ça dure",
-      haut:  "Tête en l'air — {{il|elle}} papillonne, mais c'est son charme",
-    },
-  },
-
-  // ── Bonus HSP ──
-  {
-    scaleId: 'bonus_hsp',
-    questionTemplate: "Côté sensibilité, {prenom} c'est plutôt…",
-    options: {
-      bas:   "Solide — pas facilement {{touché|touchée}} par les ambiances",
-      moyen: "Capte les ambiances et non-dits, sans se submerger",
-      haut:  "Ressent tout intensément — une vraie éponge émotionnelle",
-    },
-  },
-
-  // ── Bonus HPI ──
-  {
-    scaleId: 'bonus_hpi',
-    questionTemplate: "Au niveau du cerveau, {prenom} c'est plutôt…",
-    options: {
-      bas:   "Pragmatique — va droit au but",
-      moyen: "{{Curieux|Curieuse}} — aime comprendre comment ça marche",
-      haut:  "Cerveau à 200 à l'heure — pense à mille choses à la fois",
-    },
-  },
-
-  // ── Bonus Jalousie ──
-  {
-    scaleId: 'bonus_jalousie',
-    questionTemplate: "En matière de jalousie, {prenom} c'est plutôt…",
-    options: {
-      bas:   "Pas du tout {{jaloux|jalouse}} — confiance totale",
-      moyen: "Un petit côté {{jaloux|jalouse}} qui se voit de temps en temps",
-      haut:  "{{Jaloux|Jalouse}} en secret — même si {{il|elle}} ne le montre pas toujours",
-    },
-  },
-
-  // ── Bonus EQ ──
-  {
-    scaleId: 'bonus_eq',
-    questionTemplate: "Avec les émotions des autres, {prenom} c'est plutôt…",
-    options: {
-      bas:   "Plutôt {{cérébral|cérébrale}} — plus dans la tête que dans le cœur",
-      moyen: "Capte les émotions des autres et sait quand intervenir",
-      haut:  "Très à l'écoute — {{il|elle}} ressent ce que les autres ressentent",
-    },
-  },
-
-  // ── Bonus Confiance ──
-  {
-    scaleId: 'bonus_confiance',
-    questionTemplate: "Niveau confiance en soi, {prenom} c'est plutôt…",
-    options: {
-      bas:   "{{Prudent|Prudente}} — aime être {{sûr|sûre}} avant de se lancer",
-      moyen: "{{Confiant|Confiante}} sur l'essentiel",
-      haut:  "Fonce sans hésiter — {{sûr|sûre}} de ses capacités",
-    },
-  },
-
-  // ── Bonus Narcissisme ──
-  {
-    scaleId: 'bonus_narcissisme',
-    questionTemplate: "D'après toi, {prenom} c'est plutôt quelqu'un qui…",
-    options: {
-      bas:   "Reste {{discret|discrète}} et humble",
-      moyen: "Assume ses qualités sans en faire un spectacle",
-      haut:  "Aime briller — et assume totalement !",
-    },
-  },
-
-  // ── Bonus Manipulation ──
-  {
-    scaleId: 'bonus_manipulation',
-    questionTemplate: "Dans sa façon de fonctionner, {prenom} c'est plutôt…",
-    options: {
-      bas:   "{{Spontané|Spontanée}} et {{transparent|transparente}} — zéro calcul",
-      moyen: "Sait jouer ses cartes quand l'enjeu le vaut",
-      haut:  "Stratège — {{il|elle}} a toujours un coup d'avance",
-    },
-  },
-
-  // ── GAD-7 / Anxiété (optin) ──
-  {
-    scaleId: 'gad7',
-    questionTemplate: "Au quotidien, {prenom} est plutôt…",
-    options: {
-      bas:   "Zen et {{détendu|détendue}} — pas du genre à stresser",
-      moyen: "Gère bien la routine, mais les imprévus {{le|la}} crispent",
-      haut:  "Plutôt {{anxieux|anxieuse}} — {{il|elle}} se fait facilement du souci",
-    },
-  },
-
-  // ── RSES / Estime de soi (optin) ──
-  {
-    scaleId: 'rses',
-    questionTemplate: "Dans son rapport à soi, {prenom} c'est plutôt…",
-    options: {
-      bas:   "Très {{exigeant|exigeante}} avec soi-même — ne se fait pas de cadeau",
-      moyen: "Connaît ses forces, mais doute encore sur certains terrains",
-      haut:  "Bien dans sa peau — sait ce qu'{{il|elle}} vaut",
-    },
-  },
-
-  // ── PSS-10 / Stress (optin) ──
-  {
-    scaleId: 'pss10',
-    questionTemplate: "Face aux imprévus, {prenom} est plutôt…",
-    options: {
-      bas:   "Cool — gère sans trop se prendre la tête",
-      moyen: "Garde le cap au quotidien, mais les galères {{le|la}} secouent",
-      haut:  "Plutôt {{stressé|stressée}} — les imprévus lui pèsent",
-    },
-  },
-
-  // ── Pression sociale (optin) ──
-  {
-    scaleId: 'social_pressure',
-    questionTemplate: "Face au regard des autres, {prenom} c'est plutôt…",
-    options: {
-      bas:   "Libre — se fiche du qu'en-dira-t-on",
-      moyen: "{{Attentif|Attentive}} au regard des proches, pas des inconnus",
-      haut:  "Le regard des autres pèse dans ses choix",
-    },
-  },
-
-  // ── Bonus Burnout (optin) ──
-  {
-    scaleId: 'bonus_burnout',
-    questionTemplate: "Niveau énergie au travail/études, {prenom} c'est plutôt…",
-    options: {
-      bas:   "Plein d'énergie — pas du genre à s'épuiser",
-      moyen: "Tient le rythme, mais rentre vidé le soir",
-      haut:  "{{Épuisé|Épuisée}} — a vraiment besoin de souffler",
-    },
-  },
-
-  // ── Bonus Dépendance affective (optin) ──
-  {
-    scaleId: 'bonus_dependance',
-    questionTemplate: "Dans ses relations, {prenom} a plutôt tendance à…",
-    options: {
-      bas:   "Être {{indépendant|indépendante}} — bien dans ses baskets même {{seul|seule}}",
-      moyen: "Aime être {{entouré|entourée}}, mais sait rester {{seul|seule}} sans angoisse",
-      haut:  "S'attacher fort — a du mal à être {{seul|seule}}",
-    },
-  },
-];
+// ── Backward-compat flat structures from v4 data ─────────────────────────────
 
 const DEFS_BY_KEY = {};
-for (const d of QUESTION_DEFS) {
-  const key = d.subscaleKey ? `${d.scaleId}.${d.subscaleKey}` : d.scaleId;
-  DEFS_BY_KEY[key] = d;
+const QUESTION_DEFS = [];
+
+for (const [key, def] of Object.entries(QUESTION_DEFS_V4)) {
+  const tousVariant = def.variants.find(v => v.audiences.includes('tous')) || def.variants[0];
+  const flat = {
+    scaleId: def.scaleId,
+    subscaleKey: def.subscaleKey || undefined,
+    questionTemplate: tousVariant.stem,
+    options: tousVariant.options,
+  };
+  DEFS_BY_KEY[key] = flat;
+  QUESTION_DEFS.push(flat);
+}
+
+// ── Variant selection ────────────────────────────────────────────────────────
+
+function selectVariant(dimKey, audience, previousVariantIds = []) {
+  const def = QUESTION_DEFS_V4[dimKey];
+  if (!def) return null;
+
+  const candidates = def.variants.filter(v =>
+    v.audiences.includes(audience) || v.audiences.includes('tous')
+  );
+  if (candidates.length === 0) return null;
+
+  const fresh = candidates.filter(v => !previousVariantIds.includes(v.id));
+  const pool = fresh.length > 0 ? fresh : candidates;
+
+  const specific = pool.filter(v => v.audiences.includes(audience));
+  if (specific.length > 0) return specific[Math.floor(Math.random() * specific.length)];
+
+  return pool[Math.floor(Math.random() * pool.length)];
+}
+
+function parseDimKey(selectedKey) {
+  const colonIdx = selectedKey.indexOf(':');
+  if (colonIdx === -1) return { dimKey: selectedKey, variantId: null };
+  return { dimKey: selectedKey.substring(0, colonIdx), variantId: selectedKey.substring(colonIdx + 1) };
 }
 
 // ── Totem ─────────────────────────────────────────────────────────────────────
@@ -445,16 +253,41 @@ function collectDimensions(eligibleResults, mode) {
   return dims;
 }
 
-function selectDimensions(eligibleResults, mode = 'public') {
-  const TARGET = 8;
-  const MIN = 6;
+function dimKey(dim) {
+  return dim.subscaleKey ? `${dim.scaleId}.${dim.subscaleKey}` : dim.scaleId;
+}
+
+function selectDimensions(eligibleResults, mode = 'public', { audience, persoCount = 0 } = {}) {
+  const traitTarget = Math.max(5, 8 - persoCount);
+  const traitMin = persoCount > 0 ? 5 : 6;
 
   const allDims = collectDimensions(eligibleResults, mode);
   if (allDims.length === 0) {
     return { error: 'no_eligible_scales', selected: [], available: [] };
   }
 
-  const autoDims = allDims.filter(d => d.level === 'auto');
+  const excluded = audience && AUDIENCE_EXCLUSIONS[audience]
+    ? AUDIENCE_EXCLUSIONS[audience]
+    : new Set();
+
+  const eligibleDims = allDims.filter(d => !excluded.has(dimKey(d)));
+
+  const dimsWithVariant = audience
+    ? eligibleDims.filter(d => {
+        const dk = dimKey(d);
+        const def = QUESTION_DEFS_V4[dk];
+        if (!def) return false;
+        return def.variants.some(v =>
+          v.audiences.includes(audience) || v.audiences.includes('tous')
+        );
+      })
+    : eligibleDims.filter(d => !!DEFS_BY_KEY[dimKey(d)]);
+
+  if (dimsWithVariant.length === 0) {
+    return { error: 'no_eligible_scales', selected: [], available: [] };
+  }
+
+  const autoDims = dimsWithVariant.filter(d => d.level === 'auto');
   const bigFiveDims = autoDims.filter(d => d.isBigFive);
   const otherAutoDims = autoDims.filter(d => !d.isBigFive);
 
@@ -474,56 +307,85 @@ function selectDimensions(eligibleResults, mode = 'public') {
     usedScales.add(dim.scaleId);
   }
 
-  if (selected.length < TARGET) {
+  if (selected.length < traitTarget) {
     const remainingBF = shuffledBF.filter(d => !selected.includes(d));
     for (const dim of remainingBF) {
-      if (selected.length >= TARGET) break;
+      if (selected.length >= traitTarget) break;
       selected.push(dim);
     }
   }
 
-  if (selected.length < TARGET) {
-    const remainingEcr = allDims.filter(d => d.scaleId === 'ecr_r' && !selected.includes(d));
+  if (selected.length < traitTarget) {
+    const remainingEcr = dimsWithVariant.filter(d => d.scaleId === 'ecr_r' && !selected.includes(d));
     for (const dim of remainingEcr) {
-      if (selected.length >= TARGET) break;
+      if (selected.length >= traitTarget) break;
       selected.push(dim);
     }
   }
 
-  if (selected.length < MIN) {
+  if (selected.length < traitMin) {
     return { error: 'not_enough_scales', selected: [], available: [] };
   }
 
-  selected = selected.slice(0, TARGET);
+  selected = selected.slice(0, traitTarget);
 
-  const selectedKeys = new Set(selected.map(d => d.subscaleKey ? `${d.scaleId}.${d.subscaleKey}` : d.scaleId));
-  const available = allDims.filter(d => {
-    const key = d.subscaleKey ? `${d.scaleId}.${d.subscaleKey}` : d.scaleId;
-    return !selectedKeys.has(key) && DEFS_BY_KEY[key];
-  });
+  const selectedKeySet = new Set(selected.map(d => dimKey(d)));
+  const available = dimsWithVariant.filter(d => !selectedKeySet.has(dimKey(d)));
 
   return { error: null, selected, available };
 }
 
-function dimKey(dim) {
-  return dim.subscaleKey ? `${dim.scaleId}.${dim.subscaleKey}` : dim.scaleId;
+// ── Interleaving ─────────────────────────────────────────────────────────────
+
+function interleavePerso(traitQs, traitTs, persoQs, persoTs) {
+  if (persoQs.length === 0) return { questions: [...traitQs], truths: [...traitTs] };
+  if (traitQs.length === 0) return { questions: [...persoQs], truths: [...persoTs] };
+
+  const questions = [];
+  const truths = [];
+
+  const gap = Math.ceil(traitQs.length / (persoQs.length + 1));
+  let traitIdx = 0;
+  let persoIdx = 0;
+
+  while (traitIdx < traitQs.length || persoIdx < persoQs.length) {
+    for (let g = 0; g < gap && traitIdx < traitQs.length; g++) {
+      questions.push(traitQs[traitIdx]);
+      truths.push(traitTs[traitIdx]);
+      traitIdx++;
+    }
+    if (persoIdx < persoQs.length) {
+      questions.push(persoQs[persoIdx]);
+      truths.push(persoTs[persoIdx]);
+      persoIdx++;
+    }
+  }
+
+  return { questions, truths };
 }
 
-function buildQuestionsFromKeys(selectedKeys, eligibleResults, genre, prenom, mode = 'public', totemAnimal, defiBands) {
+// ── Build questions ──────────────────────────────────────────────────────────
+
+function buildQuestionsFromKeys(selectedKeys, eligibleResults, genre, prenom, mode = 'public', totemAnimal, defiBands, { audience, persoQuestions, persoBank, previousVariantIds } = {}) {
   if (!Array.isArray(selectedKeys)) {
     return { error: 'invalid_keys', questions: [], truths: [] };
   }
 
-  if (selectedKeys.length < 6 || selectedKeys.length > 8) {
+  const parsedKeys = selectedKeys.map(k => parseDimKey(k));
+  const dimKeysOnly = parsedKeys.map(p => p.dimKey);
+  const persoCount = persoQuestions ? persoQuestions.length : 0;
+  const traitMin = persoCount > 0 ? 5 : 6;
+  const traitMax = Math.max(5, 8 - persoCount);
+
+  if (dimKeysOnly.length < traitMin || dimKeysOnly.length > traitMax) {
     return { error: 'invalid_key_count', questions: [], truths: [] };
   }
 
-  if (new Set(selectedKeys).size !== selectedKeys.length) {
+  if (new Set(dimKeysOnly).size !== dimKeysOnly.length) {
     return { error: 'duplicate_keys', questions: [], truths: [] };
   }
 
-  const TOTEM_KEY = '__totem__';
-  if (selectedKeys.includes(TOTEM_KEY)) {
+  if (dimKeysOnly.includes('__totem__')) {
     return { error: 'totem_in_keys', questions: [], truths: [] };
   }
 
@@ -533,28 +395,65 @@ function buildQuestionsFromKeys(selectedKeys, eligibleResults, genre, prenom, mo
     dimsByKey.set(dimKey(d), d);
   }
 
-  const bigFiveCount = selectedKeys.filter(k => k.startsWith('big_five.')).length;
-  const nonBfAutoAvailable = allDims.filter(d => !d.isBigFive && d.level === 'auto' && DEFS_BY_KEY[dimKey(d)]).length;
-  if (bigFiveCount > 3 && nonBfAutoAvailable + 3 >= selectedKeys.length) {
+  const bigFiveCount = dimKeysOnly.filter(k => k.startsWith('big_five.')).length;
+  const nonBfAutoAvailable = allDims.filter(d => !d.isBigFive && d.level === 'auto' && (QUESTION_DEFS_V4[dimKey(d)] || DEFS_BY_KEY[dimKey(d)])).length;
+  if (bigFiveCount > 3 && nonBfAutoAvailable + 3 >= dimKeysOnly.length) {
     return { error: 'too_many_big_five', questions: [], truths: [] };
   }
 
-  for (const key of selectedKeys) {
-    if (!DEFS_BY_KEY[key]) {
-      return { error: 'unknown_key', detail: key, questions: [], truths: [] };
+  for (const pk of parsedKeys) {
+    if (!QUESTION_DEFS_V4[pk.dimKey] && !DEFS_BY_KEY[pk.dimKey]) {
+      return { error: 'unknown_key', detail: pk.dimKey, questions: [], truths: [] };
     }
-    const dim = dimsByKey.get(key);
-    if (!dim) {
-      return { error: 'ineligible_key', detail: key, questions: [], truths: [] };
+    if (!dimsByKey.has(pk.dimKey)) {
+      return { error: 'ineligible_key', detail: pk.dimKey, questions: [], truths: [] };
     }
   }
 
-  const questions = [];
-  const truths = [];
+  const traitQuestions = [];
+  const traitTruths = [];
+  const variantIds = [];
 
-  for (const key of shuffleArray(selectedKeys)) {
-    const dim = dimsByKey.get(key);
-    const def = DEFS_BY_KEY[key];
+  for (const pk of shuffleArray(parsedKeys)) {
+    const dim = dimsByKey.get(pk.dimKey);
+    const v4Def = QUESTION_DEFS_V4[pk.dimKey];
+
+    let stem, options;
+
+    if (v4Def && pk.variantId) {
+      const variant = v4Def.variants.find(v => v.id === pk.variantId);
+      if (variant) {
+        stem = variant.stem;
+        options = variant.options;
+        variantIds.push(variant.id);
+      } else {
+        const fallback = v4Def.variants.find(v => v.audiences.includes('tous')) || v4Def.variants[0];
+        stem = fallback.stem;
+        options = fallback.options;
+        variantIds.push(fallback.id);
+      }
+    } else if (v4Def && audience) {
+      const variant = selectVariant(pk.dimKey, audience, previousVariantIds || []);
+      if (variant) {
+        stem = variant.stem;
+        options = variant.options;
+        variantIds.push(variant.id);
+      } else {
+        const fallback = v4Def.variants[0];
+        stem = fallback.stem;
+        options = fallback.options;
+        variantIds.push(fallback.id);
+      }
+    } else if (v4Def) {
+      const variant = v4Def.variants.find(v => v.audiences.includes('tous')) || v4Def.variants[0];
+      stem = variant.stem;
+      options = variant.options;
+      variantIds.push(variant.id);
+    } else {
+      const oldDef = DEFS_BY_KEY[pk.dimKey];
+      stem = oldDef.questionTemplate;
+      options = oldDef.options;
+    }
 
     const band = computeBand(dim.scaleId, dim.score, dim.subscaleKey, defiBands);
     if (!band) continue;
@@ -564,25 +463,25 @@ function buildQuestionsFromKeys(selectedKeys, eligibleResults, genre, prenom, mo
 
     const availableBands = is2Range ? ['bas', 'haut'] : ['bas', 'moyen', 'haut'];
     const optionEntries = availableBands
-      .filter(b => def.options[b])
+      .filter(b => options[b])
       .map(b => ({
         id: generateOpaqueId(),
-        label: resolveGender(def.options[b], genre),
+        label: resolveGender(options[b], genre),
         _band: b,
       }));
 
     const shuffledOptions = shuffleArray(optionEntries);
     const correctId = shuffledOptions.find(o => o._band === band).id;
 
-    questions.push({
+    traitQuestions.push({
       source: 'scale',
       scaleId: dim.scaleId,
       subscaleKey: dim.subscaleKey || null,
-      text: resolveGender(def.questionTemplate.replace(/\{prenom\}/g, prenom), genre),
+      text: resolveGender(stem.replace(/\{prenom\}/g, prenom), genre),
       options: shuffledOptions.map(({ id, label }) => ({ id, label })),
     });
 
-    truths.push({
+    traitTruths.push({
       source: 'scale',
       scaleId: dim.scaleId,
       subscaleKey: dim.subscaleKey || null,
@@ -593,17 +492,76 @@ function buildQuestionsFromKeys(selectedKeys, eligibleResults, genre, prenom, mo
     });
   }
 
+  // Build perso questions
+  const persoQs = [];
+  const persoTs = [];
+
+  if (persoQuestions && persoQuestions.length > 0) {
+    const bank = persoBank || PERSO_QUESTIONS;
+    const allPerso = [...(bank.tous || [])];
+    if (audience && bank[audience]) {
+      allPerso.push(...bank[audience]);
+    }
+    const persoById = new Map(allPerso.map(p => [p.id, p]));
+
+    for (const pq of persoQuestions) {
+      const pDef = persoById.get(pq.questionId);
+      if (!pDef) continue;
+
+      const optionEntries = pDef.options.map(opt => ({
+        id: generateOpaqueId(),
+        label: resolveGender(opt.replace(/\{prenom\}/g, prenom), genre),
+        _value: opt,
+      }));
+
+      const shuffledOptions = shuffleArray(optionEntries);
+      const correctId = shuffledOptions.find(o => o._value === pq.creatorAnswer)?.id;
+      if (!correctId) continue;
+
+      persoQs.push({
+        source: 'perso',
+        questionId: pq.questionId,
+        text: resolveGender(pDef.stem.replace(/\{prenom\}/g, prenom), genre),
+        options: shuffledOptions.map(({ id, label }) => ({ id, label })),
+      });
+
+      persoTs.push({
+        source: 'perso',
+        questionId: pq.questionId,
+        correctOptionId: correctId,
+      });
+    }
+  }
+
+  // Interleave perso among traits, then append totem
+  const merged = interleavePerso(traitQuestions, traitTruths, persoQs, persoTs);
+  const questions = merged.questions;
+  const truths = merged.truths;
+
   if (totemAnimal) {
     const totem = buildTotemQuestion(totemAnimal, prenom, genre);
     questions.push(totem.question);
     truths.push(totem.truth);
   }
 
-  return { error: null, questions, truths };
+  return { error: null, questions, truths, variantIds };
 }
 
 function getQuestionText(key, genre, prenom) {
-  const def = DEFS_BY_KEY[key];
+  const { dimKey: dk, variantId } = parseDimKey(key);
+  const v4Def = QUESTION_DEFS_V4[dk];
+
+  if (v4Def && variantId) {
+    const variant = v4Def.variants.find(v => v.id === variantId);
+    if (variant) return resolveGender(variant.stem.replace(/\{prenom\}/g, prenom), genre);
+  }
+
+  if (v4Def) {
+    const variant = v4Def.variants.find(v => v.audiences.includes('tous')) || v4Def.variants[0];
+    return resolveGender(variant.stem.replace(/\{prenom\}/g, prenom), genre);
+  }
+
+  const def = DEFS_BY_KEY[dk];
   if (!def) return null;
   return resolveGender(def.questionTemplate.replace(/\{prenom\}/g, prenom), genre);
 }
@@ -638,7 +596,7 @@ function scoreResponse(truths, responses) {
       continue;
     }
 
-    if (truth.source === 'totem') {
+    if (truth.source === 'totem' || truth.source === 'perso') {
       if (response.optionId === truth.correctOptionId) {
         bonnes++;
         totalPoints += weight;
@@ -691,10 +649,18 @@ module.exports = {
   buildTotemQuestion,
   resolveGender,
   generateSlug,
+  selectVariant,
+  parseDimKey,
+  interleavePerso,
   TOTEM_POINTS,
   _QUESTION_DEFS: QUESTION_DEFS,
   _DEFS_BY_KEY: DEFS_BY_KEY,
   DEFI_SCALE_CONFIG,
+  QUESTION_DEFS_V4,
+  AUDIENCE_EXCLUSIONS,
+  DIMENSION_THEMES,
+  RESULT_TITLES,
+  PERSO_QUESTIONS,
   _collectDimensions: collectDimensions,
   _getBandIndex: getBandIndex,
   _neutralSuffix: neutralSuffix,

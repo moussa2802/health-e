@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, Navigate } from 'react-router-dom';
-import { ArrowLeft, Sparkles, Info, Loader2, RefreshCw, X } from 'lucide-react';
+import { ArrowLeft, Sparkles, Info, Loader2, RefreshCw, X, Lock, ChevronDown, ChevronUp, Check } from 'lucide-react';
 import { doc, updateDoc } from 'firebase/firestore';
 import { db } from '../utils/firebase';
 import { useAuth } from '../contexts/AuthContext';
@@ -47,11 +47,28 @@ const AUDIENCE_TITRE_DEFAULTS: Record<string, string> = {
 };
 
 const MAX_REPLACEMENTS = 3;
+const MAX_PERSO = 3;
 
 interface PreviewQuestion {
   key: string;
   text: string;
   theme?: string | null;
+}
+
+interface PersoQuestion {
+  id: string;
+  stem: string;
+  options: string[];
+}
+
+interface LockedDimension {
+  key: string;
+  theme: string;
+}
+
+interface SelectedPerso {
+  questionId: string;
+  creatorAnswer: string;
 }
 
 const DefiCreerPage: React.FC = () => {
@@ -79,11 +96,19 @@ const DefiCreerPage: React.FC = () => {
   const [step, setStep] = useState<'form' | 'preview'>('form');
   const [previewLoading, setPreviewLoading] = useState(false);
   const [selected, setSelected] = useState<PreviewQuestion[]>([]);
+  const [fullTraits, setFullTraits] = useState<PreviewQuestion[]>([]);
   const [available, setAvailable] = useState<PreviewQuestion[]>([]);
   const [totemPreview, setTotemPreview] = useState<{ text: string } | null>(null);
   const [replacements, setReplacements] = useState(0);
   const [replacingIndex, setReplacingIndex] = useState<number | null>(null);
   const previewGenreRef = useRef<string | null>(null);
+
+  const [lockedDims, setLockedDims] = useState<LockedDimension[]>([]);
+  const [lockedExpanded, setLockedExpanded] = useState(false);
+
+  const [persoPool, setPersoPool] = useState<PersoQuestion[]>([]);
+  const [selectedPerso, setSelectedPerso] = useState<SelectedPerso[]>([]);
+  const [answeringPersoId, setAnsweringPersoId] = useState<string | null>(null);
 
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -209,6 +234,8 @@ const DefiCreerPage: React.FC = () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           displayName: nameClean,
+          audience,
+          persoCount: 0,
           ...(genre ? { genre } : {}),
           optinScales,
         }),
@@ -222,8 +249,13 @@ const DefiCreerPage: React.FC = () => {
       }
 
       setSelected(data.selected);
+      setFullTraits(data.selected);
       setAvailable(data.available);
       setTotemPreview(data.totem);
+      setLockedDims(data.locked || []);
+      setPersoPool(data.perso || []);
+      setSelectedPerso([]);
+      setAnsweringPersoId(null);
       setReplacements(0);
       setReplacingIndex(null);
       previewGenreRef.current = genre;
@@ -238,9 +270,39 @@ const DefiCreerPage: React.FC = () => {
   const handleReplace = (questionIndex: number, newQuestion: PreviewQuestion) => {
     const old = selected[questionIndex];
     setSelected(prev => prev.map((q, i) => i === questionIndex ? newQuestion : q));
+    setFullTraits(prev => prev.map((q, i) => i === questionIndex ? newQuestion : q));
     setAvailable(prev => [...prev.filter(q => q.key !== newQuestion.key), old]);
     setReplacements(r => r + 1);
     setReplacingIndex(null);
+  };
+
+  const adjustTraitsForPerso = (persoCount: number, currentFullTraits: PreviewQuestion[]) => {
+    const traitTarget = Math.max(5, 8 - persoCount);
+    if (currentFullTraits.length <= traitTarget) {
+      setSelected(currentFullTraits);
+    } else {
+      setSelected(currentFullTraits.slice(0, traitTarget));
+    }
+  };
+
+  const handleTogglePerso = (perso: PersoQuestion) => {
+    const existing = selectedPerso.find(sp => sp.questionId === perso.id);
+    if (existing) {
+      const newPerso = selectedPerso.filter(sp => sp.questionId !== perso.id);
+      setSelectedPerso(newPerso);
+      setAnsweringPersoId(null);
+      adjustTraitsForPerso(newPerso.length, fullTraits);
+    } else {
+      if (selectedPerso.length >= MAX_PERSO) return;
+      setAnsweringPersoId(perso.id);
+    }
+  };
+
+  const handleAnswerPerso = (persoId: string, answer: string) => {
+    const newPerso = [...selectedPerso, { questionId: persoId, creatorAnswer: answer }];
+    setSelectedPerso(newPerso);
+    setAnsweringPersoId(null);
+    adjustTraitsForPerso(newPerso.length, fullTraits);
   };
 
   const handleSubmit = async () => {
@@ -262,6 +324,7 @@ const DefiCreerPage: React.FC = () => {
           audience,
           petitsMots,
           selectedKeys,
+          ...(selectedPerso.length > 0 ? { persoQuestions: selectedPerso } : {}),
           ...(genre ? { genre } : {}),
         }),
       });
@@ -283,6 +346,8 @@ const DefiCreerPage: React.FC = () => {
   };
 
   if (step === 'preview') {
+    const totalQuestions = selected.length + selectedPerso.length + (totemPreview ? 1 : 0);
+
     return (
       <div className="min-h-screen bg-paper">
         <div className="sticky top-0 z-20 bg-paper/95 backdrop-blur-md border-b border-line">
@@ -295,13 +360,55 @@ const DefiCreerPage: React.FC = () => {
         </div>
 
         <div className="max-w-[600px] mx-auto px-5 py-6">
+          <p className="text-[13px] text-muted m-0 mb-1">
+            {totalQuestions} question{totalQuestions > 1 ? 's' : ''} au total
+            ({selected.length} trait{selected.length > 1 ? 's' : ''}{selectedPerso.length > 0 ? ` + ${selectedPerso.length} perso` : ''} + totem).
+          </p>
           <p className="text-[13px] text-muted m-0 mb-5">
-            Voici les questions que tes proches devront deviner.
             {MAX_REPLACEMENTS - replacements > 0
-              ? ` Tu peux encore remplacer ${MAX_REPLACEMENTS - replacements} question${MAX_REPLACEMENTS - replacements > 1 ? 's' : ''}.`
-              : ' Tu as utilisé tous tes remplacements.'}
+              ? `Tu peux encore remplacer ${MAX_REPLACEMENTS - replacements} question${MAX_REPLACEMENTS - replacements > 1 ? 's' : ''} de trait.`
+              : 'Tu as utilisé tous tes remplacements.'}
           </p>
 
+          {/* Locked dimensions */}
+          {lockedDims.length > 0 && (
+            <div className="rounded-[14px] border border-amber-200 bg-amber-50 p-4 mb-5">
+              <button
+                onClick={() => setLockedExpanded(!lockedExpanded)}
+                className="w-full flex items-center justify-between bg-transparent border-none cursor-pointer p-0"
+              >
+                <div className="flex items-center gap-2">
+                  <Lock size={14} className="text-amber-600" />
+                  <p className="text-[13px] font-semibold text-amber-800 m-0">
+                    {lockedDims.length} dimension{lockedDims.length > 1 ? 's' : ''} verrouillée{lockedDims.length > 1 ? 's' : ''}
+                  </p>
+                </div>
+                {lockedExpanded ? <ChevronUp size={14} className="text-amber-600" /> : <ChevronDown size={14} className="text-amber-600" />}
+              </button>
+              {lockedExpanded && (
+                <div className="mt-3 pt-3 border-t border-amber-200">
+                  <p className="text-[12px] text-amber-700 m-0 mb-2">
+                    Complete ces tests pour débloquer plus de questions :
+                  </p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {lockedDims.map(d => (
+                      <span key={d.key} className="px-2 py-1 rounded-md bg-amber-100 text-[11px] text-amber-800 font-medium">
+                        {d.theme}
+                      </span>
+                    ))}
+                  </div>
+                  <button
+                    onClick={() => navigate('/assessment')}
+                    className="mt-3 text-[12px] text-amber-700 font-semibold bg-transparent border-none cursor-pointer p-0 underline"
+                  >
+                    Passer un test
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Trait questions */}
           <div className="flex flex-col gap-3 mb-6">
             {selected.map((q, i) => (
               <div key={q.key} className="rounded-[14px] border border-line bg-card p-4">
@@ -355,6 +462,33 @@ const DefiCreerPage: React.FC = () => {
               </div>
             ))}
 
+            {/* Selected perso questions */}
+            {selectedPerso.map(sp => {
+              const perso = persoPool.find(p => p.id === sp.questionId);
+              if (!perso) return null;
+              return (
+                <div key={sp.questionId} className="rounded-[14px] border border-sage/40 bg-sage/10 p-4">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-1.5 mb-1">
+                        <span className="text-[11px] font-bold uppercase tracking-[0.12em] text-sage">Perso</span>
+                      </div>
+                      <p className="text-[14px] text-ink m-0 leading-snug">{perso.stem}</p>
+                      <p className="text-[12px] text-muted m-0 mt-1">
+                        Ta réponse : <span className="font-medium text-ink">{sp.creatorAnswer}</span>
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => handleTogglePerso(perso)}
+                      className="p-1 border-none bg-transparent cursor-pointer text-muted hover:text-ink flex-shrink-0"
+                    >
+                      <X size={14} />
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+
             {totemPreview && (
               <div className="rounded-[14px] border border-gold/30 bg-gold-soft p-4">
                 <div className="flex items-center gap-2 mb-1">
@@ -365,6 +499,67 @@ const DefiCreerPage: React.FC = () => {
               </div>
             )}
           </div>
+
+          {/* Perso questions pool */}
+          {persoPool.length > 0 && (
+            <div className="mb-6">
+              <label className="block text-[13px] font-semibold text-ink mb-2">
+                Questions perso (0 à {MAX_PERSO})
+              </label>
+              <p className="text-[12px] text-muted m-0 mb-3">
+                Choisis des questions fun et réponds toi-même. Tes proches devront deviner ta réponse.
+              </p>
+              <div className="flex flex-col gap-2">
+                {persoPool.map(perso => {
+                  const isSelected = selectedPerso.some(sp => sp.questionId === perso.id);
+                  const isAnswering = answeringPersoId === perso.id;
+                  const canAdd = !isSelected && selectedPerso.length < MAX_PERSO;
+
+                  return (
+                    <div key={perso.id} className="rounded-[12px] border border-line bg-white overflow-hidden">
+                      <button
+                        onClick={() => { if (canAdd) handleTogglePerso(perso); }}
+                        disabled={!canAdd && !isSelected}
+                        className={`w-full text-left px-4 py-3 flex items-center gap-3 bg-transparent border-none cursor-pointer transition-colors ${
+                          !canAdd && !isSelected ? 'opacity-40 cursor-not-allowed' : ''
+                        } ${isSelected ? 'bg-sage/10' : ''}`}
+                      >
+                        <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
+                          isSelected ? 'border-sage bg-sage' : 'border-line bg-white'
+                        }`}>
+                          {isSelected && <Check size={12} className="text-white" />}
+                        </div>
+                        <span className="text-[13px] text-ink leading-snug">{perso.stem}</span>
+                      </button>
+
+                      {isAnswering && (
+                        <div className="px-4 pb-3 pt-1 border-t border-line">
+                          <p className="text-[12px] text-muted m-0 mb-2">Quelle est ta vraie réponse ?</p>
+                          <div className="flex flex-col gap-1.5">
+                            {perso.options.map(opt => (
+                              <button
+                                key={opt}
+                                onClick={() => handleAnswerPerso(perso.id, opt)}
+                                className="text-left px-3 py-2 rounded-[8px] border border-line bg-paper text-[13px] text-ink cursor-pointer hover:border-sage transition-colors"
+                              >
+                                {opt}
+                              </button>
+                            ))}
+                          </div>
+                          <button
+                            onClick={() => setAnsweringPersoId(null)}
+                            className="mt-2 text-[12px] text-muted bg-transparent border-none cursor-pointer p-0"
+                          >
+                            Annuler
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
           {error && (
             <div className="px-4 py-3 rounded-[12px] bg-red-50 border border-red-200 text-red-700 text-[14px] mb-4">

@@ -1,5 +1,5 @@
 const { admin, db, verifyAuth } = require('./_firebase');
-const { selectQuestions, buildQuestionsFromKeys, generateSlug } = require('./_defi/questionBank');
+const { selectQuestions, buildQuestionsFromKeys, generateSlug, PERSO_QUESTIONS } = require('./_defi/questionBank');
 const { getActiveDefis, canCreateDefi, buildActiveDefisUpdate } = require('./_defi/activeDefisHelper');
 
 const headers = {
@@ -167,17 +167,55 @@ exports.handler = async (event) => {
 
     const eligibleResults = buildEligibleResults(scaleResults, payload.optinScales, 'public');
 
+    // Validate perso questions
+    let persoQuestions = null;
+    if (Array.isArray(payload.persoQuestions) && payload.persoQuestions.length > 0) {
+      if (payload.persoQuestions.length > 3) {
+        return { statusCode: 400, headers, body: JSON.stringify({ error: 'Maximum 3 questions perso' }) };
+      }
+      const bank = PERSO_QUESTIONS;
+      const allPerso = [...(bank.tous || [])];
+      if (bank[audience]) allPerso.push(...bank[audience]);
+      const validIds = new Set(allPerso.map(p => p.id));
+      const validAnswers = new Map(allPerso.map(p => [p.id, new Set(p.options)]));
+
+      for (const pq of payload.persoQuestions) {
+        if (!pq.questionId || !validIds.has(pq.questionId)) {
+          return { statusCode: 400, headers, body: JSON.stringify({ error: `Question perso inconnue : ${pq.questionId}` }) };
+        }
+        if (!pq.creatorAnswer || !validAnswers.get(pq.questionId).has(pq.creatorAnswer)) {
+          return { statusCode: 400, headers, body: JSON.stringify({ error: `Réponse invalide pour ${pq.questionId}` }) };
+        }
+      }
+      persoQuestions = payload.persoQuestions.map(pq => ({
+        questionId: pq.questionId,
+        creatorAnswer: pq.creatorAnswer,
+      }));
+    }
+
+    // Get previous variant ids to avoid repetition
+    let previousVariantIds = [];
+    try {
+      const mesDefisSnap = await db.collection('userProfiles').doc(user.uid)
+        .collection('mesDefis').orderBy('createdAt', 'desc').limit(1).get();
+      if (!mesDefisSnap.empty) {
+        const lastDefi = mesDefisSnap.docs[0].data();
+        if (lastDefi.variantIds) previousVariantIds = lastDefi.variantIds;
+      }
+    } catch {}
+
     let qResult;
     if (Array.isArray(payload.selectedKeys) && payload.selectedKeys.length > 0) {
       qResult = buildQuestionsFromKeys(
-        payload.selectedKeys, eligibleResults, genre, displayName, 'public', totemAnimal, defiBands
+        payload.selectedKeys, eligibleResults, genre, displayName, 'public', totemAnimal, defiBands,
+        { audience, persoQuestions, previousVariantIds }
       );
     } else {
       qResult = selectQuestions(
         eligibleResults, genre, displayName, 'public', totemAnimal, defiBands
       );
     }
-    const { error: qError, questions, truths } = qResult;
+    const { error: qError, questions, truths, variantIds } = qResult;
 
     if (qError) {
       const errorMessages = {
@@ -255,7 +293,7 @@ exports.handler = async (event) => {
         })),
       });
 
-      tx.set(privateRef, {
+      const privateData = {
         uid: user.uid,
         slug,
         statut: 'actif',
@@ -263,7 +301,11 @@ exports.handler = async (event) => {
         truths,
         totemAnimal,
         optionBandMap,
-      });
+      };
+      if (persoQuestions) {
+        privateData.persoAnswers = persoQuestions;
+      }
+      tx.set(privateRef, privateData);
 
       const newActiveDefis = buildActiveDefisUpdate(currentActiveDefis, {
         slug, titre, audience, expiresAt,
@@ -278,14 +320,18 @@ exports.handler = async (event) => {
         updatedAt: createdAt,
       });
 
-      tx.set(db.collection('userProfiles').doc(user.uid).collection('mesDefis').doc(slug), {
+      const mesDefiData = {
         slug,
         displayName,
         titre,
         audience,
         createdAt,
         expiresAt,
-      });
+      };
+      if (variantIds && variantIds.length > 0) {
+        mesDefiData.variantIds = variantIds;
+      }
+      tx.set(db.collection('userProfiles').doc(user.uid).collection('mesDefis').doc(slug), mesDefiData);
     });
 
     return {

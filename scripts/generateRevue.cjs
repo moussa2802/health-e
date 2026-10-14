@@ -2,7 +2,10 @@
 const path = require('path');
 const fs = require('fs');
 
-const { _QUESTION_DEFS, resolveGender, TOTEM_POINTS } = require('../netlify/functions/_defi/questionBank');
+const {
+  _QUESTION_DEFS, resolveGender, TOTEM_POINTS,
+  QUESTION_DEFS_V4, AUDIENCE_EXCLUSIONS, DIMENSION_THEMES, RESULT_TITLES, PERSO_QUESTIONS,
+} = require('../netlify/functions/_defi/questionBank');
 const { SCALE_DEFS } = require('../netlify/functions/_defi/scaleDefinitions');
 
 const DEFI_SCALE_CONFIG = {
@@ -139,10 +142,10 @@ function generate() {
   const lines = [];
   const now = new Date().toISOString().slice(0, 10);
 
-  lines.push('# Banque de questions — Revue v3 (générée par code)');
+  lines.push('# Banque de questions — Revue v4 (générée par code)');
   lines.push('');
   lines.push(`> Généré le ${now} par \`npm run defi:revue\``);
-  lines.push('> Source : `questionBank.js` + `scaleDefinitions.js`');
+  lines.push('> Source : `questionBank.js` + `questionVariants.js` + `scaleDefinitions.js`');
   lines.push('> **Aucune plage écrite à la main** — tout est extrait des fichiers sources.');
   lines.push('');
   lines.push('---');
@@ -159,6 +162,7 @@ function generate() {
   lines.push('');
 
   let num = 0;
+  let totalVariants = 0;
 
   for (const def of _QUESTION_DEFS) {
     num++;
@@ -167,28 +171,62 @@ function generate() {
     const rootScale = def.scaleId;
     const level = getLevelEmoji(rootScale);
     const sens = SCORE_SENS[key] || '';
+    const theme = DIMENSION_THEMES[key] || '';
     const { scoreRange, nRanges, bands } = getRangesText(def.scaleId, def.subscaleKey);
+
+    const v4entry = QUESTION_DEFS_V4[key];
+    const variants = v4entry ? v4entry.variants : [];
+    totalVariants += variants.length;
 
     lines.push(`### ${num}. ${name} ${level}`);
     lines.push('');
-    lines.push(`**Plage :** ${scoreRange} · **Sens :** ${sens}`);
+    lines.push(`**Thème :** ${theme} · **Plage :** ${scoreRange} · **Sens :** ${sens}`);
     lines.push(`**Plages cliniques :** ${nRanges} ranges${nRanges === 4 ? ' → bas/moyen/moyen/haut' : ''}`);
     lines.push(`**Bandes population :** tertiles p33/p66 si n ≥ 50 (sinon cliniques)`);
+    lines.push(`**Variantes v4 :** ${variants.length}`);
     lines.push('');
-    lines.push(`**Question :** ${def.questionTemplate}`);
-    lines.push('');
-    lines.push('| Bande | Option (genre M) | Plage clinique |');
-    lines.push('|-------|-------------------|----------------|');
 
-    const availableBands = nRanges === 2 ? ['bas', 'haut'] : ['bas', 'moyen', 'haut'];
-    for (const b of availableBands) {
-      const optText = def.options[b] || '';
-      const resolved = resolveGender(optText, 'M');
-      const bandRange = bands?.find(x => x.band === b)?.range || '—';
-      lines.push(`| ${b} | ${resolved} | ${bandRange} |`);
+    // Audience exclusions
+    const excludedBy = [];
+    for (const [aud, set] of Object.entries(AUDIENCE_EXCLUSIONS)) {
+      if (set.has(key)) excludedBy.push(aud);
+    }
+    if (excludedBy.length > 0) {
+      lines.push(`**Exclue pour :** ${excludedBy.join(', ')}`);
+      lines.push('');
     }
 
-    lines.push('');
+    // V4 variants
+    if (variants.length > 0) {
+      for (const v of variants) {
+        lines.push(`#### Variante \`${v.id}\` — audiences: ${v.audiences.join(', ')}`);
+        lines.push('');
+        lines.push(`**Stem :** ${v.stem}`);
+        lines.push('');
+        lines.push('| Bande | Option |');
+        lines.push('|-------|--------|');
+        for (const b of ['bas', 'moyen', 'haut']) {
+          if (v.options[b]) {
+            lines.push(`| ${b} | ${resolveGender(v.options[b], 'M')} |`);
+          }
+        }
+        lines.push('');
+      }
+    } else {
+      lines.push(`**Question (legacy) :** ${def.questionTemplate}`);
+      lines.push('');
+      lines.push('| Bande | Option (genre M) | Plage clinique |');
+      lines.push('|-------|-------------------|----------------|');
+      const availableBands = nRanges === 2 ? ['bas', 'haut'] : ['bas', 'moyen', 'haut'];
+      for (const b of availableBands) {
+        const optText = def.options[b] || '';
+        const resolved = resolveGender(optText, 'M');
+        const bandRange = bands?.find(x => x.band === b)?.range || '—';
+        lines.push(`| ${b} | ${resolved} | ${bandRange} |`);
+      }
+      lines.push('');
+    }
+
     lines.push('---');
     lines.push('');
   }
@@ -199,6 +237,28 @@ function generate() {
   lines.push('**Statut :** interdit en public, optin en intime (décision Dr Lô).');
   lines.push('Aucune question définie pour le mode public.');
   lines.push('');
+  lines.push('---');
+  lines.push('');
+
+  // Perso questions
+  lines.push('## Questions perso (Layer B)');
+  lines.push('');
+  lines.push('Le créateur choisit 0 à 3 questions perso et y répond. Ses proches devinent sa réponse.');
+  lines.push('Scoring : exact = 1pt, mauvaise = 0pt (pas de « presque »).');
+  lines.push('');
+
+  for (const [aud, questions] of Object.entries(PERSO_QUESTIONS)) {
+    if (!questions || questions.length === 0) continue;
+    lines.push(`### Audience : ${aud} (${questions.length} questions)`);
+    lines.push('');
+    lines.push('| ID | Question | Options |');
+    lines.push('|----|----------|---------|');
+    for (const q of questions) {
+      lines.push(`| ${q.id} | ${q.stem} | ${q.options.join(' / ')} |`);
+    }
+    lines.push('');
+  }
+
   lines.push('---');
   lines.push('');
 
@@ -213,6 +273,18 @@ function generate() {
   lines.push('---');
   lines.push('');
 
+  // Result titles
+  lines.push('## Titres de résultat (section 7.1)');
+  lines.push('');
+  lines.push('| Score | Titre | Sous-titre |');
+  lines.push('|-------|-------|------------|');
+  for (const r of RESULT_TITLES) {
+    lines.push(`| ${r.min}–${r.max} % | ${r.title} | ${r.subtitle} |`);
+  }
+  lines.push('');
+  lines.push('---');
+  lines.push('');
+
   // Scoring section
   lines.push('## Scoring');
   lines.push('');
@@ -223,7 +295,24 @@ function generate() {
   lines.push('| Mauvaise (opposé ou 2 options) | 0 |');
   lines.push(`| Totem bonne | ${TOTEM_POINTS} |`);
   lines.push('| Totem mauvaise | 0 |');
+  lines.push('| Perso exacte | 1 |');
+  lines.push('| Perso mauvaise | 0 |');
   lines.push('| **Score final** | round(totalPoints / maxPoints × 100) % |');
+  lines.push('');
+  lines.push('---');
+  lines.push('');
+
+  // Audience exclusions
+  lines.push('## Exclusions par audience');
+  lines.push('');
+  for (const [aud, set] of Object.entries(AUDIENCE_EXCLUSIONS)) {
+    const dims = [...set];
+    if (dims.length === 0) {
+      lines.push(`- **${aud}** : aucune exclusion`);
+    } else {
+      lines.push(`- **${aud}** : ${dims.join(', ')}`);
+    }
+  }
   lines.push('');
   lines.push('---');
   lines.push('');
@@ -259,7 +348,7 @@ function generate() {
   const outPath = path.resolve(__dirname, '..', 'docs', 'defi-questions-revue.md');
   fs.mkdirSync(path.dirname(outPath), { recursive: true });
   fs.writeFileSync(outPath, content, 'utf-8');
-  console.log(`✓ docs/defi-questions-revue.md generated (${_QUESTION_DEFS.length} questions)`);
+  console.log(`✓ docs/defi-questions-revue.md generated (${_QUESTION_DEFS.length} dimensions, ${totalVariants} variants)`);
 }
 
 generate();

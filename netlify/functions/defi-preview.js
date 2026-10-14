@@ -1,30 +1,15 @@
 const { db, verifyAuth } = require('./_firebase');
-const { selectDimensions, getQuestionText, DEFI_SCALE_CONFIG } = require('./_defi/questionBank');
+const {
+  selectDimensions,
+  getQuestionText,
+  selectVariant,
+  DEFI_SCALE_CONFIG,
+  DIMENSION_THEMES,
+  AUDIENCE_EXCLUSIONS,
+  PERSO_QUESTIONS,
+} = require('./_defi/questionBank');
 
-const DIMENSION_THEMES = {
-  'big_five.extraversion': 'Sociabilité',
-  'big_five.agreeableness': 'Relations',
-  'big_five.conscientiousness': 'Organisation',
-  'big_five.emotional_stability': 'Gestion du stress',
-  'big_five.openness': 'Curiosité',
-  'ecr_r.anxiety': 'Attachement',
-  'ecr_r.avoidance': 'Intimité',
-  brs: 'Résilience',
-  bonus_tdah: 'Concentration',
-  bonus_hsp: 'Sensibilité',
-  bonus_hpi: 'Cognition',
-  bonus_jalousie: 'Jalousie',
-  bonus_eq: 'Intelligence émotionnelle',
-  bonus_confiance: 'Confiance en soi',
-  bonus_narcissisme: 'Ego',
-  bonus_manipulation: 'Stratégie',
-  gad7: 'Anxiété',
-  rses: 'Estime de soi',
-  pss10: 'Stress',
-  social_pressure: 'Pression sociale',
-  bonus_burnout: 'Énergie',
-  bonus_dependance: 'Dépendance affective',
-};
+const VALID_AUDIENCES = ['famille', 'amis', 'couple', 'collegues', 'tous'];
 
 const headers = {
   'Access-Control-Allow-Origin': '*',
@@ -65,6 +50,47 @@ function sanitizeDisplayName(raw) {
   // eslint-disable-next-line no-control-regex
   if (/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/.test(name)) return null;
   return name;
+}
+
+function collectAllDimKeys(scaleResults) {
+  const keys = new Set();
+  for (const [scaleId, sr] of Object.entries(scaleResults)) {
+    const config = DEFI_SCALE_CONFIG[scaleId];
+    if (!config || config.public === 'interdit') continue;
+
+    if (scaleId === 'big_five' && sr.subscaleScores) {
+      for (const sk of ['extraversion', 'agreeableness', 'conscientiousness', 'emotional_stability', 'openness']) {
+        if (sr.subscaleScores[sk] != null) keys.add(`big_five.${sk}`);
+      }
+    } else if (scaleId === 'ecr_r' && sr.subscaleScores) {
+      for (const sk of ['anxiety', 'avoidance']) {
+        if (sr.subscaleScores[sk] != null) keys.add(`ecr_r.${sk}`);
+      }
+    } else {
+      keys.add(scaleId);
+    }
+  }
+  return keys;
+}
+
+function buildLockedDimensions(completedKeys, audience) {
+  const excluded = audience && AUDIENCE_EXCLUSIONS[audience]
+    ? AUDIENCE_EXCLUSIONS[audience]
+    : new Set();
+
+  const locked = [];
+  for (const [dimKey, theme] of Object.entries(DIMENSION_THEMES)) {
+    if (completedKeys.has(dimKey)) continue;
+    if (excluded.has(dimKey)) continue;
+
+    const scaleId = dimKey.includes('.') ? dimKey.split('.')[0] : dimKey;
+    const config = DEFI_SCALE_CONFIG[scaleId];
+    if (!config || config.public === 'interdit') continue;
+
+    locked.push({ key: dimKey, theme });
+  }
+
+  return locked;
 }
 
 exports.handler = async (event) => {
@@ -116,12 +142,27 @@ exports.handler = async (event) => {
       return { statusCode: 400, headers, body: JSON.stringify({ error: 'Pseudo invalide (2-20 caractères, pas de HTML ni de liens)' }) };
     }
 
+    const audience = VALID_AUDIENCES.includes(payload.audience) ? payload.audience : 'tous';
+    const persoCount = Math.min(3, Math.max(0, parseInt(payload.persoCount) || 0));
+
     const scaleResults = profile.scaleResults || {};
     const genre = profile.defiGenre || profile.onboardingProfile?.genre || payload.genre || null;
 
     const eligibleResults = buildEligibleResults(scaleResults, payload.optinScales, 'public');
 
-    const { error: selError, selected, available } = selectDimensions(eligibleResults, 'public');
+    const previousVariantIds = [];
+    try {
+      const mesDefisSnap = await db.collection('userProfiles').doc(user.uid)
+        .collection('mesDefis').orderBy('createdAt', 'desc').limit(1).get();
+      if (!mesDefisSnap.empty) {
+        const lastDefi = mesDefisSnap.docs[0].data();
+        if (lastDefi.variantIds) previousVariantIds.push(...lastDefi.variantIds);
+      }
+    } catch {}
+
+    const { error: selError, selected, available } = selectDimensions(
+      eligibleResults, 'public', { audience, persoCount }
+    );
 
     if (selError) {
       return { statusCode: 400, headers, body: JSON.stringify({ error: 'Pas assez de tests complétés pour créer un défi' }) };
@@ -129,17 +170,40 @@ exports.handler = async (event) => {
 
     const dimToPreview = (dim) => {
       const key = dim.subscaleKey ? `${dim.scaleId}.${dim.subscaleKey}` : dim.scaleId;
-      return { key, text: getQuestionText(key, genre, displayName), theme: DIMENSION_THEMES[key] || null };
+      const variant = selectVariant(key, audience, previousVariantIds);
+      const variantId = variant ? variant.id : null;
+      const fullKey = variantId ? `${key}:${variantId}` : key;
+      return {
+        key: fullKey,
+        text: getQuestionText(fullKey, genre, displayName),
+        theme: DIMENSION_THEMES[key] || null,
+      };
     };
 
-    const totemText = getQuestionText('__totem__', genre, displayName);
+    const completedKeys = collectAllDimKeys(scaleResults);
+    const locked = buildLockedDimensions(completedKeys, audience);
+
+    const persoPool = [...(PERSO_QUESTIONS.tous || [])];
+    if (audience !== 'tous' && PERSO_QUESTIONS[audience]) {
+      persoPool.push(...PERSO_QUESTIONS[audience]);
+    }
+    const persoList = persoPool.map(p => ({
+      id: p.id,
+      stem: p.stem,
+      options: p.options,
+    }));
 
     return {
       statusCode: 200,
       headers,
       body: JSON.stringify({
         selected: selected.map(dimToPreview),
-        available: available.map(dimToPreview),
+        available: available.map(d => {
+          const key = d.subscaleKey ? `${d.scaleId}.${d.subscaleKey}` : d.scaleId;
+          return { key, theme: DIMENSION_THEMES[key] || null };
+        }),
+        locked,
+        perso: persoList,
         totem: { text: `Quel est l'animal totem de ${displayName} ? 🎯 ×2` },
       }),
     };

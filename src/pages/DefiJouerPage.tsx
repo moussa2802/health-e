@@ -61,6 +61,8 @@ interface ResultData {
   nbRepondants: number;
   devoilement?: { questionIndex: number; correctOptionId: string }[];
   creatorTotem?: string;
+  resultTitle?: string;
+  resultSubtitle?: string;
 }
 
 function getDeviceId(): string {
@@ -508,6 +510,8 @@ export default function DefiJouerPage() {
   if (phase === 'playing' && defi) {
     const question = defi.questions[currentQ];
     const isTotem = question.source === 'totem';
+    const isLastQ = currentQ === defi.questions.length - 1;
+    const isMidpoint = currentQ === Math.floor(defi.questions.length / 2);
     const progress = ((currentQ) / defi.questions.length) * 100;
     const isRedZone = timeLeft <= 5;
     const timerPct = (timeLeft / TIMER_SECONDS) * 100;
@@ -516,6 +520,12 @@ export default function DefiJouerPage() {
       try { navigator.vibrate?.(50); } catch {}
     }
 
+    const rhythmMessage = isLastQ && isTotem
+      ? 'Dernière question, elle compte double 🐾'
+      : isMidpoint
+        ? 'Mi-temps ⚽'
+        : null;
+
     return (
       <div className="min-h-screen bg-paper flex flex-col">
         <MiniHeader />
@@ -523,7 +533,12 @@ export default function DefiJouerPage() {
         {/* Progress + timer */}
         <div className="px-4 pt-3 pb-2 space-y-2">
           <div>
-            <span className="text-xs text-muted font-medium">Question {currentQ + 1}/{defi.questions.length}</span>
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-muted font-medium">Question {currentQ + 1}/{defi.questions.length}</span>
+              {rhythmMessage && (
+                <span className="text-xs font-bold text-gold animate-pulse">{rhythmMessage}</span>
+              )}
+            </div>
             <div className="h-1.5 bg-gray-200 rounded-full overflow-hidden mt-1">
               <div className="h-full bg-gold/30 rounded-full transition-none" style={{ width: `${progress}%` }} />
             </div>
@@ -606,9 +621,18 @@ export default function DefiJouerPage() {
         <div className="max-w-md mx-auto px-5 pt-8 pb-12">
           <div className="text-center mb-8">
             <p className="text-5xl font-display font-bold text-gold mb-2">{result.score} %</p>
-            <h1 className="font-display text-xl font-bold text-ink">
-              {scoreMessage(result.score, defi.displayName, defi.genre)} {result.score >= 70 ? '🔥' : result.score >= 40 ? '👀' : '🤔'}
-            </h1>
+            {result.resultTitle ? (
+              <>
+                <h1 className="font-display text-xl font-bold text-ink mb-1">{result.resultTitle}</h1>
+                {result.resultSubtitle && (
+                  <p className="text-[14px] text-muted m-0">{result.resultSubtitle}</p>
+                )}
+              </>
+            ) : (
+              <h1 className="font-display text-xl font-bold text-ink">
+                {scoreMessage(result.score, defi.displayName, defi.genre)} {result.score >= 70 ? '🔥' : result.score >= 40 ? '👀' : '🤔'}
+              </h1>
+            )}
           </div>
 
           <div className="flex justify-center gap-6 mb-6">
@@ -710,7 +734,7 @@ export default function DefiJouerPage() {
             }}
             className="w-full bg-gold text-white font-bold py-4 rounded-xl text-[14px] leading-snug px-4"
           >
-            Et toi, découvre ton totem 🐾
+            Et toi ? Tes proches te connaissent-ils vraiment ? 👉
           </button>
         </div>
       </div>

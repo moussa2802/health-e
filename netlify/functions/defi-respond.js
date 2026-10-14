@@ -1,6 +1,6 @@
 const crypto = require('crypto');
 const { admin, db, verifyAuth } = require('./_firebase');
-const { scoreResponse, DEFI_SCALE_CONFIG } = require('./_defi/questionBank');
+const { scoreResponse, DEFI_SCALE_CONFIG, RESULT_TITLES, resolveGender } = require('./_defi/questionBank');
 const { verifyStartToken } = require('./_defi/tokenUtils');
 
 const headers = {
@@ -40,7 +40,7 @@ function buildDevoilement(defi, truths) {
   const revealed = [];
   for (let i = 0; i < truths.length; i++) {
     const truth = truths[i];
-    if (truth.source === 'totem') {
+    if (truth.source === 'totem' || truth.source === 'perso') {
       revealed.push({ questionIndex: i, correctOptionId: truth.correctOptionId });
       continue;
     }
@@ -280,6 +280,7 @@ exports.handler = async (event) => {
     } catch {}
 
     // ── 11. Réponse ──────────────────────────────────────────────────────
+    const resultTitle = RESULT_TITLES.find(r => result.score >= r.min && result.score <= r.max);
     const responseBody = {
       score: result.score,
       bonnes: result.bonnes,
@@ -289,6 +290,14 @@ exports.handler = async (event) => {
       rang: rang || 1,
       nbRepondants,
     };
+
+    if (resultTitle) {
+      responseBody.resultTitle = resolveGender(resultTitle.title, defi.genre);
+      responseBody.resultSubtitle = resolveGender(
+        resultTitle.subtitle.replace(/\{prenom\}/g, defi.displayName),
+        defi.genre
+      );
+    }
 
     if (creatorTotem) {
       responseBody.creatorTotem = creatorTotem;
