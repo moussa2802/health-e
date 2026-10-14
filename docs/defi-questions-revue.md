@@ -322,7 +322,7 @@
 
 #### Variante `res_projet` — audiences: collegues
 
-**Stem :** Un projet de {prenom} tombe à l'eau. Le lendemain…
+**Stem :** {prenom} voit un de ses projets tomber à l'eau. Le lendemain…
 
 | Bande | Option |
 |-------|--------|

@@ -2,6 +2,7 @@ const { SCALE_DEFS } = require("./scaleDefinitions");
 const {
   QUESTION_DEFS_V4,
   AUDIENCE_EXCLUSIONS,
+  AUDIENCE_PRIORITIES,
   DIMENSION_THEMES,
   RESULT_TITLES,
   PERSO_QUESTIONS,
@@ -287,28 +288,43 @@ function selectDimensions(eligibleResults, mode = 'public', { audience, persoCou
     return { error: 'no_eligible_scales', selected: [], available: [] };
   }
 
+  const priorities = (audience && AUDIENCE_PRIORITIES[audience]) || [];
+  const prioSet = new Set(priorities);
+
+  function priorityRank(dim) {
+    const dk = dimKey(dim);
+    const idx = priorities.indexOf(dk);
+    return idx >= 0 ? idx : priorities.length;
+  }
+
   const autoDims = dimsWithVariant.filter(d => d.level === 'auto');
-  const bigFiveDims = autoDims.filter(d => d.isBigFive);
-  const otherAutoDims = autoDims.filter(d => !d.isBigFive);
+
+  const prioBF = autoDims.filter(d => d.isBigFive && prioSet.has(dimKey(d)))
+    .sort((a, b) => priorityRank(a) - priorityRank(b));
+  const nonPrioBF = shuffleArray(autoDims.filter(d => d.isBigFive && !prioSet.has(dimKey(d))));
+  const sortedBF = [...prioBF, ...nonPrioBF];
+
+  const prioOther = autoDims.filter(d => !d.isBigFive && prioSet.has(dimKey(d)))
+    .sort((a, b) => priorityRank(a) - priorityRank(b));
+  const nonPrioOther = shuffleArray(autoDims.filter(d => !d.isBigFive && !prioSet.has(dimKey(d))));
+  const sortedOther = [...prioOther, ...nonPrioOther];
 
   let selected = [];
   const usedScales = new Set();
 
-  const shuffledBF = shuffleArray(bigFiveDims);
-  for (const dim of shuffledBF) {
+  for (const dim of sortedBF) {
     if (selected.filter(d => d.isBigFive).length >= 3) break;
     selected.push(dim);
   }
 
-  const shuffledOther = shuffleArray(otherAutoDims);
-  for (const dim of shuffledOther) {
+  for (const dim of sortedOther) {
     if (usedScales.has(dim.scaleId) && !dim.isBigFive) continue;
     selected.push(dim);
     usedScales.add(dim.scaleId);
   }
 
   if (selected.length < traitTarget) {
-    const remainingBF = shuffledBF.filter(d => !selected.includes(d));
+    const remainingBF = sortedBF.filter(d => !selected.includes(d));
     for (const dim of remainingBF) {
       if (selected.length >= traitTarget) break;
       selected.push(dim);
@@ -327,6 +343,8 @@ function selectDimensions(eligibleResults, mode = 'public', { audience, persoCou
     return { error: 'not_enough_scales', selected: [], available: [] };
   }
 
+  // Trim to target: remove least-priority dims first (from the end)
+  selected.sort((a, b) => priorityRank(a) - priorityRank(b));
   selected = selected.slice(0, traitTarget);
 
   const selectedKeySet = new Set(selected.map(d => dimKey(d)));
@@ -518,10 +536,13 @@ function buildQuestionsFromKeys(selectedKeys, eligibleResults, genre, prenom, mo
       const correctId = shuffledOptions.find(o => o._value === pq.creatorAnswer)?.id;
       if (!correctId) continue;
 
+      let persoText = resolveGender(pDef.stem.replace(/\{prenom\}/g, prenom), genre);
+      if (!/[?!….]$/.test(persoText.trim())) persoText = persoText.trim() + ' ?';
+
       persoQs.push({
         source: 'perso',
         questionId: pq.questionId,
-        text: resolveGender(pDef.stem.replace(/\{prenom\}/g, prenom), genre),
+        text: persoText,
         options: shuffledOptions.map(({ id, label }) => ({ id, label })),
       });
 
@@ -658,6 +679,7 @@ module.exports = {
   DEFI_SCALE_CONFIG,
   QUESTION_DEFS_V4,
   AUDIENCE_EXCLUSIONS,
+  AUDIENCE_PRIORITIES,
   DIMENSION_THEMES,
   RESULT_TITLES,
   PERSO_QUESTIONS,

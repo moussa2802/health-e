@@ -3,6 +3,7 @@ const {
   selectDimensions,
   getQuestionText,
   selectVariant,
+  resolveGender,
   DEFI_SCALE_CONFIG,
   DIMENSION_THEMES,
   AUDIENCE_EXCLUSIONS,
@@ -58,13 +59,13 @@ function collectAllDimKeys(scaleResults) {
     const config = DEFI_SCALE_CONFIG[scaleId];
     if (!config || config.public === 'interdit') continue;
 
-    if (scaleId === 'big_five' && sr.subscaleScores) {
+    if (scaleId === 'big_five') {
       for (const sk of ['extraversion', 'agreeableness', 'conscientiousness', 'emotional_stability', 'openness']) {
-        if (sr.subscaleScores[sk] != null) keys.add(`big_five.${sk}`);
+        keys.add(`big_five.${sk}`);
       }
-    } else if (scaleId === 'ecr_r' && sr.subscaleScores) {
+    } else if (scaleId === 'ecr_r') {
       for (const sk of ['anxiety', 'avoidance']) {
-        if (sr.subscaleScores[sk] != null) keys.add(`ecr_r.${sk}`);
+        keys.add(`ecr_r.${sk}`);
       }
     } else {
       keys.add(scaleId);
@@ -73,21 +74,52 @@ function collectAllDimKeys(scaleResults) {
   return keys;
 }
 
+const SCALE_TEST_NAMES = {
+  big_five: 'Personnalité (Big Five)',
+  ecr_r: 'Attachement (ECR-R)',
+  brs: 'Résilience',
+  bonus_tdah: 'Concentration (TDAH)',
+  bonus_hsp: 'Sensibilité (HSP)',
+  bonus_hpi: 'Cognition (HPI)',
+  bonus_jalousie: 'Jalousie',
+  bonus_eq: 'Intelligence émotionnelle',
+  bonus_confiance: 'Confiance en soi',
+  bonus_narcissisme: 'Narcissisme',
+  bonus_manipulation: 'Machiavélisme',
+  gad7: 'Anxiété (GAD-7)',
+  rses: 'Estime de soi (RSES)',
+  pss10: 'Stress perçu (PSS-10)',
+  social_pressure: 'Pression sociale',
+  bonus_burnout: 'Burnout',
+  bonus_dependance: 'Dépendance affective',
+};
+
 function buildLockedDimensions(completedKeys, audience) {
   const excluded = audience && AUDIENCE_EXCLUSIONS[audience]
     ? AUDIENCE_EXCLUSIONS[audience]
     : new Set();
 
+  const lockedTests = new Set();
   const locked = [];
-  for (const [dimKey, theme] of Object.entries(DIMENSION_THEMES)) {
-    if (completedKeys.has(dimKey)) continue;
-    if (excluded.has(dimKey)) continue;
+  for (const [dk, theme] of Object.entries(DIMENSION_THEMES)) {
+    if (completedKeys.has(dk)) continue;
+    if (excluded.has(dk)) continue;
 
-    const scaleId = dimKey.includes('.') ? dimKey.split('.')[0] : dimKey;
+    const scaleId = dk.includes('.') ? dk.split('.')[0] : dk;
     const config = DEFI_SCALE_CONFIG[scaleId];
     if (!config || config.public === 'interdit') continue;
 
-    locked.push({ key: dimKey, theme });
+    const def = QUESTION_DEFS_V4[dk];
+    if (!def) continue;
+    const hasVariant = def.variants.some(v =>
+      v.audiences.includes(audience) || v.audiences.includes('tous')
+    );
+    if (!hasVariant) continue;
+
+    const testName = SCALE_TEST_NAMES[scaleId] || theme;
+    if (lockedTests.has(testName)) continue;
+    lockedTests.add(testName);
+    locked.push({ key: dk, theme: testName });
   }
 
   return locked;
@@ -187,11 +219,14 @@ exports.handler = async (event) => {
     if (audience !== 'tous' && PERSO_QUESTIONS[audience]) {
       persoPool.push(...PERSO_QUESTIONS[audience]);
     }
-    const persoList = persoPool.map(p => ({
-      id: p.id,
-      stem: p.stem,
-      options: p.options,
-    }));
+    const persoList = persoPool.map(p => {
+      let stem = resolveGender(p.stem.replace(/\{prenom\}/g, displayName), genre);
+      if (!/[?!….]$/.test(stem.trim())) stem = stem.trim() + ' ?';
+      const options = p.options.map(o =>
+        resolveGender(o.replace(/\{prenom\}/g, displayName), genre)
+      );
+      return { id: p.id, stem, options };
+    });
 
     return {
       statusCode: 200,

@@ -257,7 +257,7 @@ const QUESTION_DEFS_V4 = {
       },
       {
         id: 'res_projet', audiences: ['collegues'],
-        stem: "Un projet de {prenom} tombe à l'eau. Le lendemain…",
+        stem: "{prenom} voit un de ses projets tomber à l'eau. Le lendemain…",
         options: {
           bas: "{{Il|Elle}} a besoin d'une pause pour encaisser",
           moyen: "{{Il|Elle}} en parle, puis prépare un plan B",
@@ -734,9 +734,31 @@ const PERSO_QUESTIONS = {
   ],
 };
 
+const AUDIENCE_PRIORITIES = {
+  couple: [
+    'ecr_r.anxiety', 'ecr_r.avoidance', 'bonus_jalousie',
+    'big_five.emotional_stability', 'big_five.agreeableness', 'bonus_confiance',
+    'bonus_eq', 'bonus_dependance',
+  ],
+  famille: [
+    'big_five.agreeableness', 'big_five.emotional_stability', 'bonus_eq',
+    'bonus_confiance', 'social_pressure', 'big_five.conscientiousness',
+  ],
+  amis: [
+    'big_five.extraversion', 'big_five.agreeableness', 'bonus_confiance',
+    'bonus_eq', 'big_five.openness', 'bonus_hsp',
+  ],
+  collegues: [
+    'big_five.conscientiousness', 'big_five.agreeableness', 'big_five.emotional_stability',
+    'bonus_confiance', 'bonus_burnout', 'bonus_eq',
+  ],
+  tous: [],
+};
+
 module.exports = {
   QUESTION_DEFS_V4,
   AUDIENCE_EXCLUSIONS,
+  AUDIENCE_PRIORITIES,
   DIMENSION_THEMES,
   RESULT_TITLES,
   PERSO_QUESTIONS,

@@ -36,7 +36,7 @@ const STEPS = [
 
 const DefiPage: React.FC = () => {
   const navigate = useNavigate();
-  const { currentUser, isAuthenticated, authReady } = useAuth();
+  const { currentUser, isAuthenticated, authReady, loadingUserData } = useAuth();
   const { defiEnabled, loading: flagLoading } = useDefiFlag();
 
   const [profileResults, setProfileResults] = useState<Record<string, ScaleResult>>({});
@@ -175,7 +175,7 @@ const DefiPage: React.FC = () => {
     return () => unsubs.forEach(u => u());
   }, [activeDefiSlugs]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  if (!authReady || flagLoading || profileLoading) {
+  if (!authReady || loadingUserData || flagLoading || profileLoading) {
     return (
       <div className="min-h-screen bg-paper flex items-center justify-center">
         <div className="w-10 h-10 rounded-full border-[3px] border-line border-t-gold animate-spin" />

@@ -1425,6 +1425,51 @@ test("dimension without any scene for the audience is silently skipped, no error
   assert(selected.length >= 6, `still enough dimensions selected: ${selected.length}`);
 });
 
+test("couple priority: at least 4 priority dimensions with full profile and 3 perso", () => {
+  const results = makeRichResults();
+  const { error, selected } = selectDimensions(results, 'public', { audience: 'couple', persoCount: 3 });
+  assertEq(error, null, 'no error');
+  const keys = selected.map(d => d.subscaleKey ? `${d.scaleId}.${d.subscaleKey}` : d.scaleId);
+  const couplePriority = ['ecr_r.anxiety', 'ecr_r.avoidance', 'bonus_jalousie',
+    'big_five.emotional_stability', 'big_five.agreeableness', 'bonus_confiance',
+    'bonus_eq', 'bonus_dependance'];
+  const prioCount = keys.filter(k => couplePriority.includes(k)).length;
+  assert(prioCount >= 4, `couple with 3 perso: ${prioCount} priority dims (need ≥4), got: ${keys.join(', ')}`);
+});
+
+test("famille priority: at least 4 priority dimensions with full profile and 3 perso", () => {
+  const results = makeRichResults();
+  const { error, selected } = selectDimensions(results, 'public', { audience: 'famille', persoCount: 3 });
+  assertEq(error, null, 'no error');
+  const keys = selected.map(d => d.subscaleKey ? `${d.scaleId}.${d.subscaleKey}` : d.scaleId);
+  const famPriority = ['big_five.agreeableness', 'big_five.emotional_stability', 'bonus_eq',
+    'bonus_confiance', 'social_pressure', 'big_five.conscientiousness'];
+  const prioCount = keys.filter(k => famPriority.includes(k)).length;
+  assert(prioCount >= 4, `famille with 3 perso: ${prioCount} priority dims (need ≥4), got: ${keys.join(', ')}`);
+});
+
+test("amis priority: at least 4 priority dimensions with full profile and 3 perso", () => {
+  const results = makeRichResults();
+  const { error, selected } = selectDimensions(results, 'public', { audience: 'amis', persoCount: 3 });
+  assertEq(error, null, 'no error');
+  const keys = selected.map(d => d.subscaleKey ? `${d.scaleId}.${d.subscaleKey}` : d.scaleId);
+  const amisPriority = ['big_five.extraversion', 'big_five.agreeableness', 'bonus_confiance',
+    'bonus_eq', 'big_five.openness', 'bonus_hsp'];
+  const prioCount = keys.filter(k => amisPriority.includes(k)).length;
+  assert(prioCount >= 4, `amis with 3 perso: ${prioCount} priority dims (need ≥4), got: ${keys.join(', ')}`);
+});
+
+test("collegues priority: at least 4 priority dimensions with full profile and 3 perso", () => {
+  const results = makeRichResults();
+  const { error, selected } = selectDimensions(results, 'public', { audience: 'collegues', persoCount: 3 });
+  assertEq(error, null, 'no error');
+  const keys = selected.map(d => d.subscaleKey ? `${d.scaleId}.${d.subscaleKey}` : d.scaleId);
+  const collPriority = ['big_five.conscientiousness', 'big_five.agreeableness', 'big_five.emotional_stability',
+    'bonus_confiance', 'bonus_burnout', 'bonus_eq'];
+  const prioCount = keys.filter(k => collPriority.includes(k)).length;
+  assert(prioCount >= 4, `collegues with 3 perso: ${prioCount} priority dims (need ≥4), got: ${keys.join(', ')}`);
+});
+
 // ── Summary ──────────────────────────────────────────────────────────────────
 
 console.log(`\n${'═'.repeat(50)}`);

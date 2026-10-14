@@ -73,7 +73,7 @@ interface SelectedPerso {
 
 const DefiCreerPage: React.FC = () => {
   const navigate = useNavigate();
-  const { currentUser, isAuthenticated, authReady } = useAuth();
+  const { currentUser, isAuthenticated, authReady, loadingUserData } = useAuth();
   const { defiEnabled, loading: flagLoading } = useDefiFlag();
 
   const [scaleResults, setScaleResults] = useState<Record<string, ScaleResult>>({});
@@ -155,7 +155,7 @@ const DefiCreerPage: React.FC = () => {
     }
   };
 
-  if (!authReady || flagLoading || profileLoading) {
+  if (!authReady || loadingUserData || flagLoading || profileLoading) {
     return (
       <div className="min-h-screen bg-paper flex items-center justify-center">
         <div className="w-10 h-10 rounded-full border-[3px] border-line border-t-gold animate-spin" />
@@ -518,7 +518,7 @@ const DefiCreerPage: React.FC = () => {
                   return (
                     <div key={perso.id} className="rounded-[12px] border border-line bg-white overflow-hidden">
                       <button
-                        onClick={() => { if (canAdd) handleTogglePerso(perso); }}
+                        onClick={() => { if (canAdd || isSelected) handleTogglePerso(perso); }}
                         disabled={!canAdd && !isSelected}
                         className={`w-full text-left px-4 py-3 flex items-center gap-3 bg-transparent border-none cursor-pointer transition-colors ${
                           !canAdd && !isSelected ? 'opacity-40 cursor-not-allowed' : ''
