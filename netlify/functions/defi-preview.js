@@ -222,9 +222,10 @@ exports.handler = async (event) => {
     const persoList = persoPool.map(p => {
       let stem = resolveGender(p.stem.replace(/\{prenom\}/g, displayName), genre);
       if (!/[?!….]$/.test(stem.trim())) stem = stem.trim() + ' ?';
-      const options = p.options.map(o =>
-        resolveGender(o.replace(/\{prenom\}/g, displayName), genre)
-      );
+      const options = p.options.map((o, i) => ({
+        idx: i,
+        label: resolveGender(o.replace(/\{prenom\}/g, displayName), genre),
+      }));
       const item = { id: p.id, stem, options };
       if (p.allowOther) item.allowOther = true;
       if (p.genderChoice) item.genderChoice = true;

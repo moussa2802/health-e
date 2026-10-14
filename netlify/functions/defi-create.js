@@ -179,20 +179,23 @@ exports.handler = async (event) => {
       if (bank[audience]) allPerso.push(...bank[audience]);
       const persoById = new Map(allPerso.map(p => [p.id, p]));
 
+      const resolved = [];
       for (const pq of payload.persoQuestions) {
         const def = persoById.get(pq.questionId);
         if (!pq.questionId || !def) {
           return { statusCode: 400, headers, body: JSON.stringify({ error: `Question perso inconnue : ${pq.questionId}` }) };
         }
-        if (!pq.creatorAnswer || typeof pq.creatorAnswer !== 'string') {
-          return { statusCode: 400, headers, body: JSON.stringify({ error: `Réponse invalide pour ${pq.questionId}` }) };
-        }
-        const isPreset = def.options.includes(pq.creatorAnswer);
-        if (!isPreset) {
-          if (!def.allowOther) {
+
+        if (typeof pq.answerIdx === 'number') {
+          if (pq.answerIdx < 0 || pq.answerIdx >= def.options.length) {
             return { statusCode: 400, headers, body: JSON.stringify({ error: `Réponse invalide pour ${pq.questionId}` }) };
           }
-          const answer = pq.creatorAnswer.trim();
+          resolved.push({ questionId: pq.questionId, creatorAnswer: def.options[pq.answerIdx] });
+        } else if (typeof pq.customAnswer === 'string') {
+          if (!def.allowOther) {
+            return { statusCode: 400, headers, body: JSON.stringify({ error: `Réponse libre non autorisée pour ${pq.questionId}` }) };
+          }
+          const answer = pq.customAnswer.trim();
           if (answer.length < 1 || answer.length > 30) {
             return { statusCode: 400, headers, body: JSON.stringify({ error: 'Réponse personnalisée : 1-30 caractères' }) };
           }
@@ -208,12 +211,14 @@ exports.handler = async (event) => {
           if (isDup) {
             return { statusCode: 400, headers, body: JSON.stringify({ error: 'Cette réponse existe déjà dans les choix' }) };
           }
+          resolved.push({ questionId: pq.questionId, creatorAnswer: answer });
+        } else if (typeof pq.creatorAnswer === 'string' && def.options.includes(pq.creatorAnswer)) {
+          resolved.push({ questionId: pq.questionId, creatorAnswer: pq.creatorAnswer });
+        } else {
+          return { statusCode: 400, headers, body: JSON.stringify({ error: `Réponse invalide pour ${pq.questionId}` }) };
         }
       }
-      persoQuestions = payload.persoQuestions.map(pq => ({
-        questionId: pq.questionId,
-        creatorAnswer: pq.creatorAnswer.trim(),
-      }));
+      persoQuestions = resolved;
     }
 
     // Get previous variant ids to avoid repetition

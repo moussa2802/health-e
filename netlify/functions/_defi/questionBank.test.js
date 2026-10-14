@@ -617,9 +617,10 @@ test("totem question options have opaque IDs", () => {
   }
 });
 
-test("totem question displays ×2 bonus", () => {
+test("totem question has ×2 bonus in metadata (text is clean, badge is client-side)", () => {
   const { question, truth } = buildTotemQuestion('lion', 'Moussa', 'M');
-  assert(question.text.includes('×2'), "question text should mention ×2");
+  assert(!question.text.includes('×2'), "×2 must not be in text (client-side badge handles it)");
+  assert(question.text.includes('totem'), "question text mentions totem");
   assert(question.bonus === TOTEM_POINTS, `bonus should be ${TOTEM_POINTS}`);
   assertEq(truth.points, TOTEM_POINTS, "truth.points = TOTEM_POINTS");
 });
@@ -1574,6 +1575,69 @@ test("forbidden content: no skin color or morphology terms in perso options", ()
   }
 
   assert(violations.length === 0, `forbidden content found:\n    ${violations.join('\n    ')}`);
+});
+
+test("selectVariant: audience-exact variant always beats 'tous' variant", () => {
+  for (let i = 0; i < 30; i++) {
+    const v = selectVariant('big_five.agreeableness', 'couple', []);
+    assertEq(v.id, 'agre_dispute',
+      `couple agreeableness must always pick agre_dispute (couple-only), got ${v.id}`);
+  }
+
+  const vTous = selectVariant('big_five.agreeableness', 'tous', []);
+  assert(vTous && vTous.id !== 'agre_dispute',
+    `tous agreeableness must not pick couple-only agre_dispute, got ${vTous.id}`);
+});
+
+test("selectVariant: audience-exact beats 'tous' even when exact was used before", () => {
+  const v = selectVariant('big_five.agreeableness', 'couple', ['agre_dispute']);
+  assertEq(v.id, 'agre_dispute',
+    `couple should re-use agre_dispute rather than fall back to agre_whatsapp, got ${v.id}`);
+});
+
+test("end-to-end perso: every question builds, scores, and round-trips correctly", () => {
+  const results = makeRichResults();
+  results.push({ scaleId: 'bonus_jalousie', totalScore: 25, alertLevel: 0 });
+  results.push({ scaleId: 'bonus_dependance', totalScore: 15, alertLevel: 0 });
+  results.push({ scaleId: 'rses', totalScore: 20, alertLevel: 0 });
+
+  const audiences = Object.keys(PERSO_QUESTIONS);
+  const failures = [];
+
+  for (const aud of audiences) {
+    const effectiveAud = (aud === 'tous') ? 'amis' : aud;
+    for (const pq of PERSO_QUESTIONS[aud]) {
+      const answer = pq.options[0];
+      const { selected } = selectDimensions(results, 'public', { audience: effectiveAud, persoCount: 1 });
+      const keys = selected.map(d => d.subscaleKey ? `${d.scaleId}.${d.subscaleKey}` : d.scaleId);
+
+      const { error, questions, truths } = buildQuestionsFromKeys(
+        keys, results, 'M', 'Moussa', 'public', 'lion', null,
+        { audience: effectiveAud, persoQuestions: [{ questionId: pq.id, creatorAnswer: answer }] }
+      );
+
+      if (error) { failures.push(`${aud}/${pq.id}: build error=${error}`); continue; }
+
+      const persoQ = questions.find(q => q.questionId === pq.id);
+      if (!persoQ) { failures.push(`${aud}/${pq.id}: question not in output`); continue; }
+
+      const persoT = truths.find(t => t.questionId === pq.id);
+      if (!persoT) { failures.push(`${aud}/${pq.id}: truth not in output`); continue; }
+      if (!persoT.correctOptionId) { failures.push(`${aud}/${pq.id}: no correctOptionId`); continue; }
+
+      const correctOpt = persoQ.options.find(o => o.id === persoT.correctOptionId);
+      if (!correctOpt) { failures.push(`${aud}/${pq.id}: correctOptionId not in displayed options`); continue; }
+
+      const rightAnswer = [{ optionId: persoT.correctOptionId }];
+      const wrongAnswer = [{ optionId: persoQ.options.find(o => o.id !== persoT.correctOptionId).id }];
+      const rRight = scoreResponse([persoT], rightAnswer);
+      const rWrong = scoreResponse([persoT], wrongAnswer);
+      if (rRight.bonnes !== 1) failures.push(`${aud}/${pq.id}: correct answer scored ${rRight.bonnes} bonnes`);
+      if (rWrong.mauvaises !== 1) failures.push(`${aud}/${pq.id}: wrong answer scored ${rWrong.mauvaises} mauvaises`);
+    }
+  }
+
+  assert(failures.length === 0, `perso end-to-end failures:\n    ${failures.join('\n    ')}`);
 });
 
 test("genderChoice questions exist only in amis/couple audiences", () => {

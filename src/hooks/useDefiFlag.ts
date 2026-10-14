@@ -44,5 +44,8 @@ export function useDefiFlag(): DefiFlag {
       });
   }, [currentUser, authReady]);
 
+  if (currentUser && fetched.current !== currentUser.id) {
+    return { defiEnabled: false, loading: true };
+  }
   return state;
 }

@@ -149,12 +149,15 @@ function selectVariant(dimKey, audience, previousVariantIds = []) {
   );
   if (candidates.length === 0) return null;
 
+  const exact = candidates.filter(v => v.audiences.includes(audience));
+  if (exact.length > 0) {
+    const freshExact = exact.filter(v => !previousVariantIds.includes(v.id));
+    const pool = freshExact.length > 0 ? freshExact : exact;
+    return pool[Math.floor(Math.random() * pool.length)];
+  }
+
   const fresh = candidates.filter(v => !previousVariantIds.includes(v.id));
   const pool = fresh.length > 0 ? fresh : candidates;
-
-  const specific = pool.filter(v => v.audiences.includes(audience));
-  if (specific.length > 0) return specific[Math.floor(Math.random() * specific.length)];
-
   return pool[Math.floor(Math.random() * pool.length)];
 }
 
@@ -200,7 +203,7 @@ function buildTotemQuestion(realAnimal, prenom, genre) {
       source: 'totem',
       bonus: TOTEM_POINTS,
       text: resolveGender(
-        `Question bonus ×${TOTEM_POINTS} 🐾 D'après toi, c'est quoi le totem de ${prenom} ?`,
+        `D'après toi, c'est quoi le totem de ${prenom} ?`,
         genre
       ),
       options: publicOptions,

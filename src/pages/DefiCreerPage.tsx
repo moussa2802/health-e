@@ -55,10 +55,17 @@ interface PreviewQuestion {
   theme?: string | null;
 }
 
+interface PersoOption {
+  idx: number;
+  label: string;
+}
+
 interface PersoQuestion {
   id: string;
   stem: string;
-  options: string[];
+  options: PersoOption[];
+  allowOther?: boolean;
+  genderChoice?: boolean;
 }
 
 interface LockedDimension {
@@ -68,7 +75,9 @@ interface LockedDimension {
 
 interface SelectedPerso {
   questionId: string;
-  creatorAnswer: string;
+  answerIdx?: number;
+  customAnswer?: string;
+  displayLabel: string;
 }
 
 const DefiCreerPage: React.FC = () => {
@@ -109,6 +118,7 @@ const DefiCreerPage: React.FC = () => {
   const [persoPool, setPersoPool] = useState<PersoQuestion[]>([]);
   const [selectedPerso, setSelectedPerso] = useState<SelectedPerso[]>([]);
   const [answeringPersoId, setAnsweringPersoId] = useState<string | null>(null);
+  const [customAnswerText, setCustomAnswerText] = useState('');
 
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -298,10 +308,21 @@ const DefiCreerPage: React.FC = () => {
     }
   };
 
-  const handleAnswerPerso = (persoId: string, answer: string) => {
-    const newPerso = [...selectedPerso, { questionId: persoId, creatorAnswer: answer }];
+  const handleAnswerPerso = (persoId: string, opt: PersoOption) => {
+    const newPerso = [...selectedPerso, { questionId: persoId, answerIdx: opt.idx, displayLabel: opt.label }];
     setSelectedPerso(newPerso);
     setAnsweringPersoId(null);
+    setCustomAnswerText('');
+    adjustTraitsForPerso(newPerso.length, fullTraits);
+  };
+
+  const handleCustomAnswerPerso = (persoId: string, text: string) => {
+    const trimmed = text.trim();
+    if (trimmed.length < 1 || trimmed.length > 30) return;
+    const newPerso = [...selectedPerso, { questionId: persoId, customAnswer: trimmed, displayLabel: `✍️ ${trimmed}` }];
+    setSelectedPerso(newPerso);
+    setAnsweringPersoId(null);
+    setCustomAnswerText('');
     adjustTraitsForPerso(newPerso.length, fullTraits);
   };
 
@@ -324,7 +345,10 @@ const DefiCreerPage: React.FC = () => {
           audience,
           petitsMots,
           selectedKeys,
-          ...(selectedPerso.length > 0 ? { persoQuestions: selectedPerso } : {}),
+          ...(selectedPerso.length > 0 ? { persoQuestions: selectedPerso.map(sp => {
+            if (sp.customAnswer) return { questionId: sp.questionId, customAnswer: sp.customAnswer };
+            return { questionId: sp.questionId, answerIdx: sp.answerIdx };
+          }) } : {}),
           ...(genre ? { genre } : {}),
         }),
       });
@@ -475,7 +499,7 @@ const DefiCreerPage: React.FC = () => {
                       </div>
                       <p className="text-[14px] text-ink m-0 leading-snug">{perso.stem}</p>
                       <p className="text-[12px] text-muted m-0 mt-1">
-                        Ta réponse : <span className="font-medium text-ink">{sp.creatorAnswer}</span>
+                        Ta réponse : <span className="font-medium text-ink">{sp.displayLabel}</span>
                       </p>
                     </div>
                     <button
@@ -538,16 +562,37 @@ const DefiCreerPage: React.FC = () => {
                           <div className="flex flex-col gap-1.5">
                             {perso.options.map(opt => (
                               <button
-                                key={opt}
+                                key={opt.idx}
                                 onClick={() => handleAnswerPerso(perso.id, opt)}
                                 className="text-left px-3 py-2 rounded-[8px] border border-line bg-paper text-[13px] text-ink cursor-pointer hover:border-sage transition-colors"
                               >
-                                {opt}
+                                {opt.label}
                               </button>
                             ))}
+                            {perso.allowOther && (
+                              <div className="flex flex-col gap-1.5 mt-1">
+                                <div className="flex gap-2">
+                                  <input
+                                    type="text"
+                                    value={customAnswerText}
+                                    onChange={e => setCustomAnswerText(e.target.value.slice(0, 30))}
+                                    placeholder="✍️ Autre : j'écris ma réponse"
+                                    className="flex-1 px-3 py-2 rounded-[8px] border border-line bg-paper text-[13px] text-ink"
+                                  />
+                                  <button
+                                    onClick={() => handleCustomAnswerPerso(perso.id, customAnswerText)}
+                                    disabled={customAnswerText.trim().length < 1}
+                                    className="px-3 py-2 rounded-[8px] border border-sage bg-sage text-white text-[13px] font-medium cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                                  >
+                                    OK
+                                  </button>
+                                </div>
+                                <span className="text-[11px] text-muted">{customAnswerText.trim().length}/30</span>
+                              </div>
+                            )}
                           </div>
                           <button
-                            onClick={() => setAnsweringPersoId(null)}
+                            onClick={() => { setAnsweringPersoId(null); setCustomAnswerText(''); }}
                             className="mt-2 text-[12px] text-muted bg-transparent border-none cursor-pointer p-0"
                           >
                             Annuler
