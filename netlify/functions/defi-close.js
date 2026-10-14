@@ -53,10 +53,30 @@ exports.handler = async (event) => {
       const profileRef = db.collection('userProfiles').doc(user.uid);
       const profileDoc = await tx.get(profileRef);
 
+      const mesDefiRef = db.collection('userProfiles').doc(user.uid)
+        .collection('mesDefis').doc(slug);
+      const mesDefiDoc = await tx.get(mesDefiRef);
+
       if (defiDoc.exists) {
         tx.update(defiRef, { expiresAt: now, statut: 'termine' });
       }
       tx.update(privateRef, { expiresAt: now, statut: 'termine' });
+
+      if (mesDefiDoc.exists) {
+        const defiData = defiDoc.exists ? defiDoc.data() : {};
+        const classement = defiData.classement || [];
+        const top3 = classement.slice(0, 3).map(e => ({
+          pseudo: e.pseudo, score: e.score,
+        }));
+        tx.update(mesDefiRef, {
+          statut: 'termine',
+          endedAt: now,
+          endedBy: 'createur',
+          nbReponses: defiData.nbReponses || 0,
+          scoreMoyen: defiData.scoreMoyen || 0,
+          top3,
+        });
+      }
 
       if (profileDoc.exists) {
         const profile = profileDoc.data();

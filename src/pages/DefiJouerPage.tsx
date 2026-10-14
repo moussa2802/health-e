@@ -348,7 +348,7 @@ export default function DefiJouerPage() {
       <div className="min-h-screen bg-paper">
         <MiniHeader />
         <div className="max-w-md mx-auto px-5 pt-12 text-center">
-          <p className="text-4xl mb-4">⏰</p>
+          <p className="text-4xl mb-4">🏁</p>
           <h1 className="font-display text-xl font-bold text-ink mb-2">Ce défi est terminé</h1>
           <p className="text-muted mb-6">Le temps est écoulé !</p>
 
@@ -364,8 +364,11 @@ export default function DefiJouerPage() {
             </div>
           )}
 
-          <button onClick={() => navigate('/defi')} className="bg-gold text-white font-semibold px-6 py-3 rounded-xl w-full">
-            Lance ton propre défi
+          <button
+            onClick={() => navigate(`/decouvre?src=defi&ref=${slug}`)}
+            className="bg-gold text-white font-semibold px-6 py-3 rounded-xl w-full"
+          >
+            Et toi, découvre ton totem
           </button>
         </div>
       </div>

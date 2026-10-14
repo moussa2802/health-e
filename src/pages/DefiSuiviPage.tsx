@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Navigate } from 'react-router-dom';
 import { doc, onSnapshot, getDoc, collection, query as fsQuery, orderBy, getDocs, updateDoc } from 'firebase/firestore';
-import { ArrowLeft, Copy, Check, Clock, Share2, EyeOff, Eye, Flag, Loader2 } from 'lucide-react';
+import { ArrowLeft, Copy, Check, Clock, Share2, EyeOff, Eye, Flag, Loader2, CheckCircle } from 'lucide-react';
 import { db } from '../utils/firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { authedFetch } from '../utils/authedFetch';
+import { getProfileProgress } from '../services/evaluationService';
 
 interface ClassementEntry {
   pseudo: string;
@@ -66,12 +67,16 @@ const DefiSuiviPage: React.FC = () => {
   const [closeError, setCloseError] = useState('');
   const [msgError, setMsgError] = useState('');
   const [msgBusy, setMsgBusy] = useState<string | null>(null);
+  const [activeCount, setActiveCount] = useState(0);
 
   useEffect(() => {
     if (!currentUser || !slug) return;
     getDoc(doc(db, 'userProfiles', currentUser.id, 'mesDefis', slug))
       .then(snap => setIsOwner(snap.exists()))
       .catch(() => setIsOwner(false));
+    getProfileProgress(currentUser.id)
+      .then(p => setActiveCount(p.activeDefis.length))
+      .catch(() => {});
   }, [currentUser?.id, slug]);
 
   useEffect(() => {
@@ -179,10 +184,19 @@ const DefiSuiviPage: React.FC = () => {
             {defi.titre || 'Kan moo ma gën a xam ?'}
           </h2>
           <div className="flex items-center justify-center gap-2 mt-2">
-            <Clock size={14} className={expired ? 'text-muted' : 'text-gold'} />
-            <span className={`text-sm font-medium ${expired ? 'text-muted' : 'text-gold'}`}>
-              {expired ? 'Terminé' : `Se termine dans ${countdown}`}
-            </span>
+            {expired ? (
+              <span className="inline-flex items-center gap-1.5 text-sm font-medium text-muted bg-line px-3 py-1 rounded-full">
+                <CheckCircle size={14} />
+                Terminé{defi.expiresAt ? ` le ${toDate(defi.expiresAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })}` : ''}
+              </span>
+            ) : (
+              <>
+                <Clock size={14} className="text-gold" />
+                <span className="text-sm font-medium text-gold">
+                  Se termine dans {countdown}
+                </span>
+              </>
+            )}
           </div>
         </div>
 
@@ -396,16 +410,32 @@ const DefiSuiviPage: React.FC = () => {
 
         {/* CTA */}
         {expired ? (
-          <button
-            onClick={() => navigate('/defi/creer')}
-            className="w-full py-3.5 rounded-[14px] border-none bg-gold text-white text-[15px] font-bold cursor-pointer shadow-soft"
-          >
-            Lancer un nouveau défi
-          </button>
+          <div className="space-y-3">
+            <button
+              onClick={() => navigate('/defi/creer')}
+              disabled={activeCount >= 3}
+              className={`w-full py-3.5 rounded-[14px] border-none text-[15px] font-bold cursor-pointer shadow-soft ${
+                activeCount >= 3 ? 'bg-line text-muted cursor-not-allowed' : 'bg-gold text-white'
+              }`}
+            >
+              Créer un nouveau défi
+            </button>
+            {activeCount >= 3 && (
+              <p className="text-[12px] text-muted text-center m-0">
+                Maximum 3 défis actifs simultanément
+              </p>
+            )}
+            <button
+              onClick={() => navigate('/defi')}
+              className="w-full py-3 rounded-[14px] border border-line bg-card text-ink text-sm font-medium cursor-pointer"
+            >
+              Mes défis
+            </button>
+          </div>
         ) : (
           <div className="space-y-3">
             <button
-              onClick={() => navigate('/defi/mes-defis')}
+              onClick={() => navigate('/defi')}
               className="w-full py-3 rounded-[14px] border border-line bg-card text-ink text-sm font-medium cursor-pointer"
             >
               Mes défis

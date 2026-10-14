@@ -454,6 +454,7 @@ export async function getProfileProgress(userId: string): Promise<{
   totem: { animal: string; computedAt: Date; revealedAt: Date | null; pendingAnimal: string | null; lastImprovement: { scaleId: string; domainLabel: string; from: string; to: string; at: Date } | null } | null;
   archetypeId: string | null;
   activeDefis: Array<{ slug: string; titre: string; audience: string; expiresAt: Date }>;
+  defiHistory: boolean;
   defiGenre: string | null;
 }> {
   const ref = doc(db, PROFILES_COL, userId);
@@ -484,6 +485,7 @@ export async function getProfileProgress(userId: string): Promise<{
       totem: null,
       archetypeId: null,
       activeDefis: [],
+      defiHistory: false,
       defiGenre: null,
     };
   }
@@ -562,6 +564,7 @@ export async function getProfileProgress(userId: string): Promise<{
 
       return [];
     })(),
+    defiHistory: !!(data.defiHistory || data.activeDefis?.length || data.activeDefi),
     defiGenre: (data.defiGenre as string | null) ?? null,
   };
 }

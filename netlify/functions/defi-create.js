@@ -274,6 +274,7 @@ exports.handler = async (event) => {
           slug: ad.slug, titre: ad.titre, audience: ad.audience, expiresAt: ad.expiresAt,
         })),
         activeDefi: { slug, expiresAt },
+        defiHistory: true,
         updatedAt: createdAt,
       });
 

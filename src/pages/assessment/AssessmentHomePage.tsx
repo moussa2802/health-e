@@ -108,6 +108,7 @@ const AssessmentHomePage: React.FC = () => {
   const [totemData, setTotemData] = useState<{ animal: string; computedAt: Date; revealedAt: Date | null; pendingAnimal: string | null } | null>(null);
   const [journalToday, setJournalToday] = useState<boolean | null>(null);
   const [activeDefis, setActiveDefis] = useState<Array<{ slug: string; titre: string; audience: string; expiresAt: Date }>>([]);
+  const [defiHistory, setDefiHistory] = useState(false);
   const [tilesLoaded, setTilesLoaded] = useState(false);
   const ringRef = useRef<SVGCircleElement>(null);
   const segmentedRef = useRef<HTMLDivElement>(null);
@@ -135,6 +136,7 @@ const AssessmentHomePage: React.FC = () => {
         setBonusCompleted(p.bonusCompletedCount);
         setTotemData(p.totem);
         setActiveDefis(p.activeDefis);
+        setDefiHistory(p.defiHistory);
         setTilesLoaded(true);
         if (p.totem?.revealedAt && !p.archetypeId && currentUser) {
           const arch = getArchetype(p.scaleResults);
@@ -609,6 +611,7 @@ const AssessmentHomePage: React.FC = () => {
               totemRevealed={totemIsRevealed}
               onLockedClick={handleCompatLockedClick}
               activeDefis={activeDefis}
+              hasHistory={defiHistory}
             />
           )}
         </div>

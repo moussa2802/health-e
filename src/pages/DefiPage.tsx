@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Navigate } from 'react-router-dom';
-import { ArrowLeft, Sparkles, Users, Crown, Eye, Plus, Clock } from 'lucide-react';
-import { doc, onSnapshot } from 'firebase/firestore';
+import { ArrowLeft, Sparkles, Users, Crown, Eye, Plus, Clock, CheckCircle, ChevronDown, Loader2 } from 'lucide-react';
+import { doc, onSnapshot, collection, query as fsQuery, orderBy, limit, getDocs, getDoc, startAfter as fsStartAfter, type DocumentSnapshot } from 'firebase/firestore';
 import { db } from '../utils/firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { useDefiFlag } from '../hooks/useDefiFlag';
@@ -47,6 +47,21 @@ const DefiPage: React.FC = () => {
   const [profileLoading, setProfileLoading] = useState(true);
   const [reponsesBySlug, setReponsesBySlug] = useState<Record<string, number>>({});
 
+  interface TerminatedDefi {
+    slug: string;
+    titre?: string;
+    displayName?: string;
+    nbReponses?: number;
+    scoreMoyen?: number;
+    endedAt?: Date;
+    expiresAt?: Date;
+    createdAt?: Date;
+  }
+  const [terminatedDefis, setTerminatedDefis] = useState<TerminatedDefi[]>([]);
+  const [terminatedLoading, setTerminatedLoading] = useState(false);
+  const [lastTerminatedDoc, setLastTerminatedDoc] = useState<DocumentSnapshot | null>(null);
+  const [hasMoreTerminated, setHasMoreTerminated] = useState(false);
+
   useEffect(() => {
     if (!isAuthenticated || !currentUser) {
       setProfileLoading(false);
@@ -62,7 +77,90 @@ const DefiPage: React.FC = () => {
       .catch(() => setProfileLoading(false));
   }, [isAuthenticated, currentUser?.id]);
 
+  function toDate(val: unknown): Date {
+    if (!val) return new Date(0);
+    if (typeof val === 'object' && val !== null && 'toDate' in val) return (val as { toDate: () => Date }).toDate();
+    return new Date(val as string | number);
+  }
+
+  const loadTerminatedDefis = async (afterDoc?: DocumentSnapshot) => {
+    if (!currentUser) return;
+    setTerminatedLoading(true);
+    try {
+      const mesDefisRef = collection(db, 'userProfiles', currentUser.id, 'mesDefis');
+      const q = afterDoc
+        ? fsQuery(mesDefisRef, orderBy('createdAt', 'desc'), fsStartAfter(afterDoc), limit(13))
+        : fsQuery(mesDefisRef, orderBy('createdAt', 'desc'), limit(13));
+      const snap = await getDocs(q);
+
+      const activeSlugs = new Set(activeDefis.map(d => d.slug));
+      const now = Date.now();
+      const terminated: TerminatedDefi[] = [];
+
+      const fallbackPromises: Array<{ idx: number; slug: string }> = [];
+
+      snap.docs.forEach(d => {
+        const data = d.data();
+        const slug = d.id;
+        if (activeSlugs.has(slug)) return;
+        const isTerminated = data.statut === 'termine' || toDate(data.expiresAt).getTime() < now;
+        if (!isTerminated) return;
+
+        const entry: TerminatedDefi = {
+          slug,
+          titre: data.titre,
+          displayName: data.displayName,
+          endedAt: data.endedAt ? toDate(data.endedAt) : undefined,
+          expiresAt: data.expiresAt ? toDate(data.expiresAt) : undefined,
+          createdAt: data.createdAt ? toDate(data.createdAt) : undefined,
+          nbReponses: data.nbReponses,
+          scoreMoyen: data.scoreMoyen,
+        };
+        if (terminated.length < 10) {
+          const idx = terminated.length;
+          terminated.push(entry);
+          if (entry.nbReponses == null) {
+            fallbackPromises.push({ idx, slug });
+          }
+        }
+      });
+
+      if (fallbackPromises.length > 0) {
+        const results = await Promise.all(
+          fallbackPromises.map(({ slug }) =>
+            getDoc(doc(db, 'defis', slug)).catch(() => null)
+          )
+        );
+        results.forEach((defiSnap, i) => {
+          if (defiSnap?.exists()) {
+            const d = defiSnap.data();
+            terminated[fallbackPromises[i].idx].nbReponses = d.nbReponses || 0;
+            terminated[fallbackPromises[i].idx].scoreMoyen = d.scoreMoyen || 0;
+          }
+        });
+      }
+
+      if (afterDoc) {
+        setTerminatedDefis(prev => [...prev, ...terminated]);
+      } else {
+        setTerminatedDefis(terminated);
+      }
+      setHasMoreTerminated(snap.docs.length === 13);
+      setLastTerminatedDoc(snap.docs.length > 0 ? snap.docs[snap.docs.length - 1] : null);
+    } catch {
+      /* silently fail */
+    } finally {
+      setTerminatedLoading(false);
+    }
+  };
+
   const activeDefiSlugs = activeDefis.map(d => d.slug).join(',');
+
+  useEffect(() => {
+    if (!currentUser || profileLoading) return;
+    loadTerminatedDefis();
+  }, [currentUser?.id, profileLoading, activeDefiSlugs]); // eslint-disable-line react-hooks/exhaustive-deps
+
   useEffect(() => {
     if (activeDefis.length === 0) return;
     const unsubs = activeDefis.map(ad =>
@@ -237,6 +335,63 @@ const DefiPage: React.FC = () => {
           </div>
         )}
 
+        {terminatedDefis.length > 0 && (
+          <div className="mb-6">
+            <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-muted m-0 mb-3">
+              Terminés
+            </p>
+            <div className="flex flex-col gap-3">
+              {terminatedDefis.map(td => (
+                <div
+                  key={td.slug}
+                  className="rounded-[14px] border border-line bg-card p-4 cursor-pointer shadow-soft"
+                  onClick={() => navigate(`/defi/${td.slug}/suivi`)}
+                >
+                  <div className="flex items-center justify-between mb-1.5">
+                    <h4 className="font-display text-[15px] font-semibold text-ink m-0 truncate">
+                      {td.titre || td.displayName ? `Défi de ${td.displayName}` : 'Mon défi'}
+                    </h4>
+                    <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-line text-muted flex-shrink-0 ml-2 flex items-center gap-1">
+                      <CheckCircle size={10} />
+                      Terminé
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-[13px] text-muted">
+                      {td.nbReponses != null
+                        ? td.nbReponses === 0
+                          ? 'Aucune réponse'
+                          : `${td.nbReponses} réponse${td.nbReponses > 1 ? 's' : ''} · ${td.scoreMoyen || 0} %`
+                        : '…'}
+                    </span>
+                    <span className="text-[11px] text-muted">
+                      {td.endedAt
+                        ? td.endedAt.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })
+                        : td.expiresAt
+                          ? td.expiresAt.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })
+                          : ''}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+            {hasMoreTerminated && (
+              <button
+                onClick={() => {
+                  if (lastTerminatedDoc) loadTerminatedDefis(lastTerminatedDoc);
+                }}
+                disabled={terminatedLoading}
+                className="w-full mt-3 py-2.5 rounded-[14px] border border-line bg-card text-muted text-sm font-medium cursor-pointer flex items-center justify-center gap-1.5"
+              >
+                {terminatedLoading
+                  ? <Loader2 size={14} className="animate-spin" />
+                  : <ChevronDown size={14} />}
+                Voir plus
+              </button>
+            )}
+          </div>
+        )}
+
         <button
           onClick={() => navigate('/defi/creer')}
           disabled={!canCreate}
@@ -246,8 +401,8 @@ const DefiPage: React.FC = () => {
               : 'bg-line text-muted cursor-not-allowed'
           }`}
         >
-          {hasActiveDefis ? <Plus size={16} /> : <Sparkles size={16} />}
-          {hasActiveDefis ? 'Créer un nouveau défi' : 'Créer mon défi'}
+          {hasActiveDefis || terminatedDefis.length > 0 ? <Plus size={16} /> : <Sparkles size={16} />}
+          {hasActiveDefis || terminatedDefis.length > 0 ? 'Créer un nouveau défi' : 'Créer mon défi'}
         </button>
         {!canCreate && (
           <p className="text-[12px] text-muted text-center m-0 mt-2">

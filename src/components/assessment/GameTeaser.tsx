@@ -10,6 +10,7 @@ interface GameTeaserProps {
   totemRevealed: boolean;
   onLockedClick: () => void;
   activeDefis?: Array<{ slug: string; titre: string; audience: string; expiresAt: Date }>;
+  hasHistory?: boolean;
 }
 
 const THREE_DAYS_MS = 3 * 24 * 60 * 60 * 1000;
@@ -22,6 +23,7 @@ const GameTeaser: React.FC<GameTeaserProps> = ({
   totemRevealed,
   onLockedClick,
   activeDefis = [],
+  hasHistory = false,
 }) => {
   const navigate = useNavigate();
   const missing = totemProgress.total - totemProgress.completed;
@@ -168,14 +170,21 @@ const GameTeaser: React.FC<GameTeaserProps> = ({
         <span className="text-[10px] font-bold uppercase tracking-[0.08em]" style={{ color: TILE_AMBER }}>Le jeu</span>
       </div>
       <p className="text-[14px] font-bold text-[#F4F1E9] m-0 mt-2.5 leading-tight">
-        Qui te connaît le mieux ?
+        {hasHistory ? 'Lance un nouveau défi' : 'Qui te connaît le mieux ?'}
       </p>
       <p className="text-[11px] m-0 mt-1 leading-snug" style={{ color: 'rgba(244,241,233,0.65)' }}>
-        Lance un défi à tes proches
+        {hasHistory ? 'Qui te connaît le mieux ?' : 'Lance un défi à tes proches'}
       </p>
-      <p className="text-[12px] font-semibold m-0 mt-auto pt-2 flex items-center gap-1" style={{ color: TILE_AMBER }}>
-        Lancer <ArrowRight size={12} />
-      </p>
+      <div className="flex items-center justify-between mt-auto pt-2">
+        <p className="text-[12px] font-semibold m-0 flex items-center gap-1" style={{ color: TILE_AMBER }}>
+          Lancer <ArrowRight size={12} />
+        </p>
+        {hasHistory && (
+          <p className="text-[11px] m-0 underline" style={{ color: 'rgba(244,241,233,0.55)' }}>
+            Mes anciens défis
+          </p>
+        )}
+      </div>
     </div>
   );
 };
