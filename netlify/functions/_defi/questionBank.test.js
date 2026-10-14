@@ -14,6 +14,7 @@ const {
   _getBandIndex,
   _neutralSuffix,
   _normalizeGenre,
+  PERSO_QUESTIONS,
 } = require("./questionBank");
 const { SCALE_DEFS } = require("./scaleDefinitions");
 
@@ -966,7 +967,6 @@ const {
   AUDIENCE_EXCLUSIONS,
   DIMENSION_THEMES,
   RESULT_TITLES,
-  PERSO_QUESTIONS,
   selectVariant,
   parseDimKey,
   interleavePerso,
@@ -1266,12 +1266,21 @@ test("PERSO_QUESTIONS: every audience has questions", () => {
   }
 });
 
-test("PERSO_QUESTIONS: unique ids across all audiences", () => {
-  const allIds = new Set();
+test("PERSO_QUESTIONS: unique ids within each audience pool (tous + audience)", () => {
   for (const aud of Object.keys(PERSO_QUESTIONS)) {
+    const ids = new Set();
     for (const q of PERSO_QUESTIONS[aud]) {
-      assert(!allIds.has(q.id), `duplicate perso id: ${q.id}`);
-      allIds.add(q.id);
+      assert(!ids.has(q.id), `duplicate perso id in ${aud}: ${q.id}`);
+      ids.add(q.id);
+    }
+  }
+  const audiences = ['amis', 'couple', 'famille', 'collegues'];
+  for (const aud of audiences) {
+    const pool = [...(PERSO_QUESTIONS.tous || []), ...(PERSO_QUESTIONS[aud] || [])];
+    const ids = new Set();
+    for (const q of pool) {
+      assert(!ids.has(q.id), `duplicate perso id in pool tous+${aud}: ${q.id}`);
+      ids.add(q.id);
     }
   }
 });
@@ -1468,6 +1477,114 @@ test("collegues priority: at least 4 priority dimensions with full profile and 3
     'bonus_confiance', 'bonus_burnout', 'bonus_eq'];
   const prioCount = keys.filter(k => collPriority.includes(k)).length;
   assert(prioCount >= 4, `collegues with 3 perso: ${prioCount} priority dims (need ≥4), got: ${keys.join(', ')}`);
+});
+
+// ── Perso v2: long lists, Autre, forbidden content ─────────────────────────
+
+console.log("\n── perso v2 ──");
+
+test("long-list perso (>4 options) → player sees exactly 4 options including correct", () => {
+  const results = makeRichResults();
+  const { selected } = selectDimensions(results, 'public', { audience: 'tous', persoCount: 1 });
+  const keys = selected.map(d => d.subscaleKey ? `${d.scaleId}.${d.subscaleKey}` : d.scaleId);
+
+  const { questions, truths } = buildQuestionsFromKeys(
+    keys, results, 'M', 'Moussa', 'public', 'lion', null,
+    { audience: 'tous', persoQuestions: [{ questionId: 'perso_plat', creatorAnswer: 'Thiéboudienne' }] }
+  );
+
+  const persoQ = questions.find(q => q.questionId === 'perso_plat');
+  assert(persoQ, 'perso_plat question exists');
+  assertEq(persoQ.options.length, 4, 'player sees exactly 4 options for a long list');
+
+  const persoT = truths.find(t => t.questionId === 'perso_plat');
+  assert(persoT, 'perso_plat truth exists');
+  assert(persoQ.options.some(o => o.id === persoT.correctOptionId),
+    'correct option is always among the 4 displayed');
+});
+
+test("short-list perso (≤4 options) → player sees all options", () => {
+  const results = makeRichResults();
+  const { selected } = selectDimensions(results, 'public', { audience: 'tous', persoCount: 1 });
+  const keys = selected.map(d => d.subscaleKey ? `${d.scaleId}.${d.subscaleKey}` : d.scaleId);
+
+  const { questions } = buildQuestionsFromKeys(
+    keys, results, 'M', 'Moussa', 'public', 'lion', null,
+    { audience: 'tous', persoQuestions: [{ questionId: 'perso_rythme', creatorAnswer: 'Lève-tôt' }] }
+  );
+
+  const persoQ = questions.find(q => q.questionId === 'perso_rythme');
+  assert(persoQ, 'perso_rythme question exists');
+  assertEq(persoQ.options.length, 3, 'player sees all 3 options for a short list');
+});
+
+test("Autre custom answer appears as normal option, indistinguishable in player payload", () => {
+  const results = makeRichResults();
+  const { selected } = selectDimensions(results, 'public', { audience: 'tous', persoCount: 1 });
+  const keys = selected.map(d => d.subscaleKey ? `${d.scaleId}.${d.subscaleKey}` : d.scaleId);
+
+  const { questions, truths } = buildQuestionsFromKeys(
+    keys, results, 'M', 'Moussa', 'public', 'lion', null,
+    { audience: 'tous', persoQuestions: [{ questionId: 'perso_plat', creatorAnswer: 'Thiof grillé' }] }
+  );
+
+  const persoQ = questions.find(q => q.questionId === 'perso_plat');
+  assert(persoQ, 'perso_plat question exists with custom answer');
+  assertEq(persoQ.options.length, 4, '4 options including custom');
+
+  const persoT = truths.find(t => t.questionId === 'perso_plat');
+  const correctOpt = persoQ.options.find(o => o.id === persoT.correctOptionId);
+  assert(correctOpt, 'correct option found in displayed options');
+  assertEq(correctOpt.label, 'Thiof grillé', 'custom label is shown');
+
+  for (const opt of persoQ.options) {
+    const keys = Object.keys(opt);
+    assert(keys.length === 2 && keys.includes('id') && keys.includes('label'),
+      `option has only {id, label}, got: ${JSON.stringify(opt)}`);
+  }
+
+  const qPayload = JSON.stringify(persoQ);
+  assert(!qPayload.includes('_value'), '_value must not leak to player');
+  assert(!qPayload.includes('allowOther'), 'allowOther must not leak to player');
+  assert(!qPayload.includes('correctOptionId'), 'correctOptionId must not leak to player');
+});
+
+test("forbidden content: no skin color or morphology terms in perso options", () => {
+  const forbidden = ['teint', 'clair', 'foncé', 'fonce', 'ronde', 'mince', 'skinny', 'apoutchou',
+    'peau claire', 'peau foncée', 'gros', 'grosse', 'maigre'];
+  const allOptions = [];
+
+  for (const audience of Object.keys(PERSO_QUESTIONS)) {
+    for (const q of PERSO_QUESTIONS[audience]) {
+      for (const opt of q.options) {
+        allOptions.push({ audience, questionId: q.id, option: opt });
+      }
+    }
+  }
+
+  const violations = [];
+  for (const { audience, questionId, option } of allOptions) {
+    const normalized = option.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+    for (const term of forbidden) {
+      const normTerm = term.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+      if (normalized.includes(normTerm)) {
+        violations.push(`${audience}/${questionId}: "${option}" contains forbidden term "${term}"`);
+      }
+    }
+  }
+
+  assert(violations.length === 0, `forbidden content found:\n    ${violations.join('\n    ')}`);
+});
+
+test("genderChoice questions exist only in amis/couple audiences", () => {
+  for (const [audience, questions] of Object.entries(PERSO_QUESTIONS)) {
+    for (const q of questions) {
+      if (q.genderChoice) {
+        assert(audience === 'amis' || audience === 'couple',
+          `genderChoice question ${q.id} found in audience "${audience}" (only amis/couple allowed)`);
+      }
+    }
+  }
 });
 
 // ── Summary ──────────────────────────────────────────────────────────────────

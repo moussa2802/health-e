@@ -836,17 +836,21 @@ Aucune question définie pour le mode public.
 Le créateur choisit 0 à 3 questions perso et y répond. Ses proches devinent sa réponse.
 Scoring : exact = 1pt, mauvaise = 0pt (pas de « presque »).
 
-### Audience : tous (7 questions)
+### Audience : tous (11 questions)
 
 | ID | Question | Options |
 |----|----------|---------|
-| perso_plat | Le plat préféré de {prenom} ? | Thiéboudienne / Yassa / Mafé / Dibi |
+| perso_plat | Le plat préféré de {prenom} ? | Thiéboudienne / Yassa / Mafé / Dibi / Soupou kandia / Domoda / Thiéré / Ceebu yapp / Pastels / Fataya / Chawarma / Pizza / Burger |
 | perso_rythme | {prenom}, c'est plutôt… | Lève-tôt / Couche-tard / Les deux (ne dort jamais) |
-| perso_million | Avec 1 million de FCFA, {prenom}… | Épargne tout / Voyage / Aide la famille / Se fait plaisir |
-| perso_enerve | Ce qui énerve le plus {prenom} | Le retard / Le mensonge / Le bruit / Qu'on touche à son assiette |
-| perso_musique | La musique de {prenom} | Mbalax / Rap galsen / Afrobeats / Zouk/R&B |
+| perso_million | Avec 1 million de FCFA, {prenom}… | Épargne tout / Voyage / Aide la famille / Se fait plaisir / Investir / Acheter un mouton à Tabaski / Ouvrir un commerce |
+| perso_enerve | Ce qui énerve le plus {prenom} | Le retard / Le mensonge / Le bruit / Qu'on touche à son assiette / Le désordre / Les fausses promesses |
+| perso_musique | La musique de {prenom} | Mbalax / Rap galsen / Afrobeats / Zouk / R&B / Gospel/chants religieux / Coupé-décalé / Jazz |
 | perso_attaya | L'attaya, pour {prenom}… | Fait le meilleur 3e verre / Boit, ne prépare jamais / Pas son truc |
-| perso_talent | Le talent caché de {prenom} | Cuisiner / Imiter les gens / Négocier au marché / Danser |
+| perso_talent | Le talent caché de {prenom} | Cuisiner / Imiter les gens / Négocier au marché / Danser / Chanter / Raconter des histoires / Réparer tout / Dessiner |
+| perso_couleur | 🎨 Couleur préférée de {prenom} ? | 🔴 Rouge / 🔵 Bleu / 🟢 Vert / 🟡 Jaune / 🟣 Violet / 🟠 Orange / ⚫ Noir / ⚪ Blanc / 🩷 Rose |
+| perso_boisson | 🥤 La boisson de {prenom} ? | 🌺 Bissap / 🍶 Bouye / 🫚 Gingembre / ☕ Café Touba / 🍵 Attaya / 🥤 Soda |
+| perso_destination | ✈️ Destination de rêve de {prenom} ? | 🏙️ Dubaï / 🗼 Paris / 🗽 New York / 🏖️ Saly / 🕋 La Mecque / 🇲🇦 Marrakech / 🇯🇵 Tokyo |
+| perso_reseau | 📱 Le réseau social de {prenom} ? | TikTok / Snapchat / Instagram / Statut WhatsApp / Facebook / X |
 
 ### Audience : famille (3 questions)
 
@@ -856,23 +860,29 @@ Scoring : exact = 1pt, mauvaise = 0pt (pas de « presque »).
 | perso_maman | Quand maman appelle, {prenom}… | Décroche à la 1re sonnerie / Rappelle plus tard / « Oui maman, j'arrive ! » (et n'arrive pas) |
 | perso_tabaski | À Tabaski, {prenom} est… | En cuisine / Avec le mouton / En visite partout / En sieste après le repas |
 
-### Audience : amis (3 questions)
+### Audience : amis (5 questions)
 
 | ID | Question | Options |
 |----|----------|---------|
 | perso_soiree | En soirée, {prenom} c'est… | Sur la piste / Près du buffet / Sur son téléphone / {{Le DJ|La DJ}} |
 | perso_groupe | Dans le groupe WhatsApp, {prenom}… | Envoie 100 vocaux / Lit sans répondre / Que des stickers / Répond 3 jours après |
-| perso_defaut | Le défaut assumé de {prenom} | Toujours en retard / Jamais de batterie / Emprunte et oublie / Parle trop |
+| perso_defaut | Le défaut assumé de {prenom} | Toujours en retard / Jamais de batterie / Emprunte et oublie / Parle trop / Mange trop / Jaloux·se |
+| perso_artiste | 🎤 L'artiste du moment de {prenom} ? | Wally Seck / Youssou Ndour / Dip Doundou Guiss / Viviane / Sidy Diop / Burna Boy / Aya Nakamura |
+| perso_emoji | 😂 L'emoji que {prenom} utilise le plus ? | 😂 / 🙏 / 🔥 / ❤️ / 😭 / 💀 / 🤲 / 👀 |
 
-### Audience : couple (5 questions)
+### Audience : couple (9 questions)
 
 | ID | Question | Options |
 |----|----------|---------|
 | perso_langage | Le langage d'amour de {prenom} | Les mots doux / Les cadeaux / Le temps ensemble / Les gestes tendres |
 | perso_dispute | Après une dispute, qui fait le premier pas ? | {prenom} / L'autre / Personne 😅 |
-| perso_rdv | Le rendez-vous idéal pour {prenom} | Dîner en tête-à-tête / Balade sur la Corniche / Film à la maison / Sortie entre amis |
+| perso_rdv | Le rendez-vous idéal pour {prenom} | Dîner en tête-à-tête / Balade sur la Corniche / Film à la maison / Sortie entre amis / Voyage surprise / Pique-nique à la plage |
 | perso_craque | Ce qui fait craquer {prenom} en premier | Le sourire / L'humour / L'élégance / L'intelligence |
 | perso_recevoir | {prenom} préfère recevoir… | Un long vocal / Un message écrit / Un appel / Une surprise en vrai |
+| perso_artiste | 🎤 L'artiste du moment de {prenom} ? | Wally Seck / Youssou Ndour / Dip Doundou Guiss / Viviane / Sidy Diop / Burna Boy / Aya Nakamura |
+| perso_emoji | 😂 L'emoji que {prenom} utilise le plus ? | 😂 / 🙏 / 🔥 / ❤️ / 😭 / 💀 / 🤲 / 👀 |
+| perso_type_f | 💘 Le type de femme qui fait craquer {prenom} ? | 👑 La drianké, élégante en grand boubou / 🌿 La simple et naturelle / 💪 La sportive / 📚 L'intellectuelle / 😂 Celle qui {{le|la}} fait rire / 🔥 La go qui a du caractère |
+| perso_type_h | 💘 Le type d'homme qui fait craquer {prenom} ? | 🤵 Le gentleman bien sapé / 💼 Le boss ambitieux / 😂 Le drôle / 🙏 Le pieux et posé / 💪 Le sportif / 🎨 L'artiste |
 
 ### Audience : collegues (3 questions)
 

@@ -225,7 +225,10 @@ exports.handler = async (event) => {
       const options = p.options.map(o =>
         resolveGender(o.replace(/\{prenom\}/g, displayName), genre)
       );
-      return { id: p.id, stem, options };
+      const item = { id: p.id, stem, options };
+      if (p.allowOther) item.allowOther = true;
+      if (p.genderChoice) item.genderChoice = true;
+      return item;
     });
 
     return {

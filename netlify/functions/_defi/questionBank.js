@@ -235,9 +235,14 @@ function collectDimensions(eligibleResults, mode) {
     const level = config[mode];
 
     if (result.scaleId === 'big_five' && result.subscaleScores) {
+      const ss = result.subscaleScores;
+      const patched = { ...ss };
+      if (patched.emotional_stability == null && patched.neuroticism != null) {
+        patched.emotional_stability = 12 - patched.neuroticism;
+      }
       for (const sk of ['extraversion', 'agreeableness', 'conscientiousness', 'emotional_stability', 'openness']) {
-        if (result.subscaleScores[sk] != null) {
-          dims.push({ scaleId: 'big_five', subscaleKey: sk, score: result.subscaleScores[sk], level, isBigFive: true });
+        if (patched[sk] != null) {
+          dims.push({ scaleId: 'big_five', subscaleKey: sk, score: patched[sk], level, isBigFive: true });
         }
       }
     } else if (result.scaleId === 'ecr_r' && result.subscaleScores) {
@@ -532,9 +537,26 @@ function buildQuestionsFromKeys(selectedKeys, eligibleResults, genre, prenom, mo
         _value: opt,
       }));
 
+      if (!optionEntries.some(o => o._value === pq.creatorAnswer) && pDef.allowOther) {
+        optionEntries.push({
+          id: generateOpaqueId(),
+          label: resolveGender(pq.creatorAnswer.replace(/\{prenom\}/g, prenom), genre),
+          _value: pq.creatorAnswer,
+        });
+      }
+
       const shuffledOptions = shuffleArray(optionEntries);
       const correctId = shuffledOptions.find(o => o._value === pq.creatorAnswer)?.id;
       if (!correctId) continue;
+
+      let displayOptions;
+      if (shuffledOptions.length > 4) {
+        const correctOpt = shuffledOptions.find(o => o.id === correctId);
+        const others = shuffledOptions.filter(o => o.id !== correctId);
+        displayOptions = shuffleArray([correctOpt, ...shuffleArray(others).slice(0, 3)]);
+      } else {
+        displayOptions = shuffledOptions;
+      }
 
       let persoText = resolveGender(pDef.stem.replace(/\{prenom\}/g, prenom), genre);
       if (!/[?!….]$/.test(persoText.trim())) persoText = persoText.trim() + ' ?';
@@ -543,7 +565,7 @@ function buildQuestionsFromKeys(selectedKeys, eligibleResults, genre, prenom, mo
         source: 'perso',
         questionId: pq.questionId,
         text: persoText,
-        options: shuffledOptions.map(({ id, label }) => ({ id, label })),
+        options: displayOptions.map(({ id, label }) => ({ id, label })),
       });
 
       persoTs.push({

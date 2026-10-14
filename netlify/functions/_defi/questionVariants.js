@@ -700,15 +700,45 @@ const RESULT_TITLES = [
 ];
 
 // Personal questions bank (section 5)
+// allowOther: true → long-list question, creator can write a custom answer (max 30 chars, moderated)
+// Questions with ≤4 options: player sees all. Questions with >4: player sees 4 (correct + 3 random).
 const PERSO_QUESTIONS = {
   tous: [
-    { id: 'perso_plat', stem: 'Le plat préféré de {prenom} ?', options: ['Thiéboudienne', 'Yassa', 'Mafé', 'Dibi'] },
+    { id: 'perso_plat', stem: 'Le plat préféré de {prenom} ?', allowOther: true, options: [
+      'Thiéboudienne', 'Yassa', 'Mafé', 'Dibi', 'Soupou kandia', 'Domoda',
+      'Thiéré', 'Ceebu yapp', 'Pastels', 'Fataya', 'Chawarma', 'Pizza', 'Burger',
+    ] },
     { id: 'perso_rythme', stem: "{prenom}, c'est plutôt…", options: ['Lève-tôt', 'Couche-tard', 'Les deux (ne dort jamais)'] },
-    { id: 'perso_million', stem: 'Avec 1 million de FCFA, {prenom}…', options: ['Épargne tout', 'Voyage', 'Aide la famille', 'Se fait plaisir'] },
-    { id: 'perso_enerve', stem: 'Ce qui énerve le plus {prenom}', options: ['Le retard', 'Le mensonge', 'Le bruit', "Qu'on touche à son assiette"] },
-    { id: 'perso_musique', stem: 'La musique de {prenom}', options: ['Mbalax', 'Rap galsen', 'Afrobeats', 'Zouk/R&B'] },
+    { id: 'perso_million', stem: 'Avec 1 million de FCFA, {prenom}…', allowOther: true, options: [
+      'Épargne tout', 'Voyage', 'Aide la famille', 'Se fait plaisir',
+      'Investir', 'Acheter un mouton à Tabaski', 'Ouvrir un commerce',
+    ] },
+    { id: 'perso_enerve', stem: 'Ce qui énerve le plus {prenom}', allowOther: true, options: [
+      'Le retard', 'Le mensonge', 'Le bruit', "Qu'on touche à son assiette",
+      'Le désordre', 'Les fausses promesses',
+    ] },
+    { id: 'perso_musique', stem: 'La musique de {prenom}', allowOther: true, options: [
+      'Mbalax', 'Rap galsen', 'Afrobeats', 'Zouk', 'R&B',
+      'Gospel/chants religieux', 'Coupé-décalé', 'Jazz',
+    ] },
     { id: 'perso_attaya', stem: "L'attaya, pour {prenom}…", options: ['Fait le meilleur 3e verre', 'Boit, ne prépare jamais', 'Pas son truc'] },
-    { id: 'perso_talent', stem: 'Le talent caché de {prenom}', options: ['Cuisiner', 'Imiter les gens', 'Négocier au marché', 'Danser'] },
+    { id: 'perso_talent', stem: 'Le talent caché de {prenom}', allowOther: true, options: [
+      'Cuisiner', 'Imiter les gens', 'Négocier au marché', 'Danser',
+      'Chanter', 'Raconter des histoires', 'Réparer tout', 'Dessiner',
+    ] },
+    { id: 'perso_couleur', stem: '🎨 Couleur préférée de {prenom} ?', options: [
+      '🔴 Rouge', '🔵 Bleu', '🟢 Vert', '🟡 Jaune', '🟣 Violet',
+      '🟠 Orange', '⚫ Noir', '⚪ Blanc', '🩷 Rose',
+    ] },
+    { id: 'perso_boisson', stem: '🥤 La boisson de {prenom} ?', options: [
+      '🌺 Bissap', '🍶 Bouye', '🫚 Gingembre', '☕ Café Touba', '🍵 Attaya', '🥤 Soda',
+    ] },
+    { id: 'perso_destination', stem: '✈️ Destination de rêve de {prenom} ?', allowOther: true, options: [
+      '🏙️ Dubaï', '🗼 Paris', '🗽 New York', '🏖️ Saly', '🕋 La Mecque', '🇲🇦 Marrakech', '🇯🇵 Tokyo',
+    ] },
+    { id: 'perso_reseau', stem: '📱 Le réseau social de {prenom} ?', options: [
+      'TikTok', 'Snapchat', 'Instagram', 'Statut WhatsApp', 'Facebook', 'X',
+    ] },
   ],
   famille: [
     { id: 'perso_role', stem: "Dans la famille, {prenom} c'est…", options: ['{{Le conseiller|La conseillère}}', '{{Le comique|La comique}}', '{{Le médiateur|La médiatrice}}', '{{Le chouchou|La chouchoute}}'] },
@@ -718,14 +748,40 @@ const PERSO_QUESTIONS = {
   amis: [
     { id: 'perso_soiree', stem: "En soirée, {prenom} c'est…", options: ['Sur la piste', 'Près du buffet', 'Sur son téléphone', '{{Le DJ|La DJ}}'] },
     { id: 'perso_groupe', stem: 'Dans le groupe WhatsApp, {prenom}…', options: ['Envoie 100 vocaux', 'Lit sans répondre', 'Que des stickers', 'Répond 3 jours après'] },
-    { id: 'perso_defaut', stem: 'Le défaut assumé de {prenom}', options: ['Toujours en retard', 'Jamais de batterie', 'Emprunte et oublie', 'Parle trop'] },
+    { id: 'perso_defaut', stem: 'Le défaut assumé de {prenom}', allowOther: true, options: ['Toujours en retard', 'Jamais de batterie', 'Emprunte et oublie', 'Parle trop', 'Mange trop', 'Jaloux·se'] },
+    { id: 'perso_artiste', stem: "🎤 L'artiste du moment de {prenom} ?", allowOther: true, options: [
+      'Wally Seck', 'Youssou Ndour', 'Dip Doundou Guiss', 'Viviane',
+      'Sidy Diop', 'Burna Boy', 'Aya Nakamura',
+    ] },
+    { id: 'perso_emoji', stem: "😂 L'emoji que {prenom} utilise le plus ?", options: [
+      '😂', '🙏', '🔥', '❤️', '😭', '💀', '🤲', '👀',
+    ] },
   ],
   couple: [
     { id: 'perso_langage', stem: "Le langage d'amour de {prenom}", options: ['Les mots doux', 'Les cadeaux', 'Le temps ensemble', 'Les gestes tendres'] },
     { id: 'perso_dispute', stem: 'Après une dispute, qui fait le premier pas ?', options: ['{prenom}', "L'autre", 'Personne 😅'] },
-    { id: 'perso_rdv', stem: 'Le rendez-vous idéal pour {prenom}', options: ['Dîner en tête-à-tête', 'Balade sur la Corniche', 'Film à la maison', 'Sortie entre amis'] },
+    { id: 'perso_rdv', stem: 'Le rendez-vous idéal pour {prenom}', allowOther: true, options: [
+      'Dîner en tête-à-tête', 'Balade sur la Corniche', 'Film à la maison',
+      'Sortie entre amis', 'Voyage surprise', 'Pique-nique à la plage',
+    ] },
     { id: 'perso_craque', stem: 'Ce qui fait craquer {prenom} en premier', options: ['Le sourire', "L'humour", "L'élégance", "L'intelligence"] },
     { id: 'perso_recevoir', stem: '{prenom} préfère recevoir…', options: ['Un long vocal', 'Un message écrit', 'Un appel', 'Une surprise en vrai'] },
+    { id: 'perso_artiste', stem: "🎤 L'artiste du moment de {prenom} ?", allowOther: true, options: [
+      'Wally Seck', 'Youssou Ndour', 'Dip Doundou Guiss', 'Viviane',
+      'Sidy Diop', 'Burna Boy', 'Aya Nakamura',
+    ] },
+    { id: 'perso_emoji', stem: "😂 L'emoji que {prenom} utilise le plus ?", options: [
+      '😂', '🙏', '🔥', '❤️', '😭', '💀', '🤲', '👀',
+    ] },
+    { id: 'perso_type_f', stem: "💘 Le type de femme qui fait craquer {prenom} ?", genderChoice: true, options: [
+      '👑 La drianké, élégante en grand boubou', '🌿 La simple et naturelle',
+      '💪 La sportive', '📚 L\'intellectuelle', '😂 Celle qui {{le|la}} fait rire',
+      '🔥 La go qui a du caractère',
+    ] },
+    { id: 'perso_type_h', stem: "💘 Le type d'homme qui fait craquer {prenom} ?", genderChoice: true, options: [
+      '🤵 Le gentleman bien sapé', '💼 Le boss ambitieux', '😂 Le drôle',
+      '🙏 Le pieux et posé', '💪 Le sportif', '🎨 L\'artiste',
+    ] },
   ],
   collegues: [
     { id: 'perso_bureau', stem: "Au bureau, {prenom} c'est {{le roi|la reine}}…", options: ['Des pauses café', 'Des tableaux Excel', 'Des réunions', 'Des blagues'] },

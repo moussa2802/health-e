@@ -1,6 +1,7 @@
 const { admin, db, verifyAuth } = require('./_firebase');
 const { selectQuestions, buildQuestionsFromKeys, generateSlug, PERSO_QUESTIONS } = require('./_defi/questionBank');
 const { getActiveDefis, canCreateDefi, buildActiveDefisUpdate } = require('./_defi/activeDefisHelper');
+const { moderateMessage } = require('./_defi/moderation');
 
 const headers = {
   'Access-Control-Allow-Origin': '*',
@@ -176,20 +177,42 @@ exports.handler = async (event) => {
       const bank = PERSO_QUESTIONS;
       const allPerso = [...(bank.tous || [])];
       if (bank[audience]) allPerso.push(...bank[audience]);
-      const validIds = new Set(allPerso.map(p => p.id));
-      const validAnswers = new Map(allPerso.map(p => [p.id, new Set(p.options)]));
+      const persoById = new Map(allPerso.map(p => [p.id, p]));
 
       for (const pq of payload.persoQuestions) {
-        if (!pq.questionId || !validIds.has(pq.questionId)) {
+        const def = persoById.get(pq.questionId);
+        if (!pq.questionId || !def) {
           return { statusCode: 400, headers, body: JSON.stringify({ error: `Question perso inconnue : ${pq.questionId}` }) };
         }
-        if (!pq.creatorAnswer || !validAnswers.get(pq.questionId).has(pq.creatorAnswer)) {
+        if (!pq.creatorAnswer || typeof pq.creatorAnswer !== 'string') {
           return { statusCode: 400, headers, body: JSON.stringify({ error: `Réponse invalide pour ${pq.questionId}` }) };
+        }
+        const isPreset = def.options.includes(pq.creatorAnswer);
+        if (!isPreset) {
+          if (!def.allowOther) {
+            return { statusCode: 400, headers, body: JSON.stringify({ error: `Réponse invalide pour ${pq.questionId}` }) };
+          }
+          const answer = pq.creatorAnswer.trim();
+          if (answer.length < 1 || answer.length > 30) {
+            return { statusCode: 400, headers, body: JSON.stringify({ error: 'Réponse personnalisée : 1-30 caractères' }) };
+          }
+          const modResult = await moderateMessage(answer, db);
+          if (!modResult.ok) {
+            return { statusCode: 400, headers, body: JSON.stringify({ error: 'Réponse personnalisée non autorisée' }) };
+          }
+          const norm = answer.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+          const isDup = def.options.some(opt => {
+            const no = opt.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+            return no === norm;
+          });
+          if (isDup) {
+            return { statusCode: 400, headers, body: JSON.stringify({ error: 'Cette réponse existe déjà dans les choix' }) };
+          }
         }
       }
       persoQuestions = payload.persoQuestions.map(pq => ({
         questionId: pq.questionId,
-        creatorAnswer: pq.creatorAnswer,
+        creatorAnswer: pq.creatorAnswer.trim(),
       }));
     }
 
