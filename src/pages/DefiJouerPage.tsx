@@ -51,6 +51,13 @@ interface DefiData {
   petitsMots?: boolean;
 }
 
+interface QuestionDetail {
+  questionText: string;
+  verdict: 'bonne' | 'presque' | 'mauvaise' | 'timeout';
+  playerAnswer: string | null;
+  correctAnswer?: string;
+}
+
 interface ResultData {
   score: number;
   bonnes: number;
@@ -60,6 +67,7 @@ interface ResultData {
   rang: number;
   nbRepondants: number;
   devoilement?: { questionIndex: number; correctOptionId: string }[];
+  questionDetail?: QuestionDetail[];
   creatorTotem?: string;
   resultTitle?: string;
   resultSubtitle?: string;
@@ -615,10 +623,20 @@ export default function DefiJouerPage() {
 
   // ── RESULT ────────────────────────────────────────────────────────────
   if (phase === 'result' && result && defi) {
+    const SUGGESTIONS = [
+      'Fier de toi ❤️',
+      'Je te connais trop bien 😂',
+      'Tu es un vrai baobab 🌳',
+      'Ce jeu, c’est validé 🔥',
+    ];
+    const ilElle = defi.genre === 'feminin' ? 'Elle' : 'Il';
+    const luiElle = defi.genre === 'feminin' ? 'elle' : 'lui';
+
     return (
       <div className="min-h-screen bg-paper">
         <MiniHeader />
         <div className="max-w-md mx-auto px-5 pt-8 pb-12">
+          {/* Score */}
           <div className="text-center mb-8">
             <p className="text-5xl font-display font-bold text-gold mb-2">{result.score} %</p>
             {result.resultTitle ? (
@@ -635,6 +653,7 @@ export default function DefiJouerPage() {
             )}
           </div>
 
+          {/* Stats */}
           <div className="flex justify-center gap-6 mb-6">
             <div className="text-center">
               <p className="text-2xl font-bold text-green-600">{result.bonnes}</p>
@@ -650,35 +669,35 @@ export default function DefiJouerPage() {
             </div>
           </div>
 
+          {/* Rank */}
           <div className="bg-white/60 rounded-2xl p-4 mb-6 border border-line text-center">
             <p className="text-ink">
               Tu es <strong className="text-gold">{result.rang}{result.rang === 1 ? 'er' : 'e'}</strong> sur {result.nbRepondants} {result.nbRepondants > 1 ? 'joueurs' : 'joueur'}
             </p>
           </div>
 
-          {result.devoilement && result.devoilement.length > 0 && (
-            <div className="bg-white/60 rounded-2xl p-4 mb-6 border border-line">
-              <h3 className="font-display font-bold text-ink text-sm mb-3">Les bonnes réponses</h3>
-              {result.devoilement.map(d => {
-                const q = defi.questions[d.questionIndex];
-                const correctOpt = q.options.find(o => o.id === d.correctOptionId);
-                return (
-                  <div key={d.questionIndex} className="py-2 border-b border-line last:border-0">
-                    <p className="text-xs text-muted mb-1">{q.text}</p>
-                    <p className="text-sm text-ink font-medium">→ {correctOpt?.label}</p>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-
+          {/* Petit mot card */}
           {defi.petitsMots && !petitMotSent && (
-            <div className="bg-white/60 rounded-2xl p-4 mb-6 border border-line">
-              <h3 className="font-display font-bold text-ink text-sm mb-2">💌 Un petit mot pour {defi.displayName} ?</h3>
+            <div className="rounded-2xl p-4 mb-6 border-2 border-gold/40 shadow-sm"
+              style={{ background: 'linear-gradient(135deg, rgba(212,163,75,0.08) 0%, rgba(193,114,70,0.08) 100%)' }}>
+              <h3 className="font-display font-bold text-ink text-[15px] mb-0.5">
+                💌 Laisse un petit mot à {defi.displayName}
+              </h3>
+              <p className="text-xs text-muted mb-3">
+                {ilElle} le lira dans son espace, rien que pour {luiElle}
+              </p>
+              <div className="flex flex-wrap gap-1.5 mb-3">
+                {SUGGESTIONS.map(s => (
+                  <button key={s} onClick={() => setPetitMot(s)}
+                    className="text-xs px-2.5 py-1.5 rounded-full bg-white/80 border border-gold/20 text-ink hover:bg-gold-soft active:scale-95 transition-all">
+                    {s}
+                  </button>
+                ))}
+              </div>
               <textarea
                 value={petitMot}
                 onChange={e => setPetitMot(e.target.value)}
-                placeholder="Bravo pour ton défi ! Tu me connais trop bien..."
+                placeholder="Ton message ici..."
                 maxLength={200}
                 rows={3}
                 className="w-full px-3 py-2.5 rounded-xl border border-line bg-white text-ink text-sm resize-none focus:outline-none focus:border-gold"
@@ -691,13 +710,13 @@ export default function DefiJouerPage() {
                 <button
                   onClick={handleSendPetitMot}
                   disabled={!petitMot.trim() || petitMotSending}
-                  className="flex-1 bg-gold text-white font-semibold py-2.5 rounded-xl text-sm disabled:opacity-40"
+                  className="flex-1 bg-gold text-white font-semibold py-2.5 rounded-xl text-sm disabled:opacity-40 active:scale-[0.98] transition-transform"
                 >
                   {petitMotSending ? 'Envoi...' : 'Envoyer 💌'}
                 </button>
                 <button
                   onClick={() => setPetitMotSent(true)}
-                  className="px-4 py-2.5 rounded-xl border border-line text-muted text-sm"
+                  className="px-4 py-2.5 rounded-xl text-muted text-sm hover:underline"
                 >
                   Non merci
                 </button>
@@ -705,11 +724,35 @@ export default function DefiJouerPage() {
             </div>
           )}
 
-          {petitMotSent && defi.petitsMots && (
+          {petitMotSent && defi.petitsMots && petitMot.trim() && (
             <div className="bg-gold-soft rounded-2xl p-4 mb-6 text-center">
-              <p className="text-sm text-ink font-medium">
-                {petitMot.trim() ? 'Merci pour ton petit mot 💌' : ''}
-              </p>
+              <p className="text-sm text-ink font-medium">Merci pour ton petit mot 💌</p>
+            </div>
+          )}
+
+          {/* Question detail */}
+          {result.questionDetail && result.questionDetail.length > 0 && (
+            <div className="bg-white/60 rounded-2xl p-4 mb-6 border border-line">
+              <h3 className="font-display font-bold text-ink text-sm mb-3">Ton détail</h3>
+              {result.questionDetail.map((d, i) => {
+                const icon = d.verdict === 'bonne' ? '✅' : d.verdict === 'presque' ? '🟠' : '❌';
+                return (
+                  <div key={i} className="py-2.5 border-b border-line last:border-0">
+                    <div className="flex items-start gap-2 mb-1">
+                      <span className="text-sm flex-shrink-0 mt-0.5">{icon}</span>
+                      <p className="text-sm text-ink leading-snug">{d.questionText}</p>
+                    </div>
+                    <p className="text-xs text-muted ml-6">
+                      Ta réponse : {d.playerAnswer || '⏱️ Temps écoulé'}
+                    </p>
+                    {d.correctAnswer && d.verdict !== 'bonne' && (
+                      <p className="text-xs text-green-600 ml-6 mt-0.5">
+                        Bonne réponse : {d.correctAnswer}
+                      </p>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           )}
 

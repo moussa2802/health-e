@@ -131,6 +131,121 @@ describe('transaction reads-before-writes (structural)', () => {
   });
 });
 
+describe('questionDetail in response (extracted from defi-respond)', () => {
+  const fs = require('fs');
+  const path = require('path');
+  const source = fs.readFileSync(path.join(__dirname, '../defi-respond.js'), 'utf-8');
+  const { DEFI_SCALE_CONFIG } = require('./questionBank');
+
+  const fnMatch = source.match(/function buildDevoilement\(defi, truths\)\s*\{[\s\S]*?\n\}/);
+  const buildDevoilement = new Function('DEFI_SCALE_CONFIG', 'return ' + fnMatch[0])(DEFI_SCALE_CONFIG);
+
+  const defi = {
+    devoilement: 'aucun',
+    mode: 'public',
+    questions: [
+      { text: 'Q1?', options: [{ id: 'o_a', label: 'A' }, { id: 'o_b', label: 'B' }], source: 'scale' },
+      { text: 'Q2?', options: [{ id: 'o_c', label: 'C' }, { id: 'o_d', label: 'D' }], source: 'perso' },
+    ],
+  };
+  const truths = [
+    { source: 'scale', scaleId: 'big_five.extraversion', correctOptionId: 'o_a', optionBands: { o_a: 'haut', o_b: 'bas' } },
+    { source: 'perso', correctOptionId: 'o_c' },
+  ];
+
+  it('devoilement=aucun: questionDetail never contains correctAnswer', () => {
+    const isAuto = defi.devoilement === 'auto';
+    assert.equal(isAuto, false);
+
+    const responses = [{ optionId: 'o_b' }, { optionId: 'o_d' }];
+    const detail = defi.questions.map((q, i) => {
+      const truth = truths[i];
+      const playerOptionId = responses[i] ? responses[i].optionId : null;
+      const playerOpt = playerOptionId ? q.options.find(o => o.id === playerOptionId) : null;
+
+      let verdict;
+      if (!playerOptionId) {
+        verdict = 'timeout';
+      } else if (playerOptionId === truth.correctOptionId) {
+        verdict = 'bonne';
+      } else if (truth.optionBands) {
+        const correctBand = truth.optionBands[truth.correctOptionId];
+        const playerBand = truth.optionBands[playerOptionId];
+        verdict = (correctBand && playerBand && correctBand === playerBand) ? 'presque' : 'mauvaise';
+      } else {
+        verdict = 'mauvaise';
+      }
+
+      const d = {
+        questionText: q.text,
+        verdict,
+        playerAnswer: playerOpt ? playerOpt.label : null,
+      };
+
+      if (isAuto) {
+        const correctOpt = q.options.find(o => o.id === truth.correctOptionId);
+        if (correctOpt) d.correctAnswer = correctOpt.label;
+      }
+
+      return d;
+    });
+
+    for (const d of detail) {
+      assert.equal(d.correctAnswer, undefined,
+        `correctAnswer must not be present in aucun mode for "${d.questionText}"`);
+    }
+
+    assert.equal(detail[0].verdict, 'mauvaise');
+    assert.equal(detail[0].playerAnswer, 'B');
+    assert.equal(detail[1].verdict, 'mauvaise');
+    assert.equal(detail[1].playerAnswer, 'D');
+  });
+
+  it('devoilement=auto: questionDetail includes correctAnswer for wrong answers', () => {
+    const autoDefi = { ...defi, devoilement: 'auto' };
+    const isAuto = autoDefi.devoilement === 'auto';
+    assert.equal(isAuto, true);
+
+    const responses = [{ optionId: 'o_b' }, { optionId: 'o_c' }];
+    const detail = autoDefi.questions.map((q, i) => {
+      const truth = truths[i];
+      const playerOptionId = responses[i] ? responses[i].optionId : null;
+      const playerOpt = playerOptionId ? q.options.find(o => o.id === playerOptionId) : null;
+
+      let verdict;
+      if (!playerOptionId) {
+        verdict = 'timeout';
+      } else if (playerOptionId === truth.correctOptionId) {
+        verdict = 'bonne';
+      } else if (truth.optionBands) {
+        const correctBand = truth.optionBands[truth.correctOptionId];
+        const playerBand = truth.optionBands[playerOptionId];
+        verdict = (correctBand && playerBand && correctBand === playerBand) ? 'presque' : 'mauvaise';
+      } else {
+        verdict = 'mauvaise';
+      }
+
+      const d = {
+        questionText: q.text,
+        verdict,
+        playerAnswer: playerOpt ? playerOpt.label : null,
+      };
+
+      if (isAuto) {
+        const correctOpt = q.options.find(o => o.id === truth.correctOptionId);
+        if (correctOpt) d.correctAnswer = correctOpt.label;
+      }
+
+      return d;
+    });
+
+    assert.equal(detail[0].verdict, 'mauvaise');
+    assert.equal(detail[0].correctAnswer, 'A');
+    assert.equal(detail[1].verdict, 'bonne');
+    assert.equal(detail[1].correctAnswer, 'C');
+  });
+});
+
 describe('answer validation', () => {
   it('optionId from wrong question should be detectable', () => {
     const questions = [

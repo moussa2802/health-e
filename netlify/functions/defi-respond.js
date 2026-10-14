@@ -308,6 +308,40 @@ exports.handler = async (event) => {
       responseBody.devoilement = devoilement;
     }
 
+    const isAuto = defi.devoilement === 'auto';
+    responseBody.questionDetail = defi.questions.map((q, i) => {
+      const truth = defiPrivate.truths[i];
+      const playerAnswer = responses[i];
+      const playerOptionId = playerAnswer ? playerAnswer.optionId : null;
+      const playerOpt = playerOptionId ? q.options.find(o => o.id === playerOptionId) : null;
+
+      let verdict;
+      if (!playerOptionId) {
+        verdict = 'timeout';
+      } else if (playerOptionId === truth.correctOptionId) {
+        verdict = 'bonne';
+      } else if (truth.optionBands) {
+        const correctBand = truth.optionBands[truth.correctOptionId];
+        const playerBand = truth.optionBands[playerOptionId];
+        verdict = (correctBand && playerBand && correctBand === playerBand) ? 'presque' : 'mauvaise';
+      } else {
+        verdict = 'mauvaise';
+      }
+
+      const detail = {
+        questionText: q.text,
+        verdict,
+        playerAnswer: playerOpt ? playerOpt.label : null,
+      };
+
+      if (isAuto) {
+        const correctOpt = q.options.find(o => o.id === truth.correctOptionId);
+        if (correctOpt) detail.correctAnswer = correctOpt.label;
+      }
+
+      return detail;
+    });
+
     return { statusCode: 200, headers, body: JSON.stringify(responseBody) };
 
   } catch (err) {
