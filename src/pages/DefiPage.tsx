@@ -36,7 +36,7 @@ const STEPS = [
 
 const DefiPage: React.FC = () => {
   const navigate = useNavigate();
-  const { currentUser, isAuthenticated } = useAuth();
+  const { currentUser, isAuthenticated, loading: authLoading } = useAuth();
   const { defiEnabled, loading: flagLoading } = useDefiFlag();
 
   const [profileResults, setProfileResults] = useState<Record<string, ScaleResult>>({});
@@ -94,7 +94,6 @@ const DefiPage: React.FC = () => {
       const snap = await getDocs(q);
 
       const activeSlugs = new Set(activeDefis.map(d => d.slug));
-      const now = Date.now();
       const terminated: TerminatedDefi[] = [];
 
       const fallbackPromises: Array<{ idx: number; slug: string }> = [];
@@ -103,8 +102,6 @@ const DefiPage: React.FC = () => {
         const data = d.data();
         const slug = d.id;
         if (activeSlugs.has(slug)) return;
-        const isTerminated = data.statut === 'termine' || toDate(data.expiresAt).getTime() < now;
-        if (!isTerminated) return;
 
         const entry: TerminatedDefi = {
           slug,
@@ -172,16 +169,16 @@ const DefiPage: React.FC = () => {
     return () => unsubs.forEach(u => u());
   }, [activeDefiSlugs]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  if (!isAuthenticated) {
-    return <Navigate to="/patient/access" replace />;
-  }
-
-  if (flagLoading || profileLoading) {
+  if (authLoading || flagLoading || profileLoading) {
     return (
       <div className="min-h-screen bg-paper flex items-center justify-center">
         <div className="w-10 h-10 rounded-full border-[3px] border-line border-t-gold animate-spin" />
       </div>
     );
+  }
+
+  if (!isAuthenticated) {
+    return <Navigate to="/patient/access" replace />;
   }
 
   if (!defiEnabled) {

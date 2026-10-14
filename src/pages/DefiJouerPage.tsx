@@ -350,7 +350,11 @@ export default function DefiJouerPage() {
         <div className="max-w-md mx-auto px-5 pt-12 text-center">
           <p className="text-4xl mb-4">🏁</p>
           <h1 className="font-display text-xl font-bold text-ink mb-2">Ce défi est terminé</h1>
-          <p className="text-muted mb-6">Le temps est écoulé !</p>
+          <p className="text-muted mb-6">
+            {defi?.statut === 'termine'
+              ? `${defi.displayName} a clôturé son défi`
+              : 'Le temps est écoulé !'}
+          </p>
 
           {top3.length > 0 && (
             <div className="bg-white/60 rounded-2xl p-4 mb-8 border border-line">

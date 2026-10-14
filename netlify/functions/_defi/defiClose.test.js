@@ -85,15 +85,14 @@ describe('defi-create: defiHistory flag (structural)', () => {
 });
 
 // ── Client filter: terminated defis ─────────────────────────────────────────
+// The client shows as "terminated" any mesDefis doc whose slug is NOT in activeDefis.
 
 describe('client filter: terminated defis', () => {
   const now = Date.now();
   const activeSlugs = new Set(['active1', 'active2']);
 
   function isTerminated(doc) {
-    if (activeSlugs.has(doc.slug)) return false;
-    const expiresAt = doc.expiresAt ? new Date(doc.expiresAt).getTime() : Infinity;
-    return doc.statut === 'termine' || expiresAt < now;
+    return !activeSlugs.has(doc.slug);
   }
 
   it('excludes active defis', () => {
@@ -109,7 +108,11 @@ describe('client filter: terminated defis', () => {
     assert.equal(isTerminated({ slug: 'expired1', expiresAt: now - 100000 }), true);
   });
 
-  it('excludes non-active non-expired defis without statut', () => {
-    assert.equal(isTerminated({ slug: 'future1', expiresAt: now + 100000 }), false);
+  it('includes defis terminated before snapshot feature (no statut, future expiresAt)', () => {
+    assert.equal(isTerminated({ slug: 'legacy1', expiresAt: now + 100000 }), true);
+  });
+
+  it('includes defis without createdAt', () => {
+    assert.equal(isTerminated({ slug: 'no-created' }), true);
   });
 });

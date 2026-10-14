@@ -1,6 +1,6 @@
 # Banque de questions — Revue v3 (générée par code)
 
-> Généré le 2026-10-13 par `npm run defi:revue`
+> Généré le 2026-10-14 par `npm run defi:revue`
 > Source : `questionBank.js` + `scaleDefinitions.js`
 > **Aucune plage écrite à la main** — tout est extrait des fichiers sources.
 

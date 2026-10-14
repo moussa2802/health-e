@@ -56,7 +56,7 @@ interface PreviewQuestion {
 
 const DefiCreerPage: React.FC = () => {
   const navigate = useNavigate();
-  const { currentUser, isAuthenticated } = useAuth();
+  const { currentUser, isAuthenticated, loading: authLoading } = useAuth();
   const { defiEnabled, loading: flagLoading } = useDefiFlag();
 
   const [scaleResults, setScaleResults] = useState<Record<string, ScaleResult>>({});
@@ -130,9 +130,7 @@ const DefiCreerPage: React.FC = () => {
     }
   };
 
-  if (!isAuthenticated) return <Navigate to="/patient/access" replace />;
-
-  if (flagLoading || profileLoading) {
+  if (authLoading || flagLoading || profileLoading) {
     return (
       <div className="min-h-screen bg-paper flex items-center justify-center">
         <div className="w-10 h-10 rounded-full border-[3px] border-line border-t-gold animate-spin" />
@@ -140,6 +138,7 @@ const DefiCreerPage: React.FC = () => {
     );
   }
 
+  if (!isAuthenticated) return <Navigate to="/patient/access" replace />;
   if (!defiEnabled) return <Navigate to="/assessment" replace />;
   if (!totemRevealed) return <Navigate to="/defi" replace />;
 
