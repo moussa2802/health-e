@@ -3,11 +3,12 @@
  *  idle : respire doucement · listening : la personne écrit / dicte
  *  reading : relit (balayage) · thinking : réfléchit (orbite) · writing : écrit
  *  breathing : guide la respiration (le cercle grandit / se resserre)
+ *  joy : se réjouit (test terminé, défi lancé…) : brève étincelle dorée, jamais sur un résultat difficile
  */
 import React from 'react';
 import type { MomentPalette } from '../../utils/drloMoment';
 
-export type DrLoState = 'idle' | 'listening' | 'reading' | 'thinking' | 'writing' | 'breathing';
+export type DrLoState = 'idle' | 'listening' | 'reading' | 'thinking' | 'writing' | 'breathing' | 'joy';
 
 /**
  * aura (0 → 1, facultatif) : l'aura-jauge des crédits autour de Dr Lô. Basse, elle s'atténue
@@ -15,7 +16,8 @@ export type DrLoState = 'idle' | 'listening' | 'reading' | 'thinking' | 'writing
  */
 const DrLoAvatar: React.FC<{ state: DrLoState; palette: MomentPalette; size?: number; aura?: number | null }> = ({ state, palette, size = 128, aura = null }) => {
   const box = size + 28;
-  const haloClass = state === 'breathing' ? 'drl-halo-guided' : state === 'listening' ? 'drl-listen' : 'drl-halo';
+  const haloClass = state === 'breathing' ? 'drl-halo-guided' : state === 'listening' ? 'drl-listen' : state === 'joy' ? 'drl-joy-glow' : 'drl-halo';
+  const joy = state === 'joy';
   return (
     <div style={{ position: 'relative', width: box, height: box, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
       {aura !== null && (
@@ -27,7 +29,7 @@ const DrLoAvatar: React.FC<{ state: DrLoState; palette: MomentPalette; size?: nu
           opacity: aura < 0.16 ? 0.6 : 1, transition: 'background .6s ease',
         }} />
       )}
-      <div className={haloClass} style={{ position: 'absolute', inset: 0, borderRadius: '50%', border: `2px solid ${palette.accentSoft}` }} />
+      <div className={haloClass} style={{ position: 'absolute', inset: 0, borderRadius: '50%', border: `2px solid ${joy ? '#F0C86E' : palette.accentSoft}` }} />
       {state === 'reading' && (
         <div aria-hidden="true" className="drl-sweep" style={{ position: 'absolute', inset: -5, borderRadius: '50%', border: '3px solid transparent', borderTopColor: palette.accent, borderRightColor: palette.accentSoft, filter: `drop-shadow(0 0 8px ${palette.accent})` }} />
       )}
@@ -43,7 +45,7 @@ const DrLoAvatar: React.FC<{ state: DrLoState; palette: MomentPalette; size?: nu
         alt="Dr Lô"
         width={size}
         height={size}
-        style={{ position: 'relative', width: size, height: size, borderRadius: '50%', objectFit: 'cover', objectPosition: 'top', border: `3px solid ${palette.accent}` }}
+        style={{ position: 'relative', width: size, height: size, borderRadius: '50%', objectFit: 'cover', objectPosition: 'top', border: `3px solid ${joy ? '#F0C86E' : palette.accent}` }}
       />
       <span aria-hidden="true" style={{ position: 'absolute', right: size * 0.14, bottom: size * 0.14, width: 16, height: 16, borderRadius: '50%', background: '#4CC37E', border: '3px solid #17130F' }} />
     </div>

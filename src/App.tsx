@@ -50,6 +50,7 @@ import {
 // Lazy load pages for better performance
 const HomePage = lazy(() => import("./pages/OptimizedHomePage"));
 const EspacePage = lazy(() => import("./pages/drlo/EspacePage"));
+const DomainePage = lazy(() => import("./pages/drlo/DomainePage"));
 const HumeurPage = lazy(() => import("./pages/drlo/HumeurPage"));
 const QuestionPage = lazy(() => import("./pages/drlo/QuestionPage"));
 const DrLoConsole = lazy(() => import("./pages/drlo/DrLoConsole"));
@@ -139,7 +140,6 @@ const Join = lazy(() => import("./pages/Join"));
 const JournalPage = lazy(() => import("./pages/Journal/JournalPage"));
 const NewEntry = lazy(() => import("./pages/Journal/NewEntry"));
 const JournalEntryView = lazy(() => import("./pages/Journal/JournalEntryView"));
-const MonEspacePage = lazy(() => import("./pages/MonEspace/MonEspacePage"));
 const AcheterKorisPage = lazy(() => import("./pages/AcheterKorisPage"));
 
 // Assessment pages
@@ -180,7 +180,7 @@ const AppChrome: React.FC = () => {
   const isChromeless = isAdminRoute || isAppRoute || isDefiJouer;
   // Accueil : le premier écran est Dr Lô en plein écran (pas d'en-tête ni de pied de page du site)
   // Écrans « Mon Dr Lô » (thème chaud sombre, plein écran) : pas d'en-tête ni de pied de page du site
-  const isHome = pathname === "/" || pathname === "/espace" || pathname === "/humeur" || pathname === "/question" || pathname === "/drlo";
+  const isHome = pathname === "/" || pathname === "/espace" || pathname.startsWith("/espace/") || pathname === "/humeur" || pathname === "/question" || pathname === "/drlo";
   const { currentUser } = useAuth();
   const userId = currentUser?.id ?? null;
 
@@ -192,6 +192,7 @@ const AppChrome: React.FC = () => {
           <Routes>
             <Route path="/" element={<HomePage />} />
             <Route path="/espace" element={<EspacePage />} />
+            <Route path="/espace/:domaine" element={<DomainePage />} />
             <Route path="/humeur" element={<HumeurPage />} />
             <Route path="/question" element={<QuestionPage />} />
             {/* Espace du vrai Dr Lô : séparé de l'admin, rôle staff/{uid}.drlo */}
@@ -493,7 +494,7 @@ const AppChrome: React.FC = () => {
             <Route path="/journal/:id" element={<JournalEntryView userId={userId} />} />
 
             {/* Mon Espace */}
-            <Route path="/mon-espace" element={<MonEspacePage userId={userId} />} />
+            <Route path="/mon-espace" element={<Navigate to="/espace" replace />} />
             <Route path="/acheter-koris" element={<AcheterKorisPage />} />
 
             {/* Défi */}

@@ -136,9 +136,9 @@ const EspacePage: React.FC = () => {
     borderColor: `${accent}55`, background: `${accent}12`, minHeight: 104, cursor: 'pointer',
   });
   const domains = [
-    { key: 'mental', label: 'Mental', icon: Brain, color: DC.sage, word: doneMental ? `${doneMental} / ${MENTAL_HEALTH_SCALES.length} tests` : 'À découvrir', to: '/assessment/mental' },
+    { key: 'mental', label: 'Mental', icon: Brain, color: DC.sage, word: doneMental ? `${doneMental} / ${MENTAL_HEALTH_SCALES.length} tests` : 'À découvrir', to: '/espace/mental' },
     { key: 'humeur', label: 'Humeur', icon: CloudSun, color: DC.gold, word: humeurWord, to: '/humeur' },
-    { key: 'social', label: 'Social', icon: Users, color: DC.social, word: defis ? `${defis} défi${defis > 1 ? 's' : ''} en cours` : 'Compatibilité & défis', to: '/assessment/compatibility' },
+    { key: 'social', label: 'Social', icon: Users, color: DC.social, word: defis ? `${defis} défi${defis > 1 ? 's' : ''} en cours` : 'Compatibilité & défis', to: '/espace/social' },
   ];
 
   return (
@@ -180,19 +180,20 @@ const EspacePage: React.FC = () => {
               <span style={{ fontSize: 12.5, color: DC.muted }}>{dm.word}</span>
             </Link>
           ))}
-          <div style={{ ...tile(DC.intime), cursor: 'default', position: 'relative' }}>
-            <button onClick={toggleIntime} aria-label={showIntime ? 'Masquer le domaine Intime' : 'Afficher le domaine Intime'} className="drl-btn"
-              style={{ position: 'absolute', top: 8, right: 8, width: 36, height: 36, borderRadius: 10, border: `1px solid ${DC.line}`, background: DC.glass, color: DC.muted, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
-              {showIntime ? <EyeOff size={16} aria-hidden="true" /> : <Eye size={16} aria-hidden="true" />}
-            </button>
-            <Heart size={20} color={DC.intime} aria-hidden="true" />
-            <span style={{ fontSize: 15, fontWeight: 700 }}>Intime</span>
-            {showIntime ? (
-              <Link to={uid ? '/assessment/sexual' : '/'} state={uid ? undefined : { signup: true }} style={{ fontSize: 12.5, color: DC.muted, textDecoration: 'underline', textUnderlineOffset: 3 }}>
-                {!uid ? 'Avec un espace personnel' : doneSexual ? `${doneSexual} / ${SEXUAL_HEALTH_SCALES.length} tests` : 'À découvrir'}
-              </Link>
-            ) : (
-              <span style={{ fontSize: 12.5, color: DC.faint }}>Masqué</span>
+          {/* Intime : toute la tuile s'ouvre ; l'œil ne fait que cacher le chiffre sur cet écran */}
+          <div style={{ position: 'relative' }}>
+            <Link to="/espace/intime" className="drl-btn" style={{ ...tile(DC.intime), height: '100%', boxSizing: 'border-box' }}>
+              <Heart size={20} color={DC.intime} aria-hidden="true" />
+              <span style={{ fontSize: 15, fontWeight: 700 }}>Intime</span>
+              <span style={{ fontSize: 12.5, color: showIntime ? DC.muted : DC.faint }}>
+                {!uid ? 'Avec un espace personnel' : !showIntime ? 'En toute discrétion' : doneSexual ? `${doneSexual} / ${SEXUAL_HEALTH_SCALES.length} tests` : 'À découvrir'}
+              </span>
+            </Link>
+            {uid && (
+              <button onClick={toggleIntime} aria-label={showIntime ? 'Cacher mon avancée intime sur cet écran' : 'Afficher mon avancée intime sur cet écran'} className="drl-btn"
+                style={{ position: 'absolute', top: 8, right: 8, width: 36, height: 36, borderRadius: 10, border: `1px solid ${DC.line}`, background: DC.glass, color: DC.muted, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+                {showIntime ? <EyeOff size={16} aria-hidden="true" /> : <Eye size={16} aria-hidden="true" />}
+              </button>
             )}
           </div>
         </div>
@@ -282,7 +283,7 @@ const EspacePage: React.FC = () => {
           { label: 'Me confier', icon: Feather, color: DC.confier, onClick: () => navigate('/', { state: { tab: 'confier' } }) },
           { label: 'Mon journal', icon: BookOpen, color: DC.confier, onClick: () => navigate(uid ? '/journal' : '/') },
           { label: 'Tous les tests', icon: ListChecks, color: DC.sage, onClick: () => navigate('/assessment') },
-          { label: 'Défis entre proches', icon: Users, color: DC.social, onClick: () => navigate('/defi') },
+          { label: 'Défis entre proches', icon: Users, color: DC.social, onClick: () => navigate('/', { state: uid ? { flow: 'defi' } : { signup: true } }) },
         ].map(s => (
           <button key={s.label} onClick={s.onClick} className="drl-btn"
             style={{ ...card, padding: '12px 14px', display: 'flex', alignItems: 'center', gap: 10, color: DC.text, fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>

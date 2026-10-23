@@ -26,3 +26,7 @@
 @media (prefers-reduced-motion: reduce){
   .drl-halo,.drl-halo-guided,.drl-bokeh,.drl-dot,.drl-in,.drl-sweep,.drl-orbit,.drl-listen,.drl-joy{animation:none}
 }
+
+@keyframes drlJoyGlow{0%,100%{box-shadow:0 0 14px rgba(240,200,110,.4)}50%{box-shadow:0 0 44px rgba(240,200,110,.9)}}
+.drl-joy-glow{animation:drlJoyGlow 1.2s ease-in-out infinite}
+@media (prefers-reduced-motion: reduce){.drl-joy-glow{animation:none;box-shadow:0 0 24px rgba(240,200,110,.6)}}

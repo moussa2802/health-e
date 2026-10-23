@@ -13,6 +13,7 @@
  */
 
 import type { ActiveTest } from './chatTest';
+import type { SocialFlow } from './socialFlow.ts';
 import { credits } from '../config/creditName.ts';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -38,10 +39,14 @@ export type Card =
   | { type: 'signup'; mode?: 'signup' | 'login' }
   | { type: 'link_account' }
   | { type: 'result'; path: string }
-  | { type: 'go'; to: GoTarget };
+  | { type: 'go'; to: GoTarget }
+  | { type: 'defi_preview'; questions: string[] }
+  | { type: 'defi_share'; slug: string }
+  | { type: 'compat_share'; code: string }
+  | { type: 'compat_result'; score: number; prenom: string; strengths: string[]; tensions: string[] };
 
 /** Destinations hors conversation que Dr Lô peut proposer. */
-export type GoTarget = 'defi' | 'compat' | 'question_drlo' | 'totem' | 'catalogue' | 'chat' | 'confier';
+export type GoTarget = 'defi' | 'compat' | 'question_drlo' | 'totem' | 'catalogue' | 'chat' | 'confier' | 'defi_list';
 
 export const GO: Record<GoTarget, { label: string; path?: string; needsAccount: boolean; intro: string }> = {
   defi: { label: 'Lancer mon Défi', path: '/defi', needsAccount: true, intro: 'Le Défi « Kan moo ma gën a xam ? » : tes proches devinent tes réponses, et tu découvres qui te connaît le mieux.' },
@@ -50,6 +55,7 @@ export const GO: Record<GoTarget, { label: string; path?: string; needsAccount: 
   totem: { label: 'Voir mon totem', path: '/assessment/totem', needsAccount: true, intro: 'Ton totem résume ta personnalité profonde.' },
   catalogue: { label: 'Voir tous les tests', path: '/assessment', needsAccount: false, intro: 'Voici tous les tests, classés par thème.' },
   chat: { label: 'Discuter avec Dr Lô', needsAccount: true, intro: 'On peut en parler tranquillement, toi et moi.' },
+  defi_list: { label: 'Voir mes défis', path: '/defi', needsAccount: true, intro: 'Tes défis en cours et qui a déjà joué.' },
   confier: { label: 'Écrire dans mon journal', needsAccount: false, intro: 'Écris comme ça vient : je lis, sans juger et sans t\'interrompre.' },
 };
 
@@ -88,6 +94,8 @@ export interface AccueilState {
   day?: string;
   /** Destination à proposer juste après la création de l'espace. */
   pendingGo?: GoTarget;
+  /** Défi ou compatibilité en cours de préparation dans la conversation. */
+  flow?: SocialFlow;
 }
 
 /** Ce que l'interface sait déjà de la personne (compte, onboarding existant). */
@@ -657,7 +665,7 @@ export interface RouteDecision {
 }
 
 /** Ce que l'interface doit faire en plus du message (ouvrir un mode). */
-export type RouteUi = 'mood' | 'breath' | null;
+export type RouteUi = 'mood' | 'breath' | 'defi' | 'compat' | null;
 
 export interface RouteCtx {
   /** Question en cours (pendant un test), pour la reposer. */
@@ -728,6 +736,7 @@ export function routeDecision(state: AccueilState, d: RouteDecision, k: Known, c
       const then = d.action === 'pause' ? d.then : d.action;
       if (!then) return ui(null, s);
       if (then === 'mood' || then === 'breath') return ui(then, s);
+      if ((then === 'defi' || then === 'compat') && k.isAuthenticated) return ui(then, s);
       if (then === 'test' && d.scaleId) return ui(null, goTest(s, d.scaleId, k, 'On regarde ça ensemble.'));
       if ((GO_TARGETS as string[]).includes(then)) return ui(null, goTo(s, then as GoTarget, k, GO[then as GoTarget].intro));
       return ui(null, s);
@@ -744,7 +753,11 @@ export function routeDecision(state: AccueilState, d: RouteDecision, k: Known, c
   switch (d.action) {
     case 'test':
       return ui(null, d.scaleId ? goTest(s, d.scaleId, k, d.reply) : goTo(s, 'catalogue', k, d.reply));
-    case 'defi': case 'compat': case 'question_drlo': case 'totem': case 'catalogue': case 'chat': case 'confier':
+    case 'defi': case 'compat':
+      // Avec un compte, le Défi et la compatibilité se préparent ici même, dans la conversation
+      if (k.isAuthenticated) return ui(d.action, { ...push(s, 'drlo', d.reply), step: 'prescribed' });
+      return ui(null, goTo(s, d.action, k, d.reply));
+    case 'question_drlo': case 'totem': case 'catalogue': case 'chat': case 'confier':
       return ui(null, goTo(s, d.action, k, d.reply));
     case 'mood': case 'breath':
       return ui(d.action, { ...push(s, 'drlo', d.reply), step: ['need', 'need_clarify'].includes(s.step) ? 'prescribed' : s.step });

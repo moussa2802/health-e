@@ -10,7 +10,7 @@
  */
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { ArrowRight, Check, Clock, EyeOff, ListChecks, Lock, Mic, Phone, Send, Sparkles, Sprout } from 'lucide-react';
+import { ArrowRight, Check, ChevronLeft, Clock, Copy, EyeOff, ListChecks, Lock, Mic, Phone, Send, Sparkles, Sprout } from 'lucide-react';
 import './accueil.css';
 import DrLoAvatar, { type DrLoState } from './DrLoAvatar';
 import MoodIcon from './MoodIcon';
@@ -64,6 +64,13 @@ import { openDrLoChat } from '../DrLoChat/drLoEvents';
 import { useDictation } from '../../hooks/useDictation';
 import { startChatTest, recordAnswer, finishChatTest, loadScale } from '../../services/chatTestRunner';
 import { routeText } from '../../services/drloRouteService';
+import { checkCompatCode, defiCreate, defiPreview, defiUrl, loadSocialProfile, runCompat, type DefiInput } from '../../services/socialChat';
+import {
+  cleanDisplayName, defiNext, flowChips, flowWantsText, parseCompatCode, SAY, startCompat, startDefi, titreFor,
+  type DefiAudience, type SocialFlow,
+} from '../../utils/socialFlow';
+import { RELATIONSHIP_CATEGORIES } from '../../utils/relationshipTypes';
+import { getTotemProgress } from '../../utils/totemAlgorithm';
 import { KORIS_COSTS, isTestFreeRetake } from '../../services/korisService';
 import {
   nextItem, previousItem, progress, introText, questionText, fullItemText, criticalAlert, visibleItems,
@@ -201,6 +208,10 @@ const ConversationAccueil: React.FC = () => {
   const [testBusy, setTestBusy] = useState<null | 'starting' | 'finishing'>(null);
   /** Dr Lô lit un message libre (appel à drlo-route en cours). */
   const [routing, setRouting] = useState(false);
+  /** Dr Lô se réjouit brièvement (test terminé, défi lancé, compatibilité prête). Jamais sur un résultat difficile. */
+  const [joyUntil, setJoyUntil] = useState(0);
+  const [joyPending, setJoyPending] = useState(false);
+  const cheer = () => { setJoyUntil(Date.now() + 2600); window.setTimeout(() => setJoyUntil(0), 2700); };
   const initKeyRef = useRef<string | null>(null);
   const startedRef = useRef(false);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -340,7 +351,7 @@ const ConversationAccueil: React.FC = () => {
   // Lien d'invitation d'un proche (?ref=CODE) : gardé jusqu'à la création de l'espace
   useEffect(() => { captureReferral(location.search); }, []); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => {
-    const st = location.state as { prescribe?: string; openMood?: boolean; tab?: 'confier'; signup?: boolean } | null;
+    const st = location.state as { prescribe?: string; openMood?: boolean; tab?: 'confier'; signup?: boolean; flow?: 'defi' | 'compat' } | null;
     if (!st || !state || !known || state.step === 'testing') return;
     const sig = JSON.stringify(st) + location.key;
     if (intentRef.current === sig) return;
@@ -349,6 +360,7 @@ const ConversationAccueil: React.FC = () => {
     if (st.tab === 'confier') { setTab('confier'); return; }
     if (st.openMood) { setTab('discuter'); setMode('mood'); return; }
     if (st.signup && !isAuthenticated) { setTimeout(() => openSignupRef.current?.('signup'), 0); return; }
+    if (st.flow) { setTab('discuter'); setTimeout(() => startFlowRef.current?.(st.flow!), 0); return; }
     if (st.prescribe && getScaleById(st.prescribe) && !state.messages.slice(-2).some(m => m.card?.type === 'test' && m.card.scaleId === st.prescribe)) {
       const meta = getScaleMeta(st.prescribe);
       const prev = state;
@@ -359,6 +371,10 @@ const ConversationAccueil: React.FC = () => {
     }
   }, [location.key, state?.messages.length, known]); // eslint-disable-line react-hooks/exhaustive-deps
   const openSignupRef = useRef<((m: 'signup' | 'login', t?: string) => void) | null>(null);
+  const startFlowRef = useRef<((k: 'defi' | 'compat', userText?: string) => void) | null>(null);
+  /** Retour au premier écran (flèche) ; la conversation reprend en plein écran dès qu'on écrit. */
+  const [forceHome, setForceHome] = useState(false);
+  const scrollRef = useRef<HTMLDivElement>(null);
 
   const testScale = useMemo<AssessmentScale | null>(
     () => (state?.activeTest ? loadScale(state.activeTest.scaleId) : null),
@@ -368,6 +384,15 @@ const ConversationAccueil: React.FC = () => {
   const messages = state?.messages ?? [];
   const { shown, partial, phase } = useReveal(messages, reveal.nonce, reveal.from, reveal.hint);
   const revealing = phase !== 'idle' || shown < messages.length;
+  // La joie vient après que Dr Lô a fini d'écrire son message
+  useEffect(() => {
+    if (!revealing && joyPending) { setJoyPending(false); cheer(); }
+  }, [revealing, joyPending]); // eslint-disable-line react-hooks/exhaustive-deps
+  // Mode discussion : on suit toujours le dernier message
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (el) el.scrollTop = el.scrollHeight;
+  }, [shown, partial, messages.length, routing, phase, mode, tab, testBusy]);
 
   const apply = useCallback((next: AccueilState, prev: AccueilState, hint: Hint = 'thinking') => {
     setState(next);
@@ -435,6 +460,7 @@ const ConversationAccueil: React.FC = () => {
   const listening = dictation.listening || (!!input.trim() && !revealing && !breathing);
   const avatarState: DrLoState = tab === 'confier' ? confierStatus.state
     : breathing ? 'breathing'
+    : joyUntil > Date.now() && !revealing ? 'joy'
     : testBusy === 'finishing' || phase === 'reading' ? 'reading'
     : testBusy === 'starting' || routing ? 'thinking'
     : phase === 'thinking' ? 'thinking'
@@ -445,6 +471,7 @@ const ConversationAccueil: React.FC = () => {
     : testBusy === 'finishing' || phase === 'reading' ? 'Je regarde ton résultat…'
     : testBusy === 'starting' ? 'Je prépare le test…'
     : phase === 'thinking' || routing ? 'Je réfléchis…'
+    : phase === 'writing' ? 'Écrit…'
     : listening ? 'Je t\'écoute…' : null;
 
   // Le fil « focal » : le dernier message de la personne et la réponse de Dr Lô
@@ -457,14 +484,16 @@ const ConversationAccueil: React.FC = () => {
   const today = dayKey();
   const moodToday = loadMoods(moodKey)[today];
   const extrasAllowed = ['need', 'need_clarify', 'prescribed'].includes(state.step);
-  const flowReplies = getQuickReplies(state, known);
+  const flowReplies: QuickReply[] = state.flow
+    ? flowChips(state.flow, { prenom, categories: RELATIONSHIP_CATEGORIES }).map(c => ({ label: c.label, value: c.value }))
+    : getQuickReplies(state, known);
   type Chip = { label: string; kind: 'flow' | 'mood' | 'breath'; q?: QuickReply };
   const chips: Chip[] = [
     ...flowReplies.map(q => ({ label: q.label, kind: 'flow' as const, q })),
     // Premier écran léger : pas plus d'une pastille « extra » tant que la personne n'a rien dit.
     // L'humeur se note une fois par jour (la page Humeur permettra de la modifier).
-    ...(extrasAllowed && !moodToday ? [{ label: 'Noter mon humeur · 30 s', kind: 'mood' as const }] : []),
-    ...(extrasAllowed && (lastUser >= 0 || breathing) ? [{ label: 'Respirer avec moi · 1 min', kind: 'breath' as const }] : []),
+    ...(extrasAllowed && !state.flow && !moodToday ? [{ label: 'Noter mon humeur · 30 s', kind: 'mood' as const }] : []),
+    ...(extrasAllowed && !state.flow && (lastUser >= 0 || breathing) ? [{ label: 'Respirer avec moi · 1 min', kind: 'breath' as const }] : []),
   ];
 
   // ── Actions ────────────────────────────────────────────────────────────────
@@ -494,6 +523,7 @@ const ConversationAccueil: React.FC = () => {
     if (c.kind === 'mood') { trackAccueil('mood_open'); setMode('mood'); return; }
     if (c.kind === 'breath') { startBreathing(); return; }
     const q = c.q!;
+    if (q.value.startsWith('flow:')) { void onFlowChip(q.value, q.label); return; }
     if (q.action === 'catalogue') { navigate('/assessment'); return; }
     if (q.action === 'signup') { openSignup('signup', q.label); return; }
     if (q.action === 'free_chat') {
@@ -523,7 +553,10 @@ const ConversationAccueil: React.FC = () => {
     if (!text || routing) return; // on peut répondre même pendant que Dr Lô écrit : son message s'affiche alors en entier
     if (dictation.listening) dictation.stop();
     setInput('');
+    setForceHome(false);
     if (breathing) setBreath(null);
+    // Défi / compatibilité en préparation : le nom ou le code s'écrivent ici
+    if (flowWantsText(state.flow) && !detectCrisis(text)) { void onFlowText(text); return; }
     // Gérés sur place, sans IA : la crise (messages validés, immédiats), le mode mineur,
     // et les réponses simples aux questions d'identité.
     const local = detectCrisis(text)
@@ -533,7 +566,8 @@ const ConversationAccueil: React.FC = () => {
       || (state.step === 'crisis' && text.length < 4);
     if (local) { apply(respond(state, { text }, known), state); return; }
 
-    const base = addExchange(state, text, []);
+    // Autre sujet en pleine préparation d'un défi : on laisse tomber la préparation
+    const base = { ...addExchange(state, text, []), flow: undefined };
     setState(base);
     setShowHistory(false);
     setRouting(true);
@@ -574,6 +608,7 @@ const ConversationAccueil: React.FC = () => {
     apply(r.state, base, d.action === 'explain' || d.action === 'continue' ? 'quick' : 'thinking');
     trackAccueil('route', { action: d.action, then: d.then ?? '', step: state.step }); // jamais le texte
     if (r.ui === 'mood') setMode('mood');
+    if (r.ui === 'defi' || r.ui === 'compat') void startFlow(r.ui, undefined, r.state);
     if (r.ui === 'breath') setBreath({ inhale: true });
   };
 
@@ -581,6 +616,7 @@ const ConversationAccueil: React.FC = () => {
   const onGo = (to: keyof typeof GO) => {
     trackAccueil('go', { to });
     if (to === 'confier') { setTab('confier'); setMode('home'); return; }
+    if ((to === 'defi' || to === 'compat') && isAuthenticated) { void startFlow(to, GO[to].label); return; }
     if (to === 'chat') {
       const lastUserText = [...(stateRef.current?.messages ?? [])].reverse().find(m => m.from === 'user')?.text;
       openDrLoChat({
@@ -684,6 +720,8 @@ const ConversationAccueil: React.FC = () => {
       }, { ...known, doneScaleIds: Object.keys(newResults), guestRemaining: remaining });
       apply(next, cur, 'reading');
       trackAccueil('test_done', { scale: t.scaleId, via: 'chat', guest: !isAuthenticated });
+      const sev = result.interpretation?.severity ?? 'none';
+      if ((result.alertLevel ?? 0) < 2 && !['moderate', 'severe', 'alert'].includes(sev) && !result.interpretation?.referralRequired) setJoyPending(true);
     } catch {
       const cur = stateRef.current ?? s;
       apply(addExchange(cur, null, ['Je n\'ai pas réussi à enregistrer ton résultat (connexion instable). Tes réponses sont gardées : touche « Voir mon résultat » pour réessayer.']), cur);
@@ -731,6 +769,166 @@ const ConversationAccueil: React.FC = () => {
     apply(pauseChatTest(state, progress(testScale, t.answers).done, label(t.scaleId)), state);
   };
 
+  // ── Défi et compatibilité, en conversation ─────────────────────────────────
+
+  /** Dr Lô parle (et la préparation avance) ; `user` = ce que la personne a choisi ou écrit. */
+  const say = (items: (string | { text: string; card?: Card })[], user: string | null, flow: SocialFlow | undefined, from?: AccueilState) => {
+    const cur = from ?? stateRef.current ?? state;
+    const next = { ...addExchange(cur, user, items), flow, step: cur.step === 'testing' ? cur.step : 'prescribed' as const };
+    apply(next, cur);
+    return next;
+  };
+
+  const startFlow = async (kind: 'defi' | 'compat', userText?: string, from?: AccueilState) => {
+    setForceHome(false);
+    if (!isAuthenticated || !currentUser) { openSignup('signup', userText); return; }
+    const base = from ?? stateRef.current ?? state;
+    const withUser = userText ? addExchange(base, userText, []) : base;
+    if (userText) setState(withUser);
+    setRouting(true);
+    let prof;
+    try { prof = await loadSocialProfile(currentUser.id); } catch { prof = null; }
+    setRouting(false);
+    const cur = stateRef.current ?? withUser;
+    if (!prof) { say(['La connexion est instable, je n\'arrive pas à préparer ça. Réessaie dans un instant.'], null, undefined, cur); return; }
+    trackAccueil('go', { to: `flow_${kind}` });
+    if (kind === 'defi') {
+      if (!prof.totemRevealed) {
+        if (prof.totemMissing > 0) {
+          const next = getTotemNext();
+          say([next ? { text: SAY.defiNeedTotem(prof.totemMissing), card: { type: 'test', scaleId: next } } : SAY.defiNeedTotem(prof.totemMissing)], null, undefined, cur);
+        } else say([{ text: SAY.defiRevealTotem, card: { type: 'go', to: 'totem' } }], null, undefined, cur);
+        return;
+      }
+      if (prof.activeDefis >= 3) { say([{ text: SAY.defiTooMany, card: { type: 'go', to: 'defi_list' } }], null, undefined, cur); return; }
+      const f = startDefi();
+      say([SAY.defiStart], null, { ...f, data: { genre: prof.genre ?? undefined } }, cur);
+      return;
+    }
+    if (!prof.codeMental) {
+      const next = getTotemNext();
+      say([next ? { text: SAY.compatNeedProfile(Math.max(1, prof.totemMissing)), card: { type: 'test', scaleId: next } } : SAY.compatNeedProfile(Math.max(1, prof.totemMissing))], null, undefined, cur);
+      return;
+    }
+    say([SAY.compatStart], null, { ...startCompat(), data: { myCode: prof.codeMental } }, cur);
+  };
+  startFlowRef.current = (k, t) => { void startFlow(k, t); };
+
+  /** Premier test du totem qui manque encore. */
+  function getTotemNext(): string | null {
+    return getTotemProgress(results ?? {}).missing[0] ?? null;
+  }
+
+  const defiInput = (f: SocialFlow): DefiInput => ({
+    displayName: f.data.displayName!, audience: f.data.audience!, genre: f.data.genre!,
+    duration: f.data.duration!, devoilement: f.data.devoilement!, titre: titreFor(f.data.audience),
+  });
+
+  /** Avance le Défi après une réponse ; prépare l'aperçu des questions quand tout est connu. */
+  const advanceDefi = async (f: SocialFlow, user: string) => {
+    const n = defiNext(f);
+    if (n.flow.step !== 'defi_creating') { say([n.say], user, n.flow); return; }
+    const shown = say([n.say], user, n.flow);
+    setRouting(true);
+    const out = await defiPreview(defiInput(n.flow));
+    setRouting(false);
+    const cur = stateRef.current ?? shown;
+    if (!out.ok) { say([SAY.defiError(out.error)], null, undefined, cur); return; }
+    say([{ text: SAY.defiPreview(out.questions.length), card: { type: 'defi_preview', questions: out.questions.map(q => q.text) } }], null,
+      { ...n.flow, step: 'defi_preview', data: { ...n.flow.data, selectedKeys: out.questions.map(q => q.key) } }, cur);
+  };
+
+  const onFlowChip = async (value: string, label: string) => {
+    const f = state.flow;
+    if (!f || routing) return;
+    const [, key, ...rest] = value.split(':');
+    const v = rest.join(':');
+    switch (key) {
+      case 'aud': return advanceDefi({ ...f, data: { ...f.data, audience: v as DefiAudience } }, label);
+      case 'name': return advanceDefi({ ...f, data: { ...f.data, displayName: v } }, label);
+      case 'genre': return advanceDefi({ ...f, data: { ...f.data, genre: v as 'masculin' | 'feminin' } }, label);
+      case 'dur': return advanceDefi({ ...f, data: { ...f.data, duration: Number(v) } }, label);
+      case 'rev': return advanceDefi({ ...f, data: { ...f.data, devoilement: v as 'auto' | 'aucun' } }, label);
+      case 'custom': navigate('/defi/creer'); return;
+      case 'launch': {
+        const shown = say(['Je lance ton défi…'], label, { ...f, step: 'defi_creating' });
+        setRouting(true);
+        const out = await defiCreate(defiInput(f), f.data.selectedKeys ?? []);
+        setRouting(false);
+        const cur = stateRef.current ?? shown;
+        if (!out.ok) { say([SAY.defiError(out.error)], null, undefined, cur); return; }
+        trackAccueil('go', { to: 'defi_created' });
+        setJoyPending(true);
+        say([{ text: SAY.defiCreated, card: { type: 'defi_share', slug: out.slug } }], null, undefined, cur);
+        return;
+      }
+      case 'cat': {
+        const cat = RELATIONSHIP_CATEGORIES.find(c => c.id === v);
+        if (cat && cat.subTypes.length === 1) {
+          const nf: SocialFlow = { ...f, step: 'compat_code', data: { ...f.data, relCategory: v, relType: cat.subTypes[0].id } };
+          say([{ text: SAY.compatCode, card: { type: 'compat_share', code: f.data.myCode ?? '' } }], label, nf);
+          return;
+        }
+        say([SAY.compatSub], label, { ...f, step: 'compat_sub', data: { ...f.data, relCategory: v } });
+        return;
+      }
+      case 'sub':
+        say([{ text: SAY.compatCode, card: { type: 'compat_share', code: f.data.myCode ?? '' } }], label, { ...f, step: 'compat_code', data: { ...f.data, relType: v } });
+        return;
+      case 'recode':
+        say(['D\'accord. Écris-moi le bon code.'], label, { ...f, step: 'compat_code' });
+        return;
+      case 'compare': {
+        if (!currentUser) return;
+        if (balance < KORIS_COSTS.compatibility) {
+          openNoKorisModal('La compatibilité', KORIS_COSTS.compatibility);
+          say([`Il te faut ${credits(KORIS_COSTS.compatibility)} pour comparer. Recharge, ou reviens demain avec tes ${CREDIT.many} du jour : je garde le code.`], label, f);
+          return;
+        }
+        const shown = say([SAY.compatRunning], label, { ...f, step: 'compat_running' });
+        setRouting(true);
+        const pc = parseCompatCode(f.data.partnerCode ?? '');
+        const out = pc
+          ? await runCompat(currentUser.id, f.data.relType ?? 'meilleur_ami', f.data.relCategory === 'amoureux', pc.code, pc.type, f.data.partnerPrenom ?? '')
+          : { ok: false as const, error: 'Code manquant.' };
+        setRouting(false);
+        refreshBalance();
+        const cur = stateRef.current ?? shown;
+        if (!out.ok) { say([SAY.compatError(out.error)], null, undefined, cur); return; }
+        trackAccueil('go', { to: 'compat_done' });
+        const r = out.result;
+        if (r.globalScore >= 60) setJoyPending(true);
+        say([{ text: SAY.compatDone(f.data.partnerPrenom ?? 'cette personne'), card: {
+          type: 'compat_result', score: Math.round(r.globalScore), prenom: f.data.partnerPrenom ?? '',
+          strengths: (r.strengths ?? []).slice(0, 2), tensions: (r.tensions ?? []).slice(0, 1),
+        } }], null, undefined, cur);
+        return;
+      }
+    }
+  };
+
+  const onFlowText = async (text: string) => {
+    const f = state.flow!;
+    if (f.step === 'defi_name') {
+      const n = cleanDisplayName(text);
+      if (!n) { say([SAY.defiNameBad], text, f); return; }
+      return advanceDefi({ ...f, data: { ...f.data, displayName: n } }, text);
+    }
+    if (f.step === 'compat_code' && currentUser) {
+      const pc = parseCompatCode(text);
+      if (!pc) { say([SAY.compatCodeBad], text, f); return; }
+      const shown = addExchange(state, text, []);
+      setState({ ...shown, flow: f });
+      setRouting(true);
+      const v = await checkCompatCode(pc.code, currentUser.id);
+      setRouting(false);
+      const cur = stateRef.current ?? shown;
+      if (!v.ok) { say([`${v.error} Tu peux me réécrire le code ?`], null, f, cur); return; }
+      say([SAY.compatConfirm(v.prenom, credits(KORIS_COSTS.compatibility))], null,
+        { ...f, step: 'compat_confirm', data: { ...f.data, partnerCode: pc.code, partnerPrenom: v.prenom } }, cur);
+    }
+  };
+
   const resetConversation = () => {
     try { localStorage.removeItem(storageKey); } catch { /* ignore */ }
     trackAccueil('reset');
@@ -754,6 +952,237 @@ const ConversationAccueil: React.FC = () => {
     border: 0, background: 'transparent', color: C.faint, fontWeight: 600, cursor: 'pointer', minHeight: 32,
     textDecoration: 'underline', textUnderlineOffset: 3,
   };
+
+  const renderCard = (m: Msg) => (
+    <ChatCard
+                    card={m.card!}
+                    palette={palette}
+                    busy={!!testBusy || state.step === 'testing'}
+                    costLabel={(id: string) => (!isAuthenticated || isTestFreeRetake(results?.[id]?.completedAt as Date | undefined) ? 'gratuit' : credits(KORIS_COSTS.test))}
+                    onStart={startTest}
+                    onOpen={(path: string) => navigate(path)}
+                    prenom={state.prenom}
+                    genre={state.genre}
+                    onLinked={() => { const cur = stateRef.current ?? state; apply(addExchange(cur, null, ['Parfait. Ton espace est en sécurité.']), cur); }}
+                    onGo={onGo}
+                  />
+  );
+
+  const controls = (
+    <>
+          {mode === 'mood' ? (
+            <div className="drl-in" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              <p style={{ margin: 0, textAlign: 'center', fontSize: 15, fontWeight: 700 }}>Comment tu te sens, là, maintenant ?</p>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, minmax(0, 1fr))', gap: 6 }}>
+                {MOODS.map(md => (
+                  <button key={md.id} onClick={() => pickMood(md.id)} className="drl-mood"
+                    style={{ minHeight: 72, borderRadius: 14, border: `1px solid ${C.line}`, background: C.glass, color: C.text, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 6, fontSize: 11, fontWeight: 600, cursor: 'pointer', padding: 0 }}>
+                    <MoodIcon id={md.id} color={md.color} />
+                    {md.label}
+                  </button>
+                ))}
+              </div>
+              <button onClick={() => setMode('home')} style={{ minHeight: 44, border: 0, background: 'transparent', color: C.muted, fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>
+                Plus tard
+              </button>
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              {state.step === 'testing' && state.activeTest && testScale && (
+                <TestPanel
+                  scale={testScale}
+                  answers={state.activeTest.answers}
+                  askedItemId={state.activeTest.askedItemId}
+                  label={label(state.activeTest.scaleId)}
+                  palette={palette}
+                  hidden={revealing || testBusy === 'finishing'}
+                  busy={!!testBusy}
+                  onAnswer={onAnswer}
+                  onPrev={onPrevQuestion}
+                  onPause={onPauseTest}
+                  onFinish={() => { void finishTest(state, testScale); }}
+                />
+              )}
+              {!revealing && chips.length > 0 && (
+                <div className="drl-in" style={{ display: 'flex', flexWrap: 'wrap', gap: 8, justifyContent: 'center' }}>
+                  {chips.map(c => (
+                    <button key={c.label} onClick={() => onChip(c)} className="drl-btn"
+                      style={{
+                        ...glassBtn,
+                        ...(c.kind === 'flow' ? { background: 'rgba(242,182,109,.10)', border: '1px solid rgba(242,182,109,.4)' } : {}),
+                        ...(c.kind === 'breath' && breathing ? { color: palette.accent } : {}),
+                      }}>
+                      {c.kind === 'breath' && breathing ? 'Arrêter l\'exercice' : c.label}
+                    </button>
+                  ))}
+                </div>
+              )}
+              {state.step !== 'minor' && (
+                <form onSubmit={onSend} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <input
+                    ref={inputRef}
+                    value={input}
+                    onChange={e => setInput(e.target.value)}
+                    maxLength={500}
+                    placeholder={dictation.listening ? 'Parle, je t\'écoute…' : state.step === 'testing' ? 'Si quelque chose te pèse, écris-le-moi…' : 'Réponds à Dr Lô…'}
+                    aria-label="Répondre à Dr Lô"
+                    className="drl-input"
+                    style={{
+                      flex: 1, minWidth: 0, minHeight: 54, boxSizing: 'border-box', borderRadius: 27,
+                      border: `1.5px solid ${listening ? palette.accent : 'rgba(255,255,255,.18)'}`,
+                      boxShadow: listening ? `0 0 0 4px ${palette.glow}` : 'none',
+                      background: 'rgba(255,255,255,.06)', padding: '0 18px', fontFamily: 'inherit', fontSize: 16, color: C.text, outline: 'none',
+                    }}
+                  />
+                  {dictation.supported && (
+                    <button type="button" onClick={onMic} aria-pressed={dictation.listening}
+                      aria-label={dictation.listening ? 'Arrêter la dictée' : 'Dicter ma réponse'} className={`drl-btn${dictation.listening ? ' drl-halo' : ''}`}
+                      style={{ width: 50, height: 50, borderRadius: '50%', border: `1px solid ${dictation.listening ? palette.accent : 'rgba(255,255,255,.18)'}`, background: dictation.listening ? 'rgba(242,182,109,.16)' : 'rgba(255,255,255,.04)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0, color: dictation.listening ? palette.accent : '#E9E1D4' }}>
+                      <Mic size={20} aria-hidden="true" />
+                    </button>
+                  )}
+                  <button type="submit" aria-label="Envoyer à Dr Lô" className="drl-btn" disabled={!input.trim()}
+                    style={{ width: 50, height: 50, borderRadius: '50%', border: 0, background: palette.primary, boxShadow: `0 8px 24px ${palette.glow}`, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0, opacity: !input.trim() ? 0.55 : 1, color: C.ink }}>
+                    <Send size={19} aria-hidden="true" />
+                  </button>
+                </form>
+              )}
+              {dictation.error && (
+                <p role="alert" style={{ margin: 0, fontSize: 12.5, color: C.muted, textAlign: 'center' }}>{dictation.error}</p>
+              )}
+              {dictation.listening && (
+                <p style={{ margin: 0, fontSize: 11.5, color: C.faint, textAlign: 'center' }}>
+                  Tu relis avant d'envoyer. Aucun audio n'est gardé par Health-e.
+                </p>
+              )}
+            </div>
+          )}
+    </>
+  );
+
+
+  // ── Mode discussion : dès que la personne a écrit, l'écran devient une vraie conversation ──
+  const chatMode = !forceHome && messages.some(m => m.from === 'user');
+  if (chatMode) {
+    const statusText = statusLabel ?? (listening ? 'Je t\'écoute…' : 'En ligne');
+    const online = !statusLabel && !listening;
+    const shownMsgs = messages.slice(0, shown);
+    return (
+      <section aria-label="Conversation avec Dr Lô" aria-busy={revealing} className="drl-screen font-sans"
+        style={{ position: 'relative', height: '100svh', display: 'flex', flexDirection: 'column', overflow: 'hidden', background: palette.bg, color: C.text }}>
+        <div style={{ width: '100%', maxWidth: 560, margin: '0 auto', height: '100%', display: 'flex', flexDirection: 'column' }}>
+          {/* En-tête de discussion */}
+          <header style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 14px', borderBottom: '1px solid rgba(255,255,255,.08)', background: 'rgba(20,16,13,.6)' }}>
+            <button onClick={() => { setForceHome(true); setMode('home'); }} aria-label="Revenir à l'accueil" className="drl-btn"
+              style={{ width: 40, height: 40, borderRadius: 12, border: 0, background: 'transparent', color: C.text, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+              <ChevronLeft size={22} aria-hidden="true" />
+            </button>
+            <div aria-hidden="true" style={{ width: 46, height: 46, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <div style={{ transform: 'scale(.7)' }}><DrLoAvatar state={avatarState} palette={palette} size={38} /></div>
+            </div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <p style={{ margin: 0, fontSize: 15.5, fontWeight: 700 }}>Dr Lô</p>
+              <p role="status" style={{ margin: '1px 0 0', fontSize: 12.5, fontWeight: 600, color: online ? '#7FD1A0' : palette.accent, fontStyle: online ? 'normal' : 'italic' }}>{statusText}</p>
+            </div>
+            {isAuthenticated ? (!korisLoading && (
+              <Link to="/acheter-koris" aria-label={`Tes ${CREDIT.many} : ${balance}. Recharger`} className="drl-btn"
+                style={{ ...pill, border: '1px solid rgba(242,182,109,.45)', color: palette.accent }}>
+                <Sparkles size={13} aria-hidden="true" /> {balance}
+              </Link>
+            )) : (
+              <button onClick={() => openSignup('login', 'Me connecter')} className="drl-btn" style={{ ...pill, border: `1px solid ${C.line}`, color: C.text, cursor: 'pointer' }}>Se connecter</button>
+            )}
+            <button onClick={() => setVeiled(true)} aria-label="Masquer l'écran" className="drl-btn"
+              style={{ width: 40, height: 40, borderRadius: 12, border: `1px solid ${C.line}`, background: 'transparent', color: C.muted, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+              <EyeOff size={17} aria-hidden="true" />
+            </button>
+          </header>
+
+          {/* Discuter / Me confier */}
+          <nav aria-label="Mode de conversation" style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 4, margin: '10px 14px 0', padding: 4, borderRadius: 14, background: 'rgba(255,255,255,.05)' }}>
+            {(['discuter', 'confier'] as const).map(t => (
+              <button key={t} onClick={() => { if (t === tab) return; setTab(t); setMode('home'); if (t === 'confier') { setBreath(null); trackAccueil('confier_open', { guest: !isAuthenticated }); } }}
+                aria-current={tab === t ? 'page' : undefined} className="drl-btn"
+                style={{ minHeight: 36, borderRadius: 11, border: 0, cursor: 'pointer', fontSize: 13.5, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                  background: tab === t ? (t === 'confier' ? CONFIER.accent : palette.accent) : 'transparent', color: tab === t ? C.ink : C.muted }}>
+                {t === 'confier' && <Lock size={13} aria-hidden="true" />}{t === 'discuter' ? 'Discuter' : 'Me confier'}
+              </button>
+            ))}
+          </nav>
+
+          {tab === 'confier' ? (
+            <div style={{ flex: 1, overflowY: 'auto', padding: '4px 14px 16px' }}>
+              <ConfierPanel userId={isAuthenticated && currentUser ? currentUser.id : null} genre={state.genre} onStatus={onConfierStatus} onSignup={() => openSignup('signup')} />
+            </div>
+          ) : (<>
+            {/* Les messages */}
+            <div ref={scrollRef} aria-live="polite" style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 10, padding: '14px 14px 10px' }}>
+              <div style={{ flex: 1 }} />
+              {shownMsgs.map((m, i) => (
+                <div key={m.id} className="drl-in">
+                  {m.from === 'user' ? (
+                    <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                      <div style={{ maxWidth: '80%', padding: '10px 14px', borderRadius: '18px 18px 4px 18px', background: palette.primary, color: C.ink, fontSize: 15, fontWeight: 600, lineHeight: 1.45 }}>{m.text}</div>
+                    </div>
+                  ) : (
+                    <div style={{ display: 'flex', alignItems: 'flex-end', gap: 8, maxWidth: '92%' }}>
+                      <img src="/dr-lo.png" alt="" width={28} height={28} style={{ width: 28, height: 28, borderRadius: '50%', objectFit: 'cover', objectPosition: 'top', flexShrink: 0, opacity: shownMsgs[i + 1]?.from === 'drlo' ? 0 : 1 }} />
+                      <div style={{ padding: '11px 14px', borderRadius: '18px 18px 18px 4px', background: 'rgba(255,255,255,.07)', border: '1px solid rgba(255,255,255,.08)', fontSize: 15, lineHeight: 1.5, color: C.text }}>{m.text}</div>
+                    </div>
+                  )}
+                  {m.card && <div style={{ marginLeft: 36, maxWidth: 340 }}>{renderCard(m)}</div>}
+                </div>
+              ))}
+              {partial !== null && (
+                <div style={{ display: 'flex', alignItems: 'flex-end', gap: 8, maxWidth: '92%' }}>
+                  <img src="/dr-lo.png" alt="" width={28} height={28} style={{ width: 28, height: 28, borderRadius: '50%', objectFit: 'cover', objectPosition: 'top', flexShrink: 0 }} />
+                  <div style={{ padding: '11px 14px', borderRadius: '18px 18px 18px 4px', background: 'rgba(255,255,255,.07)', border: '1px solid rgba(255,255,255,.08)', fontSize: 15, lineHeight: 1.5, color: C.text }}>{partial}</div>
+                </div>
+              )}
+              {(phase === 'thinking' || phase === 'reading' || routing || testBusy) && partial === null && (
+                <div role="status" aria-label="Dr Lô écrit" style={{ display: 'flex', alignItems: 'flex-end', gap: 8 }}>
+                  <img src="/dr-lo.png" alt="" width={28} height={28} style={{ width: 28, height: 28, borderRadius: '50%', objectFit: 'cover', objectPosition: 'top' }} />
+                  <div style={{ display: 'inline-flex', gap: 5, padding: '12px 14px', borderRadius: '18px 18px 18px 4px', background: 'rgba(255,255,255,.07)' }}>
+                    {[0, 0.15, 0.3].map(d => <span key={d} className="drl-dot" style={{ width: 7, height: 7, borderRadius: '50%', background: C.muted, animationDelay: `${d}s` }} />)}
+                  </div>
+                </div>
+              )}
+              {noted && !revealing && (
+                <div className="drl-in" style={{ marginLeft: 36, display: 'flex', alignItems: 'center', gap: 8, fontSize: 12.5, fontWeight: 600, color: C.sage }}>
+                  <Check size={14} strokeWidth={2.6} aria-hidden="true" />
+                  <span style={{ textDecoration: noted.cancelled ? 'line-through' : 'none' }}>Noté dans ton humeur du jour</span>
+                  {!noted.cancelled && <button onClick={cancelMood} style={{ ...linkBtn, color: C.muted, fontSize: 12.5, fontWeight: 700, padding: '0 6px' }}>Annuler</button>}
+                </div>
+              )}
+              {breathing && (
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, padding: '12px 0' }}>
+                  <DrLoAvatar state="breathing" palette={palette} size={96} />
+                  <p style={{ margin: 0, fontFamily: 'Fraunces, serif', fontSize: 22, color: palette.accent, fontWeight: 600 }}>{breath!.inhale ? 'Inspire…' : 'Expire…'}</p>
+                </div>
+              )}
+            </div>
+
+            {/* Répondre */}
+            <div style={{ padding: '8px 14px 10px', borderTop: '1px solid rgba(255,255,255,.06)', background: 'rgba(20,16,13,.7)', maxHeight: '58svh', overflowY: 'auto' }}>
+              {controls}
+              <p style={{ margin: '8px 0 0', textAlign: 'center', fontSize: 11.5, color: C.faint, lineHeight: 1.5 }}>
+                Conseils de bien-être, pas de diagnostic · Urgence : <a href="tel:1515" style={{ fontWeight: 700 }}>1515</a>
+                {' · '}<button onClick={resetConversation} style={{ ...linkBtn, fontSize: 11.5, fontWeight: 500, minHeight: 0, padding: 0 }}>Effacer</button>
+              </p>
+            </div>
+          </>)}
+        </div>
+
+        {veiled && (
+          <button onClick={() => setVeiled(false)} aria-label="Revenir à la conversation"
+            style={{ position: 'fixed', inset: 0, zIndex: 60, border: 0, background: 'rgba(15,12,10,.82)', backdropFilter: 'blur(18px)', WebkitBackdropFilter: 'blur(18px)', color: C.muted, fontSize: 14, fontWeight: 600, cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
+            <EyeOff size={26} aria-hidden="true" />
+            Écran masqué · touche pour revenir
+          </button>
+        )}
+      </section>
+    );
+  }
 
   return (
     <section
@@ -853,20 +1282,7 @@ const ConversationAccueil: React.FC = () => {
             {focal.map(m => (
               <div key={m.id}>
                 <Bubble m={m} palette={palette} />
-                {m.card && (
-                  <ChatCard
-                    card={m.card}
-                    palette={palette}
-                    busy={!!testBusy || state.step === 'testing'}
-                    costLabel={(id: string) => (!isAuthenticated || isTestFreeRetake(results?.[id]?.completedAt as Date | undefined) ? 'gratuit' : credits(KORIS_COSTS.test))}
-                    onStart={startTest}
-                    onOpen={(path: string) => navigate(path)}
-                    prenom={state.prenom}
-                    genre={state.genre}
-                    onLinked={() => { const cur = stateRef.current ?? state; apply(addExchange(cur, null, ['Parfait. Ton espace est en sécurité.']), cur); }}
-                    onGo={onGo}
-                  />
-                )}
+                {m.card && renderCard(m)}
               </div>
             ))}
             {partial !== null && <p style={{ margin: 0, fontSize: 16.5, lineHeight: 1.55, color: C.soft }}>{partial}</p>}
@@ -890,93 +1306,7 @@ const ConversationAccueil: React.FC = () => {
 
         {/* Répondre */}
         <div style={{ marginTop: 16, minHeight: 140 }}>
-          {mode === 'mood' ? (
-            <div className="drl-in" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-              <p style={{ margin: 0, textAlign: 'center', fontSize: 15, fontWeight: 700 }}>Comment tu te sens, là, maintenant ?</p>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, minmax(0, 1fr))', gap: 6 }}>
-                {MOODS.map(md => (
-                  <button key={md.id} onClick={() => pickMood(md.id)} className="drl-mood"
-                    style={{ minHeight: 72, borderRadius: 14, border: `1px solid ${C.line}`, background: C.glass, color: C.text, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 6, fontSize: 11, fontWeight: 600, cursor: 'pointer', padding: 0 }}>
-                    <MoodIcon id={md.id} color={md.color} />
-                    {md.label}
-                  </button>
-                ))}
-              </div>
-              <button onClick={() => setMode('home')} style={{ minHeight: 44, border: 0, background: 'transparent', color: C.muted, fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>
-                Plus tard
-              </button>
-            </div>
-          ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-              {state.step === 'testing' && state.activeTest && testScale && (
-                <TestPanel
-                  scale={testScale}
-                  answers={state.activeTest.answers}
-                  askedItemId={state.activeTest.askedItemId}
-                  label={label(state.activeTest.scaleId)}
-                  palette={palette}
-                  hidden={revealing || testBusy === 'finishing'}
-                  busy={!!testBusy}
-                  onAnswer={onAnswer}
-                  onPrev={onPrevQuestion}
-                  onPause={onPauseTest}
-                  onFinish={() => { void finishTest(state, testScale); }}
-                />
-              )}
-              {!revealing && chips.length > 0 && (
-                <div className="drl-in" style={{ display: 'flex', flexWrap: 'wrap', gap: 8, justifyContent: 'center' }}>
-                  {chips.map(c => (
-                    <button key={c.label} onClick={() => onChip(c)} className="drl-btn"
-                      style={{
-                        ...glassBtn,
-                        ...(c.kind === 'flow' ? { background: 'rgba(242,182,109,.10)', border: '1px solid rgba(242,182,109,.4)' } : {}),
-                        ...(c.kind === 'breath' && breathing ? { color: palette.accent } : {}),
-                      }}>
-                      {c.kind === 'breath' && breathing ? 'Arrêter l\'exercice' : c.label}
-                    </button>
-                  ))}
-                </div>
-              )}
-              {state.step !== 'minor' && (
-                <form onSubmit={onSend} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <input
-                    ref={inputRef}
-                    value={input}
-                    onChange={e => setInput(e.target.value)}
-                    maxLength={500}
-                    placeholder={dictation.listening ? 'Parle, je t\'écoute…' : state.step === 'testing' ? 'Si quelque chose te pèse, écris-le-moi…' : 'Réponds à Dr Lô…'}
-                    aria-label="Répondre à Dr Lô"
-                    className="drl-input"
-                    style={{
-                      flex: 1, minWidth: 0, minHeight: 54, boxSizing: 'border-box', borderRadius: 27,
-                      border: `1.5px solid ${listening ? palette.accent : 'rgba(255,255,255,.18)'}`,
-                      boxShadow: listening ? `0 0 0 4px ${palette.glow}` : 'none',
-                      background: 'rgba(255,255,255,.06)', padding: '0 18px', fontFamily: 'inherit', fontSize: 16, color: C.text, outline: 'none',
-                    }}
-                  />
-                  {dictation.supported && (
-                    <button type="button" onClick={onMic} aria-pressed={dictation.listening}
-                      aria-label={dictation.listening ? 'Arrêter la dictée' : 'Dicter ma réponse'} className={`drl-btn${dictation.listening ? ' drl-halo' : ''}`}
-                      style={{ width: 50, height: 50, borderRadius: '50%', border: `1px solid ${dictation.listening ? palette.accent : 'rgba(255,255,255,.18)'}`, background: dictation.listening ? 'rgba(242,182,109,.16)' : 'rgba(255,255,255,.04)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0, color: dictation.listening ? palette.accent : '#E9E1D4' }}>
-                      <Mic size={20} aria-hidden="true" />
-                    </button>
-                  )}
-                  <button type="submit" aria-label="Envoyer à Dr Lô" className="drl-btn" disabled={!input.trim()}
-                    style={{ width: 50, height: 50, borderRadius: '50%', border: 0, background: palette.primary, boxShadow: `0 8px 24px ${palette.glow}`, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0, opacity: !input.trim() ? 0.55 : 1, color: C.ink }}>
-                    <Send size={19} aria-hidden="true" />
-                  </button>
-                </form>
-              )}
-              {dictation.error && (
-                <p role="alert" style={{ margin: 0, fontSize: 12.5, color: C.muted, textAlign: 'center' }}>{dictation.error}</p>
-              )}
-              {dictation.listening && (
-                <p style={{ margin: 0, fontSize: 11.5, color: C.faint, textAlign: 'center' }}>
-                  Tu relis avant d'envoyer. Aucun audio n'est gardé par Health-e.
-                </p>
-              )}
-            </div>
-          )}
+          {controls}
         </div>
 
         </>)}
@@ -1041,6 +1371,64 @@ const ChatCard: React.FC<{
   prenom?: string; genre?: 'homme' | 'femme'; onLinked: () => void;
   onGo: (to: keyof typeof GO) => void;
 }> = ({ card, palette, busy, costLabel, onStart, onOpen, prenom, genre, onLinked, onGo }) => {
+  const box: React.CSSProperties = { marginTop: 10, textAlign: 'left', borderRadius: 18, border: '1px solid rgba(255,255,255,.14)', background: 'rgba(255,255,255,.06)', padding: 14 };
+  const primary: React.CSSProperties = { minHeight: 44, padding: '0 16px', borderRadius: 12, border: 0, background: palette.primary, color: C.ink, fontSize: 14, fontWeight: 700, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6, textDecoration: 'none' };
+  const ghost: React.CSSProperties = { ...primary, background: 'transparent', border: '1px solid rgba(255,255,255,.18)', color: C.text, fontWeight: 600 };
+  if (card.type === 'defi_preview') {
+    return (
+      <div className="drl-in" style={box}>
+        <p style={{ margin: 0, fontSize: 11, letterSpacing: '.08em', textTransform: 'uppercase', fontWeight: 700, color: palette.accent }}>Tes proches devront deviner</p>
+        <ol style={{ margin: '8px 0 0', paddingLeft: 20, display: 'flex', flexDirection: 'column', gap: 6, fontSize: 14, lineHeight: 1.45, color: C.soft }}>
+          {card.questions.map((q, i) => <li key={i}>{q}</li>)}
+        </ol>
+      </div>
+    );
+  }
+  if (card.type === 'defi_share') {
+    const url = defiUrl(card.slug);
+    const wa = `https://wa.me/?text=${encodeURIComponent(`Kan moo ma gën a xam ? Penses-tu bien me connaître ? Prouve-le ici : ${url}`)}`;
+    return (
+      <div className="drl-in" style={box}>
+        <p style={{ margin: 0, fontSize: 13, color: C.muted, wordBreak: 'break-all' }}>{url}</p>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 12 }}>
+          <a href={wa} target="_blank" rel="noopener noreferrer" style={{ ...primary, background: '#25D366', color: '#0B2915' }}>Envoyer sur WhatsApp</a>
+          <CopyButton text={url} style={ghost} />
+          <button onClick={() => onOpen(`/defi/${card.slug}/suivi`)} style={ghost}>Qui a joué ?</button>
+        </div>
+      </div>
+    );
+  }
+  if (card.type === 'compat_share') {
+    const wa = `https://wa.me/?text=${encodeURIComponent(`On regarde notre compatibilité sur Health-e ? Fais tes tests sur https://health-e.sn puis envoie-moi ton code de compatibilité. Le mien : ${card.code}`)}`;
+    return (
+      <div className="drl-in" style={box}>
+        <p style={{ margin: 0, fontSize: 11, letterSpacing: '.08em', textTransform: 'uppercase', fontWeight: 700, color: palette.accent }}>Ton code à partager</p>
+        <p style={{ margin: '6px 0 0', fontFamily: 'Fraunces, serif', fontSize: 22, fontWeight: 600, color: C.title, letterSpacing: '.02em' }}>{card.code || '…'}</p>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 12 }}>
+          <a href={wa} target="_blank" rel="noopener noreferrer" style={{ ...primary, background: '#25D366', color: '#0B2915' }}>Envoyer sur WhatsApp</a>
+          {card.code && <CopyButton text={card.code} style={ghost} />}
+        </div>
+      </div>
+    );
+  }
+  if (card.type === 'compat_result') {
+    return (
+      <div className="drl-in" style={{ ...box, background: 'rgba(240,154,122,.08)', border: '1px solid rgba(240,154,122,.3)' }}>
+        <p style={{ margin: 0, fontSize: 11, letterSpacing: '.08em', textTransform: 'uppercase', fontWeight: 700, color: '#F09A7A' }}>Compatibilité{card.prenom ? ` · ${card.prenom}` : ''}</p>
+        <p style={{ margin: '6px 0 0', fontFamily: 'Fraunces, serif', fontSize: 30, fontWeight: 600, color: C.title }}>{card.score} %</p>
+        {card.strengths.length > 0 && (
+          <p style={{ margin: '8px 0 0', fontSize: 13.5, lineHeight: 1.5, color: C.soft }}><b style={{ color: '#7FD1A0' }}>Ce qui vous rapproche : </b>{card.strengths.join(' · ')}</p>
+        )}
+        {card.tensions.length > 0 && (
+          <p style={{ margin: '6px 0 0', fontSize: 13.5, lineHeight: 1.5, color: C.soft }}><b style={{ color: '#E9C88F' }}>À surveiller : </b>{card.tensions.join(' · ')}</p>
+        )}
+        <button onClick={() => onOpen('/assessment/compatibility')} style={{ ...primary, marginTop: 12 }}>
+          Voir l'analyse complète <ArrowRight size={16} aria-hidden="true" />
+        </button>
+        <p style={{ margin: '8px 0 0', fontSize: 11.5, color: C.faint }}>Un repère, pas un verdict.</p>
+      </div>
+    );
+  }
   if (card.type === 'go') {
     const go = GO[card.to];
     return (
@@ -1115,6 +1503,17 @@ const ChatCard: React.FC<{
     );
   }
   return null;
+};
+
+const CopyButton: React.FC<{ text: string; style: React.CSSProperties }> = ({ text, style }) => {
+  const [done, setDone] = useState(false);
+  return (
+    <button style={style} onClick={() => {
+      navigator.clipboard?.writeText(text).then(() => { setDone(true); window.setTimeout(() => setDone(false), 2000); }).catch(() => {});
+    }}>
+      {done ? <Check size={15} aria-hidden="true" /> : <Copy size={15} aria-hidden="true" />} {done ? 'Copié' : 'Copier'}
+    </button>
+  );
 };
 
 // ── Le test, dans la conversation ────────────────────────────────────────────

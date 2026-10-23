@@ -14,7 +14,8 @@ const withUser = (s: AccueilState, t: string) => addExchange(s, t, []);
 test('« mon ami me connaît ? » → carte Défi (compte) ; invité → espace puis Défi', () => {
   let s = withUser(startConversation(member), 'je veux voir si mon ami me connait vraiment');
   const r = routeDecision(s, d({ action: 'defi', reply: 'Bonne idée : lance ton Défi !' }), member);
-  assert.deepEqual(r.state.messages.at(-1)!.card, { type: 'go', to: 'defi' });
+  assert.equal(r.ui, 'defi'); // le Défi se prépare dans la conversation
+  assert.equal(r.state.messages.at(-1)!.text, 'Bonne idée : lance ton Défi !');
   s = withUser(startConversation(guest), 'je veux voir si mon ami me connait vraiment');
   const g = routeDecision(s, d({ action: 'defi', reply: 'Bonne idée !' }), guest);
   assert.equal(g.state.messages.at(-1)!.card?.type, 'signup');
@@ -73,8 +74,8 @@ test('pendant un test : « je voulais faire un défi » → pause gardée + Déf
   assert.equal(r.state.step, 'prescribed');
   assert.equal(r.state.activeTest, undefined);
   const c = r.state.messages.filter(m => m.card).map(m => m.card);
-  assert.deepEqual(c.at(-2), { type: 'test', scaleId: 'big_five', resume: true });
-  assert.deepEqual(c.at(-1), { type: 'go', to: 'defi' });
+  assert.deepEqual(c.at(-1), { type: 'test', scaleId: 'big_five', resume: true });
+  assert.equal(r.ui, 'defi');
 });
 
 test('pendant un test : remarque → un mot puis la question reposée', () => {
