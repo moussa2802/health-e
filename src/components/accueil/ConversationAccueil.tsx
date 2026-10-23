@@ -1573,6 +1573,29 @@ const ConversationAccueil: React.FC = () => {
   );
 
 
+  const progPanel = progOpen && prog ? (
+        <ProgrammePanel
+          p={prog} today={today} moods={moodsNow} palette={palette}
+          testLabel={label}
+          bilanCost={credits(KORIS_COSTS.programme_bilan)}
+          testCost={credits(KORIS_COSTS.test)}
+          busy={progBusy}
+          onClose={() => setProgOpen(false)}
+          onToggle={(k: EngKey) => persistProg(toggleCheck(prog, today, k))}
+          onSleep={(n: SleepNote) => persistProg(setSleep(prog, today, n))}
+          onMood={() => { setProgOpen(false); setInChat(false); setTab('discuter'); setMode('mood'); }}
+          onBreath={() => { setProgOpen(false); setTab('discuter'); startBreathing(); }}
+          onBilan={() => { void runBilan(); }}
+          onRetest={(id: string) => { setProgOpen(false); setTab('discuter'); setInChat(true); void startTest(id); }}
+          onLight={(on: boolean) => persistProg({ ...prog, light: on || !!prog.fragile })}
+          onPause={() => persistProg(pauseProg(prog, today))}
+          onResume={() => persistProg(resumeProg(prog, today))}
+          onStop={() => { void endProgramme(); }}
+          onRestart={() => { void restartProgramme(); }}
+          onOther={() => { void endProgramme().then(() => offerProgramme(stateRef.current ?? state, 'Un autre programme')); }}
+        />
+  ) : null;
+
   // ── Mode discussion : dès que la personne a écrit, l'écran devient une vraie conversation ──
   const chatMode = inChat;
   if (chatMode) {
@@ -1760,6 +1783,8 @@ const ConversationAccueil: React.FC = () => {
           </>)}
         </div>
 
+        {progPanel}
+
         {veiled && (
           <button onClick={() => setVeiled(false)} aria-label="Revenir à la conversation"
             style={{ position: 'fixed', inset: 0, zIndex: 60, border: 0, background: 'rgba(15,12,10,.82)', backdropFilter: 'blur(18px)', WebkitBackdropFilter: 'blur(18px)', color: C.muted, fontSize: 14, fontWeight: 600, cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
@@ -1944,28 +1969,7 @@ const ConversationAccueil: React.FC = () => {
         </p>
       </div>
 
-      {progOpen && prog && (
-        <ProgrammePanel
-          p={prog} today={today} moods={moodsNow} palette={palette}
-          testLabel={label}
-          bilanCost={credits(KORIS_COSTS.programme_bilan)}
-          testCost={credits(KORIS_COSTS.test)}
-          busy={progBusy}
-          onClose={() => setProgOpen(false)}
-          onToggle={(k: EngKey) => persistProg(toggleCheck(prog, today, k))}
-          onSleep={(n: SleepNote) => persistProg(setSleep(prog, today, n))}
-          onMood={() => { setProgOpen(false); setInChat(false); setTab('discuter'); setMode('mood'); }}
-          onBreath={() => { setProgOpen(false); setTab('discuter'); startBreathing(); }}
-          onBilan={() => { void runBilan(); }}
-          onRetest={(id: string) => { setProgOpen(false); setTab('discuter'); setInChat(true); void startTest(id); }}
-          onLight={(on: boolean) => persistProg({ ...prog, light: on || !!prog.fragile })}
-          onPause={() => persistProg(pauseProg(prog, today))}
-          onResume={() => persistProg(resumeProg(prog, today))}
-          onStop={() => { void endProgramme(); }}
-          onRestart={() => { void restartProgramme(); }}
-          onOther={() => { void endProgramme().then(() => offerProgramme(stateRef.current ?? state, 'Un autre programme')); }}
-        />
-      )}
+      {progPanel}
 
       {/* Écran masqué (quelqu'un regarde par-dessus l'épaule) */}
       {veiled && (

@@ -78,7 +78,7 @@ const ProgrammePanel: React.FC<ProgrammePanelProps> = props => {
     const tag = e.kind === 'mood' ? 'Un tap' : e.kind === 'learn' ? (e.reread ? 'À relire · 30 s' : 'Une idée à comprendre · 30 s') : e.duration ? e.duration : 'Dans la journée';
     const canTick = e.kind !== 'mood';
     return (
-      <div key={e.key} style={{ ...card, padding: 0, opacity: done && !expanded ? 0.78 : 1 }}>
+      <div key={e.key} style={{ ...card, padding: 0, borderColor: done ? 'rgba(157,191,175,.35)' : C.line }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: 14 }}>
           <button
             onClick={() => (canTick ? props.onToggle(e.key) : props.onMood())}
@@ -90,8 +90,8 @@ const ProgrammePanel: React.FC<ProgrammePanelProps> = props => {
           <button onClick={() => setOpen(expanded ? null : e.key)} aria-expanded={expanded}
             style={{ flex: 1, minWidth: 0, border: 0, background: 'transparent', color: C.text, textAlign: 'left', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
             <span style={{ flex: 1, minWidth: 0 }}>
-              <span style={{ display: 'block', fontSize: 15, fontWeight: 700, textDecoration: done ? 'line-through' : 'none', textDecorationColor: 'rgba(244,238,228,.4)' }}>{e.title}</span>
-              <span style={{ display: 'block', fontSize: 12.5, color: C.faint, marginTop: 2 }}>{tag}</span>
+              <span style={{ display: 'block', fontSize: 15, fontWeight: 700, color: done ? C.muted : C.text }}>{e.title}</span>
+              <span style={{ display: 'block', fontSize: 12.5, color: done ? C.sage : C.faint, marginTop: 2 }}>{done ? `Fait · ${tag}` : tag}</span>
             </span>
             <ChevronDown size={18} color={C.faint} aria-hidden="true" style={{ transform: expanded ? 'rotate(180deg)' : 'none', transition: 'transform .2s' }} />
           </button>

@@ -34,7 +34,7 @@ const styles = (palette: MomentPalette) => {
 
 export const ProgrammeInviteCard: React.FC<{ axes: ProgAxis[]; env: ProgCardEnv }> = ({ axes, env }) => {
   const s = styles(env.palette);
-  if (env.activeAxis) return <ProgrammeOpenCard env={env} />;
+  if (env.activeAxis) return <ProgrammeDoneLine />;
   const list = axes.length ? axes : PROG_AXES;
   return (
     <div className="drl-in" style={s.box}>
@@ -60,7 +60,7 @@ export const ProgrammeOfferCard: React.FC<{ axis: ProgAxis; intro: string; order
   const [lite, setLite] = useState(light || !!fragile);
   const ax = AXES[axis];
   const day1 = planFor({ axis, order1: order, light: lite }, 1);
-  if (env.activeAxis) return <ProgrammeOpenCard env={env} />;
+  if (env.activeAxis) return <ProgrammeDoneLine />;
   return (
     <div className="drl-in" style={s.box}>
       <p style={s.kicker}>Proposition de Dr Lô</p>
@@ -101,10 +101,15 @@ export const ProgrammeOfferCard: React.FC<{ axis: ProgAxis; intro: string; order
 export const ProgrammeOpenCard: React.FC<{ env: ProgCardEnv }> = ({ env }) => {
   const s = styles(env.palette);
   return (
-    <div className="drl-in" style={{ ...s.box, display: 'flex', alignItems: 'center', gap: 12 }}>
-      <ClipboardCheck size={22} color={env.palette.accent} aria-hidden="true" />
-      <span style={{ flex: 1, fontSize: 14, fontWeight: 700, color: C.text }}>Mon programme Dr Lô</span>
-      <button onClick={env.onOpen} style={s.primary}>Mes engagements</button>
-    </div>
+    <button onClick={env.onOpen} className="drl-btn drl-in" style={{ ...s.primary, marginTop: 10, width: '100%', fontFamily: '"Plus Jakarta Sans", system-ui, sans-serif' }}>
+      <ClipboardCheck size={18} aria-hidden="true" />Voir mes engagements du jour
+    </button>
   );
 };
+
+/** Carte d'une proposition déjà acceptée : une simple mention, pas un deuxième bouton. */
+const ProgrammeDoneLine: React.FC = () => (
+  <p className="drl-in" style={{ margin: '8px 0 0', fontSize: 12.5, color: '#9DBFAF', display: 'flex', alignItems: 'center', gap: 6 }}>
+    <ClipboardCheck size={14} aria-hidden="true" />Programme lancé
+  </p>
+);
