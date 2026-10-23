@@ -176,6 +176,10 @@ const AdminLogin: React.FC = () => {
                   </button>
                 </div>
               </form>
+              <p className="mt-6 text-center text-sm text-gray-500">
+                Vous êtes Dr Lô ?{" "}
+                <Link to="/drlo" className="font-semibold text-accent">Accéder à l'espace Dr Lô</Link>
+              </p>
             </div>
           </div>
         </div>

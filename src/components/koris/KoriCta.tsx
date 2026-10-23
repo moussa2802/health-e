@@ -1,8 +1,9 @@
 import React from 'react';
 import { Loader2 } from 'lucide-react';
 import { useKoris } from '../../contexts/KorisContext';
+import { CREDIT, credits } from '../../config/creditName';
 
-const KORI_IMG = '/kori.png';
+const KORI_IMG = CREDIT.img;
 
 type Variant = 'primary' | 'outline';
 
@@ -51,10 +52,10 @@ const KoriCta: React.FC<Props> = ({
           onClick={handleClick}
           className="w-full border-[1.5px] border-accent cursor-pointer font-sans rounded-[16px] flex items-center justify-between gap-3 bg-card shadow-soft transition-transform hover:-translate-y-px"
           style={{ padding: '6px 6px 6px 20px' }}
-          aria-label={`Il te manque ${missing} Kori${missing > 1 ? 's' : ''}, recharger`}
+          aria-label={`Il te manque ${credits(missing)}, recharger`}
         >
           <span className="text-[15px] font-bold text-ink tracking-tight">
-            Il te manque {missing} Kori{missing > 1 ? 's' : ''}
+            Il te manque {credits(missing)}
           </span>
           <span className="inline-flex items-center gap-1.5 bg-accent-soft border border-transparent rounded-xl px-3.5 py-2.5">
             <span className="text-[12.5px] font-extrabold text-accent tracking-wide uppercase">Recharger</span>
@@ -102,7 +103,7 @@ const KoriCta: React.FC<Props> = ({
           isPrimary ? 'bg-ink text-[#F4F1E9]' : 'bg-card text-ink border border-line'
         }`}
         style={{ padding: '6px 6px 6px 20px' }}
-        aria-label={`${label}, ${effectiveCost} Kori${effectiveCost > 1 ? 's' : ''}`}
+        aria-label={`${label}, ${credits(effectiveCost)}`}
       >
         <span className="text-[15px] font-bold tracking-tight">{label}</span>
         {loading ? (
@@ -128,7 +129,7 @@ const KoriCta: React.FC<Props> = ({
 const BalanceLine: React.FC<{ balance: number }> = ({ balance }) => (
   <p className="flex items-center justify-center gap-1.5 mt-2 text-xs text-muted font-semibold">
     <img src={KORI_IMG} alt="" className="w-4 h-4 rounded-full object-cover" />
-    Ton solde : <b className="text-ink-soft">{balance} Koris</b>
+    Ton solde : <b className="text-ink-soft">{credits(balance)}</b>
   </p>
 );
 

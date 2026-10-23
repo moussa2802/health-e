@@ -158,7 +158,7 @@ async function releaseKoris(holdId) {
       amount: hold.amount,
       balanceBefore,
       balanceAfter: balanceBefore + hold.amount,
-      details: "Koris restitués — opération annulée",
+      details: "Étincelles restituées — opération annulée",
       timestamp: admin.firestore.FieldValue.serverTimestamp(),
     });
   });

@@ -251,7 +251,7 @@ exports.handler = async (event) => {
   const korisFeature = payload.isRefresh ? 'analysis_refresh' : 'analysis'
   const reservation = await reserveKoris(user.uid, korisFeature)
   if (reservation.error === 'insufficient_balance') {
-    return { statusCode: 402, headers, body: JSON.stringify({ error: 'Solde Koris insuffisant', koris_debited: false }) }
+    return { statusCode: 402, headers, body: JSON.stringify({ error: "Pas assez d'étincelles", koris_debited: false }) }
   }
   const { holdId } = reservation
 

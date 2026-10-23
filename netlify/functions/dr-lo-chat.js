@@ -161,8 +161,13 @@ ${isFemme ? `11. "YAAY BOY" — avec parcimonie, seulement en encouragement/réc
 
 // ── Build user message ───────────────────────────────────────────────────────
 
-function buildUserMessage(context, message) {
+function buildUserMessage(context, message, isFirstMessage = false) {
   const prenomLabel = context.prenom || 'cette personne';
+  // Conversation ouverte par Dr Lô (accueil proactif) : l'IA doit savoir ce qu'elle a dit
+  const ouverture = typeof context.ouverture === 'string' ? context.ouverture.trim().slice(0, 400) : '';
+  if (isFirstMessage && ouverture) {
+    return `[Tu as ouvert cette conversation en disant : « ${ouverture} »]\n${prenomLabel} : ${message}`;
+  }
   return `${prenomLabel} : ${message}`;
 }
 
@@ -201,7 +206,7 @@ exports.handler = async (event) => {
   // ── Reserve Koris ──
   const reservation = await reserveKoris(user.uid, 'chat');
   if (reservation.error === 'insufficient_balance') {
-    return { statusCode: 402, headers, body: JSON.stringify({ error: 'Solde Koris insuffisant', koris_debited: false }) };
+    return { statusCode: 402, headers, body: JSON.stringify({ error: "Pas assez d'étincelles", koris_debited: false }) };
   }
   const { holdId } = reservation;
 
@@ -214,7 +219,7 @@ exports.handler = async (event) => {
   // Messages array: history + current user message (no duplication)
   const messages = [
     ...trimmedHistory.map(m => ({ role: m.role, content: m.content })),
-    { role: 'user', content: buildUserMessage(context, message) },
+    { role: 'user', content: buildUserMessage(context, message, trimmedHistory.length === 0) },
   ];
 
   const MODELS = [

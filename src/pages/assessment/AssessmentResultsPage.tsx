@@ -8,6 +8,7 @@ import {
 import { getSession, getProfileProgress } from '../../services/evaluationService';
 import { useAuth } from '../../contexts/AuthContext';
 import { getGuestSession, guestToUserSession, getGuestCount, GUEST_MAX_TESTS } from '../../utils/guestSession';
+import { getAccueilPrescribed, trackAccueil } from '../../utils/accueilTracking';
 import { getScaleById } from '../../data/scales';
 import { resolveScaleGender } from '../../utils/gender';
 import { getOnboardingProfile } from '../../utils/onboardingProfile';
@@ -27,6 +28,7 @@ import { useKoris } from '../../contexts/KorisContext';
 import { KORIS_COSTS, spendKorisForTest, isTestFreeRetake } from '../../services/korisService';
 import { useDefiFlag } from '../../hooks/useDefiFlag';
 import { isScaleEligible } from '../../config/defiConfig';
+import { credits } from '../../config/creditName';
 
 const EMERGENCY_CONTACTS = getCrisisResources().map(r => ({
   label: r.label,
@@ -233,6 +235,19 @@ const AssessmentResultsPage: React.FC = () => {
   const guestCount = isGuestMode ? getGuestCount() : 0;
   const isLastFreeTest = isGuestMode && guestCount >= GUEST_MAX_TESTS;
 
+  // Conversation d'accueil : ce test était-il celui prescrit par Dr Lô ?
+  const prescribedByDrLo = getAccueilPrescribed();
+  const fromAccueil = !!session && session.selectedScaleIds?.[0] === prescribedByDrLo;
+  useEffect(() => {
+    if (!fromAccueil || !session) return;
+    const key = `he_accueil_done_tracked:${session.id}`;
+    try {
+      if (sessionStorage.getItem(key)) return;
+      sessionStorage.setItem(key, '1');
+    } catch { /* ignore */ }
+    trackAccueil('test_done', { scale: session.selectedScaleIds[0], guest: isGuestMode });
+  }, [fromAccueil, session?.id]);
+
   useEffect(() => {
     if (!sessionId) return;
     setLoading(true);
@@ -381,7 +396,7 @@ const AssessmentResultsPage: React.FC = () => {
     : scale.category === 'bonus' ? 'Test bonus' : 'Vie intime';
 
   const retakeFree = isTestFreeRetake(result.completedAt);
-  const retakeCostLabel = retakeFree ? 'gratuit' : `${KORIS_COSTS.test} Kori`;
+  const retakeCostLabel = retakeFree ? 'gratuit' : credits(KORIS_COSTS.test);
 
   const alertLevel = result.alertLevel ?? 0;
   const criticalAlerts = (result.alertsTriggered ?? []).filter(a => a.alertLevel === 3)
@@ -686,6 +701,15 @@ const AssessmentResultsPage: React.FC = () => {
 
           {/* Navigation */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 14 }}>
+            {fromAccueil && (
+              <button onClick={() => navigate('/')} style={{
+                width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                background: '#17181B', color: 'white', border: 'none', borderRadius: 14,
+                padding: '13px 18px', fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
+              }}>
+                Revenir à Dr Lô pour en parler <ArrowRight size={16} />
+              </button>
+            )}
             {!isGuestMode && (
               <button onClick={() => navigate('/assessment/profile')} style={{
                 width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,

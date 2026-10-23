@@ -137,7 +137,7 @@ exports.handler = async (event) => {
   // ── Reserve Koris ──
   const reservation = await reserveKoris(user.uid, 'compatibility')
   if (reservation.error === 'insufficient_balance') {
-    return { statusCode: 402, headers, body: JSON.stringify({ error: 'Solde Koris insuffisant', koris_debited: false }) }
+    return { statusCode: 402, headers, body: JSON.stringify({ error: "Pas assez d'étincelles", koris_debited: false }) }
   }
   const { holdId } = reservation
 

@@ -14,6 +14,7 @@ import panthereImg from '../assets/totems/panthere.jpg';
 import renardImg from '../assets/totems/renard.jpg';
 import chevalImg from '../assets/totems/cheval.jpg';
 import oursImg from '../assets/totems/ours.jpg';
+import { credits, cap } from '../config/creditName';
 
 const TOTEMS: { key: string; label: string; emoji: string; img: string }[] = [
   { key: 'lion', label: 'Lion', emoji: '🦁', img: lionImg },
@@ -110,7 +111,7 @@ const DecouvreDefiPage: React.FC = () => {
           </div>
           <div className="flex items-center gap-1.5 text-[13px] text-ink font-medium">
             <Sparkles size={14} className="text-gold" />
-            25 Koris offerts
+            {cap(credits(25))} offertes
           </div>
         </div>
 

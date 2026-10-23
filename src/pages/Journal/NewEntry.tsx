@@ -10,6 +10,7 @@ import { KORIS_COSTS } from '../../services/korisService';
 import { KORIS_CONFIG } from '../../utils/korisConfig';
 import { authedFetch } from '../../utils/authedFetch';
 import { isAiAvailable } from '../../utils/aiCircuitBreaker';
+import { CREDIT, credits } from '../../config/creditName';
 
 const HUMEURS = [
   { emoji: '😊', label: 'Heureux(se)', icon: Smile },
@@ -261,7 +262,7 @@ const NewEntry: React.FC<Props> = ({ userId }) => {
           </button>
 
           <p className="m-0 text-[11px] text-muted text-center flex items-center justify-center gap-1">
-            <Zap size={11} /> {KORIS_CONFIG.active ? `Utilise ${KORIS_CONFIG.costs.journal_dr_lo_response} Koris` : 'Utilisera des Koris (bientôt disponible)'}
+            <Zap size={11} /> {KORIS_CONFIG.active ? `Utilise ${credits(KORIS_CONFIG.costs.journal_dr_lo_response)}` : `Utilisera des ${CREDIT.many} (bientôt disponible)`}
           </p>
         </div>
       </div>

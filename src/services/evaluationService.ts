@@ -9,6 +9,7 @@ import type {
 import { ALL_SCALES, MENTAL_HEALTH_SCALES, SEXUAL_HEALTH_SCALES, BONUS_SCALES } from '../data/scales';
 import { generateMentalCompatibilityId, generateSexualCompatibilityId } from '../utils/idGenerator';
 import { computeTotem, TOTEM_REQUIRED_SCALES, classifyDomain, getTotemDomain } from '../utils/totemAlgorithm';
+import { needsRescore, rescore } from '../utils/scaleScoring';
 
 const SESSIONS_COL = 'assessmentSessions';
 const PROFILES_COL = 'userProfiles';
@@ -186,6 +187,7 @@ export function computeScaleScore(
     completedAt: new Date(),
     alertLevel: alertLevel > 0 ? alertLevel : undefined,
     alertsTriggered: alertsTriggered.length > 0 ? alertsTriggered : undefined,
+    ...(scale.scoringVersion ? { scoringVersion: scale.scoringVersion } : {}),
   };
 }
 
@@ -206,6 +208,7 @@ export async function computeAndSaveScaleResult(
     completedAt: result.completedAt,
     alertLevel: result.alertLevel ?? null,
     alertsTriggered: result.alertsTriggered ?? null,
+    scoringVersion: result.scoringVersion ?? null,
   };
 
   await updateDoc(doc(db, SESSIONS_COL, sessionId), {
@@ -336,6 +339,7 @@ export async function saveScaleResultToProfile(
       interpretation: result.interpretation,
       completedAt: serverTimestamp(),
       alertLevel: result.alertLevel ?? null,
+      scoringVersion: result.scoringVersion ?? null,
     },
     updatedAt: serverTimestamp(),
     lastAssessmentDate: serverTimestamp(),
@@ -429,6 +433,73 @@ export async function saveScaleResultToProfile(
   }
 }
 
+/**
+ * Recalcule les résultats enregistrés avec une ancienne version d'une échelle, à partir des
+ * réponses de la dernière session terminée. Met à jour le profil et la session ; si le totem change,
+ * il est proposé comme « évolution » (pendingAnimal), comme quand on refait un test.
+ */
+export async function rescoreOutdatedResults(
+  userId: string,
+  scaleResults: Record<string, ScaleResult>,
+  totem: Record<string, unknown> | undefined,
+): Promise<Record<string, ScaleResult>> {
+  const outdated = Object.keys(scaleResults).filter(id => needsRescore(ALL_SCALES.find(x => x.id === id), scaleResults[id]));
+  const fs = db;
+  if (outdated.length === 0 || !fs) return scaleResults;
+  const snap = await getDocs(query(
+    collection(fs, SESSIONS_COL),
+    where('userId', '==', userId),
+    where('status', '==', 'completed'),
+  ));
+  const sessions = snap.docs.map(d => ({ ...(d.data() as UserAssessmentSession), id: d.id }));
+  const toMs = (v: unknown): number => {
+    if (!v) return 0;
+    if (v instanceof Date) return v.getTime();
+    const t = v as { toMillis?: () => number; seconds?: number };
+    return t.toMillis ? t.toMillis() : (t.seconds ?? 0) * 1000;
+  };
+  const updated = { ...scaleResults };
+  const profileUpdate: Record<string, unknown> = {};
+  for (const id of outdated) {
+    const scale = ALL_SCALES.find(x => x.id === id)!;
+    const latest = sessions
+      .filter(s => s.answers?.[id] && Object.keys(s.answers[id]).length > 0 && s.scores?.[id])
+      .sort((a, b) => toMs(b.completedAt ?? b.startedAt) - toMs(a.completedAt ?? a.startedAt))[0];
+    if (!latest) {
+      // Réponses introuvables : on garde l'ancien score et on ne réessaie plus
+      updated[id] = { ...scaleResults[id], rescoreSkipped: true };
+      profileUpdate[`scaleResults.${id}.rescoreSkipped`] = true;
+      continue;
+    }
+    const r = rescore(scale, scaleResults[id], latest.answers[id]);
+    updated[id] = r;
+    profileUpdate[`scaleResults.${id}.totalScore`] = r.totalScore;
+    profileUpdate[`scaleResults.${id}.subscaleScores`] = r.subscaleScores ?? null;
+    profileUpdate[`scaleResults.${id}.interpretation`] = r.interpretation;
+    profileUpdate[`scaleResults.${id}.scoringVersion`] = r.scoringVersion ?? null;
+    try {
+      await updateDoc(doc(fs, SESSIONS_COL, latest.id), {
+        [`scores.${id}.totalScore`]: r.totalScore,
+        [`scores.${id}.subscaleScores`]: r.subscaleScores ?? null,
+        [`scores.${id}.interpretation`]: r.interpretation,
+        [`scores.${id}.scoringVersion`]: r.scoringVersion ?? null,
+      });
+    } catch { /* la session n'est qu'une copie */ }
+  }
+  // Totem : même règle que lorsqu'un test est refait
+  if (outdated.some(id => (TOTEM_REQUIRED_SCALES as readonly string[]).includes(id))
+      && TOTEM_REQUIRED_SCALES.every(id => !!updated[id])) {
+    const newAnimal = computeTotem(updated);
+    if (newAnimal && totem?.animal && newAnimal !== totem.animal && newAnimal !== totem.pendingAnimal) {
+      profileUpdate['totem.pendingAnimal'] = newAnimal;
+    }
+  }
+  if (Object.keys(profileUpdate).length > 0) {
+    await updateDoc(doc(fs, PROFILES_COL, userId), { ...profileUpdate, updatedAt: serverTimestamp() });
+  }
+  return updated;
+}
+
 export async function getProfileProgress(userId: string): Promise<{
   scaleResults: Record<string, ScaleResult>;
   completedCount: number;
@@ -490,7 +561,13 @@ export async function getProfileProgress(userId: string): Promise<{
     };
   }
   const data = snap.data();
-  const scaleResults: Record<string, ScaleResult> = data.scaleResults ?? {};
+  let scaleResults: Record<string, ScaleResult> = data.scaleResults ?? {};
+  // Résultats calculés avec une ancienne version d'une échelle (ex. ECR-R corrigé) : recalcul transparent
+  if (Object.entries(scaleResults).some(([id, r]) => needsRescore(ALL_SCALES.find(x => x.id === id), r))) {
+    try {
+      scaleResults = await rescoreOutdatedResults(userId, scaleResults, data.totem as Record<string, unknown> | undefined);
+    } catch { /* on garde les anciens scores, nouvel essai au prochain chargement */ }
+  }
   const mentalCompletedCount = MENTAL_HEALTH_SCALES.filter(s => !!scaleResults[s.id]).length;
   const sexualCompletedCount = SEXUAL_HEALTH_SCALES.filter(s => !!scaleResults[s.id]).length;
   const bonusCompletedCount = BONUS_SCALES.filter(s => !!scaleResults[s.id]).length;

@@ -74,6 +74,8 @@ export interface AssessmentScale {
   reverseIds?: number[];              // ids globaux inversés pour totalScore
   scoreRange: { min: number; max: number };
   scoringMode?: 'sum' | 'mean';       // default 'sum'
+  /** Version du calcul : à incrémenter quand une correction change les scores (déclenche le recalcul des anciens résultats). */
+  scoringVersion?: number;
   interpretation: InterpretationRange[];
   resolvedInterpretation?: InterpretationRange[];  // interprétations alternatives quand trauma/expérience résolu(e)
   contextQuestion?: ContextQuestion;               // question contextuelle post-test (ex: "ça t'affecte encore ?")
@@ -117,6 +119,8 @@ export interface ScaleResult {
   completedAt: Date;
   alertLevel?: 1 | 2 | 3;            // niveau d'alerte le plus élevé détecté
   alertsTriggered?: TriggeredAlert[]; // alertes spécifiques déclenchées
+  scoringVersion?: number;            // version du calcul de l'échelle au moment du score
+  rescoreSkipped?: boolean;           // ancien résultat qu'on n'a pas pu recalculer (réponses introuvables)
 }
 
 // --- Compatibilité ---

@@ -3,8 +3,9 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, Zap, Check, Loader2, AlertCircle } from 'lucide-react';
 import { useKoris } from '../contexts/KorisContext';
 import { authedFetch } from '../utils/authedFetch';
+import { CREDIT, credits } from '../config/creditName';
 
-const KORI_IMG = '/kori.png';
+const KORI_IMG = CREDIT.img;
 
 const PACKS = [
   { id: 'pack_decouverte', koris: 25, price: 500, popular: false, label: 'Découverte' },
@@ -73,7 +74,7 @@ const AcheterKorisPage: React.FC = () => {
           <ArrowLeft size={14} /> Retour
         </button>
         <h1 className="font-display m-0 text-lg font-semibold flex items-center gap-2">
-          <Zap size={18} /> Acheter des Koris
+          <Zap size={18} /> Recharger mes {CREDIT.many}
         </h1>
       </div>
 
@@ -83,7 +84,7 @@ const AcheterKorisPage: React.FC = () => {
             <Check size={18} className="text-ok flex-shrink-0" />
             <div>
               <div className="text-sm font-semibold text-ok">Achat confirmé !</div>
-              <div className="text-xs text-ink-soft">Tes Koris ont été ajoutés à ton solde.</div>
+              <div className="text-xs text-ink-soft">Tes {CREDIT.many} ont été ajoutées à ton solde.</div>
             </div>
           </div>
         )}
@@ -95,10 +96,10 @@ const AcheterKorisPage: React.FC = () => {
         )}
 
         <div className="flex items-center gap-3 mb-6">
-          <img src={KORI_IMG} alt="Kori" className="w-12 h-12 rounded-full object-cover border-2 border-gold/20" />
+          <img src={KORI_IMG} alt="" className="w-12 h-12 rounded-full object-cover border-2 border-gold/20" />
           <div>
             <div className="text-[11px] text-muted">Mon solde actuel</div>
-            <div className="text-2xl font-extrabold text-gold">{balance} <span className="text-sm font-medium">Koris</span></div>
+            <div className="text-2xl font-extrabold text-gold">{balance} <span className="text-sm font-medium">{CREDIT.many}</span></div>
           </div>
         </div>
 
@@ -131,9 +132,9 @@ const AcheterKorisPage: React.FC = () => {
                     {pack.label}
                   </span>
                 )}
-                <div className="text-lg font-bold text-ink">{pack.koris} Koris</div>
+                <div className="text-lg font-bold text-ink">{credits(pack.koris)}</div>
                 <div className="text-xs text-muted mt-0.5">
-                  {(pack.price / pack.koris).toFixed(0)} F / Kori
+                  {(pack.price / pack.koris).toFixed(0)} F / {CREDIT.one}
                 </div>
               </div>
               <div className="text-right">
@@ -151,7 +152,7 @@ const AcheterKorisPage: React.FC = () => {
           <div className="text-xs font-semibold text-ink-soft mb-2">Comment ça marche ?</div>
           <ul className="m-0 pl-4 text-xs text-muted leading-relaxed space-y-1">
             <li>Paiement sécurisé via Orange Money, Wave ou carte bancaire</li>
-            <li>Les Koris sont ajoutés instantanément à ton solde</li>
+            <li>Les {CREDIT.many} sont ajoutées instantanément à ton solde</li>
             <li>Ils ne périment pas — utilise-les à ton rythme</li>
           </ul>
         </div>

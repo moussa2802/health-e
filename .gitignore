@@ -65,3 +65,4 @@ scripts/serviceAccountKey.json
 !storage.rules
 !netlify.toml
 !vercel.json
+_to_delete/

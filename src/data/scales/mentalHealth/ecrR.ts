@@ -2,8 +2,13 @@ import type { AssessmentScale } from '../../../types/assessment';
 
 // ECR-R : Experiences in Close Relationships — Revised (Fraley, Waller & Brennan, 2000)
 // 36 items, échelle 1-7
-// Sous-échelles : Anxiété (items impairs 1,3,5…35) + Évitement (items pairs 2,4,6…36)
-// Items inversés Évitement : 4, 16, 18, 22, 26, 28, 30, 34, 36 (formulation positive)
+// Sous-échelles : Anxiété (18 items) + Évitement (18 items) — voir `subscales` plus bas.
+// Correction du 22 oct. 2026 (scoringVersion 2) : l'item 22 (« serein(e) à l'idée d'être quitté(e) »,
+// = « I rarely worry about my partner leaving me ») appartient à l'ANXIÉTÉ (inversé), et l'item 19
+// (« du mal à compter sur ses partenaires » = « I find it difficult to allow myself to depend on
+// romantic partners ») à l'ÉVITEMENT, comme dans l'original de Fraley et al. (2000).
+// Les deux items ont aussi été échangés de place pour que chaque chapitre reste cohérent.
+// Items inversés : Anxiété 22 ; Évitement 4, 16, 18, 26, 28, 30, 34, 36 (formulation positive)
 // Score : moyenne par sous-échelle (1–7), non une somme
 // Quadrants : Sécure (<3.5//<3.5) | Préoccupé (≥3.5//<3.5) | Détaché (<3.5//≥3.5) | Craintif (≥3.5//≥3.5)
 //
@@ -38,10 +43,12 @@ export const ECR_R: AssessmentScale = {
   // totalScore = somme brute de tous les items (36–252) — pour compatibilité technique.
   // Les scores cliniquement significatifs sont les MOYENNES des sous-échelles (1–7).
   scoreRange: { min: 36, max: 252 },
-  // Items inversés globaux (pour totalScore) = items inversés de la sous-échelle Évitement
+  // Version du calcul : 2 = correction des sous-échelles (items 19 et 22), voir en-tête.
+  scoringVersion: 2,
+  // Items inversés globaux (pour totalScore) = tous les items inversés (anxiété 22 + évitement)
   reverseIds: [4, 16, 18, 22, 26, 28, 30, 34, 36],
   items: [
-    // ── Anxiété (items impairs) ──
+    // ── Anxiété (18 items) ──
     { id: 1,  text: "Il t'arrive d'avoir peur que ton/ta partenaire arrête de t'aimer ?",                                                type: 'likert', options: opts, subscale: 'anxiety' },
     { id: 3,  text: "Tu te surprends parfois à t'inquiéter que ton/ta partenaire ne veuille plus rester avec toi ?",                     type: 'likert', options: opts, subscale: 'anxiety' },
     { id: 5,  text: "Tu aimerais que ton/ta partenaire ressente des choses aussi fortes que ce que tu ressens pour lui/elle ?",            type: 'likert', options: opts, subscale: 'anxiety' },
@@ -51,7 +58,7 @@ export const ECR_R: AssessmentScale = {
     { id: 13, text: "Tu as peur que si ton/ta partenaire te découvrait vraiment — avec tes zones d'ombre — il/elle ne t'aimerait plus ?", type: 'likert', options: opts, subscale: 'anxiety' },
     { id: 15, text: "Ça te frustre de ne pas recevoir autant d'affection et de soutien que ce dont tu aurais besoin ?",                   type: 'likert', options: opts, subscale: 'anxiety' },
     { id: 17, text: "Il t'arrive de douter que ton/ta partenaire t'aime vraiment, au fond ?",                                            type: 'likert', options: opts, subscale: 'anxiety' },
-    { id: 19, text: "Tu as du mal à te laisser aller à compter sur tes partenaires ?",                                                    type: 'likert', options: opts, subscale: 'anxiety' },
+    { id: 22, text: "Tu restes plutôt {{serein|sereine}} à l'idée que ton/ta partenaire puisse te quitter ?",                        type: 'likert', options: opts, subscale: 'anxiety' },
     { id: 21, text: "Tu as l'impression de donner beaucoup d'amour à des personnes qui t'en donnent moins en retour ?",                   type: 'likert', options: opts, subscale: 'anxiety' },
     { id: 23, text: "Il t'arrive souvent d'avoir peur que ton/ta partenaire ne tienne pas vraiment à toi ?",                             type: 'likert', options: opts, subscale: 'anxiety' },
     { id: 25, text: "Quand ton/ta partenaire passe du temps loin de toi, ça crée une forme de tension en toi ?",                         type: 'likert', options: opts, subscale: 'anxiety' },
@@ -60,7 +67,7 @@ export const ECR_R: AssessmentScale = {
     { id: 31, text: "Il t'arrive de te demander ce que ton/ta partenaire ressent vraiment pour toi ?",                                   type: 'likert', options: opts, subscale: 'anxiety' },
     { id: 33, text: "Tu as le sentiment que tes partenaires ne veulent pas se rapprocher autant que toi tu le voudrais ?",                type: 'likert', options: opts, subscale: 'anxiety' },
     { id: 35, text: "Parfois, tu as l'impression de devoir « pousser » tes partenaires pour qu'ils montrent plus d'engagement ?",           type: 'likert', options: opts, subscale: 'anxiety' },
-    // ── Évitement (items pairs) ──
+    // ── Évitement (18 items) ──
     { id: 2,  text: "Tu préfères garder pour toi ce que tu ressens vraiment, plutôt que de le montrer à ton/ta partenaire ?",             type: 'likert', options: opts, subscale: 'avoidance' },
     { id: 4,  text: "Te rapprocher émotionnellement de ton/ta partenaire, c'est quelque chose qui te vient assez naturellement ?",        type: 'likert', options: opts, subscale: 'avoidance' },
     { id: 6,  text: "T'ouvrir vraiment à tes partenaires amoureux, c'est quelque chose qui te met mal à l'aise ?",                       type: 'likert', options: opts, subscale: 'avoidance' },
@@ -70,8 +77,8 @@ export const ECR_R: AssessmentScale = {
     { id: 14, text: "Tu te sens un peu {{nerveux|nerveuse}} quand tes partenaires s'approchent trop près émotionnellement ?",                      type: 'likert', options: opts, subscale: 'avoidance' },
     { id: 16, text: "Tu sens que ton/ta partenaire te comprend vraiment et comprend tes besoins ?",                                       type: 'likert', options: opts, subscale: 'avoidance' },
     { id: 18, text: "D'habitude, tu parles de tes soucis et de ce qui te préoccupe avec ton/ta partenaire ?",                            type: 'likert', options: opts, subscale: 'avoidance' },
-    { id: 20, text: "Compter sur tes partenaires amoureux, c'est quelque chose qui ne te met pas très à l'aise ?",                       type: 'likert', options: opts, subscale: 'avoidance' },
-    { id: 22, text: "L'idée que ton/ta partenaire puisse te quitter, c'est un truc qui ne t'inquiète pas trop ?",                        type: 'likert', options: opts, subscale: 'avoidance' },
+    { id: 20, text: "Compter sur tes partenaires amoureux, ça te met mal à l'aise ?",                       type: 'likert', options: opts, subscale: 'avoidance' },
+    { id: 19, text: "Tu as du mal à te laisser aller à compter sur tes partenaires ?",                                                    type: 'likert', options: opts, subscale: 'avoidance' },
     { id: 24, text: "Tu essaies d'éviter de trop te rapprocher émotionnellement de ton/ta partenaire ?",                                  type: 'likert', options: opts, subscale: 'avoidance' },
     { id: 26, text: "Dans les moments difficiles, te tourner vers ton/ta partenaire ça te réconforte ?",                                    type: 'likert', options: opts, subscale: 'avoidance' },
     { id: 28, text: "Tu dirais que tu racontes à peu près tout à ton/ta partenaire ?",                                                   type: 'likert', options: opts, subscale: 'avoidance' },
@@ -84,16 +91,16 @@ export const ECR_R: AssessmentScale = {
     {
       key: 'anxiety',
       label: "Anxiété d'attachement",
-      itemIds: [1,3,5,7,9,11,13,15,17,19,21,23,25,27,29,31,33,35],
-      reverseIds: [],         // aucun item anxiété inversé
+      itemIds: [1,3,5,7,9,11,13,15,17,22,21,23,25,27,29,31,33,35],
+      reverseIds: [22],       // « serein(e) à l'idée d'être quitté(e) » : formulation inversée
       range: { min: 1, max: 7 },
       scoringMode: 'mean',    // moyenne sur 18 items
     },
     {
       key: 'avoidance',
       label: "Évitement de l'intimité",
-      itemIds: [2,4,6,8,10,12,14,16,18,20,22,24,26,28,30,32,34,36],
-      reverseIds: [4, 16, 18, 22, 26, 28, 30, 34, 36],  // items positivement formulés
+      itemIds: [2,4,6,8,10,12,14,16,18,20,19,24,26,28,30,32,34,36],
+      reverseIds: [4, 16, 18, 26, 28, 30, 34, 36],  // items positivement formulés
       range: { min: 1, max: 7 },
       scoringMode: 'mean',    // moyenne sur 18 items
     },

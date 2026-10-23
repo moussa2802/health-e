@@ -6,8 +6,9 @@ import React, { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 import { useKoris } from '../../contexts/KorisContext';
 import { KORIS_WELCOME_BONUS } from '../../services/korisService';
+import { CREDIT, credits } from '../../config/creditName';
 
-const KORI_IMG = '/kori.png';
+const KORI_IMG = CREDIT.img;
 
 const KorisWelcome: React.FC = () => {
   const { walletJustCreated } = useKoris();
@@ -42,12 +43,12 @@ const KorisWelcome: React.FC = () => {
     >
       <img
         src={KORI_IMG}
-        alt="Kori"
+        alt=""
         className="w-9 h-9 rounded-full object-cover border-2 border-white/30"
       />
       <div>
-        <div className="text-[13px] font-bold">On t'offre 500 F de Koris pour commencer</div>
-        <div className="text-[11px] opacity-85 mt-0.5">+{KORIS_WELCOME_BONUS} Koris — discute avec Dr Lô, fais tes tests</div>
+        <div className="text-[13px] font-bold">On t'offre 500 F {CREDIT.ofMany} pour commencer</div>
+        <div className="text-[11px] opacity-85 mt-0.5">+{credits(KORIS_WELCOME_BONUS)} — discute avec Dr Lô, fais tes tests</div>
       </div>
       <button
         onClick={() => { setExiting(true); setTimeout(() => setVisible(false), 300); }}

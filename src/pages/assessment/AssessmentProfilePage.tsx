@@ -52,6 +52,7 @@ import {
   Upload,
   Eye,
 } from 'lucide-react';
+import { credits } from '../../config/creditName';
 
 // ── Helpers couleur de sévérité ───────────────────────────────────────────────
 function getSeverityClasses(severity: string): string {
@@ -224,7 +225,7 @@ const ScaleRow: React.FC<ScaleRowProps> = ({ scale, result, onStart, loading }) 
             onClick={() => onStart(scale.id)}
             disabled={loading}
             className={`flex items-center gap-1.5 rounded-pill border bg-transparent px-3 py-1.5 text-[11px] font-semibold disabled:opacity-60 ${catColor.border} ${catColor.text}`}
-            aria-label={`Refaire ${meta.label}, ${freeRetake ? 'gratuit' : KORIS_COSTS.test + ' Kori'}`}
+            aria-label={`Refaire ${meta.label}, ${freeRetake ? 'gratuit' : credits(KORIS_COSTS.test)}`}
           >
             {loading ? <Loader2 size={12} className="animate-spin" /> : (
               <>
@@ -233,7 +234,7 @@ const ScaleRow: React.FC<ScaleRowProps> = ({ scale, result, onStart, loading }) 
                   <span className="inline-flex items-center rounded-md px-1.5 py-px text-[10px] font-extrabold uppercase" style={{ background: 'rgba(159,188,175,.22)', color: '#3C7A5A' }}>Gratuit</span>
                 ) : (
                   <span className="inline-flex items-center gap-0.5 rounded-md px-1.5 py-px" style={{ background: 'rgba(23,24,27,.06)' }}>
-                    <img src="/kori.png" alt="" className="w-3 h-3 rounded-full object-cover" />
+                    <img src="/etincelle.png" alt="" className="w-3 h-3 rounded-full object-cover" />
                     <span className="font-display text-[11px] font-semibold text-ink">{KORIS_COSTS.test}</span>
                   </span>
                 )}
@@ -247,13 +248,13 @@ const ScaleRow: React.FC<ScaleRowProps> = ({ scale, result, onStart, loading }) 
             className={`flex items-center gap-1.5 rounded-pill px-3 py-1.5 text-[11px] font-bold text-white shadow-soft disabled:opacity-60 ${getCategorySolidBg(
               category
             )}`}
-            aria-label={`Commencer ${meta.label}, ${KORIS_COSTS.test} Kori`}
+            aria-label={`Commencer ${meta.label}, ${credits(KORIS_COSTS.test)}`}
           >
             {loading ? <Loader2 size={12} className="animate-spin" /> : (
               <>
                 Commencer
                 <span className="inline-flex items-center gap-0.5 rounded-md px-1.5 py-px" style={{ background: 'rgba(255,255,255,.18)' }}>
-                  <img src="/kori.png" alt="" className="w-3 h-3 rounded-full object-cover" />
+                  <img src="/etincelle.png" alt="" className="w-3 h-3 rounded-full object-cover" />
                   <span className="font-display text-[11px] font-semibold">{KORIS_COSTS.test}</span>
                 </span>
               </>
@@ -377,7 +378,7 @@ const MentalProfileCard: React.FC<{
           >
             <RefreshCw size={12} /> Actualiser
             <span className="inline-flex items-center gap-1 bg-white/20 rounded-lg px-1.5 py-0.5 ml-0.5">
-              <img src="/kori.png" alt="" className="w-3.5 h-3.5 rounded-full object-cover" />
+              <img src="/etincelle.png" alt="" className="w-3.5 h-3.5 rounded-full object-cover" />
               <span className="font-display text-[11px] font-semibold">{refreshCost}</span>
             </span>
           </button>
@@ -400,7 +401,7 @@ const MentalProfileCard: React.FC<{
           >
             Générer mon analyse
             <span className="inline-flex items-center gap-1 bg-white/20 rounded-lg px-1.5 py-0.5">
-              <img src="/kori.png" alt="" className="w-3.5 h-3.5 rounded-full object-cover" />
+              <img src="/etincelle.png" alt="" className="w-3.5 h-3.5 rounded-full object-cover" />
               <span className="font-display text-[11px] font-semibold">{generateCost}</span>
             </span>
           </button>
@@ -488,7 +489,7 @@ const IntimatePrivateCard: React.FC<{
           >
             <RefreshCw size={12} /> Actualiser
             <span className="inline-flex items-center gap-1 bg-white/20 rounded-lg px-1.5 py-0.5 ml-0.5">
-              <img src="/kori.png" alt="" className="w-3.5 h-3.5 rounded-full object-cover" />
+              <img src="/etincelle.png" alt="" className="w-3.5 h-3.5 rounded-full object-cover" />
               <span className="font-display text-[11px] font-semibold">{refreshCost}</span>
             </span>
           </button>
@@ -511,7 +512,7 @@ const IntimatePrivateCard: React.FC<{
           >
             Générer mon analyse
             <span className="inline-flex items-center gap-1 bg-white/20 rounded-lg px-1.5 py-0.5">
-              <img src="/kori.png" alt="" className="w-3.5 h-3.5 rounded-full object-cover" />
+              <img src="/etincelle.png" alt="" className="w-3.5 h-3.5 rounded-full object-cover" />
               <span className="font-display text-[11px] font-semibold">{generateCost}</span>
             </span>
           </button>

@@ -6,8 +6,9 @@
 import React, { useState } from 'react';
 import { useKoris } from '../../contexts/KorisContext';
 import KorisDetailPanel from './KorisDetailPanel';
+import { CREDIT } from '../../config/creditName';
 
-const KORI_IMG = '/kori.png';
+const KORI_IMG = CREDIT.img;
 
 const KoriBalance: React.FC = () => {
   const { balance, loading } = useKoris();
@@ -27,11 +28,11 @@ const KoriBalance: React.FC = () => {
       <button
         onClick={() => setShowPanel(!showPanel)}
         className={`inline-flex items-center gap-1 pl-1 pr-2.5 py-1 rounded-pill border text-[13px] font-bold whitespace-nowrap transition-transform hover:scale-[1.03] ${toneClass}`}
-        title="Mes Koris"
+        title={CREDIT.mine}
       >
         <img
           src={KORI_IMG}
-          alt="Kori"
+          alt=""
           className="w-6 h-6 rounded-full object-cover"
         />
         <span>{balance}</span>

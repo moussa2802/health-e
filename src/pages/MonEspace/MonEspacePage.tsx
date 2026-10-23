@@ -25,6 +25,7 @@ import { authedFetch } from '../../utils/authedFetch';
 import { isAiAvailable } from '../../utils/aiCircuitBreaker';
 import PageTooltips from '../../components/Onboarding/PageTooltips';
 import type { JournalEntry } from '../Journal/JournalPage';
+import { CREDIT, credits } from '../../config/creditName';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -1286,7 +1287,7 @@ const MonEspacePage: React.FC<Props> = ({ userId }) => {
               </div>
 
               <p className="mt-2 mb-0 text-[11px] text-muted text-center flex items-center justify-center gap-1">
-                <Zap size={11} /> {KORIS_CONFIG.active ? `Utilise ${KORIS_CONFIG.costs.chat_dr_lo_message} Koris` : 'Utilisera des Koris (bientot disponible)'}
+                <Zap size={11} /> {KORIS_CONFIG.active ? `Utilise ${credits(KORIS_CONFIG.costs.chat_dr_lo_message)}` : `Utilisera des ${CREDIT.many} (bientôt disponible)`}
               </p>
             </>
           )}

@@ -17,7 +17,21 @@ export function saveOnboardingProfile(profile: OnboardingProfile): void {
 }
 
 export function isOnboardingComplete(): boolean {
-  return getOnboardingProfile() !== null;
+  const p = getOnboardingProfile() as (OnboardingProfile & { partial?: boolean }) | null;
+  return p !== null && !p.partial;
+}
+
+/**
+ * Profil partiel recueilli par la conversation d'accueil (prénom, genre, âge).
+ * Marqué `partial` : le questionnaire complet reste proposé plus tard, et les champs
+ * absents (deuil, trauma…) ne masquent aucun test.
+ * N'écrase jamais un profil complet existant.
+ */
+export function savePartialOnboarding(partial: Partial<Pick<OnboardingProfile, 'prenom' | 'genre' | 'age'>>): void {
+  const existing = getOnboardingProfile() as (OnboardingProfile & { partial?: boolean }) | null;
+  if (existing && !existing.partial) return;
+  const merged = { ...(existing ?? {}), ...partial, partial: true };
+  try { localStorage.setItem(PROFILE_KEY, JSON.stringify(merged)); } catch { /* stockage indisponible */ }
 }
 
 export function clearOnboardingProfile(): void {

@@ -31,6 +31,7 @@ import { getBigFiveProfile, getBigFiveSummary, BAND_LABEL, type Band } from '../
 import { useKoris } from '../../contexts/KorisContext';
 import { KORIS_COSTS, spendKorisForTest, isTestFreeRetake } from '../../services/korisService';
 import KoriCta from '../../components/koris/KoriCta';
+import { credits } from '../../config/creditName';
 
 const CATEGORY_LABELS: Record<ScaleCategory, string> = {
   mental: 'Psychologique',
@@ -294,7 +295,7 @@ const TestDetailPage: React.FC = () => {
     ? ''
     : isFreeRetake
       ? ' — gratuit'
-      : ` — ${KORIS_COSTS.test} Kori`;
+      : ` — ${credits(KORIS_COSTS.test)}`;
 
   const startTest = async () => {
     setErrorMsg(null);

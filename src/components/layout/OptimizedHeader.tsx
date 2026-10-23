@@ -72,7 +72,7 @@ const OptimizedHeader: React.FC = memo(() => {
                   Évaluations
                 </Link>
 
-                <Link to="/mon-espace" className={navLinkClass}>
+                <Link to="/espace" className={navLinkClass}>
                   Mon Espace
                 </Link>
 
@@ -167,7 +167,7 @@ const OptimizedHeader: React.FC = memo(() => {
                 <Link to="/assessment" className={mobileLinkClass} onClick={() => setIsMenuOpen(false)}>
                   Évaluations
                 </Link>
-                <Link to="/mon-espace" className={mobileLinkClass} onClick={() => setIsMenuOpen(false)}>
+                <Link to="/espace" className={mobileLinkClass} onClick={() => setIsMenuOpen(false)}>
                   Mon Espace
                 </Link>
                 <Link to="/patient/profile" className={mobileLinkClass} onClick={() => setIsMenuOpen(false)}>

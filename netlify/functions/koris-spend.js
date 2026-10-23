@@ -88,7 +88,7 @@ exports.handler = async (event) => {
 
       const reservation = await reserveKoris(user.uid, feature, billableScales.length, { scaleIds: billableScales });
       if (reservation.error === "insufficient_balance") {
-        return { statusCode: 402, headers, body: JSON.stringify({ error: "Solde Koris insuffisant", koris_debited: false, required: reservation.required }) };
+        return { statusCode: 402, headers, body: JSON.stringify({ error: "Pas assez d'étincelles", koris_debited: false, required: reservation.required }) };
       }
 
       // Atomic: lastTakenAt for ALL scales written in the same batch as the commit
@@ -101,7 +101,7 @@ exports.handler = async (event) => {
   const qty = Math.max(1, Math.floor(Number(quantity) || 1));
   const reservation = await reserveKoris(user.uid, feature, qty);
   if (reservation.error === "insufficient_balance") {
-    return { statusCode: 402, headers, body: JSON.stringify({ error: "Solde Koris insuffisant", koris_debited: false, required: reservation.required }) };
+    return { statusCode: 402, headers, body: JSON.stringify({ error: "Pas assez d'étincelles", koris_debited: false, required: reservation.required }) };
   }
 
   await commitKoris(reservation.holdId);

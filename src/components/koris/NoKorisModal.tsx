@@ -7,8 +7,9 @@ import React, { useState } from 'react';
 import { Loader2 } from 'lucide-react';
 import { useKoris } from '../../contexts/KorisContext';
 import { authedFetch } from '../../utils/authedFetch';
+import { CREDIT, credits } from '../../config/creditName';
 
-const KORI_IMG = '/kori.png';
+const KORI_IMG = CREDIT.img;
 
 const PACKS = [
   { id: 'pack_decouverte', koris: 25, price: 500, label: 'Découverte' },
@@ -64,20 +65,20 @@ const NoKorisModal: React.FC = () => {
         <div className="flex items-center gap-3 mb-3">
           <img
             src={KORI_IMG}
-            alt="Kori"
+            alt=""
             className="w-12 h-12 rounded-full object-cover border-2 border-gold/20"
             style={{ opacity: 0.6, filter: 'grayscale(30%)' }}
           />
           <h3 className="font-display text-base font-bold text-ink m-0">
-            Il te manque des Koris 🪙
+            Il te manque des {CREDIT.many} ✨
           </h3>
         </div>
 
         {/* Contextual description */}
         <p className="text-sm text-ink-soft m-0 mb-4 leading-relaxed">
           {noKorisAction && noKorisCost > 0
-            ? `${noKorisAction} coûte ${noKorisCost} Kori${noKorisCost > 1 ? 's' : ''}, tu en as ${balance}.`
-            : `Tu n'as pas assez de Koris (solde : ${balance}).`}
+            ? `${noKorisAction} coûte ${credits(noKorisCost)}, tu en as ${balance}.`
+            : `Tu n'as pas assez ${CREDIT.ofMany} (solde : ${balance}).`}
         </p>
 
         {/* Packs grid */}

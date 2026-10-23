@@ -45,6 +45,7 @@ import {
 } from "../../utils/firebase";
 import LoadingSpinner from "../../components/ui/LoadingSpinner";
 import { getDoc, doc as firestoreDoc, Timestamp } from "firebase/firestore";
+import { CREDIT } from '../../config/creditName';
 
 function withTimeout<T>(p: Promise<T>, ms = 7000, label = "operation"): Promise<T> {
   return new Promise((resolve, reject) => {
@@ -543,7 +544,7 @@ const PatientProfile: React.FC = () => {
                   <Coins className="h-6 w-6 text-gold" />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold text-ink m-0">{korisBalance} <span className="text-sm font-medium text-muted">Koris</span></p>
+                  <p className="text-2xl font-bold text-ink m-0">{korisBalance} <span className="text-sm font-medium text-muted">{CREDIT.many}</span></p>
                   <p className="text-[11px] text-muted m-0 mt-0.5">Crédits disponibles</p>
                 </div>
               </div>

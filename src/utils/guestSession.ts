@@ -6,6 +6,7 @@
 
 import { ALL_SCALES } from '../data/scales';
 import type { ScaleResult, UserAssessmentSession, TriggeredAlert } from '../types/assessment';
+import { needsRescore, rescore } from './scaleScoring';
 
 export const GUEST_MAX_TESTS = 3;
 
@@ -21,6 +22,8 @@ export interface GuestSession {
   result?: ScaleResult;
   status: 'in_progress' | 'completed';
   startedAt: string;
+  /** Compte dans lequel ce test invité a été transféré à l'inscription. */
+  importedTo?: string;
 }
 
 // ── Compteur ──────────────────────────────────────────────────────────────────
@@ -70,6 +73,35 @@ export function saveGuestAnswer(sessionId: string, itemId: number, value: number
   const session = getGuestSession(sessionId);
   if (!session) return;
   session.answers[itemId] = value;
+  localStorage.setItem(`${SESSION_PREFIX}${sessionId}`, JSON.stringify(session));
+}
+
+/** Remplace toutes les réponses (test dans la conversation : retire celles d'items devenus invisibles). */
+export function replaceGuestAnswers(sessionId: string, answers: Record<number, number>): void {
+  const session = getGuestSession(sessionId);
+  if (!session) return;
+  session.answers = { ...answers };
+  localStorage.setItem(`${SESSION_PREFIX}${sessionId}`, JSON.stringify(session));
+}
+
+/** Tous les tests invités terminés (pour les transférer dans un compte). */
+export function listCompletedGuestSessions(): GuestSession[] {
+  const out: GuestSession[] = [];
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    if (!key?.startsWith(SESSION_PREFIX)) continue;
+    try {
+      const s = JSON.parse(localStorage.getItem(key) ?? '') as GuestSession;
+      if (s.status === 'completed' && s.result) out.push(s);
+    } catch { /* ignore */ }
+  }
+  return out;
+}
+
+export function markGuestSessionImported(sessionId: string, uid: string): void {
+  const session = getGuestSession(sessionId);
+  if (!session) return;
+  session.importedTo = uid;
   localStorage.setItem(`${SESSION_PREFIX}${sessionId}`, JSON.stringify(session));
 }
 
@@ -163,6 +195,7 @@ export function computeGuestResult(sessionId: string): ScaleResult | null {
     completedAt: new Date(),
     alertLevel: alertLevel > 0 ? alertLevel : undefined,
     alertsTriggered: alertsTriggered.length > 0 ? alertsTriggered : undefined,
+    ...(scale.scoringVersion ? { scoringVersion: scale.scoringVersion } : {}),
   };
 
   session.result  = result;
@@ -185,6 +218,12 @@ export function getAllGuestResults(): Record<string, ScaleResult> {
     try {
       const session = JSON.parse(localStorage.getItem(key) ?? '') as GuestSession;
       if (session.result && session.status === 'completed') {
+        // Ancien calcul d'une échelle corrigée depuis : on recalcule à partir des réponses gardées
+        const scale = ALL_SCALES.find(s => s.id === session.scaleId);
+        if (needsRescore(scale, session.result) && Object.keys(session.answers ?? {}).length > 0) {
+          session.result = rescore(scale!, session.result, session.answers);
+          try { localStorage.setItem(key, JSON.stringify(session)); } catch { /* ignore */ }
+        }
         results[session.scaleId] = session.result;
       }
     } catch { /* ignore */ }

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Users, ChevronRight, Lock, Check, Play, Shield, Stethoscope, Sparkles, NotebookPen, ArrowRight } from 'lucide-react';
+import { Users, ChevronRight, Lock, Check, Play, Shield, Stethoscope, Sparkles, NotebookPen, ArrowRight, Flame } from 'lucide-react';
 import TotemCard from '../../components/assessment/TotemCard';
 import GameTeaser from '../../components/assessment/GameTeaser';
 import { useAuth } from '../../contexts/AuthContext';
@@ -38,7 +38,17 @@ import {
 } from '../../utils/totemAlgorithm';
 import { getArchetype, getArchetypeId } from '../../utils/profileArchetype';
 import { useDefiFlag } from '../../hooks/useDefiFlag';
-import { collection, query, orderBy, limit, getDocs } from 'firebase/firestore';
+import { collection, query, orderBy, limit, getDocs, getCountFromServer } from 'firebase/firestore';
+import { openDrLoChat } from '../../components/DrLoChat/drLoEvents';
+import {
+  computePortrait,
+  computeStreak,
+  pickGuideMessage,
+  localDayKey,
+  toDate,
+  type GuideMessage,
+  type LastTest,
+} from '../../utils/drLoGuide';
 import { db } from '../../utils/firebase';
 
 import lionImg from '../../assets/totems/lion.jpg';
@@ -61,6 +71,21 @@ const TOTEM_TILE_IMAGES: Record<TotemAnimal, string> = {
 };
 
 const PSY_THRESHOLD = 7;
+
+// Suivis post-test déjà proposés (pour ne pas les répéter) — confort local, non critique
+const FOLLOW_UPS_KEY = 'he_drlo_followups_done';
+function readDoneFollowUps(): string[] {
+  try {
+    const raw = localStorage.getItem(FOLLOW_UPS_KEY);
+    const arr = raw ? JSON.parse(raw) : [];
+    return Array.isArray(arr) ? arr.filter((x): x is string => typeof x === 'string') : [];
+  } catch { return []; }
+}
+function markFollowUpDone(key: string): string[] {
+  const next = [...readDoneFollowUps().filter(k => k !== key), key].slice(-50);
+  try { localStorage.setItem(FOLLOW_UPS_KEY, JSON.stringify(next)); } catch { /* stockage indisponible */ }
+  return next;
+}
 
 const TILE_BG = 'linear-gradient(160deg, #2A2520 0%, #3D352C 100%)';
 const TILE_GOLD = '#D4AD5A';
@@ -107,6 +132,10 @@ const AssessmentHomePage: React.FC = () => {
   const [inProgressScales, setInProgressScales] = useState<Set<string>>(new Set());
   const [totemData, setTotemData] = useState<{ animal: string; computedAt: Date; revealedAt: Date | null; pendingAnimal: string | null } | null>(null);
   const [journalToday, setJournalToday] = useState<boolean | null>(null);
+  const [journalDays, setJournalDays] = useState<string[]>([]);
+  const [journalCount, setJournalCount] = useState(0);
+  const [chatCount, setChatCount] = useState(0);
+  const [doneFollowUps, setDoneFollowUps] = useState<string[]>(() => readDoneFollowUps());
   const [activeDefis, setActiveDefis] = useState<Array<{ slug: string; titre: string; audience: string; expiresAt: Date }>>([]);
   const [defiHistory, setDefiHistory] = useState(false);
   const [tilesLoaded, setTilesLoaded] = useState(false);
@@ -172,31 +201,34 @@ const AssessmentHomePage: React.FC = () => {
       .catch(() => {});
   }, [isAuthenticated, currentUser?.id, loadRetry]);
 
-  // Journal: check if user wrote today
+  // Journal + conversations : humeur du jour, série, et pièces du portrait
   useEffect(() => {
     if (!isAuthenticated || !currentUser) {
       setJournalToday(false);
+      setJournalDays([]);
+      setJournalCount(0);
+      setChatCount(0);
       return;
     }
-    const q = query(
-      collection(db, 'users', currentUser.id, 'journal'),
-      orderBy('created_at', 'desc'),
-      limit(1),
-    );
-    getDocs(q)
+    const fs = db;
+    if (!fs) return;
+    const journalCol = collection(fs, 'users', currentUser.id, 'journal');
+    getDocs(query(journalCol, orderBy('created_at', 'desc'), limit(60)))
       .then(snap => {
-        if (snap.empty) {
-          setJournalToday(false);
-          return;
-        }
-        const entry = snap.docs[0].data();
-        const createdAt = entry.created_at?.toDate?.() ?? new Date(entry.created_at);
-        const now = new Date();
-        const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-        const entryStr = `${createdAt.getFullYear()}-${String(createdAt.getMonth() + 1).padStart(2, '0')}-${String(createdAt.getDate()).padStart(2, '0')}`;
-        setJournalToday(todayStr === entryStr);
+        const days = snap.docs
+          .map(d => toDate(d.data().created_at))
+          .filter((d): d is Date => !!d)
+          .map(localDayKey);
+        setJournalDays(days);
+        setJournalToday(days.includes(localDayKey(new Date())));
       })
       .catch(() => setJournalToday(false));
+    getCountFromServer(journalCol)
+      .then(c => setJournalCount(c.data().count))
+      .catch(() => {});
+    getCountFromServer(collection(fs, 'users', currentUser.id, 'chat_dr_lo'))
+      .then(c => setChatCount(c.data().count))
+      .catch(() => {});
   }, [isAuthenticated, currentUser?.id]);
 
   useEffect(() => {
@@ -208,12 +240,13 @@ const AssessmentHomePage: React.FC = () => {
   if (showOnboarding) {
     return (
       <OnboardingProfile
-        defaultPrenom={currentUser?.name ?? undefined}
+        defaultPrenom={currentUser?.name ?? onboardingProfile?.prenom ?? undefined}
         onComplete={(profile) => {
           setOnboardingProfile(profile);
           setShowOnboarding(false);
           if (isAuthenticated && currentUser) {
-            resetUserProfile(currentUser.id)
+            // Ne jamais effacer des résultats existants (tests faits dans le chat avant le questionnaire)
+            (Object.keys(profileResults ?? {}).length === 0 ? resetUserProfile(currentUser.id) : Promise.resolve())
               .then(() => saveOnboardingToProfile(currentUser.id, profile as unknown as Record<string, string>))
               .then(() => setLoadRetry(r => r + 1))
               .catch(() => {});
@@ -231,11 +264,9 @@ const AssessmentHomePage: React.FC = () => {
 
   const doneCore = mentalCompleted + sexualCompleted;
   const totalCore = mentalTotal + sexualTotal;
-  const pct = totalCore > 0 ? Math.round((doneCore / totalCore) * 100) : 0;
 
   const RING_R = 30;
   const RING_C = 2 * Math.PI * RING_R;
-  const ringOffset = RING_C - (pct / 100) * RING_C;
 
   const currentScales = getScalesForTab(activeTab);
   const psyOk = mentalCompleted >= PSY_THRESHOLD;
@@ -250,6 +281,64 @@ const AssessmentHomePage: React.FC = () => {
   const totemAnimal = totemData?.animal as TotemAnimal | undefined;
   const totemSig = totemAnimal ? getTotemSignature(totemAnimal) : null;
   const totemImg = totemAnimal ? TOTEM_TILE_IMAGES[totemAnimal] : null;
+
+  // ── Accueil proactif de Dr Lô (Modif B) ──
+  // Portrait : tests (70 %) + journal (15 %) + conversations (15 %)
+  const portraitPct = computePortrait({ doneCore, totalCore, journalCount, chatCount });
+  const ringOffset = RING_C - (portraitPct / 100) * RING_C;
+
+  // Dernier test terminé + jours d'activité (tests + journal) pour la série
+  let lastTest: LastTest | null = null;
+  const activityDays = new Set<string>(journalDays);
+  Object.entries(profileResults).forEach(([scaleId, r]) => {
+    const at = toDate((r as { completedAt?: unknown }).completedAt);
+    if (!at) return;
+    activityDays.add(localDayKey(at));
+    if (!lastTest || at > lastTest.completedAt) {
+      lastTest = { scaleId, label: getScaleMeta(scaleId).label, completedAt: at };
+    }
+  });
+  const streak = computeStreak(activityDays, new Date());
+
+  const guide: GuideMessage = pickGuideMessage({
+    isAuthenticated,
+    prenom,
+    doneCore,
+    totalCore,
+    guestCount,
+    guestMax: GUEST_MAX_TESTS,
+    totemMissing: totemProgress.missing.length,
+    totemReady: totemIsReady,
+    totemRevealed: totemIsRevealed,
+    journalToday: isAuthenticated ? journalToday : null,
+    lastTest,
+    dismissedFollowUps: doneFollowUps,
+    now: new Date(),
+  });
+
+  const handleGuideAction = () => {
+    if (guide.followUpKey) setDoneFollowUps(markFollowUpDone(guide.followUpKey));
+    const action = guide.action;
+    switch (action.kind) {
+      case 'chat':
+        openDrLoChat({ greeting: action.greeting, source: `home_${guide.id}` });
+        break;
+      case 'journal':
+        navigate('/mon-espace');
+        break;
+      case 'signup':
+        navigate('/patient/access');
+        break;
+      case 'reveal_totem':
+        if (totemRevealRef.current) totemRevealRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        else navigate('/assessment/totem');
+        break;
+      case 'start_test':
+        setActiveTab('mental');
+        setTimeout(() => segmentedRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
+        break;
+    }
+  };
 
   const handleCompatLockedClick = () => {
     setActiveTab('mental');
@@ -374,7 +463,7 @@ const AssessmentHomePage: React.FC = () => {
                   style={{ transition: 'stroke-dashoffset 1.3s cubic-bezier(.2,.7,.3,1)' }}
                 />
                 <text x="37" y="37" textAnchor="middle" dominantBaseline="central" className="font-display" fill="#F4F1E9" fontSize="17" fontWeight="700">
-                  {pct}%
+                  {portraitPct}%
                 </text>
               </svg>
             </div>
@@ -386,18 +475,51 @@ const AssessmentHomePage: React.FC = () => {
                   <>Ton profil</>
                 )}
               </h2>
-              <p className="text-[12px] text-white/50 m-0 mt-0.5">
-                <span className="text-white/80 font-bold">{doneCore}</span>/{totalCore} tests complétés
+              <p className="text-[12px] text-white/70 m-0 mt-0.5">
+                Ton portrait se dessine : <span className="text-white font-bold">{portraitPct} %</span>
+              </p>
+              <p className="text-[11px] text-white/45 m-0 mt-0.5 flex items-center gap-2 flex-wrap">
+                <span><span className="text-white/75 font-bold">{doneCore}</span>/{totalCore} tests</span>
+                {streak >= 2 && (
+                  <span className="inline-flex items-center gap-0.5 text-[#E9A88C] font-bold">
+                    <Flame size={11} /> {streak} jours d'affilée
+                  </span>
+                )}
               </p>
             </div>
             <button
-              onClick={() => navigate('/assessment/profile')}
+              onClick={() => openDrLoChat({ source: 'home_button' })}
+              aria-label="Parler à Dr Lô"
               className="flex-shrink-0 flex items-center gap-1.5 rounded-xl border border-white/15 bg-white/10 px-3 py-2 text-[12px] font-bold text-[#F4F1E9] cursor-pointer transition-colors hover:bg-white/15"
             >
               <Stethoscope size={13} />
               Dr Lô
               <ChevronRight size={13} />
             </button>
+          </div>
+
+          {/* Message du jour de Dr Lô : toujours une prochaine étape */}
+          <div className="relative z-10 mt-4 rounded-xl bg-white/[0.07] border border-white/10 px-3.5 py-3" data-guide-id={guide.id}>
+            <p className="text-[10px] font-bold uppercase tracking-[0.08em] text-[#E9A88C] m-0 flex items-center gap-1">
+              <Stethoscope size={11} /> Dr Lô
+            </p>
+            {!tilesLoaded ? (
+              // Pas de message tant que le profil n'est pas chargé (évite un faux « premier test »)
+              <div className="mt-2 space-y-1.5 animate-pulse">
+                <div className="h-3 w-4/5 rounded bg-white/10" />
+                <div className="h-3 w-1/2 rounded bg-white/10" />
+              </div>
+            ) : (
+              <>
+                <p className="text-[13.5px] leading-snug text-[#F4F1E9] m-0 mt-1">{guide.text}</p>
+                <button
+                  onClick={handleGuideAction}
+                  className="mt-2.5 inline-flex items-center gap-1.5 rounded-[10px] bg-[#E9A88C] px-3 py-1.5 text-[12px] font-bold text-ink cursor-pointer border-0 hover:brightness-105 transition"
+                >
+                  {guide.cta} <ArrowRight size={12} />
+                </button>
+              </>
+            )}
           </div>
         </div>
 

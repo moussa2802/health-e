@@ -6,8 +6,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useKoris } from '../../contexts/KorisContext';
 import KorisFloatingPanel from './KorisFloatingPanel';
+import { CREDIT } from '../../config/creditName';
 
-const KORI_IMG = '/kori.png';
+const KORI_IMG = CREDIT.img;
 
 const DANGER = '#B23A3A';
 const WARN = '#B5732A';
@@ -84,7 +85,7 @@ const FloatingKori: React.FC = () => {
           {/* Kori image */}
           <img
             src={KORI_IMG}
-            alt="Kori"
+            alt=""
             className="w-14 h-14 rounded-full object-cover block"
           />
 

@@ -1,7 +1,7 @@
 import { collection, doc, setDoc, getDoc, updateDoc, deleteDoc, serverTimestamp, getDocs, query, where, orderBy, limit } from 'firebase/firestore';
 import { db } from '../utils/firebase';
 import type { CompatibilityRequest, CompatibilityResult, ScaleResult } from '../types/assessment';
-import { getUserProfileByCompatibilityId, getProfileProgress } from './evaluationService';
+import { getProfileProgress } from './evaluationService';
 import { authedFetch } from '../utils/authedFetch';
 import { getRelationshipSubType } from '../utils/relationshipTypes';
 
@@ -19,6 +19,32 @@ function stripUndefined<T extends Record<string, unknown>>(obj: T): T {
     }
   }
   return clean;
+}
+
+// ── Profil du/de la partenaire (côté serveur) ─────────────────────────────────
+// Les profils des autres ne sont plus lisibles depuis le navigateur (règle Firestore).
+// La fonction compatibility-partner renvoie seulement ce que le code partagé permet de voir.
+
+interface PartnerView {
+  uid: string;
+  prenom: string;
+  genre: string;
+  scaleResults: Record<string, ScaleResult>;
+}
+
+async function fetchPartner(codes: string[]): Promise<{ ok: true; partner: PartnerView } | { ok: false; error: string }> {
+  try {
+    const res = await authedFetch('/.netlify/functions/compatibility-partner', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ codes }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) return { ok: false, error: (data as { error?: string }).error ?? 'Profil partenaire introuvable' };
+    return { ok: true, partner: data as PartnerView };
+  } catch {
+    return { ok: false, error: 'Connexion instable. Réessaie dans un instant.' };
+  }
 }
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -125,19 +151,13 @@ export async function validateCompatibilityCode(
     }
   }
 
-  // 3. Chercher le profil dans la base
-  const partner = await getUserProfileByCompatibilityId(trimmed);
-  if (!partner) {
-    return { valid: false, error: 'Aucun profil trouvé pour ce code' };
-  }
+  // 3. Chercher le profil (côté serveur)
+  const found = await fetchPartner([trimmed]);
+  if (!found.ok) return { valid: false, error: found.error };
 
-  // 4. Extraire prénom et genre
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const onboarding = (partner as any).onboardingProfile as Record<string, string> | undefined;
-  const prenom = onboarding?.prenom || partner.displayName || 'Utilisateur';
-  const genre = onboarding?.genre || undefined;
-
-  return { valid: true, prenom, genre, uid: partner.uid };
+  // 4. Prénom et genre
+  const { partner } = found;
+  return { valid: true, prenom: partner.prenom || 'Utilisateur', genre: partner.genre || undefined, uid: partner.uid };
 }
 
 function getCodeType(id: string): 'mental' | 'sexual' | null {
@@ -173,8 +193,8 @@ export async function createCompatibilityRequest(
     );
   }
 
-  const partner = await getUserProfileByCompatibilityId(partnerCompatibilityId);
-  if (!partner) throw new Error('Identifiant partenaire introuvable.');
+  const found = await fetchPartner([partnerCompatibilityId]);
+  if (!found.ok) throw new Error(found.error || 'Identifiant partenaire introuvable.');
 
   const ref = doc(collection(db, COL));
   const request: CompatibilityRequest = {
@@ -284,13 +304,10 @@ export async function computeCompatibility(requestId: string): Promise<Compatibi
   if (!reqSnap.exists()) throw new Error('Demande introuvable');
   const req = reqSnap.data() as CompatibilityRequest;
 
-  const partner = await getUserProfileByCompatibilityId(req.partnerCompatibilityId);
-  if (!partner) throw new Error('Profil partenaire introuvable');
-
-  const [initiatorProfile, partnerProfile] = await Promise.all([
-    getProfileProgress(req.initiatorUserId),
-    getProfileProgress(partner.uid),
-  ]);
+  const found = await fetchPartner([req.partnerCompatibilityId]);
+  if (!found.ok) throw new Error(found.error || 'Profil partenaire introuvable');
+  const partnerProfile = found.partner;
+  const initiatorProfile = await getProfileProgress(req.initiatorUserId);
 
   if (!initiatorProfile || !partnerProfile) {
     throw new Error('Les deux profils doivent avoir complété au moins une évaluation.');
@@ -307,9 +324,9 @@ export async function computeCompatibility(requestId: string): Promise<Compatibi
   const bonusResults2 = extractBonus(partnerProfile.scaleResults);
 
   const prenom1: string = (initiatorProfile.onboardingProfile?.prenom as string | undefined) ?? 'Toi';
-  const prenom2: string = (partnerProfile.onboardingProfile?.prenom as string | undefined) ?? (partnerProfile as any).displayName?.split(' ')[0] ?? 'Partenaire';
+  const prenom2: string = partnerProfile.prenom || 'Partenaire';
   const genre1: string = (initiatorProfile.onboardingProfile?.genre as string | undefined) ?? '';
-  const genre2: string = (partnerProfile.onboardingProfile?.genre as string | undefined) ?? '';
+  const genre2: string = partnerProfile.genre || '';
 
   const relMeta = getRelationshipSubType(req.relationshipType);
   const drLoContext = relMeta?.subType.drLoContext ?? null;
@@ -364,17 +381,10 @@ export async function computeMergedCompatibility(
   const primaryCode = mentalCode || intimateCode;
   if (!primaryCode) throw new Error('Au moins un code est requis.');
 
-  // Resolve partner UID from whichever code we have
-  const partner = await getUserProfileByCompatibilityId(primaryCode);
-  if (!partner) throw new Error('Profil partenaire introuvable');
-
-  // If we have a second code, verify it points to the same person
-  if (mentalCode && intimateCode) {
-    const partner2 = await getUserProfileByCompatibilityId(intimateCode);
-    if (!partner2 || partner2.uid !== partner.uid) {
-      throw new Error('Les deux codes doivent appartenir à la même personne.');
-    }
-  }
+  // Profil du/de la partenaire (le serveur vérifie que les deux codes désignent la même personne)
+  const found = await fetchPartner([mentalCode, intimateCode].filter((c): c is string => !!c));
+  if (!found.ok) throw new Error(found.error || 'Profil partenaire introuvable');
+  const partnerProfile = found.partner;
 
   // Verify initiator has matching codes
   const initiatorSnap = await getDoc(doc(db, 'userProfiles', initiatorUserId));
@@ -387,10 +397,7 @@ export async function computeMergedCompatibility(
     throw new Error("Tu dois compléter les évaluations de vie intime avant de comparer.");
   }
 
-  const [initiatorProfile, partnerProfile] = await Promise.all([
-    getProfileProgress(initiatorUserId),
-    getProfileProgress(partner.uid),
-  ]);
+  const initiatorProfile = await getProfileProgress(initiatorUserId);
 
   if (!initiatorProfile || !partnerProfile) {
     throw new Error('Les deux profils doivent avoir complété au moins une évaluation.');
@@ -434,9 +441,9 @@ export async function computeMergedCompatibility(
   const bonusResults2 = extractBonus(partnerProfile.scaleResults);
 
   const prenom1: string = (initiatorProfile.onboardingProfile?.prenom as string | undefined) ?? 'Toi';
-  const prenom2: string = (partnerProfile.onboardingProfile?.prenom as string | undefined) ?? (partnerProfile as any).displayName?.split(' ')[0] ?? 'Partenaire';
+  const prenom2: string = partnerProfile.prenom || 'Partenaire';
   const genre1: string = (initiatorProfile.onboardingProfile?.genre as string | undefined) ?? '';
-  const genre2: string = (partnerProfile.onboardingProfile?.genre as string | undefined) ?? '';
+  const genre2: string = partnerProfile.genre || '';
 
   const relMeta = getRelationshipSubType(relationshipType);
   const drLoContext = relMeta?.subType.drLoContext ?? null;

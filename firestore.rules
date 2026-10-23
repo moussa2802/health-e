@@ -16,7 +16,13 @@ service cloud.firestore {
 
     // ─── USERS ───────────────────────────────────────────────────────────────
     match /users/{userId} {
-      allow read, write: if isOwner(userId);
+      // Le champ `type` (patient / professional / admin) ne peut jamais être choisi ou changé
+      // depuis le navigateur : sinon n'importe qui pourrait se déclarer admin.
+      allow read, delete: if isOwner(userId);
+      allow create: if isOwner(userId)
+        && (!('type' in request.resource.data) || request.resource.data.type in ['patient', 'professional']);
+      allow update: if isOwner(userId)
+        && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['type']);
 
       // Contrôle d'accès vie intime
       match /acces/{document} {
@@ -75,6 +81,11 @@ service cloud.firestore {
     // Le profil companion (situation, cycle, streak) vit dans le champ
     // `companion` du document patients/{patientId} ci-dessus (même règle).
     match /patients/{patientId}/checkins/{checkinId} {
+      allow read, write: if isOwner(patientId);
+    }
+
+    // Humeur notée depuis Dr Lô (« Noter mon humeur · 30 s ») — strictement privée
+    match /patients/{patientId}/moods/{day} {
       allow read, write: if isOwner(patientId);
     }
 
@@ -305,8 +316,10 @@ service cloud.firestore {
 
     match /userProfiles/{userId} {
       allow read, write: if request.auth != null && request.auth.uid == userId;
-      // Lecture autorisée pour tout utilisateur connecté — nécessaire pour la fonctionnalité de compatibilité
-      allow read: if request.auth != null;
+      // Profils des autres : plus de lecture depuis le navigateur (résultats psy et intimes, analyses).
+      // La compatibilité passe par la fonction serveur compatibility-partner, qui ne renvoie
+      // que ce que le code partagé permet de voir. Les admins gardent la lecture (tableaux de bord).
+      allow read: if isAdmin();
 
       // Sous-collection historique des résultats
       match /scaleResultHistory/{entryId} {
@@ -330,8 +343,21 @@ service cloud.firestore {
       }
     }
 
+    // Rôles particuliers (ex. { drlo: true } pour le vrai Dr Lô). Posés à la main dans la console
+    // Firebase ; la personne peut lire son propre rôle, personne ne peut l'écrire depuis le navigateur.
+    match /staff/{uid} {
+      allow read: if isOwner(uid);
+      allow write: if false;
+    }
+
+    // « Écrire au vrai Dr Lô » : uniquement via la fonction serveur drlo-question (jamais depuis le navigateur)
+    match /drloQuestions/{qid} { allow read, write: if false; }
+    match /drloQueue/{uid} { allow read, write: if false; }
+
     match /compatibilityRequests/{requestId} {
-      allow read, create: if request.auth != null;
+      // Seule la personne qui a lancé la comparaison lit / crée / met à jour (le résultat parle de deux personnes)
+      allow read: if request.auth != null && resource.data.initiatorUserId == request.auth.uid;
+      allow create: if request.auth != null && request.resource.data.initiatorUserId == request.auth.uid;
       allow update: if request.auth != null &&
         (resource.data.initiatorUserId == request.auth.uid);
       allow delete: if false;

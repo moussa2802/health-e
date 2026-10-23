@@ -32,7 +32,7 @@ const PatientAccess: React.FC = () => {
   const fromPath = (location.state as { from?: { pathname?: string } } | null)
     ?.from?.pathname;
   const searchParams = new URLSearchParams(location.search);
-  const returnToParam = searchParams.get("returnTo");
+  const returnToParam = searchParams.get("returnTo") || searchParams.get("redirect"); // « redirect » : ancien nom utilisé par plusieurs pages
   const modeParam = searchParams.get("mode");
   const savedReturnTo = (() => { try { return localStorage.getItem("he_auth_return_to"); } catch { return null; } })();
   const returnTo = returnToParam || savedReturnTo;

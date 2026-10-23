@@ -7,8 +7,9 @@ import { Minus, Plus, Gift, Undo2, Circle } from 'lucide-react';
 import { useKoris } from '../../contexts/KorisContext';
 import { getKorisHistory, getFeatureLabel, KORIS_COSTS, type KorisTransaction } from '../../services/korisService';
 import { useAuth } from '../../contexts/AuthContext';
+import { CREDIT, credits, cap } from '../../config/creditName';
 
-const KORI_IMG = '/kori.png';
+const KORI_IMG = CREDIT.img;
 
 interface Props {
   onClose: () => void;
@@ -75,16 +76,16 @@ const KorisDetailPanel: React.FC<Props> = ({ onClose }) => {
       <div className="bg-gold px-4 py-4.5 text-white flex items-center gap-3">
         <img
           src={KORI_IMG}
-          alt="Kori"
+          alt=""
           className="w-12 h-12 rounded-full object-cover border-2 border-white/30"
         />
         <div>
           <div className="text-[11px] opacity-85">Mon solde</div>
           <div className="text-[28px] font-extrabold tracking-tight">
             {balance}
-            <span className="text-[13px] font-medium ml-1 opacity-85">Koris</span>
+            <span className="text-[13px] font-medium ml-1 opacity-85">{CREDIT.many}</span>
           </div>
-          <div className="text-[10px] opacity-75">25 Koris offerts, puis achat de packs</div>
+          <div className="text-[10px] opacity-75">{cap(credits(25))} offertes, puis achat de packs</div>
         </div>
       </div>
 

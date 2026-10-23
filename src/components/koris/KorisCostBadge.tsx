@@ -5,8 +5,9 @@
 import React from 'react';
 import { useKoris } from '../../contexts/KorisContext';
 import { type KorisFeatureType } from '../../services/korisService';
+import { CREDIT, credits } from '../../config/creditName';
 
-const KORI_IMG = '/kori.png';
+const KORI_IMG = CREDIT.img;
 
 interface Props {
   feature: KorisFeatureType;
@@ -29,7 +30,7 @@ const KorisCostBadge: React.FC<Props> = ({ feature, style, className = '' }) => 
       className={`inline-flex items-center gap-1 pl-1 pr-1.5 py-0.5 rounded-lg text-[11px] font-semibold whitespace-nowrap ${
         affordable ? 'text-gold bg-gold-soft' : 'text-danger bg-danger/10'
       } ${className}`}
-      title={affordable ? `Coût: ${cost} Koris · Reste: ${remaining}` : `Solde insuffisant (${cost} Koris requis, solde: ${balance})`}
+      title={affordable ? `Coût : ${credits(cost)} · reste : ${remaining}` : `Solde insuffisant (${credits(cost)} nécessaires, solde : ${balance})`}
     >
       <img
         src={KORI_IMG}

@@ -536,7 +536,7 @@ const ProfileCard: React.FC<{
                       >
                         <RefreshCw size={12} /> Actualiser
                         <span className="inline-flex items-center gap-1 bg-white/20 rounded-lg px-1.5 py-0.5 ml-1">
-                          <img src="/kori.png" alt="" className="w-3.5 h-3.5 rounded-full object-cover" />
+                          <img src="/etincelle.png" alt="" className="w-3.5 h-3.5 rounded-full object-cover" />
                           <span className="font-display text-[11px] font-semibold">{refreshCost}</span>
                         </span>
                       </button>
@@ -562,7 +562,7 @@ const ProfileCard: React.FC<{
                 >
                   <Stethoscope size={14} /> Générer mon analyse
                   <span className="inline-flex items-center gap-1 bg-white/20 rounded-lg px-1.5 py-0.5 ml-1">
-                    <img src="/kori.png" alt="" className="w-3.5 h-3.5 rounded-full object-cover" />
+                    <img src="/etincelle.png" alt="" className="w-3.5 h-3.5 rounded-full object-cover" />
                     <span className="font-display text-[11px] font-semibold">{generateCost}</span>
                   </span>
                 </button>

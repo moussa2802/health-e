@@ -49,6 +49,10 @@ import {
 
 // Lazy load pages for better performance
 const HomePage = lazy(() => import("./pages/OptimizedHomePage"));
+const EspacePage = lazy(() => import("./pages/drlo/EspacePage"));
+const HumeurPage = lazy(() => import("./pages/drlo/HumeurPage"));
+const QuestionPage = lazy(() => import("./pages/drlo/QuestionPage"));
+const DrLoConsole = lazy(() => import("./pages/drlo/DrLoConsole"));
 const PatientDashboard = lazy(() => import("./pages/patient/PatientDashboard"));
 const ProfessionalDashboard = lazy(
   () => import("./pages/professional/ProfessionalDashboard")
@@ -174,16 +178,24 @@ const AppChrome: React.FC = () => {
   const isAppRoute = pathname.startsWith("/app");
   const isDefiJouer = pathname.startsWith("/d/") || pathname.startsWith("/api/d/");
   const isChromeless = isAdminRoute || isAppRoute || isDefiJouer;
+  // Accueil : le premier écran est Dr Lô en plein écran (pas d'en-tête ni de pied de page du site)
+  // Écrans « Mon Dr Lô » (thème chaud sombre, plein écran) : pas d'en-tête ni de pied de page du site
+  const isHome = pathname === "/" || pathname === "/espace" || pathname === "/humeur" || pathname === "/question" || pathname === "/drlo";
   const { currentUser } = useAuth();
   const userId = currentUser?.id ?? null;
 
   return (
     <>
-      {!isChromeless && <OptimizedHeader />}
+      {!isChromeless && !isHome && <OptimizedHeader />}
       <main className="flex-1">
         <Suspense fallback={<PageLoader />}>
           <Routes>
             <Route path="/" element={<HomePage />} />
+            <Route path="/espace" element={<EspacePage />} />
+            <Route path="/humeur" element={<HumeurPage />} />
+            <Route path="/question" element={<QuestionPage />} />
+            {/* Espace du vrai Dr Lô : séparé de l'admin, rôle staff/{uid}.drlo */}
+            <Route path="/drlo" element={<DrLoConsole />} />
 
             {/* Companion app — layout mobile plein écran, distinct du site */}
             <Route
@@ -510,9 +522,9 @@ const AppChrome: React.FC = () => {
           </Routes>
         </Suspense>
       </main>
-      {!isChromeless && <Footer />}
-      {!isChromeless && <FloatingChat userId={userId} />}
-      {!isChromeless && !!currentUser && <FloatingKori />}
+      {!isChromeless && !isHome && <Footer />}
+      {!isChromeless && <FloatingChat userId={userId} hideLauncher={isHome} />}
+      {!isChromeless && !isHome && !!currentUser && <FloatingKori />}
       {!isChromeless && <NoKorisModal />}
       {!isChromeless && <KorisWelcome />}
       {!isChromeless && <WelcomeFlow />}

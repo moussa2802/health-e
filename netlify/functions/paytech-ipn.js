@@ -29,6 +29,7 @@ if (!admin.apps.length) {
 }
 
 const db = admin.firestore();
+const { verifyPaytechIpn, parseCustomField } = require("./_paytechVerify");
 
 /**
  * Fonction Netlify pour gérer les webhooks IPN de PayTech
@@ -158,13 +159,34 @@ exports.handler = async (event, context) => {
       };
     }
 
-    // Parser les custom_fields
-    let customData = {};
-    try {
-      customData = JSON.parse(paymentData.custom_field || "{}");
-    } catch (error) {
-      console.warn("⚠️ [PAYTECH IPN] Error parsing custom_field:", error);
+    // ── Sécurité : la notification doit être signée par PayTech (HMAC ou SHA256 des clés) ──
+    const verification = verifyPaytechIpn(req, {
+      apiKey: process.env.PAYTECH_API_KEY,
+      apiSecret: process.env.PAYTECH_API_SECRET,
+    });
+    if (!verification.ok) {
+      console.error("❌ [PAYTECH IPN] Notification refusée :", verification.reason);
+      try {
+        await db.collection("payment_logs").add({
+          type_event: paymentData.type_event || null,
+          ref_command: paymentData.ref_command || null,
+          item_price: paymentData.item_price || null,
+          rejected: true,
+          reason: verification.reason,
+          receivedAt: admin.firestore.FieldValue.serverTimestamp(),
+          source: "paytech_ipn",
+        });
+      } catch (_) { /* journalisation non bloquante */ }
+      return {
+        statusCode: verification.reason === "missing_keys" ? 500 : 403,
+        headers,
+        body: JSON.stringify({ error: "Invalid signature" }),
+      };
     }
+    console.log("✅ [PAYTECH IPN] Signature vérifiée :", verification.method);
+
+    // Parser les custom_fields (JSON brut ou Base64)
+    const customData = parseCustomField(paymentData.custom_field);
 
     const {
       booking_id,
@@ -311,13 +333,38 @@ exports.handler = async (event, context) => {
       }
 
       // Koris purchase
-      if (paymentType === "koris_purchase" && customData.orderId && customData.userId) {
-        const { orderId, userId, koris } = customData;
+      if (paymentType === "koris_purchase" && customData.orderId) {
+        const orderId = String(customData.orderId);
         const ipnRef = db.collection("ipn_processed").doc(String(paymentRef || orderId));
         const ipnSnap = await ipnRef.get();
         if (ipnSnap.exists) {
           return { statusCode: 200, headers, body: JSON.stringify({ success: true, message: "IPN already processed" }) };
         }
+
+        // La commande enregistrée côté serveur fait foi (et non le custom_field) : qui, combien, à quel prix
+        const orderSnap = await db.collection("koris_orders").doc(orderId).get();
+        const order = orderSnap.exists ? orderSnap.data() : null;
+        const paid = Number(paymentData.item_price);
+        const orderProblem = !order ? "order_not_found"
+          : order.status === "completed" ? "order_already_completed"
+          : String(paymentRef) !== orderId ? "ref_mismatch"
+          : !(paid >= Number(order.price)) ? "amount_too_low"
+          : null;
+        if (orderProblem) {
+          console.error("❌ [PAYTECH IPN] Commande Koris refusée :", orderProblem, orderId);
+          await db.collection("payment_logs").add({
+            type_event: paymentData.type_event,
+            ref_command: paymentRef,
+            item_price: paymentData.item_price,
+            customData,
+            error: orderProblem,
+            receivedAt: admin.firestore.FieldValue.serverTimestamp(),
+            source: "paytech_ipn_koris",
+          });
+          return { statusCode: 200, headers, body: JSON.stringify({ success: false, message: orderProblem }) };
+        }
+        const userId = order.userId;
+        const koris = Number(order.koris);
 
         try {
           const patientRef = db.collection("patients").doc(userId);
@@ -338,7 +385,7 @@ exports.handler = async (event, context) => {
               balanceBefore: currentBalance,
               balanceAfter: currentBalance + koris,
               timestamp: new Date().toISOString(),
-              details: `Achat ${koris.toLocaleString()} Koris (${paymentData.item_price} FCFA)`,
+              details: `Achat de ${koris.toLocaleString()} étincelles (${paymentData.item_price} FCFA)`,
             });
 
             // Update global stats

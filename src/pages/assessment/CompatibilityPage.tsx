@@ -30,6 +30,7 @@ import { useKoris } from '../../contexts/KorisContext';
 import { KORIS_COSTS } from '../../services/korisService';
 import KoriCta from '../../components/koris/KoriCta';
 import { isAiAvailable } from '../../utils/aiCircuitBreaker';
+import { CREDIT, credits } from '../../config/creditName';
 
 // Icon for each top-level relationship category (relationshipTypes.ts carries an
 // `emoji` field used as raw data, but the UI never renders emoji as icons).
@@ -216,7 +217,7 @@ const CompatibilityPage: React.FC = () => {
     if (mentalTrimmed === myIdMental || sexualTrimmed === myIdSexual) { setFormError("Tu ne peux pas te comparer à toi-même."); return; }
 
     if (!canAfford('compatibility')) {
-      setFormError(`Solde Koris insuffisant (${KORIS_COSTS.compatibility} Koris requis, solde : ${balance}).`);
+      setFormError(`Pas assez ${CREDIT.ofMany} (${credits(KORIS_COSTS.compatibility)} nécessaires, solde : ${balance}).`);
       return;
     }
 

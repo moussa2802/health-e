@@ -24,19 +24,20 @@ export const CRISIS_RESOURCES: Record<string, CrisisResource[]> = {
     },
   ],
   SN: [
-    // ⚠️ À VALIDER — aucune ligne nationale dédiée à la prévention du suicide
-    // identifiée au Sénégal. Entrées provisoires : urgences médicales générales
-    // et orientation vers un service de psychiatrie.
+    // Vérifié le 22 oct. 2026 : SAMU national 1515 (sante.gouv.sn, senego.com) ;
+    // CHU de Fann : standard 33 869 18 18, urgences 33 869 18 20 (liste de l'ambassade
+    // d'Allemagne à Dakar, déc. 2024). Aucune ligne nationale dédiée à la prévention du
+    // suicide n'a été trouvée au Sénégal.
     {
       label: 'SAMU Sénégal',
-      phone: '15',
+      phone: '1515',
       availability: '24h/24',
-      note: 'Urgences médicales et psychiatriques.',
+      note: 'Urgences médicales.',
     },
     {
-      label: 'Service de psychiatrie — Hôpital Fann (Dakar)',
-      phone: '+221 33 869 18 18',
-      note: 'Centre hospitalier de référence en santé mentale.',
+      label: 'Urgences du CHU de Fann (Dakar)',
+      phone: '+221 33 869 18 20',
+      note: 'Hôpital de référence en psychiatrie. Standard : +221 33 869 18 18 (demander la psychiatrie).',
     },
   ],
 };

@@ -9,8 +9,9 @@ import { AlertTriangle, Check, Zap } from 'lucide-react';
 import { useKoris } from '../../contexts/KorisContext';
 import { getKorisHistory, getFeatureLabel, KORIS_COSTS, type KorisTransaction } from '../../services/korisService';
 import { useAuth } from '../../contexts/AuthContext';
+import { CREDIT, credits } from '../../config/creditName';
 
-const KORI_IMG = '/kori.png';
+const KORI_IMG = CREDIT.img;
 
 interface Props {
   onClose: () => void;
@@ -63,14 +64,14 @@ const KorisFloatingPanel: React.FC<Props> = ({ onClose }) => {
         <div className="bg-gold px-4 py-5 flex items-center gap-3.5 text-white">
           <img
             src={KORI_IMG}
-            alt="Kori"
+            alt=""
             className="w-12 h-12 rounded-full object-cover border-[3px] border-white/30 flex-shrink-0"
           />
           <div>
             <div className="text-[11px] opacity-85">Mon solde</div>
             <div className="text-[30px] font-extrabold tracking-tight leading-tight">
               {balance}
-              <span className="text-[13px] font-medium ml-1 opacity-85">Koris</span>
+              <span className="text-[13px] font-medium ml-1 opacity-85">{CREDIT.many}</span>
             </div>
           </div>
         </div>
@@ -82,8 +83,8 @@ const KorisFloatingPanel: React.FC<Props> = ({ onClose }) => {
               <AlertTriangle size={16} className={balance === 0 ? 'text-danger flex-shrink-0' : 'text-warn flex-shrink-0'} />
               <div className="text-[11px] text-ink-soft leading-relaxed">
                 {balance === 0
-                  ? 'Plus de Koris · Recharger dès 500 FCFA'
-                  : `Il te reste ${balance} Kori${balance > 1 ? 's' : ''} · Recharger`}
+                  ? `Plus ${CREDIT.ofMany} · Recharger dès 500 FCFA`
+                  : `Il te reste ${credits(balance)} · Recharger`}
               </div>
             </div>
           </div>
@@ -95,7 +96,7 @@ const KorisFloatingPanel: React.FC<Props> = ({ onClose }) => {
             onClick={() => { onClose(); navigate('/acheter-koris'); }}
             className="w-full py-2.5 rounded-xl border-0 bg-gold text-white text-sm font-semibold cursor-pointer hover:bg-gold/90 transition-colors flex items-center justify-center gap-2"
           >
-            <Zap size={15} /> Acheter des Koris
+            <Zap size={15} /> Recharger mes {CREDIT.many}
           </button>
         </div>
 

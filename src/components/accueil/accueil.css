@@ -1,0 +1,28 @@
+/* Premier écran vivant de Dr Lô : animations (respecte « réduire les animations »). */
+@keyframes drlBreathe{0%,100%{transform:scale(1);box-shadow:0 0 28px rgba(242,182,109,.22)}50%{transform:scale(1.06);box-shadow:0 0 64px rgba(242,182,109,.5)}}
+@keyframes drlGuided{0%,100%{transform:scale(1);box-shadow:0 0 24px rgba(242,182,109,.2)}50%{transform:scale(1.16);box-shadow:0 0 90px rgba(242,182,109,.6)}}
+@keyframes drlDrift{0%,100%{transform:translate(0,0)}50%{transform:translate(14px,-22px)}}
+@keyframes drlDot{0%,100%{opacity:.25;transform:translateY(0)}50%{opacity:1;transform:translateY(-3px)}}
+@keyframes drlIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes drlSpin{to{transform:rotate(360deg)}}
+@keyframes drlListen{0%{transform:scale(1);opacity:.8}100%{transform:scale(1.35);opacity:0}}
+@keyframes drlJoy{0%,100%{transform:scale(1)}40%{transform:scale(1.1)}}
+.drl-halo{animation:drlBreathe 6s ease-in-out infinite}
+.drl-halo-guided{animation:drlGuided 8s ease-in-out infinite}
+.drl-bokeh{animation:drlDrift 14s ease-in-out infinite}
+.drl-dot{animation:drlDot 1s ease-in-out infinite}
+.drl-in{animation:drlIn .45s ease both}
+.drl-sweep{animation:drlSpin 1.8s linear infinite}
+.drl-orbit{animation:drlSpin 2.6s linear infinite}
+.drl-listen{animation:drlListen 1.4s ease-out infinite}
+.drl-joy{animation:drlJoy 1.2s ease-in-out 2}
+.drl-btn{transition:transform .15s ease, box-shadow .2s ease, background .2s ease, border-color .2s ease}
+.drl-btn:active{transform:scale(.97)}
+.drl-btn:focus-visible,.drl-mood:focus-visible{outline:2px solid #F2B66D;outline-offset:2px}
+.drl-mood{transition:transform .15s ease, background .2s ease}
+.drl-mood:hover{transform:translateY(-3px);background:rgba(255,255,255,.09)!important}
+.drl-input::placeholder{color:#A79E90}
+.drl-screen a{color:#F2B66D}
+@media (prefers-reduced-motion: reduce){
+  .drl-halo,.drl-halo-guided,.drl-bokeh,.drl-dot,.drl-in,.drl-sweep,.drl-orbit,.drl-listen,.drl-joy{animation:none}
+}

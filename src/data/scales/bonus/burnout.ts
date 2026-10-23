@@ -58,7 +58,7 @@ export const BONUS_BURNOUT: AssessmentScale = {
     // Dépersonnalisation
     { id: 4, text: 'Il t\'arrive de traiter certaines personnes au travail de façon impersonnelle — comme si elles étaient juste des dossiers à gérer ?', type: 'frequency', options: opts, subscale: 'depersonnalisation' },
     { id: 5, text: 'Travailler avec des gens tout au long de la journée, ça te demande un effort vraiment épuisant ?', type: 'frequency', options: opts, subscale: 'depersonnalisation' },
-    { id: 6, text: 'Tu ne te soucies plus vraiment de ce qui arrive aux personnes avec qui tu travailles ?', type: 'frequency', options: opts, subscale: 'depersonnalisation' },
+    { id: 6, text: 'Ce qui arrive aux personnes avec qui tu travailles, ça t\'est devenu un peu égal ?', type: 'frequency', options: opts, subscale: 'depersonnalisation' },
 
     // Accomplissement personnel (inversé : score élevé = pas de burnout)
     { id: 7, text: 'Tu accomplis des choses qui valent vraiment la peine dans ton travail ?', type: 'frequency', options: opts, subscale: 'accomplissement', reversed: true },

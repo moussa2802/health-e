@@ -3,6 +3,7 @@ import { Lightbulb, RefreshCw, AlertTriangle, Loader2, Check, Dumbbell, Pin, Ste
 import { getOrGenerateConseils, type CachedConseils, type GenerateConseilsParams } from '../../services/conseilsService';
 import { useKoris } from '../../contexts/KorisContext';
 import { isAiAvailable } from '../../utils/aiCircuitBreaker';
+import { credits } from '../../config/creditName';
 
 type CardState = 'idle' | 'loading' | 'success' | 'error';
 
@@ -104,7 +105,7 @@ const ConseilsCard: React.FC<ConseilsCardProps> = ({
           </span>
           {conseilsCost > 0 && (
             <span className={`text-[10px] font-bold ${affordable ? 'text-sage' : 'text-muted'}`}>
-              {conseilsCost} Kori{conseilsCost > 1 ? 's' : ''} · reste {balance - conseilsCost}
+              {credits(conseilsCost)} · reste {balance - conseilsCost}
             </span>
           )}
         </div>

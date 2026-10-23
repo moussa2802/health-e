@@ -14,6 +14,8 @@ import { KORIS_COSTS, spendKorisForUnlock } from '../../services/korisService';
 import { KORIS_CONFIG } from '../../utils/korisConfig';
 import { authedFetch } from '../../utils/authedFetch';
 import { isAiAvailable } from '../../utils/aiCircuitBreaker';
+import { DRLO_OPEN_EVENT, type DrLoOpenDetail } from './drLoEvents';
+import { CREDIT, credits } from '../../config/creditName';
 
 const DAILY_MESSAGE_LIMIT = 10;
 const UNLOCK_MESSAGES = 5;
@@ -40,6 +42,8 @@ type View = 'chat' | 'history';
 
 interface Props {
   userId: string | null;
+  /** Masquer la pastille flottante (ex. page d'accueil, où la conversation est déjà au centre). Le chat reste ouvrable via openDrLoChat(). */
+  hideLauncher?: boolean;
 }
 
 // ── Build full context ────────────────────────────────────────────────────────
@@ -192,7 +196,7 @@ async function loadConversations(userId: string): Promise<SavedConversation[]> {
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
-const FloatingChat: React.FC<Props> = ({ userId }) => {
+const FloatingChat: React.FC<Props> = ({ userId, hideLauncher = false }) => {
   const [open, setOpen] = useState(false);
   const [view, setView] = useState<View>('chat');
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -211,6 +215,8 @@ const FloatingChat: React.FC<Props> = ({ userId }) => {
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const conversationId = useRef<string>(`conv_${Date.now()}`);
+  // Message d'ouverture proactif (openDrLoChat) : transmis à l'IA avec le 1er message
+  const openingRef = useRef<string | null>(null);
   const { canAfford, balance, refreshBalance, openNoKorisModal, getCost } = useKoris();
 
   const onboarding = getOnboardingProfile();
@@ -249,6 +255,26 @@ const FloatingChat: React.FC<Props> = ({ userId }) => {
       if (view === 'chat') setTimeout(() => inputRef.current?.focus(), 120);
     }
   }, [open, view]);
+
+  // Ouverture demandée par une page (bouton « Dr Lô », carte d'accueil…)
+  useEffect(() => {
+    const onOpen = (e: Event) => {
+      const detail = (e as CustomEvent<DrLoOpenDetail>).detail ?? {};
+      setView('chat');
+      setOpen(true);
+      const greeting = detail.greeting;
+      if (!greeting) return;
+      // On ne remplace le message d'accueil que si aucune conversation n'est en cours :
+      // on n'interrompt jamais un échange déjà commencé.
+      setMessages(prev => {
+        if (prev.some(m => m.role === 'user')) return prev;
+        return [{ role: 'assistant', content: greeting, timestamp: new Date().toISOString() }];
+      });
+      openingRef.current = greeting;
+    };
+    window.addEventListener(DRLO_OPEN_EVENT, onOpen);
+    return () => window.removeEventListener(DRLO_OPEN_EVENT, onOpen);
+  }, []);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -297,7 +323,13 @@ const FloatingChat: React.FC<Props> = ({ userId }) => {
       const res = await authedFetch('/.netlify/functions/dr-lo-chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: text, historique, context }),
+        body: JSON.stringify({
+          message: text,
+          historique,
+          context: openingRef.current && historique.length === 0
+            ? { ...context, ouverture: openingRef.current }
+            : context,
+        }),
       });
 
       if (!res.ok) {
@@ -305,6 +337,7 @@ const FloatingChat: React.FC<Props> = ({ userId }) => {
       }
 
       const data = await res.json();
+      openingRef.current = null;
       await refreshBalance();
       const assistantMsg: ChatMessage = {
         role: 'assistant',
@@ -574,7 +607,7 @@ const FloatingChat: React.FC<Props> = ({ userId }) => {
 
               {!KORIS_CONFIG.active && (
                 <div className="px-3.5 py-0.5 flex-shrink-0">
-                  <span className="text-[10px] text-muted flex items-center gap-1"><Zap size={10} /> Utilisera des Koris (bientôt)</span>
+                  <span className="text-[10px] text-muted flex items-center gap-1"><Zap size={10} /> Utilisera des {CREDIT.many} (bientôt)</span>
                 </div>
               )}
 
@@ -598,7 +631,7 @@ const FloatingChat: React.FC<Props> = ({ userId }) => {
                             : 'bg-sage text-white cursor-pointer hover:bg-sage/90'
                         }`}
                       >
-                        {unlocking ? 'Déblocage…' : !canAfford('unlock_chat') ? 'Pas assez de Koris' : (
+                        {unlocking ? 'Déblocage…' : !canAfford('unlock_chat') ? `Pas assez ${CREDIT.ofMany}` : (
                           <>Débloquer {UNLOCK_MESSAGES} messages · {KORIS_COSTS.unlock_chat} <Zap size={11} /></>
                         )}
                       </button>
@@ -612,7 +645,7 @@ const FloatingChat: React.FC<Props> = ({ userId }) => {
                     value={input}
                     onChange={e => setInput(e.target.value)}
                     onKeyDown={handleKeyDown}
-                    placeholder={`Ecrire un message... (${KORIS_COSTS.chat} Kori/msg · solde ${balance})`}
+                    placeholder={`Ecrire un message... (${credits(KORIS_COSTS.chat)}/msg · solde ${balance})`}
                     rows={1}
                     disabled={loading || !isAiAvailable()}
                     className="flex-1 resize-none border-[1.5px] border-line rounded-xl px-2.5 py-2 text-[13px] font-sans bg-paper text-ink leading-5 overflow-y-auto min-h-9 max-h-[116px] outline-none focus:border-sage/60 transition-colors"
@@ -723,12 +756,12 @@ const FloatingChat: React.FC<Props> = ({ userId }) => {
       {/* ── Pill FAB ── */}
       <div
         className="dr-lo-pill fixed bottom-5 right-5 z-[10000] flex items-center rounded-full bg-ink cursor-pointer select-none"
-        style={{ padding: '6px', boxShadow: '0 6px 22px rgba(23,24,27,.28)', transition: transitionStyle }}
+        style={{ padding: '6px', boxShadow: '0 6px 22px rgba(23,24,27,.28)', transition: transitionStyle, display: hideLauncher && !open ? 'none' : undefined }}
         onClick={handlePillClick}
         onMouseEnter={handlePillHover}
         onMouseLeave={handlePillLeave}
         role="button"
-        aria-label={`Parler à Dr Lô, ${KORIS_COSTS.chat} Kori par message`}
+        aria-label={`Parler à Dr Lô, ${credits(KORIS_COSTS.chat)} par message`}
         tabIndex={0}
       >
         {/* Avatar */}
@@ -764,8 +797,8 @@ const FloatingChat: React.FC<Props> = ({ userId }) => {
         >
           <b className="block text-[13.5px] font-bold leading-tight">Parler à Dr Lô</b>
           <span className="flex items-center gap-1 text-[11px] mt-0.5" style={{ color: '#BFB7A6' }}>
-            <img src="/kori.png" alt="" className="w-[13px] h-[13px] rounded-full object-cover" />
-            {KORIS_COSTS.chat} Kori par message
+            <img src="/etincelle.png" alt="" className="w-[13px] h-[13px] rounded-full object-cover" />
+            {credits(KORIS_COSTS.chat)} par message
           </span>
         </div>
       </div>

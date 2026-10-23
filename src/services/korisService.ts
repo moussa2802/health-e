@@ -22,6 +22,7 @@ import {
 } from 'firebase/firestore';
 import { db } from '../utils/firebase';
 import { authedFetch } from '../utils/authedFetch';
+import { CREDIT } from '../config/creditName';
 
 // ── Configuration ────────────────────────────────────────────────────────────
 
@@ -305,7 +306,7 @@ export function getFeatureLabel(feature: string): string {
     compatibility: 'Test de compatibilité',
     test: 'Test',
     welcome_bonus: 'Bonus de bienvenue',
-    purchase: 'Achat de Koris',
+    purchase: `Achat ${CREDIT.ofMany}`,
     refund: 'Remboursement',
     unlock_chat: 'Débloquer chat',
   };
