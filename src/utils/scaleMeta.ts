@@ -1,4 +1,5 @@
 import {
+  Moon,
   Brain, CloudRain, Dna, Link2, ScanFace, Shield, Zap,
   Baby, Bomb, HeartCrack, Users, Gem, Church, Wallet,
   Heart, Flame, Scale, Flower2, Pill, Puzzle, HandHeart,
@@ -63,6 +64,7 @@ export const SCALE_META: Record<string, ScaleMeta> = {
   bonus_burnout:      { icon: Gauge,          label: 'Burnout professionnel',            description: 'Ton corps te dit-il d\'arrêter ?', category: 'bonus' },
   bonus_jalousie:     { icon: Angry,          label: 'Jalousie',                         description: 'La jalousie te contrôle-t-elle ?', category: 'bonus' },
   bonus_eq:           { icon: Lightbulb,      label: 'Intelligence émotionnelle',        description: 'Quel est ton vrai QE émotionnel ?', category: 'bonus' },
+  bonus_sommeil:      { icon: Moon,           label: 'Qualité du sommeil',               description: 'Tes nuits te rechargent-elles vraiment ?', category: 'bonus' },
   bonus_confiance:    { icon: Crown,          label: 'Confiance en soi',                 description: 'À quel point crois-tu vraiment en toi ?', category: 'bonus' },
 };
 
@@ -86,7 +88,7 @@ const SCALE_EMOJI: Record<string, string> = {
   tsi_base: '🧩', pair: '🫂', sise: '🪞', social_pressure_sex: '🤐', griss_base: '💑',
   bonus_narcissisme: '🎭', bonus_personnalite: '🌪️', bonus_dependance: '💔',
   bonus_hsp: '🌊', bonus_hpi: '⚡', bonus_tdah: '🔄', bonus_manipulation: '🎭',
-  bonus_burnout: '🔥', bonus_jalousie: '😤', bonus_eq: '💚', bonus_confiance: '🦁',
+  bonus_burnout: '🔥', bonus_jalousie: '😤', bonus_eq: '💚', bonus_confiance: '🦁', bonus_sommeil: '🌙',
 };
 
 export function getScaleEmoji(scaleId: string): string {

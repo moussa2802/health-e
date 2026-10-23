@@ -24,7 +24,7 @@ export const WELCOME_SLIDES: WelcomeSlide[] = [
     contenu: [
       '🧠 14 évaluations en profil psychologique',
       '💋 10 évaluations en vie intime',
-      '✨ 11 tests bonus très populaires',
+      '✨ 12 tests bonus très populaires',
     ],
     description: 'Chaque évaluation est basée sur des outils validés scientifiquement. Tu fais les tests à ton rythme — dans l\'ordre que tu veux. Plus tu en fais, plus ton profil sera précis 🎯',
     bouton: 'Continuer →',

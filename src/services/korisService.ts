@@ -37,6 +37,8 @@ export const KORIS_COSTS = {
   synthesis: 0,
   compatibility: 4,
   unlock_chat: 3,
+  programme: 3,
+  programme_bilan: 3,
 } as const;
 
 export type KorisFeatureType = keyof typeof KORIS_COSTS;
@@ -309,6 +311,8 @@ export function getFeatureLabel(feature: string): string {
     purchase: `Achat ${CREDIT.ofMany}`,
     refund: 'Remboursement',
     unlock_chat: 'Débloquer chat',
+    programme: 'Mon programme Dr Lô',
+    programme_bilan: 'Bilan du programme',
   };
   return labels[feature] ?? feature;
 }

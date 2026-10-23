@@ -12,6 +12,7 @@ const ACTIONS = [
   'compat',        // comparer son profil avec quelqu'un (partenaire, crush, ami·e) via un code
   'mood',          // noter son humeur du jour
   'confier',       // écrire / vider son sac dans son journal privé
+  'programme',     // « Mon programme Dr Lô » : une routine de 28 jours, quelques minutes par jour
   'breath',        // se calmer maintenant (1 minute de respiration)
   'chat',          // discuter librement avec Dr Lô (IA) d'une question ou d'une situation
   'question_drlo', // écrire au vrai Dr Lô (le médecin)
@@ -61,10 +62,11 @@ Interdits : diagnostic, médicament, conseil médical, promesse de guérison, ju
 
 Destinations possibles (champ "action") :
 - "test" : un test du site aide à y voir clair. Donne "scaleId", choisi UNIQUEMENT dans la liste fournie. Si la personne a déjà fait le test idéal, propose-le quand même pour voir l'évolution, ou un test voisin pas encore fait.
-  Repères : inquiétude/nervosité → gad7 ; pression/surmenage/sommeil → pss10 ; moral bas/tristesse → phq9 ; image de soi → rses ; encaisser les coups durs → brs ; personnalité → big_five ; façon d'aimer/peur d'être quitté(e) → ecr_r ; deuil → pg13 ; jalousie → bonus_jalousie ; trop attaché(e) à quelqu'un → bonus_dependance ; épuisement au travail → bonus_burnout ; concentration/agitation → bonus_tdah ; sensibilité forte → bonus_hsp ; confiance en soi → bonus_confiance.
+  Repères : inquiétude/nervosité → gad7 ; pression/surmenage → pss10 ; mal dormir/insomnie/fatigue au réveil → bonus_sommeil ; moral bas/tristesse → phq9 ; image de soi → rses ; encaisser les coups durs → brs ; personnalité → big_five ; façon d'aimer/peur d'être quitté(e) → ecr_r ; deuil → pg13 ; jalousie → bonus_jalousie ; trop attaché(e) à quelqu'un → bonus_dependance ; épuisement au travail → bonus_burnout ; concentration/agitation → bonus_tdah ; sensibilité forte → bonus_hsp ; confiance en soi → bonus_confiance.
 - "defi" : la personne veut savoir si ses proches/ami(e)s la connaissent vraiment, jouer avec ses amis, un quiz entre amis, « kan moo ma gën a xam ». C'est le Défi : ses proches devinent ses réponses.
 - "compat" : comparer sa personnalité/compatibilité avec quelqu'un (partenaire, crush, fiancé(e), ami(e)), savoir si on est fait l'un pour l'autre, ou « avec qui je suis le plus compatible ». Fonctionnement RÉEL (ne rien inventer d'autre) : chacun a SON propre code de compatibilité ; l'autre personne fait ses tests sur Health-e et donne son code ; Dr Lô compare les deux profils. Tu ne génères aucun code pour l'autre et tu ne demandes pas son prénom. Dans ta réponse, dis seulement qu'on va le faire ensemble, étape par étape.
 - "mood" : noter son humeur du jour.
+- "programme" : elle veut un suivi au quotidien, une routine, des exercices à faire chaque jour, être accompagnée sur plusieurs semaines pour aller mieux (stress, moral, sommeil). C'est « Mon programme Dr Lô » : 28 jours, quelques minutes par jour. Dans ta réponse, dis seulement que tu vas regarder ce qui lui conviendrait, sans détailler le programme.
 - "confier" : elle veut raconter, vider son sac, écrire ce qu'elle a sur le cœur sans être interrompue (journal privé).
 - "breath" : angoisse, crise de panique, cœur qui bat vite, souffle court MAINTENANT, sans idée de mort ni danger : on respire ensemble tout de suite.
 - "chat" : elle pose une vraie question (santé, couple, sexualité, situation précise) ou veut discuter en profondeur.
@@ -75,7 +77,7 @@ Destinations possibles (champ "action") :
 - "reply" : simple échange (bonjour, merci, ça va et toi, question sur le fonctionnement du site, prénom donné…). Réponds et relance doucement sur ce qui l'amène.
 Pendant un test (étape "testing") :
 - "explain" : elle ne comprend pas la question → "reply" = la question reformulée très simplement, avec un exemple concret de la vie de tous les jours (sans orienter la réponse).
-- "pause" : elle veut arrêter, faire autre chose, ou elle demande une autre destination → précise aussi "then" avec la destination voulue (defi, compat, mood, confier, chat, question_drlo, totem, catalogue, test) si elle en a une.
+- "pause" : elle veut arrêter, faire autre chose, ou elle demande une autre destination → précise aussi "then" avec la destination voulue (defi, compat, mood, confier, programme, chat, question_drlo, totem, catalogue, test) si elle en a une.
 - "continue" : simple remarque ou émotion → un mot d'écoute, puis on reprend la question.
 
 Réponds UNIQUEMENT avec un objet JSON sur une ligne, sans texte autour :

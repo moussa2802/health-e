@@ -10,7 +10,7 @@
  */
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { ArrowRight, Check, ChevronDown, ChevronLeft, Clock, CloudSun, Copy, EyeOff, ListChecks, Lock, MessagesSquare, Mic, Pencil, Phone, Plus, Send, Sparkles, Sprout, Trash2, Wind } from 'lucide-react';
+import { ArrowRight, Check, ChevronDown, ChevronLeft, ClipboardCheck, Clock, CloudSun, Copy, EyeOff, ListChecks, Lock, MessagesSquare, Mic, Pencil, Phone, Plus, Send, Sparkles, Sprout, Trash2, Wind } from 'lucide-react';
 import './accueil.css';
 import DrLoAvatar, { type DrLoState } from './DrLoAvatar';
 import DrLoIsland from './DrLoIsland';
@@ -18,7 +18,7 @@ import MoodIcon from './MoodIcon';
 import ConfierPanel, { CONFIER } from './ConfierPanel';
 import SignupCard, { LinkAccountCard, SIGNUP_PENDING_KEY } from './SignupCard';
 import { migrateGuestData } from '../../services/guestMigration';
-import { recordMood, deleteMood } from '../../services/moodService';
+import { recordMood, deleteMood, fetchMoods } from '../../services/moodService';
 import { captureReferral, registerReferralIfAny } from '../../services/drloQuestionService';
 import { AURA_FULL, CREDIT, LOW_CREDIT, credits } from '../../config/creditName';
 import { useAuth } from '../../contexts/AuthContext';
@@ -77,6 +77,15 @@ import {
   convStorageKey, createConv, deleteConv, loadIndex, MAIN_ID, renameConv, saveIndex, sortedConvs, touchConv, type ConvIndex,
 } from '../../utils/conversations';
 import { KORIS_COSTS, isTestFreeRetake } from '../../services/korisService';
+import ProgrammePanel, { ProgrammeHomeCard } from './ProgrammePanel';
+import { ProgrammeInviteCard, ProgrammeOfferCard, ProgrammeOpenCard, type ProgCardEnv } from './ProgrammeCards';
+import {
+  addDays, bilanDue, bilanSummary, dayNumber, daysBetween, hardStreak, MIN_DAYS_BEFORE_RETEST, newProgramme,
+  pause as pauseProg, planFor, programmeSignals, remainingToday, resume as resumeProg, setSleep, toggleCheck, withResult,
+  type AxisSignal, type EngKey, type Programme, type SleepNote,
+} from '../../utils/programme';
+import { AXES, type ProgAxis } from '../../data/programmeLibrary';
+import { bilanProgramme, closeProgramme, loadProgramme, proposeProgramme, saveProgramme } from '../../services/programmeService';
 import {
   nextItem, previousItem, progress, introText, questionText, fullItemText, criticalAlert, visibleItems,
 } from '../../utils/chatTest';
@@ -84,6 +93,24 @@ import type { AssessmentScale, AnswerOption } from '../../types/assessment';
 import type { ScaleResult } from '../../types/assessment';
 
 const STORAGE_PREFIX = 'he_accueil_v1:';
+
+/** Date d'un résultat (Date, texte ou Timestamp Firestore) en ISO. */
+function toIso(c: unknown): string {
+  if (c instanceof Date) return c.toISOString();
+  if (typeof c === 'string') return c;
+  if (c && typeof (c as { toDate?: () => Date }).toDate === 'function') return (c as { toDate: () => Date }).toDate().toISOString();
+  return new Date().toISOString();
+}
+
+/** Invitation au programme juste après un test qui le justifie. */
+function programmeInvite(sig: AxisSignal) {
+  return {
+    text: sig.fragile
+      ? 'En plus de l\'avis d\'un professionnel, je peux t\'accompagner chaque jour pendant 4 semaines, en douceur : quelques minutes d\'exercices choisis pour toi.'
+      : 'Si tu veux, je peux aussi t\'accompagner chaque jour pendant 4 semaines : quelques minutes d\'exercices choisis pour toi.',
+    card: { type: 'programme_invite' as const, axes: [sig.axis] },
+  };
+}
 const TOTAL_CORE = MENTAL_HEALTH_SCALES.length + SEXUAL_HEALTH_SCALES.length;
 const BREATH_MS = 4000;
 const BREATH_TOTAL_MS = 60000;
@@ -323,6 +350,10 @@ const ConversationAccueil: React.FC = () => {
         portraitPct: computePortrait({ doneCore, totalCore: TOTAL_CORE, journalCount: 0, chatCount: 0 }),
         guestRemaining: isAuthenticated ? null : guestRemaining,
       }, known);
+      if (isAuthenticated && !progRef.current) {
+        const sig = programmeSignals(results).find(x => x.scaleId === s.prescribed);
+        if (sig) s = addExchange(s, null, [programmeInvite(sig)]);
+      }
       hint = 'reading'; // il relit vraiment le résultat qui vient d'arriver
       setInChat(true); // retour d'un test : on reprend la discussion là où elle en était
     }
@@ -415,6 +446,41 @@ const ConversationAccueil: React.FC = () => {
   const [confirmDel, setConfirmDel] = useState<string | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const [quota, setQuota] = useState<TalkQuota | null>(null);
+  // « Mon programme Dr Lô » (compte uniquement)
+  const [prog, setProg] = useState<Programme | null>(null);
+  const progRef = useRef<Programme | null>(null);
+  progRef.current = prog;
+  const [progOpen, setProgOpen] = useState(false);
+  const [progBusy, setProgBusy] = useState<'bilan' | null>(null);
+  const [, setMoodsVer] = useState(0);
+  useEffect(() => {
+    if (!authReady) return;
+    if (!isAuthenticated || !currentUser) { setProg(null); return; }
+    let cancelled = false;
+    loadProgramme(currentUser.id).then(p => { if (!cancelled) setProg(p); }).catch(() => {});
+    // Humeurs des 5 dernières semaines (jours actifs, bilan) : synchronisées avec le compte
+    fetchMoods(currentUser.id, addDays(dayKey(), -35)).then(() => { if (!cancelled) setMoodsVer(v => v + 1); }).catch(() => {});
+    return () => { cancelled = true; };
+  }, [authReady, isAuthenticated, currentUser?.id]);
+  const persistProg = useCallback((next: Programme) => {
+    setProg(next);
+    if (currentUser) saveProgramme(currentUser.id, next).catch(() => { /* copie locale gardée */ });
+  }, [currentUser?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+  // Protocole de crise : le programme se met en pause (il ne réclame rien pendant ce temps)
+  useEffect(() => {
+    const p = progRef.current;
+    if (state?.step === 'crisis' && p?.status === 'active') persistProg(pauseProg(p, dayKey()));
+  }, [state?.step]); // eslint-disable-line react-hooks/exhaustive-deps
+  // Le nouveau test est arrivé (à partir du jour 21, au moins 14 jours après le premier) : avant / après
+  useEffect(() => {
+    const p = progRef.current;
+    if (!p || !p.baseline || p.result || !results) return;
+    const r = results[p.baseline.scaleId];
+    if (!r) return;
+    const at = toIso(r.completedAt);
+    if (daysBetween(p.baseline.at.slice(0, 10), at.slice(0, 10)) < MIN_DAYS_BEFORE_RETEST || dayNumber(p, dayKey()) < 21) return;
+    persistProg(withResult(p, { totalScore: r.totalScore, label: r.interpretation?.label ?? '', at }));
+  }, [results, prog?.id]); // eslint-disable-line react-hooks/exhaustive-deps
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const testScale = useMemo<AssessmentScale | null>(
@@ -488,7 +554,10 @@ const ConversationAccueil: React.FC = () => {
     apply(addExchange(prev, null, [completed
       ? 'Bien joué. Une minute pour toi, ça compte. Je suis là quand tu veux en parler.'
       : 'D\'accord, on s\'arrête là. Même quelques respirations, ça compte.']), prev);
-  }, [apply]);
+    // Programme : la respiration du jour (version légère) se coche toute seule
+    const p = progRef.current;
+    if (completed && p?.status === 'active' && planFor(p, dayNumber(p, dayKey()))[1].kind === 'breath') persistProg(toggleCheck(p, dayKey(), 'action', true));
+  }, [apply, persistProg]);
 
   // 4. Respiration guidée : 1 minute, le halo grandit (inspire) puis se resserre (expire)
   const breathing = breath !== null;
@@ -564,6 +633,11 @@ const ConversationAccueil: React.FC = () => {
   ];
   const chatModeNow = inChat;
 
+  // ── Mon programme Dr Lô ──
+  const moodsNow = loadMoods(moodKey);
+  const progSignals = results ? programmeSignals(results) : [];
+  const progRemaining = prog ? remainingToday(prog, today, moodsNow) : 0;
+
   // ── Page d'accueil : toujours une salutation et une recommandation, jamais les derniers messages ──
   const hasTalked = messages.some(m => m.from === 'user');
   const homeTestLabel = state.activeTest ? getScaleMeta(state.activeTest.scaleId).label : state.prescribed ? getScaleMeta(state.prescribed).label : '';
@@ -579,6 +653,8 @@ const ConversationAccueil: React.FC = () => {
     ...(state.step === 'testing' && state.activeTest ? [{ label: 'Reprendre le test', kind: 'home' as const, q: { label: 'Reprendre le test', value: 'home:resume' } }]
       : state.prescribed && !results?.[state.prescribed] ? [{ label: `Faire le test « ${homeTestLabel} »`, kind: 'home' as const, q: { label: 'Faire le test', value: `home:test:${state.prescribed}` } }] : []),
     ...(!moodToday ? [{ label: 'Noter mon humeur · 30 s', kind: 'mood' as const }] : []),
+    ...(isAuthenticated && !prog && progSignals.length > 0 && !(state.step === 'testing' && state.activeTest)
+      ? [{ label: 'Un programme pour moi', kind: 'home' as const, q: { label: 'Mon programme Dr Lô', value: 'home:programme' } }] : []),
     // Rien d'autre : pour un nouveau sujet, on écrit simplement à Dr Lô
   ];
 
@@ -611,6 +687,7 @@ const ConversationAccueil: React.FC = () => {
       const v = c.q!.value;
       setInChat(true);
       if (v.startsWith('home:test:')) void startTest(v.slice(10));
+      if (v === 'home:programme') offerProgramme(state, 'Mon programme Dr Lô');
       return;
     }
     // Depuis l'accueil, un besoin ouvre un nouveau sujet dans la discussion en cours
@@ -707,6 +784,7 @@ const ConversationAccueil: React.FC = () => {
     if (r.ui === 'defi' || r.ui === 'compat') void startFlow(r.ui, undefined, r.state);
     if (r.ui === 'talk') void enterTalk(null, text, r.state);
     if (r.ui === 'breath') setBreath({ inhale: true });
+    if (r.ui === 'programme') offerProgramme(r.state);
   };
 
   /** Bouton d'une carte « go » : une autre partie du site, le chat libre ou « Me confier ». */
@@ -717,6 +795,152 @@ const ConversationAccueil: React.FC = () => {
     if (to === 'chat') { void enterTalk(null, null); return; }
     const path = GO[to].path;
     if (path) navigate(path);
+  };
+
+  // ── Mon programme Dr Lô ────────────────────────────────────────────────────
+
+  /** Dr Lô regarde le profil : il invite (axe conseillé), propose un test d'abord, ou rouvre le programme. */
+  const offerProgramme = (from?: AccueilState, userText?: string) => {
+    const cur = from ?? stateRef.current ?? state;
+    setTab('discuter');
+    setMode('home');
+    trackAccueil('programme_offer');
+    const add = (items: (string | { text: string; card?: Card })[]) => apply(addExchange(cur, from ? null : userText ?? null, items), cur);
+    if (cur.step === 'minor') { add(['Le programme est réservé aux 18 ans et plus. Je reste là pour t\'écouter.']); return; }
+    if (!isAuthenticated) {
+      add([{ text: 'Le programme se suit jour après jour : il te faut ton espace (gratuit, 10 secondes). Ensuite je te le prépare.', card: { type: 'signup' } }]);
+      return;
+    }
+    if (prog) { add([{ text: 'Ton programme est en cours : tes engagements du jour t\'attendent.', card: { type: 'programme_open' } }]); return; }
+    const sigs = programmeSignals(results ?? {});
+    if (sigs.length) {
+      const first = sigs[0];
+      const words: Record<ProgAxis, string> = { stress: 'le stress et l\'inquiétude', humeur: 'le moral', sommeil: 'le sommeil' };
+      add([{
+        text: first.fragile
+          ? `Avant tout : ce que montrent tes résultats mérite l'avis d'un professionnel (médecin, psychologue). En plus, je peux t'accompagner chaque jour sur ${words[first.axis]}, en version légère.`
+          : `D'après tes résultats, je te propose de travailler sur ${words[first.axis]}${sigs.length > 1 ? `, ou sur ${sigs.slice(1).map(x => words[x.axis]).join(' ou ')}` : ''}.`,
+        card: { type: 'programme_invite', axes: sigs.map(x => x.axis) },
+      }]);
+      return;
+    }
+    const done = ['gad7', 'phq9', 'pss10', 'bonus_sommeil', 'bonus_burnout'].some(id => results?.[id]);
+    if (!done) {
+      const entry = cur.need === 'mal' ? 'phq9' : 'gad7';
+      add([
+        { text: `Pour te préparer un programme juste, je dois d'abord savoir où tu en es. Commence par un test court : « ${label(entry)} ».`, card: { type: 'test', scaleId: entry } },
+        { text: 'Ou choisis directement ton programme :', card: { type: 'programme_invite', axes: ['stress', 'humeur', 'sommeil'] } },
+      ]);
+      return;
+    }
+    add([{ text: 'Tes derniers résultats sont plutôt bons : pas besoin d\'un programme pour l\'instant. Si tu veux quand même prendre soin de toi chaque jour, choisis :', card: { type: 'programme_invite', axes: ['stress', 'humeur', 'sommeil'] } }]);
+  };
+
+  /** 3 étincelles : Dr Lô lit le profil et écrit sa proposition. */
+  const prepareProgramme = async (axis: ProgAxis) => {
+    if (routing || !currentUser) return;
+    const cost = KORIS_COSTS.programme;
+    if (!korisLoading && balance < cost) { openNoKorisModal('Mon programme Dr Lô', cost); return; }
+    const sigs = programmeSignals(results ?? {});
+    const sig = sigs.find(x => x.axis === axis);
+    const fragile = !!sig?.fragile;
+    const base = addExchange(stateRef.current ?? state, AXES[axis].name, []);
+    setState(base);
+    showNow(base);
+    setRouting('Prépare ton programme');
+    const moods = loadMoods(moodKey);
+    const last14 = Array.from({ length: 14 }, (_, i) => moods[addDays(today, -i)]).filter(Boolean);
+    const out = await proposeProgramme({
+      axis, prenom, genre: genreKnown, light: fragile, fragile,
+      signals: sigs.map(x => ({ test: label(x.scaleId), result: x.label })),
+      moodLowDays: last14.filter(m => m && (m.mood === 'pas_bien' || m.mood === 'tres_dur')).length,
+      moodDays: last14.length,
+    });
+    setRouting(false);
+    refreshBalance();
+    const cur = stateRef.current ?? base;
+    if (!out.ok && out.reason === 'no_koris') { openNoKorisModal('Mon programme Dr Lô', out.required ?? cost); return; }
+    const intro = out.ok ? out.intro : `${AXES[axis].goal} Je n'ai pas pu l'écrire sur mesure cette fois (rien n'a été débité), mais voici le programme.`;
+    apply(addExchange(cur, null, [{ text: intro, card: { type: 'programme_offer', axis, intro, order: out.ok ? out.order : [], light: fragile, fragile } }]), cur);
+    trackAccueil('programme_proposed', { axis, ai: out.ok });
+  };
+
+  const acceptProgramme = (axis: ProgAxis, light: boolean, intro: string, order: string[]) => {
+    if (!currentUser || prog) return;
+    const sig = programmeSignals(results ?? {}).find(x => x.axis === axis) ?? null;
+    const p = newProgramme({ axis, today, light, intro, order1: order, signal: sig });
+    persistProg(p);
+    const cur = stateRef.current ?? state;
+    apply(addExchange(cur, 'J\'accepte', [{
+      text: `C'est parti${prenom ? `, ${prenom}` : ''} ! Chaque jour, ${p.light ? '5' : '10'} minutes et 3 petits engagements à cocher, c'est gratuit. Je les mets sur ton accueil. Ndank ndank.`,
+      card: { type: 'programme_open' },
+    }]), cur);
+    setJoyPending(true);
+    trackAccueil('programme_start', { axis, light: p.light });
+  };
+
+  /** « Adapter » → un autre axe : présentation fixe de la bibliothèque, sans nouvel appel payant. */
+  const altProgramme = (axis: ProgAxis, light: boolean) => {
+    const cur = stateRef.current ?? state;
+    const sig = programmeSignals(results ?? {}).find(x => x.axis === axis);
+    apply(addExchange(cur, `Plutôt : ${AXES[axis].short}`, [{ text: AXES[axis].goal, card: { type: 'programme_offer', axis, intro: AXES[axis].goal, order: [], light: light || !!sig?.fragile, fragile: !!sig?.fragile } }]), cur);
+  };
+
+  const laterProgramme = () => {
+    const cur = stateRef.current ?? state;
+    apply(addExchange(cur, 'Pas maintenant', ['D\'accord. Quand tu veux, écris-moi « mon programme » et je te le ressors.']), cur);
+  };
+
+  const runBilan = async () => {
+    const p = progRef.current;
+    if (!p || !currentUser || progBusy) return;
+    const week = bilanDue(p, today);
+    if (!week) return;
+    const cost = KORIS_COSTS.programme_bilan;
+    if (!korisLoading && balance < cost) { openNoKorisModal('Le bilan de la semaine', cost); return; }
+    setProgBusy('bilan');
+    const out = await bilanProgramme({ ...bilanSummary(p, today, loadMoods(moodKey)), prenom, genre: genreKnown, fragile: !!p.fragile });
+    setProgBusy(null);
+    refreshBalance();
+    if (!out.ok) {
+      if (out.reason === 'no_koris') openNoKorisModal('Le bilan de la semaine', out.required ?? cost);
+      return;
+    }
+    const latest = progRef.current ?? p;
+    persistProg({ ...latest, bilans: [...latest.bilans, { week, text: out.text, at: new Date().toISOString(), advice: out.advice }] });
+    trackAccueil('programme_bilan', { week, advice: out.advice });
+  };
+
+  /** Arrêt ou fin : un résumé reste dans l'historique du compte. */
+  const endProgramme = async () => {
+    const p = progRef.current;
+    if (!p || !currentUser) return;
+    setProg(null);
+    setProgOpen(false);
+    trackAccueil('programme_end', { status: p.result ? 'done' : 'stopped' });
+    await closeProgramme(currentUser.id, { ...p, status: p.result ? 'done' : 'stopped' }).catch(() => {});
+  };
+
+  /** « Continuer 4 semaines » : même axe, le dernier test devient le nouveau point de départ (gratuit). */
+  const restartProgramme = async () => {
+    const p = progRef.current;
+    if (!p || !currentUser) return;
+    const r = p.result;
+    await closeProgramme(currentUser.id, { ...p, status: 'done' }).catch(() => {});
+    const sig: AxisSignal | null = r ? { axis: p.axis, scaleId: r.scaleId, score: r.after, label: r.afterLabel, rank: 1, fragile: !!p.fragile, at: r.at } : null;
+    persistProg(newProgramme({ axis: p.axis, today, light: p.light, intro: p.intro, order1: p.order1, signal: sig }));
+  };
+
+  const progEnv: ProgCardEnv = {
+    palette,
+    activeAxis: prog ? prog.axis : null,
+    busy: !!routing,
+    proposeCost: credits(KORIS_COSTS.programme),
+    onPrepare: a => { void prepareProgramme(a); },
+    onAccept: acceptProgramme,
+    onAlt: altProgramme,
+    onLater: laterProgramme,
+    onOpen: () => { setProgOpen(true); trackAccueil('programme_open'); },
   };
 
   const onMic = () => {
@@ -733,7 +957,14 @@ const ConversationAccueil: React.FC = () => {
     setNoted({ day: today, cancelled: false });
     setMode('home');
     trackAccueil('mood', { guest: !isAuthenticated }); // jamais la valeur de l'humeur dans Analytics
-    apply(addExchange(state, `Mon humeur : ${moodById(id).label.toLowerCase()}`, [moodReply(id, prenom, already)]), state);
+    const lines = [moodReply(id, prenom, already)];
+    // Programme en cours et 3 jours « très dur » d'affilée : Dr Lô prend des nouvelles et allège
+    const p = progRef.current;
+    if (p && p.status === 'active' && id === 'tres_dur' && hardStreak(loadMoods(moodKey), today) >= 3) {
+      lines.push('Ça fait trois jours que c\'est très dur. Je passe ton programme en version douce. Et je te le redis : parler à quelqu\'un aide vraiment. Le 1515 répond à toute heure, et les urgences psychiatriques du CHU Fann au +221 33 869 18 20.');
+      if (!p.light) persistProg({ ...p, light: true });
+    }
+    apply(addExchange(state, `Mon humeur : ${moodById(id).label.toLowerCase()}`, lines), state);
   };
 
   const cancelMood = () => {
@@ -807,7 +1038,8 @@ const ConversationAccueil: React.FC = () => {
         guestRemaining: isAuthenticated ? null : remaining,
         resultPath: resultsPath,
       }, { ...known, doneScaleIds: Object.keys(newResults), guestRemaining: remaining });
-      apply(next, cur, 'reading');
+      const sig = isAuthenticated && !progRef.current ? programmeSignals(newResults).find(x => x.scaleId === t.scaleId) : undefined;
+      apply(sig ? addExchange(next, null, [programmeInvite(sig)]) : next, cur, 'reading');
       trackAccueil('test_done', { scale: t.scaleId, via: 'chat', guest: !isAuthenticated });
       const sev = result.interpretation?.severity ?? 'none';
       if ((result.alertLevel ?? 0) < 2 && !['moderate', 'severe', 'alert'].includes(sev) && !result.interpretation?.referralRequired) setJoyPending(true);
@@ -1214,6 +1446,7 @@ const ConversationAccueil: React.FC = () => {
                     genre={state.genre}
                     onLinked={() => { const cur = stateRef.current ?? state; apply(addExchange(cur, null, ['Parfait. Ton espace est en sécurité.']), cur); }}
                     onGo={onGo}
+                    prog={progEnv}
                   />
   );
 
@@ -1278,6 +1511,7 @@ const ConversationAccueil: React.FC = () => {
                     {[
                       ...(!moodToday ? [{ label: 'Noter mon humeur', hint: '30 s', icon: CloudSun, go: () => { trackAccueil('mood_open'); setMode('mood'); } }] : []),
                       { label: 'Respirer avec moi', hint: '1 min', icon: Wind, go: () => startBreathing() },
+                      ...(isAuthenticated ? [{ label: 'Mon programme Dr Lô', hint: prog && prog.status === 'active' && progRemaining ? `${progRemaining} à faire` : '', icon: ClipboardCheck, go: () => (prog ? setProgOpen(true) : offerProgramme(state, 'Mon programme Dr Lô')) }] : []),
                       { label: 'Tous les tests', hint: '', icon: ListChecks, go: () => navigate('/assessment') },
                       { label: isAuthenticated ? 'Mon espace bien-être' : 'Ce que propose Health-e', hint: '', icon: Sprout, go: () => navigate('/espace') },
                     ].map(it => (
@@ -1677,6 +1911,12 @@ const ConversationAccueil: React.FC = () => {
           )}
         </div>
 
+        {prog && (
+          <div style={{ marginTop: 16 }}>
+            <ProgrammeHomeCard p={prog} today={today} remaining={progRemaining} palette={palette} onOpen={() => { trackAccueil('programme_open'); setProgOpen(true); }} />
+          </div>
+        )}
+
         {/* Répondre */}
         <div style={{ marginTop: 16, minHeight: 140 }}>
           {controls}
@@ -1703,6 +1943,29 @@ const ConversationAccueil: React.FC = () => {
           </button>
         </p>
       </div>
+
+      {progOpen && prog && (
+        <ProgrammePanel
+          p={prog} today={today} moods={moodsNow} palette={palette}
+          testLabel={label}
+          bilanCost={credits(KORIS_COSTS.programme_bilan)}
+          testCost={credits(KORIS_COSTS.test)}
+          busy={progBusy}
+          onClose={() => setProgOpen(false)}
+          onToggle={(k: EngKey) => persistProg(toggleCheck(prog, today, k))}
+          onSleep={(n: SleepNote) => persistProg(setSleep(prog, today, n))}
+          onMood={() => { setProgOpen(false); setInChat(false); setTab('discuter'); setMode('mood'); }}
+          onBreath={() => { setProgOpen(false); setTab('discuter'); startBreathing(); }}
+          onBilan={() => { void runBilan(); }}
+          onRetest={(id: string) => { setProgOpen(false); setTab('discuter'); setInChat(true); void startTest(id); }}
+          onLight={(on: boolean) => persistProg({ ...prog, light: on || !!prog.fragile })}
+          onPause={() => persistProg(pauseProg(prog, today))}
+          onResume={() => persistProg(resumeProg(prog, today))}
+          onStop={() => { void endProgramme(); }}
+          onRestart={() => { void restartProgramme(); }}
+          onOther={() => { void endProgramme().then(() => offerProgramme(stateRef.current ?? state, 'Un autre programme')); }}
+        />
+      )}
 
       {/* Écran masqué (quelqu'un regarde par-dessus l'épaule) */}
       {veiled && (
@@ -1743,7 +2006,11 @@ const ChatCard: React.FC<{
   onStart: (id: string) => void; onOpen: (path: string) => void;
   prenom?: string; genre?: 'homme' | 'femme'; onLinked: () => void;
   onGo: (to: keyof typeof GO) => void;
-}> = ({ card, palette, busy, costLabel, onStart, onOpen, prenom, genre, onLinked, onGo }) => {
+  prog?: ProgCardEnv;
+}> = ({ card, palette, busy, costLabel, onStart, onOpen, prenom, genre, onLinked, onGo, prog }) => {
+  if (card.type === 'programme_invite') return prog ? <ProgrammeInviteCard axes={card.axes} env={prog} /> : null;
+  if (card.type === 'programme_offer') return prog ? <ProgrammeOfferCard axis={card.axis} intro={card.intro} order={card.order} light={card.light} fragile={card.fragile} env={prog} /> : null;
+  if (card.type === 'programme_open') return prog ? <ProgrammeOpenCard env={prog} /> : null;
   const box: React.CSSProperties = { marginTop: 10, textAlign: 'left', borderRadius: 18, border: '1px solid rgba(255,255,255,.14)', background: 'rgba(255,255,255,.06)', padding: 14 };
   const primary: React.CSSProperties = { minHeight: 44, padding: '0 16px', borderRadius: 12, border: 0, background: palette.primary, color: C.ink, fontSize: 14, fontWeight: 700, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6, textDecoration: 'none' };
   const ghost: React.CSSProperties = { ...primary, background: 'transparent', border: '1px solid rgba(255,255,255,.18)', color: C.text, fontWeight: 600 };

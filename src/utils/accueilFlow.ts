@@ -14,6 +14,7 @@
 
 import type { ActiveTest } from './chatTest';
 import type { SocialFlow } from './socialFlow.ts';
+import type { ProgAxis } from '../data/programmeLibrary.ts';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -42,7 +43,10 @@ export type Card =
   | { type: 'defi_preview'; items?: { text: string; tag?: 'perso' | 'totem'; note?: string }[]; questions?: string[] }
   | { type: 'defi_share'; slug: string }
   | { type: 'compat_share'; code: string }
-  | { type: 'compat_result'; score: number; prenom: string; strengths: string[]; tensions: string[] };
+  | { type: 'compat_result'; score: number; prenom: string; strengths: string[]; tensions: string[] }
+  | { type: 'programme_invite'; axes: ProgAxis[] }
+  | { type: 'programme_offer'; axis: ProgAxis; intro: string; order: string[]; light: boolean; fragile?: boolean }
+  | { type: 'programme_open' };
 
 /** Destinations hors conversation que Dr Lô peut proposer. */
 export type GoTarget = 'defi' | 'compat' | 'question_drlo' | 'totem' | 'catalogue' | 'chat' | 'confier' | 'defi_list';
@@ -656,7 +660,7 @@ export function welcomeAfterAuth(state: AccueilState, w: WelcomeInfo): AccueilSt
 
 /** Décision renvoyée par drlo-route (déjà validée côté serveur). */
 export interface RouteDecision {
-  action: 'test' | 'defi' | 'compat' | 'mood' | 'confier' | 'breath' | 'chat' | 'question_drlo' | 'totem'
+  action: 'test' | 'defi' | 'compat' | 'mood' | 'confier' | 'programme' | 'breath' | 'chat' | 'question_drlo' | 'totem'
     | 'catalogue' | 'explain' | 'pause' | 'continue' | 'crisis' | 'reply';
   scaleId: string | null;
   then: RouteDecision['action'] | null;
@@ -664,7 +668,7 @@ export interface RouteDecision {
 }
 
 /** Ce que l'interface doit faire en plus du message (ouvrir un mode). */
-export type RouteUi = 'mood' | 'breath' | 'defi' | 'compat' | 'talk' | null;
+export type RouteUi = 'mood' | 'breath' | 'defi' | 'compat' | 'talk' | 'programme' | null;
 
 export interface RouteCtx {
   /** Question en cours (pendant un test), pour la reposer. */
@@ -734,7 +738,7 @@ export function routeDecision(state: AccueilState, d: RouteDecision, k: Known, c
       s = { ...s, step: 'prescribed', activeTest: undefined, prescribed: scaleId };
       const then = d.action === 'pause' ? d.then : d.action;
       if (!then) return ui(null, s);
-      if (then === 'mood' || then === 'breath') return ui(then, s);
+      if (then === 'mood' || then === 'breath' || then === 'programme') return ui(then, s);
       if ((then === 'defi' || then === 'compat') && k.isAuthenticated) return ui(then, s);
       if (then === 'test' && d.scaleId) return ui(null, goTest(s, d.scaleId, k, 'On regarde ça ensemble.'));
       if ((GO_TARGETS as string[]).includes(then)) return ui(null, goTo(s, then as GoTarget, k, GO[then as GoTarget].intro));
@@ -762,6 +766,9 @@ export function routeDecision(state: AccueilState, d: RouteDecision, k: Known, c
       return ui(null, goTo(s, d.action, k, d.reply));
     case 'question_drlo': case 'totem': case 'catalogue': case 'confier':
       return ui(null, goTo(s, d.action, k, d.reply));
+    case 'programme':
+      // L'interface regarde le profil et propose (ou rouvre) le programme
+      return ui('programme', { ...push(s, 'drlo', d.reply), step: ['need', 'need_clarify'].includes(s.step) ? 'prescribed' : s.step });
     case 'mood': case 'breath':
       return ui(d.action, { ...push(s, 'drlo', d.reply), step: ['need', 'need_clarify'].includes(s.step) ? 'prescribed' : s.step });
     default: {

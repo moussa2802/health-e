@@ -72,6 +72,8 @@ const TEST_ABOUT: Record<string, string> = {
     "La jalousie est une émotion humaine normale, mais quand elle devient envahissante, elle peut nuire à tes relations. Ce test t'aide à comprendre ton rapport à cette émotion.",
   bonus_eq:
     "L'intelligence émotionnelle, c'est ta capacité à reconnaître, comprendre et gérer tes émotions — et celles des autres. Ce test mesure cette compétence clé du bien-être.",
+  bonus_sommeil:
+    "Bien dormir, ce n'est pas un luxe : le sommeil règle ton humeur, ton énergie et ta concentration. Ce test repère les difficultés d'endormissement, les réveils et leur impact sur tes journées.",
   bonus_confiance:
     "La confiance en soi, c'est croire en ta capacité à agir et à réussir. Ce test t'aide à mesurer cette force intérieure et à identifier tes zones de progression.",
 };

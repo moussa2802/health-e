@@ -17,7 +17,7 @@ export interface RoutePayload {
   lastDrlo?: string;
 }
 
-const ACTIONS = new Set(['test', 'defi', 'compat', 'mood', 'confier', 'breath', 'chat', 'question_drlo', 'totem',
+const ACTIONS = new Set(['test', 'defi', 'compat', 'mood', 'confier', 'programme', 'breath', 'chat', 'question_drlo', 'totem',
   'catalogue', 'explain', 'pause', 'continue', 'crisis', 'reply']);
 
 export async function routeText(payload: RoutePayload, timeoutMs = 9000): Promise<RouteDecision | null> {

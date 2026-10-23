@@ -9,3 +9,4 @@ export { BONUS_BURNOUT } from './burnout';
 export { BONUS_JALOUSIE } from './jalousie';
 export { BONUS_EQ } from './intelligenceEmotionnelle';
 export { BONUS_CONFIANCE } from './confianceEnSoi';
+export { BONUS_SOMMEIL } from './sommeil';
