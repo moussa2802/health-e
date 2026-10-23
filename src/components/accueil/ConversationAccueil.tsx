@@ -10,9 +10,10 @@
  */
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { ArrowRight, Check, ChevronLeft, Clock, Copy, EyeOff, ListChecks, Lock, Mic, Phone, Send, Sparkles, Sprout } from 'lucide-react';
+import { ArrowRight, Check, ChevronLeft, Clock, CloudSun, Copy, EyeOff, ListChecks, Lock, Mic, Phone, Plus, Send, Sparkles, Sprout, Wind } from 'lucide-react';
 import './accueil.css';
 import DrLoAvatar, { type DrLoState } from './DrLoAvatar';
+import DrLoIsland from './DrLoIsland';
 import MoodIcon from './MoodIcon';
 import ConfierPanel, { CONFIER } from './ConfierPanel';
 import SignupCard, { LinkAccountCard, SIGNUP_PENDING_KEY } from './SignupCard';
@@ -207,7 +208,8 @@ const ConversationAccueil: React.FC = () => {
   const [reveal, setReveal] = useState({ nonce: 0, from: 0, hint: 'thinking' as Hint });
   const [testBusy, setTestBusy] = useState<null | 'starting' | 'finishing'>(null);
   /** Dr Lô lit un message libre (appel à drlo-route en cours). */
-  const [routing, setRouting] = useState(false);
+  /** Dr Lô travaille (appel en cours) : ce qu'il fait, affiché dans sa bulle d'activité. */
+  const [routing, setRouting] = useState<string | false>(false);
   /** Dr Lô se réjouit brièvement (test terminé, défi lancé, compatibilité prête). Jamais sur un résultat difficile. */
   const [joyUntil, setJoyUntil] = useState(0);
   const [joyPending, setJoyPending] = useState(false);
@@ -374,6 +376,7 @@ const ConversationAccueil: React.FC = () => {
   const startFlowRef = useRef<((k: 'defi' | 'compat', userText?: string) => void) | null>(null);
   /** Retour au premier écran (flèche) ; la conversation reprend en plein écran dès qu'on écrit. */
   const [forceHome, setForceHome] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const testScale = useMemo<AssessmentScale | null>(
@@ -394,6 +397,8 @@ const ConversationAccueil: React.FC = () => {
     if (el) el.scrollTop = el.scrollHeight;
   }, [shown, partial, messages.length, routing, phase, mode, tab, testBusy]);
 
+  /** Affiche tout de suite le message de la personne (pendant que Dr Lô travaille). */
+  const showNow = (s: AccueilState) => setReveal(r => ({ nonce: r.nonce + 1, from: s.messages.length, hint: 'thinking' }));
   const apply = useCallback((next: AccueilState, prev: AccueilState, hint: Hint = 'thinking') => {
     setState(next);
     setReveal(r => ({ nonce: r.nonce + 1, from: prev.messages.length, hint }));
@@ -473,6 +478,15 @@ const ConversationAccueil: React.FC = () => {
     : phase === 'thinking' || routing ? 'Je réfléchis…'
     : phase === 'writing' ? 'Écrit…'
     : listening ? 'Je t\'écoute…' : null;
+  // La bulle d'activité : ce que Dr Lô fait précisément, seulement quand il travaille
+  const activityLabel: string | null = tab === 'confier' || breathing ? null
+    : routing ? routing
+    : testBusy === 'starting' ? 'Prépare le test'
+    : testBusy === 'finishing' || phase === 'reading' ? 'Regarde ton résultat'
+    : phase === 'thinking' ? 'Réfléchit'
+    : phase === 'writing' ? 'Écrit'
+    : avatarState === 'joy' ? 'Content pour toi'
+    : null;
 
   // Le fil « focal » : le dernier message de la personne et la réponse de Dr Lô
   const visible = messages.slice(0, shown);
@@ -492,9 +506,12 @@ const ConversationAccueil: React.FC = () => {
     ...flowReplies.map(q => ({ label: q.label, kind: 'flow' as const, q })),
     // Premier écran léger : pas plus d'une pastille « extra » tant que la personne n'a rien dit.
     // L'humeur se note une fois par jour (la page Humeur permettra de la modifier).
-    ...(extrasAllowed && !state.flow && !moodToday ? [{ label: 'Noter mon humeur · 30 s', kind: 'mood' as const }] : []),
-    ...(extrasAllowed && !state.flow && (lastUser >= 0 || breathing) ? [{ label: 'Respirer avec moi · 1 min', kind: 'breath' as const }] : []),
+    // Une seule pastille « extra », sur le premier écran tant que la personne n'a rien dit ;
+    // ensuite les raccourcis passent dans le menu « + » pour garder la discussion claire.
+    ...(extrasAllowed && !state.flow && !moodToday && lastUser < 0 && !breathing ? [{ label: 'Noter mon humeur · 30 s', kind: 'mood' as const }] : []),
+    ...(breathing ? [{ label: 'Arrêter l\'exercice', kind: 'breath' as const }] : []),
   ];
+  const chatModeNow = !forceHome && messages.some(m => m.from === 'user');
 
   // ── Actions ────────────────────────────────────────────────────────────────
 
@@ -554,6 +571,7 @@ const ConversationAccueil: React.FC = () => {
     if (dictation.listening) dictation.stop();
     setInput('');
     setForceHome(false);
+    setMenuOpen(false);
     if (breathing) setBreath(null);
     // Défi / compatibilité en préparation : le nom ou le code s'écrivent ici
     if (flowWantsText(state.flow) && !detectCrisis(text)) { void onFlowText(text); return; }
@@ -569,8 +587,9 @@ const ConversationAccueil: React.FC = () => {
     // Autre sujet en pleine préparation d'un défi : on laisse tomber la préparation
     const base = { ...addExchange(state, text, []), flow: undefined };
     setState(base);
+    showNow(base);
     setShowHistory(false);
-    setRouting(true);
+    setRouting('Lit ton message');
     const t = state.activeTest;
     const sc = testScale;
     const item = t && sc ? (sc.items.find(i => i.id === t.askedItemId) ?? nextItem(sc, t.answers)) : null;
@@ -784,8 +803,8 @@ const ConversationAccueil: React.FC = () => {
     if (!isAuthenticated || !currentUser) { openSignup('signup', userText); return; }
     const base = from ?? stateRef.current ?? state;
     const withUser = userText ? addExchange(base, userText, []) : base;
-    if (userText) setState(withUser);
-    setRouting(true);
+    if (userText) { setState(withUser); showNow(withUser); }
+    setRouting('Regarde ton profil');
     let prof;
     try { prof = await loadSocialProfile(currentUser.id); } catch { prof = null; }
     setRouting(false);
@@ -829,7 +848,7 @@ const ConversationAccueil: React.FC = () => {
     const n = defiNext(f);
     if (n.flow.step !== 'defi_creating') { say([n.say], user, n.flow); return; }
     const shown = say([n.say], user, n.flow);
-    setRouting(true);
+    setRouting('Prépare tes questions');
     const out = await defiPreview(defiInput(n.flow));
     setRouting(false);
     const cur = stateRef.current ?? shown;
@@ -852,7 +871,7 @@ const ConversationAccueil: React.FC = () => {
       case 'custom': navigate('/defi/creer'); return;
       case 'launch': {
         const shown = say(['Je lance ton défi…'], label, { ...f, step: 'defi_creating' });
-        setRouting(true);
+        setRouting('Lance ton défi');
         const out = await defiCreate(defiInput(f), f.data.selectedKeys ?? []);
         setRouting(false);
         const cur = stateRef.current ?? shown;
@@ -886,7 +905,7 @@ const ConversationAccueil: React.FC = () => {
           return;
         }
         const shown = say([SAY.compatRunning], label, { ...f, step: 'compat_running' });
-        setRouting(true);
+        setRouting('Compare vos profils');
         const pc = parseCompatCode(f.data.partnerCode ?? '');
         const out = pc
           ? await runCompat(currentUser.id, f.data.relType ?? 'meilleur_ami', f.data.relCategory === 'amoureux', pc.code, pc.type, f.data.partnerPrenom ?? '')
@@ -917,9 +936,10 @@ const ConversationAccueil: React.FC = () => {
     if (f.step === 'compat_code' && currentUser) {
       const pc = parseCompatCode(text);
       if (!pc) { say([SAY.compatCodeBad], text, f); return; }
-      const shown = addExchange(state, text, []);
-      setState({ ...shown, flow: f });
-      setRouting(true);
+      const shown = { ...addExchange(state, text, []), flow: f };
+      setState(shown);
+      showNow(shown);
+      setRouting('Vérifie le code');
       const v = await checkCompatCode(pc.code, currentUser.id);
       setRouting(false);
       const cur = stateRef.current ?? shown;
@@ -1003,22 +1023,48 @@ const ConversationAccueil: React.FC = () => {
                   onFinish={() => { void finishTest(state, testScale); }}
                 />
               )}
-              {!revealing && chips.length > 0 && (
-                <div className="drl-in" style={{ display: 'flex', flexWrap: 'wrap', gap: 8, justifyContent: 'center' }}>
+              {!revealing && !routing && chips.length > 0 && (
+                <div className="drl-in" style={chatModeNow
+                  ? { display: 'flex', gap: 7, overflowX: 'auto', paddingBottom: 2, scrollbarWidth: 'none' }
+                  : { display: 'flex', flexWrap: 'wrap', gap: 8, justifyContent: 'center' }}>
                   {chips.map(c => (
                     <button key={c.label} onClick={() => onChip(c)} className="drl-btn"
                       style={{
                         ...glassBtn,
                         ...(c.kind === 'flow' ? { background: 'rgba(242,182,109,.10)', border: '1px solid rgba(242,182,109,.4)' } : {}),
-                        ...(c.kind === 'breath' && breathing ? { color: palette.accent } : {}),
+                        ...(c.kind === 'breath' ? { color: palette.accent } : {}),
+                        ...(chatModeNow ? { flexShrink: 0, minHeight: 38, fontSize: 13.5 } : {}),
                       }}>
-                      {c.kind === 'breath' && breathing ? 'Arrêter l\'exercice' : c.label}
+                      {c.label}
                     </button>
                   ))}
                 </div>
               )}
-              {state.step !== 'minor' && (
-                <form onSubmit={onSend} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              {state.step !== 'minor' && (<>
+                  {menuOpen && chatModeNow && (
+                  <div role="menu" className="drl-in" style={{ marginBottom: 8, padding: 6, borderRadius: 16, background: '#221B16', border: '1px solid rgba(255,255,255,.12)', boxShadow: '0 12px 30px rgba(0,0,0,.45)' }}>
+                    {[
+                      ...(!moodToday ? [{ label: 'Noter mon humeur', hint: '30 s', icon: CloudSun, go: () => { trackAccueil('mood_open'); setMode('mood'); } }] : []),
+                      { label: 'Respirer avec moi', hint: '1 min', icon: Wind, go: () => startBreathing() },
+                      { label: 'Tous les tests', hint: '', icon: ListChecks, go: () => navigate('/assessment') },
+                      { label: isAuthenticated ? 'Mon espace bien-être' : 'Ce que propose Health-e', hint: '', icon: Sprout, go: () => navigate('/espace') },
+                    ].map(it => (
+                      <button key={it.label} type="button" role="menuitem" onClick={() => { setMenuOpen(false); it.go(); }} className="drl-btn"
+                        style={{ width: '100%', minHeight: 46, padding: '0 12px', border: 0, borderRadius: 12, background: 'transparent', color: C.text, display: 'flex', alignItems: 'center', gap: 10, fontSize: 14.5, fontWeight: 600, cursor: 'pointer', textAlign: 'left' }}>
+                        <it.icon size={18} color={palette.accent} aria-hidden="true" />
+                        <span style={{ flex: 1 }}>{it.label}</span>
+                        {it.hint && <span style={{ fontSize: 12, color: C.faint }}>{it.hint}</span>}
+                      </button>
+                    ))}
+                  </div>
+                )}
+                <form onSubmit={onSend} style={{ display: 'flex', alignItems: 'center', gap: 8, position: 'relative' }}>
+                  {chatModeNow && state.step !== 'testing' && (
+                    <button type="button" onClick={() => setMenuOpen(v => !v)} aria-expanded={menuOpen} aria-label="Plus d'options" className="drl-btn"
+                      style={{ width: 44, height: 44, borderRadius: '50%', border: `1px solid ${menuOpen ? palette.accent : 'rgba(255,255,255,.18)'}`, background: menuOpen ? 'rgba(242,182,109,.14)' : 'rgba(255,255,255,.04)', color: menuOpen ? palette.accent : '#E9E1D4', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}>
+                      <Plus size={20} aria-hidden="true" style={{ transform: menuOpen ? 'rotate(45deg)' : 'none', transition: 'transform .2s' }} />
+                    </button>
+                  )}
                   <input
                     ref={inputRef}
                     value={input}
@@ -1046,7 +1092,7 @@ const ConversationAccueil: React.FC = () => {
                     <Send size={19} aria-hidden="true" />
                   </button>
                 </form>
-              )}
+              </>)}
               {dictation.error && (
                 <p role="alert" style={{ margin: 0, fontSize: 12.5, color: C.muted, textAlign: 'center' }}>{dictation.error}</p>
               )}
@@ -1115,7 +1161,9 @@ const ConversationAccueil: React.FC = () => {
               <ConfierPanel userId={isAuthenticated && currentUser ? currentUser.id : null} genre={state.genre} onStatus={onConfierStatus} onSignup={() => openSignup('signup')} />
             </div>
           ) : (<>
-            {/* Les messages */}
+            {/* Les messages, avec la bulle d'activité de Dr Lô par-dessus */}
+            <div style={{ position: 'relative', flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+            <DrLoIsland state={avatarState} label={activityLabel} palette={palette} />
             <div ref={scrollRef} aria-live="polite" style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 10, padding: '14px 14px 10px' }}>
               <div style={{ flex: 1 }} />
               {shownMsgs.map((m, i) => (
@@ -1160,6 +1208,7 @@ const ConversationAccueil: React.FC = () => {
                   <p style={{ margin: 0, fontFamily: 'Fraunces, serif', fontSize: 22, color: palette.accent, fontWeight: 600 }}>{breath!.inhale ? 'Inspire…' : 'Expire…'}</p>
                 </div>
               )}
+            </div>
             </div>
 
             {/* Répondre */}

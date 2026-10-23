@@ -14,7 +14,6 @@
 
 import type { ActiveTest } from './chatTest';
 import type { SocialFlow } from './socialFlow.ts';
-import { credits } from '../config/creditName.ts';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -303,7 +302,7 @@ export function startConversation(k: Known): AccueilState {
 
 // ── Réponses rapides affichées selon l'étape ─────────────────────────────────
 
-export function getQuickReplies(s: AccueilState, k: Known): QuickReply[] {
+export function getQuickReplies(s: AccueilState, _k: Known): QuickReply[] {
   switch (s.step) {
     case 'need':
     case 'need_clarify':
@@ -316,15 +315,10 @@ export function getQuickReplies(s: AccueilState, k: Known): QuickReply[] {
       return AGE_REPLIES;
     case 'crisis':
       return [{ label: 'Je suis en sécurité, on peut continuer', value: 'crisis:safe' }];
-    case 'prescribed': {
-      const r: QuickReply[] = [
-        ...(s.prescribed ? [{ label: 'Pourquoi ce test ?', value: 'why' }] : []),
-        { label: 'Voir tous les tests', value: 'catalogue', action: 'catalogue' as const },
-      ];
-      if (k.isAuthenticated) r.push({ label: `Parler librement (${credits(1)} / message)`, value: 'free_chat', action: 'free_chat' });
-      else if (k.guestRemaining <= 0) r.push({ label: 'Créer mon compte', value: 'signup', action: 'signup' });
-      return r;
-    }
+    case 'prescribed':
+      // Pas de pastilles ici : la carte du test est juste au-dessus, et on peut écrire librement.
+      // Les raccourcis (humeur, respiration, tests, espace) sont dans le menu « + ».
+      return [];
     case 'minor':
     case 'testing':
       return [];
