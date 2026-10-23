@@ -39,7 +39,7 @@ export type Card =
   | { type: 'link_account' }
   | { type: 'result'; path: string }
   | { type: 'go'; to: GoTarget }
-  | { type: 'defi_preview'; questions: string[] }
+  | { type: 'defi_preview'; items?: { text: string; tag?: 'perso' | 'totem'; note?: string }[]; questions?: string[] }
   | { type: 'defi_share'; slug: string }
   | { type: 'compat_share'; code: string }
   | { type: 'compat_result'; score: number; prenom: string; strengths: string[]; tensions: string[] };
@@ -95,6 +95,11 @@ export interface AccueilState {
   pendingGo?: GoTarget;
   /** Défi ou compatibilité en cours de préparation dans la conversation. */
   flow?: SocialFlow;
+  /**
+   * Discussion approfondie en cours (IA, 1 étincelle / message), dans ce même fil.
+   * start = index du premier message de cette discussion (pour l'historique envoyé à l'IA).
+   */
+  talk?: { conv: string; start: number; opening?: string | null };
 }
 
 /** Ce que l'interface sait déjà de la personne (compte, onboarding existant). */
@@ -659,7 +664,7 @@ export interface RouteDecision {
 }
 
 /** Ce que l'interface doit faire en plus du message (ouvrir un mode). */
-export type RouteUi = 'mood' | 'breath' | 'defi' | 'compat' | null;
+export type RouteUi = 'mood' | 'breath' | 'defi' | 'compat' | 'talk' | null;
 
 export interface RouteCtx {
   /** Question en cours (pendant un test), pour la reposer. */
@@ -751,7 +756,11 @@ export function routeDecision(state: AccueilState, d: RouteDecision, k: Known, c
       // Avec un compte, le Défi et la compatibilité se préparent ici même, dans la conversation
       if (k.isAuthenticated) return ui(d.action, { ...push(s, 'drlo', d.reply), step: 'prescribed' });
       return ui(null, goTo(s, d.action, k, d.reply));
-    case 'question_drlo': case 'totem': case 'catalogue': case 'chat': case 'confier':
+    case 'chat':
+      // Avec un compte, la discussion approfondie continue ici même (plus de deuxième fenêtre de chat)
+      if (k.isAuthenticated) return ui('talk', { ...push(s, 'drlo', d.reply), step: 'prescribed' });
+      return ui(null, goTo(s, d.action, k, d.reply));
+    case 'question_drlo': case 'totem': case 'catalogue': case 'confier':
       return ui(null, goTo(s, d.action, k, d.reply));
     case 'mood': case 'breath':
       return ui(d.action, { ...push(s, 'drlo', d.reply), step: ['need', 'need_clarify'].includes(s.step) ? 'prescribed' : s.step });
@@ -780,12 +789,12 @@ export function firstName(p?: string | null): string | undefined {
 export function newDay(s: AccueilState, today: string, k: Known): AccueilState {
   if (!s.day) return { ...s, day: today };
   if (s.day === today) return s;
-  if (s.step === 'testing' || s.step === 'crisis' || s.step === 'minor') return { ...s, day: today };
+  if (s.step === 'testing' || s.step === 'crisis' || s.step === 'minor') return { ...s, day: today, talk: undefined };
   const p = firstName(s.prenom ?? k.prenom);
   let out = push(s, 'drlo', p ? `Re-bonjour ${p} 👋\u00a0Content de te revoir. Comment tu vas aujourd'hui ?` : `Re-bonjour 👋\u00a0Content de te revoir. Comment tu vas aujourd'hui ?`);
   if (s.prescribed && !k.doneScaleIds.includes(s.prescribed)) {
     out = push(out, 'drlo', `Le test « ${k.labelOf(s.prescribed)} » t'attend toujours, si tu veux.`, { type: 'test', scaleId: s.prescribed });
-    return { ...out, day: today, step: 'prescribed' };
+    return { ...out, day: today, step: 'prescribed', talk: undefined, flow: undefined };
   }
-  return { ...out, day: today, step: 'need', prescribed: undefined };
+  return { ...out, day: today, step: 'need', prescribed: undefined, talk: undefined, flow: undefined };
 }

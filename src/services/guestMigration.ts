@@ -76,12 +76,12 @@ export async function migrateGuestData(uid: string, displayName: string): Promis
 
   // 2. Journal invité (« Me confier »)
   try {
-    const list = JSON.parse(localStorage.getItem(GUEST_JOURNAL_KEY) ?? '[]') as { id: string; contenu: string; date: string }[];
+    const list = JSON.parse(localStorage.getItem(GUEST_JOURNAL_KEY) ?? '[]') as { id: string; contenu: string; date: string; carnet?: string }[];
     const left: typeof list = [];
     for (const e of list) {
       try {
         await addDoc(collection(fs, 'users', uid, 'journal'), {
-          date: e.date, humeur: '', contenu: e.contenu, themes: [], dr_lo_response: null, dr_lo_requested_at: null,
+          date: e.date, humeur: '', contenu: e.contenu, carnet: e.carnet || 'Général', themes: [], dr_lo_response: null, dr_lo_requested_at: null,
           koris_consumed: 0, created_at: e.date, updated_at: new Date().toISOString(), is_private: true, source: 'confier_invite',
         });
         report.journalCount += 1;

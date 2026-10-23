@@ -45,6 +45,10 @@ function since(d: Date | null): string {
   return `il y a ${m} mois`;
 }
 
+/** Ordre des tests par leur numéro (P1, P2… / V1… / B1…), celui que Dr Lô cite dans ses vidéos. */
+const codeNum = (c?: string) => Number((c ?? '').replace(/\D/g, '')) || 999;
+const byCode = (a: AssessmentScale, b: AssessmentScale) => codeNum(a.code) - codeNum(b.code);
+
 const h2: React.CSSProperties = { margin: '0 0 10px', fontFamily: 'Fraunces, serif', fontSize: 19, fontWeight: 600, color: DC.title };
 
 const DomainePage: React.FC = () => {
@@ -105,7 +109,10 @@ const DomainePage: React.FC = () => {
             <Icon size={18} color={meta.color} aria-hidden="true" />
           </span>
           <span style={{ flex: 1, minWidth: 0 }}>
-            <span style={{ display: 'block', fontSize: 15, fontWeight: 700 }}>{m.label}</span>
+            <span style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 15, fontWeight: 700 }}>
+              {s.code && <span style={{ fontSize: 11.5, fontWeight: 700, color: meta.color, border: `1px solid ${meta.color}66`, borderRadius: 6, padding: '1px 6px', letterSpacing: '.03em' }}>{s.code}</span>}
+              {m.label}
+            </span>
             <span style={{ display: 'block', fontSize: 12.5, marginTop: 2, color: r ? tone(r.interpretation?.severity) : DC.faint }}>
               {r ? `${r.interpretation?.label ?? 'Fait'}${at ? ` · ${since(at)}` : ''}` : g ? 'Ne te concerne pas pour l\'instant' : 'À découvrir'}
             </span>
@@ -139,7 +146,7 @@ const DomainePage: React.FC = () => {
 
   const list = (scales: AssessmentScale[], intime = false) => (
     <ul style={{ margin: 0, padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 8 }}>
-      {scales.filter(s => !hidden.includes(s.id)).map(s => row(s, intime))}
+      {scales.filter(s => !hidden.includes(s.id)).slice().sort(byCode).map(s => row(s, intime))}
     </ul>
   );
 

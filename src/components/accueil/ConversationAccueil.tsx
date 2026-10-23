@@ -10,7 +10,7 @@
  */
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { ArrowRight, Check, ChevronLeft, Clock, CloudSun, Copy, EyeOff, ListChecks, Lock, Mic, Phone, Plus, Send, Sparkles, Sprout, Wind } from 'lucide-react';
+import { ArrowRight, Check, ChevronDown, ChevronLeft, Clock, CloudSun, Copy, EyeOff, ListChecks, Lock, MessagesSquare, Mic, Pencil, Phone, Plus, Send, Sparkles, Sprout, Trash2, Wind } from 'lucide-react';
 import './accueil.css';
 import DrLoAvatar, { type DrLoState } from './DrLoAvatar';
 import DrLoIsland from './DrLoIsland';
@@ -61,17 +61,21 @@ import { getProfileProgress } from '../../services/evaluationService';
 import { ALL_SCALES, getScaleById, MENTAL_HEALTH_SCALES, SEXUAL_HEALTH_SCALES } from '../../data/scales';
 import { getScaleMeta } from '../../utils/scaleMeta';
 import { getCrisisResources } from '../../data/crisisResources';
-import { openDrLoChat } from '../DrLoChat/drLoEvents';
+import { loadQuota, talk as talkToDrLo, unlockMore, MAX_DAILY_UNLOCKS, UNLOCK_MESSAGES, type TalkQuota } from '../../services/drloTalk';
 import { useDictation } from '../../hooks/useDictation';
 import { startChatTest, recordAnswer, finishChatTest, loadScale } from '../../services/chatTestRunner';
 import { routeText } from '../../services/drloRouteService';
 import { checkCompatCode, defiCreate, defiPreview, defiUrl, loadSocialProfile, runCompat, type DefiInput } from '../../services/socialChat';
 import {
-  cleanDisplayName, defiNext, flowChips, flowWantsText, parseCompatCode, SAY, startCompat, startDefi, titreFor,
+  addPerso, cleanCustom, cleanDisplayName, cleanTitre, defiNext, flowChips, flowWantsText, OPTIN_LABELS, parseCompatCode,
+  previewItems, replaceQuestion, SAY, startCompat, startDefi, titreFor, toggleOptin, withPreview,
   type DefiAudience, type SocialFlow,
 } from '../../utils/socialFlow';
 import { RELATIONSHIP_CATEGORIES } from '../../utils/relationshipTypes';
 import { getTotemProgress } from '../../utils/totemAlgorithm';
+import {
+  convStorageKey, createConv, deleteConv, loadIndex, MAIN_ID, renameConv, saveIndex, sortedConvs, touchConv, type ConvIndex,
+} from '../../utils/conversations';
 import { KORIS_COSTS, isTestFreeRetake } from '../../services/korisService';
 import {
   nextItem, previousItem, progress, introText, questionText, fullItemText, criticalAlert, visibleItems,
@@ -178,7 +182,20 @@ const ConversationAccueil: React.FC = () => {
   const { currentUser, isAuthenticated, isPhoneOnlyUser, authReady } = useAuth();
   const { balance, loading: korisLoading, refreshBalance, openNoKorisModal } = useKoris();
   const uidKey = currentUser?.id ?? 'guest';
-  const storageKey = `${STORAGE_PREFIX}${uidKey}`;
+  // Les discussions : une principale + des secondaires, nommées (gardées sur ce téléphone)
+  const [convState, setConvState] = useState<{ uidKey: string; idx: ConvIndex }>(() => ({ uidKey, idx: loadIndex(uidKey) }));
+  const convIdx = convState.uidKey === uidKey ? convState.idx : loadIndex(uidKey);
+  const setConvIdx = useCallback((fn: (i: ConvIndex) => ConvIndex) => {
+    setConvState(cs => {
+      const base = cs.uidKey === uidKey ? cs.idx : loadIndex(uidKey);
+      const next = fn(base);
+      saveIndex(uidKey, next);
+      return { uidKey, idx: next };
+    });
+  }, [uidKey]);
+  const convId = convIdx.current;
+  const convMeta = convIdx.list.find(c => c.id === convId);
+  const storageKey = convStorageKey(STORAGE_PREFIX, uidKey, convId);
   const moodKey = `${MOOD_STORAGE_PREFIX}${uidKey}`;
 
   const [moment] = useState(() => getMoment());
@@ -284,7 +301,12 @@ const ConversationAccueil: React.FC = () => {
       const msgs = saved.messages.filter(m => !(m.from === 'drlo' && /^Ici, tu peux faire \d+ tests? gratuits?/.test(m.text)));
       if (msgs.length !== saved.messages.length) saved = { ...saved, messages: msgs };
     }
-    let s = saved ? newDay(saved, dayKey(), known) : { ...startConversation(known), day: dayKey() };
+    let s = saved ? newDay(saved, dayKey(), known)
+      : convId === MAIN_ID ? { ...startConversation(known), day: dayKey() }
+      // Discussion secondaire toute neuve : Dr Lô ouvre le sujet
+      : addExchange({ ...startConversation(known), messages: [], seq: 0, day: dayKey() }, null, [
+        `« ${convMeta?.title ?? 'Nouvelle discussion'} » : c'est noté, on en parle ici, à part. Qu'est-ce que tu veux aborder ?`,
+      ]);
     const before = saved ? saved.messages.length : 0;
     let hint: Hint = 'thinking';
 
@@ -302,6 +324,7 @@ const ConversationAccueil: React.FC = () => {
         guestRemaining: isAuthenticated ? null : guestRemaining,
       }, known);
       hint = 'reading'; // il relit vraiment le résultat qui vient d'arriver
+      setInChat(true); // retour d'un test : on reprend la discussion là où elle en était
     }
     // Test en cours dans la conversation : on repose la question où on en était
     if (s.step === 'testing' && s.activeTest) {
@@ -330,9 +353,16 @@ const ConversationAccueil: React.FC = () => {
   }, [known, results, storageKey]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // 3. Persister + exposer le test prescrit à la page de résultats
+  const lastLenRef = useRef(0);
+  useEffect(() => { lastLenRef.current = 0; }, [storageKey]);
   useEffect(() => {
     if (!state) return;
     saveState(storageKey, state);
+    if (state.messages.length > lastLenRef.current && lastLenRef.current > 0) {
+      const lastUser = [...state.messages].reverse().find(m => m.from === 'user');
+      if (lastUser) setConvIdx(i => touchConv(i, convId, lastUser.text));
+    }
+    lastLenRef.current = state.messages.length;
     setAccueilPrescribed(state.prescribed ?? null);
     if (state.prenom || state.genre || state.age) {
       savePartialOnboarding({ prenom: state.prenom, genre: state.genre, age: state.age });
@@ -347,19 +377,20 @@ const ConversationAccueil: React.FC = () => {
     const k = `he_low_credit_said:${dayKey()}`;
     try { if (localStorage.getItem(k)) return; localStorage.setItem(k, '1'); } catch { return; }
     const prev = state;
-    apply(addExchange(prev, null, [CREDIT.low]), prev);
+    apply(addExchange(prev, null, [CREDIT.low]), prev, 'thinking', false);
   }, [isAuthenticated, korisLoading, balance, !!state, !!known]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Lien d'invitation d'un proche (?ref=CODE) : gardé jusqu'à la création de l'espace
   useEffect(() => { captureReferral(location.search); }, []); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => {
-    const st = location.state as { prescribe?: string; openMood?: boolean; tab?: 'confier'; signup?: boolean; flow?: 'defi' | 'compat' } | null;
+    const st = location.state as { prescribe?: string; openMood?: boolean; tab?: 'confier'; journal?: boolean; signup?: boolean; flow?: 'defi' | 'compat'; talk?: { greeting?: string | null; draft?: string | null } } | null;
     if (!st || !state || !known || state.step === 'testing') return;
     const sig = JSON.stringify(st) + location.key;
     if (intentRef.current === sig) return;
     intentRef.current = sig;
     navigate('.', { replace: true, state: null }); // une seule fois, même après rechargement
-    if (st.tab === 'confier') { setTab('confier'); return; }
+    if (st.tab === 'confier') { setTab('confier'); setConfierView(st.journal ? 'journal' : 'write'); return; }
+    if (st.talk) { setTimeout(() => talkRef.current?.(st.talk!.greeting ?? null, st.talk!.draft ?? null), 0); return; }
     if (st.openMood) { setTab('discuter'); setMode('mood'); return; }
     if (st.signup && !isAuthenticated) { setTimeout(() => openSignupRef.current?.('signup'), 0); return; }
     if (st.flow) { setTab('discuter'); setTimeout(() => startFlowRef.current?.(st.flow!), 0); return; }
@@ -374,9 +405,16 @@ const ConversationAccueil: React.FC = () => {
   }, [location.key, state?.messages.length, known]); // eslint-disable-line react-hooks/exhaustive-deps
   const openSignupRef = useRef<((m: 'signup' | 'login', t?: string) => void) | null>(null);
   const startFlowRef = useRef<((k: 'defi' | 'compat', userText?: string) => void) | null>(null);
+  const talkRef = useRef<((opening: string | null, draft: string | null) => void) | null>(null);
+  const [confierView, setConfierView] = useState<'write' | 'journal'>('write');
   /** Retour au premier écran (flèche) ; la conversation reprend en plein écran dès qu'on écrit. */
-  const [forceHome, setForceHome] = useState(false);
+  /** Mode discussion (plein écran). À l'arrivée, l'accueil reste une page de salutation. */
+  const [inChat, setInChat] = useState(false);
+  const [showConvs, setShowConvs] = useState(false);
+  const [editingConv, setEditingConv] = useState<{ id: string; text: string } | null>(null);
+  const [confirmDel, setConfirmDel] = useState<string | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [quota, setQuota] = useState<TalkQuota | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const testScale = useMemo<AssessmentScale | null>(
@@ -391,6 +429,15 @@ const ConversationAccueil: React.FC = () => {
   useEffect(() => {
     if (!revealing && joyPending) { setJoyPending(false); cheer(); }
   }, [revealing, joyPending]); // eslint-disable-line react-hooks/exhaustive-deps
+  // Mode discussion : l'écran est la discussion, la page derrière ne défile plus
+  const chatActive = inChat;
+  useEffect(() => {
+    if (!chatActive) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    window.scrollTo(0, 0);
+    return () => { document.body.style.overflow = prev; };
+  }, [chatActive]);
   // Mode discussion : on suit toujours le dernier message
   useEffect(() => {
     const el = scrollRef.current;
@@ -399,8 +446,9 @@ const ConversationAccueil: React.FC = () => {
 
   /** Affiche tout de suite le message de la personne (pendant que Dr Lô travaille). */
   const showNow = (s: AccueilState) => setReveal(r => ({ nonce: r.nonce + 1, from: s.messages.length, hint: 'thinking' }));
-  const apply = useCallback((next: AccueilState, prev: AccueilState, hint: Hint = 'thinking') => {
+  const apply = useCallback((next: AccueilState, prev: AccueilState, hint: Hint = 'thinking', open = true) => {
     setState(next);
+    if (open) setInChat(true);
     setReveal(r => ({ nonce: r.nonce + 1, from: prev.messages.length, hint }));
     setShowHistory(false);
     if (prev.messages.every(m => m.from === 'drlo')) trackAccueil('start', { guest: !isAuthenticated });
@@ -501,7 +549,7 @@ const ConversationAccueil: React.FC = () => {
   const flowReplies: QuickReply[] = state.flow
     ? flowChips(state.flow, { prenom, categories: RELATIONSHIP_CATEGORIES }).map(c => ({ label: c.label, value: c.value }))
     : getQuickReplies(state, known);
-  type Chip = { label: string; kind: 'flow' | 'mood' | 'breath'; q?: QuickReply };
+  type Chip = { label: string; kind: 'flow' | 'mood' | 'breath' | 'home'; q?: QuickReply };
   const chips: Chip[] = [
     ...flowReplies.map(q => ({ label: q.label, kind: 'flow' as const, q })),
     // Premier écran léger : pas plus d'une pastille « extra » tant que la personne n'a rien dit.
@@ -510,8 +558,29 @@ const ConversationAccueil: React.FC = () => {
     // ensuite les raccourcis passent dans le menu « + » pour garder la discussion claire.
     ...(extrasAllowed && !state.flow && !moodToday && lastUser < 0 && !breathing ? [{ label: 'Noter mon humeur · 30 s', kind: 'mood' as const }] : []),
     ...(breathing ? [{ label: 'Arrêter l\'exercice', kind: 'breath' as const }] : []),
+    ...(state.talk && quota && quota.count >= quota.limit && quota.unlocks < MAX_DAILY_UNLOCKS
+      ? [{ label: `Débloquer ${UNLOCK_MESSAGES} messages · ${credits(KORIS_COSTS.unlock_chat)}`, kind: 'flow' as const, q: { label: `Débloquer ${UNLOCK_MESSAGES} messages`, value: 'talk:unlock' } }]
+      : []),
   ];
-  const chatModeNow = !forceHome && messages.some(m => m.from === 'user');
+  const chatModeNow = inChat;
+
+  // ── Page d'accueil : toujours une salutation et une recommandation, jamais les derniers messages ──
+  const hasTalked = messages.some(m => m.from === 'user');
+  const homeTestLabel = state.activeTest ? getScaleMeta(state.activeTest.scaleId).label : state.prescribed ? getScaleMeta(state.prescribed).label : '';
+  const homeLines: string[] = [
+    `Content de te revoir${prenom ? `, ${prenom}` : ''} 👋\u00a0Comment tu vas aujourd'hui ?`,
+    ...(state.step === 'testing' && state.activeTest
+      ? [`Ton test « ${homeTestLabel} » est en cours. On le reprend où tu t'étais arrêté${genreKnown === 'femme' ? 'e' : ''} ?`]
+      : state.prescribed && !results?.[state.prescribed]
+        ? [`Le test « ${homeTestLabel} » t'attend, quand tu veux.`]
+        : !moodToday ? ['Tu notes ton humeur du jour ? Ça prend 30 secondes.'] : []),
+  ];
+  const homeChips: Chip[] = [
+    ...(state.step === 'testing' && state.activeTest ? [{ label: 'Reprendre le test', kind: 'home' as const, q: { label: 'Reprendre le test', value: 'home:resume' } }]
+      : state.prescribed && !results?.[state.prescribed] ? [{ label: `Faire le test « ${homeTestLabel} »`, kind: 'home' as const, q: { label: 'Faire le test', value: `home:test:${state.prescribed}` } }] : []),
+    ...(!moodToday ? [{ label: 'Noter mon humeur · 30 s', kind: 'mood' as const }] : []),
+    // Rien d'autre : pour un nouveau sujet, on écrit simplement à Dr Lô
+  ];
 
   // ── Actions ────────────────────────────────────────────────────────────────
 
@@ -538,19 +607,25 @@ const ConversationAccueil: React.FC = () => {
 
   const onChip = (c: Chip) => {
     if (c.kind === 'mood') { trackAccueil('mood_open'); setMode('mood'); return; }
+    if (c.kind === 'home') {
+      const v = c.q!.value;
+      setInChat(true);
+      if (v.startsWith('home:test:')) void startTest(v.slice(10));
+      return;
+    }
+    // Depuis l'accueil, un besoin ouvre un nouveau sujet dans la discussion en cours
+    if (!inChat && c.q?.value.startsWith('need:') && !['need', 'need_clarify', 'testing'].includes(state.step)) {
+      const base = { ...state, step: 'need' as const, flow: undefined };
+      apply(respond(base, { value: c.q.value, label: c.q.label }, known), state);
+      return;
+    }
     if (c.kind === 'breath') { startBreathing(); return; }
     const q = c.q!;
     if (q.value.startsWith('flow:')) { void onFlowChip(q.value, q.label); return; }
     if (q.action === 'catalogue') { navigate('/assessment'); return; }
     if (q.action === 'signup') { openSignup('signup', q.label); return; }
-    if (q.action === 'free_chat') {
-      trackAccueil('free_chat');
-      openDrLoChat({
-        source: 'accueil',
-        greeting: `On peut discuter librement maintenant${prenom ? `, ${prenom}` : ''}. Qu'est-ce que tu as sur le cœur ?`,
-      });
-      return;
-    }
+    if (q.action === 'free_chat') { void enterTalk(null, null); return; }
+    if (q.value === 'talk:unlock') { void onUnlock(); return; }
     let next = respond(state, { value: q.value, label: q.label }, known);
     // Retour au test après le protocole de crise : on repose la question en cours
     if (state.step === 'crisis' && next.step === 'testing' && next.activeTest && testScale) {
@@ -570,11 +645,13 @@ const ConversationAccueil: React.FC = () => {
     if (!text || routing) return; // on peut répondre même pendant que Dr Lô écrit : son message s'affiche alors en entier
     if (dictation.listening) dictation.stop();
     setInput('');
-    setForceHome(false);
+    setInChat(true);
     setMenuOpen(false);
     if (breathing) setBreath(null);
     // Défi / compatibilité en préparation : le nom ou le code s'écrivent ici
     if (flowWantsText(state.flow) && !detectCrisis(text)) { void onFlowText(text); return; }
+    // Discussion approfondie en cours : le message part à Dr Lô (IA), la crise restant détectée ici d'abord
+    if (state.talk && isAuthenticated && !detectCrisis(text)) { void sendTalk(text); return; }
     // Gérés sur place, sans IA : la crise (messages validés, immédiats), le mode mineur,
     // et les réponses simples aux questions d'identité.
     const local = detectCrisis(text)
@@ -628,6 +705,7 @@ const ConversationAccueil: React.FC = () => {
     trackAccueil('route', { action: d.action, then: d.then ?? '', step: state.step }); // jamais le texte
     if (r.ui === 'mood') setMode('mood');
     if (r.ui === 'defi' || r.ui === 'compat') void startFlow(r.ui, undefined, r.state);
+    if (r.ui === 'talk') void enterTalk(null, text, r.state);
     if (r.ui === 'breath') setBreath({ inhale: true });
   };
 
@@ -636,15 +714,7 @@ const ConversationAccueil: React.FC = () => {
     trackAccueil('go', { to });
     if (to === 'confier') { setTab('confier'); setMode('home'); return; }
     if ((to === 'defi' || to === 'compat') && isAuthenticated) { void startFlow(to, GO[to].label); return; }
-    if (to === 'chat') {
-      const lastUserText = [...(stateRef.current?.messages ?? [])].reverse().find(m => m.from === 'user')?.text;
-      openDrLoChat({
-        source: 'accueil_route',
-        greeting: `On en parle tranquillement${prenom ? `, ${prenom}` : ''}. Je t'écoute.`,
-        draft: lastUserText,
-      });
-      return;
-    }
+    if (to === 'chat') { void enterTalk(null, null); return; }
     const path = GO[to].path;
     if (path) navigate(path);
   };
@@ -799,7 +869,7 @@ const ConversationAccueil: React.FC = () => {
   };
 
   const startFlow = async (kind: 'defi' | 'compat', userText?: string, from?: AccueilState) => {
-    setForceHome(false);
+    setInChat(true);
     if (!isAuthenticated || !currentUser) { openSignup('signup', userText); return; }
     const base = from ?? stateRef.current ?? state;
     const withUser = userText ? addExchange(base, userText, []) : base;
@@ -821,7 +891,7 @@ const ConversationAccueil: React.FC = () => {
       }
       if (prof.activeDefis >= 3) { say([{ text: SAY.defiTooMany, card: { type: 'go', to: 'defi_list' } }], null, undefined, cur); return; }
       const f = startDefi();
-      say([SAY.defiStart], null, { ...f, data: { genre: prof.genre ?? undefined } }, cur);
+      say([SAY.defiStart], null, { ...f, data: { genre: prof.genre ?? undefined, availableOptins: prof.availableOptins } }, cur);
       return;
     }
     if (!prof.codeMental) {
@@ -832,6 +902,7 @@ const ConversationAccueil: React.FC = () => {
     say([SAY.compatStart], null, { ...startCompat(), data: { myCode: prof.codeMental } }, cur);
   };
   startFlowRef.current = (k, t) => { void startFlow(k, t); };
+  talkRef.current = (o, d) => { void enterTalk(o, d); };
 
   /** Premier test du totem qui manque encore. */
   function getTotemNext(): string | null {
@@ -840,8 +911,12 @@ const ConversationAccueil: React.FC = () => {
 
   const defiInput = (f: SocialFlow): DefiInput => ({
     displayName: f.data.displayName!, audience: f.data.audience!, genre: f.data.genre!,
-    duration: f.data.duration!, devoilement: f.data.devoilement!, titre: titreFor(f.data.audience),
+    duration: f.data.duration!, devoilement: f.data.devoilement!, titre: f.data.titre ?? titreFor(f.data.audience),
+    optinScales: f.data.optins ?? [], petitsMots: f.data.petitsMots ?? true,
   });
+
+  /** La carte d'aperçu : toutes les questions, numérotées (personnalité, perso, totem). */
+  const previewCard = (f: SocialFlow): Card => ({ type: 'defi_preview', items: previewItems(f.data) });
 
   /** Avance le Défi après une réponse ; prépare l'aperçu des questions quand tout est connu. */
   const advanceDefi = async (f: SocialFlow, user: string) => {
@@ -853,8 +928,15 @@ const ConversationAccueil: React.FC = () => {
     setRouting(false);
     const cur = stateRef.current ?? shown;
     if (!out.ok) { say([SAY.defiError(out.error)], null, undefined, cur); return; }
-    say([{ text: SAY.defiPreview(out.questions.length), card: { type: 'defi_preview', questions: out.questions.map(q => q.text) } }], null,
-      { ...n.flow, step: 'defi_preview', data: { ...n.flow.data, selectedKeys: out.questions.map(q => q.key) } }, cur);
+    const pf = withPreview(n.flow, out);
+    say([{ text: SAY.defiPreview(previewItems(pf.data).length), card: previewCard(pf) }], null, pf, cur);
+  };
+
+  /** Retour à l'aperçu après un changement (question remplacée, question perso ajoutée). */
+  const backToPreview = (f: SocialFlow, user: string, changed: boolean) => {
+    const pf: SocialFlow = { ...f, step: 'defi_preview', data: { ...f.data, replaceIdx: null, persoId: null } };
+    const n = previewItems(pf.data).length;
+    say([changed ? { text: SAY.defiPreviewAgain(n), card: previewCard(pf) } : 'D\'accord.'], user, pf);
   };
 
   const onFlowChip = async (value: string, label: string) => {
@@ -864,18 +946,47 @@ const ConversationAccueil: React.FC = () => {
     const v = rest.join(':');
     switch (key) {
       case 'aud': return advanceDefi({ ...f, data: { ...f.data, audience: v as DefiAudience } }, label);
+      case 'titre': return advanceDefi({ ...f, data: { ...f.data, titre: titreFor(f.data.audience) } }, label);
       case 'name': return advanceDefi({ ...f, data: { ...f.data, displayName: v } }, label);
       case 'genre': return advanceDefi({ ...f, data: { ...f.data, genre: v as 'masculin' | 'feminin' } }, label);
+      case 'opt': {
+        // Cocher / décocher un test sensible : on reste à l'étape, sans message
+        const nf = toggleOptin(f, v);
+        setState({ ...state, flow: nf });
+        return;
+      }
+      case 'optdone': {
+        const chosen = f.data.optins ?? [];
+        const lbl = chosen.length ? `Avec : ${chosen.map(id => OPTIN_LABELS[id] ?? id).join(', ')}` : label;
+        return advanceDefi({ ...f, data: { ...f.data, optinsDone: true } }, lbl);
+      }
       case 'dur': return advanceDefi({ ...f, data: { ...f.data, duration: Number(v) } }, label);
       case 'rev': return advanceDefi({ ...f, data: { ...f.data, devoilement: v as 'auto' | 'aucun' } }, label);
-      case 'custom': navigate('/defi/creer'); return;
+      case 'mots': return advanceDefi({ ...f, data: { ...f.data, petitsMots: v === '1' } }, label);
+      case 'rep': say([SAY.defiReplacePick], label, { ...f, step: 'defi_replace_pick' }); return;
+      case 'repi': say([SAY.defiReplaceWith], label, { ...f, step: 'defi_replace_with', data: { ...f.data, replaceIdx: Number(v) } }); return;
+      case 'repw': return backToPreview(replaceQuestion(f, f.data.replaceIdx ?? 0, v), label, true);
+      case 'perso': say([SAY.defiPersoPick], label, { ...f, step: 'defi_perso_pick' }); return;
+      case 'pp': {
+        const p = f.data.persoPool?.find(x => x.id === v);
+        if (!p) return;
+        say([SAY.defiPersoAnswer(p.stem, !!p.allowOther)], label, { ...f, step: 'defi_perso_answer', data: { ...f.data, persoId: v } });
+        return;
+      }
+      case 'pa': {
+        const p = f.data.persoPool?.find(x => x.id === f.data.persoId);
+        const o = p?.options.find(x => x.idx === Number(v));
+        if (!p || !o) return;
+        return backToPreview(addPerso(f, { questionId: p.id, answerIdx: o.idx, displayLabel: o.label }), label, true);
+      }
+      case 'back': return backToPreview(f, label, false);
       case 'launch': {
         const shown = say(['Je lance ton défi…'], label, { ...f, step: 'defi_creating' });
         setRouting('Lance ton défi');
-        const out = await defiCreate(defiInput(f), f.data.selectedKeys ?? []);
+        const out = await defiCreate(defiInput(f), (f.data.selected ?? []).map(q => q.key), f.data.selectedPerso ?? []);
         setRouting(false);
         const cur = stateRef.current ?? shown;
-        if (!out.ok) { say([SAY.defiError(out.error)], null, undefined, cur); return; }
+        if (!out.ok) { say([SAY.defiError(out.error)], null, { ...f, step: 'defi_preview' }, cur); return; }
         trackAccueil('go', { to: 'defi_created' });
         setJoyPending(true);
         say([{ text: SAY.defiCreated, card: { type: 'defi_share', slug: out.slug } }], null, undefined, cur);
@@ -928,10 +1039,21 @@ const ConversationAccueil: React.FC = () => {
 
   const onFlowText = async (text: string) => {
     const f = state.flow!;
+    if (f.step === 'defi_titre') {
+      const t = cleanTitre(text);
+      if (!t) { say([SAY.defiTitreBad], text, f); return; }
+      return advanceDefi({ ...f, data: { ...f.data, titre: t } }, text);
+    }
     if (f.step === 'defi_name') {
       const n = cleanDisplayName(text);
       if (!n) { say([SAY.defiNameBad], text, f); return; }
       return advanceDefi({ ...f, data: { ...f.data, displayName: n } }, text);
+    }
+    if (f.step === 'defi_perso_answer') {
+      const c = cleanCustom(text);
+      const p = f.data.persoPool?.find(x => x.id === f.data.persoId);
+      if (!c || !p) { say(['Une réponse courte (30 caractères maximum), s\'il te plaît.'], text, f); return; }
+      return backToPreview(addPerso(f, { questionId: p.id, customAnswer: c, displayLabel: `✍️ ${c}` }), text, true);
     }
     if (f.step === 'compat_code' && currentUser) {
       const pc = parseCompatCode(text);
@@ -947,6 +1069,113 @@ const ConversationAccueil: React.FC = () => {
       say([SAY.compatConfirm(v.prenom, credits(KORIS_COSTS.compatibility))], null,
         { ...f, step: 'compat_confirm', data: { ...f.data, partnerCode: pc.code, partnerPrenom: v.prenom } }, cur);
     }
+  };
+
+  // ── Discussion approfondie (IA) dans ce même fil ───────────────────────────
+
+  const talkIntro = (q: TalkQuota | null) => {
+    const left = q ? Math.max(0, q.limit - q.count) : null;
+    return `On en parle tranquillement${prenom ? `, ${prenom}` : ''}. Ici, je te réponds en détail : chaque message me coûte ${credits(KORIS_COSTS.chat)}${left !== null ? ` (encore ${left} message${left > 1 ? 's' : ''} aujourd'hui)` : ''}. Je t'écoute.`;
+  };
+
+  /** Entre en discussion approfondie : même fil, même Dr Lô. `draft` pré-remplit le champ (la personne envoie elle-même). */
+  const enterTalk = async (opening: string | null, draft: string | null, from?: AccueilState) => {
+    setInChat(true);
+    setTab('discuter');
+    setMode('home');
+    const cur0 = from ?? stateRef.current ?? state;
+    if (!isAuthenticated || !currentUser) { openSignup('signup'); return; }
+    if (cur0.talk) { if (draft) setInput(draft); return; }
+    trackAccueil('free_chat');
+    let q = quota;
+    if (!q) { q = await loadQuota(currentUser.id); setQuota(q); }
+    const cur = stateRef.current ?? cur0;
+    const items: string[] = opening ? [opening, talkIntro(q)] : [talkIntro(q)];
+    const next = { ...addExchange(cur, null, items), flow: undefined };
+    const withTalk = { ...next, talk: { conv: `conv_${Date.now()}`, start: next.messages.length, opening } };
+    apply(withTalk, cur);
+    if (draft) setInput(draft);
+  };
+
+  const endTalk = () => {
+    const cur = stateRef.current ?? state;
+    apply({ ...addExchange(cur, 'Terminer la discussion', ['D\'accord. Je reste là, ici, quand tu veux en reparler.']), talk: undefined }, cur);
+  };
+
+  const onUnlock = async () => {
+    if (!currentUser || !quota) return;
+    if (quota.unlocks >= MAX_DAILY_UNLOCKS) return;
+    if (balance < KORIS_COSTS.unlock_chat) { openNoKorisModal('Débloquer la discussion', KORIS_COSTS.unlock_chat); return; }
+    setRouting('Débloque la suite');
+    const q = await unlockMore(currentUser.id, quota);
+    setRouting(false);
+    refreshBalance();
+    const cur = stateRef.current ?? state;
+    if (!q) { openNoKorisModal('Débloquer la discussion', KORIS_COSTS.unlock_chat); return; }
+    setQuota(q);
+    apply(addExchange(cur, `Débloquer ${UNLOCK_MESSAGES} messages`, [`C'est fait : ${UNLOCK_MESSAGES} messages de plus aujourd'hui. Je t'écoute.`]), cur);
+  };
+
+  const sendTalk = async (text: string) => {
+    if (!currentUser || !state.talk) return;
+    const t = state.talk;
+    let q = quota ?? await loadQuota(currentUser.id);
+    if (!quota) setQuota(q);
+    if (q.count >= q.limit) {
+      const can = q.unlocks < MAX_DAILY_UNLOCKS;
+      apply(addExchange(state, text, [can
+        ? `On a déjà beaucoup parlé aujourd'hui. Tu peux débloquer ${UNLOCK_MESSAGES} messages de plus (${credits(KORIS_COSTS.unlock_chat)}), ou écrire dans ton journal : c'est gratuit et je le garde pour toi.`
+        : 'On a beaucoup parlé aujourd\'hui, on reprend demain. En attendant, tu peux écrire dans ton journal : c\'est gratuit.']), state);
+      return;
+    }
+    if (balance < KORIS_COSTS.chat) {
+      openNoKorisModal('Un message à Dr Lô', KORIS_COSTS.chat);
+      apply(addExchange(state, text, [`Il te manque des ${CREDIT.many} pour la discussion approfondie. Tu peux recharger, ou revenir demain. Écrire dans ton journal et noter ton humeur restent gratuits.`]), state);
+      return;
+    }
+    const base = addExchange(state, text, []);
+    setState(base);
+    showNow(base);
+    setRouting('Lit ton message');
+    const history = state.messages.slice(t.start).map(m => ({ role: m.from === 'user' ? 'user' as const : 'assistant' as const, content: m.text }));
+    const out = await talkToDrLo(currentUser.id, t.conv, text, history, t.opening ?? null, q);
+    setRouting(false);
+    refreshBalance();
+    const cur = stateRef.current ?? base;
+    if (!out.ok) {
+      if (out.reason === 'no_koris') openNoKorisModal('Un message à Dr Lô', KORIS_COSTS.chat);
+      apply(addExchange(cur, null, [out.reason === 'no_koris' ? `Il te manque des ${CREDIT.many} pour ce message.` : 'Je n\'arrive pas à te répondre maintenant (connexion instable). Réessaie dans un instant.']), cur);
+      return;
+    }
+    q = { ...q, count: q.count + 1 };
+    setQuota(q);
+    apply(addExchange(cur, null, [out.text]), cur);
+  };
+
+  // ── Discussions : changer, créer, renommer, supprimer ─────────────────────
+  const switchConversation = (id: string) => {
+    setShowConvs(false);
+    setMode('home');
+    setBreath(null);
+    setNoted(null);
+    setInChat(true);
+    if (id === convId) return;
+    setConvIdx(i => ({ ...i, current: id }));
+  };
+  const newConversation = () => {
+    setShowConvs(false);
+    setMode('home');
+    setBreath(null);
+    setNoted(null);
+    setInChat(true);
+    setConvIdx(i => createConv(i).idx);
+    trackAccueil('go', { to: 'new_conversation' });
+  };
+  const removeConversation = (id: string) => {
+    if (confirmDel !== id) { setConfirmDel(id); return; }
+    try { localStorage.removeItem(convStorageKey(STORAGE_PREFIX, uidKey, id)); } catch { /* ignore */ }
+    setConvIdx(i => deleteConv(i, id));
+    setConfirmDel(null);
   };
 
   const resetConversation = () => {
@@ -1008,7 +1237,7 @@ const ConversationAccueil: React.FC = () => {
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-              {state.step === 'testing' && state.activeTest && testScale && (
+              {chatModeNow && state.step === 'testing' && state.activeTest && testScale && (
                 <TestPanel
                   scale={testScale}
                   answers={state.activeTest.answers}
@@ -1023,21 +1252,24 @@ const ConversationAccueil: React.FC = () => {
                   onFinish={() => { void finishTest(state, testScale); }}
                 />
               )}
-              {!revealing && !routing && chips.length > 0 && (
-                <div className="drl-in" style={chatModeNow
-                  ? { display: 'flex', gap: 7, overflowX: 'auto', paddingBottom: 2, scrollbarWidth: 'none' }
-                  : { display: 'flex', flexWrap: 'wrap', gap: 8, justifyContent: 'center' }}>
-                  {chips.map(c => (
+              {!chatModeNow && !revealing && !routing && (hasTalked ? homeChips : chips).length > 0 && (
+                <div className="drl-in" style={{ display: 'flex', flexWrap: 'wrap', gap: 8, justifyContent: 'center' }}>
+                  {(hasTalked ? homeChips : chips).map(c => (
                     <button key={c.label} onClick={() => onChip(c)} className="drl-btn"
                       style={{
                         ...glassBtn,
                         ...(c.kind === 'flow' ? { background: 'rgba(242,182,109,.10)', border: '1px solid rgba(242,182,109,.4)' } : {}),
                         ...(c.kind === 'breath' ? { color: palette.accent } : {}),
-                        ...(chatModeNow ? { flexShrink: 0, minHeight: 38, fontSize: 13.5 } : {}),
                       }}>
                       {c.label}
                     </button>
                   ))}
+                </div>
+              )}
+              {state.talk && isAuthenticated && state.step !== 'testing' && (
+                <div className="drl-in" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, padding: '6px 10px 6px 12px', borderRadius: 12, background: 'rgba(242,182,109,.08)', border: '1px solid rgba(242,182,109,.25)', fontSize: 12.5, color: C.muted }}>
+                  <span>Discussion avec Dr Lô · {credits(KORIS_COSTS.chat)} / message{quota ? ` · ${Math.max(0, quota.limit - quota.count)} restant${quota.limit - quota.count > 1 ? 's' : ''} aujourd'hui` : ''}</span>
+                  <button type="button" onClick={endTalk} style={{ ...linkBtn, minHeight: 28, padding: 0, color: palette.accent, fontWeight: 700 }}>Terminer</button>
                 </div>
               )}
               {state.step !== 'minor' && (<>
@@ -1070,7 +1302,7 @@ const ConversationAccueil: React.FC = () => {
                     value={input}
                     onChange={e => setInput(e.target.value)}
                     maxLength={500}
-                    placeholder={dictation.listening ? 'Parle, je t\'écoute…' : state.step === 'testing' ? 'Si quelque chose te pèse, écris-le-moi…' : 'Réponds à Dr Lô…'}
+                    placeholder={dictation.listening ? 'Parle, je t\'écoute…' : state.step === 'testing' ? 'Si quelque chose te pèse, écris-le-moi…' : state.talk ? 'Écris à Dr Lô…' : 'Réponds à Dr Lô…'}
                     aria-label="Répondre à Dr Lô"
                     className="drl-input"
                     style={{
@@ -1108,18 +1340,18 @@ const ConversationAccueil: React.FC = () => {
 
 
   // ── Mode discussion : dès que la personne a écrit, l'écran devient une vraie conversation ──
-  const chatMode = !forceHome && messages.some(m => m.from === 'user');
+  const chatMode = inChat;
   if (chatMode) {
     const statusText = statusLabel ?? (listening ? 'Je t\'écoute…' : 'En ligne');
     const online = !statusLabel && !listening;
     const shownMsgs = messages.slice(0, shown);
     return (
       <section aria-label="Conversation avec Dr Lô" aria-busy={revealing} className="drl-screen font-sans"
-        style={{ position: 'relative', height: '100svh', display: 'flex', flexDirection: 'column', overflow: 'hidden', background: palette.bg, color: C.text }}>
+        style={{ position: 'fixed', inset: 0, zIndex: 40, height: '100dvh', display: 'flex', flexDirection: 'column', overflow: 'hidden', background: palette.bg, color: C.text }}>
         <div style={{ width: '100%', maxWidth: 560, margin: '0 auto', height: '100%', display: 'flex', flexDirection: 'column' }}>
           {/* En-tête de discussion */}
           <header style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 14px', borderBottom: '1px solid rgba(255,255,255,.08)', background: 'rgba(20,16,13,.6)' }}>
-            <button onClick={() => { setForceHome(true); setMode('home'); }} aria-label="Revenir à l'accueil" className="drl-btn"
+            <button onClick={() => { setInChat(false); setMode('home'); setShowConvs(false); }} aria-label="Revenir à l'accueil" className="drl-btn"
               style={{ width: 40, height: 40, borderRadius: 12, border: 0, background: 'transparent', color: C.text, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
               <ChevronLeft size={22} aria-hidden="true" />
             </button>
@@ -1156,9 +1388,68 @@ const ConversationAccueil: React.FC = () => {
             ))}
           </nav>
 
-          {tab === 'confier' ? (
+          {/* La discussion en cours (principale ou secondaire) et l'accès à l'historique */}
+          {tab === 'discuter' && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, margin: '8px 14px 0' }}>
+              <button onClick={() => setShowConvs(v => !v)} aria-expanded={showConvs} className="drl-btn"
+                style={{ flex: 1, minWidth: 0, minHeight: 36, padding: '0 12px', borderRadius: 11, border: `1px solid ${C.line}`, background: showConvs ? 'rgba(242,182,109,.12)' : 'transparent', color: C.text, fontSize: 13.5, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
+                <MessagesSquare size={15} color={palette.accent} aria-hidden="true" />
+                <span style={{ flex: 1, textAlign: 'left', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{convMeta?.title ?? 'Discussion principale'}</span>
+                <ChevronDown size={15} aria-hidden="true" style={{ transform: showConvs ? 'rotate(180deg)' : 'none', transition: 'transform .2s' }} />
+              </button>
+              <button onClick={newConversation} aria-label="Nouvelle discussion" className="drl-btn"
+                style={{ minHeight: 36, padding: '0 12px', borderRadius: 11, border: `1px solid ${C.line}`, background: 'transparent', color: C.text, fontSize: 13, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 5, cursor: 'pointer', flexShrink: 0 }}>
+                <Plus size={14} aria-hidden="true" /> Nouvelle
+              </button>
+            </div>
+          )}
+
+          {tab === 'discuter' && showConvs ? (
+            <div style={{ flex: 1, overflowY: 'auto', padding: '10px 14px 16px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <p style={{ margin: '0 0 2px', fontSize: 12, letterSpacing: '.08em', textTransform: 'uppercase', fontWeight: 700, color: palette.accent }}>Mes discussions</p>
+              {sortedConvs(convIdx).map(c => {
+                const current = c.id === convId;
+                const isEditing = editingConv?.id === c.id;
+                const d = new Date(c.updatedAt);
+                return (
+                  <div key={c.id} style={{ borderRadius: 14, border: `1px solid ${current ? 'rgba(242,182,109,.45)' : C.line}`, background: current ? 'rgba(242,182,109,.08)' : C.glass, padding: '10px 12px' }}>
+                    {isEditing ? (
+                      <form onSubmit={e => { e.preventDefault(); setConvIdx(i => renameConv(i, c.id, editingConv!.text)); setEditingConv(null); }} style={{ display: 'flex', gap: 8 }}>
+                        <input autoFocus value={editingConv!.text} maxLength={40} onChange={e => setEditingConv({ id: c.id, text: e.target.value })} aria-label="Nom de la discussion"
+                          className="drl-input" style={{ flex: 1, minWidth: 0, minHeight: 40, borderRadius: 10, border: `1px solid ${palette.accent}`, background: 'rgba(255,255,255,.06)', color: C.text, padding: '0 10px', fontSize: 15, fontFamily: 'inherit', outline: 'none' }} />
+                        <button type="submit" style={{ ...pill, border: 0, background: palette.primary, color: C.ink, cursor: 'pointer' }}>OK</button>
+                      </form>
+                    ) : (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <button onClick={() => switchConversation(c.id)} style={{ flex: 1, minWidth: 0, border: 0, background: 'transparent', color: C.text, textAlign: 'left', cursor: 'pointer', padding: 0 }}>
+                          <span style={{ display: 'block', fontSize: 14.5, fontWeight: 700 }}>{c.title}{current ? ' · en cours' : ''}</span>
+                          <span style={{ display: 'block', fontSize: 12, color: C.faint, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                            {Number.isNaN(d.getTime()) ? '' : d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}{c.preview ? ` · « ${c.preview} »` : ''}
+                          </span>
+                        </button>
+                        <button onClick={() => setEditingConv({ id: c.id, text: c.title })} aria-label={`Renommer ${c.title}`} style={{ border: 0, background: 'transparent', color: C.muted, cursor: 'pointer', width: 34, height: 34, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          <Pencil size={15} aria-hidden="true" />
+                        </button>
+                        {c.id !== MAIN_ID && (
+                          <button onClick={() => removeConversation(c.id)} aria-label={confirmDel === c.id ? 'Confirmer la suppression' : `Supprimer ${c.title}`}
+                            style={{ border: 0, background: 'transparent', color: confirmDel === c.id ? '#E8A0A0' : C.muted, cursor: 'pointer', minWidth: 34, height: 34, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, fontSize: 12, fontWeight: 700 }}>
+                            <Trash2 size={15} aria-hidden="true" />{confirmDel === c.id ? 'Supprimer ?' : ''}
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+              <button onClick={newConversation} className="drl-btn"
+                style={{ marginTop: 4, minHeight: 46, borderRadius: 14, border: `1px dashed ${C.line}`, background: 'transparent', color: C.text, fontSize: 14, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                <Plus size={16} aria-hidden="true" /> Nouvelle discussion
+              </button>
+              <p style={{ margin: '6px 0 0', fontSize: 11.5, color: C.faint, textAlign: 'center' }}>Tes discussions restent sur ce téléphone. Touche le crayon pour les renommer.</p>
+            </div>
+          ) : tab === 'confier' ? (
             <div style={{ flex: 1, overflowY: 'auto', padding: '4px 14px 16px' }}>
-              <ConfierPanel userId={isAuthenticated && currentUser ? currentUser.id : null} genre={state.genre} onStatus={onConfierStatus} onSignup={() => openSignup('signup')} />
+              <ConfierPanel userId={isAuthenticated && currentUser ? currentUser.id : null} genre={state.genre} onStatus={onConfierStatus} onSignup={() => openSignup('signup')} view={confierView} onView={setConfierView} />
             </div>
           ) : (<>
             {/* Les messages, avec la bulle d'activité de Dr Lô par-dessus */}
@@ -1206,6 +1497,19 @@ const ConversationAccueil: React.FC = () => {
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, padding: '12px 0' }}>
                   <DrLoAvatar state="breathing" palette={palette} size={96} />
                   <p style={{ margin: 0, fontFamily: 'Fraunces, serif', fontSize: 22, color: palette.accent, fontWeight: 600 }}>{breath!.inhale ? 'Inspire…' : 'Expire…'}</p>
+                </div>
+              )}
+              {/* Les choix proposés par Dr Lô, dans la conversation, tous visibles */}
+              {!revealing && !routing && chips.length > 0 && (
+                <div className="drl-in" role="group" aria-label="Choisis une réponse"
+                  style={{ marginLeft: 36, display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                  {chips.map(c => (
+                    <button key={c.label} onClick={() => onChip(c)} className="drl-btn"
+                      style={{ minHeight: 44, padding: '0 16px', borderRadius: 999, cursor: 'pointer', fontSize: 14.5, fontWeight: 600, color: c.kind === 'breath' ? palette.accent : C.text,
+                        background: 'rgba(242,182,109,.10)', border: '1px solid rgba(242,182,109,.45)', textAlign: 'left' }}>
+                      {c.label}
+                    </button>
+                  ))}
                 </div>
               )}
             </div>
@@ -1306,7 +1610,7 @@ const ConversationAccueil: React.FC = () => {
         </div>
 
         {tab === 'confier' ? (
-          <ConfierPanel userId={isAuthenticated && currentUser ? currentUser.id : null} genre={state.genre} onStatus={onConfierStatus} onSignup={() => openSignup('signup')} />
+          <ConfierPanel userId={isAuthenticated && currentUser ? currentUser.id : null} genre={state.genre} onStatus={onConfierStatus} onSignup={() => openSignup('signup')} view={confierView} onView={setConfierView} />
         ) : (<>
         {/* La conversation, au centre */}
         <div style={{ marginTop: 16, textAlign: 'center' }}>
@@ -1314,6 +1618,25 @@ const ConversationAccueil: React.FC = () => {
             {greetingFor(moment, prenom)}
           </h1>
 
+          {hasTalked ? (
+            <div aria-live="polite" style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 12 }}>
+              {homeLines.map(t => <p key={t} className="drl-in" style={{ margin: 0, fontSize: 16.5, lineHeight: 1.55, color: C.soft }}>{t}</p>)}
+              <button onClick={() => setInChat(true)} className="drl-btn"
+                style={{ marginTop: 4, display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', borderRadius: 16, border: `1px solid ${C.line}`, background: C.glass, color: C.text, cursor: 'pointer', textAlign: 'left' }}>
+                <img src="/dr-lo.png" alt="" width={34} height={34} style={{ width: 34, height: 34, borderRadius: '50%', objectFit: 'cover', objectPosition: 'top', flexShrink: 0 }} />
+                <span style={{ flex: 1, minWidth: 0 }}>
+                  <span style={{ display: 'block', fontSize: 14.5, fontWeight: 700 }}>Reprendre : {convMeta?.title ?? 'Discussion principale'}</span>
+                  {convMeta?.preview && <span style={{ display: 'block', fontSize: 12.5, color: C.faint, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>« {convMeta.preview} »</span>}
+                </span>
+                <ArrowRight size={16} color={C.muted} aria-hidden="true" />
+              </button>
+              {convIdx.list.length > 1 && (
+                <button onClick={() => { setInChat(true); setShowConvs(true); }} style={{ ...linkBtn, fontSize: 12.5 }}>
+                  Toutes mes discussions ({convIdx.list.length})
+                </button>
+              )}
+            </div>
+          ) : (<>
           {history.length > 0 && (
             <div style={{ marginTop: 10 }}>
               <button onClick={() => setShowHistory(v => !v)} aria-expanded={showHistory} style={{ ...linkBtn, fontSize: 12.5 }}>
@@ -1341,6 +1664,7 @@ const ConversationAccueil: React.FC = () => {
               </div>
             )}
           </div>
+          </>)}
 
           {noted && !revealing && (
             <div className="drl-in" style={{ marginTop: 10, display: 'inline-flex', alignItems: 'center', gap: 8, fontSize: 12.5, fontWeight: 600, color: C.sage }}>
@@ -1424,12 +1748,27 @@ const ChatCard: React.FC<{
   const primary: React.CSSProperties = { minHeight: 44, padding: '0 16px', borderRadius: 12, border: 0, background: palette.primary, color: C.ink, fontSize: 14, fontWeight: 700, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6, textDecoration: 'none' };
   const ghost: React.CSSProperties = { ...primary, background: 'transparent', border: '1px solid rgba(255,255,255,.18)', color: C.text, fontWeight: 600 };
   if (card.type === 'defi_preview') {
+    const items: { text: string; tag?: 'perso' | 'totem'; note?: string }[] = card.items ?? (card.questions ?? []).map(t => ({ text: t }));
     return (
       <div className="drl-in" style={box}>
-        <p style={{ margin: 0, fontSize: 11, letterSpacing: '.08em', textTransform: 'uppercase', fontWeight: 700, color: palette.accent }}>Tes proches devront deviner</p>
-        <ol style={{ margin: '8px 0 0', paddingLeft: 20, display: 'flex', flexDirection: 'column', gap: 6, fontSize: 14, lineHeight: 1.45, color: C.soft }}>
-          {card.questions.map((q, i) => <li key={i}>{q}</li>)}
-        </ol>
+        <p style={{ margin: 0, fontSize: 11, letterSpacing: '.08em', textTransform: 'uppercase', fontWeight: 700, color: palette.accent }}>
+          Tes proches devront deviner · {items.length} questions
+        </p>
+        <div style={{ marginTop: 8, display: 'flex', flexDirection: 'column', gap: 8 }}>
+          {items.map((q, i) => (
+            <div key={i} style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+              <span style={{ flexShrink: 0, width: 22, height: 22, borderRadius: '50%', background: q.tag === 'totem' ? 'rgba(233,200,143,.22)' : q.tag === 'perso' ? 'rgba(157,191,175,.2)' : 'rgba(255,255,255,.08)', color: q.tag === 'totem' ? '#E9C88F' : q.tag === 'perso' ? '#9DBFAF' : C.muted, fontSize: 12, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', marginTop: 1 }}>
+                {q.tag === 'totem' ? '🐾' : i + 1}
+              </span>
+              <span style={{ fontSize: 14, lineHeight: 1.45, color: C.soft }}>
+                {q.tag === 'totem' && <b style={{ display: 'block', fontSize: 11, letterSpacing: '.06em', textTransform: 'uppercase', color: '#E9C88F' }}>Question totem</b>}
+                {q.tag === 'perso' && <b style={{ display: 'block', fontSize: 11, letterSpacing: '.06em', textTransform: 'uppercase', color: '#9DBFAF' }}>Question perso</b>}
+                {q.text}
+                {q.note && <span style={{ display: 'block', fontSize: 12.5, color: C.faint }}>{q.note}</span>}
+              </span>
+            </div>
+          ))}
+        </div>
       </div>
     );
   }

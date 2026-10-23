@@ -5,14 +5,52 @@
  *    fonction dr-lo-journal (même tarif : 1 Kori).
  *  - Invité : dans le navigateur uniquement (aucun envoi au serveur).
  */
-import { collection, addDoc, deleteDoc, doc, updateDoc } from 'firebase/firestore';
+import { collection, addDoc, deleteDoc, doc, updateDoc, getDocs, query, orderBy, limit } from 'firebase/firestore';
 import { db } from '../utils/firebase';
 import { authedFetch } from '../utils/authedFetch';
 import { getOnboardingProfile } from '../utils/onboardingProfile';
 
 const GUEST_KEY = 'he_confier_guest_journal';
 
-interface GuestEntry { id: string; contenu: string; date: string }
+interface GuestEntry { id: string; contenu: string; date: string; carnet?: string }
+
+// ── Carnets : séparer ses confidences (famille, amis, couple…) ──────────────
+
+export const DEFAULT_CARNET = 'Général';
+export const SUGGESTED_CARNETS = ['Général', 'Famille', 'Amis', 'Couple', 'Travail'];
+const CARNETS_KEY = 'he_carnets_v1:';
+const CURRENT_KEY = 'he_carnet_current:';
+
+export function cleanCarnet(t: string): string | null {
+  const n = t.trim().replace(/\s+/g, ' ');
+  if (n.length < 1 || n.length > 24 || /[<>]/.test(n)) return null;
+  return n.charAt(0).toUpperCase() + n.slice(1);
+}
+
+/** Carnets proposés : suggestions + ceux créés par la personne + ceux déjà présents dans le journal. */
+export function loadCarnets(owner: string, fromEntries: string[] = []): string[] {
+  let custom: string[] = [];
+  try { custom = JSON.parse(localStorage.getItem(`${CARNETS_KEY}${owner}`) ?? '[]') as string[]; } catch { /* ignore */ }
+  return Array.from(new Set([...SUGGESTED_CARNETS, ...custom, ...fromEntries.filter(Boolean)]));
+}
+
+export function addCarnet(owner: string, name: string): string[] {
+  const n = cleanCarnet(name);
+  let custom: string[] = [];
+  try { custom = JSON.parse(localStorage.getItem(`${CARNETS_KEY}${owner}`) ?? '[]') as string[]; } catch { /* ignore */ }
+  if (n && !custom.includes(n) && !SUGGESTED_CARNETS.includes(n)) {
+    custom = [...custom, n];
+    try { localStorage.setItem(`${CARNETS_KEY}${owner}`, JSON.stringify(custom)); } catch { /* ignore */ }
+  }
+  return loadCarnets(owner);
+}
+
+export function currentCarnet(owner: string): string {
+  try { return localStorage.getItem(`${CURRENT_KEY}${owner}`) || DEFAULT_CARNET; } catch { return DEFAULT_CARNET; }
+}
+export function setCurrentCarnet(owner: string, name: string): void {
+  try { localStorage.setItem(`${CURRENT_KEY}${owner}`, name); } catch { /* ignore */ }
+}
 
 function readGuest(): GuestEntry[] {
   try { return JSON.parse(localStorage.getItem(GUEST_KEY) ?? '[]') as GuestEntry[]; } catch { return []; }
@@ -21,11 +59,11 @@ function writeGuest(list: GuestEntry[]) {
   try { localStorage.setItem(GUEST_KEY, JSON.stringify(list)); } catch { /* stockage indisponible */ }
 }
 
-export async function saveConfidence(userId: string | null, text: string): Promise<string> {
+export async function saveConfidence(userId: string | null, text: string, carnet: string = DEFAULT_CARNET): Promise<string> {
   const now = new Date().toISOString();
   if (!userId) {
     const id = `g${Date.now()}`;
-    writeGuest([...readGuest(), { id, contenu: text, date: now }]);
+    writeGuest([...readGuest(), { id, contenu: text, date: now, carnet }]);
     return id;
   }
   const fs = db;
@@ -42,6 +80,7 @@ export async function saveConfidence(userId: string | null, text: string): Promi
     updated_at: now,
     is_private: true,
     source: 'confier',
+    carnet,
   });
   return ref.id;
 }
@@ -93,4 +132,39 @@ export async function askAdvice(userId: string, text: string, lastJournalId: str
   } catch {
     return { ok: false, reason: 'unavailable' };
   }
+}
+
+// ── Le journal, lu depuis « Me confier » (même source que l'ancienne page /journal) ──
+
+export interface JournalItem {
+  id: string;
+  /** ISO */
+  date: string;
+  contenu: string;
+  humeur: string;
+  drLo: string | null;
+  carnet: string;
+}
+
+/** Les entrées les plus récentes d'abord (compte : Firestore ; invité : ce téléphone). */
+export async function listJournal(userId: string | null, max = 120): Promise<JournalItem[]> {
+  if (!userId) {
+    return readGuest()
+      .map(e => ({ id: e.id, date: e.date, contenu: e.contenu, humeur: '', drLo: null, carnet: e.carnet || DEFAULT_CARNET }))
+      .sort((a, b) => (a.date < b.date ? 1 : -1));
+  }
+  const fs = db;
+  if (!fs) return [];
+  const snap = await getDocs(query(collection(fs, 'users', userId, 'journal'), orderBy('created_at', 'desc'), limit(max)));
+  return snap.docs.map(d => {
+    const x = d.data();
+    return {
+      id: d.id,
+      date: (x.created_at as string) || (x.date as string) || '',
+      contenu: (x.contenu as string) ?? '',
+      humeur: (x.humeur as string) ?? '',
+      drLo: (x.dr_lo_response as string | null) ?? null,
+      carnet: (x.carnet as string) || DEFAULT_CARNET,
+    };
+  });
 }

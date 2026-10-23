@@ -99,3 +99,16 @@ test('prénom : premier mot seulement ; nouveau jour → nouvelle salutation', (
   const t = newDay({ ...testing(), day: '2026-10-23' }, '2026-10-24', member);
   assert.equal(t.step, 'testing');
 });
+
+test('« discuter » avec un compte → discussion dans le même fil ; invité → espace', () => {
+  const s = withUser(startConversation(member), 'ma copine est trop jalouse');
+  const r = routeDecision(s, d({ action: 'chat', reply: 'On en parle ?' }), member);
+  assert.equal(r.ui, 'talk');
+  const g = routeDecision(withUser(startConversation(guest), 'x'), d({ action: 'chat', reply: 'On en parle ?' }), guest);
+  assert.equal(g.state.messages.at(-1)!.card?.type, 'signup');
+});
+
+test('nouveau jour : la discussion approfondie se termine', () => {
+  const s = { ...startConversation(member), day: '2026-10-23', talk: { conv: 'c', start: 1 } };
+  assert.equal(newDay(s, '2026-10-24', member).talk, undefined);
+});

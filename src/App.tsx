@@ -137,9 +137,6 @@ const VerifyEmail = lazy(() => import("./pages/VerifyEmail"));
 const Join = lazy(() => import("./pages/Join"));
 
 // Journal pages
-const JournalPage = lazy(() => import("./pages/Journal/JournalPage"));
-const NewEntry = lazy(() => import("./pages/Journal/NewEntry"));
-const JournalEntryView = lazy(() => import("./pages/Journal/JournalEntryView"));
 const AcheterKorisPage = lazy(() => import("./pages/AcheterKorisPage"));
 
 // Assessment pages
@@ -489,9 +486,10 @@ const AppChrome: React.FC = () => {
             />
 
             {/* Journal Routes */}
-            <Route path="/journal" element={<JournalPage userId={userId} />} />
-            <Route path="/journal/new" element={<NewEntry userId={userId} />} />
-            <Route path="/journal/:id" element={<JournalEntryView userId={userId} />} />
+            {/* Le journal vit désormais dans « Me confier » (une seule entité pour écrire et relire) */}
+            <Route path="/journal" element={<Navigate to="/" replace state={{ tab: 'confier', journal: true }} />} />
+            <Route path="/journal/new" element={<Navigate to="/" replace state={{ tab: 'confier' }} />} />
+            <Route path="/journal/:id" element={<Navigate to="/" replace state={{ tab: 'confier', journal: true }} />} />
 
             {/* Mon Espace */}
             <Route path="/mon-espace" element={<Navigate to="/espace" replace />} />

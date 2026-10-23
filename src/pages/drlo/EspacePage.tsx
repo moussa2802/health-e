@@ -6,7 +6,7 @@
  */
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ArrowRight, BookOpen, Brain, CloudSun, Eye, EyeOff, Feather, Heart, ListChecks, Sparkles, Users } from 'lucide-react';
+import { ArrowRight, BookOpen, Brain, CloudSun, Crown, Eye, EyeOff, Heart, Sparkles, Users } from 'lucide-react';
 import { collection, getCountFromServer } from 'firebase/firestore';
 import DrLoShell, { DC, card, usePalette } from '../../components/accueil/DrLoShell';
 import MoodIcon from '../../components/accueil/MoodIcon';
@@ -24,7 +24,6 @@ import { fetchMoods } from '../../services/moodService';
 import { lastDays, MOOD_SCORE, WEEKDAYS, weekdayIndex } from '../../utils/moodInsights';
 import { addDays } from '../../utils/cycleCalc';
 import { getTotemProgress, getTotemSignature, type TotemAnimal } from '../../utils/totemAlgorithm';
-import { openDrLoChat } from '../../components/DrLoChat/drLoEvents';
 import { trackAccueil } from '../../utils/accueilTracking';
 import PaliersCard from '../../components/accueil/PaliersCard';
 import { getDrloStatus, registerReferralIfAny, type DrloStatus } from '../../services/drloQuestionService';
@@ -109,7 +108,8 @@ const EspacePage: React.FC = () => {
 
   const onGuide = () => {
     const a = guide.action;
-    if (a.kind === 'chat') openDrLoChat({ greeting: a.greeting, source: `espace_${guide.id}` });
+    // Un seul Dr Lô : la discussion s'ouvre dans la conversation de l'accueil
+    if (a.kind === 'chat') navigate('/', { state: { talk: { greeting: a.greeting, draft: null } } });
     else if (a.kind === 'reveal_totem') navigate('/assessment/totem');
     else if (a.kind === 'journal') navigate('/', { state: { openMood: true } });
     else if (a.kind === 'signup') navigate('/', { state: { signup: true } });
@@ -138,7 +138,7 @@ const EspacePage: React.FC = () => {
   const domains = [
     { key: 'mental', label: 'Mental', icon: Brain, color: DC.sage, word: doneMental ? `${doneMental} / ${MENTAL_HEALTH_SCALES.length} tests` : 'À découvrir', to: '/espace/mental' },
     { key: 'humeur', label: 'Humeur', icon: CloudSun, color: DC.gold, word: humeurWord, to: '/humeur' },
-    { key: 'social', label: 'Social', icon: Users, color: DC.social, word: defis ? `${defis} défi${defis > 1 ? 's' : ''} en cours` : 'Compatibilité & défis', to: '/espace/social' },
+    { key: 'social', label: 'Social', icon: Users, color: DC.social, word: 'Compatibilité', to: '/espace/social' },
   ];
 
   return (
@@ -155,19 +155,47 @@ const EspacePage: React.FC = () => {
           <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: palette.accent }}>Le mot de Dr Lô</p>
         </div>
         <p style={{ margin: '10px 0 0', fontSize: 15, lineHeight: 1.55, color: DC.soft }}>{loaded ? guide.text : '…'}</p>
+        {/* Ton totem (ou, tant qu'il n'est pas révélé, le portrait qui se dessine) */}
+        {loaded && (totemRevealed ? (
+          <Link to="/assessment/totem" className="drl-btn" style={{ marginTop: 12, display: 'flex', alignItems: 'center', gap: 12, padding: '10px 12px', borderRadius: 14, background: 'rgba(233,200,143,.08)', border: '1px solid rgba(233,200,143,.25)', color: DC.text, textDecoration: 'none' }}>
+            <Sparkles size={20} color={DC.gold} aria-hidden="true" />
+            <span style={{ flex: 1, minWidth: 0 }}>
+              <span style={{ display: 'block', fontSize: 12, color: DC.faint }}>Ton totem</span>
+              <span style={{ display: 'block', fontFamily: 'Fraunces, serif', fontSize: 17, fontWeight: 600 }}>{getTotemSignature(totem!.animal as TotemAnimal)?.label ?? totem!.animal}</span>
+              <span style={{ display: 'block', fontSize: 12.5, color: DC.muted, lineHeight: 1.4 }}>{getTotemSignature(totem!.animal as TotemAnimal)?.meaning}</span>
+            </span>
+            <ArrowRight size={16} color={DC.muted} aria-hidden="true" />
+          </Link>
+        ) : totemProgress.missing.length === 0 ? (
+          <Link to="/assessment/totem" className="drl-btn" style={{ marginTop: 12, display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderRadius: 14, background: 'rgba(233,200,143,.08)', border: '1px solid rgba(233,200,143,.25)', color: DC.text, textDecoration: 'none', fontSize: 14, fontWeight: 700 }}>
+            <Sparkles size={18} color={DC.gold} aria-hidden="true" /> Ton totem est prêt : viens le découvrir <ArrowRight size={16} aria-hidden="true" />
+          </Link>
+        ) : (
+          <div style={{ marginTop: 12 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, fontSize: 12.5, color: DC.muted }}>
+              <span>Ton portrait se dessine · encore {totemProgress.missing.length} test{totemProgress.missing.length > 1 ? 's' : ''} pour ton totem</span>
+              <b style={{ color: palette.accent, whiteSpace: 'nowrap' }}>{portrait} %</b>
+            </div>
+            <div role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={portrait} aria-label="Portrait" style={{ height: 6, borderRadius: 4, background: 'rgba(255,255,255,.08)', marginTop: 6, overflow: 'hidden' }}>
+              <div style={{ width: `${portrait}%`, height: '100%', background: palette.primary }} />
+            </div>
+          </div>
+        ))}
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 12 }}>
           <button onClick={onGuide} className="drl-btn"
             style={{ minHeight: 44, padding: '0 16px', borderRadius: 999, border: 0, background: palette.primary, color: DC.ink, fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>
             {guide.cta}
           </button>
-          <Link to="/" className="drl-btn" style={{ minHeight: 44, padding: '0 16px', borderRadius: 999, border: `1px solid ${DC.line}`, background: DC.glass, color: DC.text, fontSize: 14, fontWeight: 600, display: 'inline-flex', alignItems: 'center', textDecoration: 'none' }}>
-            Parler à Dr Lô
-          </Link>
+          {guide.action.kind !== 'chat' && (
+            <Link to="/" className="drl-btn" style={{ minHeight: 44, padding: '0 16px', borderRadius: 999, border: `1px solid ${DC.line}`, background: DC.glass, color: DC.text, fontSize: 14, fontWeight: 600, display: 'inline-flex', alignItems: 'center', textDecoration: 'none' }}>
+              Discuter avec Dr Lô
+            </Link>
+          )}
         </div>
       </section>
 
       {/* Ton équilibre */}
-      <section aria-label="Tes quatre domaines" style={{ marginTop: 18 }}>
+      <section aria-label="Tes domaines" style={{ marginTop: 18 }}>
         <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between' }}>
           <h2 style={h2}>Ton équilibre</h2>
           <span style={{ fontSize: 12, color: DC.faint }}>Touche un domaine</span>
@@ -196,25 +224,18 @@ const EspacePage: React.FC = () => {
               </button>
             )}
           </div>
+          <button onClick={() => navigate('/', { state: uid ? { flow: 'defi' } : { signup: true } })} className="drl-btn" style={{ ...tile(DC.gold), textAlign: 'left' }}>
+            <Crown size={20} color={DC.gold} aria-hidden="true" />
+            <span style={{ fontSize: 15, fontWeight: 700 }}>Défi</span>
+            <span style={{ fontSize: 12.5, color: DC.muted }}>{defis ? `${defis} en cours` : 'Qui te connaît le mieux ?'}</span>
+          </button>
+          <button onClick={() => navigate('/', { state: { tab: 'confier', journal: true } })} className="drl-btn" style={{ ...tile(DC.confier), textAlign: 'left' }}>
+            <BookOpen size={20} color={DC.confier} aria-hidden="true" />
+            <span style={{ fontSize: 15, fontWeight: 700 }}>Journal</span>
+            <span style={{ fontSize: 12.5, color: DC.muted }}>{counts.journal ? `${counts.journal} page${counts.journal > 1 ? 's' : ''} · écrire, relire` : 'Écrire, te confier'}</span>
+          </button>
         </div>
 
-        <div style={{ ...card, marginTop: 10 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
-            <span style={{ fontSize: 14, fontWeight: 700 }}>Ton portrait se dessine</span>
-            <span style={{ fontFamily: 'Fraunces, serif', fontSize: 20, fontWeight: 700, color: palette.accent }}>{portrait} %</span>
-          </div>
-          <div role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={portrait} aria-label="Portrait" style={{ height: 8, borderRadius: 6, background: 'rgba(255,255,255,.08)', marginTop: 8, overflow: 'hidden' }}>
-            <div style={{ width: `${portrait}%`, height: '100%', background: palette.primary }} />
-          </div>
-          {next && (
-            <p style={{ margin: '10px 0 0', fontSize: 13.5, color: DC.muted, lineHeight: 1.5 }}>
-              Prochaine pièce : <b style={{ color: DC.text }}>{getScaleMeta(next).label}</b>.{' '}
-              <button onClick={() => navigate('/', { state: { prescribe: next } })} style={{ border: 0, background: 'transparent', color: palette.accent, fontWeight: 700, cursor: 'pointer', padding: 0, fontSize: 13.5, textDecoration: 'underline', textUnderlineOffset: 3 }}>
-                La faire avec Dr Lô
-              </button>
-            </p>
-          )}
-        </div>
       </section>
 
       {/* Météo intérieure */}
@@ -247,50 +268,8 @@ const EspacePage: React.FC = () => {
         )}
       </section>
 
-      {/* Totem */}
-      <section aria-label="Ton totem" style={{ ...card, marginTop: 14, display: 'flex', alignItems: 'center', gap: 14 }}>
-        <div style={{ width: 54, height: 54, borderRadius: 16, background: 'rgba(233,200,143,.14)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-          <Sparkles size={24} color={DC.gold} aria-hidden="true" />
-        </div>
-        {totemRevealed ? (
-          <Link to="/assessment/totem" style={{ flex: 1, color: DC.text, textDecoration: 'none' }}>
-            <span style={{ display: 'block', fontSize: 12, color: DC.faint }}>Ton totem</span>
-            <span style={{ display: 'block', fontFamily: 'Fraunces, serif', fontSize: 19, fontWeight: 600 }}>{getTotemSignature(totem!.animal as TotemAnimal)?.label ?? totem!.animal}</span>
-            <span style={{ display: 'block', fontSize: 12.5, color: DC.muted, lineHeight: 1.45, marginTop: 2 }}>{getTotemSignature(totem!.animal as TotemAnimal)?.meaning}</span>
-          </Link>
-        ) : totemProgress.missing.length === 0 ? (
-          <Link to="/assessment/totem" style={{ flex: 1, color: DC.text, textDecoration: 'none' }}>
-            <span style={{ display: 'block', fontSize: 15, fontWeight: 700 }}>Ton totem est prêt</span>
-            <span style={{ display: 'block', fontSize: 12.5, color: DC.muted }}>Viens le découvrir</span>
-          </Link>
-        ) : (
-          <div style={{ flex: 1 }}>
-            <span style={{ display: 'block', fontSize: 15, fontWeight: 700 }}>Ton animal-totem</span>
-            <span style={{ display: 'block', fontSize: 12.5, color: DC.muted }}>
-              Encore {totemProgress.missing.length} test{totemProgress.missing.length > 1 ? 's' : ''} pour le révéler ({totemProgress.completed}/{totemProgress.total})
-            </span>
-          </div>
-        )}
-        <ArrowRight size={18} color={DC.muted} aria-hidden="true" />
-      </section>
-
       {/* Ton chemin vers Dr Lô (paliers) */}
       {drlo && <PaliersCard status={drlo} palette={palette} />}
-
-      {/* Raccourcis */}
-      <section aria-label="Raccourcis" style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 10, marginTop: 14 }}>
-        {[
-          { label: 'Me confier', icon: Feather, color: DC.confier, onClick: () => navigate('/', { state: { tab: 'confier' } }) },
-          { label: 'Mon journal', icon: BookOpen, color: DC.confier, onClick: () => navigate(uid ? '/journal' : '/') },
-          { label: 'Tous les tests', icon: ListChecks, color: DC.sage, onClick: () => navigate('/assessment') },
-          { label: 'Défis entre proches', icon: Users, color: DC.social, onClick: () => navigate('/', { state: uid ? { flow: 'defi' } : { signup: true } }) },
-        ].map(s => (
-          <button key={s.label} onClick={s.onClick} className="drl-btn"
-            style={{ ...card, padding: '12px 14px', display: 'flex', alignItems: 'center', gap: 10, color: DC.text, fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>
-            <s.icon size={18} color={s.color} aria-hidden="true" /> {s.label}
-          </button>
-        ))}
-      </section>
 
       <p style={{ margin: '18px 0 0', textAlign: 'center', fontSize: 11.5, lineHeight: 1.5, color: DC.faint }}>
         Des tendances, jamais des notes. Pas de diagnostic · Urgence : <a href="tel:1515" style={{ fontWeight: 700 }}>1515</a>

@@ -5,13 +5,14 @@
  * et donne son avis seulement si on le demande (1 Kori, comme le journal classique).
  */
 import React, { useEffect, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
 import { BookOpen, Check, Feather, Mic, Phone, Send } from 'lucide-react';
 import {
   addAdvice, addNote, deposit, emptyConfier, hasLiveEntries, markCancelled, markError, markSaved,
   pendingForAdvice, MAX_ENTRY_CHARS, type ConfierState,
 } from '../../utils/confierFlow';
-import { askAdvice, removeConfidence, saveConfidence } from '../../services/confierService';
+import {
+  addCarnet, askAdvice, currentCarnet, loadCarnets, removeConfidence, saveConfidence, setCurrentCarnet,
+} from '../../services/confierService';
 import { useDictation } from '../../hooks/useDictation';
 import { useKoris } from '../../contexts/KorisContext';
 import { KORIS_COSTS } from '../../services/korisService';
@@ -20,16 +21,20 @@ import { trackAccueil } from '../../utils/accueilTracking';
 import type { DrLoState } from './DrLoAvatar';
 import { CREDIT, credits } from '../../config/creditName';
 
-export const CONFIER = {
-  accent: '#C9B8E4', soft: 'rgba(201,184,228,.5)', tint: 'rgba(201,184,228,.10)', line: 'rgba(201,184,228,.35)',
-  text: '#F4EEE4', muted: '#CFC6B8', faint: '#A79E90', ink: '#1C140D',
-};
+import { CONFIER } from './confierTheme';
+import JournalView from './JournalView';
+import { dayKey } from '../../utils/moodLog';
+
+export { CONFIER };
 const PREFIX = 'he_confier_v1:';
 
+/** La page « Écrire » ne garde que la séance du jour : la veille est rangée dans « Mon journal ». */
 function load(key: string): ConfierState {
   try {
-    const s = JSON.parse(localStorage.getItem(key) ?? 'null') as ConfierState | null;
-    return s && s.v === 1 && Array.isArray(s.items) ? s : emptyConfier();
+    const s = JSON.parse(localStorage.getItem(key) ?? 'null') as (ConfierState & { day?: string }) | null;
+    if (!s || s.v !== 1 || !Array.isArray(s.items)) return emptyConfier();
+    if (s.day && s.day !== dayKey()) return emptyConfier();
+    return s;
   } catch { return emptyConfier(); }
 }
 
@@ -39,7 +44,10 @@ const ConfierPanel: React.FC<{
   onStatus: (state: DrLoState, label: string | null) => void;
   /** Invité : ouvrir la carte « créer mon espace » dans la conversation. */
   onSignup: () => void;
-}> = ({ userId, genre, onStatus, onSignup }) => {
+  /** « Écrire » ou « Mon journal » (une seule entité : on écrit et on relit au même endroit). */
+  view?: 'write' | 'journal';
+  onView?: (v: 'write' | 'journal') => void;
+}> = ({ userId, genre, onStatus, onSignup, view = 'write', onView }) => {
   const { refreshBalance, openNoKorisModal } = useKoris();
   const key = `${PREFIX}${userId ?? 'guest'}`;
   const [state, setState] = useState<ConfierState>(() => load(key));
@@ -50,9 +58,17 @@ const ConfierPanel: React.FC<{
   const listRef = useRef<HTMLDivElement>(null);
   const dictation = useDictation(setDraft);
   const seul = genre === 'femme' ? 'seule' : genre === 'homme' ? 'seul' : 'seul(e)';
+  // Carnets : la personne range ses confidences (famille, amis, couple…)
+  const owner = userId ?? 'guest';
+  const [carnet, setCarnet] = useState(() => currentCarnet(owner));
+  const [carnets, setCarnets] = useState(() => loadCarnets(owner));
+  const [pickCarnet, setPickCarnet] = useState(false);
+  const [newCarnet, setNewCarnet] = useState<string | null>(null);
+  useEffect(() => { setCarnet(currentCarnet(owner)); setCarnets(loadCarnets(owner)); }, [owner]);
+  const chooseCarnet = (c: string) => { setCarnet(c); setCurrentCarnet(owner, c); setPickCarnet(false); setNewCarnet(null); };
 
   useEffect(() => { setState(load(key)); }, [key]);
-  useEffect(() => { try { localStorage.setItem(key, JSON.stringify(state)); } catch { /* ignore */ } }, [key, state]);
+  useEffect(() => { try { localStorage.setItem(key, JSON.stringify({ ...state, day: dayKey() })); } catch { /* ignore */ } }, [key, state]);
   useEffect(() => { listRef.current?.scrollTo({ top: listRef.current.scrollHeight, behavior: 'smooth' }); }, [state.items.length]);
 
   // Dr Lô écoute pendant qu'on écrit
@@ -76,7 +92,7 @@ const ConfierPanel: React.FC<{
     trackAccueil('confier_entry', { guest: !userId }); // jamais le contenu
     if (crisis) trackAccueil('crisis', { at: 'confier' });
     try {
-      const journalId = await saveConfidence(userId, text);
+      const journalId = await saveConfidence(userId, text, carnet);
       update(s => markSaved(s, entryId, journalId));
     } catch {
       update(s => markError(s, entryId));
@@ -113,8 +129,34 @@ const ConfierPanel: React.FC<{
   const pending = pendingForAdvice(state);
   const resources = getCrisisResources();
 
+  const savedCount = state.items.filter(i => i.kind === 'entry' && i.status === 'saved').length;
+  const tabs = (
+    <div role="tablist" aria-label="Me confier" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 4, padding: 4, borderRadius: 12, background: 'rgba(201,184,228,.08)', border: `1px solid ${CONFIER.line}` }}>
+      {(['write', 'journal'] as const).map(v => (
+        <button key={v} role="tab" aria-selected={view === v} onClick={() => onView?.(v)} className="drl-btn"
+          style={{ minHeight: 36, borderRadius: 9, border: 0, cursor: 'pointer', fontSize: 13.5, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+            background: view === v ? 'rgba(201,184,228,.25)' : 'transparent', color: view === v ? CONFIER.text : CONFIER.muted }}>
+          {v === 'write' ? <><Feather size={14} aria-hidden="true" /> Écrire</> : <><BookOpen size={14} aria-hidden="true" /> Mon journal</>}
+        </button>
+      ))}
+    </div>
+  );
+
+  if (view === 'journal') {
+    return (
+      <div className="drl-in" style={{ display: 'flex', flexDirection: 'column', gap: 12, marginTop: 14 }}>
+        {tabs}
+        <JournalView userId={userId} refreshKey={savedCount} onWrite={() => onView?.('write')} />
+        <p style={{ margin: 0, textAlign: 'center', fontSize: 12, color: CONFIER.faint }}>
+          Visible par toi {seul}{!userId && ' · Sans compte, ton journal reste sur ce téléphone'}
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div className="drl-in" style={{ display: 'flex', flexDirection: 'column', gap: 12, marginTop: 14 }}>
+      {tabs}
       <div ref={listRef} aria-live="polite" style={{ display: 'flex', flexDirection: 'column', gap: 10, maxHeight: '46vh', overflowY: 'auto', paddingRight: 2 }}>
         <div style={{ borderRadius: 18, border: `1px solid ${CONFIER.line}`, background: CONFIER.tint, padding: 14, textAlign: 'left' }}>
           <p style={{ margin: 0, display: 'flex', alignItems: 'center', gap: 7, fontSize: 13, fontWeight: 700, color: CONFIER.accent }}>
@@ -124,7 +166,7 @@ const ConfierPanel: React.FC<{
             « C'est ton espace. Écris ce que tu veux, comme ça vient. Je lis, je ne juge pas, et je ne t'interromps pas. »
           </p>
           <p style={{ margin: '8px 0 0', fontSize: 12, color: CONFIER.faint, lineHeight: 1.45 }}>
-            Tout ce que tu écris ici va dans ton journal. Écrire est gratuit.
+            Tout ce que tu écris ici va dans ton journal, rangé par jour. Écrire est gratuit.
             {!userId && ' Sans compte, ton journal reste sur ce téléphone.'}
           </p>
         </div>
@@ -203,6 +245,38 @@ const ConfierPanel: React.FC<{
         )
       )}
 
+      {/* Carnet où va le texte */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <button type="button" onClick={() => setPickCarnet(v => !v)} aria-expanded={pickCarnet} className="drl-btn"
+          style={{ alignSelf: 'flex-start', minHeight: 34, padding: '0 12px', borderRadius: 999, border: `1px solid ${CONFIER.line}`, background: CONFIER.tint, color: CONFIER.text, fontSize: 13, fontWeight: 600, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+          <BookOpen size={13} aria-hidden="true" /> Carnet : <b>{carnet}</b> ▾
+        </button>
+        {pickCarnet && (
+          <div className="drl-in" style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+            {carnets.map(c => (
+              <button key={c} type="button" onClick={() => chooseCarnet(c)} className="drl-btn"
+                style={{ minHeight: 34, padding: '0 12px', borderRadius: 999, border: `1px solid ${c === carnet ? CONFIER.accent : CONFIER.line}`, background: c === carnet ? 'rgba(201,184,228,.25)' : 'transparent', color: CONFIER.text, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
+                {c}
+              </button>
+            ))}
+            {newCarnet === null ? (
+              <button type="button" onClick={() => setNewCarnet('')} className="drl-btn"
+                style={{ minHeight: 34, padding: '0 12px', borderRadius: 999, border: `1px dashed ${CONFIER.line}`, background: 'transparent', color: CONFIER.muted, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
+                + Nouveau carnet
+              </button>
+            ) : (
+              <span style={{ display: 'inline-flex', gap: 6 }}>
+                <input autoFocus value={newCarnet} maxLength={24} onChange={e => setNewCarnet(e.target.value)} placeholder="Ex. Mes sœurs" aria-label="Nom du nouveau carnet"
+                  onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); const list = addCarnet(owner, newCarnet); setCarnets(list); const n = list.find(x => x.toLowerCase() === newCarnet.trim().toLowerCase()); if (n) chooseCarnet(n); } }}
+                  className="drl-input" style={{ minHeight: 34, width: 140, borderRadius: 999, border: `1px solid ${CONFIER.accent}`, background: 'rgba(255,255,255,.06)', color: CONFIER.text, padding: '0 12px', fontSize: 14, fontFamily: 'inherit', outline: 'none' }} />
+                <button type="button" onClick={() => { const list = addCarnet(owner, newCarnet); setCarnets(list); const n = list.find(x => x.toLowerCase() === newCarnet.trim().toLowerCase()); if (n) chooseCarnet(n); }}
+                  style={{ minHeight: 34, padding: '0 12px', borderRadius: 999, border: 0, background: CONFIER.accent, color: CONFIER.ink, fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>OK</button>
+              </span>
+            )}
+          </div>
+        )}
+      </div>
+
       <form onSubmit={onDeposit} style={{ display: 'flex', alignItems: 'flex-end', gap: 8 }}>
         <label htmlFor="drl-confier" style={{ position: 'absolute', width: 1, height: 1, overflow: 'hidden', clip: 'rect(0 0 0 0)' }}>Écrire dans ton journal</label>
         <textarea
@@ -233,7 +307,7 @@ const ConfierPanel: React.FC<{
 
       <p style={{ margin: 0, textAlign: 'center', fontSize: 12, color: CONFIER.faint }}>
         Visible par toi {seul}
-        {userId && hasLiveEntries(state) && <> · <Link to="/journal" style={{ color: CONFIER.accent, fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 4 }}><BookOpen size={12} aria-hidden="true" /> Ouvrir mon journal</Link></>}
+        {hasLiveEntries(state) && <> · <button type="button" onClick={() => onView?.('journal')} style={{ border: 0, background: 'transparent', padding: 0, cursor: 'pointer', color: CONFIER.accent, fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 12 }}><BookOpen size={12} aria-hidden="true" /> Relire mon journal</button></>}
       </p>
     </div>
   );

@@ -10,7 +10,8 @@ import {
 } from './compatibilityService';
 import { getTotemProgress } from '../utils/totemAlgorithm';
 import type { CompatibilityResult } from '../types/assessment';
-import type { DefiAudience } from '../utils/socialFlow';
+import { DEFI_SCALE_CONFIG } from '../config/defiConfig';
+import type { DefiAudience, DefiQuestion, PersoQuestion, SelectedPerso } from '../utils/socialFlow';
 
 export interface SocialProfile {
   totemRevealed: boolean;
@@ -19,6 +20,8 @@ export interface SocialProfile {
   genre: 'masculin' | 'feminin' | null;
   codeMental: string | null;
   codeSexual: string | null;
+  /** Tests sensibles déjà faits, que la personne peut ajouter à un défi public. */
+  availableOptins: string[];
 }
 
 export async function loadSocialProfile(uid: string): Promise<SocialProfile> {
@@ -31,6 +34,9 @@ export async function loadSocialProfile(uid: string): Promise<SocialProfile> {
     genre: g === 'masculin' || g === 'homme' ? 'masculin' : g === 'feminin' || g === 'femme' ? 'feminin' : null,
     codeMental: p.compatibilityIdMental,
     codeSexual: p.compatibilityIdSexual,
+    availableOptins: Object.entries(DEFI_SCALE_CONFIG)
+      .filter(([id, cfg]) => cfg.public === 'optin' && !!p.scaleResults?.[id])
+      .map(([id]) => id),
   };
 }
 
@@ -41,31 +47,41 @@ export interface DefiInput {
   duration: number;
   devoilement: 'auto' | 'aucun';
   titre: string;
+  optinScales: string[];
+  petitsMots: boolean;
 }
 
-export async function defiPreview(i: DefiInput): Promise<{ ok: true; questions: { key: string; text: string }[] } | { ok: false; error: string }> {
+export async function defiPreview(i: DefiInput): Promise<{ ok: true; selected: DefiQuestion[]; available: DefiQuestion[]; perso: PersoQuestion[]; totem: string | null } | { ok: false; error: string }> {
   try {
     const res = await authedFetch('/.netlify/functions/defi-preview', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ displayName: i.displayName, audience: i.audience, persoCount: 0, genre: i.genre, optinScales: [] }),
+      body: JSON.stringify({ displayName: i.displayName, audience: i.audience, persoCount: 0, genre: i.genre, optinScales: i.optinScales }),
     });
     const data = await res.json();
     if (!res.ok) return { ok: false, error: data.error || 'aperçu impossible' };
-    return { ok: true, questions: (data.selected ?? []).map((q: { key: string; text: string }) => ({ key: q.key, text: q.text })) };
+    const q = (x: { key: string; text: string }) => ({ key: x.key, text: x.text });
+    return {
+      ok: true,
+      selected: (data.selected ?? []).map(q),
+      available: (data.available ?? []).map(q),
+      perso: (data.perso ?? []).map((p: PersoQuestion) => ({ id: p.id, stem: p.stem, options: p.options ?? [], allowOther: !!p.allowOther })),
+      totem: data.totem?.text ?? null,
+    };
   } catch {
     return { ok: false, error: 'connexion instable' };
   }
 }
 
-export async function defiCreate(i: DefiInput, selectedKeys: string[]): Promise<{ ok: true; slug: string } | { ok: false; error: string }> {
+export async function defiCreate(i: DefiInput, selectedKeys: string[], perso: SelectedPerso[]): Promise<{ ok: true; slug: string } | { ok: false; error: string }> {
   try {
     const res = await authedFetch('/.netlify/functions/defi-create', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        displayName: i.displayName, optinScales: [], duration: i.duration, devoilement: i.devoilement,
-        titre: i.titre, audience: i.audience, petitsMots: true, selectedKeys, genre: i.genre,
+        displayName: i.displayName, optinScales: i.optinScales, duration: i.duration, devoilement: i.devoilement,
+        titre: i.titre, audience: i.audience, petitsMots: i.petitsMots, selectedKeys, genre: i.genre,
+        ...(perso.length ? { persoQuestions: perso.map(sp => (sp.customAnswer ? { questionId: sp.questionId, customAnswer: sp.customAnswer } : { questionId: sp.questionId, answerIdx: sp.answerIdx })) } : {}),
       }),
     });
     const data = await res.json();
