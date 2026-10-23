@@ -1,7 +1,7 @@
 // Lancer : node --test netlify/functions/_drloQuestions.test.js
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
-const Q = require('./_drloQuestions');
+const Q = require('../_drloQuestions');
 
 const T = Date.UTC(2026, 9, 22, 10); // jeudi 22 oct. 2026
 

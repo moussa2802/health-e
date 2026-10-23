@@ -2,7 +2,7 @@
 const { test } = require("node:test");
 const assert = require("node:assert/strict");
 const crypto = require("crypto");
-const { verifyPaytechIpn, parseCustomField } = require("./_paytechVerify");
+const { verifyPaytechIpn, parseCustomField } = require("../_paytechVerify");
 
 const keys = { apiKey: "KEY123", apiSecret: "SECRET456" };
 const hmac = (amount, ref) => crypto.createHmac("sha256", keys.apiSecret).update(`${amount}|${ref}|${keys.apiKey}`).digest("hex");

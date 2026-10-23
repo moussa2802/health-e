@@ -1,7 +1,7 @@
 // Lancer : node --test netlify/functions/_compatPartner.test.js
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
-const { codeType, partnerView } = require('./_compatPartner');
+const { codeType, partnerView } = require('../_compatPartner');
 
 const profile = {
   uid: 'u2', displayName: 'Moussa Diop',
