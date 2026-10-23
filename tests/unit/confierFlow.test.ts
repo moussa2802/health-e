@@ -13,7 +13,7 @@ test('déposer : l\'entrée part au journal, Dr Lô répond d\'un mot bref', () 
   assert.equal(e.text, 'Journée lourde au boulot.');
   assert.equal(e.status, 'saving');
   assert.equal(state.items.at(-1)!.kind, 'ack');
-  assert.ok((state.items.at(-1) as { text: string }).text.length < 40, 'un mot bref, pas un conseil');
+  assert.ok((state.items.at(-1) as { text: string }).text.length < 90, 'une phrase brève, pas un conseil');
   assert.notEqual(ackFor(1), ackFor(2));
 });
 
@@ -57,4 +57,11 @@ test('fil limité en taille', () => {
   let s = emptyConfier();
   for (let i = 0; i < 30; i++) s = deposit(s, `t${i}`).state;
   assert.ok(s.items.length <= MAX_ITEMS);
+});
+
+test('l\'accusé de réception reprend le thème, sans conseil', () => {
+  assert.match(ackFor(1, 'je me dispute souvent avec ma mère et ça me pèse'), /famille/);
+  assert.match(ackFor(1, 'mon copain ne me parle plus'), /cœur/);
+  assert.match(ackFor(1, 'mon patron me met la pression'), /travail/);
+  assert.equal(ackFor(1, 'rien de spécial'), 'Je t\'entends.');
 });

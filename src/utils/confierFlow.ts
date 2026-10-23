@@ -34,7 +34,29 @@ const ACKS = [
   'C\'est posé, en sécurité ici.',
 ];
 
-export function ackFor(entryCount: number): string {
+/**
+ * Accusé de réception : il reprend le thème du texte quand on le reconnaît (sans conseil,
+ * sans IA, rien n'est envoyé), sinon une phrase d'écoute qui varie.
+ */
+const THEMES: { re: RegExp; text: string }[] = [
+  { re: /\b(deuil|decede|deces|est mort|est morte|enterrement|ma perte)\b/, text: 'Perdre quelqu\'un, ça laisse un vide immense. Je suis là, prends ton temps.' },
+  { re: /\b(mere|maman|pere|papa|parents?|famille|frere|soeur|tante|oncle|belle-mere|beaux-parents|ndeye|baye)\b/, text: 'Les tensions en famille, ça pèse lourd, surtout avec ceux qu\'on aime. Je t\'entends.' },
+  { re: /\b(mari|femme|epou\w*|copain|copine|couple|fiance\w*|ex|rupture|tromp\w*|jalou\w*|crush)\b/, text: 'Les histoires de cœur, ça remue profondément. Je t\'écoute, sans jugement.' },
+  { re: /\b(travail|boulot|patron|chef|bureau|collegues?|chomage|licenci\w*)\b/, text: 'Quand le travail déborde sur tout le reste, c\'est épuisant. C\'est noté, ici.' },
+  { re: /\b(argent|dette|dettes|loyer|payer|factures?|depenses?)\b/, text: 'Les soucis d\'argent empêchent de souffler. Merci de l\'avoir posé ici.' },
+  { re: /\b(examen|exam|ecole|fac|universite|etudes|bac|concours|memoire)\b/, text: 'La pression des études, ça prend toute la place. Je lis, prends ton temps.' },
+  { re: /\b(dors|dormir|sommeil|insomnie|fatigue|fatiguee?|epuise\w*)\b/, text: 'Quand le corps est à bout, tout devient plus lourd. Je suis là.' },
+  { re: /\b(seule?|solitude|personne ne|isole\w*)\b/, text: 'La solitude, c\'est dur. Ici, tu ne la portes plus sans personne.' },
+];
+
+function norm(t: string): string {
+  return t.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+}
+
+export function ackFor(entryCount: number, text = ''): string {
+  const t = norm(text);
+  const theme = t ? THEMES.find(x => x.re.test(t)) : undefined;
+  if (theme) return theme.text;
   return ACKS[(Math.max(1, entryCount) - 1) % ACKS.length];
 }
 
@@ -56,7 +78,7 @@ export function deposit(s: ConfierState, text: string, now = Date.now()): { stat
   let next = add(s, { id: entryId, kind: 'entry', text: clean, at: now, journalId: null, status: 'saving' });
   const crisis = detectCrisis(clean);
   if (crisis) next = add(next, { kind: 'crisis' });
-  else next = add(next, { kind: 'ack', text: ackFor(entries(next).length) });
+  else next = add(next, { kind: 'ack', text: ackFor(entries(next).length, clean) });
   return { state: next, entryId, crisis };
 }
 

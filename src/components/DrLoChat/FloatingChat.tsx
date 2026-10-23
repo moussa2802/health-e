@@ -262,6 +262,7 @@ const FloatingChat: React.FC<Props> = ({ userId, hideLauncher = false }) => {
       const detail = (e as CustomEvent<DrLoOpenDetail>).detail ?? {};
       setView('chat');
       setOpen(true);
+      if (detail.draft) setInput(detail.draft.slice(0, 1000));
       const greeting = detail.greeting;
       if (!greeting) return;
       // On ne remplace le message d'accueil que si aucune conversation n'est en cours :

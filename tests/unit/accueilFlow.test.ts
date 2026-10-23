@@ -17,7 +17,6 @@ const cards = (s: AccueilState) => s.messages.filter(m => m.card).map(m => m.car
 function guestToPrescription(needValue: string): AccueilState {
   let s = startConversation(guest);
   s = respond(s, { value: needValue, label: 'x' }, guest);
-  s = respond(s, { text: 'Awa' }, guest);
   s = respond(s, { value: 'genre:femme', label: 'Une femme' }, guest);
   s = respond(s, { value: 'age:18-25', label: '18-25' }, guest);
   return s;
@@ -29,13 +28,13 @@ test('accueil invité : annonce les 3 tests gratuits sans compte', () => {
   assert.equal(getQuickReplies(s, guest).length, 5);
 });
 
-test('stress → prénom → genre → âge → carte test Anxiété (4 échanges)', () => {
+test('stress → genre → âge → carte test Anxiété (3 échanges, prénom pas demandé)', () => {
   const s = guestToPrescription('need:stress');
   assert.equal(s.step, 'prescribed');
   assert.equal(s.prescribed, 'gad7');
   assert.deepEqual(cards(s).at(-1), { type: 'test', scaleId: 'gad7' });
-  assert.equal(s.prenom, 'Awa');
-  assert.equal(s.messages.filter(m => m.from === 'user').length, 4);
+  assert.equal(s.prenom, undefined);
+  assert.equal(s.messages.filter(m => m.from === 'user').length, 3);
 });
 
 test('correspondances besoin → test', () => {
@@ -70,7 +69,7 @@ test('texte incompris deux fois → on démarre en douceur, pas de boucle', () =
   assert.equal(s.step, 'need_clarify');
   s = respond(s, { text: 'euh' }, guest);
   assert.equal(s.need, 'decouvre');
-  assert.equal(s.step, 'prenom');
+  assert.equal(s.step, 'genre');
 });
 
 test('crise détectée à n\'importe quelle étape → ressources, pas de test', () => {
@@ -140,4 +139,14 @@ test('parseurs', () => {
   assert.equal(parseAge('16'), 'minor');
   assert.equal(parseAge("j'ai 29 ans"), '26-35');
   assert.equal(parseAge('aucune idée'), null);
+});
+
+test('crise en wolof (plusieurs orthographes)', () => {
+  for (const t of ['dama bëgg dee', 'dama beug dee', 'dama bugg dee', 'Dama bëgg rey sama bopp', 'damay xaru',
+    'bëgguma dund', 'dama sonn ci dund', 'sonn naa ci àddina', 'dama bëgg génn àddina', 'dund amatul solo']) {
+    assert.ok(detectCrisis(t), t);
+  }
+  for (const t of ['dama bëgg dem', 'dama sonn', 'nanga def', 'dama bëgg xam sama bopp', 'idée']) {
+    assert.ok(!detectCrisis(t), t);
+  }
 });

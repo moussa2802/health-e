@@ -2,8 +2,10 @@
  * accueilFlow.ts — Moteur de la conversation d'accueil de Dr Lô (page d'accueil).
  *
  * Choix de conception (étape 1) :
- *  - Conversation SCRIPTÉE par règles, sans appel IA : gratuite (0 Kori, 0 coût API),
- *    accessible aux invités, et sans risque qu'une IA improvise face à une personne fragile.
+ *  - Squelette SCRIPTÉ par règles (pastilles, test, crise) : gratuit, accessible aux invités.
+ *  - Le texte libre est compris par l'IA (fonction drlo-route, gratuite) qui choisit une
+ *    destination parmi une liste fermée (routeDecision). Les mots-clés restent le secours.
+ *  - La crise est TOUJOURS détectée localement d'abord, avec des messages validés.
  *  - Logique pure et sérialisable (état sauvegardé en localStorage par l'interface),
  *    testable avec `node --test tests/unit/`.
  *  - Garde-fous intégrés : détection de crise à chaque saisie libre, cadre « 18 ans et plus »,
@@ -35,7 +37,21 @@ export type Card =
   | { type: 'crisis' }
   | { type: 'signup'; mode?: 'signup' | 'login' }
   | { type: 'link_account' }
-  | { type: 'result'; path: string };
+  | { type: 'result'; path: string }
+  | { type: 'go'; to: GoTarget };
+
+/** Destinations hors conversation que Dr Lô peut proposer. */
+export type GoTarget = 'defi' | 'compat' | 'question_drlo' | 'totem' | 'catalogue' | 'chat' | 'confier';
+
+export const GO: Record<GoTarget, { label: string; path?: string; needsAccount: boolean; intro: string }> = {
+  defi: { label: 'Lancer mon Défi', path: '/defi', needsAccount: true, intro: 'Le Défi « Kan moo ma gën a xam ? » : tes proches devinent tes réponses, et tu découvres qui te connaît le mieux.' },
+  compat: { label: 'Comparer nos profils', path: '/assessment/compatibility', needsAccount: true, intro: 'La compatibilité : tu partages un code, l\'autre personne fait ses tests, et je compare vos deux profils.' },
+  question_drlo: { label: 'Écrire au vrai Dr Lô', path: '/question', needsAccount: true, intro: 'Tu peux écrire au vrai Dr Lô : c\'est gratuit, une question à la fois.' },
+  totem: { label: 'Voir mon totem', path: '/assessment/totem', needsAccount: true, intro: 'Ton totem résume ta personnalité profonde.' },
+  catalogue: { label: 'Voir tous les tests', path: '/assessment', needsAccount: false, intro: 'Voici tous les tests, classés par thème.' },
+  chat: { label: 'Discuter avec Dr Lô', needsAccount: true, intro: 'On peut en parler tranquillement, toi et moi.' },
+  confier: { label: 'Écrire dans mon journal', needsAccount: false, intro: 'Écris comme ça vient : je lis, sans juger et sans t\'interrompre.' },
+};
 
 export interface Msg {
   id: string;
@@ -68,6 +84,10 @@ export interface AccueilState {
   commented: string[];
   messages: Msg[];
   seq: number;
+  /** Jour (AAAA-MM-JJ) du dernier échange : un nouveau jour = une nouvelle salutation. */
+  day?: string;
+  /** Destination à proposer juste après la création de l'espace. */
+  pendingGo?: GoTarget;
 }
 
 /** Ce que l'interface sait déjà de la personne (compte, onboarding existant). */
@@ -165,6 +185,14 @@ const CRISIS_PATTERNS: RegExp[] = [
   /automutil/,
   /\bme pendre\b/,
   /\bdisparaitre\b/,
+  // Wolof (orthographes courantes, accents retirés par normalize) — liste à compléter/valider par Dr Lô
+  /\b(begg?|beug|bugg?|beugue?)\s+(a\s+)?de+\b/,                 // dama bëgg dee : je veux mourir
+  /\breyi?\s+(sama\s+|sa\s+|sama\s+bakkan\s*)?bopp/,            // rey sama bopp : me tuer
+  /\bxaru\b/,                                                       // xaru : se suicider
+  /\b(begg|beug|bugg)(uma|ul|oul|ouma)\s+(dund|dound)/,             // bëgguma dund : je ne veux plus vivre
+  /\bsonn(\s+naa)?\s+(ci|si)\s+(dund|dound|a+d+u?n+a|a+d+ina)\b/,  // sonn naa ci dund : fatigué(e) de vivre
+  /\b(genn|gen|guen)\s+(a+d+u?n+a|a+d+ina)\b/,                     // génn àddina : quitter ce monde
+  /\bdund\s+(amatul|amul)\s+(solo|njariñ|njarin)/,                 // dund amatul solo : la vie n'a plus de sens
 ];
 
 export function detectCrisis(text: string): boolean {
@@ -256,8 +284,8 @@ export function startConversation(k: Known): AccueilState {
     prenom: k.prenom, genre: k.genre, age: k.age,
   };
   const hello = k.prenom
-    ? `Bonjour ${k.prenom} 👋 Content de te revoir. Comment tu vas aujourd'hui, et qu'est-ce qui t'amène ?`
-    : `Salut 👋 Moi c'est Dr Lô. Comment tu vas, et qu'est-ce qui t'amène ici ?`;
+    ? `Bonjour ${firstName(k.prenom)} 👋\u00a0Comment tu vas aujourd'hui, et qu'est-ce qui t'amène ?`
+    : `Salut 👋\u00a0Moi c'est Dr Lô. Comment tu vas, et qu'est-ce qui t'amène ici ?`;
   s = push(s, 'drlo', hello);
   if (!k.isAuthenticated) {
     s = push(s, 'drlo', `Ici, tu peux faire ${k.guestRemaining > 0 ? k.guestRemaining : 3} tests gratuits, sans créer de compte. Ce que tu me dis reste sur ton téléphone.`);
@@ -307,9 +335,7 @@ const ACKS: Record<Need, (s: AccueilState) => string> = {
 
 /** Pose la prochaine question d'identité manquante, ou prescrit le test. */
 function askNextOrPrescribe(s: AccueilState, k: Known): AccueilState {
-  if (!s.prenom && s.step !== 'genre' && s.step !== 'age' && !s.messages.some(m => m.text.startsWith('Au fait, comment tu t\'appelles'))) {
-    return { ...push(s, 'drlo', `Au fait, comment tu t'appelles ? Juste ton prénom ou un surnom.`), step: 'prenom' };
-  }
+  // Le prénom n'est plus demandé avant d'aider : il viendra avec l'espace (ou si la personne le dit).
   if (!s.genre) {
     const hi = s.prenom ? `Enchanté ${s.prenom} ! ` : '';
     return { ...push(s, 'drlo', `${hi}Pour bien m'adresser à toi : tu es…`), step: 'genre' };
@@ -322,22 +348,21 @@ function askNextOrPrescribe(s: AccueilState, k: Known): AccueilState {
 
 function prescribe(s: AccueilState, k: Known, forcedScale?: string): AccueilState {
   const need = s.need ?? 'decouvre';
-  const first = forcedScale && !k.doneScaleIds.includes(forcedScale)
-    ? forcedScale
-    : (!k.doneScaleIds.includes(NEED_TO_SCALE[need]) ? NEED_TO_SCALE[need] : pickNextScale(need, k.doneScaleIds));
-  if (!first) {
-    let out = push(s, 'drlo', `Tu as déjà fait les tests par lesquels je commence d'habitude. Va jeter un œil au catalogue, il en reste plein à découvrir.`);
-    out = { ...out, step: 'prescribed' };
-    return out;
-  }
+  // Un test précis demandé (deuil, sommeil, choix de l'IA) est proposé même s'il a déjà été fait : on regarde l'évolution
+  const first = forcedScale
+    ?? (!k.doneScaleIds.includes(NEED_TO_SCALE[need]) ? NEED_TO_SCALE[need] : pickNextScale(need, k.doneScaleIds))
+    // Tout est déjà fait : on refait le test de base du besoin, pour voir ce qui a bougé
+    ?? NEED_TO_SCALE[need];
   const label = k.labelOf(first);
   const mins = k.minutesOf(first);
-  let out = push(s, 'drlo', `Vu ce que tu m'as dit, je te propose de commencer par le test « ${label} » : environ ${mins} minutes. Ensuite on en reparle ici, et je te dirai ce que ton résultat raconte.`, { type: 'test', scaleId: first });
+  let out = push(s, 'drlo', k.doneScaleIds.includes(first)
+    ? `Tu as déjà fait le test « ${label} ». On le refait (environ ${mins} minutes) ? On verra ensemble ce qui a bougé depuis.`
+    : `Vu ce que tu m'as dit, je te propose le test « ${label} » : environ ${mins} minutes. Ensuite on en reparle ici, et je te dirai ce que ton résultat raconte.`, { type: 'test', scaleId: first });
   out = { ...out, step: 'prescribed', prescribed: first };
   return out;
 }
 
-function enterCrisis(s: AccueilState): AccueilState {
+export function enterCrisis(s: AccueilState): AccueilState {
   const resumeStep = s.step === 'crisis' ? s.resumeStep : s.step;
   let out = push(s, 'drlo', `Ce que tu viens d'écrire est important, et je suis vraiment content que tu l'aies dit. Tu n'as pas à traverser ça ${g(s, 'seul', 'seule')}.`);
   out = push(out, 'drlo', `Je suis un compagnon de bien-être, pas une équipe de secours : là, tu as besoin d'une vraie personne. Appelle un de ces numéros, ou parle tout de suite à quelqu'un de confiance autour de toi.`, { type: 'crisis' });
@@ -370,6 +395,8 @@ export function respond(state: AccueilState, input: Input, k: Known): AccueilSta
       s = { ...s, step: back, resumeStep: undefined };
       if (back === 'need' || back === 'need_clarify') return push(s, 'drlo', `Quand tu te sens prêt(e) : qu'est-ce qui t'amène ici ?`);
       if (back === 'testing') return push(s, 'drlo', `On reprend quand tu veux, à ton rythme. Tu peux aussi mettre le test en pause.`);
+      // Un test était déjà proposé : on ne le repropose pas juste après une crise
+      if (back === 'prescribed') return push(s, 'drlo', `Je reste là. On peut parler, respirer un moment, ou continuer plus tard : c'est toi qui choisis.`);
       return askNextOrPrescribe(s, k);
     }
     return push(s, 'drlo', `Je reste là. Si tu es en danger maintenant, appelle le 1515 (SAMU) ou un des numéros ci-dessus.`);
@@ -440,9 +467,15 @@ export function respond(state: AccueilState, input: Input, k: Known): AccueilSta
           s = push(s, 'drlo', ACKS[match.need](s));
           return prescribe({ ...s, need: match.need }, k, match.scaleId);
         }
+        if (match?.scaleId && match.scaleId !== s.prescribed) return prescribe({ ...s, need: match.need }, k, match.scaleId);
+        if (!s.prescribed) {
+          return push(s, 'drlo', k.isAuthenticated
+            ? `Je t'ai bien lu. Dis-m'en un peu plus, ou choisis juste en dessous : on peut aussi en parler librement.`
+            : `Je t'ai bien lu. Dis-m'en un peu plus, ou choisis juste en dessous.`);
+        }
         return push(s, 'drlo', k.isAuthenticated
-          ? `Je t'ai bien lu. Le mieux, c'est de commencer par le test proposé : on en reparle juste après. Si tu veux discuter plus longuement maintenant, tu peux aussi ouvrir le chat libre.`
-          : `Je t'ai bien lu. Le mieux, c'est de commencer par le test proposé : on en reparle juste après, ici même.`);
+          ? `Je t'ai bien lu. Le test proposé juste au-dessus nous aidera à y voir clair : on en reparle juste après. Si tu préfères en parler maintenant, ouvre la discussion libre.`
+          : `Je t'ai bien lu. Le test proposé juste au-dessus nous aidera à y voir clair : on en reparle juste après, ici même.`);
       }
       return s;
     }
@@ -561,7 +594,9 @@ export function pauseChatTest(state: AccueilState, doneCount: number, label: str
   if (!state.activeTest) return state;
   const scaleId = state.activeTest.scaleId;
   let s = push(state, 'user', 'Je continue plus tard');
-  s = push(s, 'drlo', `Pas de souci. Tes ${doneCount} réponse${doneCount > 1 ? 's sont gardées' : ' est gardée'} : on reprendra « ${label} » là où tu t'es ${g(s, 'arrêté', 'arrêtée')}, quand tu veux.`, { type: 'test', scaleId, resume: true });
+  s = push(s, 'drlo', doneCount > 0
+    ? `Pas de souci. Tes ${doneCount} réponse${doneCount > 1 ? 's sont gardées' : ' est gardée'} : on reprendra « ${label} » là où tu t'es ${g(s, 'arrêté', 'arrêtée')}, quand tu veux.`
+    : `Pas de souci. Le test « ${label} » t'attendra : on le reprendra quand tu veux.`, { type: 'test', scaleId, resume: doneCount > 0 });
   return { ...s, step: 'prescribed', activeTest: undefined, prescribed: scaleId };
 }
 
@@ -596,7 +631,11 @@ export function welcomeAfterAuth(state: AccueilState, w: WelcomeInfo): AccueilSt
   if (w.journalCount > 0) added.push(`${w.journalCount > 1 ? `tes ${w.journalCount} confidences` : 'ta confidence'}`);
   if (added.length) text += ` J'ai ajouté à ton espace ${added.join(' et ')}.`;
   let s = push(state, 'drlo', text);
-  if (w.phoneOnly) {
+  if (state.pendingGo) {
+    const go = GO[state.pendingGo];
+    s = push(s, 'drlo', `${go.intro} On y va ?`, { type: 'go', to: state.pendingGo });
+    s = { ...s, pendingGo: undefined };
+  } else if (w.phoneOnly) {
     s = push(s, 'drlo', `Une dernière chose : la connexion par SMS va bientôt s'arrêter. Relie Google ou ton e-mail à ton espace pour ne jamais le perdre. Un seul geste.`, { type: 'link_account' });
   } else {
     s = push(s, 'drlo', state.prescribed && state.step === 'prescribed'
@@ -604,4 +643,142 @@ export function welcomeAfterAuth(state: AccueilState, w: WelcomeInfo): AccueilSt
       : `Qu'est-ce qu'on regarde ensemble maintenant ?`);
   }
   return s;
+}
+
+// ── Texte libre compris par l'IA (fonction drlo-route) ──────────────────────
+
+/** Décision renvoyée par drlo-route (déjà validée côté serveur). */
+export interface RouteDecision {
+  action: 'test' | 'defi' | 'compat' | 'mood' | 'confier' | 'breath' | 'chat' | 'question_drlo' | 'totem'
+    | 'catalogue' | 'explain' | 'pause' | 'continue' | 'crisis' | 'reply';
+  scaleId: string | null;
+  then: RouteDecision['action'] | null;
+  reply: string;
+}
+
+/** Ce que l'interface doit faire en plus du message (ouvrir un mode). */
+export type RouteUi = 'mood' | 'breath' | null;
+
+export interface RouteCtx {
+  /** Question en cours (pendant un test), pour la reposer. */
+  currentQuestion?: { itemId: number; text: string };
+  /** Nombre de réponses déjà données et nom du test (pour la pause). */
+  doneCount?: number;
+  testLabel?: string;
+}
+
+const GO_TARGETS: GoTarget[] = ['defi', 'compat', 'question_drlo', 'totem', 'catalogue', 'chat', 'confier'];
+
+/** Propose une destination hors conversation (ou l'espace d'abord, pour un invité). */
+function goTo(s: AccueilState, to: GoTarget, k: Known, text: string): AccueilState {
+  const go = GO[to];
+  if (go.needsAccount && !k.isAuthenticated) {
+    const out = push(s, 'drlo', `${text} Pour ça, il te faut ton espace : c'est gratuit et ça prend 10 secondes. Ensuite je t'y emmène.`, { type: 'signup' });
+    return { ...out, pendingGo: to, step: s.step === 'testing' ? s.step : 'prescribed' };
+  }
+  return { ...push(s, 'drlo', text, { type: 'go', to }), step: s.step === 'testing' ? s.step : 'prescribed' };
+}
+
+/** Propose un test choisi par l'IA (genre et âge d'abord, s'ils manquent : le test s'y accorde, et pas de test avant 18 ans). */
+function goTest(s: AccueilState, scaleId: string, k: Known, text: string): AccueilState {
+  const out = push(s, 'drlo', text);
+  const withNeed: AccueilState = { ...out, need: out.need ?? 'decouvre', prescribed: scaleId };
+  if (!withNeed.genre || !withNeed.age) return askNextOrPrescribe({ ...withNeed, step: 'need' }, k);
+  const label = k.labelOf(scaleId);
+  const mins = k.minutesOf(scaleId);
+  const again = k.doneScaleIds.includes(scaleId);
+  const card = push(withNeed, 'drlo', again
+    ? `Tu l'as déjà fait : on refait « ${label} » (environ ${mins} minutes) pour voir ce qui a bougé ?`
+    : `Le test « ${label} » : environ ${mins} minutes, ici avec moi.`, { type: 'test', scaleId });
+  return { ...card, step: 'prescribed', prescribed: scaleId };
+}
+
+/** Repose la question d'identité en attente (genre / âge) après un échange libre. */
+function reAsk(s: AccueilState): AccueilState {
+  if (s.step === 'genre') return push(s, 'drlo', `Pour bien m'adresser à toi : tu es un homme ou une femme ?`);
+  if (s.step === 'age') return push(s, 'drlo', `Et tu as quel âge ?`);
+  return s;
+}
+
+/**
+ * Applique la décision de l'IA. `state` contient DÉJÀ le message de la personne.
+ * La crise utilise toujours les messages validés (enterCrisis), jamais le texte de l'IA.
+ */
+export function routeDecision(state: AccueilState, d: RouteDecision, k: Known, ctx: RouteCtx = {}): { state: AccueilState; ui: RouteUi } {
+  let s = state;
+  const ui = (u: RouteUi, next: AccueilState) => ({ state: next, ui: u });
+  if (d.action === 'crisis') return ui(null, enterCrisis(s));
+
+  if (s.step === 'testing' && s.activeTest) {
+    if (d.action === 'explain') return ui(null, push(s, 'drlo', d.reply));
+    if (d.action === 'continue') {
+      s = push(s, 'drlo', d.reply);
+      if (ctx.currentQuestion) s = askQuestion(s, ctx.currentQuestion.itemId, ctx.currentQuestion.text);
+      return ui(null, s);
+    }
+    if (d.action === 'pause' || d.action !== 'reply') {
+      const scaleId = s.activeTest.scaleId;
+      const n = ctx.doneCount ?? Object.keys(s.activeTest.answers).length;
+      s = push(s, 'drlo', d.reply);
+      const lbl = ctx.testLabel ?? k.labelOf(scaleId);
+      s = push(s, 'drlo', n > 0
+        ? `Tes ${n} réponse${n > 1 ? 's sont gardées' : ' est gardée'} : on reprendra « ${lbl} » quand tu veux.`
+        : `Le test « ${lbl} » t'attendra : on le reprendra quand tu veux.`, { type: 'test', scaleId, resume: n > 0 });
+      s = { ...s, step: 'prescribed', activeTest: undefined, prescribed: scaleId };
+      const then = d.action === 'pause' ? d.then : d.action;
+      if (!then) return ui(null, s);
+      if (then === 'mood' || then === 'breath') return ui(then, s);
+      if (then === 'test' && d.scaleId) return ui(null, goTest(s, d.scaleId, k, 'On regarde ça ensemble.'));
+      if ((GO_TARGETS as string[]).includes(then)) return ui(null, goTo(s, then as GoTarget, k, GO[then as GoTarget].intro));
+      return ui(null, s);
+    }
+    // « reply » pendant un test : un mot, puis la question en cours
+    s = push(s, 'drlo', d.reply);
+    if (ctx.currentQuestion) s = askQuestion(s, ctx.currentQuestion.itemId, ctx.currentQuestion.text);
+    return ui(null, s);
+  }
+
+  // Hors test, on n'est plus dans une étape de crise si on en sort par une destination
+  if (s.step === 'crisis') return ui(null, push(s, 'drlo', d.reply));
+
+  switch (d.action) {
+    case 'test':
+      return ui(null, d.scaleId ? goTest(s, d.scaleId, k, d.reply) : goTo(s, 'catalogue', k, d.reply));
+    case 'defi': case 'compat': case 'question_drlo': case 'totem': case 'catalogue': case 'chat': case 'confier':
+      return ui(null, goTo(s, d.action, k, d.reply));
+    case 'mood': case 'breath':
+      return ui(d.action, { ...push(s, 'drlo', d.reply), step: ['need', 'need_clarify'].includes(s.step) ? 'prescribed' : s.step });
+    default: {
+      // « reply » (ou explain/continue/pause hors test) : on répond et on relance là où on en était
+      s = push(s, 'drlo', d.reply);
+      if (s.step === 'genre' || s.step === 'age') s = reAsk(s);
+      else if (s.step === 'need_clarify') s = { ...s, step: 'need' };
+      return ui(null, s);
+    }
+  }
+}
+
+// ── Nouveau jour ─────────────────────────────────────────────────────────────
+
+/** Prénom affiché : le premier mot seulement (l'onboarding contient parfois le nom complet). */
+export function firstName(p?: string | null): string | undefined {
+  const f = (p ?? '').trim().split(/\s+/)[0];
+  return f ? f.charAt(0).toUpperCase() + f.slice(1) : undefined;
+}
+
+/**
+ * Retour un autre jour : Dr Lô salue à nouveau et repart de « comment tu vas ? »,
+ * sauf pendant un test (on le reprend) ou une crise.
+ */
+export function newDay(s: AccueilState, today: string, k: Known): AccueilState {
+  if (!s.day) return { ...s, day: today };
+  if (s.day === today) return s;
+  if (s.step === 'testing' || s.step === 'crisis' || s.step === 'minor') return { ...s, day: today };
+  const p = firstName(s.prenom ?? k.prenom);
+  let out = push(s, 'drlo', p ? `Re-bonjour ${p} 👋\u00a0Content de te revoir. Comment tu vas aujourd'hui ?` : `Re-bonjour 👋\u00a0Content de te revoir. Comment tu vas aujourd'hui ?`);
+  if (s.prescribed && !k.doneScaleIds.includes(s.prescribed)) {
+    out = push(out, 'drlo', `Le test « ${k.labelOf(s.prescribed)} » t'attend toujours, si tu veux.`, { type: 'test', scaleId: s.prescribed });
+    return { ...out, day: today, step: 'prescribed' };
+  }
+  return { ...out, day: today, step: 'need', prescribed: undefined };
 }

@@ -1,7 +1,7 @@
 /**
  * ConversationAccueil — Le premier écran vivant : la page d'accueil EST Dr Lô.
  *
- *  - conversation scriptée (src/utils/accueilFlow.ts), gratuite, sans IA
+ *  - conversation scriptée (src/utils/accueilFlow.ts) ; le texte libre est compris par l'IA (drlo-route, gratuit)
  *  - Dr Lô montre ce qu'il fait réellement : il lit, réfléchit, écrit (DrLoAvatar)
  *  - ambiance selon le moment de la journée (src/utils/drloMoment.ts)
  *  - on répond directement : pastilles + champ libre + dictée (Web Speech, rien n'est gardé)
@@ -34,6 +34,13 @@ import {
   welcomeAfterAuth,
   getQuickReplies,
   respond,
+  routeDecision,
+  newDay,
+  firstName,
+  detectCrisis,
+  parseAge,
+  parseGenre,
+  GO,
   startConversation,
   type AccueilState,
   type Card,
@@ -50,15 +57,16 @@ import { trackAccueil, setAccueilPrescribed } from '../../utils/accueilTracking'
 import { getOnboardingProfile, savePartialOnboarding } from '../../utils/onboardingProfile';
 import { getAllGuestResults, getGuestCount, GUEST_MAX_TESTS } from '../../utils/guestSession';
 import { getProfileProgress } from '../../services/evaluationService';
-import { getScaleById, MENTAL_HEALTH_SCALES, SEXUAL_HEALTH_SCALES } from '../../data/scales';
+import { ALL_SCALES, getScaleById, MENTAL_HEALTH_SCALES, SEXUAL_HEALTH_SCALES } from '../../data/scales';
 import { getScaleMeta } from '../../utils/scaleMeta';
 import { getCrisisResources } from '../../data/crisisResources';
 import { openDrLoChat } from '../DrLoChat/drLoEvents';
 import { useDictation } from '../../hooks/useDictation';
 import { startChatTest, recordAnswer, finishChatTest, loadScale } from '../../services/chatTestRunner';
+import { routeText } from '../../services/drloRouteService';
 import { KORIS_COSTS, isTestFreeRetake } from '../../services/korisService';
 import {
-  nextItem, previousItem, progress, introText, questionText, criticalAlert, visibleItems,
+  nextItem, previousItem, progress, introText, questionText, fullItemText, criticalAlert, visibleItems,
 } from '../../utils/chatTest';
 import type { AssessmentScale, AnswerOption } from '../../types/assessment';
 import type { ScaleResult } from '../../types/assessment';
@@ -104,7 +112,9 @@ function useReveal(messages: Msg[], nonce: number, from: number, hint: Hint) {
 
   useEffect(() => {
     const list = msgsRef.current;
-    if (nonce === 0 || prefersReducedMotion() || from >= list.length) {
+    // Crise : tout s'affiche immédiatement, sans « réflexion » ni écriture mot à mot
+    const urgent = list.slice(from).some(m => m.card?.type === 'crisis');
+    if (nonce === 0 || urgent || prefersReducedMotion() || from >= list.length) {
       setShown(list.length); setPartial(null); setPhase('idle');
       return;
     }
@@ -151,13 +161,13 @@ function askNextQuestion(s: AccueilState, sc: AssessmentScale): AccueilState {
   const item = nextItem(sc, s.activeTest.answers);
   if (!item) return s;
   const p = progress(sc, s.activeTest.answers);
-  return askQuestion(s, item.id, questionText(item, p.done, p.total));
+  return askQuestion(s, item.id, questionText(item, p.done, p.total, sc.instructions));
 }
 
 const ConversationAccueil: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { currentUser, isAuthenticated, isPhoneOnlyUser } = useAuth();
+  const { currentUser, isAuthenticated, isPhoneOnlyUser, authReady } = useAuth();
   const { balance, loading: korisLoading, refreshBalance, openNoKorisModal } = useKoris();
   const uidKey = currentUser?.id ?? 'guest';
   const storageKey = `${STORAGE_PREFIX}${uidKey}`;
@@ -189,6 +199,8 @@ const ConversationAccueil: React.FC = () => {
   const [breath, setBreath] = useState<{ inhale: boolean } | null>(null);
   const [reveal, setReveal] = useState({ nonce: 0, from: 0, hint: 'thinking' as Hint });
   const [testBusy, setTestBusy] = useState<null | 'starting' | 'finishing'>(null);
+  /** Dr Lô lit un message libre (appel à drlo-route en cours). */
+  const [routing, setRouting] = useState(false);
   const initKeyRef = useRef<string | null>(null);
   const startedRef = useRef(false);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -200,6 +212,9 @@ const ConversationAccueil: React.FC = () => {
   // 1. Charger ce qu'on sait déjà (résultats)
   useEffect(() => {
     let cancelled = false;
+    // On attend de savoir si la personne est connectée : sinon la conversation d'invité
+    // démarrait une seconde, puis se retrouvait dans le compte.
+    if (!authReady) return;
     if (!isAuthenticated || !currentUser) {
       setResults(getAllGuestResults());
       return;
@@ -209,7 +224,7 @@ const ConversationAccueil: React.FC = () => {
       .then(p => { if (!cancelled) setResults(p.scaleResults ?? {}); })
       .catch(() => { if (!cancelled) setResults({}); });
     return () => { cancelled = true; };
-  }, [isAuthenticated, currentUser?.id]);
+  }, [authReady, isAuthenticated, currentUser?.id]);
 
   const guestRemaining = Math.max(0, GUEST_MAX_TESTS - getGuestCount());
 
@@ -218,7 +233,7 @@ const ConversationAccueil: React.FC = () => {
     const ob = getOnboardingProfile();
     return {
       isAuthenticated,
-      prenom: ob?.prenom || currentUser?.name?.split(' ')[0] || undefined,
+      prenom: firstName(ob?.prenom || currentUser?.name),
       genre: ob?.genre,
       age: ob?.age,
       guestRemaining,
@@ -250,9 +265,14 @@ const ConversationAccueil: React.FC = () => {
         }
       }
     }
-    const saved = loadState(storageKey);
-    let s = saved ?? startConversation(known);
-    const before = saved ? s.messages.length : 0;
+    let saved = loadState(storageKey);
+    // Un compte ne doit jamais garder les messages réservés aux invités
+    if (saved && isAuthenticated) {
+      const msgs = saved.messages.filter(m => !(m.from === 'drlo' && /^Ici, tu peux faire \d+ tests? gratuits?/.test(m.text)));
+      if (msgs.length !== saved.messages.length) saved = { ...saved, messages: msgs };
+    }
+    let s = saved ? newDay(saved, dayKey(), known) : { ...startConversation(known), day: dayKey() };
+    const before = saved ? saved.messages.length : 0;
     let hint: Hint = 'thinking';
 
     if (s.step !== 'testing' && s.prescribed && results[s.prescribed] && !s.commented.includes(s.prescribed)) {
@@ -409,14 +429,14 @@ const ConversationAccueil: React.FC = () => {
     );
   }
 
-  const prenom = state.prenom ?? known.prenom;
+  const prenom = firstName(state.prenom ?? known.prenom);
   const genreKnown = state.genre ?? known.genre;
   const fem = genreKnown === 'femme';
   const listening = dictation.listening || (!!input.trim() && !revealing && !breathing);
   const avatarState: DrLoState = tab === 'confier' ? confierStatus.state
     : breathing ? 'breathing'
     : testBusy === 'finishing' || phase === 'reading' ? 'reading'
-    : testBusy === 'starting' ? 'thinking'
+    : testBusy === 'starting' || routing ? 'thinking'
     : phase === 'thinking' ? 'thinking'
     : phase === 'writing' ? 'writing'
     : listening ? 'listening' : 'idle';
@@ -424,7 +444,7 @@ const ConversationAccueil: React.FC = () => {
     : breathing ? (breath!.inhale ? 'Inspire…' : 'Expire…')
     : testBusy === 'finishing' || phase === 'reading' ? 'Je regarde ton résultat…'
     : testBusy === 'starting' ? 'Je prépare le test…'
-    : phase === 'thinking' ? 'Je réfléchis…'
+    : phase === 'thinking' || routing ? 'Je réfléchis…'
     : listening ? 'Je t\'écoute…' : null;
 
   // Le fil « focal » : le dernier message de la personne et la réponse de Dr Lô
@@ -491,20 +511,87 @@ const ConversationAccueil: React.FC = () => {
       const item = testScale.items.find(i => i.id === t.askedItemId) ?? nextItem(testScale, t.answers);
       if (item) {
         const p = progress(testScale, t.answers);
-        next = askQuestion(next, item.id, questionText(item, p.done, p.total));
+        next = askQuestion(next, item.id, questionText(item, p.done, p.total, testScale.instructions));
       }
     }
     apply(next, state);
   };
 
-  const onSend = (e: React.FormEvent) => {
+  const onSend = async (e: React.FormEvent) => {
     e.preventDefault();
     const text = input.trim();
-    if (!text) return; // on peut répondre même pendant que Dr Lô écrit : son message s'affiche alors en entier
+    if (!text || routing) return; // on peut répondre même pendant que Dr Lô écrit : son message s'affiche alors en entier
     if (dictation.listening) dictation.stop();
     setInput('');
     if (breathing) setBreath(null);
-    apply(respond(state, { text }, known), state);
+    // Gérés sur place, sans IA : la crise (messages validés, immédiats), le mode mineur,
+    // et les réponses simples aux questions d'identité.
+    const local = detectCrisis(text)
+      || state.step === 'minor' || state.step === 'prenom'
+      || (state.step === 'genre' && !!parseGenre(text))
+      || (state.step === 'age' && !!parseAge(text))
+      || (state.step === 'crisis' && text.length < 4);
+    if (local) { apply(respond(state, { text }, known), state); return; }
+
+    const base = addExchange(state, text, []);
+    setState(base);
+    setShowHistory(false);
+    setRouting(true);
+    const t = state.activeTest;
+    const sc = testScale;
+    const item = t && sc ? (sc.items.find(i => i.id === t.askedItemId) ?? nextItem(sc, t.answers)) : null;
+    const p = t && sc ? progress(sc, t.answers) : null;
+    const lastDrlo = [...state.messages].reverse().find(m => m.from === 'drlo')?.text;
+    const d = await routeText({
+      text,
+      step: state.step,
+      prenom,
+      genre: genreKnown,
+      isAuthenticated,
+      done: Object.keys(results ?? {}),
+      scales: ALL_SCALES.map(x => ({ id: x.id, label: getScaleMeta(x.id).label })),
+      activeTest: t && sc && item ? {
+        label: label(t.scaleId),
+        question: fullItemText(item.text, sc.instructions),
+        options: item.options.map(o => o.label),
+      } : null,
+      lastDrlo,
+    });
+    setRouting(false);
+    // La personne a fait autre chose pendant ce temps (pastille, réponse au test) : on n'écrase rien
+    if (stateRef.current !== base) return;
+    if (!d) {
+      // Secours : la logique par mots-clés
+      apply(respond(state, { text }, known), base);
+      trackAccueil('route', { action: 'fallback', step: state.step });
+      return;
+    }
+    const r = routeDecision(base, d, known, item && p && sc ? {
+      currentQuestion: { itemId: item.id, text: questionText(item, p.done, p.total, sc.instructions) },
+      doneCount: p.done,
+      testLabel: t ? label(t.scaleId) : undefined,
+    } : {});
+    apply(r.state, base, d.action === 'explain' || d.action === 'continue' ? 'quick' : 'thinking');
+    trackAccueil('route', { action: d.action, then: d.then ?? '', step: state.step }); // jamais le texte
+    if (r.ui === 'mood') setMode('mood');
+    if (r.ui === 'breath') setBreath({ inhale: true });
+  };
+
+  /** Bouton d'une carte « go » : une autre partie du site, le chat libre ou « Me confier ». */
+  const onGo = (to: keyof typeof GO) => {
+    trackAccueil('go', { to });
+    if (to === 'confier') { setTab('confier'); setMode('home'); return; }
+    if (to === 'chat') {
+      const lastUserText = [...(stateRef.current?.messages ?? [])].reverse().find(m => m.from === 'user')?.text;
+      openDrLoChat({
+        source: 'accueil_route',
+        greeting: `On en parle tranquillement${prenom ? `, ${prenom}` : ''}. Je t'écoute.`,
+        draft: lastUserText,
+      });
+      return;
+    }
+    const path = GO[to].path;
+    if (path) navigate(path);
   };
 
   const onMic = () => {
@@ -634,7 +721,7 @@ const ConversationAccueil: React.FC = () => {
     if (!prev) return;
     const s = addExchange(state, 'Revenir à la question précédente', []);
     const chosen = prev.options.find(o => o.value === t.answers[prev.id]);
-    apply(askQuestion(s, prev.id, `${prev.text}${chosen ? ` (tu avais répondu « ${chosen.label} »)` : ''}`), state, 'quick');
+    apply(askQuestion(s, prev.id, `${fullItemText(prev.text, testScale.instructions)}${chosen ? ` (tu avais répondu « ${chosen.label} »)` : ''}`), state, 'quick');
   };
 
   const onPauseTest = () => {
@@ -777,12 +864,13 @@ const ConversationAccueil: React.FC = () => {
                     prenom={state.prenom}
                     genre={state.genre}
                     onLinked={() => { const cur = stateRef.current ?? state; apply(addExchange(cur, null, ['Parfait. Ton espace est en sécurité.']), cur); }}
+                    onGo={onGo}
                   />
                 )}
               </div>
             ))}
             {partial !== null && <p style={{ margin: 0, fontSize: 16.5, lineHeight: 1.55, color: C.soft }}>{partial}</p>}
-            {(phase === 'thinking' || phase === 'reading') && (
+            {(phase === 'thinking' || phase === 'reading' || routing) && (
               <div role="status" aria-label="Dr Lô écrit" style={{ alignSelf: 'center', display: 'inline-flex', gap: 6, padding: '10px 14px', borderRadius: 999, background: 'rgba(255,255,255,.06)' }}>
                 {[0, 0.15, 0.3].map(d => <span key={d} className="drl-dot" style={{ width: 7, height: 7, borderRadius: '50%', background: C.muted, animationDelay: `${d}s` }} />)}
               </div>
@@ -951,7 +1039,20 @@ const ChatCard: React.FC<{
   costLabel: (scaleId: string) => string;
   onStart: (id: string) => void; onOpen: (path: string) => void;
   prenom?: string; genre?: 'homme' | 'femme'; onLinked: () => void;
-}> = ({ card, palette, busy, costLabel, onStart, onOpen, prenom, genre, onLinked }) => {
+  onGo: (to: keyof typeof GO) => void;
+}> = ({ card, palette, busy, costLabel, onStart, onOpen, prenom, genre, onLinked, onGo }) => {
+  if (card.type === 'go') {
+    const go = GO[card.to];
+    return (
+      <div className="drl-in" style={{ marginTop: 10 }}>
+        <button onClick={() => onGo(card.to)} className="drl-btn"
+          style={{ minHeight: 46, padding: '0 18px', display: 'inline-flex', alignItems: 'center', gap: 6, borderRadius: 14, border: 0, background: palette.primary, color: C.ink, fontSize: 14.5, fontWeight: 700, cursor: 'pointer' }}>
+          {go.label}{card.to === 'chat' && <span style={{ fontWeight: 600, opacity: 0.75 }}>· {credits(1)} / message</span>}
+          <ArrowRight size={16} aria-hidden="true" />
+        </button>
+      </div>
+    );
+  }
   if (card.type === 'signup') return <SignupCard mode={card.mode ?? 'signup'} prenom={prenom} genre={genre} palette={palette} />;
   if (card.type === 'link_account') return <LinkAccountCard palette={palette} onLinked={onLinked} />;
   if (card.type === 'result') {
@@ -1041,7 +1142,7 @@ const TestPanel: React.FC<{
       </div>
       {!hidden && item && (
         <div className="drl-in" style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-          {scale.instructions && (
+          {scale.instructions && !/(…|\.\.\.)\s*$/.test(scale.instructions) && (
             <p style={{ margin: '2px 0 2px', fontSize: 12, color: C.faint, textAlign: 'center', lineHeight: 1.45 }}>{scale.instructions}</p>
           )}
           {item.options.map(o => {

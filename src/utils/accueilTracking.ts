@@ -11,7 +11,7 @@ import { app } from './firebase';
 export type AccueilEvent =
   | 'view' | 'start' | 'prescription' | 'test_click' | 'test_done'
   | 'crisis' | 'minor' | 'free_chat' | 'reset'
-  | 'mood_open' | 'mood' | 'mood_cancel' | 'breath' | 'mic'
+  | 'mood_open' | 'mood' | 'mood_cancel' | 'breath' | 'mic' | 'route' | 'go'
   | 'test_start' | 'test_pause'
   | 'confier_open' | 'confier_entry' | 'confier_cancel' | 'confier_advice'
   | 'signup_open' | 'signup_start' | 'signup_done' | 'account_linked'

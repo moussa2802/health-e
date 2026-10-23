@@ -12,6 +12,8 @@ export interface DrLoOpenDetail {
   greeting?: string;
   /** D'où vient l'ouverture (ex. 'home_button', 'home_follow_up') — pour les métriques. */
   source?: string;
+  /** Texte pré-rempli dans le champ (la personne relit et envoie elle-même : chaque message coûte une étincelle). */
+  draft?: string;
 }
 
 export function openDrLoChat(detail: DrLoOpenDetail = {}): void {

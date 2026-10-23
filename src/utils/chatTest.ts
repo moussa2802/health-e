@@ -64,12 +64,26 @@ export function introText(label: string, total: number, resumedAt: number): stri
 }
 
 /** Texte de la question, avec un mot d'encouragement aux bons moments. */
-export function questionText(item: ScaleItem, done: number, total: number): string {
+export function questionText(item: ScaleItem, done: number, total: number, stem?: string): string {
   const half = Math.floor(total / 2);
   let lead = '';
   if (total >= 8 && done === half) lead = 'On est à mi-chemin, tu te débrouilles bien. ';
   else if (total >= 6 && done === total - 1) lead = 'Dernière question. ';
-  return `${lead}${item.text}`;
+  return `${lead}${fullItemText(item.text, stem)}`;
+}
+
+const TRAIL = /\s*(…|\.\.\.)\s*$/;
+const LEAD = /^\s*(…|\.\.\.)\s*/;
+
+/**
+ * Phrase complète d'un item écrit en fragment (« …est réservé ») : on la recolle à
+ * l'amorce de la consigne (« Je me vois comme quelqu'un qui… »).
+ */
+export function fullItemText(text: string, stem?: string): string {
+  if (!LEAD.test(text)) return text;
+  const rest = text.replace(LEAD, '');
+  if (stem && TRAIL.test(stem)) return `« ${stem.replace(TRAIL, '')} ${rest} »`;
+  return rest.charAt(0).toUpperCase() + rest.slice(1);
 }
 
 /** Alerte de niveau 3 (ex. idées noires) : même message que la page de test, accordé au genre. */

@@ -69,6 +69,8 @@ export const KorisProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
     if (initDoneRef.current) return;
     initDoneRef.current = true;
+    // Solde en cours de chargement : sans ça, le 0 du mode invité passait pour un vrai solde
+    setLoading(true);
 
     const init = async () => {
       try {
