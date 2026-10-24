@@ -42,7 +42,7 @@ async function sendToUser(uid, msg, opts = {}) {
       notification: { title: msg.title || 'Dr Lô', body: msg.body },
       data: { link: msg.link || '/', kind: msg.kind },
       webpush: {
-        notification: { icon: '/icons/icon-192.png', badge: '/icons/icon-192.png', tag: `drlo-${msg.kind}` },
+        notification: { icon: '/icons/drlo-notif.png', badge: '/icons/badge-96.png', tag: `drlo-${msg.kind}` },
         fcmOptions: { link: `${SITE}${msg.link || '/'}` },
       },
     });

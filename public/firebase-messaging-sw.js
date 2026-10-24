@@ -21,8 +21,8 @@ messaging.onBackgroundMessage((payload) => {
   const d = payload.data || {};
   self.registration.showNotification(d.title || 'Dr Lô', {
     body: d.body || '',
-    icon: '/icons/icon-192.png',
-    badge: '/icons/icon-192.png',
+    icon: '/icons/drlo-notif.png', // Android : le visage de Dr Lô (l'iPhone affiche toujours l'icône de l'appli)
+    badge: '/icons/badge-96.png', // petite icône de la barre d'état : blanche, détourée
     tag: `drlo-${d.kind || 'info'}`,
     data: { link: d.link || '/' },
   });

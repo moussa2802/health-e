@@ -101,7 +101,7 @@ export const GuideVisualView: React.FC<{ visual: GuideVisual; os: Os }> = ({ vis
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 44px)', gap: 12, padding: 6 }}>
             {Array.from({ length: 7 }).map((_, i) => <span key={i} style={{ width: 44, height: 44, borderRadius: 11, background: 'rgba(255,255,255,.08)' }} />)}
             <span style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
-              <Target><img src="/icons/icon-192.png" alt="" width={44} height={44} style={{ width: 44, height: 44, borderRadius: 11, display: 'block' }} /></Target>
+              <Target><img src="/icons/apple-touch-icon.png" alt="" width={44} height={44} style={{ width: 44, height: 44, borderRadius: 11, display: 'block' }} /></Target>
               <span style={{ fontSize: 10, color: C.text }}>Health-e</span>
             </span>
           </div>
