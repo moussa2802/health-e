@@ -77,7 +77,7 @@ import {
   convStorageKey, createConv, deleteConv, loadIndex, MAIN_ID, renameConv, saveIndex, sortedConvs, touchConv, type ConvIndex,
 } from '../../utils/conversations';
 import { KORIS_COSTS, isTestFreeRetake } from '../../services/korisService';
-import ProgrammePanel, { ProgrammeHomeCard } from './ProgrammePanel';
+import ProgrammePanel from './ProgrammePanel';
 import { ProgrammeInviteCard, ProgrammeOfferCard, ProgrammeOpenCard, type ProgCardEnv } from './ProgrammeCards';
 import {
   addDays, bilanDue, bilanSummary, dayNumber, daysBetween, hardStreak, MIN_DAYS_BEFORE_RETEST, newProgramme,
@@ -659,22 +659,59 @@ const ConversationAccueil: React.FC = () => {
   // ── Page d'accueil : toujours une salutation et une recommandation, jamais les derniers messages ──
   const hasTalked = messages.some(m => m.from === 'user');
   const homeTestLabel = state.activeTest ? getScaleMeta(state.activeTest.scaleId).label : state.prescribed ? getScaleMeta(state.prescribed).label : '';
-  const homeLines: string[] = [
-    `Content de te revoir${prenom ? `, ${prenom}` : ''} 👋\u00a0Comment tu vas aujourd'hui ?`,
-    ...(state.step === 'testing' && state.activeTest
-      ? [`Ton test « ${homeTestLabel} » est en cours. On le reprend où tu t'étais arrêté${genreKnown === 'femme' ? 'e' : ''} ?`]
-      : state.prescribed && !results?.[state.prescribed]
-        ? [`Le test « ${homeTestLabel} » t'attend, quand tu veux.`]
-        : !moodToday ? ['Tu notes ton humeur du jour ? Ça prend 30 secondes.'] : []),
-  ];
-  const homeChips: Chip[] = [
-    ...(state.step === 'testing' && state.activeTest ? [{ label: 'Reprendre le test', kind: 'home' as const, q: { label: 'Reprendre le test', value: 'home:resume' } }]
-      : state.prescribed && !results?.[state.prescribed] ? [{ label: `Faire le test « ${homeTestLabel} »`, kind: 'home' as const, q: { label: 'Faire le test', value: `home:test:${state.prescribed}` } }] : []),
-    ...(!moodToday ? [{ label: 'Noter mon humeur · 30 s', kind: 'mood' as const }] : []),
-    ...(isAuthenticated && !prog && progSignals.length > 0 && !(state.step === 'testing' && state.activeTest)
-      ? [{ label: 'Un programme pour moi', kind: 'home' as const, q: { label: 'Mon programme Dr Lô', value: 'home:programme' } }] : []),
-    // Rien d'autre : pour un nouveau sujet, on écrit simplement à Dr Lô
-  ];
+  const testing = state.step === 'testing' && !!state.activeTest;
+  const pendingTest = !testing && state.prescribed && !results?.[state.prescribed] ? state.prescribed : null;
+  const progActive = !!prog && prog.status === 'active' && !prog.result;
+  /** La seule phrase sous la salutation : ce qui compte le plus maintenant. */
+  const focusLine = testing
+    ? `Ton test « ${homeTestLabel} » t'attend : on le reprend où tu t'étais arrêté${genreKnown === 'femme' ? 'e' : ''}.`
+    : progActive && progRemaining > 0
+      ? `${progRemaining} engagement${progRemaining > 1 ? 's t\'attendent' : ' t\'attend'} aujourd'hui. Ou dis-moi simplement comment tu vas.`
+      : 'Comment tu vas aujourd\'hui ? Écris-moi, je t\'écoute.';
+
+  /** « Aujourd'hui » : une ligne par chose à faire, dans l'ordre d'importance (3 ou 4 au plus). */
+  type TodayRow = { key: string; title: string; sub: string; onClick: () => void; visual: React.ReactNode; badge?: React.ReactNode; subColor?: string };
+  const iconBox = (node: React.ReactNode) => (
+    <span style={{ width: 42, height: 42, borderRadius: 13, background: 'rgba(242,182,109,.14)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>{node}</span>
+  );
+  const countBadge = (n: number) => (
+    <span aria-label={`${n} à faire`} style={{ minWidth: 22, height: 22, padding: '0 6px', boxSizing: 'border-box', borderRadius: 11, background: '#E8664F', color: '#fff', fontSize: 12, fontWeight: 700, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>{n}</span>
+  );
+  const todayRows: TodayRow[] = [];
+  if (testing) {
+    todayRows.push({ key: 'test', title: `Reprendre « ${homeTestLabel} »`, sub: 'Tes réponses sont gardées', onClick: () => onChip({ label: 'Reprendre le test', kind: 'home', q: { label: 'Reprendre le test', value: 'home:resume' } }), visual: iconBox(<ListChecks size={20} color={palette.accent} aria-hidden="true" />) });
+  } else if (pendingTest) {
+    todayRows.push({ key: 'test', title: `Le test « ${homeTestLabel} »`, sub: `Environ ${getScaleById(pendingTest)?.timeEstimateMinutes ?? 3} minutes, avec moi`, onClick: () => onChip({ label: 'Faire le test', kind: 'home', q: { label: 'Faire le test', value: `home:test:${pendingTest}` } }), visual: iconBox(<ListChecks size={20} color={palette.accent} aria-hidden="true" />) });
+  }
+  if (prog) {
+    const day = Math.min(28, dayNumber(prog, today));
+    todayRows.push({
+      key: 'prog', title: 'Mon programme Dr Lô',
+      sub: prog.result ? 'Terminé : vois le chemin parcouru' : prog.status === 'paused' ? 'En pause' : progRemaining > 0 ? `${AXES[prog.axis].short} · Jour ${day} sur 28 · ${progRemaining} à faire` : `${AXES[prog.axis].short} · Jour ${day} sur 28 · journée validée`,
+      subColor: progActive && progRemaining === 0 ? C.sage : undefined,
+      onClick: () => { trackAccueil('programme_open'); setProgOpen(true); },
+      visual: iconBox(<ClipboardCheck size={20} color={palette.accent} aria-hidden="true" />),
+      badge: progActive && progRemaining > 0 ? countBadge(progRemaining) : progActive ? <Check size={18} color={C.sage} strokeWidth={2.6} aria-label="Fait" /> : undefined,
+    });
+  } else if (isAuthenticated && progSignals.length > 0 && !testing) {
+    todayRows.push({ key: 'prog', title: 'Un programme pour moi', sub: '28 jours, quelques minutes par jour, choisis pour toi', onClick: () => onChip({ label: 'Mon programme Dr Lô', kind: 'home', q: { label: 'Mon programme Dr Lô', value: 'home:programme' } }), visual: iconBox(<ClipboardCheck size={20} color={palette.accent} aria-hidden="true" />) });
+  }
+  // L'humeur : comptée dans le programme si on en suit un, sinon une ligne ici
+  if (!moodToday && !progActive) {
+    todayRows.push({ key: 'mood', title: 'Noter mon humeur', sub: '30 secondes, pour suivre ta météo intérieure', onClick: () => { trackAccueil('mood_open'); setMode('mood'); window.scrollTo({ top: 0, behavior: 'smooth' }); }, visual: iconBox(<CloudSun size={20} color={palette.accent} aria-hidden="true" />) });
+  }
+  if (totemInfo) {
+    const gd = TOTEM_GUIDE[totemInfo.animal];
+    const onDefi = isTotemDefiActive(totemDefi, totemInfo.animal);
+    const n = Math.floor(Date.now() / 864e5) % 3;
+    const title = onDefi ? `Ton défi ${totemInfo.words.du}` : n === 0 ? `Ce qui recharge ${totemInfo.words.ton}` : n === 1 ? `Le piège ${totemInfo.words.du}` : `La force ${totemInfo.words.du}`;
+    const text = onDefi ? gd.defi : n === 0 ? gd.recharge : n === 1 ? gd.piege : gd.force;
+    todayRows.push({
+      key: 'totem', title, sub: resolveGender(text, genreKnown === 'femme' ? 'femme' : 'homme'),
+      onClick: () => navigate('/assessment/totem'),
+      visual: <img src={TOTEM_IMAGES[totemInfo.animal]} alt="" width={42} height={42} style={{ width: 42, height: 42, borderRadius: 13, objectFit: 'cover', flexShrink: 0 }} />,
+    });
+  }
 
   // ── Actions ────────────────────────────────────────────────────────────────
 
@@ -1505,9 +1542,9 @@ const ConversationAccueil: React.FC = () => {
                   onFinish={() => { void finishTest(state, testScale); }}
                 />
               )}
-              {!chatModeNow && !revealing && !routing && (hasTalked ? homeChips : chips).length > 0 && (
+              {!chatModeNow && !revealing && !routing && (hasTalked ? [] : chips).length > 0 && (
                 <div className="drl-in" style={{ display: 'flex', flexWrap: 'wrap', gap: 8, justifyContent: 'center' }}>
-                  {(hasTalked ? homeChips : chips).map(c => (
+                  {(hasTalked ? [] : chips).map(c => (
                     <button key={c.label} onClick={() => onChip(c)} className="drl-btn"
                       style={{
                         ...glassBtn,
@@ -1556,7 +1593,7 @@ const ConversationAccueil: React.FC = () => {
                     value={input}
                     onChange={e => setInput(e.target.value)}
                     maxLength={500}
-                    placeholder={dictation.listening ? 'Parle, je t\'écoute…' : state.step === 'testing' ? 'Si quelque chose te pèse, écris-le-moi…' : state.talk ? 'Écris à Dr Lô…' : 'Réponds à Dr Lô…'}
+                    placeholder={dictation.listening ? 'Parle, je t\'écoute…' : state.step === 'testing' ? 'Si quelque chose te pèse, écris-le-moi…' : state.talk || !chatModeNow ? 'Écris à Dr Lô…' : 'Réponds à Dr Lô…'}
                     aria-label="Répondre à Dr Lô"
                     className="drl-input"
                     style={{
@@ -1907,31 +1944,65 @@ const ConversationAccueil: React.FC = () => {
         {tab === 'confier' ? (
           <ConfierPanel userId={isAuthenticated && currentUser ? currentUser.id : null} genre={state.genre} onStatus={onConfierStatus} onSignup={() => openSignup('signup')} view={confierView} onView={setConfierView} />
         ) : (<>
-        {/* La conversation, au centre */}
+        {hasTalked ? (<>
+        {/* 1. Bonjour, et la seule chose importante du moment */}
         <div style={{ marginTop: 16, textAlign: 'center' }}>
           <h1 style={{ margin: 0, fontFamily: 'Fraunces, serif', fontSize: 29, lineHeight: 1.18, fontWeight: 600, color: C.title }}>
             {greetingFor(moment, prenom)}
           </h1>
+          <p className="drl-in" aria-live="polite" style={{ margin: '10px 0 0', fontSize: 16, lineHeight: 1.5, color: C.soft }}>{focusLine}</p>
+        </div>
 
-          {hasTalked ? (
-            <div aria-live="polite" style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 12 }}>
-              {homeLines.map(t => <p key={t} className="drl-in" style={{ margin: 0, fontSize: 16.5, lineHeight: 1.55, color: C.soft }}>{t}</p>)}
-              <button onClick={() => setInChat(true)} className="drl-btn"
-                style={{ marginTop: 4, display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', borderRadius: 16, border: `1px solid ${C.line}`, background: C.glass, color: C.text, cursor: 'pointer', textAlign: 'left' }}>
-                <img src="/dr-lo.png" alt="" width={34} height={34} style={{ width: 34, height: 34, borderRadius: '50%', objectFit: 'cover', objectPosition: 'top', flexShrink: 0 }} />
-                <span style={{ flex: 1, minWidth: 0 }}>
-                  <span style={{ display: 'block', fontSize: 14.5, fontWeight: 700 }}>Reprendre : {convMeta?.title ?? 'Discussion principale'}</span>
-                  {convMeta?.preview && <span style={{ display: 'block', fontSize: 12.5, color: C.faint, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>« {convMeta.preview} »</span>}
-                </span>
-                <ArrowRight size={16} color={C.muted} aria-hidden="true" />
+        {/* 2. Parler à Dr Lô : l'action principale, tout de suite */}
+        <div style={{ marginTop: 16 }}>
+          {controls}
+          <div style={{ display: 'flex', justifyContent: 'center', flexWrap: 'wrap', gap: '2px 16px', marginTop: 6 }}>
+            <button onClick={() => setInChat(true)} style={{ ...linkBtn, fontSize: 13, color: C.muted, display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+              <MessagesSquare size={14} aria-hidden="true" />Reprendre ma discussion
+            </button>
+            {convIdx.list.length > 1 && (
+              <button onClick={() => { setInChat(true); setShowConvs(true); }} style={{ ...linkBtn, fontSize: 13, color: C.muted }}>
+                Toutes mes discussions ({convIdx.list.length})
               </button>
-              {convIdx.list.length > 1 && (
-                <button onClick={() => { setInChat(true); setShowConvs(true); }} style={{ ...linkBtn, fontSize: 12.5 }}>
-                  Toutes mes discussions ({convIdx.list.length})
-                </button>
+            )}
+          </div>
+          {noted && !revealing && (
+            <div className="drl-in" style={{ marginTop: 10, display: 'inline-flex', alignItems: 'center', gap: 8, fontSize: 12.5, fontWeight: 600, color: C.sage }}>
+              <Check size={14} strokeWidth={2.6} aria-hidden="true" />
+              <span style={{ textDecoration: noted.cancelled ? 'line-through' : 'none' }}>Noté dans ton humeur du jour</span>
+              {!noted.cancelled && (
+                <button onClick={cancelMood} style={{ ...linkBtn, color: C.muted, fontSize: 12.5, fontWeight: 700, padding: '0 6px' }}>Annuler</button>
               )}
             </div>
-          ) : (<>
+          )}
+        </div>
+
+        {/* 3. Aujourd'hui : une seule liste, une ligne par chose à faire */}
+        {todayRows.length > 0 && (
+          <section aria-label="Aujourd'hui" style={{ marginTop: 22, marginBottom: 14 }}>
+            <p style={{ margin: '0 4px 8px', fontSize: 11.5, letterSpacing: '.12em', textTransform: 'uppercase', fontWeight: 700, color: C.faint }}>Aujourd'hui</p>
+            <div style={{ borderRadius: 18, border: `1px solid ${C.line}`, background: C.glass, overflow: 'hidden' }}>
+              {todayRows.map((r, i) => (
+                <button key={r.key} onClick={r.onClick} className="drl-btn"
+                  style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 12, padding: '13px 14px', border: 0, borderTop: i ? `1px solid ${C.line}` : 0, background: 'transparent', color: C.text, cursor: 'pointer', textAlign: 'left', fontFamily: 'inherit' }}>
+                  {r.visual}
+                  <span style={{ flex: 1, minWidth: 0 }}>
+                    <span style={{ display: 'block', fontSize: 14.5, fontWeight: 700 }}>{r.title}</span>
+                    <span style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', fontSize: 12.5, lineHeight: 1.45, color: r.subColor ?? C.faint, marginTop: 2 }}>{r.sub}</span>
+                  </span>
+                  {r.badge}
+                  <ArrowRight size={16} color={C.muted} aria-hidden="true" style={{ flexShrink: 0 }} />
+                </button>
+              ))}
+            </div>
+          </section>
+        )}
+        </>) : (<>
+        {/* Première visite : la conversation d'accueil, au centre */}
+        <div style={{ marginTop: 16, textAlign: 'center' }}>
+          <h1 style={{ margin: 0, fontFamily: 'Fraunces, serif', fontSize: 29, lineHeight: 1.18, fontWeight: 600, color: C.title }}>
+            {greetingFor(moment, prenom)}
+          </h1>
           {history.length > 0 && (
             <div style={{ marginTop: 10 }}>
               <button onClick={() => setShowHistory(v => !v)} aria-expanded={showHistory} style={{ ...linkBtn, fontSize: 12.5 }}>
@@ -1959,8 +2030,6 @@ const ConversationAccueil: React.FC = () => {
               </div>
             )}
           </div>
-          </>)}
-
           {noted && !revealing && (
             <div className="drl-in" style={{ marginTop: 10, display: 'inline-flex', alignItems: 'center', gap: 8, fontSize: 12.5, fontWeight: 600, color: C.sage }}>
               <Check size={14} strokeWidth={2.6} aria-hidden="true" />
@@ -1972,34 +2041,11 @@ const ConversationAccueil: React.FC = () => {
           )}
         </div>
 
-        {prog && (
-          <div style={{ marginTop: 16 }}>
-            <ProgrammeHomeCard p={prog} today={today} remaining={progRemaining} palette={palette} totemImg={totemAnimal ? TOTEM_IMAGES[totemAnimal] : undefined} onOpen={() => { trackAccueil('programme_open'); setProgOpen(true); }} />
-          </div>
-        )}
-
-        {totemInfo && (() => {
-          const gd = TOTEM_GUIDE[totemInfo.animal];
-          const onDefi = isTotemDefiActive(totemDefi, totemInfo.animal);
-          const n = Math.floor(Date.now() / 864e5) % 3;
-          const kicker = onDefi ? `Ton défi ${totemInfo.words.du} cette semaine` : n === 0 ? `Ce qui recharge ${totemInfo.words.ton}` : n === 1 ? `Le piège ${totemInfo.words.du}` : `La force ${totemInfo.words.du}`;
-          const text = onDefi ? gd.defi : n === 0 ? gd.recharge : n === 1 ? gd.piege : gd.force;
-          return (
-            <Link to="/assessment/totem" className="drl-btn drl-in"
-              style={{ marginTop: 12, display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', borderRadius: 18, border: '1px solid rgba(233,200,143,.25)', background: 'rgba(233,200,143,.06)', color: C.text, textDecoration: 'none', textAlign: 'left' }}>
-              <img src={TOTEM_IMAGES[totemInfo.animal]} alt="" width={44} height={44} style={{ width: 44, height: 44, borderRadius: 14, objectFit: 'cover', flexShrink: 0 }} />
-              <span style={{ flex: 1, minWidth: 0 }}>
-                <span style={{ display: 'block', fontSize: 11, letterSpacing: '.08em', textTransform: 'uppercase', fontWeight: 700, color: '#E9C88F' }}>{kicker}</span>
-                <span style={{ display: 'block', marginTop: 3, fontSize: 13.5, lineHeight: 1.45, color: C.soft }}>{resolveGender(text, genreKnown === 'femme' ? 'femme' : 'homme')}</span>
-              </span>
-            </Link>
-          );
-        })()}
-
         {/* Répondre */}
         <div style={{ marginTop: 16, minHeight: 140 }}>
           {controls}
         </div>
+        </>)}
 
         </>)}
 
