@@ -1,16 +1,23 @@
 /**
- * ProgrammePanel — « Mes engagements du jour » (Mon programme Dr Lô), plein écran au-dessus de l'accueil.
- * Cocher est gratuit. Le bilan de la semaine (IA) et le nouveau test coûtent des étincelles.
+ * ProgrammePanel — « Mes engagements du jour » (Mon programme Dr Lô), plein écran.
+ * Chaque engagement se FAIT ici, guidé par Dr Lô (respiration, étapes, quelques lignes gardées
+ * dans le journal, habitude du jour, vrai/faux), et Dr Lô réagit. Cocher reste gratuit.
  * Aucune culpabilisation : un jour manqué s'affiche en gris, jamais en rouge.
  */
-import React, { useEffect, useState } from 'react';
-import { BookOpen, Check, ChevronDown, ChevronLeft, ClipboardCheck, LineChart, Moon, Pause, Phone, Play, Wind } from 'lucide-react';
+import React, { useEffect, useRef, useState } from 'react';
+import { BookOpen, Check, ChevronDown, ChevronLeft, ClipboardCheck, Flame, LineChart, Moon, Pause, Phone, Play, Plus, X } from 'lucide-react';
 import {
-  AXES, bilanDue, dayNumber, hardStreak, improved, isDone, planFor, PROGRAMME_DAYS, retestInfo, weekDots,
+  AXES, bilanDue, dailyLine, dayComplete, dayNumber, hardStreak, improved, isDone, moodSeries, planFor,
+  PROGRAMME_DAYS, retestInfo, routineDone, streak, weekDots, weekOf,
   type Engagement, type EngKey, type MoodLike, type Programme, type SleepNote,
 } from '../../utils/programme';
+import { CHAPTERS, guideOf, LEARNINGS, QUIZ } from '../../data/programmeLibrary';
 import { getCrisisResources } from '../../data/crisisResources';
+import { routineById, TOTEM_ROUTINES } from '../../data/totemGuide';
+import { resolveGender } from '../../utils/gender';
+import type { TotemAnimal } from '../../utils/totemAlgorithm';
 import type { MomentPalette } from '../../utils/drloMoment';
+import { ExerciseRunner, LearnQuiz, type ExerciseDone } from './ProgrammeExercise';
 
 const C = {
   text: '#F4EEE4', soft: '#DCD3C5', muted: '#CFC6B8', faint: '#A79E90', title: '#FBF5EA',
@@ -22,15 +29,27 @@ export interface ProgrammePanelProps {
   today: string;
   moods: MoodLike;
   palette: MomentPalette;
+  prenom?: string;
+  genre?: 'homme' | 'femme';
+  /** Totem révélé : ses routines peuvent rejoindre le programme */
+  totem?: { animal: TotemAnimal; label: string; words: { du: string; ton: string } } | null;
   testLabel: (scaleId: string) => string;
   bilanCost: string;
   testCost: string;
   busy: 'bilan' | null;
   onClose: () => void;
-  onToggle: (key: EngKey) => void;
+  onToggle: (key: EngKey, on?: boolean) => void;
+  onCommit: () => void;
+  /** Garde une trace écrite de l'exercice dans le journal (carnet « Programme ») */
+  onNote: (text: string) => void;
+  /** Un mot de crise écrit dans un exercice : protocole de crise habituel */
+  onCrisis: (text: string) => void;
   onSleep: (n: SleepNote) => void;
+  /** Cocher / décocher une routine aujourd'hui */
+  onRoutineCheck: (id: string, on?: boolean) => void;
+  /** Ajouter / retirer une routine du programme */
+  onRoutineSet: (id: string, on: boolean) => void;
   onMood: () => void;
-  onBreath: () => void;
   onBilan: () => void;
   onRetest: (scaleId: string) => void;
   onLight: (on: boolean) => void;
@@ -45,20 +64,65 @@ const SLEEP: { id: SleepNote; label: string }[] = [
   { id: 'mal', label: 'Mal dormi' }, { id: 'moyen', label: 'Moyen' }, { id: 'bien', label: 'Bien dormi' },
 ];
 
+/** Ce que Dr Lô dit quand un engagement est tenu (écrit à l'avance, gratuit). */
+const REACT = {
+  breath: ['Tu sens ? Ton souffle a déjà ralenti.', 'Une minute rien que pour toi. Ça compte.', 'Ton corps vient de recevoir le message : tout va bien.'],
+  note: ['C\'est gardé dans ton journal, carnet « Programme ».', 'Bien joué. Mettre des mots, c\'est déjà alléger.', 'Noté. Tu pourras relire ça dans quelques semaines.'],
+  done: ['Bien joué. Un pas de plus, ndank ndank.', 'C\'est fait. Je suis fier de toi.', 'Bravo. Chaque petit geste compte.'],
+  held: ['Bravo, tu as tenu !', 'Tenu ! C\'est comme ça qu\'une habitude s\'installe.'],
+  notHeld: ['Tu as essayé, c\'est déjà beaucoup. Demain est un autre jour.', 'Pas grave du tout. On réessaie demain, tranquillement.'],
+  learnRight: ['Bien vu ! Tu en sais déjà beaucoup.', 'Exact. Tu as l\'œil.'],
+  learnWrong: ['Maintenant tu sais. C\'est tout l\'intérêt.', 'Beaucoup de gens pensent pareil. Maintenant tu sais.'],
+  commit: ['C\'est noté. Je te le redemande plus tard.'],
+};
+const pick = (list: string[], seed: number) => list[seed % list.length];
+
 const ProgrammePanel: React.FC<ProgrammePanelProps> = props => {
   const { p, today, moods, palette } = props;
-  const [open, setOpen] = useState<EngKey | null>(null);
-  const [confirmStop, setConfirmStop] = useState(false);
-  useEffect(() => {
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    return () => { document.body.style.overflow = prev; };
-  }, []);
-
-  const ax = AXES[p.axis];
   const day = dayNumber(p, today);
   const shownDay = Math.min(PROGRAMME_DAYS, day);
   const plan = planFor(p, day);
+  // À l'ouverture : le premier engagement pas encore tenu est déplié
+  const firstOpen = (): EngKey | null => (plan.find(e => !isDone(p, today, e.key, moods))?.key ?? null);
+  const [open, setOpen] = useState<EngKey | null>(firstOpen);
+  const [confirmStop, setConfirmStop] = useState(false);
+  const [toast, setToast] = useState<string | null>(null);
+  const toastTimer = useRef<number | null>(null);
+  const wasComplete = useRef(dayComplete(p, today, moods));
+  const [cheer, setCheer] = useState(false);
+  const doneRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = prev; if (toastTimer.current) window.clearTimeout(toastTimer.current); };
+  }, []);
+  const complete = dayComplete(p, today, moods);
+  useEffect(() => {
+    if (complete && !wasComplete.current) {
+      setCheer(true);
+      window.setTimeout(() => setCheer(false), 2600);
+      window.setTimeout(() => doneRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 150);
+    }
+    wasComplete.current = complete;
+  }, [complete]);
+
+  const say = (t: string) => {
+    setToast(t);
+    if (toastTimer.current) window.clearTimeout(toastTimer.current);
+    toastTimer.current = window.setTimeout(() => setToast(null), 3800);
+  };
+  const seed = day;
+  /** Engagement tenu : on coche, Dr Lô réagit, et on déplie le suivant. */
+  const finish = (key: EngKey, line: string) => {
+    props.onToggle(key, true);
+    say(line);
+    const next = plan.find(e => e.key !== key && !isDone(p, today, e.key, moods));
+    setOpen(next ? next.key : null);
+  };
+
+  const ax = AXES[p.axis];
+  const week = weekOf(shownDay);
+  const chapters = CHAPTERS[p.axis];
   const { dots, active } = weekDots(p, today, moods);
   const due = p.status === 'active' ? bilanDue(p, today) : null;
   const nextBilanDay = Math.min(PROGRAMME_DAYS, (Math.floor(day / 7) + 1) * 7);
@@ -66,29 +130,50 @@ const ProgrammePanel: React.FC<ProgrammePanelProps> = props => {
   const hard = hardStreak(moods, today) >= 3;
   const lastBilan = p.bilans.length ? p.bilans[p.bilans.length - 1] : null;
   const resources = getCrisisResources();
+  const series = moodSeries(p, today, moods);
+  const noted = series.filter(v => v !== null).length;
+  const run = streak(p, today, moods);
+  const tomorrow = shownDay < PROGRAMME_DAYS ? planFor(p, shownDay + 1)[1] : null;
 
   const card: React.CSSProperties = { borderRadius: 18, border: `1px solid ${C.line}`, background: C.glass };
-  const primary: React.CSSProperties = { minHeight: 44, padding: '0 16px', borderRadius: 12, border: 0, background: palette.primary, color: C.ink, fontSize: 14, fontWeight: 700, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6 };
+  const primary: React.CSSProperties = { minHeight: 44, padding: '0 16px', borderRadius: 12, border: 0, background: palette.primary, color: C.ink, fontSize: 14, fontWeight: 700, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6, fontFamily: 'inherit' };
   const ghost: React.CSSProperties = { ...primary, background: 'transparent', border: '1px solid rgba(255,255,255,.18)', color: C.text, fontWeight: 600 };
-  const link: React.CSSProperties = { border: 0, background: 'transparent', color: C.faint, fontSize: 13, fontWeight: 600, cursor: 'pointer', minHeight: 40, textDecoration: 'underline', textUnderlineOffset: 3 };
+  const link: React.CSSProperties = { border: 0, background: 'transparent', color: C.faint, fontSize: 13, fontWeight: 600, cursor: 'pointer', minHeight: 40, textDecoration: 'underline', textUnderlineOffset: 3, fontFamily: 'inherit' };
+
+  const onExercise = (e: Engagement, r: ExerciseDone) => {
+    if (r.note) props.onNote(r.note);
+    const g = guideOf(e.refId);
+    const line = r.held === true ? pick(REACT.held, seed) : r.held === false ? pick(REACT.notHeld, seed)
+      : g.kind === 'breath' ? pick(REACT.breath, seed) : r.note ? pick(REACT.note, seed) : pick(REACT.done, seed);
+    finish('action', line);
+  };
 
   const row = (e: Engagement) => {
     const done = isDone(p, today, e.key, moods);
     const expanded = open === e.key;
-    const tag = e.kind === 'mood' ? 'Un tap' : e.kind === 'learn' ? (e.reread ? 'À relire · 30 s' : 'Une idée à comprendre · 30 s') : e.duration ? e.duration : 'Dans la journée';
-    const canTick = e.kind !== 'mood';
+    const g = e.key === 'action' ? guideOf(e.refId) : null;
+    const committed = !!p.commits?.[today];
+    const tag = e.kind === 'mood' ? 'Un tap'
+      : e.kind === 'learn' ? (e.reread ? 'À relire · vrai ou faux' : 'Vrai ou faux · 30 s')
+      : g?.kind === 'habit' ? (committed && !done ? 'Engagé · je te le redemande' : 'Habitude du jour')
+      : g?.kind === 'breath' ? `Guidé par Dr Lô · ${e.duration ?? '1 min'}`
+      : g?.kind === 'write' || g?.kind === 'steps' || g?.kind === 'chips' ? `Avec Dr Lô · ${e.duration ?? '2 min'}`
+      : e.duration ?? 'Dans la journée';
+    const onCircle = () => {
+      if (e.kind === 'mood') { if (!done) props.onMood(); return; }
+      if (done) { props.onToggle(e.key, false); return; }
+      setOpen(e.key);
+    };
+    const learning = e.kind === 'learn' ? LEARNINGS.find(l => l.id === e.refId) : undefined;
     return (
-      <div key={e.key} style={{ ...card, padding: 0, borderColor: done ? 'rgba(157,191,175,.35)' : C.line }}>
+      <div key={e.key} style={{ ...card, padding: 0, borderColor: done ? 'rgba(157,191,175,.35)' : expanded ? 'rgba(242,182,109,.35)' : C.line }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: 14 }}>
-          <button
-            onClick={() => (canTick ? props.onToggle(e.key) : props.onMood())}
-            aria-label={done ? `${e.title} : fait` : `${e.title} : à faire`}
-            aria-pressed={done}
+          <button onClick={onCircle} aria-label={done ? `${e.title} : fait` : `${e.title} : à faire`} aria-pressed={done}
             style={{ flexShrink: 0, width: 30, height: 30, borderRadius: '50%', border: `2px solid ${done ? palette.accent : 'rgba(242,182,109,.55)'}`, background: done ? palette.accent : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', padding: 0 }}>
             {done && <Check size={16} strokeWidth={3} color={C.ink} aria-hidden="true" />}
           </button>
           <button onClick={() => setOpen(expanded ? null : e.key)} aria-expanded={expanded}
-            style={{ flex: 1, minWidth: 0, border: 0, background: 'transparent', color: C.text, textAlign: 'left', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
+            style={{ flex: 1, minWidth: 0, border: 0, background: 'transparent', color: C.text, textAlign: 'left', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', gap: 8, fontFamily: 'inherit' }}>
             <span style={{ flex: 1, minWidth: 0 }}>
               <span style={{ display: 'block', fontSize: 15, fontWeight: 700, color: done ? C.muted : C.text }}>{e.title}</span>
               <span style={{ display: 'block', fontSize: 12.5, color: done ? C.sage : C.faint, marginTop: 2 }}>{done ? `Fait · ${tag}` : tag}</span>
@@ -97,25 +182,29 @@ const ProgrammePanel: React.FC<ProgrammePanelProps> = props => {
           </button>
         </div>
         {(expanded || (e.kind === 'mood' && p.axis === 'sommeil' && !p.sleep[today])) && (
-          <div className="drl-in" style={{ padding: '0 14px 14px 56px', display: 'flex', flexDirection: 'column', gap: 10 }}>
-            {expanded && <p style={{ margin: 0, fontSize: 14, lineHeight: 1.55, color: C.soft }}>{e.text}</p>}
+          <div className="drl-in" style={{ padding: '0 14px 16px 56px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+            {expanded && e.kind !== 'learn' && <p style={{ margin: 0, fontSize: 14, lineHeight: 1.55, color: C.soft }}>{e.text}</p>}
             {e.kind === 'mood' && p.axis === 'sommeil' && (
               <div role="group" aria-label="Ma nuit" style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                 {SLEEP.map(s => (
                   <button key={s.id} onClick={() => props.onSleep(s.id)} aria-pressed={p.sleep[today] === s.id}
-                    style={{ minHeight: 38, padding: '0 12px', borderRadius: 999, border: `1px solid ${p.sleep[today] === s.id ? palette.accent : C.line}`, background: p.sleep[today] === s.id ? 'rgba(242,182,109,.18)' : 'transparent', color: C.text, fontSize: 13, fontWeight: 600, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                    style={{ minHeight: 38, padding: '0 12px', borderRadius: 999, border: `1px solid ${p.sleep[today] === s.id ? palette.accent : C.line}`, background: p.sleep[today] === s.id ? 'rgba(242,182,109,.18)' : 'transparent', color: C.text, fontSize: 13, fontWeight: 600, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 6, fontFamily: 'inherit' }}>
                     <Moon size={13} aria-hidden="true" />{s.label}
                   </button>
                 ))}
               </div>
             )}
             {expanded && e.kind === 'mood' && !done && <button onClick={props.onMood} style={{ ...primary, alignSelf: 'flex-start' }}>Noter mon humeur</button>}
-            {expanded && e.kind === 'breath' && <button onClick={props.onBreath} style={{ ...primary, alignSelf: 'flex-start' }}><Wind size={16} aria-hidden="true" />Respirer maintenant</button>}
-            {expanded && e.kind !== 'mood' && !done && (
-              <button onClick={() => { props.onToggle(e.key); setOpen(null); }} style={{ ...ghost, alignSelf: 'flex-start' }}>
-                {e.kind === 'learn' ? 'Lu' : 'C\'est fait'}
-              </button>
+            {expanded && e.key === 'action' && g && !done && (
+              <ExerciseRunner guide={g} palette={palette} committed={committed}
+                onDone={r => onExercise(e, r)}
+                onCommit={() => { props.onCommit(); say(REACT.commit[0]); }}
+                onCrisis={props.onCrisis} />
             )}
+            {expanded && e.kind === 'learn' && learning && (done
+              ? <p style={{ margin: 0, fontSize: 14, lineHeight: 1.6, color: C.soft }}>{learning.text}</p>
+              : <LearnQuiz key={learning.id} learning={learning} quiz={QUIZ[learning.id]} palette={palette}
+                  onDone={right => finish('learn', right === false ? pick(REACT.learnWrong, seed) : pick(REACT.learnRight, seed))} />)}
           </div>
         )}
       </div>
@@ -125,12 +214,76 @@ const ProgrammePanel: React.FC<ProgrammePanelProps> = props => {
   const result = p.result;
   const verdict = result ? improved(result) : null;
 
+  // Courbe de l'humeur depuis le début
+  const spark = (() => {
+    if (noted < 3) return null;
+    const W = 300; const H = 70; const n = series.length;
+    const x = (i: number) => (n === 1 ? W / 2 : (i / (n - 1)) * (W - 12) + 6);
+    const y = (v: number) => H - 8 - ((v - 1) / 4) * (H - 16);
+    const pts = series.map((v, i) => (v === null ? null : `${x(i)},${y(v)}`)).filter(Boolean).join(' ');
+    return (
+      <svg viewBox={`0 0 ${W} ${H}`} width="100%" height={H} role="img" aria-label="Ton humeur jour après jour depuis le début du programme">
+        <line x1="0" x2={W} y1={y(3)} y2={y(3)} stroke="rgba(255,255,255,.10)" strokeDasharray="3 4" />
+        <polyline points={pts} fill="none" stroke={palette.accent} strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round" />
+        {series.map((v, i) => (v === null ? null : <circle key={i} cx={x(i)} cy={y(v)} r="3.2" fill={palette.accent} />))}
+      </svg>
+    );
+  })();
+
+  // ── Mes routines (celles du totem) : en plus des 3 engagements, retirables ──
+  const gtxt = (t: string) => resolveGender(t, props.genre ?? 'homme');
+  const myRoutines = (p.routines ?? []).map(id => routineById(id)).filter((r): r is NonNullable<typeof r> => !!r);
+  const suggest = props.totem ? TOTEM_ROUTINES[props.totem.animal].filter(r => !(p.routines ?? []).includes(r.id)) : [];
+  const WHEN: Record<string, string> = { matin: 'Le matin', 'journée': 'Dans la journée', soir: 'Le soir' };
+  const routinesBlock = (myRoutines.length > 0 || suggest.length > 0) ? (
+    <div style={{ ...card, padding: 14, display: 'flex', flexDirection: 'column', gap: 10 }}>
+      <div>
+        <p style={{ margin: 0, fontSize: 14.5, fontWeight: 700 }}>{props.totem ? `Mes routines ${props.totem.words.du}` : 'Mes routines'}</p>
+        <p style={{ margin: '2px 0 0', fontSize: 12.5, color: C.faint }}>En plus de tes 3 engagements. Tu peux en retirer quand tu veux.</p>
+      </div>
+      {myRoutines.map(r => {
+        const done = routineDone(p, today, r.id);
+        return (
+          <div key={r.id} style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+            <button onClick={() => { props.onRoutineCheck(r.id); if (!done) say(pick(REACT.done, seed + r.id.length)); }} aria-pressed={done} aria-label={done ? `${r.title} : fait` : `${r.title} : à faire`}
+              style={{ flexShrink: 0, width: 28, height: 28, borderRadius: '50%', border: `2px solid ${done ? C.sage : 'rgba(157,191,175,.6)'}`, background: done ? C.sage : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', padding: 0, marginTop: 2 }}>
+              {done && <Check size={15} strokeWidth={3} color={C.ink} aria-hidden="true" />}
+            </button>
+            <span style={{ flex: 1, minWidth: 0 }}>
+              <span style={{ display: 'block', fontSize: 14, fontWeight: 700, color: done ? C.muted : C.text }}>{r.title}</span>
+              <span style={{ display: 'block', fontSize: 12.5, color: C.faint, marginTop: 2 }}>{WHEN[r.when]} · {gtxt(r.text)}</span>
+            </span>
+            <button onClick={() => props.onRoutineSet(r.id, false)} aria-label={`Retirer « ${r.title} » de mon programme`}
+              style={{ flexShrink: 0, width: 36, height: 36, border: 0, background: 'transparent', color: C.faint, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <X size={16} aria-hidden="true" />
+            </button>
+          </div>
+        );
+      })}
+      {suggest.length > 0 && (
+        <div style={{ borderTop: myRoutines.length ? `1px solid ${C.line}` : 0, paddingTop: myRoutines.length ? 10 : 0, display: 'flex', flexDirection: 'column', gap: 8 }}>
+          {myRoutines.length > 0 && <p style={{ margin: 0, fontSize: 12.5, color: C.faint }}>{props.totem!.words.ton.charAt(0).toUpperCase() + props.totem!.words.ton.slice(1)} te propose aussi :</p>}
+          {suggest.map(r => (
+            <button key={r.id} onClick={() => { props.onRoutineSet(r.id, true); say('Ajouté à ton programme. Tu pourras le retirer à tout moment.'); }}
+              style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderRadius: 12, border: '1px dashed rgba(255,255,255,.22)', background: 'transparent', color: C.text, cursor: 'pointer', textAlign: 'left', fontFamily: 'inherit' }}>
+              <Plus size={16} color={palette.accent} aria-hidden="true" />
+              <span style={{ flex: 1, minWidth: 0 }}>
+                <span style={{ display: 'block', fontSize: 13.5, fontWeight: 700 }}>{r.title}</span>
+                <span style={{ display: 'block', fontSize: 12, color: C.faint }}>{WHEN[r.when]} · {gtxt(r.text)}</span>
+              </span>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  ) : null;
+
   return (
     <div role="dialog" aria-modal="true" aria-label="Mes engagements du jour"
       style={{ position: 'fixed', inset: 0, zIndex: 55, background: palette.bg, color: C.text, overflowY: 'auto', fontFamily: '"Plus Jakarta Sans", system-ui, sans-serif' }}>
-      <div style={{ maxWidth: 520, margin: '0 auto', padding: '14px 16px 40px', display: 'flex', flexDirection: 'column', gap: 14 }}>
+      <div style={{ maxWidth: 520, margin: '0 auto', padding: '14px 16px 110px', display: 'flex', flexDirection: 'column', gap: 14 }}>
         <header style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <button onClick={props.onClose} aria-label="Revenir à l'accueil" style={{ width: 44, height: 44, border: 0, background: 'transparent', color: C.muted, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <button onClick={props.onClose} aria-label="Revenir" style={{ width: 44, height: 44, border: 0, background: 'transparent', color: C.muted, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <ChevronLeft size={24} aria-hidden="true" />
           </button>
           <div style={{ minWidth: 0 }}>
@@ -142,6 +295,19 @@ const ProgrammePanel: React.FC<ProgrammePanelProps> = props => {
             </p>
           </div>
         </header>
+
+        {/* Dr Lô accueille chaque jour */}
+        {!result && (
+          <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
+            <img src="/dr-lo.png" alt="" width={44} height={44} className={cheer ? 'drl-joy-glow' : undefined}
+              style={{ width: 44, height: 44, borderRadius: '50%', objectFit: 'cover', objectPosition: 'top', flexShrink: 0, border: `2px solid ${cheer ? '#E9C88F' : 'rgba(242,182,109,.45)'}` }} />
+            <p className="drl-in" key={complete ? 'c' : 'n'} style={{ margin: 0, padding: '12px 14px', borderRadius: '6px 18px 18px 18px', background: 'rgba(255,255,255,.07)', fontSize: 14.5, lineHeight: 1.55, color: C.soft }}>
+              {complete
+                ? `Journée validée${props.prenom ? `, ${props.prenom}` : ''} ! ${tomorrow ? `Demain : ${tomorrow.title.toLowerCase()}${tomorrow.duration ? ` (${tomorrow.duration})` : ''}. ` : ''}Repose-toi bien.`
+                : dailyLine(p, today, moods, props.prenom)}
+            </p>
+          </div>
+        )}
 
         {(hard || p.fragile) && (
           <div style={{ ...card, padding: 14, borderColor: 'rgba(185,166,214,.4)', background: 'rgba(185,166,214,.10)' }}>
@@ -192,6 +358,21 @@ const ProgrammePanel: React.FC<ProgrammePanelProps> = props => {
             </div>
           </div>
         ) : (<>
+          {/* Le chemin : 4 étapes */}
+          <div style={{ ...card, padding: '12px 14px' }}>
+            <div style={{ display: 'flex', gap: 6 }} aria-hidden="true">
+              {chapters.map((c, i) => (
+                <span key={c.name} style={{ flex: 1, height: 6, borderRadius: 3, background: i + 1 < week ? palette.accent : i + 1 === week ? `linear-gradient(90deg, ${palette.accent} ${Math.round((((shownDay - 1) % 7) + 1) / 7 * 100)}%, rgba(255,255,255,.12) 0)` : 'rgba(255,255,255,.12)' }} />
+              ))}
+            </div>
+            <p style={{ margin: '10px 0 0', fontSize: 13.5, color: C.text, fontWeight: 700 }}>
+              Étape {week} sur 4 · {chapters[week - 1].name}
+            </p>
+            <p style={{ margin: '2px 0 0', fontSize: 12.5, color: C.faint }}>
+              {week < 4 ? `Ensuite : ${chapters[week].name}` : 'Dernière étape, puis le nouveau test'}
+            </p>
+          </div>
+
           <div style={{ ...card, padding: '12px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
             <div style={{ display: 'flex', gap: 7 }} aria-hidden="true">
               {dots.map((d, i) => (
@@ -202,15 +383,37 @@ const ProgrammePanel: React.FC<ProgrammePanelProps> = props => {
                 }} />
               ))}
             </div>
-            <span style={{ fontSize: 12.5, color: C.faint }}>jours actifs <b style={{ color: C.text }}>{active}/7</b></span>
+            <span style={{ fontSize: 12.5, color: C.faint, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+              {run >= 2 ? <><Flame size={15} color="#F2B66D" aria-hidden="true" /><b style={{ color: C.text }}>{run} jours</b> d'affilée</> : <>jours actifs <b style={{ color: C.text }}>{active}/7</b></>}
+            </span>
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>{plan.map(row)}</div>
 
-          {day === 1 && p.intro && (
-            <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
-              <img src="/dr-lo.png" alt="" width={32} height={32} style={{ width: 32, height: 32, borderRadius: '50%', objectFit: 'cover', objectPosition: 'top', flexShrink: 0 }} />
-              <p style={{ margin: 0, fontSize: 14, lineHeight: 1.55, color: C.soft }}>{p.intro}</p>
+          {routinesBlock}
+
+          {complete && (
+            <div ref={doneRef} className="drl-in" style={{ ...card, padding: 16, textAlign: 'center', borderColor: 'rgba(233,200,143,.45)', background: 'radial-gradient(120% 90% at 50% 0%, rgba(233,200,143,.16), rgba(233,200,143,0) 70%), rgba(255,255,255,.04)' }}>
+              <span aria-hidden="true" style={{ display: 'inline-flex', width: 48, height: 48, borderRadius: '50%', background: palette.primary, alignItems: 'center', justifyContent: 'center' }}>
+                <Check size={26} strokeWidth={3} color={C.ink} />
+              </span>
+              <p style={{ margin: '10px 0 2px', fontFamily: 'Fraunces, serif', fontSize: 22, fontWeight: 600, color: C.title }}>Journée validée</p>
+              <p style={{ margin: 0, fontSize: 13.5, color: C.soft, display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+                {run >= 2 ? <><Flame size={15} color="#F2B66D" aria-hidden="true" />{run} jours d'affilée</> : 'Premier jour tenu, bravo.'}
+              </p>
+              {tomorrow && (
+                <p style={{ margin: '12px 0 0', fontSize: 13.5, lineHeight: 1.5, color: C.faint }}>
+                  Demain : <b style={{ color: C.text }}>{tomorrow.title}</b>{tomorrow.duration ? ` · ${tomorrow.duration}` : ''}
+                </p>
+              )}
+            </div>
+          )}
+
+          {spark && (
+            <div style={{ ...card, padding: 14 }}>
+              <p style={{ margin: '0 0 6px', fontSize: 13, fontWeight: 700 }}>Ton humeur depuis le début</p>
+              {spark}
+              <p style={{ margin: '4px 0 0', fontSize: 12, color: C.faint }}>{noted} jour{noted > 1 ? 's' : ''} noté{noted > 1 ? 's' : ''} · plus c'est haut, mieux ça va</p>
             </div>
           )}
         </>)}
@@ -280,6 +483,14 @@ const ProgrammePanel: React.FC<ProgrammePanelProps> = props => {
           Cocher est gratuit. Un jour manqué n'est pas grave : reprends simplement le lendemain.
         </p>
       </div>
+
+      {/* Dr Lô réagit */}
+      {toast && (
+        <div role="status" className="drl-in" style={{ position: 'fixed', left: 16, right: 16, bottom: 20, zIndex: 56, maxWidth: 488, margin: '0 auto', display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', borderRadius: 18, background: '#2A211A', border: '1px solid rgba(242,182,109,.35)', boxShadow: '0 12px 30px rgba(0,0,0,.45)' }}>
+          <img src="/dr-lo.png" alt="" width={32} height={32} style={{ width: 32, height: 32, borderRadius: '50%', objectFit: 'cover', objectPosition: 'top', flexShrink: 0 }} />
+          <span style={{ fontSize: 14, lineHeight: 1.45, color: C.text }}>{toast}</span>
+        </div>
+      )}
     </div>
   );
 };
@@ -287,7 +498,7 @@ const ProgrammePanel: React.FC<ProgrammePanelProps> = props => {
 export default ProgrammePanel;
 
 /** La carte de l'accueil : comme une petite notification (pastille = engagements restants). */
-export const ProgrammeHomeCard: React.FC<{ p: Programme; today: string; remaining: number; palette: MomentPalette; onOpen: () => void }> = ({ p, today, remaining, palette, onOpen }) => {
+export const ProgrammeHomeCard: React.FC<{ p: Programme; today: string; remaining: number; palette: MomentPalette; onOpen: () => void; totemImg?: string }> = ({ p, today, remaining, palette, onOpen, totemImg }) => {
   const day = Math.min(PROGRAMME_DAYS, dayNumber(p, today));
   const sub = p.result ? `${AXES[p.axis].short} · terminé, vois le chemin parcouru`
     : p.status === 'paused' ? `${AXES[p.axis].short} · en pause`
@@ -313,6 +524,7 @@ export const ProgrammeHomeCard: React.FC<{ p: Programme; today: string; remainin
           <span style={{ display: 'block', fontSize: 15, fontWeight: 700 }}>Mon programme Dr Lô</span>
           <span style={{ display: 'block', fontSize: 12.5, color: C.faint, marginTop: 2 }}>{sub}</span>
         </span>
+        {totemImg && <img src={totemImg} alt="" width={36} height={36} style={{ width: 36, height: 36, borderRadius: 12, objectFit: 'cover', flexShrink: 0, border: '1px solid rgba(233,200,143,.35)' }} />}
       </span>
       {!p.result && (
         <span aria-hidden="true" style={{ display: 'block', width: '100%', height: 6, borderRadius: 3, background: 'rgba(255,255,255,.08)' }}>

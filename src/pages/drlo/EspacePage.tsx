@@ -23,7 +23,7 @@ import { dayKey, moodById, type MoodMap } from '../../utils/moodLog';
 import { fetchMoods } from '../../services/moodService';
 import { lastDays, MOOD_SCORE, WEEKDAYS, weekdayIndex } from '../../utils/moodInsights';
 import { addDays } from '../../utils/cycleCalc';
-import { getTotemProgress, getTotemSignature, type TotemAnimal } from '../../utils/totemAlgorithm';
+import { getTotemProgress, getTotemSignature, totemMeaning, type TotemAnimal } from '../../utils/totemAlgorithm';
 import { trackAccueil } from '../../utils/accueilTracking';
 import PaliersCard from '../../components/accueil/PaliersCard';
 import { getDrloStatus, registerReferralIfAny, type DrloStatus } from '../../services/drloQuestionService';
@@ -46,7 +46,7 @@ const EspacePage: React.FC = () => {
   const today = dayKey();
 
   const [results, setResults] = useState<Record<string, ScaleResult>>({});
-  const [totem, setTotem] = useState<{ animal: string; revealedAt: unknown } | null>(null);
+  const [totem, setTotem] = useState<{ animal: string; revealedAt: unknown; pending?: string | null } | null>(null);
   const [defis, setDefis] = useState(0);
   const [counts, setCounts] = useState({ journal: 0, chats: 0 });
   const [moods, setMoods] = useState<MoodMap>({});
@@ -67,7 +67,7 @@ const EspacePage: React.FC = () => {
     getProfileProgress(uid).then(p => {
       if (off) return;
       setResults(p.scaleResults ?? {});
-      setTotem(p.totem ? { animal: p.totem.animal, revealedAt: p.totem.revealedAt } : null);
+      setTotem(p.totem ? { animal: p.totem.animal, revealedAt: p.totem.revealedAt, pending: p.totem.pendingAnimal } : null);
       setDefis(p.activeDefis?.length ?? 0);
       setLoaded(true);
     }).catch(() => setLoaded(true));
@@ -162,7 +162,10 @@ const EspacePage: React.FC = () => {
             <span style={{ flex: 1, minWidth: 0 }}>
               <span style={{ display: 'block', fontSize: 12, color: DC.faint }}>Ton totem</span>
               <span style={{ display: 'block', fontFamily: 'Fraunces, serif', fontSize: 17, fontWeight: 600 }}>{getTotemSignature(totem!.animal as TotemAnimal)?.label ?? totem!.animal}</span>
-              <span style={{ display: 'block', fontSize: 12.5, color: DC.muted, lineHeight: 1.4 }}>{getTotemSignature(totem!.animal as TotemAnimal)?.meaning}</span>
+              <span style={{ display: 'block', fontSize: 12.5, color: DC.muted, lineHeight: 1.4 }}>{totemMeaning(totem!.animal as TotemAnimal, genre === 'femme' ? 'femme' : 'homme')}</span>
+              {totem!.pending && totem!.pending !== totem!.animal && (
+                <span style={{ display: 'block', marginTop: 4, fontSize: 12.5, fontWeight: 700, color: DC.gold }}>Ton totem a évolué : viens découvrir le nouveau</span>
+              )}
             </span>
             <ArrowRight size={16} color={DC.muted} aria-hidden="true" />
           </Link>

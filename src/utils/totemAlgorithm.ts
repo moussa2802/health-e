@@ -1,5 +1,6 @@
 import type { ScaleResult } from '../types/assessment';
 import { resolveSubscaleScores } from './bigFiveProfile';
+import { resolveGender } from './gender';
 
 export type TotemAnimal =
   | 'lion' | 'aigle' | 'cheval' | 'loup' | 'dauphin' | 'elephant'
@@ -179,7 +180,7 @@ const TOTEM_DOMAINS: TotemDomain[] = [
     scaleId: 'big_five',
     label: 'Personnalité',
     forceLabel: 'Profil ouvert et stable',
-    forceDescription: 'Tu es ouvert, adaptable et équilibré — une personnalité riche.',
+    forceDescription: 'Tu es {{ouvert, adaptable et équilibré|ouverte, adaptable et équilibrée}} — une personnalité riche.',
     growLabel: 'Ton équilibre intérieur',
     growDescription: 'Ta sensibilité est une richesse — apprendre à la canaliser peut tout changer.',
   },
@@ -403,22 +404,22 @@ function capitalize(s: string): string {
    ═══════════════════════════════════════════════════════════════════════════ */
 
 const ANIMAL_DESCRIPTIONS: Record<TotemAnimal, string> = {
-  lion: 'Tu es guidé par la confiance et le courage. Tu inspires naturellement ceux qui t\'entourent, et ta présence rassure. Quand tu crois en quelque chose, tu avances — et les autres suivent.',
+  lion: 'Tu es {{guidé|guidée}} par la confiance et le courage. Tu inspires naturellement ceux qui t\'entourent, et ta présence rassure. Quand tu crois en quelque chose, tu avances — et les autres suivent.',
   aigle: 'Tu vois plus loin que la plupart des gens. Ton esprit indépendant et ta capacité à prendre de la hauteur te permettent de tracer ta route avec clarté, même quand le chemin est flou pour les autres.',
-  cheval: 'Tu es porté par une énergie vive et une curiosité insatiable. Ta soif de liberté et ton ouverture au monde font de toi quelqu\'un d\'entraînant — tu vis pleinement et ça se sent.',
-  loup: 'Tu es guidé par la loyauté et l\'intuition. Tu ressens profondément les liens qui t\'unissent aux autres, et tu protèges ceux que tu aimes avec une fidélité rare.',
+  cheval: 'Tu es {{porté|portée}} par une énergie vive et une curiosité insatiable. Ta soif de liberté et ton ouverture au monde font de toi quelqu\'un d\'entraînant — tu vis pleinement et ça se sent.',
+  loup: 'Tu es {{guidé|guidée}} par la loyauté et l\'intuition. Tu ressens profondément les liens qui t\'unissent aux autres, et tu protèges ceux que tu aimes avec une fidélité rare.',
   dauphin: 'Tu illumines les espaces que tu traverses. Ta joie communicative et ton empathie naturelle créent des ponts entre les gens — tu sais écouter, rassurer, et donner le sourire.',
   elephant: 'Tu portes une force tranquille au service des autres. Ta bienveillance, ta fiabilité et ton sens des responsabilités font de toi un pilier — quelqu\'un sur qui on peut compter, toujours.',
   cerf: 'Tu perçois ce que d\'autres ignorent. Ta sensibilité est un don qui te connecte profondément au monde — tu ressens les atmosphères, les émotions, les non-dits avec une finesse rare.',
   hibou: 'Tu réfléchis avant d\'agir, et ta profondeur d\'analyse est un atout précieux. Ton monde intérieur est riche, et ta sagesse vient de cette capacité à observer et comprendre en silence.',
-  panthere: 'Tu avances avec une maîtrise impressionnante. Là où d\'autres s\'agitent, tu restes calme et centré. Ta force n\'est pas dans le bruit — elle est dans la précision et l\'assurance de chacun de tes pas.',
+  panthere: 'Tu avances avec une maîtrise impressionnante. Là où d\'autres s\'agitent, tu restes calme et {{centré|centrée}}. Ta force n\'est pas dans le bruit — elle est dans la précision et l\'assurance de chacun de tes pas.',
   renard: 'Tu t\'adaptes à tout. Ton intelligence vive et ton sens stratégique te permettent de naviguer les situations complexes avec une aisance naturelle — tu trouves toujours un chemin.',
-  tortue: 'Ta paix intérieure est une force rare. Là où le monde s\'agite, tu avances à ton rythme — constant, résilient, ancré. Ta sagesse vient de cette capacité à rester solide quoi qu\'il arrive.',
+  tortue: 'Ta paix intérieure est une force rare. Là où le monde s\'agite, tu avances à ton rythme — {{constant, résilient, ancré|constante, résiliente, ancrée}}. Ta sagesse vient de cette capacité à rester solide quoi qu\'il arrive.',
   ours: 'Ta force est tranquille et profonde. Tu n\'as pas besoin de beaucoup de monde — mais ceux que tu laisses entrer dans ton cercle trouvent en toi une protection et une solidité inébranlables.',
 };
 
-export function getAnimalDescription(animal: TotemAnimal): string {
-  return ANIMAL_DESCRIPTIONS[animal];
+export function getAnimalDescription(animal: TotemAnimal, genre: 'homme' | 'femme' = 'homme'): string {
+  return resolveGender(ANIMAL_DESCRIPTIONS[animal], genre);
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -455,4 +456,109 @@ export function computeTotem(profileResults: Record<string, ScaleResult>): Totem
   }
 
   return scored[0].animal;
+}
+
+/** Les totems qui te ressemblent le plus (même tempérament sur beaucoup de plans). */
+export function nearestTotems(animal: TotemAnimal, n = 2): TotemAnimal[] {
+  const me = getTotemSignature(animal);
+  return SIGNATURES
+    .filter(s => s.animal !== animal)
+    .map(s => ({ a: s.animal, d: weightedDistance(me.vector, s.vector, DIM_WEIGHTS) }))
+    .sort((x, y) => x.d - y.d)
+    .slice(0, n)
+    .map(x => x.a);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   En amour : avec quels totems ça s'accorde le mieux (repère, pas une vérité)
+   Vecteur : [extraversion, ouverture, agréabilité, conscience, névrosisme, sécurité d'attachement, résilience]
+   Ce qui compte le plus dans un couple : valeurs et façon de vivre proches (ouverture, douceur,
+   sérieux), sécurité affective, stabilité émotionnelle ; une énergie sociale pas trop éloignée.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+export interface LoveMatch { animal: TotemAnimal; score: number; reasons: string[] }
+
+function loveScore(a: number[], b: number[]): number {
+  const sim = 1 - (Math.abs(a[1] - b[1]) + Math.abs(a[2] - b[2]) + Math.abs(a[3] - b[3])) / 3;
+  const secure = (a[5] + b[5]) / 2;
+  const stable = 1 - (a[4] + b[4]) / 2;
+  const warm = (a[2] + b[2]) / 2;
+  const energy = 1 - Math.abs(a[0] - b[0]);
+  return 0.35 * sim + 0.25 * secure + 0.2 * stable + 0.1 * warm + 0.1 * energy;
+}
+
+function goodReasons(a: number[], b: number[]): string[] {
+  const r: string[] = [];
+  if (Math.abs(a[2] - b[2]) <= 0.15 && b[2] >= 0.55) r.push('la même douceur avec les autres');
+  if (Math.abs(a[3] - b[3]) <= 0.15) r.push('le même sérieux dans les engagements');
+  if (Math.abs(a[1] - b[1]) <= 0.15) r.push('la même curiosité pour la vie');
+  if (b[5] >= 0.75) r.push('sa sécurité affective t\'apaise');
+  if (b[4] <= 0.2 && a[4] >= 0.4) r.push('son calme équilibre tes émotions');
+  if (Math.abs(a[0] - b[0]) >= 0.4) r.push('l\'un ouvre au monde, l\'autre ramène au calme');
+  if (a[0] >= 0.7 && b[0] >= 0.7) r.push('la même énergie, le même goût de l\'action');
+  if (Math.abs(a[0] - b[0]) <= 0.15 && a[0] < 0.7) r.push('le même besoin de calme et d\'intimité');
+  if (!r.length) r.push('vos forces se complètent');
+  return r.slice(0, 2);
+}
+
+function effortReasons(a: number[], b: number[]): string[] {
+  const r: string[] = [];
+  if (a[4] + b[4] >= 0.9) r.push('vos émotions peuvent s\'emballer en même temps');
+  if (Math.abs(a[0] - b[0]) >= 0.5) r.push('l\'un veut sortir quand l\'autre veut rester');
+  if (Math.abs(a[3] - b[3]) >= 0.35) r.push('vos rythmes de vie sont très différents');
+  if (Math.abs(a[2] - b[2]) >= 0.35) r.push('vous ne gérez pas les conflits de la même façon');
+  if ((a[5] + b[5]) / 2 <= 0.55) r.push('chacun peut se protéger en prenant de la distance');
+  if (!r.length) r.push('vous voyez souvent les choses différemment');
+  return r.slice(0, 2);
+}
+
+/** Les 2 totems avec qui l'amour coule le plus, et celui qui demande le plus d'efforts. */
+export function loveMatches(animal: TotemAnimal): { best: LoveMatch[]; effort: LoveMatch } {
+  const me = getTotemSignature(animal).vector;
+  // Un totem « facile » (très sécure, très calme) plairait à tout le monde : on corrige par sa
+  // moyenne, pour garder ce qui est propre au DUO.
+  const avgOf = (v: number[]) => {
+    const others = SIGNATURES.filter(x => x.vector !== v);
+    return others.reduce((n, x) => n + loveScore(x.vector, v), 0) / others.length;
+  };
+  const all = SIGNATURES.filter(s => s.animal !== animal)
+    .map(s => ({ animal: s.animal, score: loveScore(me, s.vector) - 0.7 * avgOf(s.vector), v: s.vector }))
+    .sort((x, y) => y.score - x.score);
+  const best = all.slice(0, 2).map(x => ({ animal: x.animal, score: x.score, reasons: goodReasons(me, x.v) }));
+  const low = all[all.length - 1];
+  return { best, effort: { animal: low.animal, score: low.score, reasons: effortReasons(me, low.v) } };
+}
+
+/** Les bons articles : « la Panthère », « de l'Aigle », « ta tortue », « une Panthère ». */
+export function totemWords(animal: TotemAnimal): { le: string; du: string; ton: string; un: string } {
+  const label = getTotemSignature(animal).label;
+  const fem = animal === 'tortue' || animal === 'panthere';
+  const vowel = /^[AEÉIOU]/.test(label);
+  const low = label.toLowerCase();
+  return {
+    le: fem ? `la ${label}` : vowel ? `l'${label}` : `le ${label}`,
+    du: fem ? `de la ${label}` : vowel ? `de l'${label}` : `du ${label}`,
+    ton: fem ? `ta ${low}` : `ton ${low}`,
+    un: fem ? `une ${label}` : `un ${label}`,
+  };
+}
+
+/** La phrase-signature accordée au genre (« Maîtresse de soi », « Protectrice bienveillante »…). */
+const MEANING_G: Record<TotemAnimal, string> = {
+  lion: '{{Meneur confiant|Meneuse confiante}} — tu inspires et rassures naturellement.',
+  aigle: 'Visionnaire {{indépendant|indépendante}} — tu vois loin et traces ta route.',
+  cheval: 'Libre et {{fougueux|fougueuse}} — ton énergie et ta curiosité t\'emportent.',
+  loup: '{{Fidèle relationnel|Fidèle relationnelle}} — la loyauté et les liens sont ton moteur.',
+  dauphin: 'Sociable optimiste — ta joie et ton écoute rayonnent.',
+  elephant: '{{Protecteur bienveillant|Protectrice bienveillante}} — ta force est au service des autres.',
+  cerf: 'Sensible {{délicat|délicate}} — ta finesse perçoit ce que d\'autres ignorent.',
+  hibou: '{{Introspectif profond|Introspective profonde}} — tu réfléchis en profondeur avant d\'agir.',
+  panthere: '{{Maître|Maîtresse}} de soi — tu avances avec calme et assurance.',
+  renard: '{{Malin|Maligne}} stratège — tu t\'adaptes et trouves toujours un chemin.',
+  tortue: 'Sage {{résilient|résiliente}} — ta constance et ta paix intérieure impressionnent.',
+  ours: '{{Protecteur|Protectrice}} solitaire — ta force tranquille rassure ceux que tu aimes.',
+};
+
+export function totemMeaning(animal: TotemAnimal, genre: 'homme' | 'femme' = 'homme'): string {
+  return resolveGender(MEANING_G[animal], genre);
 }

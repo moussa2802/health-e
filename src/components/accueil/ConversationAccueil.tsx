@@ -72,7 +72,7 @@ import {
   type DefiAudience, type SocialFlow,
 } from '../../utils/socialFlow';
 import { RELATIONSHIP_CATEGORIES } from '../../utils/relationshipTypes';
-import { getTotemProgress } from '../../utils/totemAlgorithm';
+import { getTotemProgress, getTotemSignature, totemWords, type TotemAnimal } from '../../utils/totemAlgorithm';
 import {
   convStorageKey, createConv, deleteConv, loadIndex, MAIN_ID, renameConv, saveIndex, sortedConvs, touchConv, type ConvIndex,
 } from '../../utils/conversations';
@@ -81,10 +81,15 @@ import ProgrammePanel, { ProgrammeHomeCard } from './ProgrammePanel';
 import { ProgrammeInviteCard, ProgrammeOfferCard, ProgrammeOpenCard, type ProgCardEnv } from './ProgrammeCards';
 import {
   addDays, bilanDue, bilanSummary, dayNumber, daysBetween, hardStreak, MIN_DAYS_BEFORE_RETEST, newProgramme,
-  pause as pauseProg, planFor, programmeSignals, remainingToday, resume as resumeProg, setSleep, toggleCheck, withResult,
+  pause as pauseProg, planFor, programmeSignals, remainingToday, resume as resumeProg, setRoutine, setSleep, toggleCheck, toggleRoutine, withResult,
   type AxisSignal, type EngKey, type Programme, type SleepNote,
 } from '../../utils/programme';
 import { AXES, type ProgAxis } from '../../data/programmeLibrary';
+import { TOTEM_GUIDE, TOTEM_ROUTINES } from '../../data/totemGuide';
+import { TOTEM_IMAGES } from '../../data/totemImages';
+import { defiActive as isTotemDefiActive, loadTotemDefi, type TotemDefi } from '../../services/totemService';
+import { resolveGender } from '../../utils/gender';
+import { addCarnet, saveConfidence } from '../../services/confierService';
 import { bilanProgramme, closeProgramme, loadProgramme, proposeProgramme, saveProgramme } from '../../services/programmeService';
 import {
   nextItem, previousItem, progress, introText, questionText, fullItemText, criticalAlert, visibleItems,
@@ -93,6 +98,8 @@ import type { AssessmentScale, AnswerOption } from '../../types/assessment';
 import type { ScaleResult } from '../../types/assessment';
 
 const STORAGE_PREFIX = 'he_accueil_v1:';
+/** Les traces écrites des exercices du programme vont dans ce carnet du journal. */
+const PROGRAMME_CARNET = 'Programme';
 
 /** Date d'un résultat (Date, texte ou Timestamp Firestore) en ISO. */
 function toIso(c: unknown): string {
@@ -242,6 +249,8 @@ const ConversationAccueil: React.FC = () => {
     : PALETTES[moment];
 
   const [results, setResults] = useState<Record<string, ScaleResult> | null>(null);
+  const [totemAnimal, setTotemAnimal] = useState<TotemAnimal | null>(null);
+  const [totemDefi, setTotemDefi] = useState<TotemDefi | null>(null);
   const [state, setState] = useState<AccueilState | null>(null);
   const [input, setInput] = useState('');
   const [mode, setMode] = useState<'home' | 'mood'>('home');
@@ -278,7 +287,13 @@ const ConversationAccueil: React.FC = () => {
     }
     setResults(null); // pas de résultats d'invité mélangés à ceux du compte pendant le chargement
     getProfileProgress(currentUser.id)
-      .then(p => { if (!cancelled) setResults(p.scaleResults ?? {}); })
+      .then(p => {
+        if (cancelled) return;
+        setResults(p.scaleResults ?? {});
+        setTotemAnimal(p.totem?.revealedAt && p.totem.animal ? (p.totem.animal as TotemAnimal) : null);
+      })
+      .then(() => (cancelled ? null : loadTotemDefi(currentUser.id)))
+      .then(d => { if (!cancelled && d) setTotemDefi(d); })
       .catch(() => { if (!cancelled) setResults({}); });
     return () => { cancelled = true; };
   }, [authReady, isAuthenticated, currentUser?.id]);
@@ -414,7 +429,7 @@ const ConversationAccueil: React.FC = () => {
   // Lien d'invitation d'un proche (?ref=CODE) : gardé jusqu'à la création de l'espace
   useEffect(() => { captureReferral(location.search); }, []); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => {
-    const st = location.state as { prescribe?: string; openMood?: boolean; tab?: 'confier'; journal?: boolean; signup?: boolean; flow?: 'defi' | 'compat'; talk?: { greeting?: string | null; draft?: string | null } } | null;
+    const st = location.state as { prescribe?: string; openMood?: boolean; tab?: 'confier'; journal?: boolean; signup?: boolean; flow?: 'defi' | 'compat'; programme?: boolean; talk?: { greeting?: string | null; draft?: string | null } } | null;
     if (!st || !state || !known || state.step === 'testing') return;
     const sig = JSON.stringify(st) + location.key;
     if (intentRef.current === sig) return;
@@ -425,6 +440,7 @@ const ConversationAccueil: React.FC = () => {
     if (st.openMood) { setTab('discuter'); setMode('mood'); return; }
     if (st.signup && !isAuthenticated) { setTimeout(() => openSignupRef.current?.('signup'), 0); return; }
     if (st.flow) { setTab('discuter'); setTimeout(() => startFlowRef.current?.(st.flow!), 0); return; }
+    if (st.programme) { setTab('discuter'); setTimeout(() => programmeRef.current?.(), 0); return; }
     if (st.prescribe && getScaleById(st.prescribe) && !state.messages.slice(-2).some(m => m.card?.type === 'test' && m.card.scaleId === st.prescribe)) {
       const meta = getScaleMeta(st.prescribe);
       const prev = state;
@@ -436,6 +452,7 @@ const ConversationAccueil: React.FC = () => {
   }, [location.key, state?.messages.length, known]); // eslint-disable-line react-hooks/exhaustive-deps
   const openSignupRef = useRef<((m: 'signup' | 'login', t?: string) => void) | null>(null);
   const startFlowRef = useRef<((k: 'defi' | 'compat', userText?: string) => void) | null>(null);
+  const programmeRef = useRef<(() => void) | null>(null);
   const talkRef = useRef<((opening: string | null, draft: string | null) => void) | null>(null);
   const [confierView, setConfierView] = useState<'write' | 'journal'>('write');
   /** Retour au premier écran (flèche) ; la conversation reprend en plein écran dès qu'on écrit. */
@@ -635,6 +652,7 @@ const ConversationAccueil: React.FC = () => {
 
   // ── Mon programme Dr Lô ──
   const moodsNow = loadMoods(moodKey);
+  const totemInfo = totemAnimal ? { animal: totemAnimal, label: getTotemSignature(totemAnimal).label, words: totemWords(totemAnimal) } : null;
   const progSignals = results ? programmeSignals(results) : [];
   const progRemaining = prog ? remainingToday(prog, today, moodsNow) : 0;
 
@@ -868,11 +886,11 @@ const ConversationAccueil: React.FC = () => {
   const acceptProgramme = (axis: ProgAxis, light: boolean, intro: string, order: string[]) => {
     if (!currentUser || prog) return;
     const sig = programmeSignals(results ?? {}).find(x => x.axis === axis) ?? null;
-    const p = newProgramme({ axis, today, light, intro, order1: order, signal: sig });
+    const p = newProgramme({ axis, today, light, intro, order1: order, signal: sig, routines: totemAnimal ? TOTEM_ROUTINES[totemAnimal].slice(0, 2).map(r => r.id) : [] });
     persistProg(p);
     const cur = stateRef.current ?? state;
     apply(addExchange(cur, 'J\'accepte', [{
-      text: `C'est parti${prenom ? `, ${prenom}` : ''} ! Chaque jour, ${p.light ? '5' : '10'} minutes et 3 petits engagements à cocher, c'est gratuit. Je les mets sur ton accueil. Ndank ndank.`,
+      text: `C'est parti${prenom ? `, ${prenom}` : ''} ! Chaque jour, ${p.light ? '5' : '10'} minutes et 3 petits engagements à cocher, c'est gratuit.${totemInfo ? ` J'ai ajouté 2 routines de ${totemInfo.words.ton} : tu peux les retirer quand tu veux.` : ''} Je mets tout sur ton accueil. Ndank ndank.`,
       card: { type: 'programme_open' },
     }]), cur);
     setJoyPending(true);
@@ -930,6 +948,8 @@ const ConversationAccueil: React.FC = () => {
     const sig: AxisSignal | null = r ? { axis: p.axis, scaleId: r.scaleId, score: r.after, label: r.afterLabel, rank: 1, fragile: !!p.fragile, at: r.at } : null;
     persistProg(newProgramme({ axis: p.axis, today, light: p.light, intro: p.intro, order1: p.order1, signal: sig }));
   };
+
+  programmeRef.current = () => { if (prog) setProgOpen(true); else offerProgramme(stateRef.current ?? state, 'Mon programme Dr Lô'); };
 
   const progEnv: ProgCardEnv = {
     palette,
@@ -1581,10 +1601,26 @@ const ConversationAccueil: React.FC = () => {
           testCost={credits(KORIS_COSTS.test)}
           busy={progBusy}
           onClose={() => setProgOpen(false)}
-          onToggle={(k: EngKey) => persistProg(toggleCheck(prog, today, k))}
+          prenom={prenom}
+          onToggle={(k: EngKey, on?: boolean) => persistProg(toggleCheck(progRef.current ?? prog, today, k, on))}
+          onCommit={() => { const cur = progRef.current ?? prog; persistProg({ ...cur, commits: { ...(cur.commits ?? {}), [today]: true } }); }}
+          onNote={(t: string) => {
+            if (!currentUser) return;
+            addCarnet(currentUser.id, PROGRAMME_CARNET);
+            saveConfidence(currentUser.id, t, PROGRAMME_CARNET).catch(() => { /* l'exercice reste coché */ });
+          }}
+          onCrisis={(t: string) => {
+            setProgOpen(false);
+            setTab('discuter');
+            const cur = stateRef.current ?? state;
+            apply(respond(cur, { text: t }, known), cur);
+          }}
           onSleep={(n: SleepNote) => persistProg(setSleep(prog, today, n))}
+          genre={genreKnown}
+          totem={totemInfo}
+          onRoutineCheck={(id: string, on?: boolean) => persistProg(toggleRoutine(progRef.current ?? prog, today, id, on))}
+          onRoutineSet={(id: string, on: boolean) => persistProg(setRoutine(progRef.current ?? prog, id, on))}
           onMood={() => { setProgOpen(false); setInChat(false); setTab('discuter'); setMode('mood'); }}
-          onBreath={() => { setProgOpen(false); setTab('discuter'); startBreathing(); }}
           onBilan={() => { void runBilan(); }}
           onRetest={(id: string) => { setProgOpen(false); setTab('discuter'); setInChat(true); void startTest(id); }}
           onLight={(on: boolean) => persistProg({ ...prog, light: on || !!prog.fragile })}
@@ -1938,9 +1974,27 @@ const ConversationAccueil: React.FC = () => {
 
         {prog && (
           <div style={{ marginTop: 16 }}>
-            <ProgrammeHomeCard p={prog} today={today} remaining={progRemaining} palette={palette} onOpen={() => { trackAccueil('programme_open'); setProgOpen(true); }} />
+            <ProgrammeHomeCard p={prog} today={today} remaining={progRemaining} palette={palette} totemImg={totemAnimal ? TOTEM_IMAGES[totemAnimal] : undefined} onOpen={() => { trackAccueil('programme_open'); setProgOpen(true); }} />
           </div>
         )}
+
+        {totemInfo && (() => {
+          const gd = TOTEM_GUIDE[totemInfo.animal];
+          const onDefi = isTotemDefiActive(totemDefi, totemInfo.animal);
+          const n = Math.floor(Date.now() / 864e5) % 3;
+          const kicker = onDefi ? `Ton défi ${totemInfo.words.du} cette semaine` : n === 0 ? `Ce qui recharge ${totemInfo.words.ton}` : n === 1 ? `Le piège ${totemInfo.words.du}` : `La force ${totemInfo.words.du}`;
+          const text = onDefi ? gd.defi : n === 0 ? gd.recharge : n === 1 ? gd.piege : gd.force;
+          return (
+            <Link to="/assessment/totem" className="drl-btn drl-in"
+              style={{ marginTop: 12, display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', borderRadius: 18, border: '1px solid rgba(233,200,143,.25)', background: 'rgba(233,200,143,.06)', color: C.text, textDecoration: 'none', textAlign: 'left' }}>
+              <img src={TOTEM_IMAGES[totemInfo.animal]} alt="" width={44} height={44} style={{ width: 44, height: 44, borderRadius: 14, objectFit: 'cover', flexShrink: 0 }} />
+              <span style={{ flex: 1, minWidth: 0 }}>
+                <span style={{ display: 'block', fontSize: 11, letterSpacing: '.08em', textTransform: 'uppercase', fontWeight: 700, color: '#E9C88F' }}>{kicker}</span>
+                <span style={{ display: 'block', marginTop: 3, fontSize: 13.5, lineHeight: 1.45, color: C.soft }}>{resolveGender(text, genreKnown === 'femme' ? 'femme' : 'homme')}</span>
+              </span>
+            </Link>
+          );
+        })()}
 
         {/* Répondre */}
         <div style={{ marginTop: 16, minHeight: 140 }}>

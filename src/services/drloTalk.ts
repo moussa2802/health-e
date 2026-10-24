@@ -11,6 +11,7 @@ import { getCompatibilityHistory } from './compatibilityService';
 import { MENTAL_HEALTH_SCALES, SEXUAL_HEALTH_SCALES, BONUS_SCALES } from '../data/scales';
 import type { ScaleResult } from '../types/assessment';
 import { getTotemSignature, computeDimensionGauges, type TotemAnimal } from '../utils/totemAlgorithm';
+import { TOTEM_GUIDE } from '../data/totemGuide';
 import { authedFetch } from '../utils/authedFetch';
 import { spendKorisForUnlock } from './korisService';
 
@@ -51,7 +52,9 @@ function buildTotemResume(
     pct >= 67 ? 'force' : pct >= 34 ? 'moyen' : 'à améliorer';
 
   const lines = gauges.map(g => `${g.label}: ${g.fillPercent}% (${tierLabel(g.fillPercent)})`);
-  return `Totem : ${sig.label} — ${sig.meaning}\nProfil 7 aspects : ${lines.join(' · ')}`;
+  const gd = TOTEM_GUIDE[animal as TotemAnimal];
+  const daily = gd ? `\nAu quotidien : force = ${gd.force} Piège quand ça chauffe = ${gd.piege} Ce qui le recharge = ${gd.recharge} Défi de la semaine proposé = ${gd.defi}`.replace(/\{\{([^|]+)\|[^}]+\}\}/g, '$1') : '';
+  return `Totem : ${sig.label} — ${sig.meaning}\nProfil 7 aspects : ${lines.join(' · ')}${daily}`;
 }
 
 export async function buildFullContext(userId: string | null) {

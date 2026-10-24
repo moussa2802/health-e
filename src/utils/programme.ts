@@ -6,7 +6,7 @@
  * Cocher est gratuit ; la proposition et les bilans (IA) coûtent des étincelles côté serveur.
  */
 import {
-  AXES, BREATH_EXERCISE, EXERCISES, learningsFor, PROG_AXES,
+  AXES, BREATH_EXERCISE, CHAPTERS, EXERCISES, learningsFor, PROG_AXES,
   type ProgAxis, type ProgExercise, type ProgLearning,
 } from '../data/programmeLibrary.ts';
 
@@ -37,6 +37,12 @@ export interface Programme {
   fragile?: boolean;
   /** Engagements cochés, par jour */
   checks: Record<string, EngKey[]>;
+  /** Habitude du jour : la personne s'y est engagée le matin (on lui redemande le soir) */
+  commits?: Record<string, boolean>;
+  /** Routines ajoutées (celles du totem, par exemple) : retirables à tout moment */
+  routines?: string[];
+  /** Routines cochées, par jour */
+  rchecks?: Record<string, string[]>;
   /** Programme sommeil : la nuit notée d'un tap, par jour */
   sleep: Record<string, SleepNote>;
   bilans: { week: number; text: string; at: string; advice?: 'garder' | 'alleger' | 'changer' }[];
@@ -119,7 +125,26 @@ export function isDone(p: Programme, date: string, key: EngKey, moods: MoodLike)
 }
 
 export function remainingToday(p: Programme, today: string, moods: MoodLike): number {
-  return (['mood', 'action', 'learn'] as EngKey[]).filter(k => !isDone(p, today, k, moods)).length;
+  const core = (['mood', 'action', 'learn'] as EngKey[]).filter(k => !isDone(p, today, k, moods)).length;
+  const done = p.rchecks?.[today] ?? [];
+  return core + (p.routines ?? []).filter(id => !done.includes(id)).length;
+}
+
+export const routineDone = (p: Programme, date: string, id: string) => (p.rchecks?.[date] ?? []).includes(id);
+
+export function toggleRoutine(p: Programme, date: string, id: string, on?: boolean): Programme {
+  const cur = p.rchecks?.[date] ?? [];
+  const has = cur.includes(id);
+  const want = on ?? !has;
+  if (want === has) return p;
+  return { ...p, rchecks: { ...(p.rchecks ?? {}), [date]: want ? [...cur, id] : cur.filter(x => x !== id) } };
+}
+
+/** Ajouter ou retirer une routine du programme. */
+export function setRoutine(p: Programme, id: string, on: boolean): Programme {
+  const cur = p.routines ?? [];
+  if (on === cur.includes(id)) return p;
+  return { ...p, routines: on ? [...cur, id] : cur.filter(x => x !== id) };
 }
 
 export function toggleCheck(p: Programme, date: string, key: EngKey, on?: boolean): Programme {
@@ -137,7 +162,7 @@ export function setSleep(p: Programme, date: string, note: SleepNote): Programme
 
 /** Un jour « actif » : au moins un engagement tenu (l'humeur notée compte). */
 export function isActiveDay(p: Programme, date: string, moods: MoodLike): boolean {
-  return !!moods[date] || (p.checks[date] ?? []).length > 0;
+  return !!moods[date] || (p.checks[date] ?? []).length > 0 || (p.rchecks?.[date] ?? []).length > 0;
 }
 
 export type DotState = 'done' | 'missed' | 'today' | 'future';
@@ -298,7 +323,7 @@ export function programmeSignals(results: Record<string, ResultLike | undefined>
 
 export function newProgramme(o: {
   axis: ProgAxis; today: string; light: boolean; intro: string; order1: string[];
-  signal?: AxisSignal | null; now?: Date;
+  signal?: AxisSignal | null; now?: Date; routines?: string[];
 }): Programme {
   const now = o.now ?? new Date();
   const valid = new Set(EXERCISES[o.axis].filter(e => e.week === 1).map(e => e.id));
@@ -316,6 +341,7 @@ export function newProgramme(o: {
     checks: {},
     sleep: {},
     bilans: [],
+    ...(o.routines?.length ? { routines: o.routines } : {}),
   };
 }
 
@@ -344,6 +370,44 @@ export function bilanSummary(p: Programme, today: string, moods: MoodLike) {
     sleep: { mal: sleep.filter(s => s === 'mal').length, moyen: sleep.filter(s => s === 'moyen').length, bien: sleep.filter(s => s === 'bien').length },
     actionsDone: [...done].slice(0, 7),
   };
+}
+
+// ── Ce qui rend le programme vivant ──────────────────────────────────────────
+
+/** Jours actifs d'affilée jusqu'à aujourd'hui (aujourd'hui compte s'il est déjà actif). */
+export function streak(p: Programme, today: string, moods: MoodLike): number {
+  let d = isActiveDay(p, today, moods) ? today : addDays(today, -1);
+  let n = 0;
+  while (daysBetween(p.startDay, d) >= 0 && isActiveDay(p, d, moods)) { n += 1; d = addDays(d, -1); }
+  return n;
+}
+
+export const dayComplete = (p: Programme, date: string, moods: MoodLike) =>
+  (['mood', 'action', 'learn'] as EngKey[]).every(k => isDone(p, date, k, moods));
+
+/** Le mot de Dr Lô en haut de l'écran, chaque jour (textes écrits à l'avance, gratuits). */
+export function dailyLine(p: Programme, today: string, moods: MoodLike, prenom?: string): string {
+  const day = Math.min(PROGRAMME_DAYS, dayNumber(p, today));
+  const w = weekOf(day);
+  const ch = CHAPTERS[p.axis][w - 1];
+  const act = planFor(p, day)[1];
+  const what = `${act.title.charAt(0).toLowerCase()}${act.title.slice(1)}${act.duration ? ` (${act.duration})` : ''}`;
+  const hi = prenom ? `${prenom}, ` : '';
+  if (day === 1) return p.intro || `${hi}bienvenue dans ton programme. Aujourd'hui : ${what}. Je te guide.`;
+  if (!isActiveDay(p, addDays(today, -1), moods) && !isActiveDay(p, today, moods)) {
+    return `Content de te revoir${prenom ? `, ${prenom}` : ''}. Un jour manqué n'efface rien : on reprend simplement aujourd'hui avec ${what}.`;
+  }
+  if ((day - 1) % 7 === 0) return `Nouvelle étape : « ${ch.name} ». ${ch.why} Aujourd'hui : ${what}.`;
+  return `${hi ? hi.charAt(0).toUpperCase() + hi.slice(1) : ''}${hi ? 's' : 'S'}emaine ${w}, « ${ch.name} ». Aujourd'hui : ${what}. Je te guide.`;
+}
+
+/** Humeur jour après jour depuis le début (1 = très dur … 5 = très bien), null si non notée. */
+export function moodSeries(p: Programme, today: string, moods: MoodLike): (number | null)[] {
+  const n = Math.min(PROGRAMME_DAYS, Math.max(1, daysBetween(p.startDay, today) + 1));
+  return Array.from({ length: n }, (_, i) => {
+    const m = moods[addDays(p.startDay, i)];
+    return m && MOOD_SCORE[m.mood] ? MOOD_SCORE[m.mood] : null;
+  });
 }
 
 export { AXES, PROG_AXES };

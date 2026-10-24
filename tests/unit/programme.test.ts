@@ -130,3 +130,40 @@ test('résumé du bilan : des comptes, jamais de texte libre', () => {
   assert.deepEqual(s.counts, { mood: 1, action: 1, learn: 0 });
   assert.equal(s.actionsDone.length, 1);
 });
+
+import { streak, dailyLine, dayComplete, moodSeries } from '../../src/utils/programme.ts';
+import { GUIDES, QUIZ, guideOf } from '../../src/data/programmeLibrary.ts';
+
+test('chaque exercice et chaque apprentissage a sa façon de se faire', () => {
+  for (const list of Object.values(EXERCISES)) for (const e of list) assert.ok(GUIDES[e.id], e.id);
+  for (const l of LEARNINGS) assert.ok(QUIZ[l.id], l.id);
+  assert.equal(guideOf('BR').kind, 'breath');
+});
+
+test('série, journée complète, mot du jour, courbe', () => {
+  let p = base();
+  p = toggleCheck(toggleCheck(p, '2026-10-02', 'action'), '2026-10-03', 'learn');
+  assert.equal(streak(p, '2026-10-03', {}), 2);
+  assert.equal(streak(p, '2026-10-04', {}), 2);
+  assert.equal(streak(p, '2026-10-05', {}), 0);
+  const full = toggleCheck(toggleCheck(p, '2026-10-03', 'action'), '2026-10-03', 'learn', true);
+  assert.equal(dayComplete(full, '2026-10-03', { '2026-10-03': { mood: 'bof' } }), true);
+  assert.equal(dailyLine(p, '2026-10-01', {}), 'x');
+  assert.match(dailyLine(p, '2026-10-06', {}, 'Awa'), /Content de te revoir, Awa/);
+  assert.match(dailyLine(p, '2026-10-08', { '2026-10-07': { mood: 'bof' } }), /Nouvelle étape : « Calmer le corps »/);
+  assert.deepEqual(moodSeries(p, '2026-10-03', { '2026-10-02': { mood: 'tres_bien' } }), [null, 5, null]);
+});
+
+import { setRoutine, toggleRoutine, routineDone } from '../../src/utils/programme.ts';
+
+test('routines du totem : ajoutées, cochées, retirées', () => {
+  let p = newProgramme({ axis: 'stress', today: '2026-10-01', light: false, intro: '', order1: [], routines: ['CE1', 'CE2'] });
+  assert.equal(remainingToday(p, '2026-10-01', {}), 5);
+  p = toggleRoutine(p, '2026-10-01', 'CE1');
+  assert.equal(routineDone(p, '2026-10-01', 'CE1'), true);
+  assert.equal(remainingToday(p, '2026-10-01', {}), 4);
+  p = setRoutine(p, 'CE2', false);
+  assert.deepEqual(p.routines, ['CE1']);
+  assert.equal(remainingToday(p, '2026-10-01', {}), 3);
+  assert.equal(streak(p, '2026-10-01', {}), 1);
+});
