@@ -14,6 +14,7 @@ const ACTIONS = [
   'confier',       // écrire / vider son sac dans son journal privé
   'programme',     // « Mon programme Dr Lô » : une routine de 28 jours, quelques minutes par jour
   'breath',        // se calmer maintenant (1 minute de respiration)
+  'rappels',       // recevoir (ou régler) les rappels de Dr Lô sur son téléphone
   'chat',          // discuter librement avec Dr Lô (IA) d'une question ou d'une situation
   'question_drlo', // écrire au vrai Dr Lô (le médecin)
   'totem',         // voir son totem / son profil
@@ -72,12 +73,13 @@ Destinations possibles (champ "action") :
 - "chat" : elle pose une vraie question (santé, couple, sexualité, situation précise) ou veut discuter en profondeur.
 - "question_drlo" : elle veut parler au vrai Dr Lô, le médecin. Attention : ce n'est PAS un appel ni un chat en direct. Elle lui écrit une question (gratuit, une à la fois) et il répond par écrit quand il peut. Ne promets jamais une mise en contact immédiate.
 - "totem" : voir son animal-totem ou son profil complet.
+- "rappels" : elle veut que Dr Lô lui envoie des rappels ou des notifications sur son téléphone, les activer, les régler, ou elle dit qu'elle ne les reçoit pas. Dans ta réponse, dis seulement qu'on règle ça ensemble tout de suite ; l'application affiche la suite.
 - "catalogue" : voir la liste de tous les tests.
 - "crisis" : idées de mort ou de suicide (y compris « à quoi bon vivre ») (même en wolof : « dama bëgg dee », « rey sama bopp », « xaru »…), se faire du mal, danger immédiat, violence subie en ce moment. Dans le doute, choisis "crisis". La réponse dit qu'on prend ça au sérieux et qu'elle a besoin d'une vraie personne maintenant.
 - "reply" : simple échange (bonjour, merci, ça va et toi, question sur le fonctionnement du site, prénom donné…). Réponds et relance doucement sur ce qui l'amène.
 Pendant un test (étape "testing") :
 - "explain" : elle ne comprend pas la question → "reply" = la question reformulée très simplement, avec un exemple concret de la vie de tous les jours (sans orienter la réponse).
-- "pause" : elle veut arrêter, faire autre chose, ou elle demande une autre destination → précise aussi "then" avec la destination voulue (defi, compat, mood, confier, programme, chat, question_drlo, totem, catalogue, test) si elle en a une.
+- "pause" : elle veut arrêter, faire autre chose, ou elle demande une autre destination → précise aussi "then" avec la destination voulue (defi, compat, mood, confier, programme, rappels, chat, question_drlo, totem, catalogue, test) si elle en a une.
 - "continue" : simple remarque ou émotion → un mot d'écoute, puis on reprend la question.
 
 Réponds UNIQUEMENT avec un objet JSON sur une ligne, sans texte autour :

@@ -1,4 +1,5 @@
 const crypto = require('crypto');
+const { sendToUser } = require('./_push');
 const { admin, db, verifyAuth } = require('./_firebase');
 const { scoreResponse, DEFI_SCALE_CONFIG, RESULT_TITLES, resolveGender } = require('./_defi/questionBank');
 const { verifyStartToken } = require('./_defi/tokenUtils');
@@ -266,6 +267,15 @@ exports.handler = async (event) => {
         createdAt: admin.firestore.FieldValue.serverTimestamp(),
         priority: 'medium',
       });
+      // Sur le téléphone : au plus une fois toutes les 2 heures par personne (message neutre)
+      const pRef = db.collection('patients').doc(creatorUid);
+      const pSnap = await pRef.get();
+      const pData = pSnap.exists ? pSnap.data() : {};
+      const last = pData.lastDefiPushAt && pData.lastDefiPushAt.toMillis ? pData.lastDefiPushAt.toMillis() : 0;
+      if (Date.now() - last > 2 * 3600 * 1000) {
+        const out = await sendToUser(creatorUid, { kind: 'defi_response', title: 'Dr Lô', body: 'Un proche vient de jouer à ton défi. Viens voir son score.', link: `/defi/${slug}/suivi` }, { noInbox: true, patient: pData });
+        if (out.sent) await pRef.set({ lastDefiPushAt: admin.firestore.FieldValue.serverTimestamp() }, { merge: true });
+      }
     } catch (notifErr) {
       console.warn('defi-respond notification error (non-blocking):', notifErr.message);
     }

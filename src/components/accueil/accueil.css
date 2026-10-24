@@ -35,3 +35,8 @@
 .drl-island-in{animation:drlIslandIn .32s cubic-bezier(.2,.9,.3,1.2) both}
 .drl-island-out{animation:drlIslandOut .26s ease both}
 @media (prefers-reduced-motion: reduce){.drl-island-in,.drl-island-out{animation:none}}
+
+/* Guide des rappels : le bouton à toucher « respire » */
+@keyframes drl-guide-pulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(242,182,109,.45); } 50% { box-shadow: 0 0 0 7px rgba(242,182,109,0); } }
+.drl-guide-target { animation: drl-guide-pulse 1.8s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) { .drl-guide-target { animation: none; } }

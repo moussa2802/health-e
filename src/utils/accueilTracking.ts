@@ -17,7 +17,8 @@ export type AccueilEvent =
   | 'signup_open' | 'signup_start' | 'signup_done' | 'account_linked'
   | 'cycle_set' | 'cycle_period' | 'mood_erase_all' | 'espace_view'
   | 'question_sent' | 'queue_join' | 'invite_share'
-  | 'programme_offer' | 'programme_proposed' | 'programme_start' | 'programme_open' | 'programme_bilan' | 'programme_end';
+  | 'programme_offer' | 'programme_proposed' | 'programme_start' | 'programme_open' | 'programme_bilan' | 'programme_end'
+  | 'reminders_offer';
 
 export function trackAccueil(event: AccueilEvent, params: Record<string, string | number | boolean> = {}): void {
   try {

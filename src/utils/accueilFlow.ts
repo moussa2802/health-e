@@ -46,7 +46,9 @@ export type Card =
   | { type: 'compat_result'; score: number; prenom: string; strengths: string[]; tensions: string[] }
   | { type: 'programme_invite'; axes: ProgAxis[] }
   | { type: 'programme_offer'; axis: ProgAxis; intro: string; order: string[]; light: boolean; fragile?: boolean }
-  | { type: 'programme_open' };
+  | { type: 'programme_open' }
+  | { type: 'notif_optin'; reason?: 'programme' | 'drlo_answer' | 'defi' | 'ask' | 'resume' }
+  | { type: 'notif_settings' };
 
 /** Destinations hors conversation que Dr Lô peut proposer. */
 export type GoTarget = 'defi' | 'compat' | 'question_drlo' | 'totem' | 'catalogue' | 'chat' | 'confier' | 'defi_list';
@@ -660,7 +662,7 @@ export function welcomeAfterAuth(state: AccueilState, w: WelcomeInfo): AccueilSt
 
 /** Décision renvoyée par drlo-route (déjà validée côté serveur). */
 export interface RouteDecision {
-  action: 'test' | 'defi' | 'compat' | 'mood' | 'confier' | 'programme' | 'breath' | 'chat' | 'question_drlo' | 'totem'
+  action: 'test' | 'defi' | 'compat' | 'mood' | 'confier' | 'programme' | 'rappels' | 'breath' | 'chat' | 'question_drlo' | 'totem'
     | 'catalogue' | 'explain' | 'pause' | 'continue' | 'crisis' | 'reply';
   scaleId: string | null;
   then: RouteDecision['action'] | null;
@@ -668,7 +670,7 @@ export interface RouteDecision {
 }
 
 /** Ce que l'interface doit faire en plus du message (ouvrir un mode). */
-export type RouteUi = 'mood' | 'breath' | 'defi' | 'compat' | 'talk' | 'programme' | null;
+export type RouteUi = 'mood' | 'breath' | 'defi' | 'compat' | 'talk' | 'programme' | 'rappels' | null;
 
 export interface RouteCtx {
   /** Question en cours (pendant un test), pour la reposer. */
@@ -738,7 +740,7 @@ export function routeDecision(state: AccueilState, d: RouteDecision, k: Known, c
       s = { ...s, step: 'prescribed', activeTest: undefined, prescribed: scaleId };
       const then = d.action === 'pause' ? d.then : d.action;
       if (!then) return ui(null, s);
-      if (then === 'mood' || then === 'breath' || then === 'programme') return ui(then, s);
+      if (then === 'mood' || then === 'breath' || then === 'programme' || then === 'rappels') return ui(then, s);
       if ((then === 'defi' || then === 'compat') && k.isAuthenticated) return ui(then, s);
       if (then === 'test' && d.scaleId) return ui(null, goTest(s, d.scaleId, k, 'On regarde ça ensemble.'));
       if ((GO_TARGETS as string[]).includes(then)) return ui(null, goTo(s, then as GoTarget, k, GO[then as GoTarget].intro));
@@ -769,6 +771,9 @@ export function routeDecision(state: AccueilState, d: RouteDecision, k: Known, c
     case 'programme':
       // L'interface regarde le profil et propose (ou rouvre) le programme
       return ui('programme', { ...push(s, 'drlo', d.reply), step: ['need', 'need_clarify'].includes(s.step) ? 'prescribed' : s.step });
+    case 'rappels':
+      // L'interface regarde le téléphone et propose d'activer (avec le guide si besoin)
+      return ui('rappels', { ...push(s, 'drlo', d.reply), step: ['need', 'need_clarify'].includes(s.step) ? 'prescribed' : s.step });
     case 'mood': case 'breath':
       return ui(d.action, { ...push(s, 'drlo', d.reply), step: ['need', 'need_clarify'].includes(s.step) ? 'prescribed' : s.step });
     default: {

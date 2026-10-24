@@ -16,6 +16,8 @@ import {
   type DrloStatus, type SubmitInput,
 } from '../../services/drloQuestionService';
 import { trackAccueil } from '../../utils/accueilTracking';
+import { NotifOptinCard } from '../../components/accueil/NotificationsPanel';
+import { canProposeReminders, loadPrefs, noteProposed, pushSupport } from '../../services/pushService';
 
 const MONTHS = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'];
 const DAYS = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'];
@@ -39,6 +41,8 @@ const QuestionPage: React.FC = () => {
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const [sent, setSent] = useState(false);
+  /** Après l'envoi : « Je te préviens dès qu'il répond ? » (si les rappels ne sont pas encore activés). */
+  const [askNotif, setAskNotif] = useState(false);
   const [form, setForm] = useState<SubmitInput>({ text: '', anonymous: true, share: 'none', includeIntime: false, includeJournal: false, videoConsent: false });
 
   const load = () => getDrloStatus().then(s => {
@@ -55,6 +59,9 @@ const QuestionPage: React.FC = () => {
       await submitDrloQuestion(form);
       trackAccueil('question_sent', { share: form.share, anonymous: form.anonymous }); // jamais le texte
       setSent(true);
+      if (currentUser && canProposeReminders(currentUser.id) && pushSupport() !== 'unsupported') {
+        loadPrefs(currentUser.id).then(pr => { if (!pr.on) { setAskNotif(true); noteProposed(currentUser.id); } }).catch(() => {});
+      }
       setForm(f => ({ ...f, text: '' }));
       await load();
     } catch (er: unknown) {
@@ -135,6 +142,7 @@ const QuestionPage: React.FC = () => {
           <p style={{ margin: 0, fontSize: 15, fontWeight: 700 }}>Ta question est entre de bonnes mains.</p>
           <p style={{ margin: '6px 0 0', fontSize: 14, color: DC.muted, lineHeight: 1.5 }}>Dr Lô te répond sous 7 jours. Tu la retrouveras ici, et je te le dirai sur l'accueil.</p>
           {pending && <p style={{ margin: '8px 0 0', fontSize: 13.5, color: DC.faint, fontStyle: 'italic', whiteSpace: 'pre-wrap' }}>« {pending.text} »</p>}
+          {askNotif && currentUser && <NotifOptinCard uid={currentUser.id} palette={palette} reason="drlo_answer" onDone={() => {}} />}
         </section>
       )}
 

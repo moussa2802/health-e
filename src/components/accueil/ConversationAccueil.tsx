@@ -10,7 +10,7 @@
  */
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { ArrowRight, Check, ChevronDown, ChevronLeft, ClipboardCheck, Clock, CloudSun, Copy, EyeOff, ListChecks, Lock, MessagesSquare, Mic, Pencil, Phone, Plus, Send, Sparkles, Sprout, Trash2, Wind } from 'lucide-react';
+import { ArrowRight, Bell, Check, ChevronDown, ChevronLeft, ClipboardCheck, Clock, CloudSun, Copy, EyeOff, ListChecks, Lock, MessagesSquare, Mic, Pencil, Phone, Plus, Send, Sparkles, Sprout, Trash2, Wind } from 'lucide-react';
 import './accueil.css';
 import DrLoAvatar, { type DrLoState } from './DrLoAvatar';
 import DrLoIsland from './DrLoIsland';
@@ -78,10 +78,14 @@ import {
 } from '../../utils/conversations';
 import { KORIS_COSTS, isTestFreeRetake } from '../../services/korisService';
 import ProgrammePanel from './ProgrammePanel';
+import NotificationsPanel, { NotifOptinCard, type LiveItem } from './NotificationsPanel';
+import { loadInbox, type InboxItem } from '../../services/inboxService';
+import { canProposeReminders, loadPrefs, markSeen, noteProposed, permissionState, pushSupport } from '../../services/pushService';
+import { isReminderRequest, shouldResume } from '../../utils/pushGuide';
 import { ProgrammeInviteCard, ProgrammeOfferCard, ProgrammeOpenCard, type ProgCardEnv } from './ProgrammeCards';
 import {
   addDays, bilanDue, bilanSummary, dayNumber, daysBetween, hardStreak, MIN_DAYS_BEFORE_RETEST, newProgramme,
-  pause as pauseProg, planFor, programmeSignals, remainingToday, resume as resumeProg, setRoutine, setSleep, toggleCheck, toggleRoutine, withResult,
+  pause as pauseProg, planFor, retestInfo, programmeSignals, remainingToday, resume as resumeProg, setRoutine, setSleep, toggleCheck, toggleRoutine, withResult,
   type AxisSignal, type EngKey, type Programme, type SleepNote,
 } from '../../utils/programme';
 import { AXES, type ProgAxis } from '../../data/programmeLibrary';
@@ -251,6 +255,14 @@ const ConversationAccueil: React.FC = () => {
   const [results, setResults] = useState<Record<string, ScaleResult> | null>(null);
   const [totemAnimal, setTotemAnimal] = useState<TotemAnimal | null>(null);
   const [totemDefi, setTotemDefi] = useState<TotemDefi | null>(null);
+  const [totemPending, setTotemPending] = useState(false);
+  // Notifications : la cloche, « Mes rappels », et la demande dans le chat
+  const [inbox, setInbox] = useState<InboxItem[]>([]);
+  const [notifView, setNotifView] = useState<'list' | 'settings' | null>(null);
+  const [pushOn, setPushOn] = useState<boolean | null>(null);
+  const [pushHour, setPushHour] = useState(19);
+  /** Reprendre l'activation des rappels dans le chat (retour depuis TikTok, l'écran d'accueil…). */
+  const [resumeAsk, setResumeAsk] = useState<null | 'link' | `auto:${string}`>(null);
   const [state, setState] = useState<AccueilState | null>(null);
   const [input, setInput] = useState('');
   const [mode, setMode] = useState<'home' | 'mood'>('home');
@@ -291,6 +303,7 @@ const ConversationAccueil: React.FC = () => {
         if (cancelled) return;
         setResults(p.scaleResults ?? {});
         setTotemAnimal(p.totem?.revealedAt && p.totem.animal ? (p.totem.animal as TotemAnimal) : null);
+        setTotemPending(!!(p.totem?.revealedAt && p.totem.pendingAnimal && p.totem.pendingAnimal !== p.totem.animal));
       })
       .then(() => (cancelled ? null : loadTotemDefi(currentUser.id)))
       .then(d => { if (!cancelled && d) setTotemDefi(d); })
@@ -475,6 +488,14 @@ const ConversationAccueil: React.FC = () => {
     if (!isAuthenticated || !currentUser) { setProg(null); return; }
     let cancelled = false;
     loadProgramme(currentUser.id).then(p => { if (!cancelled) setProg(p); }).catch(() => {});
+    loadInbox(currentUser.id).then(list => { if (!cancelled) setInbox(list); }).catch(() => {});
+    loadPrefs(currentUser.id).then(pr => {
+      if (cancelled) return;
+      setPushOn(pr.on);
+      setPushHour(pr.hour);
+      if (shouldResume(pr, pushSupport(), Date.now())) setResumeAsk(r => r ?? `auto:${pr.setupFrom ?? ''}`);
+    }).catch(() => {});
+    markSeen(currentUser.id);
     // Humeurs des 5 dernières semaines (jours actifs, bilan) : synchronisées avec le compte
     fetchMoods(currentUser.id, addDays(dayKey(), -35)).then(() => { if (!cancelled) setMoodsVer(v => v + 1); }).catch(() => {});
     return () => { cancelled = true; };
@@ -483,6 +504,28 @@ const ConversationAccueil: React.FC = () => {
     setProg(next);
     if (currentUser) saveProgramme(currentUser.id, next).catch(() => { /* copie locale gardée */ });
   }, [currentUser?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+  // Toucher une notification : /?ouvrir=programme | notifications | rappels
+  useEffect(() => {
+    const what = new URLSearchParams(location.search).get('ouvrir');
+    if (!what || !isAuthenticated) return;
+    if (what === 'programme') { if (!prog) return; setProgOpen(true); }
+    else if (what === 'notifications') setNotifView('list');
+    else if (what === 'rappels') setResumeAsk('link'); // Dr Lô reprend dans la conversation, avec le guide
+    navigate({ pathname: '/', search: '' }, { replace: true });
+  }, [location.search, isAuthenticated, prog?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+  // Retour après avoir ouvert Health-e ailleurs (Chrome, Safari, icône de l'écran d'accueil) : on termine les rappels
+  useEffect(() => {
+    if (!resumeAsk || !state || !currentUser || pushOn === null) return;
+    if (state.step === 'crisis' || state.step === 'minor' || state.step === 'testing') { setResumeAsk(null); return; }
+    // Une fois par jour et par étape au plus (TikTok → Safari, puis Safari → icône, ce sont deux étapes)
+    const k = `he_push_resume:${currentUser.id}:${dayKey()}:${resumeAsk}`;
+    try {
+      if (resumeAsk !== 'link' && localStorage.getItem(k)) { setResumeAsk(null); return; }
+      localStorage.setItem(k, '1');
+    } catch { /* ignore */ }
+    setResumeAsk(null);
+    offerReminders(null, undefined, 'resume');
+  }, [resumeAsk, !!state, currentUser?.id, pushOn]); // eslint-disable-line react-hooks/exhaustive-deps
   // Protocole de crise : le programme se met en pause (il ne réclame rien pendant ce temps)
   useEffect(() => {
     const p = progRef.current;
@@ -713,6 +756,19 @@ const ConversationAccueil: React.FC = () => {
     });
   }
 
+  /** La cloche : ce qui attend maintenant (calculé sur place) + ce que Dr Lô a envoyé. */
+  const liveItems: LiveItem[] = [];
+  if (prog && progActive) {
+    const dueW = bilanDue(prog, today);
+    const rt = retestInfo(prog, today, moodsNow);
+    if (progRemaining > 0) liveItems.push({ key: 'prog', title: 'Ton programme', body: `${progRemaining} engagement${progRemaining > 1 ? 's t\'attendent' : ' t\'attend'} aujourd'hui`, onOpen: () => setProgOpen(true) });
+    if (dueW) liveItems.push({ key: 'bilan', title: 'Ton bilan de la semaine est prêt', body: `Semaine ${dueW} · à ouvrir quand tu veux`, onOpen: () => setProgOpen(true) });
+    if (rt?.available) liveItems.push({ key: 'retest', title: 'Ton nouveau test est prêt', body: 'Pour voir le chemin parcouru', onOpen: () => setProgOpen(true) });
+  }
+  if (totemPending) liveItems.push({ key: 'totem', title: 'Ton totem a évolué', body: 'Viens découvrir le nouveau', onOpen: () => navigate('/assessment/totem') });
+  const unreadCount = inbox.filter(i => !i.read).length;
+  const bellCount = liveItems.length + unreadCount;
+
   // ── Actions ────────────────────────────────────────────────────────────────
 
   const startBreathing = () => {
@@ -782,6 +838,8 @@ const ConversationAccueil: React.FC = () => {
     if (breathing) setBreath(null);
     // Défi / compatibilité en préparation : le nom ou le code s'écrivent ici
     if (flowWantsText(state.flow) && !detectCrisis(text)) { void onFlowText(text); return; }
+    // « Active mes rappels », « je reçois pas les notifs »… : géré ici, même en pleine discussion
+    if (isReminderRequest(text) && !detectCrisis(text) && state.step !== 'testing' && state.step !== 'minor') { offerReminders(text); return; }
     // Discussion approfondie en cours : le message part à Dr Lô (IA), la crise restant détectée ici d'abord
     if (state.talk && isAuthenticated && !detectCrisis(text)) { void sendTalk(text); return; }
     // Gérés sur place, sans IA : la crise (messages validés, immédiats), le mode mineur,
@@ -840,6 +898,7 @@ const ConversationAccueil: React.FC = () => {
     if (r.ui === 'talk') void enterTalk(null, text, r.state);
     if (r.ui === 'breath') setBreath({ inhale: true });
     if (r.ui === 'programme') offerProgramme(r.state);
+    if (r.ui === 'rappels') offerReminders(null, r.state);
   };
 
   /** Bouton d'une carte « go » : une autre partie du site, le chat libre ou « Me confier ». */
@@ -850,6 +909,33 @@ const ConversationAccueil: React.FC = () => {
     if (to === 'chat') { void enterTalk(null, null); return; }
     const path = GO[to].path;
     if (path) navigate(path);
+  };
+
+  // ── Les rappels, proposés dans la conversation ─────────────────────────────
+
+  /** La personne demande les rappels (ou revient les terminer) : Dr Lô propose, avec le guide si besoin. */
+  const offerReminders = (userText: string | null, from?: AccueilState, why: 'ask' | 'resume' = 'ask') => {
+    const cur = from ?? stateRef.current ?? state;
+    if (!cur) return;
+    setTab('discuter');
+    setMode('home');
+    trackAccueil('reminders_offer', { why });
+    const add = (items: (string | { text: string; card?: Card })[]) => apply(addExchange(cur, from ? null : userText, items), cur);
+    if (!isAuthenticated || !currentUser) {
+      add([{ text: 'Les rappels arrivent sur ton téléphone grâce à ton espace (gratuit, 10 secondes). Crée-le, et je te les active juste après.', card: { type: 'signup' } }]);
+      return;
+    }
+    if (pushOn && permissionState() === 'granted') {
+      add([{ text: `Tes rappels sont déjà activés, vers ${pushHour} h. Si rien n'arrive, fais un essai ou change l'heure ici :`, card: { type: 'notif_settings' } }]);
+      return;
+    }
+    add([{
+      text: why === 'resume'
+        ? `Te revoilà${prenom ? `, ${prenom}` : ''} ! On termine d'activer tes rappels ?`
+        : `Bien sûr. Je te fais signe une fois par jour au plus, et seulement s'il te reste quelque chose à faire.`,
+      card: { type: 'notif_optin', reason: why },
+    }]);
+    noteProposed(currentUser.id);
   };
 
   // ── Mon programme Dr Lô ────────────────────────────────────────────────────
@@ -926,10 +1012,14 @@ const ConversationAccueil: React.FC = () => {
     const p = newProgramme({ axis, today, light, intro, order1: order, signal: sig, routines: totemAnimal ? TOTEM_ROUTINES[totemAnimal].slice(0, 2).map(r => r.id) : [] });
     persistProg(p);
     const cur = stateRef.current ?? state;
+    const showOptin = !!currentUser && pushOn === false && canProposeReminders(currentUser.id) && pushSupport() !== 'unsupported';
     apply(addExchange(cur, 'J\'accepte', [{
       text: `C'est parti${prenom ? `, ${prenom}` : ''} ! Chaque jour, ${p.light ? '5' : '10'} minutes et 3 petits engagements à cocher, c'est gratuit.${totemInfo ? ` J'ai ajouté 2 routines de ${totemInfo.words.ton} : tu peux les retirer quand tu veux.` : ''} Je mets tout sur ton accueil. Ndank ndank.`,
       card: { type: 'programme_open' },
-    }]), cur);
+    }, ...(showOptin
+      ? [{ text: 'Une dernière chose : tu veux que je te fasse signe chaque jour, pour ne pas oublier ?', card: { type: 'notif_optin' as const, reason: 'programme' as const } }]
+      : [])]), cur);
+    if (showOptin && currentUser) noteProposed(currentUser.id);
     setJoyPending(true);
     trackAccueil('programme_start', { axis, light: p.light });
   };
@@ -1278,7 +1368,11 @@ const ConversationAccueil: React.FC = () => {
         if (!out.ok) { say([SAY.defiError(out.error)], null, { ...f, step: 'defi_preview' }, cur); return; }
         trackAccueil('go', { to: 'defi_created' });
         setJoyPending(true);
-        say([{ text: SAY.defiCreated, card: { type: 'defi_share', slug: out.slug } }], null, undefined, cur);
+        // Proposer d'être prévenu des réponses (1 fois par semaine au plus, jamais après 2 refus)
+        const askNotif = !!currentUser && pushOn === false && canProposeReminders(currentUser.id) && pushSupport() !== 'unsupported';
+        say([{ text: SAY.defiCreated, card: { type: 'defi_share', slug: out.slug } },
+          ...(askNotif ? [{ text: 'Je peux aussi te prévenir dès qu\'un proche a répondu.', card: { type: 'notif_optin' as const, reason: 'defi' as const } }] : [])], null, undefined, cur);
+        if (askNotif && currentUser) noteProposed(currentUser.id);
         return;
       }
       case 'cat': {
@@ -1504,6 +1598,11 @@ const ConversationAccueil: React.FC = () => {
                     onLinked={() => { const cur = stateRef.current ?? state; apply(addExchange(cur, null, ['Parfait. Ton espace est en sécurité.']), cur); }}
                     onGo={onGo}
                     prog={progEnv}
+                    notif={currentUser ? { uid: currentUser.id, onDone: (text: string) => {
+                      const cur = stateRef.current ?? state;
+                      apply(addExchange(cur, null, [text]), cur);
+                      loadPrefs(currentUser.id).then(pr => { setPushOn(pr.on); setPushHour(pr.hour); }).catch(() => {});
+                    }, onSettings: () => setNotifView('settings') } : undefined}
                   />
   );
 
@@ -1629,6 +1728,13 @@ const ConversationAccueil: React.FC = () => {
     </>
   );
 
+
+  const notifPanel = notifView && currentUser ? (
+    <NotificationsPanel uid={currentUser.id} palette={palette} live={liveItems} startView={notifView}
+      onClose={() => { setNotifView(null); loadPrefs(currentUser.id).then(pr => setPushOn(pr.on)).catch(() => {}); }}
+      onLink={(link: string) => (link.startsWith('/?ouvrir=programme') ? setProgOpen(true) : navigate(link))}
+      onInboxChange={setInbox} />
+  ) : null;
 
   const progPanel = progOpen && prog ? (
         <ProgrammePanel
@@ -1857,6 +1963,7 @@ const ConversationAccueil: React.FC = () => {
         </div>
 
         {progPanel}
+        {notifPanel}
 
         {veiled && (
           <button onClick={() => setVeiled(false)} aria-label="Revenir à la conversation"
@@ -1900,6 +2007,15 @@ const ConversationAccueil: React.FC = () => {
             ) : (
               <button onClick={() => openSignup('login', 'Me connecter')} className="drl-btn" style={{ ...pill, border: `1px solid ${C.line}`, color: C.text, cursor: 'pointer' }}>
                 Se connecter
+              </button>
+            )}
+            {isAuthenticated && (
+              <button onClick={() => setNotifView('list')} aria-label={bellCount ? `Mes notifications : ${bellCount} nouvelle${bellCount > 1 ? 's' : ''}` : 'Mes notifications'} className="drl-btn"
+                style={{ position: 'relative', width: 44, height: 44, borderRadius: 13, border: `1px solid ${C.line}`, background: C.glass, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: C.text }}>
+                <Bell size={20} aria-hidden="true" />
+                {bellCount > 0 && (
+                  <span aria-hidden="true" style={{ position: 'absolute', top: -5, right: -5, minWidth: 20, height: 20, padding: '0 5px', boxSizing: 'border-box', borderRadius: 10, background: '#E8664F', color: '#fff', fontSize: 11.5, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid #1C1612' }}>{bellCount}</span>
+                )}
               </button>
             )}
             <button onClick={() => setVeiled(true)} aria-label="Masquer l'écran" title="Masquer l'écran" className="drl-btn"
@@ -2070,6 +2186,7 @@ const ConversationAccueil: React.FC = () => {
       </div>
 
       {progPanel}
+      {notifPanel}
 
       {/* Écran masqué (quelqu'un regarde par-dessus l'épaule) */}
       {veiled && (
@@ -2111,7 +2228,15 @@ const ChatCard: React.FC<{
   prenom?: string; genre?: 'homme' | 'femme'; onLinked: () => void;
   onGo: (to: keyof typeof GO) => void;
   prog?: ProgCardEnv;
-}> = ({ card, palette, busy, costLabel, onStart, onOpen, prenom, genre, onLinked, onGo, prog }) => {
+  notif?: { uid: string; onDone: (text: string) => void; onSettings: () => void };
+}> = ({ card, palette, busy, costLabel, onStart, onOpen, prenom, genre, onLinked, onGo, prog, notif }) => {
+  if (card.type === 'notif_optin') return notif ? <NotifOptinCard uid={notif.uid} palette={palette} onDone={notif.onDone} reason={card.reason} /> : null;
+  if (card.type === 'notif_settings') return notif ? (
+    <button onClick={notif.onSettings} className="drl-btn drl-in"
+      style={{ marginTop: 10, minHeight: 44, padding: '0 16px', borderRadius: 12, border: '1px solid rgba(255,255,255,.18)', background: 'transparent', color: C.text, fontSize: 14, fontWeight: 600, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 8, fontFamily: 'inherit' }}>
+      <Bell size={16} color={palette.accent} aria-hidden="true" />Régler mes rappels
+    </button>
+  ) : null;
   if (card.type === 'programme_invite') return prog ? <ProgrammeInviteCard axes={card.axes} env={prog} /> : null;
   if (card.type === 'programme_offer') return prog ? <ProgrammeOfferCard axis={card.axis} intro={card.intro} order={card.order} light={card.light} fragile={card.fragile} env={prog} /> : null;
   if (card.type === 'programme_open') return prog ? <ProgrammeOpenCard env={prog} /> : null;

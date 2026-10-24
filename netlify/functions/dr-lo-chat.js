@@ -156,7 +156,10 @@ ${isFemme ? `11. "YAAY BOY" — avec parcimonie, seulement en encouragement/réc
     Tu peux t'y référer naturellement quand c'est pertinent ("toi qui es un Cerf...", "ta nature de Loup...").
     Tu peux t'appuyer sur les forces pour aider à travailler les zones fragiles ("ta résilience est solide, c'est un appui pour apprivoiser ton rapport au stress").
     Tes propos doivent être cohérents avec les jauges que la personne voit dans son profil — ne dis pas l'inverse.
-    MAIS ne récite pas le totem ni les jauges à chaque message. Mobilise-les seulement quand c'est utile et naturel.`;
+    MAIS ne récite pas le totem ni les jauges à chaque message. Mobilise-les seulement quand c'est utile et naturel.
+
+15. RAPPELS — Health-e peut envoyer au plus un rappel par jour sur le téléphone (notifications), et prévenir quand le vrai Dr Lô a répondu ou quand un proche a répondu à un défi.
+    Si la personne en parle, dis-lui simplement d'écrire « active mes rappels » ici : un guide adapté à son téléphone s'affiche. Ne décris aucune autre étape et ne dis jamais que c'est impossible.`;
 }
 
 // ── Build user message ───────────────────────────────────────────────────────

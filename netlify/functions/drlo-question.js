@@ -14,6 +14,7 @@
  */
 const { admin, db, verifyAuth } = require('./_firebase');
 const Q = require('./_drloQuestions');
+const { sendToUser } = require('./_push');
 
 const headers = {
   'Access-Control-Allow-Origin': '*',
@@ -119,9 +120,15 @@ exports.handler = async (event) => {
       const text = String(body.answer || '').trim();
       const status = body.status === 'referred' ? 'referred' : 'answered';
       if (!body.id || text.length < 2) return reply(400, { error: 'Réponse vide' });
-      await db.collection('drloQuestions').doc(String(body.id)).update({
+      const qRef = db.collection('drloQuestions').doc(String(body.id));
+      await qRef.update({
         status, answer: { text: text.slice(0, 6000), at: admin.firestore.FieldValue.serverTimestamp(), by: uid }, seenAt: null,
       });
+      // Prévenir la personne (message neutre : rien de sa question sur l'écran verrouillé)
+      try {
+        const q = (await qRef.get()).data() || {};
+        if (q.uid) await sendToUser(q.uid, { kind: 'drlo_answer', title: 'Dr Lô', body: 'Le vrai Dr Lô t\'a répondu. Ta réponse t\'attend.', inboxTitle: 'Le vrai Dr Lô t\'a répondu', inboxBody: 'Ta réponse t\'attend.', link: '/question' });
+      } catch (e) { console.warn('drlo answer push failed', e.message); }
       return reply(200, { ok: true });
     }
 
