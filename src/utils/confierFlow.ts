@@ -114,3 +114,30 @@ export function addNote(s: ConfierState, text: string): ConfierState {
 }
 
 export const hasLiveEntries = (s: ConfierState) => liveEntries(s).length > 0;
+
+/**
+ * La séance « Écrire » du jour, reconstruite depuis le journal du compte (nouveau téléphone,
+ * icône de l'iPhone, autre navigateur) : les textes du jour et les avis de Dr Lô déjà reçus.
+ * `list` : entrées du journal, les plus récentes d'abord ; `dayOf` donne le jour local d'une date ISO.
+ */
+export function rebuildToday(
+  list: { id: string; date: string; contenu: string; drLo: string | null }[],
+  today: string,
+  dayOf: (iso: string) => string,
+): ConfierState | null {
+  const todays = list.filter(i => i.date && i.contenu && dayOf(i.date) === today).reverse().slice(-MAX_ITEMS / 2);
+  if (!todays.length) return null;
+  let seq = 0;
+  let advisedUpTo = 0;
+  const items: ConfierItem[] = [];
+  todays.forEach((e, n) => {
+    seq += 1;
+    items.push({ kind: 'entry', id: `e${seq}`, text: e.contenu, at: Date.parse(e.date) || 0, journalId: e.id, status: 'saved' });
+    if (e.drLo) {
+      seq += 1;
+      items.push({ kind: 'advice', id: `a${seq}`, text: e.drLo });
+      advisedUpTo = n + 1;
+    }
+  });
+  return { v: 1, items, seq, advisedUpTo };
+}

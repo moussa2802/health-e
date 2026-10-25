@@ -15,6 +15,8 @@ export interface RoutePayload {
   scales: { id: string; label: string }[];
   activeTest?: { label: string; question: string; options: string[] } | null;
   lastDrlo?: string;
+  /** Ce que Dr Lô sait déjà de la personne (sans l'intime), pour un ton personnel. */
+  profil?: string;
 }
 
 const ACTIONS = new Set(['test', 'defi', 'compat', 'mood', 'confier', 'programme', 'rappels', 'breath', 'chat', 'question_drlo', 'totem',

@@ -48,7 +48,9 @@ export type Card =
   | { type: 'programme_offer'; axis: ProgAxis; intro: string; order: string[]; light: boolean; fragile?: boolean }
   | { type: 'programme_open' }
   | { type: 'notif_optin'; reason?: 'programme' | 'drlo_answer' | 'defi' | 'ask' | 'resume' }
-  | { type: 'notif_settings' };
+  | { type: 'notif_settings' }
+  /** Bouton proposé par Dr Lô dans la discussion : respirer, noter son humeur, son programme. */
+  | { type: 'quick'; what: 'breath' | 'mood' | 'programme' };
 
 /** Destinations hors conversation que Dr Lô peut proposer. */
 export type GoTarget = 'defi' | 'compat' | 'question_drlo' | 'totem' | 'catalogue' | 'chat' | 'confier' | 'defi_list';
@@ -106,6 +108,8 @@ export interface AccueilState {
    * start = index du premier message de cette discussion (pour l'historique envoyé à l'IA).
    */
   talk?: { conv: string; start: number; opening?: string | null };
+  /** Dernier enregistrement (ISO) : la copie la plus récente l'emporte entre téléphones. */
+  savedAt?: string;
 }
 
 /** Ce que l'interface sait déjà de la personne (compte, onboarding existant). */

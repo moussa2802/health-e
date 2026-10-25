@@ -39,6 +39,11 @@ service cloud.firestore {
         allow read, write: if isOwner(userId);
       }
 
+      // Discussions de l'accueil (copie écrite par la fonction drlo-threads) : lecture par la personne
+      match /accueil_threads/{convId} {
+        allow read: if isOwner(userId);
+      }
+
       // Prompts journal intelligents
       match /journal_prompts/{promptId} {
         allow read, write: if isOwner(userId);

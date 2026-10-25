@@ -8,10 +8,10 @@ import React, { useEffect, useRef, useState } from 'react';
 import { BookOpen, Check, Feather, Mic, Phone, Send } from 'lucide-react';
 import {
   addAdvice, addNote, deposit, emptyConfier, hasLiveEntries, markCancelled, markError, markSaved,
-  pendingForAdvice, MAX_ENTRY_CHARS, type ConfierState,
+  pendingForAdvice, rebuildToday, MAX_ENTRY_CHARS, type ConfierState,
 } from '../../utils/confierFlow';
 import {
-  addCarnet, askAdvice, currentCarnet, loadCarnets, removeConfidence, saveConfidence, setCurrentCarnet,
+  addCarnet, askAdvice, currentCarnet, listJournal, loadCarnets, removeConfidence, saveConfidence, setCurrentCarnet,
 } from '../../services/confierService';
 import { useDictation } from '../../hooks/useDictation';
 import { useKoris } from '../../contexts/KorisContext';
@@ -68,6 +68,19 @@ const ConfierPanel: React.FC<{
   const chooseCarnet = (c: string) => { setCarnet(c); setCurrentCarnet(owner, c); setPickCarnet(false); setNewCarnet(null); };
 
   useEffect(() => { setState(load(key)); }, [key]);
+  // Compte : les carnets et la séance du jour viennent aussi du journal (retrouvés sur tout téléphone)
+  useEffect(() => {
+    if (!userId) return;
+    let off = false;
+    listJournal(userId, 80).then(list => {
+      if (off) return;
+      setCarnets(loadCarnets(owner, list.map(i => i.carnet)));
+      if (stateRef.current.items.length) return;
+      const rebuilt = rebuildToday(list, dayKey(), iso => dayKey(new Date(iso)));
+      if (rebuilt) setState(cur => (cur.items.length ? cur : rebuilt));
+    }).catch(() => {});
+    return () => { off = true; };
+  }, [userId]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => { try { localStorage.setItem(key, JSON.stringify({ ...state, day: dayKey() })); } catch { /* ignore */ } }, [key, state]);
   useEffect(() => { listRef.current?.scrollTo({ top: listRef.current.scrollHeight, behavior: 'smooth' }); }, [state.items.length]);
 

@@ -55,13 +55,15 @@ import {
   dayKey, loadMoods, MOOD_STORAGE_PREFIX, moodById, moodReply, MOODS, type MoodId,
 } from '../../utils/moodLog';
 import { trackAccueil, setAccueilPrescribed } from '../../utils/accueilTracking';
-import { getOnboardingProfile, savePartialOnboarding } from '../../utils/onboardingProfile';
+import { getOnboardingProfile, saveOnboardingProfile, savePartialOnboarding } from '../../utils/onboardingProfile';
+import { mergeIndex, pickNewer, trimForCloud } from '../../utils/threadSync';
+import { deleteThread, pullThread, pushIndex, pushThread } from '../../services/threadSyncService';
 import { getAllGuestResults, getGuestCount, GUEST_MAX_TESTS } from '../../utils/guestSession';
-import { getProfileProgress } from '../../services/evaluationService';
+import { getProfileProgress, saveOnboardingToProfile } from '../../services/evaluationService';
 import { ALL_SCALES, getScaleById, MENTAL_HEALTH_SCALES, SEXUAL_HEALTH_SCALES } from '../../data/scales';
 import { getScaleMeta } from '../../utils/scaleMeta';
 import { getCrisisResources } from '../../data/crisisResources';
-import { loadQuota, talk as talkToDrLo, unlockMore, MAX_DAILY_UNLOCKS, UNLOCK_MESSAGES, type TalkQuota } from '../../services/drloTalk';
+import { loadQuota, talk as talkToDrLo, unlockMore, MAX_DAILY_UNLOCKS, UNLOCK_MESSAGES, type TalkAction, type TalkQuota } from '../../services/drloTalk';
 import { useDictation } from '../../hooks/useDictation';
 import { startChatTest, recordAnswer, finishChatTest, loadScale } from '../../services/chatTestRunner';
 import { routeText } from '../../services/drloRouteService';
@@ -141,6 +143,10 @@ function loadState(key: string): AccueilState | null {
   } catch { return null; }
 }
 function saveState(key: string, s: AccueilState) {
+  try { localStorage.setItem(key, JSON.stringify({ ...s, savedAt: new Date().toISOString() })); } catch { /* stockage indisponible */ }
+}
+/** Copie venue du compte : gardée telle quelle (avec sa date). */
+function saveRaw(key: string, s: AccueilState) {
   try { localStorage.setItem(key, JSON.stringify(s)); } catch { /* stockage indisponible */ }
 }
 const prefersReducedMotion = () =>
@@ -301,6 +307,9 @@ const ConversationAccueil: React.FC = () => {
     getProfileProgress(currentUser.id)
       .then(p => {
         if (cancelled) return;
+        // Prénom, genre, âge : le compte fait foi (nouveau téléphone, icône de l'iPhone, autre navigateur)
+        accountOnboardingRef.current = !!p.onboardingProfile;
+        if (p.onboardingProfile) saveOnboardingProfile(p.onboardingProfile as unknown as Parameters<typeof saveOnboardingProfile>[0]);
         setResults(p.scaleResults ?? {});
         setTotemAnimal(p.totem?.revealedAt && p.totem.animal ? (p.totem.animal as TotemAnimal) : null);
         setTotemPending(!!(p.totem?.revealedAt && p.totem.pendingAnimal && p.totem.pendingAnimal !== p.totem.animal));
@@ -328,9 +337,32 @@ const ConversationAccueil: React.FC = () => {
     };
   }, [results, isAuthenticated, currentUser?.name, guestRemaining]);
 
+  // 1 bis. Récupérer la discussion gardée dans le compte (avant de l'afficher)
+  const [hydrated, setHydrated] = useState<string | null>(null);
+  /** Discussions dont la copie du compte a bien été lue : seules celles-là y sont renvoyées. */
+  const syncOkRef = useRef<Set<string>>(new Set());
+  const accountOnboardingRef = useRef<boolean | null>(null);
+  useEffect(() => {
+    if (!authReady) return;
+    if (!isAuthenticated || !currentUser) { setHydrated(storageKey); return; }
+    const key = storageKey;
+    let done = false;
+    const finish = () => { if (!done) { done = true; setHydrated(key); } };
+    // Réseau lent : on n'attend pas plus de 6 s (et on ne renverra rien par-dessus le compte)
+    const timer = window.setTimeout(finish, 6000);
+    pullThread<AccueilState>(convId).then(r => {
+      if (!r || done) return;
+      const remote = r.thread && r.thread.v === 1 && Array.isArray(r.thread.messages) ? r.thread : null;
+      if (remote && pickNewer(loadState(key), remote) === 'remote') saveRaw(key, remote);
+      if (r.index) setConvIdx(i => mergeIndex(i, r.index));
+      syncOkRef.current.add(key);
+    }).finally(() => { window.clearTimeout(timer); finish(); });
+    return () => { window.clearTimeout(timer); };
+  }, [authReady, isAuthenticated, currentUser?.id, storageKey]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // 2. Démarrer ou reprendre la conversation, puis commenter un test terminé
   useEffect(() => {
-    if (!known || !results) return;
+    if (!known || !results || hydrated !== storageKey) return;
     if (initKeyRef.current === storageKey) return; // une seule fois par personne (les résultats peuvent changer ensuite)
     initKeyRef.current = storageKey;
     // Inscription / connexion depuis le chat : la conversation de l'invité continue dans le compte
@@ -409,7 +441,7 @@ const ConversationAccueil: React.FC = () => {
       startedRef.current = true;
       trackAccueil('view', { guest: !isAuthenticated, returning: !!saved, moment });
     }
-  }, [known, results, storageKey]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [known, results, storageKey, hydrated]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // 3. Persister + exposer le test prescrit à la page de résultats
   const lastLenRef = useRef(0);
@@ -425,8 +457,46 @@ const ConversationAccueil: React.FC = () => {
     setAccueilPrescribed(state.prescribed ?? null);
     if (state.prenom || state.genre || state.age) {
       savePartialOnboarding({ prenom: state.prenom, genre: state.genre, age: state.age });
+      // Le compte n'avait rien : on y garde ce que la personne vient de dire (une fois)
+      if (isAuthenticated && currentUser && accountOnboardingRef.current === false && state.genre && state.age) {
+        accountOnboardingRef.current = true;
+        const ob = getOnboardingProfile();
+        if (ob) saveOnboardingToProfile(currentUser.id, ob as unknown as Record<string, string>).catch(() => { accountOnboardingRef.current = false; });
+      }
     }
   }, [state, storageKey]);
+
+  // 3 bis. Copie dans le compte (quelques secondes après le dernier changement, ou en quittant l'appli)
+  const pendingPushRef = useRef<{ key: string; id: string } | null>(null);
+  const flushPush = useCallback(() => {
+    const p = pendingPushRef.current;
+    pendingPushRef.current = null;
+    if (!p) return;
+    const cur = loadState(p.key);
+    if (cur) void pushThread(p.id, trimForCloud(cur), cur.savedAt ?? new Date().toISOString());
+  }, []);
+  useEffect(() => {
+    if (!state || !isAuthenticated || !currentUser || !syncOkRef.current.has(storageKey)) return;
+    pendingPushRef.current = { key: storageKey, id: convId };
+    const t = window.setTimeout(flushPush, 3000);
+    return () => window.clearTimeout(t);
+  }, [state, storageKey]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    const onHide = () => { if (document.visibilityState === 'hidden') flushPush(); };
+    document.addEventListener('visibilitychange', onHide);
+    window.addEventListener('pagehide', flushPush);
+    return () => { flushPush(); document.removeEventListener('visibilitychange', onHide); window.removeEventListener('pagehide', flushPush); };
+  }, [flushPush, storageKey]);
+  // La liste des discussions (titres, supprimées) suit aussi le compte
+  const idxSigRef = useRef('');
+  useEffect(() => {
+    if (!isAuthenticated || !currentUser || syncOkRef.current.size === 0) return;
+    const sig = JSON.stringify({ l: convIdx.list, d: convIdx.deleted ?? [] });
+    if (sig === idxSigRef.current) return;
+    const ix = convIdx;
+    const t = window.setTimeout(() => { idxSigRef.current = sig; void pushIndex(ix); }, 4000);
+    return () => window.clearTimeout(t);
+  }, [convIdx, isAuthenticated, currentUser?.id, hydrated]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Demandes venant des autres écrans (tableau de bord, humeur) : test, humeur, confier, inscription
   const intentRef = useRef<string | null>(null);
@@ -876,6 +946,7 @@ const ConversationAccueil: React.FC = () => {
         options: item.options.map(o => o.label),
       } : null,
       lastDrlo,
+      profil: isAuthenticated ? routeProfile() : undefined,
     });
     setRouting(false);
     // La personne a fait autre chose pendant ce temps (pastille, réponse au test) : on n'écrase rien
@@ -884,6 +955,12 @@ const ConversationAccueil: React.FC = () => {
       // Secours : la logique par mots-clés
       apply(respond(state, { text }, known), base);
       trackAccueil('route', { action: 'fallback', step: state.step });
+      return;
+    }
+    // Question personnelle / profonde (compte) : le vrai Dr Lô répond directement, avec tout le profil
+    if (d.action === 'chat' && isAuthenticated && state.step !== 'testing') {
+      trackAccueil('route', { action: 'chat', then: '', step: state.step });
+      void askDeep(text, base);
       return;
     }
     const r = routeDecision(base, d, known, item && p && sc ? {
@@ -909,6 +986,47 @@ const ConversationAccueil: React.FC = () => {
     if (to === 'chat') { void enterTalk(null, null); return; }
     const path = GO[to].path;
     if (path) navigate(path);
+  };
+
+  /**
+   * Ce que Dr Lô sait de la personne, en quelques lignes, pour que ses réponses courtes sonnent
+   * comme le même Dr Lô qui la connaît (sans l'intime, sans scores).
+   */
+  const routeProfile = (): string => {
+    const parts: string[] = [];
+    if (totemAnimal) parts.push(`Totem : ${getTotemSignature(totemAnimal).label}.`);
+    const sexual = new Set(SEXUAL_HEALTH_SCALES.map(x => x.id));
+    const lines = Object.entries(results ?? {})
+      .filter(([id, r]) => !sexual.has(id) && r?.interpretation?.label)
+      .slice(0, 12)
+      .map(([id, r]) => `${getScaleMeta(id).label} : ${r.interpretation!.label}`);
+    if (lines.length) parts.push(`Ce qui ressort de ses tests : ${lines.join(' ; ')}.`);
+    const p = progRef.current;
+    if (p && !p.result) parts.push(`Programme Dr Lô en cours : ${AXES[p.axis].short}${p.status === 'paused' ? ' (en pause)' : ''}.`);
+    return parts.join(' ').slice(0, 900);
+  };
+
+  /** L'action proposée par Dr Lô à la fin de sa réponse devient un vrai bouton. */
+  const actionCard = (a: TalkAction | null): Card | undefined => {
+    if (!a) return undefined;
+    switch (a.kind) {
+      case 'test': return getScaleById(a.scaleId) ? { type: 'test', scaleId: a.scaleId } : undefined;
+      case 'respiration': return { type: 'quick', what: 'breath' };
+      case 'humeur': return { type: 'quick', what: 'mood' };
+      case 'programme': return progRef.current ? { type: 'programme_open' } : { type: 'quick', what: 'programme' };
+      case 'journal': return { type: 'go', to: 'confier' };
+      case 'defi': return { type: 'go', to: 'defi' };
+      case 'compat': return { type: 'go', to: 'compat' };
+      case 'vrai_drlo': return { type: 'go', to: 'question_drlo' };
+      case 'totem': return totemAnimal ? { type: 'go', to: 'totem' } : undefined;
+      default: return undefined;
+    }
+  };
+  const onQuick = (what: 'breath' | 'mood' | 'programme') => {
+    trackAccueil('go', { to: `quick_${what}` });
+    if (what === 'breath') { setTab('discuter'); setBreath({ inhale: true }); return; }
+    if (what === 'mood') { setTab('discuter'); setMode('mood'); return; }
+    offerProgramme();
   };
 
   // ── Les rappels, proposés dans la conversation ─────────────────────────────
@@ -1499,28 +1617,28 @@ const ConversationAccueil: React.FC = () => {
     apply(addExchange(cur, `Débloquer ${UNLOCK_MESSAGES} messages`, [`C'est fait : ${UNLOCK_MESSAGES} messages de plus aujourd'hui. Je t'écoute.`]), cur);
   };
 
-  const sendTalk = async (text: string) => {
-    if (!currentUser || !state.talk) return;
-    const t = state.talk;
-    let q = quota ?? await loadQuota(currentUser.id);
-    if (!quota) setQuota(q);
+  /** Plus de messages ou d'étincelles : Dr Lô le dit (sans culpabiliser). `true` = rien n'a été envoyé. */
+  const talkBlocked = (q: TalkQuota, prev: AccueilState, userText: string | null): boolean => {
     if (q.count >= q.limit) {
       const can = q.unlocks < MAX_DAILY_UNLOCKS;
-      apply(addExchange(state, text, [can
+      apply(addExchange(prev, userText, [can
         ? `On a déjà beaucoup parlé aujourd'hui. Tu peux débloquer ${UNLOCK_MESSAGES} messages de plus (${credits(KORIS_COSTS.unlock_chat)}), ou écrire dans ton journal : c'est gratuit et je le garde pour toi.`
-        : 'On a beaucoup parlé aujourd\'hui, on reprend demain. En attendant, tu peux écrire dans ton journal : c\'est gratuit.']), state);
-      return;
+        : 'On a beaucoup parlé aujourd\'hui, on reprend demain. En attendant, tu peux écrire dans ton journal : c\'est gratuit.']), prev);
+      return true;
     }
     if (balance < KORIS_COSTS.chat) {
       openNoKorisModal('Un message à Dr Lô', KORIS_COSTS.chat);
-      apply(addExchange(state, text, [`Il te manque des ${CREDIT.many} pour la discussion approfondie. Tu peux recharger, ou revenir demain. Écrire dans ton journal et noter ton humeur restent gratuits.`]), state);
-      return;
+      apply(addExchange(prev, userText, [`Il te manque des ${CREDIT.many} pour la discussion approfondie. Tu peux recharger, ou revenir demain. Écrire dans ton journal et noter ton humeur restent gratuits.`]), prev);
+      return true;
     }
-    const base = addExchange(state, text, []);
-    setState(base);
-    showNow(base);
+    return false;
+  };
+
+  /** Le vrai Dr Lô (IA, profil complet) répond. `base` contient déjà le message de la personne. */
+  const deepReply = async (base: AccueilState, text: string, t: NonNullable<AccueilState['talk']>, q: TalkQuota, firstOfDay: boolean) => {
+    if (!currentUser) return;
     setRouting('Lit ton message');
-    const history = state.messages.slice(t.start).map(m => ({ role: m.from === 'user' ? 'user' as const : 'assistant' as const, content: m.text }));
+    const history = base.messages.slice(t.start, -1).map(m => ({ role: m.from === 'user' ? 'user' as const : 'assistant' as const, content: m.text }));
     const out = await talkToDrLo(currentUser.id, t.conv, text, history, t.opening ?? null, q);
     setRouting(false);
     refreshBalance();
@@ -1530,9 +1648,47 @@ const ConversationAccueil: React.FC = () => {
       apply(addExchange(cur, null, [out.reason === 'no_koris' ? `Il te manque des ${CREDIT.many} pour ce message.` : 'Je n\'arrive pas à te répondre maintenant (connexion instable). Réessaie dans un instant.']), cur);
       return;
     }
-    q = { ...q, count: q.count + 1 };
-    setQuota(q);
-    apply(addExchange(cur, null, [out.text]), cur);
+    const nq = { ...q, count: q.count + 1 };
+    setQuota(nq);
+    const left = Math.max(0, nq.limit - nq.count);
+    const card = actionCard(out.action);
+    apply(addExchange(cur, null, [card ? { text: out.text, card } : out.text, ...(firstOfDay
+      ? [`(Ici je te réponds en détail : ${credits(KORIS_COSTS.chat)} par message, encore ${left} aujourd'hui. « Terminer » pour revenir à l'accueil.)`]
+      : [])]), cur);
+  };
+
+  const sendTalk = async (text: string) => {
+    if (!currentUser || !state.talk) return;
+    const t = state.talk;
+    const q = quota ?? await loadQuota(currentUser.id);
+    if (!quota) setQuota(q);
+    if (talkBlocked(q, state, text)) return;
+    const base = addExchange(state, text, []);
+    setState(base);
+    showNow(base);
+    await deepReply(base, text, t, q, false);
+  };
+
+  /**
+   * Question personnelle ou profonde écrite sur l'accueil (« décris-moi », « de quoi j'ai besoin »…) :
+   * Dr Lô y répond tout de suite, avec tout ce qu'il sait de la personne (plus de « repose ta question »).
+   */
+  const askDeep = async (text: string, base: AccueilState) => {
+    if (!currentUser) return;
+    setTab('discuter');
+    setMode('home');
+    setInChat(true);
+    trackAccueil('free_chat');
+    const q = quota ?? await loadQuota(currentUser.id);
+    if (!quota) setQuota(q);
+    const from = stateRef.current ?? base;
+    const prev = { ...from, messages: from.messages.slice(0, -1), seq: from.seq }; // sans le message, ré-ajouté ci-dessous si bloqué
+    if (talkBlocked(q, prev, text)) return;
+    const t = base.talk ?? { conv: `conv_${Date.now()}`, start: from.messages.length - 1, opening: null };
+    const withTalk: AccueilState = { ...from, talk: t, step: from.step === 'need' || from.step === 'need_clarify' ? 'prescribed' : from.step };
+    setState(withTalk);
+    showNow(withTalk);
+    await deepReply(withTalk, text, t, q, q.count === 0);
   };
 
   // ── Discussions : changer, créer, renommer, supprimer ─────────────────────
@@ -1557,6 +1713,7 @@ const ConversationAccueil: React.FC = () => {
   const removeConversation = (id: string) => {
     if (confirmDel !== id) { setConfirmDel(id); return; }
     try { localStorage.removeItem(convStorageKey(STORAGE_PREFIX, uidKey, id)); } catch { /* ignore */ }
+    if (isAuthenticated) void deleteThread(id); // supprimée aussi du compte
     setConvIdx(i => deleteConv(i, id));
     setConfirmDel(null);
   };
@@ -1597,6 +1754,7 @@ const ConversationAccueil: React.FC = () => {
                     genre={state.genre}
                     onLinked={() => { const cur = stateRef.current ?? state; apply(addExchange(cur, null, ['Parfait. Ton espace est en sécurité.']), cur); }}
                     onGo={onGo}
+                    onQuick={onQuick}
                     prog={progEnv}
                     notif={currentUser ? { uid: currentUser.id, onDone: (text: string) => {
                       const cur = stateRef.current ?? state;
@@ -1657,7 +1815,7 @@ const ConversationAccueil: React.FC = () => {
               )}
               {state.talk && isAuthenticated && state.step !== 'testing' && (
                 <div className="drl-in" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, padding: '6px 10px 6px 12px', borderRadius: 12, background: 'rgba(242,182,109,.08)', border: '1px solid rgba(242,182,109,.25)', fontSize: 12.5, color: C.muted }}>
-                  <span>Discussion avec Dr Lô · {credits(KORIS_COSTS.chat)} / message{quota ? ` · ${Math.max(0, quota.limit - quota.count)} restant${quota.limit - quota.count > 1 ? 's' : ''} aujourd'hui` : ''}</span>
+                  <span>Dr Lô te répond en détail · {credits(KORIS_COSTS.chat)} / message{quota ? ` · ${Math.max(0, quota.limit - quota.count)} restant${quota.limit - quota.count > 1 ? 's' : ''} aujourd'hui` : ''}</span>
                   <button type="button" onClick={endTalk} style={{ ...linkBtn, minHeight: 28, padding: 0, color: palette.accent, fontWeight: 700 }}>Terminer</button>
                 </div>
               )}
@@ -2229,7 +2387,17 @@ const ChatCard: React.FC<{
   onGo: (to: keyof typeof GO) => void;
   prog?: ProgCardEnv;
   notif?: { uid: string; onDone: (text: string) => void; onSettings: () => void };
-}> = ({ card, palette, busy, costLabel, onStart, onOpen, prenom, genre, onLinked, onGo, prog, notif }) => {
+  onQuick?: (what: 'breath' | 'mood' | 'programme') => void;
+}> = ({ card, palette, busy, costLabel, onStart, onOpen, prenom, genre, onLinked, onGo, prog, notif, onQuick }) => {
+  if (card.type === 'quick') {
+    const QL = { breath: 'Respirer 1 minute avec moi', mood: 'Noter mon humeur', programme: 'Voir le programme qui me conviendrait' } as const;
+    return onQuick ? (
+      <button onClick={() => onQuick(card.what)} className="drl-btn drl-in"
+        style={{ marginTop: 10, minHeight: 44, padding: '0 16px', borderRadius: 12, border: 0, background: palette.primary, color: C.ink, fontSize: 14, fontWeight: 700, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 8, fontFamily: 'inherit' }}>
+        {card.what === 'breath' ? <Wind size={16} aria-hidden="true" /> : card.what === 'mood' ? <CloudSun size={16} aria-hidden="true" /> : <Sprout size={16} aria-hidden="true" />}{QL[card.what]}
+      </button>
+    ) : null;
+  }
   if (card.type === 'notif_optin') return notif ? <NotifOptinCard uid={notif.uid} palette={palette} onDone={notif.onDone} reason={card.reason} /> : null;
   if (card.type === 'notif_settings') return notif ? (
     <button onClick={notif.onSettings} className="drl-btn drl-in"

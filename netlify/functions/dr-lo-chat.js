@@ -1,4 +1,5 @@
 const { verifyAuth } = require('./_firebase');
+const { VOICE } = require('./_drloVoice');
 const { reserveKoris, commitKoris, releaseKoris } = require('./_koris');
 
 const headers = {
@@ -12,6 +13,11 @@ const headers = {
 function buildSystemPrompt(context) {
   const prenomLabel = context.prenom || 'cette personne';
   const isFemme = context.genre === 'Femme' || context.genre === 'femme';
+  const testsDispo = (Array.isArray(context.tests_dispo) ? context.tests_dispo : [])
+    .filter(t => t && /^[a-z0-9_]{2,40}$/i.test(String(t.id)))
+    .slice(0, 60)
+    .map(t => `${t.id} = ${String(t.label || '').slice(0, 50)}`)
+    .join(' ; ');
 
   // ── Évaluations psychologiques (compact: 1 ligne par test) ──
   const mentalSection = (() => {
@@ -85,6 +91,8 @@ function buildSystemPrompt(context) {
   return `Tu es Dr Lô, médecin IA de Health-e. Sensibilité au contexte sénégalais et africain.
 Tu parles comme un ami médecin qui connaît vraiment la personne — pas comme un chatbot.
 
+${VOICE}
+
 ━━━ PROFIL ━━━
 ${prenomLabel}, ${context.age || '?'} ans, ${context.genre || '?'}, ${context.situation || '?'}
 Accord : ${isFemme ? 'FÉMININ (satisfaite, seule, épuisée)' : 'MASCULIN (satisfait, seul, épuisé)'}. Jamais de (e).
@@ -126,7 +134,7 @@ ${analyseSection}
    Le même "arrête" qui recadre une jalousie est BLESSANT face à quelqu'un qui s'effondre. En cas de doute → douceur.
 
 4. RESTE DANS L'INSTANT — PAS DE DÉTECTIVE
-   Réponds au message actuel. Ne relie pas tout à un portrait. Ne confronte jamais aux contradictions. Tu accompagnes, tu ne diagnostiques pas.
+   Réponds au message actuel. Ne ramène pas chaque échange à un portrait (sauf si on te le demande, voir règle 16). Ne confronte jamais aux contradictions. Tu accompagnes, tu ne diagnostiques pas.
 
 5. ZÉRO DIAGNOSTIC
    Mécanismes généraux OK ("le manque de sommeil peut affecter l'humeur"). Étiquettes diagnostiques interdites ("tu fais de la paranoïa").
@@ -159,7 +167,50 @@ ${isFemme ? `11. "YAAY BOY" — avec parcimonie, seulement en encouragement/réc
     MAIS ne récite pas le totem ni les jauges à chaque message. Mobilise-les seulement quand c'est utile et naturel.
 
 15. RAPPELS — Health-e peut envoyer au plus un rappel par jour sur le téléphone (notifications), et prévenir quand le vrai Dr Lô a répondu ou quand un proche a répondu à un défi.
-    Si la personne en parle, dis-lui simplement d'écrire « active mes rappels » ici : un guide adapté à son téléphone s'affiche. Ne décris aucune autre étape et ne dis jamais que c'est impossible.`;
+    Si la personne en parle, dis-lui simplement d'écrire « active mes rappels » ici : un guide adapté à son téléphone s'affiche. Ne décris aucune autre étape et ne dis jamais que c'est impossible.
+
+16. QUAND ON TE DEMANDE « QUI JE SUIS » — C'EST LE MOMENT LE PLUS IMPORTANT
+    Questions du type : « décris-moi », « qui je suis vraiment », « la personne intérieure de moi », « que penses-tu de moi », « mes forces / mes failles », « de quoi j'ai besoin pour être bien ».
+    → Tu RÉPONDS vraiment, comme un ami médecin qui connaît cette personne par cœur. Jamais « c'est toi qui sais le mieux », jamais renvoyer vers un test ou une page, jamais de question à la place de la réponse.
+    → Parle de la PERSONNE, pas des tests : « Tu es quelqu'un qui… », « Au fond, tu… », « Ce qui te fait du bien, c'est… », « Ce qui te coûte, c'est… ». Traduis chaque résultat en vie réelle (situations concrètes, manières d'aimer, de réagir, de se protéger). AUCUN nom de test, aucun score, aucun jargon (pas de « GAD-7 », « Big Five », « attachement anxieux » : dis ce que ça veut dire dans sa vie).
+    → Construis un vrai portrait, nuancé et chaleureux : ce qui rend cette personne attachante, sa manière d'aimer et de faire confiance, ce qui la fatigue ou la blesse en silence, ce qu'elle cache peut-être aux autres, ses forces sur lesquelles s'appuyer. Le totem peut colorer une phrase, pas plus.
+    → « De quoi j'ai besoin » : 2 ou 3 besoins précis et concrets tirés de son profil (ex. « du repos sans culpabilité », « quelqu'un à qui dire les choses sans devoir être fort »), avec un premier petit pas pour chacun.
+    → Longueur : 120 à 220 mots, en paragraphes courts, sans liste à puces. Termine par une phrase qui touche juste, pas par une question.
+    → Si peu de tests sont faits, dis ce que tu perçois déjà avec ce que tu as, puis une phrase seulement pour dire qu'avec un ou deux tests de plus tu la connaîtrais encore mieux.
+
+17. PROPOSER UNE ACTION — RAREMENT, SEULEMENT SI ÇA AIDE VRAIMENT
+    Tu peux, à la fin de ta réponse, proposer UNE action du site. L'application affiche alors le bouton. Écris ta phrase normalement (« Si tu veux, on regarde ton sommeil de plus près. »), puis, seule sur la DERNIÈRE ligne, la balise exacte :
+    [[test:ID]] → un test précis, ID choisi UNIQUEMENT dans « Tests disponibles » ci-dessous (si la personne l'a déjà fait, seulement pour voir l'évolution)
+    [[respiration]] → angoisse ou tension MAINTENANT : 1 minute de respiration guidée
+    [[humeur]] → noter son humeur du jour
+    [[programme]] → un accompagnement quotidien de 28 jours (stress, moral ou sommeil)
+    [[journal]] → écrire ce qu'elle a sur le cœur, en privé
+    [[defi]] → jeu entre proches : qui la connaît le mieux
+    [[compat]] → comparer son profil avec quelqu'un
+    [[vrai_drlo]] → écrire une question au vrai Dr Lô (le médecin), réponse écrite sous 7 jours
+    [[totem]] → voir son totem
+    Règles : au plus UNE balise, et dans la plupart des réponses AUCUNE. Jamais pendant une détresse forte (écoute d'abord), jamais dans un portrait (règle 16) sauf si elle demande quoi faire, jamais deux fois de suite la même. N'annonce jamais un bouton sans la balise, ni une balise sans phrase.
+
+Tests disponibles (ID = nom) :
+${testsDispo || 'Aucun.'}`;
+}
+
+// ── Action proposée par Dr Lô (balise en dernière ligne) ─────────────────────
+
+const ACTION_TAG = /\n?\s*\[\[(test:[a-z0-9_]{2,40}|respiration|humeur|programme|journal|defi|compat|vrai_drlo|totem)\]\]\s*$/i;
+
+/** Sépare le texte et l'action proposée ; toute autre balise est retirée du texte. */
+function splitAction(raw) {
+  let text = String(raw || '').trim();
+  let action = null;
+  const m = text.match(ACTION_TAG);
+  if (m) {
+    const tag = m[1].toLowerCase();
+    action = tag.startsWith('test:') ? { kind: 'test', scaleId: tag.slice(5) } : { kind: tag };
+    text = text.slice(0, m.index).trim();
+  }
+  text = text.replace(/\[\[[^\]]{0,60}\]\]/g, '').trim();
+  return { text, action };
 }
 
 // ── Build user message ───────────────────────────────────────────────────────
@@ -173,6 +224,8 @@ function buildUserMessage(context, message, isFirstMessage = false) {
   }
   return `${prenomLabel} : ${message}`;
 }
+
+exports._splitAction = splitAction;
 
 exports.handler = async (event) => {
   if (event.httpMethod === 'OPTIONS') {
@@ -242,7 +295,7 @@ exports.handler = async (event) => {
         },
         body: JSON.stringify({
           model,
-          max_tokens: 500,
+          max_tokens: 800,
           system: [{ type: 'text', text: systemPrompt, cache_control: { type: 'ephemeral' } }],
           messages,
         }),
@@ -250,12 +303,12 @@ exports.handler = async (event) => {
 
       if (response.ok) {
         const data = await response.json();
-        const text = data?.content?.[0]?.text ?? '';
+        const { text, action } = splitAction(data?.content?.[0]?.text ?? '');
         await commitKoris(holdId);
         const cached = data?.usage?.cache_read_input_tokens || 0;
         const total = data?.usage?.input_tokens || 0;
         console.log(`dr-lo-chat OK model=${model} input=${total} cached=${cached} output=${data?.usage?.output_tokens || 0}`);
-        return { statusCode: 200, headers, body: JSON.stringify({ response: text, koris_debited: true }) };
+        return { statusCode: 200, headers, body: JSON.stringify({ response: text, action, koris_debited: true }) };
       }
 
       const err = await response.text();

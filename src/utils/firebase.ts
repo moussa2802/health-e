@@ -1,7 +1,7 @@
 import { initializeApp } from "firebase/app";
 import { getAnalytics } from "firebase/analytics";
 import { getStorage } from "firebase/storage";
-import { getAuth } from "firebase/auth";
+import { getAuth, initializeAuth, browserLocalPersistence, indexedDBLocalPersistence, browserPopupRedirectResolver, type Auth } from "firebase/auth";
 import { getFunctions } from "firebase/functions";
 import {
   initializeFirestore,
@@ -36,7 +36,20 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 
 // Initialize and export Firebase Auth
-const auth = getAuth(app);
+// La session est gardée d'abord dans localStorage, puis IndexedDB en secours. Sur iPhone (icône de
+// l'écran d'accueil), IndexedDB perd parfois sa connexion quand l'appli revient de l'arrière-plan
+// (« Connection to Indexed Database server lost ») : la personne paraissait déconnectée.
+// Les sessions déjà ouvertes (gardées dans IndexedDB) sont reprises et migrées automatiquement.
+const auth: Auth = (() => {
+  try {
+    return initializeAuth(app, {
+      persistence: [browserLocalPersistence, indexedDBLocalPersistence],
+      popupRedirectResolver: browserPopupRedirectResolver,
+    });
+  } catch {
+    return getAuth(app); // déjà initialisé (rechargement à chaud)
+  }
+})();
 // Initialize and export Firebase Functions (europe-west1)
 const functions = getFunctions(app, "europe-west1");
 auth.useDeviceLanguage();

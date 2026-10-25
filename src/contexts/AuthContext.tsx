@@ -106,6 +106,27 @@ googleProvider.addScope("email");
 googleProvider.addScope("profile");
 
 
+/** Dernière personne connectée sur ce téléphone (pour la reprendre sans attendre Firestore). */
+const CACHED_USER_KEY = "health-e-user";
+function readCachedUser(uid: string): User | null {
+  try {
+    const raw = localStorage.getItem(CACHED_USER_KEY);
+    if (!raw) return null;
+    const u = JSON.parse(raw) as Partial<User> & { authMigrated?: boolean };
+    if (!u || u.id !== uid) return null;
+    const { authMigrated: _ignored, ...rest } = u;
+    return { name: "", email: "", type: null, ...rest, id: uid } as User;
+  } catch {
+    return null;
+  }
+}
+function writeCachedUser(u: Partial<User> & { id: string }): void {
+  try {
+    const prev = JSON.parse(localStorage.getItem(CACHED_USER_KEY) ?? "null") as Record<string, unknown> | null;
+    localStorage.setItem(CACHED_USER_KEY, JSON.stringify({ ...(prev && prev.id === u.id ? prev : {}), ...u }));
+  } catch { /* ignore */ }
+}
+
 // Helper function to check if error is a Firestore internal error
 const isFirestoreInternalError = (error: unknown): boolean => {
   const errorMessage = error instanceof Error ? error.message : "";
@@ -229,7 +250,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
           const userType = userData.type || null;
           const userEmail = userData.email || firebaseUser.email || "";
 
-          setCurrentUser({
+          const u = {
             id: firebaseUser.uid,
             name: userData.name || "",
             email: userEmail,
@@ -239,7 +260,9 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
               serviceType: userData.serviceType,
               specialty: userData.specialty,
             }),
-          });
+          };
+          setCurrentUser(u);
+          writeCachedUser(u);
         } else {
           // Firestore doc missing — if Google user, auto-create patient profile
           const isGoogleUser = firebaseUser.providerData.some(p => p.providerId === "google.com");
@@ -316,22 +339,29 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       unsubscribeRef.current = onAuthStateChanged(
         auth,
         async (firebaseUser: FirebaseUser | null) => {
-          setAuthReady(true);
-
           if (firebaseUser) {
+            // Retour dans l'appli : la personne connue sur ce téléphone est reprise tout de suite.
+            // Avant, l'accueil s'affichait « invité » le temps de lire Firestore : on se croyait déconnecté.
+            const cached = readCachedUser(firebaseUser.uid);
+            if (cached) {
+              setCurrentUser(cached);
+              setAuthReady(true);
+            }
             setLoadingUserData(true);
             try {
               // User is signed in, get their data from Firestore with retry mechanism
               await fetchUserDataWithRetry(firebaseUser);
             } catch (error) {
-              setCurrentUser(null);
+              if (!cached) setCurrentUser(null);
             } finally {
               setLoadingUserData(false);
+              setAuthReady(true); // « prêt » seulement quand on sait QUI est connecté
             }
           } else {
             // User is signed out
             setCurrentUser(null);
             setLoadingUserData(false);
+            setAuthReady(true);
           }
           setLoading(false);
         }

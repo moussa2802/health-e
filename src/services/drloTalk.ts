@@ -14,6 +14,7 @@ import { getTotemSignature, computeDimensionGauges, type TotemAnimal } from '../
 import { TOTEM_GUIDE } from '../data/totemGuide';
 import { authedFetch } from '../utils/authedFetch';
 import { spendKorisForUnlock } from './korisService';
+import { getScaleMeta } from '../utils/scaleMeta';
 
 export const DAILY_MESSAGE_LIMIT = 10;
 export const UNLOCK_MESSAGES = 5;
@@ -180,7 +181,23 @@ export async function unlockMore(userId: string, q: TalkQuota): Promise<TalkQuot
 
 export interface TalkTurn { role: 'user' | 'assistant'; content: string }
 
-export type TalkOutcome = { ok: true; text: string } | { ok: false; reason: 'no_koris' | 'error' };
+/** Action que Dr Lô propose à la fin de sa réponse (l'appli affiche le bouton). */
+export type TalkAction =
+  | { kind: 'test'; scaleId: string }
+  | { kind: 'respiration' | 'humeur' | 'programme' | 'journal' | 'defi' | 'compat' | 'vrai_drlo' | 'totem' };
+
+export type TalkOutcome = { ok: true; text: string; action: TalkAction | null } | { ok: false; reason: 'no_koris' | 'error' };
+
+const TALK_ACTIONS = new Set(['respiration', 'humeur', 'programme', 'journal', 'defi', 'compat', 'vrai_drlo', 'totem']);
+/** Seules des actions qui existent vraiment sur le site passent. */
+function cleanAction(a: unknown): TalkAction | null {
+  if (!a || typeof a !== 'object') return null;
+  const x = a as { kind?: string; scaleId?: string };
+  if (x.kind === 'test') return typeof x.scaleId === 'string' && SCALE_MAP.has(x.scaleId) ? { kind: 'test', scaleId: x.scaleId } : null;
+  return x.kind && TALK_ACTIONS.has(x.kind) ? ({ kind: x.kind } as TalkAction) : null;
+}
+/** Les tests que Dr Lô peut proposer (identifiants et noms). */
+const TESTS_DISPO = ALL_SCALES.map(s => ({ id: s.id, label: getScaleMeta(s.id).label }));
 
 /**
  * Envoie un message à Dr Lô (1 étincelle, débitée côté serveur) et garde la conversation
@@ -193,7 +210,7 @@ export async function talk(userId: string, convId: string, text: string, history
     const res = await authedFetch('/.netlify/functions/dr-lo-chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message: text, historique, context: opening && historique.length === 0 ? { ...context, ouverture: opening } : context }),
+      body: JSON.stringify({ message: text, historique, context: { ...context, tests_dispo: TESTS_DISPO, ...(opening && historique.length === 0 ? { ouverture: opening } : {}) } }),
     });
     if (res.status === 402) return { ok: false, reason: 'no_koris' };
     if (!res.ok) return { ok: false, reason: 'error' };
@@ -204,7 +221,7 @@ export async function talk(userId: string, convId: string, text: string, history
     const msgs = [...history, { role: 'user' as const, content: text }, { role: 'assistant' as const, content: answer }]
       .map(m => ({ role: m.role, content: m.content, timestamp: now, koris_consumed: m.role === 'assistant' ? 1 : 0 }));
     setDoc(doc(db!, 'users', userId, 'chat_dr_lo', convId), { messages: msgs, updated_at: now, created_at: convId.replace('conv_', '') }, { merge: true }).catch(() => {});
-    return { ok: true, text: answer };
+    return { ok: true, text: answer, action: cleanAction(data.action) };
   } catch {
     return { ok: false, reason: 'error' };
   }

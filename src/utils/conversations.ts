@@ -19,6 +19,8 @@ export interface ConvIndex {
   v: 1;
   current: string;
   list: ConvMeta[];
+  /** Discussions supprimées (pour qu'elles ne reviennent pas d'un autre téléphone). */
+  deleted?: string[];
 }
 
 const INDEX_PREFIX = 'he_convs_v1:';
@@ -34,7 +36,7 @@ export function loadIndex(uidKey: string): ConvIndex {
     const raw = JSON.parse(localStorage.getItem(`${INDEX_PREFIX}${uidKey}`) ?? 'null') as ConvIndex | null;
     if (!raw || raw.v !== 1 || !Array.isArray(raw.list)) return emptyIndex();
     const list = raw.list.some(c => c.id === MAIN_ID) ? raw.list : [mainMeta(), ...raw.list];
-    return { v: 1, current: list.some(c => c.id === raw.current) ? raw.current : MAIN_ID, list };
+    return { v: 1, current: list.some(c => c.id === raw.current) ? raw.current : MAIN_ID, list, ...(Array.isArray(raw.deleted) ? { deleted: raw.deleted } : {}) };
   } catch {
     return emptyIndex();
   }
@@ -75,7 +77,7 @@ export function renameConv(idx: ConvIndex, id: string, title: string): ConvIndex
 /** La discussion principale ne se supprime pas (on peut l'effacer). */
 export function deleteConv(idx: ConvIndex, id: string): ConvIndex {
   if (id === MAIN_ID) return idx;
-  return { ...idx, current: idx.current === id ? MAIN_ID : idx.current, list: idx.list.filter(c => c.id !== id) };
+  return { ...idx, current: idx.current === id ? MAIN_ID : idx.current, list: idx.list.filter(c => c.id !== id), deleted: [...(idx.deleted ?? []), id] };
 }
 
 export function touchConv(idx: ConvIndex, id: string, preview?: string, now = new Date()): ConvIndex {
