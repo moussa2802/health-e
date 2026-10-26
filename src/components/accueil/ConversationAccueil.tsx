@@ -200,9 +200,11 @@ function useReveal(messages: Msg[], nonce: number, from: number, hint: Hint) {
         if (cancelled) return;
         setPhase('writing');
         const words = m.text.split(' ');
-        for (let w = 1; w <= words.length; w += 1) {
-          setPartial(words.slice(0, w).join(' '));
-          await wait(hint === 'quick' ? 30 : words.length > 40 ? 35 : 55);
+        // Au plus ~45 étapes d'affichage : une longue réponse s'écrit en 2 à 3 secondes, pas en une minute
+        const step = Math.max(1, Math.ceil(words.length / 45));
+        for (let w = step; w < words.length + step; w += step) {
+          setPartial(words.slice(0, Math.min(w, words.length)).join(' '));
+          await wait(hint === 'quick' ? 30 : words.length > 40 ? 40 : 55);
           if (cancelled) return;
         }
         i += 1;
