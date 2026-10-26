@@ -1,3 +1,4 @@
+import '../../components/accueil/accueil.css';
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { doc, onSnapshot } from 'firebase/firestore';
@@ -66,7 +67,7 @@ function getSeverityColor(severity: string): string {
     case 'mild': return '#8F6A1F';
     case 'moderate': return '#B5522F';
     case 'severe': case 'alert': return '#B23A3A';
-    default: return '#6E7078';
+    default: return '#CFC6B8';
   }
 }
 
@@ -122,28 +123,28 @@ const ScaleRow: React.FC<{
     return (
       <div
         className="flex items-center gap-3 rounded-2xl p-4 bg-white cursor-pointer"
-        style={{ border: '1.5px solid #E7E4DA', opacity: 0.55 }}
+        style={{ border: '1.5px solid rgba(255,255,255,.14)', opacity: 0.55 }}
         onClick={() => onGreyedClick?.(scale.id, greyedInfo)}
       >
         <div
           className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
-          style={{ background: '#F3F1EA' }}
+          style={{ background: 'rgba(255,255,255,.06)' }}
         >
-          <meta.icon size={18} color="#9CA3AF" />
+          <meta.icon size={18} color="#A79E90" />
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1.5 mb-0.5 flex-wrap">
             <TestCode scaleId={scale.id} />
-            <span className="text-[11px] font-bold" style={{ color: '#9CA3AF' }}>{scale.shortName}</span>
+            <span className="text-[11px] font-bold" style={{ color: '#A79E90' }}>{scale.shortName}</span>
           </div>
-          <p className="m-0 text-[13px] font-semibold overflow-hidden text-ellipsis whitespace-nowrap" style={{ color: '#9CA3AF' }}>
+          <p className="m-0 text-[13px] font-semibold overflow-hidden text-ellipsis whitespace-nowrap" style={{ color: '#A79E90' }}>
             {meta.label}
           </p>
-          <p className="m-0 text-[11px] mt-0.5 leading-tight italic" style={{ color: '#B0A890' }}>
+          <p className="m-0 text-[11px] mt-0.5 leading-tight italic" style={{ color: '#A79E90' }}>
             {greyedInfo.reason}
           </p>
         </div>
-        <Lock size={14} className="flex-shrink-0" style={{ color: '#C4B99A' }} />
+        <Lock size={14} className="flex-shrink-0" style={{ color: '#A79E90' }} />
       </div>
     );
   }
@@ -158,7 +159,7 @@ const ScaleRow: React.FC<{
     <div
       className="flex items-center gap-3 rounded-2xl p-4 bg-white"
       style={{
-        border: isCompleted ? '1.5px solid rgba(60,122,90,0.35)' : '1.5px solid #E7E4DA',
+        border: isCompleted ? '1.5px solid rgba(60,122,90,0.35)' : '1.5px solid rgba(255,255,255,.14)',
       }}
     >
       <div
@@ -172,18 +173,18 @@ const ScaleRow: React.FC<{
           <TestCode scaleId={scale.id} />
           <span className="text-[11px] font-bold text-muted">{scale.shortName}</span>
           {scale.targetGender === 'female' && (
-            <span className="text-[10px] font-bold rounded-full px-2 py-0.5" style={{ color: '#B5522F', background: 'rgba(201,96,63,0.08)', border: '1px solid rgba(201,96,63,0.2)' }}>
+            <span className="text-[10px] font-bold rounded-full px-2 py-0.5" style={{ color: '#F09A7A', background: 'rgba(201,96,63,0.08)', border: '1px solid rgba(201,96,63,0.2)' }}>
               Pour les femmes
             </span>
           )}
           {scale.targetGender === 'male' && (
-            <span className="text-[10px] font-bold rounded-full px-2 py-0.5" style={{ color: '#4A5D57', background: 'rgba(74,93,87,0.08)', border: '1px solid rgba(74,93,87,0.2)' }}>
+            <span className="text-[10px] font-bold rounded-full px-2 py-0.5" style={{ color: '#9DBFAF', background: 'rgba(74,93,87,0.08)', border: '1px solid rgba(74,93,87,0.2)' }}>
               Pour les hommes
             </span>
           )}
           {isCompleted && <CheckCircle2 size={12} color="#3C7A5A" />}
           {isCompleted && attemptCount && attemptCount > 1 && (
-            <span className="text-[10px] font-semibold text-ink-light rounded-full px-2 py-0.5" style={{ background: '#F3F1EA' }}>
+            <span className="text-[10px] font-semibold text-ink-light rounded-full px-2 py-0.5" style={{ background: 'rgba(255,255,255,.06)' }}>
               Passé {attemptCount} fois
             </span>
           )}
@@ -216,7 +217,7 @@ const ScaleRow: React.FC<{
                   {isExpanded ? 'Masquer' : 'Voir mon analyse'}
                 </button>
                 {isExpanded && (
-                  <div className="mt-2 rounded-xl px-3 py-2.5 text-xs text-ink-soft leading-relaxed" style={{ background: '#F3F1EA', border: '1px solid #E7E4DA' }}>
+                  <div className="mt-2 rounded-xl px-3 py-2.5 text-xs text-ink-soft leading-relaxed" style={{ background: 'rgba(255,255,255,.06)', border: '1px solid rgba(255,255,255,.14)' }}>
                     {fullComment}
                   </div>
                 )}
@@ -228,7 +229,7 @@ const ScaleRow: React.FC<{
                   type="button"
                   onClick={() => onToggleAdvice(scale.id)}
                   className="bg-transparent border-0 p-0 text-[11px] font-bold cursor-pointer flex items-center gap-1"
-                  style={{ color: '#8F6A1F' }}
+                  style={{ color: '#E9C88F' }}
                 >
                   {conseilsLoading ? (
                     <><Loader2 size={11} className="animate-spin" /> Génération en cours…</>
@@ -242,11 +243,11 @@ const ScaleRow: React.FC<{
                 </button>
                 {isAdviceExpanded && !conseilsLoading && (
                   hasConseils ? (
-                    <div className="mt-2 rounded-2xl px-3.5 py-3 text-xs text-ink leading-relaxed" style={{ background: '#E4EAE6', border: '1px solid rgba(74,93,87,0.18)' }}>
+                    <div className="mt-2 rounded-2xl px-3.5 py-3 text-xs text-ink leading-relaxed" style={{ background: 'rgba(157,191,175,.15)', border: '1px solid rgba(74,93,87,0.18)' }}>
                       {/* Signification */}
                       {cachedConseils!.signification && (
-                        <div className="rounded-lg px-2.5 py-2 mb-2.5" style={{ background: '#FFFFFF', border: '1px solid rgba(74,93,87,0.15)' }}>
-                          <div className="flex items-center gap-1 text-[10px] font-bold uppercase mb-1 tracking-wide" style={{ color: '#3C7A5A' }}>
+                        <div className="rounded-lg px-2.5 py-2 mb-2.5" style={{ background: 'rgba(255,255,255,.06)', border: '1px solid rgba(74,93,87,0.15)' }}>
+                          <div className="flex items-center gap-1 text-[10px] font-bold uppercase mb-1 tracking-wide" style={{ color: '#7FD1A0' }}>
                             <Pin size={11} /> Ce que ça veut dire
                           </div>
                           <div className="text-xs text-ink-soft leading-relaxed">
@@ -260,7 +261,7 @@ const ScaleRow: React.FC<{
                       </div>
                       <div className="flex flex-col gap-2">
                         {cachedConseils!.conseils.map((c, i) => (
-                          <div key={i} className="rounded-lg px-2.5 py-2" style={{ background: '#FFFFFF', borderLeft: `3px solid ${catColor.accent}` }}>
+                          <div key={i} className="rounded-lg px-2.5 py-2" style={{ background: 'rgba(255,255,255,.06)', borderLeft: `3px solid ${catColor.accent}` }}>
                             <div className="text-xs font-bold text-ink mb-0.5">{c.titre}</div>
                             <div className="text-xs text-ink-soft leading-relaxed">{c.texte}</div>
                           </div>
@@ -269,7 +270,7 @@ const ScaleRow: React.FC<{
                       {/* Exercice */}
                       {cachedConseils!.exercice && (
                         <div className="mt-2.5 rounded-lg px-2.5 py-2" style={{ background: 'rgba(201,96,63,0.06)', border: '1px solid rgba(201,96,63,0.15)' }}>
-                          <div className="flex items-center gap-1 text-[10px] font-bold uppercase mb-1 tracking-wide" style={{ color: '#B5522F' }}>
+                          <div className="flex items-center gap-1 text-[10px] font-bold uppercase mb-1 tracking-wide" style={{ color: '#F09A7A' }}>
                             <Dumbbell size={11} /> Exercice de la semaine
                           </div>
                           <div className="text-xs font-bold text-ink mb-0.5">{cachedConseils!.exercice.titre}</div>
@@ -278,8 +279,8 @@ const ScaleRow: React.FC<{
                       )}
                       {/* Avis pro */}
                       {cachedConseils!.avis_pro && (
-                        <div className="mt-2.5 rounded-lg px-2.5 py-2" style={{ background: '#F1EAD6', border: '1px solid rgba(183,138,46,0.25)' }}>
-                          <div className="flex items-center gap-1 text-[10px] font-bold uppercase mb-1" style={{ color: '#8F6A1F' }}>
+                        <div className="mt-2.5 rounded-lg px-2.5 py-2" style={{ background: 'rgba(233,200,143,.13)', border: '1px solid rgba(183,138,46,0.25)' }}>
+                          <div className="flex items-center gap-1 text-[10px] font-bold uppercase mb-1" style={{ color: '#E9C88F' }}>
                             <Stethoscope size={11} /> Avis du Dr Lô
                           </div>
                           <div className="text-xs text-ink-soft leading-relaxed">{cachedConseils!.avis_pro}</div>
@@ -287,7 +288,7 @@ const ScaleRow: React.FC<{
                       )}
                     </div>
                   ) : (
-                    <div className="mt-2 rounded-xl px-3 py-2.5 text-xs flex items-center gap-1.5" style={{ background: 'rgba(178,58,58,0.06)', border: '1px solid rgba(178,58,58,0.2)', color: '#B23A3A' }}>
+                    <div className="mt-2 rounded-xl px-3 py-2.5 text-xs flex items-center gap-1.5" style={{ background: 'rgba(178,58,58,0.06)', border: '1px solid rgba(178,58,58,0.2)', color: '#F09A7A' }}>
                       <AlertTriangle size={13} className="flex-shrink-0" /> La génération a échoué. Réessaie en appuyant à nouveau.
                     </div>
                   )
@@ -308,7 +309,7 @@ const ScaleRow: React.FC<{
               onClick={() => onStart(scale.id)}
               disabled={loading}
               className="bg-transparent rounded-full px-3 py-1 text-[11px] font-semibold flex items-center gap-1 cursor-pointer"
-              style={{ border: '1.5px solid rgba(60,122,90,0.4)', color: '#3C7A5A', opacity: loading ? 0.6 : 1 }}
+              style={{ border: '1.5px solid rgba(60,122,90,0.4)', color: '#7FD1A0', opacity: loading ? 0.6 : 1 }}
             >
               {loading ? <Loader2 size={12} className="animate-spin" /> : 'Refaire'}
             </button>
@@ -319,7 +320,7 @@ const ScaleRow: React.FC<{
                 style={{
                   background: deleteConfirm ? 'rgba(178,58,58,0.1)' : 'transparent',
                   border: deleteConfirm ? '1px solid rgba(178,58,58,0.4)' : 'none',
-                  color: '#B23A3A',
+                  color: '#F09A7A',
                   opacity: deleteConfirm ? 1 : 0.6,
                 }}
               >
@@ -376,6 +377,7 @@ const ProfileCard: React.FC<{
 
   const catColor = getCategoryColor(isMental ? 'mental' : 'sexual');
   const accentColor = catColor.accent;
+  const accentText = isMental ? '#9DBFAF' : '#F09A7A';
   const CategoryIcon = isMental ? Brain : Heart;
 
   const completedScales = scales.filter(s => profileResults[s.id]);
@@ -427,8 +429,8 @@ const ProfileCard: React.FC<{
   return (
     <div
       ref={cardRef}
-      className="bg-white rounded-block overflow-hidden shadow-lift mx-auto"
-      style={{ maxWidth: 560 }}
+      className="rounded-block overflow-hidden mx-auto"
+      style={{ maxWidth: 560, background: '#241B14', border: '1px solid rgba(255,255,255,.12)' }}
     >
       {/* ── Solid Header ─────────────────────────────────────────────────── */}
       <div className="px-6 pt-7 pb-8 relative overflow-hidden" style={{ background: accentColor }}>
@@ -474,24 +476,24 @@ const ProfileCard: React.FC<{
       </div>
 
       {/* ── Body ────────────────────────────────────────────────────────── */}
-      <div className="px-6 pb-6 bg-white">
+      <div className="px-6 pb-6" style={{ background: '#241B14' }}>
 
         {/* Dr Lo section */}
-        <div className="py-5" style={{ borderBottom: '1px solid #F1F5F9' }}>
+        <div className="py-5" style={{ borderBottom: '1px solid rgba(255,255,255,.1)' }}>
           <div className="flex items-center gap-2 mb-3">
             <div className="w-7 h-7 rounded-full overflow-hidden flex-shrink-0" style={{ border: `2px solid ${accentColor}30` }}>
               <img src="/dr-lo.png" alt="Dr. Lô" className="w-full h-full object-cover" style={{ objectPosition: 'top center' }} />
             </div>
-            <span className="text-xs font-extrabold tracking-wide flex items-center gap-1" style={{ color: accentColor }}>
+            <span className="text-xs font-extrabold tracking-wide flex items-center gap-1" style={{ color: accentText }}>
               <Stethoscope size={12} /> ANALYSE DR LÔ
             </span>
             <div className="ml-auto flex items-center gap-1">
               <span className="w-1.5 h-1.5 rounded-full inline-block" style={{ background: '#3C7A5A' }} />
-              <span className="text-[9px] font-bold" style={{ color: '#3C7A5A' }}>IA</span>
+              <span className="text-[9px] font-bold" style={{ color: '#7FD1A0' }}>IA</span>
             </div>
           </div>
 
-          <div className="rounded-xl px-4 py-3.5" style={{ background: '#F8F7F3', border: `1px solid ${accentColor}15` }}>
+          <div className="rounded-xl px-4 py-3.5" style={{ background: 'rgba(255,255,255,.06)', border: `1px solid ${accentColor}15` }}>
             {!isAuthenticated && completedCount > 0 ? (
               <>
                 <p className="m-0 mb-2.5 text-[13px] text-ink-soft leading-relaxed">
@@ -511,7 +513,7 @@ const ProfileCard: React.FC<{
               </p>
             ) : drLoUpdating ? (
               <div className="flex items-center gap-2.5">
-                <Loader2 size={16} className="animate-spin flex-shrink-0" style={{ color: accentColor }} />
+                <Loader2 size={16} className="animate-spin flex-shrink-0" style={{ color: accentText }} />
                 <p className="m-0 text-xs text-muted">
                   Dr. Lô met à jour ton analyse… Cela peut prendre quelques secondes.
                 </p>
@@ -525,7 +527,7 @@ const ProfileCard: React.FC<{
                 <div className="mt-3 pt-2.5 flex items-center justify-between flex-wrap gap-2" style={{ borderTop: '1px solid rgba(0,0,0,0.06)' }}>
                   {isOutdated ? (
                     <>
-                      <p className="m-0 text-[11px] font-semibold flex items-center gap-1" style={{ color: '#8F6A1F' }}>
+                      <p className="m-0 text-[11px] font-semibold flex items-center gap-1" style={{ color: '#E9C88F' }}>
                         <span className="w-1.5 h-1.5 rounded-full inline-block" style={{ background: '#8F6A1F' }} />
                         Profil modifié depuis la dernière analyse
                       </p>
@@ -542,7 +544,7 @@ const ProfileCard: React.FC<{
                       </button>
                     </>
                   ) : (
-                    <p className="m-0 text-[11px] font-semibold flex items-center gap-1" style={{ color: '#3C7A5A' }}>
+                    <p className="m-0 text-[11px] font-semibold flex items-center gap-1" style={{ color: '#7FD1A0' }}>
                       <span className="w-1.5 h-1.5 rounded-full inline-block" style={{ background: '#3C7A5A' }} />
                       Profil à jour {drLoDateStr ? `· ${drLoDateStr}` : ''}
                     </p>
@@ -572,18 +574,18 @@ const ProfileCard: React.FC<{
         </div>
 
         {/* Evaluations section */}
-        <div className="py-5" style={{ borderBottom: '1px solid #F1F5F9' }}>
+        <div className="py-5" style={{ borderBottom: '1px solid rgba(255,255,255,.1)' }}>
           <div className="flex items-center justify-between mb-3">
             <span className="text-xs font-extrabold text-ink tracking-wide flex items-center gap-1.5">
               <BarChart3 size={13} /> MES ÉVALUATIONS
             </span>
-            <span className="text-xs font-bold" style={{ color: accentColor }}>
+            <span className="text-xs font-bold" style={{ color: accentText }}>
               {completedCount}/{totalCount}
             </span>
           </div>
 
           {/* Progress bar */}
-          <div className="h-[5px] rounded-pill overflow-hidden mb-3.5" style={{ background: '#F1F5F9' }}>
+          <div className="h-[5px] rounded-pill overflow-hidden mb-3.5" style={{ background: 'rgba(255,255,255,.08)' }}>
             <div
               className="h-full rounded-pill transition-all duration-500"
               style={{
@@ -606,7 +608,7 @@ const ProfileCard: React.FC<{
                 const meta = getScaleMeta(scale.id);
                 const sevColor = getSeverityColor(result.interpretation.severity);
                 return (
-                  <div key={scale.id} className="flex items-center gap-2 rounded-lg px-2.5 py-1.5" style={{ background: '#F8F7F3' }}>
+                  <div key={scale.id} className="flex items-center gap-2 rounded-lg px-2.5 py-1.5" style={{ background: 'rgba(255,255,255,.06)' }}>
                     <span className="w-5 flex items-center justify-center flex-shrink-0" style={{ color: sevColor }}>
                       <meta.icon size={15} />
                     </span>
@@ -627,13 +629,13 @@ const ProfileCard: React.FC<{
         </div>
 
         {/* Compatibility code section */}
-        <div className="py-5" style={{ borderBottom: '1px solid #F1F5F9' }}>
+        <div className="py-5" style={{ borderBottom: '1px solid rgba(255,255,255,.1)' }}>
           <span className="text-xs font-extrabold text-ink tracking-wide mb-3 flex items-center gap-1.5">
             <Link2 size={13} /> TON CODE DE COMPATIBILITÉ
           </span>
 
           {!isAuthenticated ? (
-            <div className="rounded-xl px-4 py-3.5 text-center mt-3" style={{ background: '#F8F7F3', border: '1px dashed #CBD5E1' }}>
+            <div className="rounded-xl px-4 py-3.5 text-center mt-3" style={{ background: 'rgba(255,255,255,.06)', border: '1px dashed rgba(255,255,255,.14)' }}>
               <p className="m-0 mb-2.5 text-xs text-muted flex items-center justify-center gap-1">
                 <Lock size={12} /> Crée un compte pour générer ton code de compatibilité
               </p>
@@ -650,7 +652,7 @@ const ProfileCard: React.FC<{
               <p className="m-0 mb-2 text-[10px] text-muted font-semibold tracking-wide">
                 TON CODE UNIQUE
               </p>
-              <p className="m-0 mb-3 text-lg font-extrabold tracking-wide" style={{ color: accentColor, fontFamily: 'monospace' }}>
+              <p className="m-0 mb-3 text-lg font-extrabold tracking-wide" style={{ color: accentText, fontFamily: 'monospace' }}>
                 {compatibilityId}
               </p>
               <p className="m-0 text-[11px] text-muted">
@@ -658,16 +660,16 @@ const ProfileCard: React.FC<{
               </p>
             </div>
           ) : (
-            <div className="rounded-xl px-4 py-3.5 mt-3" style={{ background: '#F8F7F3', border: '1px dashed #CBD5E1' }}>
+            <div className="rounded-xl px-4 py-3.5 mt-3" style={{ background: 'rgba(255,255,255,.06)', border: '1px dashed rgba(255,255,255,.14)' }}>
               <div className="flex items-center justify-between mb-2.5">
                 <span className="text-xs text-ink-soft font-semibold flex items-center gap-1">
                   <Lock size={12} /> {doneRequired}/{totalRequired} évaluations obligatoires
                 </span>
-                <span className="text-[11px] font-bold" style={{ color: accentColor }}>
+                <span className="text-[11px] font-bold" style={{ color: accentText }}>
                   {Math.round((doneRequired / totalRequired) * 100)}%
                 </span>
               </div>
-              <div className="h-[5px] rounded-pill overflow-hidden mb-3" style={{ background: '#E2E8F0' }}>
+              <div className="h-[5px] rounded-pill overflow-hidden mb-3" style={{ background: 'rgba(255,255,255,.08)' }}>
                 <div
                   className="h-full rounded-pill"
                   style={{
@@ -683,7 +685,7 @@ const ProfileCard: React.FC<{
                     {profileResults[r.id]
                       ? <CheckCircle2 size={12} color="#3C7A5A" />
                       : <Circle size={12} className="text-muted" />}
-                    <span className="text-[11px]" style={{ color: profileResults[r.id] ? '#3C7A5A' : '#6E7078', fontWeight: profileResults[r.id] ? 600 : 400 }}>
+                    <span className="text-[11px]" style={{ color: profileResults[r.id] ? '#7FD1A0' : '#CFC6B8', fontWeight: profileResults[r.id] ? 600 : 400 }}>
                       {r.label}
                     </span>
                   </div>
@@ -695,7 +697,7 @@ const ProfileCard: React.FC<{
 
         {/* Footer */}
         <div className="pt-4 flex items-center justify-center gap-1.5">
-          <CategoryIcon size={14} color="#6E7078" />
+          <CategoryIcon size={14} color="#CFC6B8" />
           <span className="text-xs font-bold text-muted">health-e.sn</span>
         </div>
       </div>
@@ -716,6 +718,7 @@ const AssessmentCategoryPage: React.FC = () => {
   const isValidCategory = category === 'mental' || category === 'sexual';
   const catColor = getCategoryColor(isMental ? 'mental' : 'sexual');
   const accentColor = catColor.accent;
+  const accentText = isMental ? '#9DBFAF' : '#F09A7A';
 
   // ── TOUS les hooks en premier — jamais après un early return ──────────────
 
@@ -1093,12 +1096,12 @@ const AssessmentCategoryPage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen" style={{ background: '#F3F1EA' }}>
+    <div className="min-h-screen drl-screen drl-page">
 
       {/* ── Header ──────────────────────────────────────────────────────────── */}
       <div
         className="sticky top-0 z-20 py-3.5"
-        style={{ background: 'rgba(243,241,234,0.95)', backdropFilter: 'blur(12px)', borderBottom: '1px solid rgba(23,24,27,0.08)' }}
+        style={{ background: 'rgba(24,18,13,.95)', backdropFilter: 'blur(12px)', borderBottom: '1px solid rgba(255,255,255,.1)' }}
       >
         <div className="max-w-[600px] mx-auto px-5 flex items-center gap-3">
           <button
@@ -1108,12 +1111,12 @@ const AssessmentCategoryPage: React.FC = () => {
             <ArrowLeft size={20} />
           </button>
           <h1 className="font-display m-0 text-lg font-bold text-ink flex-1 flex items-center gap-2">
-            {isMental ? <Brain size={18} color={accentColor} /> : <Heart size={18} color={accentColor} />}
+            {isMental ? <Brain size={18} color={accentText} /> : <Heart size={18} color={accentText} />}
             {isMental ? 'Profil psychologique' : 'Vie intime'}
           </h1>
           <span
             className="text-[11px] font-bold rounded-full px-2.5 py-1 whitespace-nowrap"
-            style={{ background: `${accentColor}18`, color: accentColor, border: `1px solid ${accentColor}30` }}
+            style={{ background: `${accentColor}18`, color: accentText, border: `1px solid ${accentColor}30` }}
           >
             {completedCount}/{activeScales.length}
           </span>
@@ -1130,7 +1133,7 @@ const AssessmentCategoryPage: React.FC = () => {
               className="flex-1 py-2.5 rounded-xl border-0 font-bold text-[13px] cursor-pointer flex items-center justify-center gap-1.5 transition-colors duration-150"
               style={{
                 background: activeTab === tab ? accentColor : 'transparent',
-                color: activeTab === tab ? '#fff' : '#6E7078',
+                color: activeTab === tab ? '#fff' : '#CFC6B8',
               }}
             >
               {tab === 'evaluations' ? <><ClipboardList size={14} /> Évaluations</> : <><User size={14} /> Mon Profil</>}
@@ -1142,7 +1145,7 @@ const AssessmentCategoryPage: React.FC = () => {
       {/* ── Bandeau erreur ──────────────────────────────────────────────────── */}
       {errorMsg && (
         <div className="max-w-[600px] mx-auto px-5 mt-2.5">
-          <div className="rounded-xl px-4 py-2.5 text-xs flex items-center gap-2" style={{ background: 'rgba(178,58,58,0.06)', border: '1px solid rgba(178,58,58,0.25)', color: '#B23A3A' }}>
+          <div className="rounded-xl px-4 py-2.5 text-xs flex items-center gap-2" style={{ background: 'rgba(178,58,58,0.06)', border: '1px solid rgba(178,58,58,0.25)', color: '#F09A7A' }}>
             <AlertTriangle size={14} className="flex-shrink-0" /> {errorMsg}
           </div>
         </div>
@@ -1152,9 +1155,9 @@ const AssessmentCategoryPage: React.FC = () => {
       {!isAuthenticated && (
         <div className="max-w-[600px] mx-auto px-5 mt-2.5">
           <div className="rounded-xl px-4 py-2.5 flex items-center justify-between gap-2.5 flex-wrap" style={{ background: `${accentColor}08`, border: `1px solid ${accentColor}20` }}>
-            <p className="m-0 text-xs font-medium" style={{ color: accentColor }}>
+            <p className="m-0 text-xs font-medium" style={{ color: accentText }}>
               {guestCount < GUEST_MAX_TESTS
-                ? `${GUEST_MAX_TESTS - guestCount} essai${GUEST_MAX_TESTS - guestCount > 1 ? 's' : ''} gratuit${GUEST_MAX_TESTS - guestCount > 1 ? 's' : ''} restant`
+                ? (GUEST_MAX_TESTS - guestCount > 1 ? `Encore ${GUEST_MAX_TESTS - guestCount} tests gratuits` : 'Encore 1 test gratuit')
                 : 'Limite atteinte — crée un compte pour continuer'}
             </p>
             <Link
@@ -1182,7 +1185,7 @@ const AssessmentCategoryPage: React.FC = () => {
         {activeTab === 'evaluations' && (
           <div className="flex flex-col gap-2">
             <div className="flex items-center gap-2.5 bg-white border border-line rounded-[14px] px-3.5 py-3 mb-1">
-              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="var(--muted, #8A8C95)" strokeWidth="2.2"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#A79E90" strokeWidth="2.2"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>
               <input
                 type="text"
                 value={scaleSearch}
@@ -1214,8 +1217,8 @@ const AssessmentCategoryPage: React.FC = () => {
               </div>
             ))}
             <div className="mt-3 rounded-xl px-3.5 py-2.5 flex items-start gap-2" style={{ background: 'rgba(181,115,42,0.06)', border: '1px solid rgba(181,115,42,0.25)' }}>
-              <AlertTriangle size={14} className="flex-shrink-0 mt-0.5" style={{ color: '#B5732A' }} />
-              <p className="m-0 text-[11px] leading-relaxed" style={{ color: '#8C5A21' }}>
+              <AlertTriangle size={14} className="flex-shrink-0 mt-0.5" style={{ color: '#E9C88F' }} />
+              <p className="m-0 text-[11px] leading-relaxed" style={{ color: '#E9C88F' }}>
                 Ces évaluations ne remplacent pas une consultation avec un professionnel de santé.
                 En cas de détresse, consultez immédiatement un spécialiste qualifié.
               </p>
@@ -1224,7 +1227,7 @@ const AssessmentCategoryPage: React.FC = () => {
             {/* ── Sous-section Tests Bonus (mental uniquement) ── */}
             {isMental && (
               <div className="mt-5">
-                <div className="rounded-2xl px-[18px] py-4 mb-3.5 relative overflow-hidden" style={{ background: '#17181B' }}>
+                <div className="rounded-2xl px-[18px] py-4 mb-3.5 relative overflow-hidden" style={{ background: 'rgba(233,200,143,.14)', border: '1px solid rgba(233,200,143,.35)' }}>
                   <div className="absolute rounded-full" style={{ top: -15, right: -15, width: 90, height: 90, background: 'rgba(183,138,46,0.18)' }} />
                   <div className="relative z-10 flex items-center justify-between">
                     <div>
@@ -1235,7 +1238,7 @@ const AssessmentCategoryPage: React.FC = () => {
                         Ces tests enrichissent ton profil — très populaires <Flame size={11} color="#D4AD5A" />
                       </p>
                     </div>
-                    <span className="text-[11px] font-bold rounded-full px-2.5 py-1 whitespace-nowrap" style={{ background: 'rgba(183,138,46,0.25)', color: '#D4AD5A', border: '1px solid rgba(183,138,46,0.35)' }}>
+                    <span className="text-[11px] font-bold rounded-full px-2.5 py-1 whitespace-nowrap" style={{ background: 'rgba(183,138,46,0.25)', color: '#E9C88F', border: '1px solid rgba(183,138,46,0.35)' }}>
                       {bonusCompleted}/{BONUS_SCALES.length}
                     </span>
                   </div>
@@ -1293,10 +1296,10 @@ const AssessmentCategoryPage: React.FC = () => {
             {isMental && bonusCompleted > 0 && (
               <div className="bg-white rounded-2xl px-[18px] py-4" style={{ border: '1.5px solid rgba(183,138,46,0.2)', boxShadow: '0 2px 12px rgba(183,138,46,0.06)' }}>
                 <div className="flex items-center justify-between mb-3">
-                  <span className="text-xs font-extrabold tracking-wide flex items-center gap-1.5" style={{ color: '#8A6A1E' }}>
+                  <span className="text-xs font-extrabold tracking-wide flex items-center gap-1.5" style={{ color: '#E9C88F' }}>
                     <Sparkles size={13} /> TESTS BONUS
                   </span>
-                  <span className="text-xs font-bold" style={{ color: '#8F6A1F' }}>
+                  <span className="text-xs font-bold" style={{ color: '#E9C88F' }}>
                     {bonusCompleted}/{BONUS_SCALES.length}
                   </span>
                 </div>
@@ -1306,7 +1309,7 @@ const AssessmentCategoryPage: React.FC = () => {
                     const meta = getScaleMeta(scale.id);
                     const sevColor = getSeverityColor(result.interpretation.severity);
                     return (
-                      <div key={scale.id} className="flex items-center gap-2 rounded-lg px-2.5 py-1.5" style={{ background: '#F1EAD6' }}>
+                      <div key={scale.id} className="flex items-center gap-2 rounded-lg px-2.5 py-1.5" style={{ background: 'rgba(233,200,143,.13)' }}>
                         <span className="w-5 flex items-center justify-center flex-shrink-0" style={{ color: sevColor }}>
                           <meta.icon size={14} />
                         </span>
@@ -1333,9 +1336,9 @@ const AssessmentCategoryPage: React.FC = () => {
                 disabled={isCapturing || completedCount === 0}
                 className="flex-1 rounded-2xl px-4 py-3.5 text-[13px] font-bold flex items-center justify-center gap-1.5 border-0"
                 style={{
-                  background: isCapturing ? '#E2E8F0' : accentColor,
+                  background: isCapturing ? 'rgba(255,255,255,.08)' : accentColor,
                   cursor: completedCount === 0 ? 'not-allowed' : 'pointer',
-                  color: isCapturing ? '#94A3B8' : '#FFFFFF',
+                  color: isCapturing ? '#A79E90' : '#FFFFFF',
                   boxShadow: completedCount === 0 ? 'none' : `0 3px 12px ${accentColor}30`,
                   opacity: completedCount === 0 ? 0.5 : 1,
                 }}
@@ -1353,7 +1356,7 @@ const AssessmentCategoryPage: React.FC = () => {
                   style={{
                     background: copyMsg ? 'rgba(60,122,90,0.1)' : 'white',
                     border: `1.5px solid ${copyMsg ? '#3C7A5A' : accentColor}30`,
-                    color: copyMsg ? '#3C7A5A' : accentColor,
+                    color: copyMsg ? '#7FD1A0' : accentColor,
                   }}
                 >
                   {copyMsg ? <><CheckCircle2 size={14} /> {copyMsg}</> : <><Copy size={14} /> Copier mon code</>}
@@ -1371,17 +1374,17 @@ const AssessmentCategoryPage: React.FC = () => {
             {isAuthenticated && currentUser && (
               <div className="mt-5 rounded-xl px-4 py-3.5 flex items-center gap-3" style={{ background: 'rgba(178,58,58,0.05)', border: '1px solid rgba(178,58,58,0.2)' }}>
                 <div className="flex-1 min-w-0">
-                  <p className="m-0 text-xs font-semibold" style={{ color: '#8C2E2E' }}>
+                  <p className="m-0 text-xs font-semibold" style={{ color: '#F09A7A' }}>
                     Réinitialiser mon profil
                   </p>
-                  <p className="m-0 mt-0.5 text-[11px] leading-tight" style={{ color: '#B23A3A' }}>
+                  <p className="m-0 mt-0.5 text-[11px] leading-tight" style={{ color: '#F09A7A' }}>
                     Supprime tous tes résultats et synthèses Dr Lô. Ton compte et préférences sont conservés.
                   </p>
                 </div>
                 <button
                   onClick={() => setShowResetModal(true)}
                   className="bg-white rounded-lg px-3.5 py-1.5 text-[11px] font-bold cursor-pointer flex-shrink-0 whitespace-nowrap"
-                  style={{ border: '1px solid rgba(178,58,58,0.35)', color: '#B23A3A' }}
+                  style={{ border: '1px solid rgba(178,58,58,0.35)', color: '#F09A7A' }}
                 >
                   Réinitialiser
                 </button>
@@ -1412,7 +1415,7 @@ const AssessmentCategoryPage: React.FC = () => {
           >
             <div className="flex items-center gap-2.5 mb-4">
               <div className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(183,138,46,0.1)' }}>
-                <Lock size={16} style={{ color: '#8F6A1F' }} />
+                <Lock size={16} style={{ color: '#E9C88F' }} />
               </div>
               <div>
                 <p className="m-0 text-[13px] font-bold text-ink">{unlockModal.info.unlockPrompt}</p>
@@ -1449,7 +1452,7 @@ const AssessmentCategoryPage: React.FC = () => {
                     setUnlockModal(null);
                   }}
                   className="w-full text-left px-4 py-3 rounded-xl bg-white text-[13px] font-medium text-ink cursor-pointer transition-colors"
-                  style={{ border: '1.5px solid #E7E4DA' }}
+                  style={{ border: '1.5px solid rgba(255,255,255,.14)' }}
                 >
                   {opt.label}
                 </button>
@@ -1458,7 +1461,7 @@ const AssessmentCategoryPage: React.FC = () => {
             <button
               onClick={() => setUnlockModal(null)}
               className="w-full mt-3 py-2.5 rounded-xl border-0 bg-transparent text-[13px] font-semibold cursor-pointer"
-              style={{ color: '#8A8C95' }}
+              style={{ color: '#A79E90' }}
             >
               Annuler
             </button>
@@ -1479,10 +1482,10 @@ const AssessmentCategoryPage: React.FC = () => {
             onClick={e => e.stopPropagation()}
           >
             <div className="w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-3" style={{ background: `${accentColor}12` }}>
-              <Target size={26} color={accentColor} />
+              <Target size={26} color={accentText} />
             </div>
             <h3 className="font-display m-0 mb-2 text-xl font-extrabold text-ink">
-              Tu as utilisé tes 3 essais gratuits !
+              Tu as fait tes 3 tests gratuits !
             </h3>
             <p className="m-0 mb-2 text-[13px] text-ink-soft leading-relaxed">
               Crée un compte <strong>gratuit</strong> pour :

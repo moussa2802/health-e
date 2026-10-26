@@ -1,3 +1,4 @@
+import '../../components/accueil/accueil.css';
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import useReloadLock from '../../hooks/useReloadLock';
@@ -36,7 +37,8 @@ function getThemeColors(category?: string) {
   const colors = getCategoryColor(cat as any);
   return {
     accent: colors.accent,
-    pageBg: '#F3F1EA',
+    accentText: cat === 'sexual' ? '#F09A7A' : cat === 'bonus' ? '#E9C88F' : '#9DBFAF',
+    pageBg: 'transparent',
     cardBorder: `${colors.accent}18`,
     badgeBg: `${colors.accent}08`,
     label: category === 'sexual_health' ? 'Vie intime' : category === 'bonus' ? 'Bonus' : 'Profil psychologique',
@@ -409,9 +411,9 @@ const AssessmentQuizPage: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: '#F3F1EA' }}>
+      <div className="min-h-screen flex items-center justify-center drl-screen drl-page">
         <div className="text-center">
-          <Loader2 size={36} className="animate-spin mx-auto mb-4" style={{ color: '#4A5D57' }} />
+          <Loader2 size={36} className="animate-spin mx-auto mb-4" style={{ color: '#9DBFAF' }} />
           <p className="text-ink-light text-sm">Chargement de votre évaluation…</p>
         </div>
       </div>
@@ -420,7 +422,7 @@ const AssessmentQuizPage: React.FC = () => {
 
   if (error) {
     return (
-      <div className="min-h-screen flex items-center justify-center px-5" style={{ background: '#F3F1EA' }}>
+      <div className="min-h-screen flex items-center justify-center px-5 drl-screen drl-page">
         <div style={{
           background: '#fff', borderRadius: 20, border: '1px solid rgba(220,38,38,0.15)',
           padding: '36px 32px', maxWidth: 420, width: '100%', textAlign: 'center',
@@ -445,7 +447,7 @@ const AssessmentQuizPage: React.FC = () => {
   if (!session || !currentScale || !currentItem) return null;
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ background: theme.pageBg }}>
+    <div className="min-h-screen flex flex-col drl-screen drl-page" style={{ background: theme.pageBg }}>
       <style>{`
         @keyframes slideInLeft { from { opacity: 0; transform: translateX(28px); } to { opacity: 1; transform: translateX(0); } }
         @keyframes slideInRight { from { opacity: 0; transform: translateX(-28px); } to { opacity: 1; transform: translateX(0); } }
@@ -459,7 +461,7 @@ const AssessmentQuizPage: React.FC = () => {
       {/* Top bar */}
       <div style={{
         position: 'fixed', top: 0, left: 0, right: 0, zIndex: 30,
-        background: 'rgba(255,255,255,0.92)',
+        background: 'rgba(24,18,13,.92)',
         backdropFilter: 'blur(18px)',
         WebkitBackdropFilter: 'blur(18px)',
         borderBottom: `1px solid ${theme.cardBorder}`,
@@ -471,13 +473,13 @@ const AssessmentQuizPage: React.FC = () => {
               background: `${theme.accent}10`,
               display: 'flex', alignItems: 'center', justifyContent: 'center',
             }}>
-              {ScaleIcon && <ScaleIcon size={18} style={{ color: theme.accent }} />}
+              {ScaleIcon && <ScaleIcon size={18} style={{ color: theme.accentText }} />}
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
-              <p style={{ margin: 0, fontSize: 10, fontWeight: 600, color: theme.accent, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+              <p style={{ margin: 0, fontSize: 10, fontWeight: 600, color: theme.accentText, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
                 {theme.label} · {scaleIndex + 1}/{totalScales}
               </p>
-              <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: '#17181B', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: '#FBF5EA', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                 {currentScale.shortName} — {currentScale.name}
               </p>
             </div>
@@ -485,7 +487,7 @@ const AssessmentQuizPage: React.FC = () => {
               background: theme.badgeBg,
               border: `1px solid ${theme.accent}20`,
               borderRadius: 20, padding: '3px 11px',
-              fontSize: 12, fontWeight: 800, color: theme.accent,
+              fontSize: 12, fontWeight: 800, color: theme.accentText,
               flexShrink: 0,
             }}>
               {currentVisibleIndex + 1} / {totalVisible}
@@ -505,7 +507,7 @@ const AssessmentQuizPage: React.FC = () => {
               onClick={() => setShowAbandonConfirm(true)}
               style={{
                 background: 'none', border: 'none', cursor: 'pointer', padding: '4px 6px',
-                color: '#94A3B8', borderRadius: 8, flexShrink: 0,
+                color: '#A79E90', borderRadius: 8, flexShrink: 0,
               }}
             >
               <X size={20} />
@@ -536,7 +538,7 @@ const AssessmentQuizPage: React.FC = () => {
                     }} />
                     {isActive && (
                       <span style={{
-                        fontSize: 11, fontWeight: 600, color: theme.accent,
+                        fontSize: 11, fontWeight: 600, color: theme.accentText,
                         overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
                       }}>
                         {ch.title}
@@ -554,7 +556,7 @@ const AssessmentQuizPage: React.FC = () => {
       <div style={{ flex: 1, maxWidth: 680, margin: '0 auto', width: '100%', padding: '86px 20px 110px', boxSizing: 'border-box' }}>
         {currentVisibleIndex === 0 && currentScale.instructions && (
           <div style={{
-            background: 'rgba(255,255,255,0.8)',
+            background: 'rgba(255,255,255,.06)',
             backdropFilter: 'blur(10px)',
             border: `1px solid ${theme.cardBorder}`,
             borderRadius: 14,
@@ -564,7 +566,7 @@ const AssessmentQuizPage: React.FC = () => {
             alignItems: 'flex-start',
             gap: 10,
           }}>
-            <p style={{ margin: 0, fontSize: 13, color: '#475569', lineHeight: 1.6 }}>
+            <p style={{ margin: 0, fontSize: 13, color: '#CFC6B8', lineHeight: 1.6 }}>
               {currentScale.instructions}
             </p>
           </div>
@@ -573,7 +575,7 @@ const AssessmentQuizPage: React.FC = () => {
         {milestoneMsg && (
           <div style={{
             textAlign: 'center', padding: '8px 14px', marginBottom: 10,
-            fontSize: 13, fontWeight: 600, color: theme.accent,
+            fontSize: 13, fontWeight: 600, color: theme.accentText,
             opacity: 0.85, animation: 'fadeIn 0.4s ease',
           }}>
             {milestoneMsg}
@@ -583,7 +585,7 @@ const AssessmentQuizPage: React.FC = () => {
         {/* Question card */}
         <div
           style={{
-            background: 'rgba(255,255,255,0.95)',
+            background: 'rgba(255,255,255,.06)',
             backdropFilter: 'blur(16px)',
             border: `1px solid ${theme.cardBorder}`,
             borderRadius: 20,
@@ -636,7 +638,7 @@ const AssessmentQuizPage: React.FC = () => {
       <div style={{ position: 'fixed', bottom: 16, left: 16, right: 16, zIndex: 20 }}>
         <div style={{
           maxWidth: 648, margin: '0 auto',
-          background: 'rgba(255,255,255,0.95)',
+          background: 'rgba(24,18,13,.95)',
           backdropFilter: 'blur(20px)',
           borderRadius: 18,
           border: `1px solid ${theme.cardBorder}`,
@@ -651,8 +653,8 @@ const AssessmentQuizPage: React.FC = () => {
             style={{
               width: 48, height: 48, borderRadius: 13, flexShrink: 0,
               border: `1px solid ${theme.accent}18`,
-              background: currentVisibleIndex === 0 ? '#FAFAF8' : `${theme.accent}06`,
-              color: currentVisibleIndex === 0 ? '#CBD5E1' : theme.accent,
+              background: currentVisibleIndex === 0 ? 'rgba(255,255,255,.06)' : `${theme.accent}06`,
+              color: currentVisibleIndex === 0 ? '#6F675C' : theme.accentText,
               cursor: currentVisibleIndex === 0 ? 'not-allowed' : 'pointer',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               opacity: currentVisibleIndex === 0 ? 0.5 : 1,
@@ -669,8 +671,8 @@ const AssessmentQuizPage: React.FC = () => {
               height: 48,
               borderRadius: 13,
               border: 'none',
-              background: canGoNext && !submitting ? theme.accent : '#E5E7EB',
-              color: canGoNext && !submitting ? '#fff' : '#94A3B8',
+              background: canGoNext && !submitting ? theme.accent : 'rgba(255,255,255,.1)',
+              color: canGoNext && !submitting ? '#fff' : '#A79E90',
               fontSize: 14,
               fontWeight: 700,
               cursor: canGoNext && !submitting ? 'pointer' : 'not-allowed',
@@ -704,7 +706,7 @@ const AssessmentQuizPage: React.FC = () => {
             style={{
               display: 'block', margin: '8px auto 0', padding: '4px 12px',
               background: 'none', border: 'none', cursor: 'pointer',
-              fontSize: 12, fontWeight: 600, color: '#94A3B8',
+              fontSize: 12, fontWeight: 600, color: '#A79E90',
               fontFamily: 'inherit',
             }}
           >
@@ -716,7 +718,7 @@ const AssessmentQuizPage: React.FC = () => {
       {/* Intro screen */}
       {showIntro && experience?.introScreen && (
         <div style={{
-          position: 'fixed', inset: 0, background: 'rgba(243,241,234,0.98)',
+          position: 'fixed', inset: 0, background: 'rgba(26,19,14,.98)',
           zIndex: 40, display: 'flex', alignItems: 'center', justifyContent: 'center',
           padding: '0 24px', animation: 'fadeIn 0.4s ease',
         }}>
@@ -727,17 +729,17 @@ const AssessmentQuizPage: React.FC = () => {
                 background: `${theme.accent}12`,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
               }}>
-                <ScaleIcon size={28} style={{ color: theme.accent }} />
+                <ScaleIcon size={28} style={{ color: theme.accentText }} />
               </div>
             )}
             <h2 className="font-display" style={{
-              fontSize: 26, fontWeight: 600, color: '#17181B',
+              fontSize: 26, fontWeight: 600, color: '#FBF5EA',
               margin: '0 0 8px', letterSpacing: '-0.01em',
             }}>
               {experience.introScreen.title}
             </h2>
             <p style={{
-              fontSize: 15, color: '#6B7280', lineHeight: 1.6,
+              fontSize: 15, color: '#CFC6B8', lineHeight: 1.6,
               margin: '0 0 20px',
             }}>
               {experience.introScreen.subtitle}
@@ -746,14 +748,14 @@ const AssessmentQuizPage: React.FC = () => {
               display: 'inline-flex', alignItems: 'center', gap: 6,
               padding: '6px 14px', borderRadius: 20,
               background: `${theme.accent}08`, border: `1px solid ${theme.accent}15`,
-              fontSize: 13, fontWeight: 600, color: theme.accent,
+              fontSize: 13, fontWeight: 600, color: theme.accentText,
               marginBottom: 8,
             }}>
               {experience.introScreen.duration}
             </div>
             {experience.introScreen.tip && (
               <p style={{
-                fontSize: 13, color: '#94A3B8', lineHeight: 1.5,
+                fontSize: 13, color: '#A79E90', lineHeight: 1.5,
                 margin: '12px 0 0',
               }}>
                 {experience.introScreen.tip}
@@ -779,7 +781,7 @@ const AssessmentQuizPage: React.FC = () => {
       {/* Resume screen */}
       {resumeInfo && currentScale && (
         <div style={{
-          position: 'fixed', inset: 0, background: 'rgba(243,241,234,0.98)',
+          position: 'fixed', inset: 0, background: 'rgba(26,19,14,.98)',
           zIndex: 40, display: 'flex', alignItems: 'center', justifyContent: 'center',
           padding: '0 24px', animation: 'fadeIn 0.4s ease',
         }}>
@@ -790,15 +792,15 @@ const AssessmentQuizPage: React.FC = () => {
                 background: `${theme.accent}12`,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
               }}>
-                <ScaleIcon size={28} style={{ color: theme.accent }} />
+                <ScaleIcon size={28} style={{ color: theme.accentText }} />
               </div>
             )}
             <h2 className="font-display" style={{
-              fontSize: 24, fontWeight: 600, color: '#17181B', margin: '0 0 8px',
+              fontSize: 24, fontWeight: 600, color: '#FBF5EA', margin: '0 0 8px',
             }}>
               Tu avais commencé ce test
             </h2>
-            <p style={{ fontSize: 15, color: '#6B7280', lineHeight: 1.6, margin: '0 0 28px' }}>
+            <p style={{ fontSize: 15, color: '#CFC6B8', lineHeight: 1.6, margin: '0 0 28px' }}>
               {resumeInfo.answered} question{resumeInfo.answered > 1 ? 's' : ''} sur {resumeInfo.total}
             </p>
 
@@ -836,8 +838,8 @@ const AssessmentQuizPage: React.FC = () => {
                 }}
                 style={{
                   width: '100%', padding: '14px 28px', borderRadius: 14,
-                  border: '1px solid rgba(23,24,27,0.1)', background: '#FAFAF8',
-                  color: '#475569', fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
+                  border: '1px solid rgba(255,255,255,.14)', background: 'rgba(255,255,255,.06)',
+                  color: '#CFC6B8', fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
                 }}
               >
                 Recommencer
@@ -850,7 +852,7 @@ const AssessmentQuizPage: React.FC = () => {
       {/* Chapter transition screen */}
       {chapterTransition && (
         <div style={{
-          position: 'fixed', inset: 0, background: 'rgba(243,241,234,0.98)',
+          position: 'fixed', inset: 0, background: 'rgba(26,19,14,.98)',
           zIndex: 40, display: 'flex', alignItems: 'center', justifyContent: 'center',
           padding: '0 24px', animation: 'fadeIn 0.4s ease',
         }}>
@@ -859,19 +861,19 @@ const AssessmentQuizPage: React.FC = () => {
               display: 'inline-flex', alignItems: 'center', gap: 6,
               padding: '5px 14px', borderRadius: 20,
               background: `${theme.accent}08`, border: `1px solid ${theme.accent}15`,
-              fontSize: 12, fontWeight: 700, color: theme.accent,
+              fontSize: 12, fontWeight: 700, color: theme.accentText,
               marginBottom: 16, textTransform: 'uppercase', letterSpacing: '0.04em',
             }}>
               Chapitre {chapterTransition.chapterIndex + 1} / {chapters?.length ?? 0}
             </div>
             <h2 className="font-display" style={{
-              fontSize: 24, fontWeight: 600, color: '#17181B',
+              fontSize: 24, fontWeight: 600, color: '#FBF5EA',
               margin: '0 0 12px', letterSpacing: '-0.01em',
             }}>
               {chapterTransition.title}
             </h2>
             <p style={{
-              fontSize: 15, color: '#6B7280', lineHeight: 1.7,
+              fontSize: 15, color: '#CFC6B8', lineHeight: 1.7,
               margin: '0 0 28px', maxWidth: 340, marginLeft: 'auto', marginRight: 'auto',
             }}>
               {chapterTransition.text}
@@ -899,7 +901,7 @@ const AssessmentQuizPage: React.FC = () => {
         const isSober = cardTone === 'sober';
         return (
           <div style={{
-            position: 'fixed', inset: 0, background: '#F7F5EF',
+            position: 'fixed', inset: 0, background: '#1A130E',
             zIndex: 40, display: 'flex', flexDirection: 'column',
             padding: 14, animation: 'fadeIn 0.6s ease',
           }}>
@@ -923,7 +925,7 @@ const AssessmentQuizPage: React.FC = () => {
                     flex: 1, border: 0, cursor: 'pointer', fontFamily: 'inherit', fontWeight: 700,
                     fontSize: 13.5, borderRadius: 14, padding: 13, display: 'flex',
                     alignItems: 'center', justifyContent: 'center', gap: 7,
-                    background: '#17181B', color: '#F4F1E9',
+                    background: '#E9C88F', color: '#1C140D',
                   }}
                 >
                   Voir mon résultat
@@ -941,7 +943,7 @@ const AssessmentQuizPage: React.FC = () => {
                         flex: 1, border: 0, cursor: 'pointer', fontFamily: 'inherit', fontWeight: 700,
                         fontSize: 13.5, borderRadius: 14, padding: 13, display: 'flex',
                         alignItems: 'center', justifyContent: 'center', gap: 7,
-                        background: '#17181B', color: '#F4F1E9',
+                        background: '#E9C88F', color: '#1C140D',
                       }}
                     >
                       <Upload size={15} />Partager ma carte
@@ -953,10 +955,10 @@ const AssessmentQuizPage: React.FC = () => {
                       if (finalNavPath) navigate(finalNavPath, { state: { responseQuality: responseQualityRef.current } });
                     }}
                     style={{
-                      flex: 1, border: '1px solid #E7E4DA', cursor: 'pointer', fontFamily: 'inherit',
+                      flex: 1, border: '1px solid rgba(255,255,255,.14)', cursor: 'pointer', fontFamily: 'inherit',
                       fontWeight: 700, fontSize: 13.5, borderRadius: 14, padding: 13,
                       display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7,
-                      background: '#FFFFFF', color: '#17181B',
+                      background: 'rgba(255,255,255,.06)', color: '#FBF5EA',
                     }}
                   >
                     Voir le détail
@@ -965,11 +967,11 @@ const AssessmentQuizPage: React.FC = () => {
               )}
             </div>
             {isSober ? (
-              <p style={{ textAlign: 'center', fontSize: 11, color: '#8A8C95', margin: '9px 0 0', fontWeight: 600 }}>
+              <p style={{ textAlign: 'center', fontSize: 11, color: '#A79E90', margin: '9px 0 0', fontWeight: 600 }}>
                 Aucun partage proposé sur ce test.
               </p>
             ) : cardCfg.shareable ? (
-              <p style={{ textAlign: 'center', fontSize: 11, color: '#8A8C95', margin: '9px 0 0', fontWeight: 600 }}>
+              <p style={{ textAlign: 'center', fontSize: 11, color: '#A79E90', margin: '9px 0 0', fontWeight: 600 }}>
                 Enregistre l'image ou partage-la directement.
               </p>
             ) : null}
@@ -980,13 +982,13 @@ const AssessmentQuizPage: React.FC = () => {
       {/* Support screen — alertLevel 3 */}
       {supportScreen && (
         <div style={{
-          position: 'fixed', inset: 0, background: '#F3F1EA',
+          position: 'fixed', inset: 0, background: '#1A130E',
           zIndex: 45, display: 'flex', alignItems: 'center', justifyContent: 'center',
           padding: '0 24px',
         }}>
           <div style={{ maxWidth: 420, width: '100%' }}>
             <p style={{
-              fontSize: 15, lineHeight: 1.7, color: '#4B4D55',
+              fontSize: 15, lineHeight: 1.7, color: '#CFC6B8',
               margin: '0 0 24px', textAlign: 'center',
             }}>
               {supportScreen.message}
@@ -999,14 +1001,14 @@ const AssessmentQuizPage: React.FC = () => {
                   href={`tel:${r.phone}`}
                   style={{
                     display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                    background: '#FFFFFF', border: '1px solid #E7E4DA',
+                    background: 'rgba(255,255,255,.06)', border: '1px solid rgba(255,255,255,.14)',
                     borderRadius: 12, padding: '12px 16px', textDecoration: 'none',
                   }}
                 >
                   <div>
-                    <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: '#17181B' }}>{r.label}</p>
+                    <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: '#FBF5EA' }}>{r.label}</p>
                     {r.availability && (
-                      <p style={{ margin: '2px 0 0', fontSize: 11, color: '#6E7078' }}>{r.availability}</p>
+                      <p style={{ margin: '2px 0 0', fontSize: 11, color: '#CFC6B8' }}>{r.availability}</p>
                     )}
                   </div>
                   <span style={{
@@ -1024,12 +1026,12 @@ const AssessmentQuizPage: React.FC = () => {
                 <div
                   key={r.label}
                   style={{
-                    background: '#FFFFFF', border: '1px solid #E7E4DA',
+                    background: 'rgba(255,255,255,.06)', border: '1px solid rgba(255,255,255,.14)',
                     borderRadius: 12, padding: '12px 16px',
                   }}
                 >
-                  <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: '#17181B' }}>{r.label}</p>
-                  <p style={{ margin: '2px 0 0', fontSize: 11, color: '#6E7078' }}>{r.note}</p>
+                  <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: '#FBF5EA' }}>{r.label}</p>
+                  <p style={{ margin: '2px 0 0', fontSize: 11, color: '#CFC6B8' }}>{r.note}</p>
                 </div>
               ))}
             </div>
@@ -1049,7 +1051,7 @@ const AssessmentQuizPage: React.FC = () => {
                 onClick={() => navigate('/assessment')}
                 style={{
                   width: '100%', padding: '14px 28px', borderRadius: 14,
-                  border: '1px solid #E7E4DA', background: '#FFFFFF', color: '#4B4D55',
+                  border: '1px solid rgba(255,255,255,.14)', background: 'rgba(255,255,255,.06)', color: '#CFC6B8',
                   fontSize: 15, fontWeight: 700, cursor: 'pointer',
                 }}
               >
@@ -1072,10 +1074,10 @@ const AssessmentQuizPage: React.FC = () => {
             maxWidth: 360, width: '100%',
             boxShadow: '0 20px 60px rgba(0,0,0,0.15)',
           }}>
-            <h3 className="font-display" style={{ margin: '0 0 8px', fontSize: 17, fontWeight: 600, color: '#17181B' }}>
+            <h3 className="font-display" style={{ margin: '0 0 8px', fontSize: 17, fontWeight: 600, color: '#FBF5EA' }}>
               Abandonner l'évaluation ?
             </h3>
-            <p style={{ margin: '0 0 22px', fontSize: 13, color: '#6B7280', lineHeight: 1.6 }}>
+            <p style={{ margin: '0 0 22px', fontSize: 13, color: '#CFC6B8', lineHeight: 1.6 }}>
               Tes réponses sont sauvegardées — tu pourras reprendre plus tard.
             </p>
             <div style={{ display: 'flex', gap: 10 }}>
@@ -1083,8 +1085,8 @@ const AssessmentQuizPage: React.FC = () => {
                 onClick={() => setShowAbandonConfirm(false)}
                 style={{
                   flex: 1, padding: '11px 0', borderRadius: 12,
-                  border: '1px solid rgba(23,24,27,0.1)',
-                  background: '#FAFAF8', color: '#475569', fontSize: 13, fontWeight: 600, cursor: 'pointer',
+                  border: '1px solid rgba(255,255,255,.14)',
+                  background: 'rgba(255,255,255,.06)', color: '#CFC6B8', fontSize: 13, fontWeight: 600, cursor: 'pointer',
                 }}
               >
                 Continuer

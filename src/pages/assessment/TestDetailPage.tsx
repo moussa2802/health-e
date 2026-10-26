@@ -1,3 +1,4 @@
+import '../../components/accueil/accueil.css';
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, Navigate } from 'react-router-dom';
 import { ArrowLeft, Lock, Clock, HelpCircle, Info, Check, RefreshCw, Loader2, Play } from 'lucide-react';
@@ -269,7 +270,7 @@ const TestDetailPage: React.FC = () => {
 
   if (!scale || !meta || !scaleId) {
     return (
-      <div className="min-h-screen bg-paper flex items-center justify-center">
+      <div className="min-h-screen bg-paper drl-screen drl-page flex items-center justify-center">
         <div className="text-center">
           <p className="text-ink font-semibold">Test introuvable</p>
           <button
@@ -367,7 +368,7 @@ const TestDetailPage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-paper">
+    <div className="min-h-screen bg-paper drl-screen drl-page">
       {/* ── Top bar ── */}
       <div className="sticky top-0 z-20 bg-paper/95 backdrop-blur-md border-b border-line">
         <div className="max-w-[600px] mx-auto px-5 py-3 flex items-center gap-3">

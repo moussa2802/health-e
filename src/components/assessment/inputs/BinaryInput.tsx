@@ -42,8 +42,8 @@ const BinaryInput: React.FC<BinaryInputProps> = ({
     onChange(opt.value);
   }
 
-  const selectedColor = isPlayful ? accentColor : '#6B7280';
-  const selectedBg = isPlayful ? accentColor : '#9CA3AF';
+  const selectedColor = isPlayful ? accentColor : '#CFC6B8';
+  const selectedBg = isPlayful ? accentColor : '#A79E90';
 
   return (
     <div>
@@ -78,7 +78,7 @@ const BinaryInput: React.FC<BinaryInputProps> = ({
                 borderRadius: 16,
                 border: selected
                   ? `2px solid ${selectedColor}`
-                  : '2px solid #E7E4DA',
+                  : '2px solid rgba(255,255,255,.14)',
                 background: selected ? `${selectedBg}0F` : '#FFFFFF',
                 cursor: disabled ? 'not-allowed' : 'pointer',
                 fontFamily: 'inherit',
@@ -90,13 +90,13 @@ const BinaryInput: React.FC<BinaryInputProps> = ({
                 transform: bouncing ? 'scale(1.06)' : 'none',
                 boxShadow: selected
                   ? `0 2px 12px ${selectedColor}18`
-                  : '0 1px 3px rgba(0,0,0,0.04)',
+                  : 'none',
               }}
             >
               <span style={{
                 fontSize: 15,
                 fontWeight: 700,
-                color: selected ? selectedColor : '#374151',
+                color: selected ? selectedColor : '#CFC6B8',
                 transition: 'color 0.18s',
               }}>
                 {opt.label}
@@ -105,7 +105,7 @@ const BinaryInput: React.FC<BinaryInputProps> = ({
                 <span style={{
                   fontSize: 11,
                   fontWeight: 500,
-                  color: selected ? selectedColor : '#94A3B8',
+                  color: selected ? selectedColor : '#A79E90',
                   opacity: selected ? 0.8 : 1,
                   textAlign: 'center',
                   padding: '0 8px',
@@ -148,7 +148,7 @@ const BinaryInput: React.FC<BinaryInputProps> = ({
             cursor: 'pointer',
             fontSize: 12,
             fontWeight: 600,
-            color: '#94A3B8',
+            color: '#A79E90',
             fontFamily: 'inherit',
           }}
         >

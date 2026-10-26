@@ -1,3 +1,4 @@
+import '../../components/accueil/accueil.css';
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Brain, Heart, ChevronRight, AlertCircle, Loader2 } from 'lucide-react';
@@ -68,7 +69,7 @@ const AssessmentSelectPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen" style={{ background: '#F3F1EA' }}>
+    <div className="min-h-screen drl-screen drl-page">
       {/* Sticky header */}
       <div className="sticky top-0 z-20 bg-white border-b" style={{ borderColor: 'rgba(23,24,27,0.06)' }}>
         <div className="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between gap-4">
@@ -94,7 +95,7 @@ const AssessmentSelectPage: React.FC = () => {
               className="flex items-center gap-2 px-5 py-2 rounded-full text-sm font-semibold transition-all duration-200"
               style={{
                 background: canStart && !loading ? '#4A5D57' : '#D1D5DB',
-                color: canStart && !loading ? '#fff' : '#9CA3AF',
+                color: canStart && !loading ? '#fff' : '#A79E90',
                 cursor: canStart && !loading ? 'pointer' : 'not-allowed',
                 boxShadow: canStart && !loading ? '0 2px 8px rgba(74,93,87,0.2)' : 'none',
               }}

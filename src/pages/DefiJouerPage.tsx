@@ -1,3 +1,4 @@
+import '../components/accueil/accueil.css';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import useReloadLock from '../hooks/useReloadLock';
@@ -326,7 +327,7 @@ export default function DefiJouerPage() {
   // ── LOADING ───────────────────────────────────────────────────────────
   if (phase === 'loading') {
     return (
-      <div className="min-h-screen bg-paper">
+      <div className="min-h-screen bg-paper drl-screen drl-page">
         <MiniHeader />
         <div className="flex items-center justify-center pt-32">
           <div className="animate-spin w-8 h-8 border-4 border-gold border-t-transparent rounded-full" />
@@ -338,7 +339,7 @@ export default function DefiJouerPage() {
   // ── NOT FOUND ─────────────────────────────────────────────────────────
   if (phase === 'notFound') {
     return (
-      <div className="min-h-screen bg-paper">
+      <div className="min-h-screen bg-paper drl-screen drl-page">
         <MiniHeader />
         <div className="max-w-md mx-auto px-5 pt-20 text-center">
           <p className="text-4xl mb-4">🤔</p>
@@ -355,7 +356,7 @@ export default function DefiJouerPage() {
   // ── EXPIRED ───────────────────────────────────────────────────────────
   if (phase === 'expired') {
     return (
-      <div className="min-h-screen bg-paper">
+      <div className="min-h-screen bg-paper drl-screen drl-page">
         <MiniHeader />
         <div className="max-w-md mx-auto px-5 pt-12 text-center">
           <p className="text-4xl mb-4">🏁</p>
@@ -392,7 +393,7 @@ export default function DefiJouerPage() {
   // ── IS CREATOR ────────────────────────────────────────────────────────
   if (phase === 'isCreator') {
     return (
-      <div className="min-h-screen bg-paper">
+      <div className="min-h-screen bg-paper drl-screen drl-page">
         <MiniHeader />
         <div className="max-w-md mx-auto px-5 pt-20 text-center">
           <p className="text-4xl mb-4">😄</p>
@@ -409,7 +410,7 @@ export default function DefiJouerPage() {
   // ── ALREADY RESPONDED ─────────────────────────────────────────────────
   if (phase === 'alreadyResponded') {
     return (
-      <div className="min-h-screen bg-paper">
+      <div className="min-h-screen bg-paper drl-screen drl-page">
         <MiniHeader />
         <div className="max-w-md mx-auto px-5 pt-20 text-center">
           <p className="text-4xl mb-4">✋</p>
@@ -432,7 +433,7 @@ export default function DefiJouerPage() {
   if (phase === 'error') {
     const canRetry = answers.length > 0 && startToken;
     return (
-      <div className="min-h-screen bg-paper">
+      <div className="min-h-screen bg-paper drl-screen drl-page">
         <MiniHeader />
         <div className="max-w-md mx-auto px-5 pt-20 text-center">
           <p className="text-4xl mb-4">😕</p>
@@ -457,7 +458,7 @@ export default function DefiJouerPage() {
     const pseudoValid = pseudo.trim().length >= 2 && pseudo.trim().length <= 20;
 
     return (
-      <div className="min-h-screen bg-paper">
+      <div className="min-h-screen bg-paper drl-screen drl-page">
         <MiniHeader />
         <div className="max-w-md mx-auto px-5 pt-8 pb-12">
           <div className="text-center mb-8">
@@ -535,7 +536,7 @@ export default function DefiJouerPage() {
         : null;
 
     return (
-      <div className="min-h-screen bg-paper flex flex-col">
+      <div className="min-h-screen bg-paper drl-screen drl-page flex flex-col">
         <MiniHeader />
 
         {/* Progress + timer */}
@@ -611,7 +612,7 @@ export default function DefiJouerPage() {
   // ── SUBMITTING ────────────────────────────────────────────────────────
   if (phase === 'submitting') {
     return (
-      <div className="min-h-screen bg-paper">
+      <div className="min-h-screen bg-paper drl-screen drl-page">
         <MiniHeader />
         <div className="flex flex-col items-center justify-center pt-32">
           <div className="animate-spin w-8 h-8 border-4 border-gold border-t-transparent rounded-full mb-4" />
@@ -633,7 +634,7 @@ export default function DefiJouerPage() {
     const luiElle = defi.genre === 'feminin' ? 'elle' : 'lui';
 
     return (
-      <div className="min-h-screen bg-paper">
+      <div className="min-h-screen bg-paper drl-screen drl-page">
         <MiniHeader />
         <div className="max-w-md mx-auto px-5 pt-8 pb-12">
           {/* Score */}

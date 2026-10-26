@@ -326,7 +326,7 @@ const ShareableProfileCard: React.FC<ShareableProfileCardProps> = ({
         }}
       >
         <span>
-          Découvre ton profil sur <b style={{ color: '#DCD3C4', fontWeight: 700 }}>health-e.app</b>
+          Découvre ton profil sur <b style={{ color: '#DCD3C4', fontWeight: 700 }}>health-e.sn</b>
         </span>
         <span>{completedCount} tests · {pct}%</span>
       </div>

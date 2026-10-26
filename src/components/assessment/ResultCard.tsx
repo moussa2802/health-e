@@ -397,7 +397,7 @@ const ResultCard = React.forwardRef<HTMLDivElement, ResultCardProps>(({ scale, r
               </div>
               {renderDims()}
               <div style={{ ...FOOT_FULL, marginTop: 'auto' }}>
-                <span>health-e.app</span>
+                <span>health-e.sn</span>
                 <span><b style={{ color: '#DCD3C4', fontWeight: 700 }}>{fmtDate(result.completedAt)}</b></span>
               </div>
             </>
@@ -421,7 +421,7 @@ const ResultCard = React.forwardRef<HTMLDivElement, ResultCardProps>(({ scale, r
                 </p>
               )}
               <div style={{ ...FOOT_FULL, marginTop: 'auto' }}>
-                <span>health-e.app</span>
+                <span>health-e.sn</span>
                 <span><b style={{ color: '#DCD3C4', fontWeight: 700 }}>{fmtDate(result.completedAt)}</b></span>
               </div>
             </>

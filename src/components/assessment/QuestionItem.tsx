@@ -36,7 +36,7 @@ const QuestionItem: React.FC<QuestionItemProps> = ({
       <p className="font-display" style={{
         fontSize: 20,
         fontWeight: 600,
-        color: '#17181B',
+        color: '#FBF5EA',
         lineHeight: 1.55,
         marginBottom: experience.answerPrompt ? 10 : 24,
         letterSpacing: '-0.01em',
@@ -49,13 +49,13 @@ const QuestionItem: React.FC<QuestionItemProps> = ({
           margin: '14px 0 14px',
           fontSize: 12.5,
           fontWeight: 700,
-          color: '#4A5D57',
+          color: '#9DBFAF',
           display: 'flex',
           alignItems: 'center',
           gap: 7,
         }}>
           {experience.answerPrompt}
-          <span style={{ flex: 1, height: 1, background: '#E7E4DA' }} />
+          <span style={{ flex: 1, height: 1, background: 'rgba(255,255,255,.14)' }} />
         </p>
       )}
 

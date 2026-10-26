@@ -1,3 +1,4 @@
+import '../components/accueil/accueil.css';
 import { useState, useEffect } from 'react';
 import { useNavigate, Navigate } from 'react-router-dom';
 import { collection, getDocs, orderBy, query } from 'firebase/firestore';
@@ -43,7 +44,7 @@ const DefiMesDefisPage: React.FC = () => {
 
   if (!authReady) {
     return (
-      <div className="min-h-screen bg-paper flex items-center justify-center">
+      <div className="min-h-screen bg-paper drl-screen drl-page flex items-center justify-center">
         <div className="w-10 h-10 rounded-full border-[3px] border-line border-t-gold animate-spin" />
       </div>
     );
@@ -52,7 +53,7 @@ const DefiMesDefisPage: React.FC = () => {
   if (!isAuthenticated) return <Navigate to="/patient/access" replace />;
 
   return (
-    <div className="min-h-screen bg-paper">
+    <div className="min-h-screen bg-paper drl-screen drl-page">
       <div className="sticky top-0 z-20 bg-paper/95 backdrop-blur-md border-b border-line">
         <div className="max-w-[600px] mx-auto px-5 py-3.5 flex items-center gap-3">
           <button onClick={() => navigate('/defi')} className="p-0 border-none bg-transparent cursor-pointer text-ink">

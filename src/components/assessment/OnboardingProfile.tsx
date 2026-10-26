@@ -1,3 +1,4 @@
+import '../accueil/accueil.css';
 import React, { useState, useEffect } from 'react';
 import {
   ArrowLeft,
@@ -204,7 +205,7 @@ const OnboardingProfile: React.FC<Props> = ({ onComplete, defaultPrenom }) => {
 
   if (step === 0) {
     return (
-      <div className="min-h-screen bg-paper flex flex-col items-center justify-center px-4 py-6">
+      <div className="min-h-screen bg-paper drl-screen drl-page flex flex-col items-center justify-center px-4 py-6">
         <div className="w-full max-w-[480px] bg-card border border-line rounded-block shadow-soft p-7 pb-6">
           {/* Dr. Lô avatar */}
           <div className="flex flex-col items-center mb-6">
@@ -249,7 +250,7 @@ const OnboardingProfile: React.FC<Props> = ({ onComplete, defaultPrenom }) => {
 
   if (step === 9) {
     return (
-      <div className="min-h-screen bg-paper flex flex-col items-center justify-center px-4 py-6">
+      <div className="min-h-screen bg-paper drl-screen drl-page flex flex-col items-center justify-center px-4 py-6">
         <div className="w-full max-w-[480px] bg-card border border-line rounded-block shadow-soft p-7 pb-6 text-center">
           <div className="mx-auto mb-3 w-14 h-14 rounded-full bg-accent-soft flex items-center justify-center">
             <PartyPopper size={28} className="text-accent" />
@@ -270,7 +271,7 @@ const OnboardingProfile: React.FC<Props> = ({ onComplete, defaultPrenom }) => {
   if (!currentQ) return null;
 
   return (
-    <div className="min-h-screen bg-paper flex flex-col items-center justify-center px-4 py-6">
+    <div className="min-h-screen bg-paper drl-screen drl-page flex flex-col items-center justify-center px-4 py-6">
       {/* Progress bar */}
       <div className="fixed top-0 left-0 right-0 z-10 h-1 bg-line">
         <div

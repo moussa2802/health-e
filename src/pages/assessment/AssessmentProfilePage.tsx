@@ -1,3 +1,4 @@
+import '../../components/accueil/accueil.css';
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { toPng } from 'html-to-image';
@@ -874,7 +875,7 @@ const AssessmentProfilePage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-paper pb-[120px]">
+    <div className="min-h-screen bg-paper drl-screen drl-page pb-[120px]">
       {/* ── Header ────────────────────────────────────────────────────── */}
       <div className="mb-7 bg-card pb-[18px] pt-5 shadow-soft">
         <div className="mx-auto max-w-[720px] px-5">

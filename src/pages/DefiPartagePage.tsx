@@ -1,3 +1,4 @@
+import '../components/accueil/accueil.css';
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Navigate } from 'react-router-dom';
 import { ArrowLeft, Copy, Check, Share2, ExternalLink } from 'lucide-react';
@@ -53,7 +54,7 @@ const DefiPartagePage: React.FC = () => {
   );
 
   return (
-    <div className="min-h-screen bg-paper">
+    <div className="min-h-screen bg-paper drl-screen drl-page">
       <div className="sticky top-0 z-20 bg-paper/95 backdrop-blur-md border-b border-line">
         <div className="max-w-[600px] mx-auto px-5 py-3.5 flex items-center gap-3">
           <button onClick={() => navigate('/defi')} className="p-0 border-none bg-transparent cursor-pointer text-ink">

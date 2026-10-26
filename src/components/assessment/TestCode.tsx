@@ -10,9 +10,9 @@ interface Props {
 }
 
 const CATEGORY_STYLES: Record<string, { bg: string; color: string }> = {
-  mental_health: { bg: '#E4EAE6', color: '#4A5D57' },
-  sexual_health: { bg: '#F5E4DC', color: '#C9603F' },
-  bonus: { bg: '#F1EAD6', color: '#B78A2E' },
+  mental_health: { bg: 'rgba(157,191,175,.16)', color: '#9DBFAF' },
+  sexual_health: { bg: 'rgba(240,154,122,.16)', color: '#F09A7A' },
+  bonus: { bg: 'rgba(233,200,143,.16)', color: '#E9C88F' },
 };
 
 const DARK_STYLE = {

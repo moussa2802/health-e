@@ -51,8 +51,8 @@ const SegmentedInput: React.FC<SegmentedInputProps> = ({
               borderRadius: 14,
               border: isSelected
                 ? `2px solid ${accentColor}`
-                : '2px solid rgba(148,163,184,0.18)',
-              background: isSelected ? `${accentColor}0A` : '#FAFAF8',
+                : '2px solid rgba(255,255,255,.14)',
+              background: isSelected ? `${accentColor}0A` : 'rgba(255,255,255,.06)',
               cursor: disabled ? 'not-allowed' : 'pointer',
               textAlign: 'left',
               flexDirection: isHorizontal && !hint ? 'column' : 'row',
@@ -60,7 +60,7 @@ const SegmentedInput: React.FC<SegmentedInputProps> = ({
               transition: 'all 0.18s ease',
               boxShadow: isSelected
                 ? `0 2px 12px ${accentColor}18`
-                : '0 1px 3px rgba(0,0,0,0.04)',
+                : 'none',
               transform: isSelected ? 'translateY(-1px)' : 'none',
               opacity: disabled && !isSelected ? 0.5 : 1,
               outline: 'none',
@@ -91,7 +91,7 @@ const SegmentedInput: React.FC<SegmentedInputProps> = ({
                 display: 'block',
                 fontSize: 14,
                 fontWeight: isSelected ? 650 : 500,
-                color: isSelected ? '#17181B' : '#374151',
+                color: isSelected ? '#FBF5EA' : '#CFC6B8',
                 lineHeight: 1.4,
               }}>
                 {option.label}
@@ -102,7 +102,7 @@ const SegmentedInput: React.FC<SegmentedInputProps> = ({
                   marginTop: 4,
                   fontSize: 12,
                   fontWeight: 400,
-                  color: '#94A3B8',
+                  color: '#A79E90',
                   lineHeight: 1.45,
                 }}>
                   {hint}

@@ -1,3 +1,4 @@
+import '../components/accueil/accueil.css';
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, Navigate } from 'react-router-dom';
 import { ArrowLeft, Sparkles, Info, Loader2, RefreshCw, X, Lock, ChevronDown, ChevronUp, Check } from 'lucide-react';
@@ -167,7 +168,7 @@ const DefiCreerPage: React.FC = () => {
 
   if (!authReady || loadingUserData || flagLoading || profileLoading) {
     return (
-      <div className="min-h-screen bg-paper flex items-center justify-center">
+      <div className="min-h-screen bg-paper drl-screen drl-page flex items-center justify-center">
         <div className="w-10 h-10 rounded-full border-[3px] border-line border-t-gold animate-spin" />
       </div>
     );
@@ -179,7 +180,7 @@ const DefiCreerPage: React.FC = () => {
 
   if (tooManyDefis) {
     return (
-      <div className="min-h-screen bg-paper">
+      <div className="min-h-screen bg-paper drl-screen drl-page">
         <div className="sticky top-0 z-20 bg-paper/95 backdrop-blur-md border-b border-line">
           <div className="max-w-[600px] mx-auto px-5 py-3.5 flex items-center gap-3">
             <button onClick={() => navigate('/defi')} className="p-0 border-none bg-transparent cursor-pointer text-ink">
@@ -373,7 +374,7 @@ const DefiCreerPage: React.FC = () => {
     const totalQuestions = selected.length + selectedPerso.length + (totemPreview ? 1 : 0);
 
     return (
-      <div className="min-h-screen bg-paper">
+      <div className="min-h-screen bg-paper drl-screen drl-page">
         <div className="sticky top-0 z-20 bg-paper/95 backdrop-blur-md border-b border-line">
           <div className="max-w-[600px] mx-auto px-5 py-3.5 flex items-center gap-3">
             <button onClick={() => { setStep('form'); setReplacingIndex(null); }} className="p-0 border-none bg-transparent cursor-pointer text-ink">
@@ -637,7 +638,7 @@ const DefiCreerPage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-paper">
+    <div className="min-h-screen bg-paper drl-screen drl-page">
       <div className="sticky top-0 z-20 bg-paper/95 backdrop-blur-md border-b border-line">
         <div className="max-w-[600px] mx-auto px-5 py-3.5 flex items-center gap-3">
           <button onClick={() => navigate('/defi')} className="p-0 border-none bg-transparent cursor-pointer text-ink">

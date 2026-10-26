@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, useSearchParams, useLocation, Link } from 'react-router-dom';
 import {
-  AlertTriangle, CheckCircle, ArrowRight, Loader2, ChevronRight,
+  AlertTriangle, ArrowRight, Loader2, ChevronRight,
   Phone, Heart, ShieldAlert, RefreshCw, Trash2, Clock, BookOpen,
   Upload, Sparkles, FileText,
 } from 'lucide-react';
@@ -23,12 +23,11 @@ import ConseilsCard from '../../components/assessment/ConseilsCard';
 import ResultCard from '../../components/assessment/ResultCard';
 import { getResultCardConfig } from '../../data/experiences';
 import { shareResultCard } from '../../utils/shareCard';
-import { getScaleMeta, getScaleCategory, getCategoryColor } from '../../utils/scaleMeta';
 import { useKoris } from '../../contexts/KorisContext';
 import { KORIS_COSTS, spendKorisForTest, isTestFreeRetake } from '../../services/korisService';
 import { useDefiFlag } from '../../hooks/useDefiFlag';
 import { isScaleEligible } from '../../config/defiConfig';
-import { credits } from '../../config/creditName';
+import DrLoShell, { DC, usePalette } from '../../components/accueil/DrLoShell';
 
 const EMERGENCY_CONTACTS = getCrisisResources().map(r => ({
   label: r.label,
@@ -80,7 +79,7 @@ const CriticalAlertModal: React.FC<CriticalAlertModalProps> = ({ alerts, onAckno
           </div>
 
           <p style={{ fontSize: 14, color: '#374151', lineHeight: 1.6, marginBottom: 16 }}>
-            Tu n'as pas à traverser ça seul(e). Des professionnels formés sont disponibles pour t'écouter et t'accompagner, sans jugement.
+            Tu n'as pas à traverser ça sans soutien. Des professionnels formés sont disponibles pour t'écouter et t'accompagner, sans jugement.
           </p>
 
           <p style={{ fontSize: 12, fontWeight: 700, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>
@@ -121,7 +120,7 @@ const CriticalAlertModal: React.FC<CriticalAlertModalProps> = ({ alerts, onAckno
               }}
             >
               <div>
-                <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: '#4A5D57' }}>Healt-e — Professionnels</p>
+                <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: '#4A5D57' }}>Health-e — Professionnels</p>
                 <p style={{ margin: 0, fontSize: 11, color: '#6B7280' }}>Consulter un professionnel sur la plateforme</p>
               </div>
               <ChevronRight size={16} color="#4A5D57" />
@@ -132,7 +131,7 @@ const CriticalAlertModal: React.FC<CriticalAlertModalProps> = ({ alerts, onAckno
             <input type="checkbox" checked={acknowledged} onChange={e => setAcknowledged(e.target.checked)}
               style={{ marginTop: 2, width: 16, height: 16, cursor: 'pointer' }} />
             <span style={{ fontSize: 13, color: '#374151', lineHeight: 1.5 }}>
-              J'ai lu ce message et je suis conscient(e) des ressources disponibles.
+              J'ai lu ce message et je suis au courant des ressources disponibles.
             </span>
           </label>
 
@@ -159,28 +158,28 @@ const CriticalAlertModal: React.FC<CriticalAlertModalProps> = ({ alerts, onAckno
 
 const AlertLevel2Block: React.FC<{ message?: string }> = ({ message }) => (
   <div style={{
-    background: '#FFF7ED', border: '1.5px solid #F97316',
+    background: 'rgba(249,115,22,.13)', border: '1.5px solid rgba(249,115,22,.55)',
     borderRadius: 16, padding: '16px 18px',
   }}>
     <div style={{ display: 'flex', gap: 10 }}>
-      <AlertTriangle size={20} color="#EA580C" style={{ flexShrink: 0, marginTop: 2 }} />
+      <AlertTriangle size={20} color="#FDBA74" style={{ flexShrink: 0, marginTop: 2 }} />
       <div>
-        <p style={{ margin: '0 0 6px', fontSize: 14, fontWeight: 700, color: '#9A3412' }}>
+        <p style={{ margin: '0 0 6px', fontSize: 14, fontWeight: 700, color: '#FDBA74' }}>
           Consultation professionnelle recommandée
         </p>
-        <p style={{ margin: '0 0 10px', fontSize: 13, color: '#C2410C', lineHeight: 1.5 }}>
+        <p style={{ margin: '0 0 10px', fontSize: 13, color: '#FED7AA', lineHeight: 1.5 }}>
           {message ?? 'Ce que tu ressens mérite l\'attention d\'un professionnel.'}
         </p>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
           {EMERGENCY_CONTACTS.slice(0, 2).map(c => c.number && (
             <a key={c.label} href={`tel:${c.number}`}
-              style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: '#EA580C', fontSize: 13, fontWeight: 600, textDecoration: 'none' }}>
+              style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: '#FDBA74', fontSize: 13, fontWeight: 600, textDecoration: 'none' }}>
               <Phone size={13} /> {c.label} — {c.number}
             </a>
           ))}
           <Link to="/professionals"
-            style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: '#4A5D57', fontSize: 13, fontWeight: 600, textDecoration: 'none' }}>
-            Trouver un professionnel sur Healt-e <ChevronRight size={13} />
+            style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: DC.sage, fontSize: 13, fontWeight: 600, textDecoration: 'none' }}>
+            Trouver un professionnel sur Health-e <ChevronRight size={13} />
           </Link>
         </div>
       </div>
@@ -190,14 +189,14 @@ const AlertLevel2Block: React.FC<{ message?: string }> = ({ message }) => (
 
 const AlertLevel1Block: React.FC = () => (
   <div style={{
-    background: '#FFFBEB', border: '1px solid #FCD34D',
+    background: 'rgba(233,200,143,.12)', border: '1px solid rgba(233,200,143,.45)',
     borderRadius: 14, padding: '14px 16px',
   }}>
     <div style={{ display: 'flex', gap: 8 }}>
-      <AlertTriangle size={18} color="#D97706" style={{ flexShrink: 0, marginTop: 1 }} />
+      <AlertTriangle size={18} color="#E9C88F" style={{ flexShrink: 0, marginTop: 1 }} />
       <div>
-        <p style={{ margin: '0 0 4px', fontSize: 13, fontWeight: 700, color: '#92400E' }}>Zone de vigilance</p>
-        <p style={{ margin: 0, fontSize: 13, color: '#B45309', lineHeight: 1.5 }}>
+        <p style={{ margin: '0 0 4px', fontSize: 13, fontWeight: 700, color: '#F3DDB0' }}>Zone de vigilance</p>
+        <p style={{ margin: 0, fontSize: 13, color: '#E9C88F', lineHeight: 1.5 }}>
           Tes résultats indiquent des difficultés qui méritent attention. Un professionnel peut t'apporter un soutien précieux.
         </p>
       </div>
@@ -231,6 +230,7 @@ const AssessmentResultsPage: React.FC = () => {
   const [signatureValues, setSignatureValues] = useState<{ value: number; max: number }[] | undefined>();
   const [totemRevealed, setTotemRevealed] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
+  const palette = usePalette();
 
   const guestCount = isGuestMode ? getGuestCount() : 0;
   const isLastFreeTest = isGuestMode && guestCount >= GUEST_MAX_TESTS;
@@ -330,32 +330,33 @@ const AssessmentResultsPage: React.FC = () => {
     } catch { /* silencieux */ }
   };
 
+  const backTo = { to: '/', label: 'Retour à Dr Lô' };
+  const errBox = (title: string, msg: string) => (
+    <DrLoShell back={backTo} palette={palette}>
+      <div style={{ marginTop: 40, borderRadius: 20, border: `1px solid ${DC.line}`, background: DC.glass, padding: 28, textAlign: 'center' }}>
+        <AlertTriangle size={34} color={DC.social} style={{ margin: '0 auto 12px' }} />
+        <h2 style={{ margin: '0 0 8px', fontSize: 18, fontWeight: 700, color: DC.title }}>{title}</h2>
+        <p style={{ margin: '0 0 20px', fontSize: 14, color: DC.muted, lineHeight: 1.5 }}>{msg}</p>
+        <button onClick={() => navigate('/assessment')} className="drl-btn"
+          style={{ background: DC.gold, color: DC.ink, border: 0, borderRadius: 14, padding: '12px 22px', minHeight: 44, fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>
+          Voir les tests
+        </button>
+      </div>
+    </DrLoShell>
+  );
+
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: '#F3F1EA' }}>
-        <div className="text-center">
-          <Loader2 size={36} className="animate-spin mx-auto mb-4" style={{ color: '#4A5D57' }} />
-          <p className="text-ink-light text-sm">Chargement de vos résultats...</p>
+      <DrLoShell back={backTo} palette={palette}>
+        <div style={{ textAlign: 'center', marginTop: 90 }}>
+          <Loader2 size={34} className="animate-spin" style={{ color: DC.gold, margin: '0 auto 14px' }} />
+          <p style={{ fontSize: 14, color: DC.muted }}>Je prépare ton résultat…</p>
         </div>
-      </div>
+      </DrLoShell>
     );
   }
 
-  if (error || !session) {
-    return (
-      <div className="min-h-screen flex items-center justify-center px-4" style={{ background: '#F3F1EA' }}>
-        <div className="bg-white rounded-2xl border border-red-200 p-8 max-w-md w-full text-center shadow-card">
-          <AlertTriangle size={36} className="text-red-500 mx-auto mb-4" />
-          <h2 className="font-display text-lg font-semibold text-ink mb-2">Résultats introuvables</h2>
-          <p className="text-ink-light mb-6">{error ?? 'Session invalide.'}</p>
-          <button onClick={() => navigate('/assessment')}
-            className="text-white px-6 py-2.5 rounded-full font-medium" style={{ background: '#4A5D57' }}>
-            Retour aux évaluations
-          </button>
-        </div>
-      </div>
-    );
-  }
+  if (error || !session) return errBox('Résultat introuvable', error ?? 'Session invalide.');
 
   const scaleId = session.selectedScaleIds[0];
   const result: ScaleResult | undefined = session.scores[scaleId];
@@ -363,21 +364,7 @@ const AssessmentResultsPage: React.FC = () => {
   const userGender = getOnboardingProfile()?.genre ?? 'homme';
   const scale = rawScale ? resolveScaleGender(rawScale, userGender) : null;
 
-  if (!result || !scale) {
-    return (
-      <div className="min-h-screen flex items-center justify-center px-4" style={{ background: '#F3F1EA' }}>
-        <div className="bg-white rounded-2xl border border-red-200 p-8 max-w-md w-full text-center shadow-card">
-          <AlertTriangle size={36} className="text-red-500 mx-auto mb-4" />
-          <h2 className="font-display text-lg font-semibold text-ink mb-2">Résultat indisponible</h2>
-          <p className="text-ink-light mb-6">Le résultat de cette évaluation n'a pas pu être chargé.</p>
-          <button onClick={() => navigate('/assessment')}
-            className="text-white px-6 py-2.5 rounded-full font-medium" style={{ background: '#4A5D57' }}>
-            Retour aux évaluations
-          </button>
-        </div>
-      </div>
-    );
-  }
+  if (!result || !scale) return errBox('Résultat indisponible', "Le résultat de ce test n'a pas pu être chargé.");
 
   const rg = (t: string) => t.replace(/\{\{([^|]+)\|([^}]+)\}\}/g, (_, m, f) => userGender === 'homme' ? m : f);
   const resolvedInterp = {
@@ -386,8 +373,6 @@ const AssessmentResultsPage: React.FC = () => {
     description: rg(result.interpretation.description),
     recommendation: rg(result.interpretation.recommendation),
   };
-  const category = getScaleCategory(scaleId);
-  const catColor = getCategoryColor(category);
   const { card: cardCfg, tone: cardTone } = getResultCardConfig(scale);
   const isSober = cardTone === 'sober';
   const isBigFive = scaleId === 'big_five';
@@ -396,7 +381,6 @@ const AssessmentResultsPage: React.FC = () => {
     : scale.category === 'bonus' ? 'Test bonus' : 'Vie intime';
 
   const retakeFree = isTestFreeRetake(result.completedAt);
-  const retakeCostLabel = retakeFree ? 'gratuit' : credits(KORIS_COSTS.test);
 
   const alertLevel = result.alertLevel ?? 0;
   const criticalAlerts = (result.alertsTriggered ?? []).filter(a => a.alertLevel === 3)
@@ -404,22 +388,29 @@ const AssessmentResultsPage: React.FC = () => {
   const showCriticalModal = alertLevel >= 3 && criticalAlerts.length > 0 && !criticalAlertDismissed;
 
   const SEC: React.CSSProperties = {
-    marginTop: 14, background: '#fff', border: '1px solid #E7E4DA',
-    borderRadius: 18, padding: 17,
-    boxShadow: '0 1px 2px rgba(23,24,27,.03)',
+    marginTop: 14, background: DC.glass, border: `1px solid ${DC.line}`,
+    borderRadius: 20, padding: 17,
   };
   const LAB: React.CSSProperties = {
-    fontSize: 10.5, fontWeight: 700, letterSpacing: '.1em',
-    textTransform: 'uppercase', color: '#8A8C95', margin: 0,
+    fontSize: 11, fontWeight: 700, letterSpacing: '.1em',
+    textTransform: 'uppercase', color: DC.faint, margin: 0,
   };
   const AROW: React.CSSProperties = {
     display: 'flex', alignItems: 'center', gap: 12,
   };
   const IC: React.CSSProperties = {
     width: 40, height: 40, borderRadius: 12,
-    background: '#E4EAE6', color: '#4A5D57',
+    background: 'rgba(157,191,175,.18)', color: DC.sage,
     display: 'flex', alignItems: 'center', justifyContent: 'center',
     flexShrink: 0,
+  };
+  const BTN2: React.CSSProperties = {
+    width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+    background: DC.glass, color: DC.text, border: `1px solid ${DC.line}`, borderRadius: 14,
+    padding: '13px 18px', minHeight: 48, fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
+  };
+  const BTN1: React.CSSProperties = {
+    ...BTN2, background: DC.gold, color: DC.ink, border: 0, fontWeight: 700,
   };
 
   return (
@@ -428,11 +419,11 @@ const AssessmentResultsPage: React.FC = () => {
         <CriticalAlertModal alerts={criticalAlerts} onAcknowledge={() => setCriticalAlertDismissed(true)} />
       )}
 
-      <div style={{ minHeight: '100vh', background: '#F7F5EF', paddingBottom: 80 }}>
-        <div style={{ maxWidth: 480, margin: '0 auto', padding: '16px 17px 0' }}>
+      <DrLoShell back={backTo} genre={getOnboardingProfile()?.genre ?? undefined} palette={palette}>
+        <div style={{ paddingTop: 14 }}>
 
           {/* Breadcrumb */}
-          <p style={{ fontSize: 11, color: '#8A8C95', fontWeight: 600, margin: '0 0 10px' }}>
+          <p style={{ fontSize: 11, color: DC.faint, fontWeight: 600, margin: '0 0 10px' }}>
             {crumbLabel} · {scale.name}{scale.shortName ? ` (${scale.shortName})` : ''}
           </p>
 
@@ -456,7 +447,7 @@ const AssessmentResultsPage: React.FC = () => {
                   flex: 1, border: 0, cursor: 'pointer', fontFamily: 'inherit', fontWeight: 700,
                   fontSize: 13.5, borderRadius: 14, padding: 13, display: 'flex',
                   alignItems: 'center', justifyContent: 'center', gap: 7,
-                  background: '#17181B', color: '#F4F1E9',
+                  background: DC.gold, color: DC.ink,
                 }}
               >
                 <Upload size={15} />Partager ma carte
@@ -470,7 +461,7 @@ const AssessmentResultsPage: React.FC = () => {
                   flex: 1, cursor: retaking ? 'not-allowed' : 'pointer', fontFamily: 'inherit',
                   fontWeight: 700, fontSize: 13.5, borderRadius: 14, padding: 13,
                   display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7,
-                  background: '#FFFFFF', color: '#17181B', border: '1px solid #E7E4DA',
+                  background: DC.glass, color: DC.text, border: `1px solid ${DC.line}`,
                   opacity: retaking ? 0.6 : 1,
                 }}
               >
@@ -494,17 +485,17 @@ const AssessmentResultsPage: React.FC = () => {
 
             {resolvedInterp.referralRequired && alertLevel === 0 && (
               <div style={{
-                background: '#FFF7ED', border: '1px solid #FDBA74',
+                background: 'rgba(249,115,22,.13)', border: '1px solid rgba(249,115,22,.55)',
                 borderRadius: 16, padding: '14px 16px', display: 'flex', gap: 10,
               }}>
-                <AlertTriangle size={18} style={{ color: '#EA580C', flexShrink: 0, marginTop: 2 }} />
+                <AlertTriangle size={18} style={{ color: '#FDBA74', flexShrink: 0, marginTop: 2 }} />
                 <div>
-                  <p style={{ margin: '0 0 4px', fontSize: 13, fontWeight: 700, color: '#9A3412' }}>Consultation recommandée</p>
-                  <p style={{ margin: 0, fontSize: 13, color: '#C2410C', lineHeight: 1.5 }}>{scale.warningMessage}</p>
+                  <p style={{ margin: '0 0 4px', fontSize: 13, fontWeight: 700, color: '#FDBA74' }}>Consultation recommandée</p>
+                  <p style={{ margin: 0, fontSize: 13, color: '#FED7AA', lineHeight: 1.5 }}>{scale.warningMessage}</p>
                   <button onClick={() => navigate('/professionals')} style={{
                     background: 'none', border: 'none', padding: 0, marginTop: 6,
                     display: 'inline-flex', alignItems: 'center', gap: 4,
-                    fontSize: 13, fontWeight: 600, color: '#EA580C', cursor: 'pointer',
+                    fontSize: 13, fontWeight: 600, color: '#FDBA74', cursor: 'pointer',
                   }}>
                     Trouver un professionnel <ChevronRight size={14} />
                   </button>
@@ -517,13 +508,13 @@ const AssessmentResultsPage: React.FC = () => {
           {responseQuality?.flag === 'low_confidence' && (
             <div style={{
               ...SEC,
-              background: '#F1EAD6', border: '1px solid rgba(143,106,31,0.15)',
+              background: 'rgba(233,200,143,.12)', border: '1px solid rgba(233,200,143,.35)',
             }}>
               <div style={{ display: 'flex', gap: 10 }}>
-                <Clock size={18} style={{ color: '#8F6A1F', flexShrink: 0, marginTop: 1 }} />
+                <Clock size={18} style={{ color: DC.gold, flexShrink: 0, marginTop: 1 }} />
                 <div>
-                  <p style={{ margin: '0 0 4px', fontSize: 13, fontWeight: 700, color: '#8F6A1F' }}>Fiabilité réduite</p>
-                  <p style={{ margin: 0, fontSize: 13, color: '#92741C', lineHeight: 1.5, textAlign: 'left' }}>
+                  <p style={{ margin: '0 0 4px', fontSize: 13, fontWeight: 700, color: DC.gold }}>Fiabilité réduite</p>
+                  <p style={{ margin: 0, fontSize: 13, color: DC.soft, lineHeight: 1.5, textAlign: 'left' }}>
                     Certaines réponses ont été données très rapidement. Pour un résultat plus fiable, reprends le test en prenant le temps de lire chaque question.
                   </p>
                 </div>
@@ -534,17 +525,17 @@ const AssessmentResultsPage: React.FC = () => {
           {/* Ce que ça veut dire */}
           <div style={SEC}>
             <span style={LAB}>Ce que ça veut dire</span>
-            <p style={{ margin: '10px 0 0', fontSize: 13.5, lineHeight: 1.65, color: '#4B4D55', textAlign: 'left' }}>
+            <p style={{ margin: '10px 0 0', fontSize: 13.5, lineHeight: 1.65, color: DC.soft, textAlign: 'left' }}>
               {resolvedInterp.description}
             </p>
             {resolvedInterp.recommendation && (
               <div style={{
-                marginTop: 13, background: '#E4EAE6', borderRadius: 13,
+                marginTop: 13, background: 'rgba(157,191,175,.14)', borderRadius: 13,
                 padding: '12px 13px', display: 'flex', gap: 10,
               }}>
-                <Sparkles size={15} style={{ color: '#4A5D57', flexShrink: 0, marginTop: 2 }} />
-                <p style={{ margin: 0, fontSize: 12.5, lineHeight: 1.55, color: '#33413C', textAlign: 'left' }}>
-                  <b style={{ color: '#4A5D57' }}>À retenir :</b> {resolvedInterp.recommendation}
+                <Sparkles size={15} style={{ color: DC.sage, flexShrink: 0, marginTop: 2 }} />
+                <p style={{ margin: 0, fontSize: 12.5, lineHeight: 1.55, color: DC.soft, textAlign: 'left' }}>
+                  <b style={{ color: DC.sage }}>À retenir :</b> {resolvedInterp.recommendation}
                 </p>
               </div>
             )}
@@ -580,12 +571,12 @@ const AssessmentResultsPage: React.FC = () => {
               <div style={AROW}>
                 <div style={IC}><FileText size={19} /></div>
                 <div style={{ flex: 1 }}>
-                  <h3 style={{ margin: 0, fontSize: 14, fontWeight: 700, color: '#17181B' }}>Voir l'analyse complète</h3>
-                  <p style={{ margin: '2px 0 0', fontSize: 12, color: '#8A8C95', lineHeight: 1.4 }}>
+                  <h3 style={{ margin: 0, fontSize: 14, fontWeight: 700, color: DC.title }}>Voir l'analyse complète</h3>
+                  <p style={{ margin: '2px 0 0', fontSize: 12, color: DC.faint, lineHeight: 1.4 }}>
                     Synthèse globale de ton profil
                   </p>
                 </div>
-                <ChevronRight size={17} style={{ color: '#8A8C95', flexShrink: 0 }} />
+                <ChevronRight size={17} style={{ color: DC.faint, flexShrink: 0 }} />
               </div>
             </button>
           )}
@@ -594,35 +585,35 @@ const AssessmentResultsPage: React.FC = () => {
           {isGuestMode && (
             <div style={{
               ...SEC,
-              borderColor: isLastFreeTest ? '#B5522F' : '#E7E4DA',
+              borderColor: isLastFreeTest ? DC.social : DC.line,
               borderWidth: isLastFreeTest ? 1.5 : 1,
               overflow: 'hidden', padding: 0,
             }}>
               {isLastFreeTest && (
-                <div style={{ background: '#B5522F', padding: '8px 16px', fontSize: 12, fontWeight: 700, color: 'white', textAlign: 'center' }}>
-                  Tu as utilisé tous tes essais gratuits !
+                <div style={{ background: DC.social, padding: '8px 16px', fontSize: 12, fontWeight: 700, color: DC.ink, textAlign: 'center' }}>
+                  Tu as fait tes tests gratuits !
                 </div>
               )}
               <div style={{ padding: '16px 18px' }}>
-                <p style={{ margin: '0 0 4px', fontSize: 14, fontWeight: 700, color: '#17181B' }}>
-                  {isLastFreeTest ? 'Crée un compte pour continuer' : `${GUEST_MAX_TESTS - guestCount} essai${GUEST_MAX_TESTS - guestCount > 1 ? 's' : ''} gratuit restant`}
+                <p style={{ margin: '0 0 4px', fontSize: 14, fontWeight: 700, color: DC.title }}>
+                  {isLastFreeTest ? 'Crée un compte pour continuer' : (GUEST_MAX_TESTS - guestCount > 1 ? `Encore ${GUEST_MAX_TESTS - guestCount} tests gratuits` : 'Encore 1 test gratuit')}
                 </p>
-                <p style={{ margin: '0 0 12px', fontSize: 12, color: '#6B7280', textAlign: 'left' }}>
+                <p style={{ margin: '0 0 12px', fontSize: 12.5, color: DC.muted, textAlign: 'left' }}>
                   {isLastFreeTest ? 'Sauvegarde tes résultats et accède à toutes les évaluations.' : 'Connecte-toi pour sauvegarder tes résultats.'}
                 </p>
                 <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                   <Link to="/patient/access" style={{
                     display: 'inline-flex', alignItems: 'center', gap: 6,
-                    background: '#B5522F', color: 'white', fontWeight: 700, fontSize: 13,
-                    padding: '9px 18px', borderRadius: 10, textDecoration: 'none',
+                    background: DC.gold, color: DC.ink, fontWeight: 700, fontSize: 13.5,
+                    padding: '12px 20px', minHeight: 44, borderRadius: 12, textDecoration: 'none',
                   }}>
                     {isLastFreeTest ? 'Créer mon compte gratuit' : 'Se connecter'}
                   </Link>
                   {!isLastFreeTest && (
                     <button onClick={() => navigate('/assessment')} style={{
-                      background: 'white', border: '1px solid rgba(23,24,27,0.1)',
-                      color: '#475569', fontWeight: 600, fontSize: 13,
-                      padding: '9px 14px', borderRadius: 10, cursor: 'pointer',
+                      background: DC.glass, border: `1px solid ${DC.line}`,
+                      color: DC.text, fontWeight: 600, fontSize: 13.5,
+                      padding: '12px 16px', minHeight: 44, borderRadius: 12, cursor: 'pointer',
                     }}>
                       Continuer sans compte
                     </button>
@@ -637,7 +628,7 @@ const AssessmentResultsPage: React.FC = () => {
             <div style={{ marginTop: 14, textAlign: 'center' }}>
               <button onClick={() => setShowDeleteConfirm(true)} disabled={deleting} style={{
                 background: 'none', border: 'none', padding: '6px 12px',
-                fontSize: 12, fontWeight: 600, color: '#DC2626', cursor: deleting ? 'not-allowed' : 'pointer',
+                fontSize: 12.5, fontWeight: 600, color: DC.social, minHeight: 44, cursor: deleting ? 'not-allowed' : 'pointer',
                 display: 'inline-flex', alignItems: 'center', gap: 5, opacity: deleting ? 0.6 : 1,
               }}>
                 <Trash2 size={13} /> Supprimer ce résultat
@@ -647,19 +638,19 @@ const AssessmentResultsPage: React.FC = () => {
 
           {/* Delete confirm */}
           {showDeleteConfirm && (
-            <div style={{ ...SEC, background: '#FEF2F2', borderColor: '#FCA5A5' }}>
-              <p style={{ margin: '0 0 10px', fontSize: 14, fontWeight: 700, color: '#991B1B' }}>Supprimer ce résultat ?</p>
-              <p style={{ margin: '0 0 14px', fontSize: 13, color: '#B91C1C', lineHeight: 1.5, textAlign: 'left' }}>
+            <div style={{ ...SEC, background: 'rgba(240,154,122,.1)', borderColor: 'rgba(240,154,122,.45)' }}>
+              <p style={{ margin: '0 0 10px', fontSize: 14, fontWeight: 700, color: DC.social }}>Supprimer ce résultat ?</p>
+              <p style={{ margin: '0 0 14px', fontSize: 13, color: DC.soft, lineHeight: 1.5, textAlign: 'left' }}>
                 Le test redeviendra "à faire" et tout l'historique sera supprimé. Cette action est irréversible.
               </p>
               <div style={{ display: 'flex', gap: 10 }}>
                 <button onClick={() => setShowDeleteConfirm(false)} style={{
-                  flex: 1, background: 'white', border: '1px solid #E5E7EB', borderRadius: 10,
-                  padding: '10px 14px', fontSize: 13, fontWeight: 600, color: '#374151', cursor: 'pointer',
+                  flex: 1, background: DC.glass, border: `1px solid ${DC.line}`, borderRadius: 12,
+                  padding: '12px 14px', minHeight: 44, fontSize: 13, fontWeight: 600, color: DC.text, cursor: 'pointer',
                 }}>Annuler</button>
                 <button onClick={handleDelete} disabled={deleting} style={{
-                  flex: 1, background: '#DC2626', border: 'none', borderRadius: 10,
-                  padding: '10px 14px', fontSize: 13, fontWeight: 700, color: 'white',
+                  flex: 1, background: DC.social, border: 'none', borderRadius: 12,
+                  padding: '12px 14px', minHeight: 44, fontSize: 13, fontWeight: 700, color: DC.ink,
                   cursor: deleting ? 'not-allowed' : 'pointer', opacity: deleting ? 0.6 : 1,
                 }}>{deleting ? 'Suppression...' : 'Confirmer la suppression'}</button>
               </div>
@@ -671,9 +662,9 @@ const AssessmentResultsPage: React.FC = () => {
             <div style={{ marginTop: 14 }}>
               <button onClick={() => setShowHistory(!showHistory)} style={{
                 display: 'flex', alignItems: 'center', gap: 8, width: '100%',
-                background: 'white', border: '1px solid #E7E4DA',
-                borderRadius: 14, padding: '12px 16px', fontSize: 13, fontWeight: 600,
-                color: '#475569', cursor: 'pointer', fontFamily: 'inherit',
+                background: DC.glass, border: `1px solid ${DC.line}`,
+                borderRadius: 14, padding: '12px 16px', minHeight: 44, fontSize: 13, fontWeight: 600,
+                color: DC.text, cursor: 'pointer', fontFamily: 'inherit',
               }}>
                 <Clock size={15} />
                 {showHistory ? 'Masquer l\'historique' : `Voir l'historique (${history.length} passage${history.length > 1 ? 's' : ''} précédent${history.length > 1 ? 's' : ''})`}
@@ -702,44 +693,30 @@ const AssessmentResultsPage: React.FC = () => {
           {/* Navigation */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 14 }}>
             {fromAccueil && (
-              <button onClick={() => navigate('/')} style={{
-                width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-                background: '#17181B', color: 'white', border: 'none', borderRadius: 14,
-                padding: '13px 18px', fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
-              }}>
+              <button onClick={() => navigate('/')} className="drl-btn" style={BTN1}>
                 Revenir à Dr Lô pour en parler <ArrowRight size={16} />
               </button>
             )}
             {!isGuestMode && (
-              <button onClick={() => navigate('/assessment/profile')} style={{
-                width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-                background: catColor.accent, color: 'white', border: 'none', borderRadius: 14,
-                padding: '13px 18px', fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
-              }}>
+              <button onClick={() => navigate('/assessment/profile')} className="drl-btn" style={fromAccueil ? BTN2 : BTN1}>
                 Voir mon profil <ArrowRight size={16} />
               </button>
             )}
-            <button onClick={() => navigate('/assessment')} style={{
-              width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-              background: '#FFFFFF', color: '#4B4D55', border: '1px solid #E7E4DA', borderRadius: 14,
-              padding: '13px 18px', fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
-            }}>
-              {isGuestMode ? 'Faire une autre évaluation' : 'Autre évaluation'}
+            <button onClick={() => navigate('/assessment')} className="drl-btn" style={BTN2}>
+              {isGuestMode ? 'Faire un autre test' : 'Autre test'}
             </button>
           </div>
 
           {/* Mon Espace */}
           {!isGuestMode && isAuthenticated && (
-            <button onClick={() => navigate('/mon-espace')} style={{
-              width: '100%', marginTop: 14, padding: '14px 18px', borderRadius: 14, border: 'none',
-              background: '#17181B', color: '#fff', cursor: 'pointer', textAlign: 'left',
-              display: 'flex', alignItems: 'center', gap: 12, fontFamily: 'inherit',
+            <button onClick={() => navigate('/espace')} className="drl-btn" style={{
+              ...BTN2, marginTop: 14, textAlign: 'left', justifyContent: 'flex-start', gap: 12,
             }}>
-              <BookOpen size={20} color="rgba(255,255,255,0.7)" />
+              <BookOpen size={20} color={DC.confier} />
               <div style={{ flex: 1 }}>
-                <p style={{ margin: 0, fontSize: 13, fontWeight: 700 }}>En parler dans Mon Espace</p>
-                <p style={{ margin: '2px 0 0', fontSize: 11, color: 'rgba(255,255,255,0.6)' }}>
-                  Dr Lo t'a préparé une invitation dans ton journal
+                <p style={{ margin: 0, fontSize: 13.5, fontWeight: 700, color: DC.title }}>En parler dans Mon espace</p>
+                <p style={{ margin: '2px 0 0', fontSize: 12, color: DC.muted }}>
+                  Dr Lô t'a préparé une invitation dans ton journal
                 </p>
               </div>
               <ChevronRight size={16} style={{ opacity: 0.5 }} />
@@ -748,15 +725,15 @@ const AssessmentResultsPage: React.FC = () => {
 
           {defiEnabled && totemRevealed && result && isScaleEligible(result, 'public') && (
             <button onClick={() => navigate('/defi')} style={{
-              width: '100%', marginTop: 14, padding: '14px 18px', borderRadius: 14, border: 'none',
-              background: 'linear-gradient(160deg, #2A2520 0%, #3D352C 100%)',
-              color: '#F4F1E9', cursor: 'pointer', textAlign: 'left',
+              width: '100%', marginTop: 14, padding: '14px 18px', borderRadius: 14,
+              background: 'rgba(233,200,143,.1)', border: `1px solid rgba(233,200,143,.35)`,
+              color: DC.text, cursor: 'pointer', textAlign: 'left',
               display: 'flex', alignItems: 'center', gap: 12, fontFamily: 'inherit',
             }}>
               <Sparkles size={20} color="#D4AD5A" />
               <div style={{ flex: 1 }}>
                 <p style={{ margin: 0, fontSize: 13, fontWeight: 700 }}>Tes proches auraient-ils deviné ça ?</p>
-                <p style={{ margin: '2px 0 0', fontSize: 11, color: 'rgba(212,173,90,0.7)' }}>
+                <p style={{ margin: '2px 0 0', fontSize: 11, color: 'DC.gold' }}>
                   Teste-les 👀
                 </p>
               </div>
@@ -766,7 +743,7 @@ const AssessmentResultsPage: React.FC = () => {
 
           {/* Disclaimer */}
           <p style={{
-            fontSize: 11, color: 'rgba(138,140,149,.5)', textAlign: 'center',
+            fontSize: 11.5, color: DC.faint, textAlign: 'center',
             lineHeight: 1.7, margin: '20px 0 0', padding: '0 10px',
           }}>
             Ces résultats sont fournis à titre informatif uniquement et ne constituent pas un diagnostic médical.
@@ -774,7 +751,7 @@ const AssessmentResultsPage: React.FC = () => {
           </p>
 
         </div>
-      </div>
+      </DrLoShell>
     </>
   );
 };

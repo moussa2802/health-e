@@ -40,3 +40,40 @@
 @keyframes drl-guide-pulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(242,182,109,.45); } 50% { box-shadow: 0 0 0 7px rgba(242,182,109,0); } }
 .drl-guide-target { animation: drl-guide-pulse 1.8s ease-in-out infinite; }
 @media (prefers-reduced-motion: reduce) { .drl-guide-target { animation: none; } }
+
+/* ── Habillage sombre des composants à classes Tailwind (ConseilsCard, historique…) dans l'univers Dr Lô ── */
+.drl-screen .bg-card,.drl-screen .bg-white{background:rgba(255,255,255,.06)!important}
+.drl-screen .bg-paper{background:rgba(255,255,255,.05)!important}
+.drl-screen .bg-paper-dark,.drl-screen .hover\:bg-paper-dark:hover{background:rgba(255,255,255,.1)!important}
+.drl-screen .bg-sage-soft,.drl-screen .hover\:bg-sage-soft:hover{background:rgba(157,191,175,.15)!important}
+.drl-screen .bg-gold-soft{background:rgba(233,200,143,.13)!important}
+.drl-screen .bg-accent-soft{background:rgba(240,154,122,.14)!important}
+.drl-screen .text-ink{color:#FBF5EA!important}
+.drl-screen .text-ink-soft{color:#DCD3C5!important}
+.drl-screen .text-ink-light,.drl-screen .text-muted{color:#CFC6B8!important}
+.drl-screen .text-sage{color:#9DBFAF!important}
+.drl-screen .text-gold{color:#E9C88F!important}
+.drl-screen .text-accent,.drl-screen .text-danger{color:#F09A7A!important}
+.drl-screen .text-ok{color:#7FD1A0!important}
+.drl-screen .text-warn{color:#E9C88F!important}
+.drl-screen .text-line{color:#A79E90!important}
+.drl-screen .border-line,.drl-screen .border-paper{border-color:rgba(255,255,255,.12)!important}
+.drl-screen .shadow-soft,.drl-screen .shadow-card{box-shadow:none!important}
+
+/* Pages ex-« site blanc » passées en univers Dr Lô (défi, découvre…) */
+.drl-page{background:radial-gradient(110% 52% at 50% 0%,rgba(234,150,88,.28),rgba(234,150,88,0) 60%),linear-gradient(180deg,#1F1712 0%,#140F0C 100%)!important;color:#F4EEE4}
+.drl-screen .bg-paper\/95{background:rgba(24,18,13,.92)!important}
+.drl-screen .bg-white\/60,.drl-screen .bg-white\/80{background:rgba(255,255,255,.07)!important}
+.drl-screen .bg-gold{background:#E9C88F!important;color:#1C140D!important}
+.drl-screen .bg-gold.text-white,.drl-screen .bg-gold .text-white{color:#1C140D!important}
+.drl-screen .bg-gold\/30{background:rgba(233,200,143,.3)!important}
+.drl-screen .border-gold{border-color:#E9C88F!important}
+.drl-screen .bg-ink{background:rgba(233,200,143,.2)!important;color:#FBF5EA!important}
+.drl-screen .border-ink{border-color:#E9C88F!important}
+.drl-screen .border-ink\/20,.drl-screen .border-ink\/25{border-color:rgba(233,200,143,.35)!important}
+.drl-screen input,.drl-screen textarea,.drl-screen select{background:rgba(255,255,255,.07);color:#F4EEE4;border-color:rgba(255,255,255,.18)}
+.drl-screen input::placeholder,.drl-screen textarea::placeholder{color:#A79E90}
+.drl-screen .text-white{color:#FBF5EA}
+.drl-screen .bg-line{background:rgba(255,255,255,.14)!important}
+.drl-screen .border-card{border-color:#1C140D!important}
+.drl-screen .bg-accent{background:#C9603F!important}

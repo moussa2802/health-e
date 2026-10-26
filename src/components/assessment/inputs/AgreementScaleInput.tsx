@@ -80,8 +80,8 @@ const AgreementScaleInput: React.FC<AgreementScaleInputProps> = ({
                   display: 'flex',
                   alignItems: 'center',
                   gap: 10,
-                  background: selected ? accentColor : '#FFFFFF',
-                  border: selected ? `1.5px solid ${accentColor}` : '1.5px solid #E7E4DA',
+                  background: selected ? accentColor : 'rgba(255,255,255,.06)',
+                  border: selected ? `1.5px solid ${accentColor}` : '1.5px solid rgba(255,255,255,.14)',
                   borderRadius: 13,
                   padding: '0 12px',
                   minHeight: 46,
@@ -109,8 +109,8 @@ const AgreementScaleInput: React.FC<AgreementScaleInputProps> = ({
                   width: 24,
                   height: 24,
                   borderRadius: 8,
-                  background: selected ? 'rgba(244,241,233,0.22)' : '#F1EEE4',
-                  color: selected ? '#F4F1E9' : '#4B4D55',
+                  background: selected ? 'rgba(244,241,233,0.22)' : 'rgba(255,255,255,.1)',
+                  color: selected ? '#F4F1E9' : '#CFC6B8',
                   fontSize: 11,
                   fontWeight: 800,
                   display: 'flex',
@@ -125,7 +125,7 @@ const AgreementScaleInput: React.FC<AgreementScaleInputProps> = ({
                   flex: 1,
                   fontSize: 13.5,
                   fontWeight: 650,
-                  color: selected ? '#F4F1E9' : '#17181B',
+                  color: selected ? '#F4F1E9' : '#FBF5EA',
                 }}>
                   {opt.label}
                 </span>
@@ -134,7 +134,7 @@ const AgreementScaleInput: React.FC<AgreementScaleInputProps> = ({
                   width: 20,
                   height: 20,
                   borderRadius: '50%',
-                  border: selected ? 'none' : '2px solid #D8D2C2',
+                  border: selected ? 'none' : '2px solid rgba(255,255,255,.25)',
                   background: selected ? '#F4F1E9' : 'transparent',
                   display: 'flex',
                   alignItems: 'center',
@@ -151,7 +151,7 @@ const AgreementScaleInput: React.FC<AgreementScaleInputProps> = ({
         {selectedOpt && (
           <div style={{
             marginTop: 12,
-            background: '#E4EAE6',
+            background: 'rgba(157,191,175,.15)',
             borderRadius: 13,
             padding: '11px 13px',
             display: 'flex',
@@ -160,7 +160,7 @@ const AgreementScaleInput: React.FC<AgreementScaleInputProps> = ({
             animation: 'fadeInUp 0.28s ease',
           }}>
             <Check size={16} color={accentColor} strokeWidth={2.4} style={{ flexShrink: 0 }} />
-            <p style={{ margin: 0, fontSize: 12.5, color: '#33413C' }}>
+            <p style={{ margin: 0, fontSize: 12.5, color: '#DCD3C5' }}>
               Ta réponse : <b style={{ color: accentColor }}>{selectedOpt.value} — {selectedOpt.label}</b>
             </p>
           </div>
@@ -172,8 +172,8 @@ const AgreementScaleInput: React.FC<AgreementScaleInputProps> = ({
   return (
     <div ref={groupRef} role="radiogroup" aria-label="Échelle d'accord">
       <div style={{
-        background: '#FFFFFF',
-        border: '1px solid #E7E4DA',
+        background: 'rgba(255,255,255,.06)',
+        border: '1px solid rgba(255,255,255,.14)',
         borderRadius: 18,
         padding: '14px 10px 12px',
       }}>
@@ -183,8 +183,8 @@ const AgreementScaleInput: React.FC<AgreementScaleInputProps> = ({
           padding: '0 4px',
           marginBottom: 10,
         }}>
-          <span style={{ fontSize: 11, color: '#8A8C95', fontWeight: 700 }}>{sorted[0].label}</span>
-          <span style={{ fontSize: 11, color: '#8A8C95', fontWeight: 700 }}>{sorted[sorted.length - 1].label}</span>
+          <span style={{ fontSize: 11, color: '#A79E90', fontWeight: 700 }}>{sorted[0].label}</span>
+          <span style={{ fontSize: 11, color: '#A79E90', fontWeight: 700 }}>{sorted[sorted.length - 1].label}</span>
         </div>
 
         <div style={{
@@ -231,9 +231,9 @@ const AgreementScaleInput: React.FC<AgreementScaleInputProps> = ({
                   fontWeight: 700,
                   fontStyle: 'normal',
                   transition: 'transform 0.2s cubic-bezier(.3,1.4,.5,1), background 0.18s, border-color 0.18s, color 0.18s',
-                  background: selected ? accentColor : '#FFFFFF',
-                  color: selected ? '#F4F1E9' : '#4B4D55',
-                  border: selected ? `1.5px solid ${accentColor}` : '1.5px solid #DCD6C6',
+                  background: selected ? accentColor : 'rgba(255,255,255,.06)',
+                  color: selected ? '#F4F1E9' : '#CFC6B8',
+                  border: selected ? `1.5px solid ${accentColor}` : '1.5px solid rgba(255,255,255,.14)',
                   transform: selected ? 'scale(1.1)' : 'none',
                 }}>
                   {i + 1}
@@ -242,7 +242,7 @@ const AgreementScaleInput: React.FC<AgreementScaleInputProps> = ({
                   fontSize: 9.5,
                   lineHeight: 1.2,
                   fontWeight: selected ? 700 : 600,
-                  color: selected ? accentColor : '#8A8C95',
+                  color: selected ? accentColor : '#A79E90',
                   textAlign: 'center',
                   maxWidth: 60,
                   transition: 'color 0.18s',
@@ -258,7 +258,7 @@ const AgreementScaleInput: React.FC<AgreementScaleInputProps> = ({
       {selectedOpt && (
         <div style={{
           marginTop: 12,
-          background: '#E4EAE6',
+          background: 'rgba(157,191,175,.15)',
           borderRadius: 13,
           padding: '11px 13px',
           display: 'flex',
@@ -267,7 +267,7 @@ const AgreementScaleInput: React.FC<AgreementScaleInputProps> = ({
           animation: 'fadeInUp 0.28s ease',
         }}>
           <Check size={16} color={accentColor} strokeWidth={2.4} style={{ flexShrink: 0 }} />
-          <p style={{ margin: 0, fontSize: 12.5, color: '#33413C' }}>
+          <p style={{ margin: 0, fontSize: 12.5, color: '#DCD3C5' }}>
             Ta réponse : <b style={{ color: accentColor }}>{selectedOpt.value} — {selectedOpt.label}</b>
           </p>
         </div>

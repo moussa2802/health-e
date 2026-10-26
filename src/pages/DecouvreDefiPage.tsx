@@ -1,3 +1,4 @@
+import '../components/accueil/accueil.css';
 import React from 'react';
 import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import { Sparkles, Clock, CheckCircle } from 'lucide-react';
@@ -50,7 +51,7 @@ const DecouvreDefiPage: React.FC = () => {
   const signupUrl = `/patient/access?mode=signup&returnTo=/assessment`;
 
   return (
-    <div className="min-h-screen bg-paper">
+    <div className="min-h-screen bg-paper drl-screen drl-page">
       <div className="max-w-[600px] mx-auto px-5 py-8">
         {/* Creator totem banner */}
         {totemData && creatorName && (

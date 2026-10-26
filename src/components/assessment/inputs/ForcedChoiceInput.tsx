@@ -58,7 +58,7 @@ const ForcedChoiceInput: React.FC<ForcedChoiceInputProps> = ({
               borderRadius: 16,
               border: selected
                 ? `2px solid ${accentColor}`
-                : '2px solid #E7E4DA',
+                : '2px solid rgba(255,255,255,.14)',
               background: selected ? `${accentColor}0A` : '#FFFFFF',
               cursor: disabled ? 'not-allowed' : 'pointer',
               textAlign: 'left',
@@ -69,7 +69,7 @@ const ForcedChoiceInput: React.FC<ForcedChoiceInputProps> = ({
               transform: bouncing ? 'scale(1.02)' : 'none',
               boxShadow: selected
                 ? `0 2px 12px ${accentColor}18`
-                : '0 1px 3px rgba(0,0,0,0.04)',
+                : 'none',
               minHeight: 64,
             }}
           >
@@ -96,7 +96,7 @@ const ForcedChoiceInput: React.FC<ForcedChoiceInputProps> = ({
               flex: 1,
               fontSize: 14,
               fontWeight: selected ? 650 : 500,
-              color: selected ? '#17181B' : '#374151',
+              color: selected ? '#FBF5EA' : '#CFC6B8',
               lineHeight: 1.45,
               minWidth: 0,
             }}>

@@ -1,3 +1,4 @@
+import '../../components/accueil/accueil.css';
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Users, ChevronRight, Lock, Check, Play, Shield, Stethoscope, Sparkles, NotebookPen, ArrowRight, Flame } from 'lucide-react';
@@ -360,7 +361,7 @@ const AssessmentHomePage: React.FC = () => {
 
   return (
     <>
-    <div className="min-h-screen bg-paper">
+    <div className="min-h-screen bg-paper drl-screen drl-page">
 
       {/* ── Header ── */}
       <div className="sticky top-0 z-20 bg-paper/95 backdrop-blur-md border-b border-line">
@@ -371,7 +372,6 @@ const AssessmentHomePage: React.FC = () => {
             </h1>
             <p className="text-xs text-muted mt-0.5">
               24 outils cliniquement validés
-              <span className="ml-1.5 opacity-40 text-[10px]">v.{__APP_VERSION__}</span>
             </p>
           </div>
           <div className="flex items-center gap-3">
@@ -761,7 +761,7 @@ const AssessmentHomePage: React.FC = () => {
         )}
 
         {/* ── Segmented control ── */}
-        <div ref={segmentedRef} className="flex gap-1 bg-[#EAE7DD] p-[5px] rounded-[16px] mb-5">
+        <div ref={segmentedRef} className="flex gap-1 bg-white/10 p-[5px] rounded-[16px] mb-5">
           {TAB_CONFIG.map(tab => (
             <button
               key={tab.id}

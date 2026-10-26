@@ -43,7 +43,7 @@ const FrequencyStripInput: React.FC<FrequencyStripInputProps> = ({
         display: 'flex',
         justifyContent: 'space-between',
         fontSize: 10.5,
-        color: '#8A8C95',
+        color: '#A79E90',
         fontWeight: 600,
         marginBottom: 7,
       }}>
@@ -67,7 +67,7 @@ const FrequencyStripInput: React.FC<FrequencyStripInputProps> = ({
             style={{
               aspectRatio: '1',
               borderRadius: 3,
-              background: i < fillCount ? accentColor : '#E4E0D4',
+              background: i < fillCount ? accentColor : 'rgba(255,255,255,.14)',
               transition: 'background 0.28s, transform 0.28s',
               transform: i < fillCount ? 'scale(1.06)' : 'none',
             }}
@@ -92,8 +92,8 @@ const FrequencyStripInput: React.FC<FrequencyStripInputProps> = ({
                 display: 'flex',
                 alignItems: 'center',
                 gap: 11,
-                background: isSelected ? accentColor : '#FFFFFF',
-                border: isSelected ? `1.5px solid ${accentColor}` : '1.5px solid #E7E4DA',
+                background: isSelected ? accentColor : 'rgba(255,255,255,.06)',
+                border: isSelected ? `1.5px solid ${accentColor}` : '1.5px solid rgba(255,255,255,.14)',
                 borderRadius: 14,
                 padding: '13px 15px',
                 cursor: disabled ? 'not-allowed' : 'pointer',
@@ -108,8 +108,8 @@ const FrequencyStripInput: React.FC<FrequencyStripInputProps> = ({
                 width: 22,
                 height: 22,
                 borderRadius: 7,
-                background: isSelected ? 'rgba(244,241,233,0.22)' : '#F1EEE4',
-                color: isSelected ? '#F4F1E9' : '#8A8C95',
+                background: isSelected ? 'rgba(244,241,233,0.22)' : 'rgba(255,255,255,.1)',
+                color: isSelected ? '#F4F1E9' : '#A79E90',
                 fontSize: 10.5,
                 fontWeight: 800,
                 display: 'flex',
@@ -123,7 +123,7 @@ const FrequencyStripInput: React.FC<FrequencyStripInputProps> = ({
                 flex: 1,
                 fontSize: 14,
                 fontWeight: 650,
-                color: isSelected ? '#F4F1E9' : '#17181B',
+                color: isSelected ? '#F4F1E9' : '#FBF5EA',
               }}>
                 {option.label}
               </span>

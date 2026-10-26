@@ -177,7 +177,7 @@ const AppChrome: React.FC = () => {
   const isChromeless = isAdminRoute || isAppRoute || isDefiJouer;
   // Accueil : le premier écran est Dr Lô en plein écran (pas d'en-tête ni de pied de page du site)
   // Écrans « Mon Dr Lô » (thème chaud sombre, plein écran) : pas d'en-tête ni de pied de page du site
-  const isHome = pathname === "/" || pathname === "/espace" || pathname.startsWith("/espace/") || pathname === "/humeur" || pathname === "/question" || pathname === "/drlo" || pathname === "/assessment/totem";
+  const isHome = pathname === "/" || pathname === "/espace" || pathname.startsWith("/espace/") || pathname === "/humeur" || pathname === "/question" || pathname === "/drlo" || pathname === "/assessment/totem" || pathname.startsWith("/assessment/results/") || pathname === "/defi" || pathname.startsWith("/defi/") || pathname === "/decouvre" || pathname === "/assessment/compatibility" || pathname === "/assessment" || pathname.startsWith("/assessment/") || pathname === "/acheter-koris";
   const { currentUser } = useAuth();
   const userId = currentUser?.id ?? null;
 

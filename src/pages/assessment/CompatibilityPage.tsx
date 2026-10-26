@@ -1,3 +1,4 @@
+import '../../components/accueil/accueil.css';
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import {
@@ -197,7 +198,7 @@ const CompatibilityPage: React.FC = () => {
 
   const handleCalculate = async () => {
     setFormError(null);
-    if (!isAuthenticated || !currentUser) { setFormError("Tu dois être connecté(e)."); return; }
+    if (!isAuthenticated || !currentUser) { setFormError("Tu dois te connecter pour continuer."); return; }
     if (!selectedSubTypeId) { setFormError("Sélectionne le type de relation."); return; }
 
     if (mentalTrimmed && mentalValidation && !mentalValidation.valid) {
@@ -483,7 +484,7 @@ const CompatibilityPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-paper">
+    <div className="min-h-screen bg-paper drl-screen drl-page">
       <div className="max-w-[680px] mx-auto px-5 pt-[52px] pb-20 relative z-[1]">
 
         {/* ── Hero ── */}
@@ -495,7 +496,7 @@ const CompatibilityPage: React.FC = () => {
             Test de <span className="text-accent">compatibilité</span>
           </h1>
           <p className="m-0 mx-auto text-[15px] text-ink-soft leading-relaxed max-w-[460px]">
-            Couple, crush, ami(e), famille, collègue… Découvre ce qui vous rapproche et ce qui peut coincer.
+            Couple, crush, amitié, famille, collègue… Découvre ce qui vous rapproche et ce qui peut coincer.
           </p>
         </div>
 
@@ -729,7 +730,7 @@ const CompatibilityPage: React.FC = () => {
                         <>
                           <CheckCircle2 size={14} className="text-sage" />
                           <span className="text-sage font-semibold">{mentalValidation.prenom}</span>
-                          <span className="text-muted">trouvé(e)</span>
+                          <span className="text-muted">: profil trouvé</span>
                         </>
                       ) : (
                         <>
@@ -776,7 +777,7 @@ const CompatibilityPage: React.FC = () => {
                           <>
                             <CheckCircle2 size={14} className="text-sage" />
                             <span className="text-sage font-semibold">{sexualValidation.prenom}</span>
-                            <span className="text-muted">trouvé(e)</span>
+                            <span className="text-muted">: profil trouvé</span>
                           </>
                         ) : (
                           <>

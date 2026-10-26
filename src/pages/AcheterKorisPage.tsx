@@ -1,3 +1,4 @@
+import '../components/accueil/accueil.css';
 import React, { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, Zap, Check, Loader2, AlertCircle } from 'lucide-react';
@@ -65,8 +66,8 @@ const AcheterKorisPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-paper pb-10">
-      <div className="bg-gold px-4 py-5 flex items-center gap-3 text-white">
+    <div className="min-h-screen bg-paper drl-screen drl-page pb-10">
+      <div className="bg-paper/95 border-b border-line px-4 py-5 flex items-center gap-3 text-white">
         <button
           onClick={() => navigate(-1)}
           className="inline-flex items-center gap-1.5 bg-white/15 text-white rounded-pill px-3 py-1.5 text-[13px] font-semibold hover:bg-white/25 transition-colors"
