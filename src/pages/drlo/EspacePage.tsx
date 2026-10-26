@@ -26,6 +26,7 @@ import { addDays } from '../../utils/cycleCalc';
 import { getTotemProgress, getTotemSignature, totemMeaning, type TotemAnimal } from '../../utils/totemAlgorithm';
 import { trackAccueil } from '../../utils/accueilTracking';
 import PaliersCard from '../../components/accueil/PaliersCard';
+import DrloMemoryCard from '../../components/accueil/DrloMemoryCard';
 import { getDrloStatus, registerReferralIfAny, type DrloStatus } from '../../services/drloQuestionService';
 import type { ScaleResult } from '../../types/assessment';
 
@@ -270,6 +271,8 @@ const EspacePage: React.FC = () => {
           </button>
         )}
       </section>
+
+      {uid && <DrloMemoryCard uid={uid} palette={palette} />}
 
       {/* Ton chemin vers Dr Lô (paliers) */}
       {drlo && <PaliersCard status={drlo} palette={palette} />}

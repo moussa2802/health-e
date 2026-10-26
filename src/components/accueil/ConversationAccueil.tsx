@@ -25,6 +25,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useKoris } from '../../contexts/KorisContext';
 import {
   addExchange,
+  enterCrisis,
   afterTest,
   alertDuringTest,
   askQuestion,
@@ -57,13 +58,17 @@ import {
 import { trackAccueil, setAccueilPrescribed } from '../../utils/accueilTracking';
 import { getOnboardingProfile, saveOnboardingProfile, savePartialOnboarding } from '../../utils/onboardingProfile';
 import { mergeIndex, pickNewer, trimForCloud } from '../../utils/threadSync';
+import RichText from './RichText';
 import { deleteThread, pullThread, pushIndex, pushThread } from '../../services/threadSyncService';
 import { getAllGuestResults, getGuestCount, GUEST_MAX_TESTS } from '../../utils/guestSession';
 import { getProfileProgress, saveOnboardingToProfile } from '../../services/evaluationService';
 import { ALL_SCALES, getScaleById, MENTAL_HEALTH_SCALES, SEXUAL_HEALTH_SCALES } from '../../data/scales';
 import { getScaleMeta } from '../../utils/scaleMeta';
 import { getCrisisResources } from '../../data/crisisResources';
-import { loadQuota, talk as talkToDrLo, unlockMore, MAX_DAILY_UNLOCKS, UNLOCK_MESSAGES, type TalkAction, type TalkQuota } from '../../services/drloTalk';
+import { invalidateTalkContext, rememberNow, talk as talkToDrLo, type TalkAction } from '../../services/drloTalk';
+
+/** Messages offerts chaque jour avec Dr Lô (même valeur que netlify/functions/_chatAllowance.js). */
+const FREE_MESSAGES = 15;
 import { useDictation } from '../../hooks/useDictation';
 import { startChatTest, recordAnswer, finishChatTest, loadScale } from '../../services/chatTestRunner';
 import { routeText } from '../../services/drloRouteService';
@@ -337,11 +342,16 @@ const ConversationAccueil: React.FC = () => {
     };
   }, [results, isAuthenticated, currentUser?.name, guestRemaining]);
 
+  // Nouveau résultat de test : Dr Lô relira tout le profil au prochain message
+  useEffect(() => { invalidateTalkContext(); }, [results]);
+
   // 1 bis. Récupérer la discussion gardée dans le compte (avant de l'afficher)
   const [hydrated, setHydrated] = useState<string | null>(null);
   /** Discussions dont la copie du compte a bien été lue : seules celles-là y sont renvoyées. */
   const syncOkRef = useRef<Set<string>>(new Set());
   const accountOnboardingRef = useRef<boolean | null>(null);
+  /** La discussion (clé de stockage) à laquelle appartient `state`. */
+  const stateKeyRef = useRef<string | null>(null);
   useEffect(() => {
     if (!authReady) return;
     if (!isAuthenticated || !currentUser) { setHydrated(storageKey); return; }
@@ -423,6 +433,7 @@ const ConversationAccueil: React.FC = () => {
       if (!sc) s = { ...s, step: 'prescribed', activeTest: undefined };
       else if (s.activeTest.askedItemId === null) s = askNextQuestion(s, sc);
     }
+    stateKeyRef.current = storageKey;
     setState(s);
     setReveal(r => ({ nonce: r.nonce + 1, from: Math.min(before, s.messages.length), hint }));
     if (pendingSignup && currentUser) void finishSignup(currentUser.id, currentUser.name ?? s.prenom ?? '');
@@ -447,7 +458,9 @@ const ConversationAccueil: React.FC = () => {
   const lastLenRef = useRef(0);
   useEffect(() => { lastLenRef.current = 0; }, [storageKey]);
   useEffect(() => {
-    if (!state) return;
+    // La discussion affichée n'est pas encore celle de cette clé (on vient d'en changer) : on n'écrit rien,
+    // sinon « Nouvelle discussion » recopiait l'ancienne.
+    if (!state || stateKeyRef.current !== storageKey) return;
     saveState(storageKey, state);
     if (state.messages.length > lastLenRef.current && lastLenRef.current > 0) {
       const lastUser = [...state.messages].reverse().find(m => m.from === 'user');
@@ -476,7 +489,7 @@ const ConversationAccueil: React.FC = () => {
     if (cur) void pushThread(p.id, trimForCloud(cur), cur.savedAt ?? new Date().toISOString());
   }, []);
   useEffect(() => {
-    if (!state || !isAuthenticated || !currentUser || !syncOkRef.current.has(storageKey)) return;
+    if (!state || !isAuthenticated || !currentUser || !syncOkRef.current.has(storageKey) || stateKeyRef.current !== storageKey) return;
     pendingPushRef.current = { key: storageKey, id: convId };
     const t = window.setTimeout(flushPush, 3000);
     return () => window.clearTimeout(t);
@@ -545,7 +558,6 @@ const ConversationAccueil: React.FC = () => {
   const [editingConv, setEditingConv] = useState<{ id: string; text: string } | null>(null);
   const [confirmDel, setConfirmDel] = useState<string | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
-  const [quota, setQuota] = useState<TalkQuota | null>(null);
   // « Mon programme Dr Lô » (compte uniquement)
   const [prog, setProg] = useState<Programme | null>(null);
   const progRef = useRef<Programme | null>(null);
@@ -757,9 +769,6 @@ const ConversationAccueil: React.FC = () => {
     // ensuite les raccourcis passent dans le menu « + » pour garder la discussion claire.
     ...(extrasAllowed && !state.flow && !moodToday && lastUser < 0 && !breathing ? [{ label: 'Noter mon humeur · 30 s', kind: 'mood' as const }] : []),
     ...(breathing ? [{ label: 'Arrêter l\'exercice', kind: 'breath' as const }] : []),
-    ...(state.talk && quota && quota.count >= quota.limit && quota.unlocks < MAX_DAILY_UNLOCKS
-      ? [{ label: `Débloquer ${UNLOCK_MESSAGES} messages · ${credits(KORIS_COSTS.unlock_chat)}`, kind: 'flow' as const, q: { label: `Débloquer ${UNLOCK_MESSAGES} messages`, value: 'talk:unlock' } }]
-      : []),
   ];
   const chatModeNow = inChat;
 
@@ -883,7 +892,6 @@ const ConversationAccueil: React.FC = () => {
     if (q.action === 'catalogue') { navigate('/assessment'); return; }
     if (q.action === 'signup') { openSignup('signup', q.label); return; }
     if (q.action === 'free_chat') { void enterTalk(null, null); return; }
-    if (q.value === 'talk:unlock') { void onUnlock(); return; }
     let next = respond(state, { value: q.value, label: q.label }, known);
     // Retour au test après le protocole de crise : on repose la question en cours
     if (state.step === 'crisis' && next.step === 'testing' && next.activeTest && testScale) {
@@ -910,8 +918,6 @@ const ConversationAccueil: React.FC = () => {
     if (flowWantsText(state.flow) && !detectCrisis(text)) { void onFlowText(text); return; }
     // « Active mes rappels », « je reçois pas les notifs »… : géré ici, même en pleine discussion
     if (isReminderRequest(text) && !detectCrisis(text) && state.step !== 'testing' && state.step !== 'minor') { offerReminders(text); return; }
-    // Discussion approfondie en cours : le message part à Dr Lô (IA), la crise restant détectée ici d'abord
-    if (state.talk && isAuthenticated && !detectCrisis(text)) { void sendTalk(text); return; }
     // Gérés sur place, sans IA : la crise (messages validés, immédiats), le mode mineur,
     // et les réponses simples aux questions d'identité.
     const local = detectCrisis(text)
@@ -920,6 +926,14 @@ const ConversationAccueil: React.FC = () => {
       || (state.step === 'age' && !!parseAge(text))
       || (state.step === 'crisis' && text.length < 4);
     if (local) { apply(respond(state, { text }, known), state); return; }
+    // Personne connectée : c'est toujours LE Dr Lô qui la connaît qui répond (sauf pendant un test)
+    if (isAuthenticated && currentUser && state.step !== 'testing') {
+      const base = { ...addExchange(state, text, []), flow: undefined };
+      setShowHistory(false);
+      trackAccueil('route', { action: 'drlo', then: '', step: state.step });
+      void askDeep(text, base);
+      return;
+    }
 
     // Autre sujet en pleine préparation d'un défi : on laisse tomber la préparation
     const base = { ...addExchange(state, text, []), flow: undefined };
@@ -957,12 +971,6 @@ const ConversationAccueil: React.FC = () => {
       trackAccueil('route', { action: 'fallback', step: state.step });
       return;
     }
-    // Question personnelle / profonde (compte) : le vrai Dr Lô répond directement, avec tout le profil
-    if (d.action === 'chat' && isAuthenticated && state.step !== 'testing') {
-      trackAccueil('route', { action: 'chat', then: '', step: state.step });
-      void askDeep(text, base);
-      return;
-    }
     const r = routeDecision(base, d, known, item && p && sc ? {
       currentQuestion: { itemId: item.id, text: questionText(item, p.done, p.total, sc.instructions) },
       doneCount: p.done,
@@ -972,7 +980,8 @@ const ConversationAccueil: React.FC = () => {
     trackAccueil('route', { action: d.action, then: d.then ?? '', step: state.step }); // jamais le texte
     if (r.ui === 'mood') setMode('mood');
     if (r.ui === 'defi' || r.ui === 'compat') void startFlow(r.ui, undefined, r.state);
-    if (r.ui === 'talk') void enterTalk(null, text, r.state);
+    // Pendant un test, une question de fond : le test est mis en pause (réponses gardées), puis Dr Lô répond
+    if (r.ui === 'talk') void askDeep(text, r.state, false);
     if (r.ui === 'breath') setBreath({ inhale: true });
     if (r.ui === 'programme') offerProgramme(r.state);
     if (r.ui === 'rappels') offerReminders(null, r.state);
@@ -1019,6 +1028,7 @@ const ConversationAccueil: React.FC = () => {
       case 'compat': return { type: 'go', to: 'compat' };
       case 'vrai_drlo': return { type: 'go', to: 'question_drlo' };
       case 'totem': return totemAnimal ? { type: 'go', to: 'totem' } : undefined;
+      case 'catalogue': return { type: 'go', to: 'catalogue' };
       default: return undefined;
     }
   };
@@ -1574,121 +1584,71 @@ const ConversationAccueil: React.FC = () => {
 
   // ── Discussion approfondie (IA) dans ce même fil ───────────────────────────
 
-  const talkIntro = (q: TalkQuota | null) => {
-    const left = q ? Math.max(0, q.limit - q.count) : null;
-    return `On en parle tranquillement${prenom ? `, ${prenom}` : ''}. Ici, je te réponds en détail : chaque message me coûte ${credits(KORIS_COSTS.chat)}${left !== null ? ` (encore ${left} message${left > 1 ? 's' : ''} aujourd'hui)` : ''}. Je t'écoute.`;
-  };
+  const talkIntro = () => `Je t'écoute${prenom ? `, ${prenom}` : ''}. Dis-moi ce que tu as sur le cœur, ou pose-moi ta question.`;
 
-  /** Entre en discussion approfondie : même fil, même Dr Lô. `draft` pré-remplit le champ (la personne envoie elle-même). */
+  /** « Discuter avec Dr Lô » (bouton, autre écran) : même fil, même Dr Lô. `draft` pré-remplit le champ. */
   const enterTalk = async (opening: string | null, draft: string | null, from?: AccueilState) => {
     setInChat(true);
     setTab('discuter');
     setMode('home');
     const cur0 = from ?? stateRef.current ?? state;
     if (!isAuthenticated || !currentUser) { openSignup('signup'); return; }
-    if (cur0.talk) { if (draft) setInput(draft); return; }
     trackAccueil('free_chat');
-    let q = quota;
-    if (!q) { q = await loadQuota(currentUser.id); setQuota(q); }
     const cur = stateRef.current ?? cur0;
-    const items: string[] = opening ? [opening, talkIntro(q)] : [talkIntro(q)];
+    const items: string[] = opening ? [opening] : [talkIntro()];
     const next = { ...addExchange(cur, null, items), flow: undefined };
-    const withTalk = { ...next, talk: { conv: `conv_${Date.now()}`, start: next.messages.length, opening } };
+    const withTalk = { ...next, talk: cur.talk ?? { conv: `conv_${Date.now()}`, start: 0, opening } };
     apply(withTalk, cur);
     if (draft) setInput(draft);
   };
 
-  const endTalk = () => {
-    const cur = stateRef.current ?? state;
-    apply({ ...addExchange(cur, 'Terminer la discussion', ['D\'accord. Je reste là, ici, quand tu veux en reparler.']), talk: undefined }, cur);
-  };
-
-  const onUnlock = async () => {
-    if (!currentUser || !quota) return;
-    if (quota.unlocks >= MAX_DAILY_UNLOCKS) return;
-    if (balance < KORIS_COSTS.unlock_chat) { openNoKorisModal('Débloquer la discussion', KORIS_COSTS.unlock_chat); return; }
-    setRouting('Débloque la suite');
-    const q = await unlockMore(currentUser.id, quota);
-    setRouting(false);
-    refreshBalance();
-    const cur = stateRef.current ?? state;
-    if (!q) { openNoKorisModal('Débloquer la discussion', KORIS_COSTS.unlock_chat); return; }
-    setQuota(q);
-    apply(addExchange(cur, `Débloquer ${UNLOCK_MESSAGES} messages`, [`C'est fait : ${UNLOCK_MESSAGES} messages de plus aujourd'hui. Je t'écoute.`]), cur);
-  };
-
-  /** Plus de messages ou d'étincelles : Dr Lô le dit (sans culpabiliser). `true` = rien n'a été envoyé. */
-  const talkBlocked = (q: TalkQuota, prev: AccueilState, userText: string | null): boolean => {
-    if (q.count >= q.limit) {
-      const can = q.unlocks < MAX_DAILY_UNLOCKS;
-      apply(addExchange(prev, userText, [can
-        ? `On a déjà beaucoup parlé aujourd'hui. Tu peux débloquer ${UNLOCK_MESSAGES} messages de plus (${credits(KORIS_COSTS.unlock_chat)}), ou écrire dans ton journal : c'est gratuit et je le garde pour toi.`
-        : 'On a beaucoup parlé aujourd\'hui, on reprend demain. En attendant, tu peux écrire dans ton journal : c\'est gratuit.']), prev);
-      return true;
-    }
-    if (balance < KORIS_COSTS.chat) {
-      openNoKorisModal('Un message à Dr Lô', KORIS_COSTS.chat);
-      apply(addExchange(prev, userText, [`Il te manque des ${CREDIT.many} pour la discussion approfondie. Tu peux recharger, ou revenir demain. Écrire dans ton journal et noter ton humeur restent gratuits.`]), prev);
-      return true;
-    }
-    return false;
-  };
-
-  /** Le vrai Dr Lô (IA, profil complet) répond. `base` contient déjà le message de la personne. */
-  const deepReply = async (base: AccueilState, text: string, t: NonNullable<AccueilState['talk']>, q: TalkQuota, firstOfDay: boolean) => {
-    if (!currentUser) return;
-    setRouting('Lit ton message');
-    const history = base.messages.slice(t.start, -1).map(m => ({ role: m.from === 'user' ? 'user' as const : 'assistant' as const, content: m.text }));
-    const out = await talkToDrLo(currentUser.id, t.conv, text, history, t.opening ?? null, q);
-    setRouting(false);
-    refreshBalance();
-    const cur = stateRef.current ?? base;
-    if (!out.ok) {
-      if (out.reason === 'no_koris') openNoKorisModal('Un message à Dr Lô', KORIS_COSTS.chat);
-      apply(addExchange(cur, null, [out.reason === 'no_koris' ? `Il te manque des ${CREDIT.many} pour ce message.` : 'Je n\'arrive pas à te répondre maintenant (connexion instable). Réessaie dans un instant.']), cur);
-      return;
-    }
-    const nq = { ...q, count: q.count + 1 };
-    setQuota(nq);
-    const left = Math.max(0, nq.limit - nq.count);
-    const card = actionCard(out.action);
-    apply(addExchange(cur, null, [card ? { text: out.text, card } : out.text, ...(firstOfDay
-      ? [`(Ici je te réponds en détail : ${credits(KORIS_COSTS.chat)} par message, encore ${left} aujourd'hui. « Terminer » pour revenir à l'accueil.)`]
-      : [])]), cur);
-  };
-
-  const sendTalk = async (text: string) => {
-    if (!currentUser || !state.talk) return;
-    const t = state.talk;
-    const q = quota ?? await loadQuota(currentUser.id);
-    if (!quota) setQuota(q);
-    if (talkBlocked(q, state, text)) return;
-    const base = addExchange(state, text, []);
-    setState(base);
-    showNow(base);
-    await deepReply(base, text, t, q, false);
-  };
+  /** Messages offerts restants aujourd'hui (connu après le premier message). */
+  const [freeLeft, setFreeLeft] = useState<number | null>(null);
 
   /**
-   * Question personnelle ou profonde écrite sur l'accueil (« décris-moi », « de quoi j'ai besoin »…) :
-   * Dr Lô y répond tout de suite, avec tout ce qu'il sait de la personne (plus de « repose ta question »).
+   * LE Dr Lô : chaque message d'une personne connectée lui arrive, avec son profil, sa mémoire
+   * et les derniers échanges. Il répond court ou en profondeur, et propose le bon bouton.
+   * `base` contient déjà le message de la personne.
    */
-  const askDeep = async (text: string, base: AccueilState) => {
+  const askDeep = async (text: string, base: AccueilState, endsWithUserMsg = true) => {
     if (!currentUser) return;
-    setTab('discuter');
-    setMode('home');
-    setInChat(true);
-    trackAccueil('free_chat');
-    const q = quota ?? await loadQuota(currentUser.id);
-    if (!quota) setQuota(q);
-    const from = stateRef.current ?? base;
-    const prev = { ...from, messages: from.messages.slice(0, -1), seq: from.seq }; // sans le message, ré-ajouté ci-dessous si bloqué
-    if (talkBlocked(q, prev, text)) return;
-    const t = base.talk ?? { conv: `conv_${Date.now()}`, start: from.messages.length - 1, opening: null };
-    const withTalk: AccueilState = { ...from, talk: t, step: from.step === 'need' || from.step === 'need_clarify' ? 'prescribed' : from.step };
+    const t = base.talk ?? { conv: `conv_${Date.now()}`, start: 0, opening: null };
+    const withTalk: AccueilState = { ...base, talk: t, step: base.step === 'need' || base.step === 'need_clarify' ? 'prescribed' : base.step };
     setState(withTalk);
     showNow(withTalk);
-    await deepReply(withTalk, text, t, q, q.count === 0);
+    setRouting('Lit ton message');
+    const prior = endsWithUserMsg ? withTalk.messages.slice(0, -1) : withTalk.messages.filter(m => !(m.from === 'user' && m.text === text));
+    const turns = prior.slice(-12).map(m => ({ role: m.from === 'user' ? 'user' as const : 'assistant' as const, content: m.text }));
+    const out = await talkToDrLo(currentUser.id, t.conv, text, turns, t.opening ?? null);
+    setRouting(false);
+    const cur = stateRef.current ?? withTalk;
+    if (!out.ok) {
+      if (out.reason === 'no_koris') {
+        openNoKorisModal('Un message à Dr Lô', KORIS_COSTS.chat);
+        apply(addExchange(cur, null, ['Tes messages offerts d\'aujourd\'hui sont utilisés, et il te manque une étincelle pour celui-ci. Ils reviennent demain. En attendant, écrire dans ton journal et noter ton humeur restent gratuits.']), cur);
+      } else if (out.reason === 'limit') {
+        apply(addExchange(cur, null, ['On a beaucoup parlé aujourd\'hui, on reprend demain. En attendant, tu peux écrire dans ton journal : je le garde pour toi.']), cur);
+      } else {
+        apply(addExchange(cur, null, ['Je n\'arrive pas à te répondre maintenant (connexion instable). Réessaie dans un instant.']), cur);
+      }
+      return;
+    }
+    refreshBalance();
+    // Urgence repérée par Dr Lô : messages validés (1515, Fann), jamais le texte de l'IA seul
+    if (out.actions.some(a => a.kind === 'crise')) {
+      apply(enterCrisis(cur), cur);
+      return;
+    }
+    const cards = out.actions.map(actionCard).filter((c): c is Card => !!c);
+    const items: (string | { text: string; card?: Card })[] = cards.length
+      ? [{ text: out.text, card: cards[0] }, ...cards.slice(1).map(card => ({ text: '', card }))]
+      : [out.text];
+    // Les messages offerts touchent à leur fin : on le dit une fois, sans insister
+    const prevLeft = freeLeft;
+    setFreeLeft(out.freeLeft);
+    if (out.freeLeft === 0 && prevLeft !== 0) items.push(`(C'était ton dernier message offert d'aujourd'hui. Les suivants coûtent ${credits(KORIS_COSTS.chat)} chacun ; demain, ${FREE_MESSAGES} nouveaux messages offerts.)`);
+    apply(addExchange(cur, null, items), cur);
+    if (out.remember) rememberNow([...turns, { role: 'user', content: text }, { role: 'assistant', content: out.text }]);
   };
 
   // ── Discussions : changer, créer, renommer, supprimer ─────────────────────
@@ -1813,11 +1773,12 @@ const ConversationAccueil: React.FC = () => {
                   ))}
                 </div>
               )}
-              {state.talk && isAuthenticated && state.step !== 'testing' && (
-                <div className="drl-in" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, padding: '6px 10px 6px 12px', borderRadius: 12, background: 'rgba(242,182,109,.08)', border: '1px solid rgba(242,182,109,.25)', fontSize: 12.5, color: C.muted }}>
-                  <span>Dr Lô te répond en détail · {credits(KORIS_COSTS.chat)} / message{quota ? ` · ${Math.max(0, quota.limit - quota.count)} restant${quota.limit - quota.count > 1 ? 's' : ''} aujourd'hui` : ''}</span>
-                  <button type="button" onClick={endTalk} style={{ ...linkBtn, minHeight: 28, padding: 0, color: palette.accent, fontWeight: 700 }}>Terminer</button>
-                </div>
+              {isAuthenticated && freeLeft !== null && freeLeft <= 3 && state.step !== 'testing' && (
+                <p className="drl-in" style={{ margin: '0 0 2px', fontSize: 12, color: C.faint, textAlign: 'center' }}>
+                  {freeLeft > 0
+                    ? `Encore ${freeLeft} message${freeLeft > 1 ? 's' : ''} offert${freeLeft > 1 ? 's' : ''} aujourd'hui, puis ${credits(KORIS_COSTS.chat)} par message.`
+                    : `Messages offerts utilisés aujourd'hui : ${credits(KORIS_COSTS.chat)} par message jusqu'à demain.`}
+                </p>
               )}
               {state.step !== 'minor' && (<>
                   {menuOpen && chatModeNow && (
@@ -2039,7 +2000,7 @@ const ConversationAccueil: React.FC = () => {
                 style={{ marginTop: 4, minHeight: 46, borderRadius: 14, border: `1px dashed ${C.line}`, background: 'transparent', color: C.text, fontSize: 14, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
                 <Plus size={16} aria-hidden="true" /> Nouvelle discussion
               </button>
-              <p style={{ margin: '6px 0 0', fontSize: 11.5, color: C.faint, textAlign: 'center' }}>Tes discussions restent sur ce téléphone. Touche le crayon pour les renommer.</p>
+              <p style={{ margin: '6px 0 0', fontSize: 11.5, color: C.faint, textAlign: 'center' }}>{isAuthenticated ? 'Tes discussions sont gardées dans ton compte : tu les retrouves sur tous tes appareils.' : 'Tes discussions restent sur ce téléphone.'} Touche le crayon pour les renommer.</p>
             </div>
           ) : tab === 'confier' ? (
             <div style={{ flex: 1, overflowY: 'auto', padding: '4px 14px 16px' }}>
@@ -2057,10 +2018,10 @@ const ConversationAccueil: React.FC = () => {
                     <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
                       <div style={{ maxWidth: '80%', padding: '10px 14px', borderRadius: '18px 18px 4px 18px', background: palette.primary, color: C.ink, fontSize: 15, fontWeight: 600, lineHeight: 1.45 }}>{m.text}</div>
                     </div>
-                  ) : (
+                  ) : !m.text ? null : (
                     <div style={{ display: 'flex', alignItems: 'flex-end', gap: 8, maxWidth: '92%' }}>
                       <img src="/dr-lo.png" alt="" width={28} height={28} style={{ width: 28, height: 28, borderRadius: '50%', objectFit: 'cover', objectPosition: 'top', flexShrink: 0, opacity: shownMsgs[i + 1]?.from === 'drlo' ? 0 : 1 }} />
-                      <div style={{ padding: '11px 14px', borderRadius: '18px 18px 18px 4px', background: 'rgba(255,255,255,.07)', border: '1px solid rgba(255,255,255,.08)', fontSize: 15, lineHeight: 1.5, color: C.text }}>{m.text}</div>
+                      <div style={{ padding: '11px 14px', borderRadius: '18px 18px 18px 4px', background: 'rgba(255,255,255,.07)', border: '1px solid rgba(255,255,255,.08)', fontSize: 15, lineHeight: 1.5, color: C.text }}><RichText text={m.text} /></div>
                     </div>
                   )}
                   {m.card && <div style={{ marginLeft: 36, maxWidth: 340 }}>{renderCard(m)}</div>}
@@ -2069,7 +2030,7 @@ const ConversationAccueil: React.FC = () => {
               {partial !== null && (
                 <div style={{ display: 'flex', alignItems: 'flex-end', gap: 8, maxWidth: '92%' }}>
                   <img src="/dr-lo.png" alt="" width={28} height={28} style={{ width: 28, height: 28, borderRadius: '50%', objectFit: 'cover', objectPosition: 'top', flexShrink: 0 }} />
-                  <div style={{ padding: '11px 14px', borderRadius: '18px 18px 18px 4px', background: 'rgba(255,255,255,.07)', border: '1px solid rgba(255,255,255,.08)', fontSize: 15, lineHeight: 1.5, color: C.text }}>{partial}</div>
+                  <div style={{ padding: '11px 14px', borderRadius: '18px 18px 18px 4px', background: 'rgba(255,255,255,.07)', border: '1px solid rgba(255,255,255,.08)', fontSize: 15, lineHeight: 1.5, color: C.text }}><RichText text={partial} /></div>
                 </div>
               )}
               {(phase === 'thinking' || phase === 'reading' || routing || testBusy) && partial === null && (
@@ -2372,7 +2333,7 @@ const Bubble: React.FC<{ m: Msg; palette: MomentPalette; compact?: boolean }> = 
   }
   return (
     <p style={{ margin: 0, fontSize: compact ? 13.5 : 16.5, lineHeight: 1.55, color: compact ? C.muted : C.soft, textAlign: compact ? 'left' : 'center' }}>
-      {m.text}
+      <RichText text={m.text} />
     </p>
   );
 };

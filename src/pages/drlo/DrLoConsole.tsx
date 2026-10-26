@@ -14,6 +14,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { auth, db } from '../../utils/firebase';
 import { adminAnswerQuestion, adminListQuestions, type AdminQuestion } from '../../services/drloQuestionService';
 import { getScaleMeta } from '../../utils/scaleMeta';
+import DrloBench from '../../components/accueil/DrloBench';
 
 const fmt = (t: number) => (t ? new Date(t).toLocaleString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : '');
 const SHARE_LABEL: Record<string, string> = { none: 'Question seule', totem: 'Totem et tendances', results: 'Résultats de tests' };
@@ -58,7 +59,7 @@ const DrLoConsole: React.FC = () => {
   const [error, setError] = useState('');
   const [drafts, setDrafts] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState<string | null>(null);
-  const [tab, setTab] = useState<'pending' | 'done'>('pending');
+  const [tab, setTab] = useState<'pending' | 'done' | 'bench'>('pending');
 
   // Rôle Dr Lô (lu dans staff/{uid} ; le serveur revérifie à chaque action)
   useEffect(() => {
@@ -149,10 +150,10 @@ const DrLoConsole: React.FC = () => {
         </p>
       )}
       <div style={{ display: 'flex', gap: 8, marginTop: 14, alignItems: 'center' }}>
-        {(['pending', 'done'] as const).map(t => (
+        {(['pending', 'done', 'bench'] as const).map(t => (
           <button key={t} onClick={() => setTab(t)} className="drl-btn"
             style={{ minHeight: 38, padding: '0 14px', borderRadius: 999, border: `1px solid ${tab === t ? palette.accent : DC.line}`, background: tab === t ? 'rgba(242,182,109,.15)' : DC.glass, color: tab === t ? palette.accent : DC.muted, fontWeight: 700, fontSize: 13.5, cursor: 'pointer' }}>
-            {t === 'pending' ? `À répondre (${pendingCount})` : 'Répondues'}
+            {t === 'pending' ? `À répondre (${pendingCount})` : t === 'done' ? 'Répondues' : 'Banc d\'essai'}
           </button>
         ))}
         <button onClick={() => signOut(auth)} aria-label="Se déconnecter" className="drl-btn" style={{ marginLeft: 'auto', width: 38, height: 38, borderRadius: 12, border: `1px solid ${DC.line}`, background: DC.glass, color: DC.muted, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
@@ -160,7 +161,7 @@ const DrLoConsole: React.FC = () => {
         </button>
       </div>
       {error && <p role="alert" style={{ color: '#F09A7A', fontSize: 13.5 }}>{error}</p>}
-      {loading && items.length === 0 ? <Loader2 className="animate-spin" style={{ marginTop: 20 }} /> : (
+      {tab === 'bench' && currentUser ? <DrloBench uid={currentUser.id} palette={palette} /> : loading && items.length === 0 ? <Loader2 className="animate-spin" style={{ marginTop: 20 }} /> : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginTop: 14 }}>
           {list.length === 0 && <p style={{ color: DC.faint, fontSize: 14 }}>{tab === 'pending' ? 'Aucune question en attente. 🙏' : 'Pas encore de réponse envoyée.'}</p>}
           {list.map(q => {

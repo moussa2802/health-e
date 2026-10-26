@@ -181,14 +181,16 @@ export async function unlockMore(userId: string, q: TalkQuota): Promise<TalkQuot
 
 export interface TalkTurn { role: 'user' | 'assistant'; content: string }
 
-/** Action que Dr Lô propose à la fin de sa réponse (l'appli affiche le bouton). */
+/** Bouton que Dr Lô propose sous sa réponse (l'appli l'affiche). `crise` = protocole d'urgence. */
 export type TalkAction =
   | { kind: 'test'; scaleId: string }
-  | { kind: 'respiration' | 'humeur' | 'programme' | 'journal' | 'defi' | 'compat' | 'vrai_drlo' | 'totem' };
+  | { kind: 'respiration' | 'humeur' | 'programme' | 'journal' | 'defi' | 'compat' | 'vrai_drlo' | 'totem' | 'catalogue' | 'crise' };
 
-export type TalkOutcome = { ok: true; text: string; action: TalkAction | null } | { ok: false; reason: 'no_koris' | 'error' };
+export type TalkOutcome =
+  | { ok: true; text: string; actions: TalkAction[]; freeLeft: number | null; remember: boolean }
+  | { ok: false; reason: 'no_koris' | 'limit' | 'error' };
 
-const TALK_ACTIONS = new Set(['respiration', 'humeur', 'programme', 'journal', 'defi', 'compat', 'vrai_drlo', 'totem']);
+const TALK_ACTIONS = new Set(['respiration', 'humeur', 'programme', 'journal', 'defi', 'compat', 'vrai_drlo', 'totem', 'catalogue', 'crise']);
 /** Seules des actions qui existent vraiment sur le site passent. */
 function cleanAction(a: unknown): TalkAction | null {
   if (!a || typeof a !== 'object') return null;
@@ -199,31 +201,68 @@ function cleanAction(a: unknown): TalkAction | null {
 /** Les tests que Dr Lô peut proposer (identifiants et noms). */
 const TESTS_DISPO = ALL_SCALES.map(s => ({ id: s.id, label: getScaleMeta(s.id).label }));
 
+// Le profil complet change rarement : on le garde 3 minutes (réponses plus rapides)
+let ctxCache: { uid: string; at: number; ctx: Awaited<ReturnType<typeof buildFullContext>> } | null = null;
+async function contextFor(userId: string) {
+  if (ctxCache && ctxCache.uid === userId && Date.now() - ctxCache.at < 3 * 60 * 1000) return ctxCache.ctx;
+  const ctx = await buildFullContext(userId);
+  ctxCache = { uid: userId, at: Date.now(), ctx };
+  return ctx;
+}
+/** Un test vient d'être fait, une analyse générée… : le prochain message relit tout. */
+export const invalidateTalkContext = () => { ctxCache = null; };
+
 /**
- * Envoie un message à Dr Lô (1 étincelle, débitée côté serveur) et garde la conversation
- * dans users/{uid}/chat_dr_lo/{convId} (même endroit qu'avant).
+ * Un message à Dr Lô : les premiers de la journée sont offerts, ensuite 1 étincelle (décidé
+ * côté serveur). La conversation est aussi gardée dans users/{uid}/chat_dr_lo/{convId}.
  */
-export async function talk(userId: string, convId: string, text: string, history: TalkTurn[], opening: string | null, q: TalkQuota): Promise<TalkOutcome> {
+export async function talk(userId: string, convId: string, text: string, history: TalkTurn[], opening: string | null): Promise<TalkOutcome> {
   try {
-    const context = await buildFullContext(userId);
-    const historique = history.slice(-8);
+    const context = await contextFor(userId);
+    const historique = history.filter(m => m.content.trim()).slice(-12);
     const res = await authedFetch('/.netlify/functions/dr-lo-chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ message: text, historique, context: { ...context, tests_dispo: TESTS_DISPO, ...(opening && historique.length === 0 ? { ouverture: opening } : {}) } }),
     });
     if (res.status === 402) return { ok: false, reason: 'no_koris' };
+    if (res.status === 429) return { ok: false, reason: 'limit' };
     if (!res.ok) return { ok: false, reason: 'error' };
     const data = await res.json();
     const answer: string = data.response ?? 'Je n\'ai pas pu répondre. Réessaie dans un instant.';
     const now = new Date().toISOString();
-    setDoc(doc(db!, 'users', userId), { chatDailyCount: q.count + 1, chatLastDate: todayIso() }, { merge: true }).catch(() => {});
-    const msgs = [...history, { role: 'user' as const, content: text }, { role: 'assistant' as const, content: answer }]
-      .map(m => ({ role: m.role, content: m.content, timestamp: now, koris_consumed: m.role === 'assistant' ? 1 : 0 }));
+    const msgs = [...historique, { role: 'user' as const, content: text }, { role: 'assistant' as const, content: answer }]
+      .map(m => ({ role: m.role, content: m.content, timestamp: now }));
     setDoc(doc(db!, 'users', userId, 'chat_dr_lo', convId), { messages: msgs, updated_at: now, created_at: convId.replace('conv_', '') }, { merge: true }).catch(() => {});
-    return { ok: true, text: answer, action: cleanAction(data.action) };
+    const actions = (Array.isArray(data.actions) ? data.actions : data.action ? [data.action] : []).map(cleanAction).filter(Boolean) as TalkAction[];
+    return { ok: true, text: answer, actions, freeLeft: typeof data.free_left === 'number' ? data.free_left : null, remember: !!data.remember };
   } catch {
     return { ok: false, reason: 'error' };
+  }
+}
+
+/** Dr Lô met à jour ce qu'il retient de la personne (gratuit, en arrière-plan). */
+export function rememberNow(history: TalkTurn[]): void {
+  authedFetch('/.netlify/functions/drlo-memory', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ historique: history.slice(-14) }),
+  }).catch(() => {});
+}
+
+/** Banc d'essai (console du vrai Dr Lô) : une réponse sur son propre profil, sans rien compter ni retenir. */
+export async function benchTalk(userId: string, text: string, withMemory: boolean): Promise<{ ok: boolean; text: string; actions: TalkAction[]; ms: number }> {
+  const t0 = Date.now();
+  try {
+    const context = await contextFor(userId);
+    const res = await authedFetch('/.netlify/functions/dr-lo-chat', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ test: true, withMemory, message: text, historique: [], context: { ...context, tests_dispo: TESTS_DISPO } }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) return { ok: false, text: data.error ?? `Erreur ${res.status}`, actions: [], ms: Date.now() - t0 };
+    const actions = (Array.isArray(data.actions) ? data.actions : []).map(cleanAction).filter(Boolean) as TalkAction[];
+    return { ok: true, text: data.response ?? '', actions, ms: Date.now() - t0 };
+  } catch (e) {
+    return { ok: false, text: e instanceof Error ? e.message : 'Erreur', actions: [], ms: Date.now() - t0 };
   }
 }
 

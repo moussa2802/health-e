@@ -1,4 +1,5 @@
-const { verifyAuth } = require('./_firebase');
+const { db, verifyAuth } = require('./_firebase');
+const { takeSlot, giveBack } = require('./_chatAllowance');
 const { VOICE } = require('./_drloVoice');
 const { reserveKoris, commitKoris, releaseKoris } = require('./_koris');
 
@@ -13,6 +14,12 @@ const headers = {
 function buildSystemPrompt(context) {
   const prenomLabel = context.prenom || 'cette personne';
   const isFemme = context.genre === 'Femme' || context.genre === 'femme';
+  const memSection = (Array.isArray(context.memoire) ? context.memoire : [])
+    .map(m => (typeof m === 'string' ? m : m && m.text))
+    .filter(Boolean)
+    .slice(0, 25)
+    .map(t => `• ${String(t).slice(0, 200)}`)
+    .join('\n') || 'Rien encore : c\'est peut-être votre première vraie discussion.';
   const testsDispo = (Array.isArray(context.tests_dispo) ? context.tests_dispo : [])
     .filter(t => t && /^[a-z0-9_]{2,40}$/i.test(String(t.id)))
     .slice(0, 60)
@@ -118,6 +125,9 @@ ${journalSection}
 ━━━ ANALYSES DR LÔ ━━━
 ${analyseSection}
 
+━━━ CE QUE TU RETIENS D'ELLE (tes notes des discussions précédentes) ━━━
+${memSection}
+
 ━━━ RÈGLES ━━━
 
 1. TU AS TOUTES LES DONNÉES — UTILISE-LES AVEC PARCIMONIE
@@ -139,11 +149,16 @@ ${analyseSection}
 5. ZÉRO DIAGNOSTIC
    Mécanismes généraux OK ("le manque de sommeil peut affecter l'humeur"). Étiquettes diagnostiques interdites ("tu fais de la paranoïa").
 
-6. PAS DE QUESTION SYSTÉMATIQUE
-   Conclus SANS question sauf si tu as besoin d'une précision. Sur "merci"/"ok" → conclus simplement.
+6. PAS D'INTERROGATOIRE
+   AU PLUS UNE question par réponse, et seulement si tu en as vraiment besoin. Jamais de liste de questions. Sur "merci"/"ok" → conclus simplement.
+   Apporte d'abord quelque chose (une écoute juste, une observation sur elle, un conseil concret) avant de demander quoi que ce soit.
 
-7. LONGUEUR ADAPTÉE
-   Court quand c'est suffisant. Développe seulement si demandé ou nécessaire.
+7. LONGUEUR ET FORME ADAPTÉES À LA SITUATION
+   Tu es LE SEUL Dr Lô de l'application : tu réponds à tout ce que la personne écrit, du « salut » à la confidence la plus lourde.
+   - Demande pratique (un test, son humeur, une info sur le site) : 1 à 3 phrases + le bouton (règle 17).
+   - Émotion, situation, question sur elle : réponse humaine et personnelle, 60 à 150 mots.
+   - Portrait ou « de quoi j'ai besoin » : règle 16.
+   Forme : paragraphes courts séparés par une ligne vide. Pas de titre (#), pas de liste à puces sauf pour 2-3 choix. Gras très rare (un mot clé au plus).
 
 8. ZÉRO FORMULE VIDE
    Remplace "c'est normal" / "je comprends" par une observation concrète.
@@ -178,18 +193,28 @@ ${isFemme ? `11. "YAAY BOY" — avec parcimonie, seulement en encouragement/réc
     → Longueur : 120 à 220 mots, en paragraphes courts, sans liste à puces. Termine par une phrase qui touche juste, pas par une question.
     → Si peu de tests sont faits, dis ce que tu perçois déjà avec ce que tu as, puis une phrase seulement pour dire qu'avec un ou deux tests de plus tu la connaîtrais encore mieux.
 
-17. PROPOSER UNE ACTION — RAREMENT, SEULEMENT SI ÇA AIDE VRAIMENT
-    Tu peux, à la fin de ta réponse, proposer UNE action du site. L'application affiche alors le bouton. Écris ta phrase normalement (« Si tu veux, on regarde ton sommeil de plus près. »), puis, seule sur la DERNIÈRE ligne, la balise exacte :
-    [[test:ID]] → un test précis, ID choisi UNIQUEMENT dans « Tests disponibles » ci-dessous (si la personne l'a déjà fait, seulement pour voir l'évolution)
+17. LES BOUTONS — L'APPLICATION LES AFFICHE SOUS TA RÉPONSE
+    Pour proposer quelque chose du site, termine ta réponse par la ou les balises, chacune seule sur sa ligne, tout à la fin :
+    [[test:ID]] → un test précis, ID choisi UNIQUEMENT dans « Tests disponibles » ci-dessous
     [[respiration]] → angoisse ou tension MAINTENANT : 1 minute de respiration guidée
     [[humeur]] → noter son humeur du jour
-    [[programme]] → un accompagnement quotidien de 28 jours (stress, moral ou sommeil)
+    [[programme]] → accompagnement quotidien de 28 jours (stress, moral ou sommeil)
     [[journal]] → écrire ce qu'elle a sur le cœur, en privé
     [[defi]] → jeu entre proches : qui la connaît le mieux
     [[compat]] → comparer son profil avec quelqu'un
     [[vrai_drlo]] → écrire une question au vrai Dr Lô (le médecin), réponse écrite sous 7 jours
     [[totem]] → voir son totem
-    Règles : au plus UNE balise, et dans la plupart des réponses AUCUNE. Jamais pendant une détresse forte (écoute d'abord), jamais dans un portrait (règle 16) sauf si elle demande quoi faire, jamais deux fois de suite la même. N'annonce jamais un bouton sans la balise, ni une balise sans phrase.
+    [[catalogue]] → voir tous les tests
+    [[crise]] → idées de mort ou de suicide, envie de se faire du mal, danger immédiat, violence subie en ce moment : l'application affiche aussitôt les numéros d'urgence. Dans ce cas ta réponse est courte, chaleureuse, et dit qu'elle a besoin d'une vraie personne maintenant.
+    Quand :
+    - « Je veux faire un test » (sans préciser) → choisis pour ELLE 2 ou 3 tests utiles vu ce qu'elle vit et ce qu'elle n'a pas encore fait, une demi-phrase chacun pour dire pourquoi, puis les 2 ou 3 balises [[test:ID]]. Jamais de liste de catégories.
+    - Elle demande une action précise (son humeur, respirer, le programme, un défi…) → une phrase + la balise.
+    - Elle décrit un trouble précis (sommeil, stress, moral, jalousie…) → écoute d'abord ; si le test correspondant n'est pas fait, propose-le avec sa balise dans CETTE réponse (pas « plus tard »).
+    - Sinon, la plupart du temps : AUCUNE balise. Jamais de bouton pendant une détresse forte (sauf [[crise]] ou [[respiration]]), jamais dans un portrait sauf si elle demande quoi faire.
+    Au plus 3 balises [[test:…]], ou une seule autre balise. N'annonce jamais un bouton sans sa balise.
+
+18. TA MÉMOIRE — C'EST CE QUI FAIT QU'ON SE SENT CONNU
+    Tes notes (« Ce que tu retiens d'elle ») viennent de vos discussions passées. Sers-t'en naturellement, comme un ami qui se souvient : « La dernière fois tu me parlais de ton travail, ça va mieux ? ». Une fois de temps en temps, quand c'est pertinent, pas à chaque message. Ne récite jamais tes notes et ne dis pas « d'après mes notes ».
 
 Tests disponibles (ID = nom) :
 ${testsDispo || 'Aucun.'}`;
@@ -197,21 +222,25 @@ ${testsDispo || 'Aucun.'}`;
 
 // ── Action proposée par Dr Lô (balise en dernière ligne) ─────────────────────
 
-const ACTION_TAG = /\n?\s*\[\[(test:[a-z0-9_]{2,40}|respiration|humeur|programme|journal|defi|compat|vrai_drlo|totem)\]\]\s*$/i;
+const TAG = /\[\[(test:[a-z0-9_]{2,40}|respiration|humeur|programme|journal|defi|compat|vrai_drlo|totem|catalogue|crise)\]\]/gi;
 
-/** Sépare le texte et l'action proposée ; toute autre balise est retirée du texte. */
-function splitAction(raw) {
-  let text = String(raw || '').trim();
-  let action = null;
-  const m = text.match(ACTION_TAG);
-  if (m) {
-    const tag = m[1].toLowerCase();
-    action = tag.startsWith('test:') ? { kind: 'test', scaleId: tag.slice(5) } : { kind: tag };
-    text = text.slice(0, m.index).trim();
-  }
-  text = text.replace(/\[\[[^\]]{0,60}\]\]/g, '').trim();
-  return { text, action };
+/**
+ * Sépare le texte et les boutons proposés (balises n'importe où, retirées du texte).
+ * Crise → seul bouton gardé. Sinon : jusqu'à 3 tests, ou une seule autre action.
+ */
+function splitActions(raw) {
+  let text = String(raw || '');
+  const tags = [];
+  text = text.replace(TAG, (_, t) => { tags.push(t.toLowerCase()); return ''; });
+  text = text.replace(/\[\[[^\]]{0,60}\]\]/g, '').replace(/[ \t]+\n/g, '\n').replace(/\n{3,}/g, '\n\n').trim();
+  if (tags.includes('crise')) return { text, actions: [{ kind: 'crise' }] };
+  const tests = [...new Set(tags.filter(t => t.startsWith('test:')).map(t => t.slice(5)))].slice(0, 3);
+  if (tests.length) return { text, actions: tests.map(scaleId => ({ kind: 'test', scaleId })) };
+  const other = tags.find(t => !t.startsWith('test:'));
+  return { text, actions: other ? [{ kind: other }] : [] };
 }
+/** Compatibilité : la première action seulement. */
+function splitAction(raw) { const o = splitActions(raw); return { text: o.text, action: o.actions[0] || null }; }
 
 // ── Build user message ───────────────────────────────────────────────────────
 
@@ -226,6 +255,8 @@ function buildUserMessage(context, message, isFirstMessage = false) {
 }
 
 exports._splitAction = splitAction;
+exports._splitActions = splitActions;
+exports._buildSystemPrompt = buildSystemPrompt;
 
 exports.handler = async (event) => {
   if (event.httpMethod === 'OPTIONS') {
@@ -259,18 +290,46 @@ exports.handler = async (event) => {
     return { statusCode: 500, headers, body: JSON.stringify({ error: 'Clé API manquante', koris_debited: false }) };
   }
 
-  // ── Reserve Koris ──
-  const reservation = await reserveKoris(user.uid, 'chat');
-  if (reservation.error === 'insufficient_balance') {
-    return { statusCode: 402, headers, body: JSON.stringify({ error: "Pas assez d'étincelles", koris_debited: false }) };
+  // ── Banc d'essai (console du vrai Dr Lô) : rien n'est compté ni retenu ──
+  let testMode = false;
+  if (body.test === true) {
+    const staff = await db.collection('staff').doc(user.uid).get().catch(() => null);
+    if (!staff || !staff.exists || staff.data().drlo !== true) return { statusCode: 403, headers, body: JSON.stringify({ error: 'Réservé à Dr Lô' }) };
+    testMode = true;
   }
-  const { holdId } = reservation;
+
+  // ── Messages offerts du jour, puis 1 étincelle ──
+  let holdId = null;
+  let slot = { free: true, freeLeft: null, next: { count: 0 } };
+  if (!testMode) {
+    slot = await takeSlot(db, user.uid).catch(() => ({ free: false, limit: false, freeLeft: 0, next: { count: 0 } }));
+    if (slot.limit) return { statusCode: 429, headers, body: JSON.stringify({ error: 'limite_jour', koris_debited: false }) };
+    if (!slot.free) {
+      const reservation = await reserveKoris(user.uid, 'chat');
+      if (reservation.error === 'insufficient_balance') {
+        await giveBack(db, user.uid);
+        return { statusCode: 402, headers, body: JSON.stringify({ error: "Pas assez d'étincelles", koris_debited: false }) };
+      }
+      holdId = reservation.holdId;
+    }
+  }
+  const commit = async () => { if (holdId) await commitKoris(holdId); };
+  const release = async () => { if (holdId) await releaseKoris(holdId); if (!testMode) await giveBack(db, user.uid); };
+
+  // Ce que Dr Lô retient de la personne (notes gardées dans son compte)
+  let memoire = [];
+  if (!testMode || body.withMemory) {
+    const p = await db.collection('patients').doc(user.uid).get().catch(() => null);
+    memoire = p && p.exists && Array.isArray(p.data().drloMemory) ? p.data().drloMemory : [];
+  }
 
   // System prompt with cache_control (stable across messages in a conversation)
-  const systemPrompt = buildSystemPrompt(context);
+  const systemPrompt = buildSystemPrompt({ ...context, memoire });
 
-  // Conversation history: keep last 8 messages (4 exchanges) to limit input
-  const trimmedHistory = historique.slice(-8);
+  // Conversation history: the last 12 messages of the thread
+  const trimmedHistory = (Array.isArray(historique) ? historique : [])
+    .filter(m => m && (m.role === 'user' || m.role === 'assistant') && typeof m.content === 'string' && m.content.trim())
+    .slice(-12);
 
   // Messages array: history + current user message (no duplication)
   const messages = [
@@ -303,12 +362,17 @@ exports.handler = async (event) => {
 
       if (response.ok) {
         const data = await response.json();
-        const { text, action } = splitAction(data?.content?.[0]?.text ?? '');
-        await commitKoris(holdId);
+        const { text, actions } = splitActions(data?.content?.[0]?.text ?? '');
+        await commit();
         const cached = data?.usage?.cache_read_input_tokens || 0;
         const total = data?.usage?.input_tokens || 0;
         console.log(`dr-lo-chat OK model=${model} input=${total} cached=${cached} output=${data?.usage?.output_tokens || 0}`);
-        return { statusCode: 200, headers, body: JSON.stringify({ response: text, action, koris_debited: true }) };
+        return { statusCode: 200, headers, body: JSON.stringify({
+          response: text, actions, action: actions[0] || null,
+          koris_debited: !!holdId, free_left: slot.freeLeft,
+          // Toutes les 5 réponses : l'appli demande à Dr Lô de mettre à jour ce qu'il retient
+          remember: !testMode && slot.next && slot.next.count > 0 && slot.next.count % 5 === 0,
+        }) };
       }
 
       const err = await response.text();
@@ -316,7 +380,7 @@ exports.handler = async (event) => {
       console.warn(`dr-lo-chat model ${model} failed (${response.status}): ${err.substring(0, 200)}`);
 
       if (!isOverloaded) {
-        await releaseKoris(holdId);
+        await release();
         return { statusCode: 502, headers, body: JSON.stringify({ error: 'Erreur API Claude', error_code: 'ai_unavailable', koris_debited: false }) };
       }
 
@@ -324,12 +388,12 @@ exports.handler = async (event) => {
     } catch (e) {
       console.error(`dr-lo-chat fetch error (model ${model}):`, e.message);
       if (attempt === MODELS.length - 1) {
-        await releaseKoris(holdId);
+        await release();
         return { statusCode: 500, headers, body: JSON.stringify({ error: e.message, error_code: 'ai_unavailable', koris_debited: false }) };
       }
     }
   }
 
-  await releaseKoris(holdId);
+  await release();
   return { statusCode: 500, headers, body: JSON.stringify({ error: 'Tous les modèles sont indisponibles', error_code: 'ai_unavailable', koris_debited: false }) };
 };
