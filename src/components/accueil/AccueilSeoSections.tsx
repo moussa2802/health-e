@@ -5,7 +5,7 @@
  */
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { MessageCircle, ClipboardList, Sparkles, Lock } from 'lucide-react';
+import { MessageCircle, ClipboardList, Sparkles, Lock, ChevronDown, Brain, Heart, Flame } from 'lucide-react';
 import { MENTAL_HEALTH_SCALES, SEXUAL_HEALTH_SCALES, BONUS_SCALES } from '../../data/scales';
 import { getScaleMeta } from '../../utils/scaleMeta';
 
@@ -23,21 +23,30 @@ const FAQ = [
   { q: 'À qui s\'adresse Health-e ?', a: 'Aux adultes (18 ans et plus) qui veulent comprendre leurs émotions, leur personnalité, leur couple ou leur vie intime, au Sénégal et dans toute l\'Afrique francophone.' },
 ];
 
-const Group: React.FC<{ title: string; ids: string[] }> = ({ title, ids }) => (
-  <div>
-    <h3 className="font-display text-base font-bold text-[#F4EEE4] mb-2">{title} <span className="text-[#A79E90] font-normal text-sm">({ids.length})</span></h3>
-    <ul className="m-0 p-0 list-none grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1.5">
+const COUPLE_IDS = ['ecr_r', 'social_pressure', 'bonus_jalousie', 'bonus_dependance', 'griss_base', 'pair'];
+
+const Group: React.FC<{ title: string; hint: string; icon: React.ElementType; ids: string[] }> = ({ title, hint, icon: Icon, ids }) => (
+  <details className="group rounded-card border border-white/[0.12] bg-white/[0.05] px-4 py-3">
+    <summary className="flex cursor-pointer list-none items-center gap-3">
+      <span aria-hidden="true" className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#F2B66D]/15"><Icon size={22} className="text-[#F2B66D]" /></span>
+      <span className="flex-1">
+        <span className="block font-display text-[15px] font-bold text-[#F4EEE4]">{title} <span className="font-normal text-[13px] text-[#A79E90]">· {ids.length} tests</span></span>
+        <span className="block text-[12.5px] leading-snug text-[#CFC6B8]">{hint}</span>
+      </span>
+      <ChevronDown size={18} aria-hidden="true" className="shrink-0 text-[#A79E90] transition-transform group-open:rotate-180" />
+    </summary>
+    <ul className="m-0 mt-3 list-none grid grid-cols-1 gap-x-4 gap-y-2 p-0 sm:grid-cols-2">
       {ids.map(id => {
         const m = getScaleMeta(id);
         return (
           <li key={id} className="text-[13px] leading-snug">
             <Link to={`/assessment/test/${id}`} className="font-semibold text-[#F4EEE4] no-underline hover:text-[#F2B66D]">{m.label}</Link>
-            {m.description && <span className="block text-[#A79E90] text-[12px]">{m.description}</span>}
+            {m.description && <span className="block text-[12px] text-[#A79E90]">{m.description}</span>}
           </li>
         );
       })}
     </ul>
-  </div>
+  </details>
 );
 
 const AccueilSeoSections: React.FC = () => (
@@ -61,10 +70,15 @@ const AccueilSeoSections: React.FC = () => (
 
     <section>
       <h2 className="font-display text-2xl font-bold text-[#F4EEE4] mb-5">Les évaluations Health-e</h2>
-      <div className="flex flex-col gap-7">
-        <Group title="Profil psychologique" ids={MENTAL_HEALTH_SCALES.map(s => s.id)} />
-        <Group title="Vie intime" ids={SEXUAL_HEALTH_SCALES.map(s => s.id)} />
-        <Group title="Tests bonus" ids={BONUS_SCALES.map(s => s.id)} />
+      <div className="flex flex-col gap-3">
+        <Group title="Mon mental" hint="Anxiété, humeur, stress, estime de soi, personnalité, deuil…" icon={Brain}
+          ids={MENTAL_HEALTH_SCALES.map(s => s.id).filter(id => !COUPLE_IDS.includes(id))} />
+        <Group title="Mon couple" hint="Attachement, jalousie, dépendance affective, satisfaction et intimité de couple." icon={Heart}
+          ids={COUPLE_IDS} />
+        <Group title="Ma vie intime" hint="Désir, satisfaction, fonctionnement sexuel, communication, image de soi." icon={Flame}
+          ids={SEXUAL_HEALTH_SCALES.map(s => s.id).filter(id => !COUPLE_IDS.includes(id))} />
+        <Group title="Tests fun" hint="TDAH, hypersensibilité, haut potentiel, burnout, intelligence émotionnelle…" icon={Sparkles}
+          ids={BONUS_SCALES.map(s => s.id).filter(id => !COUPLE_IDS.includes(id))} />
       </div>
     </section>
 

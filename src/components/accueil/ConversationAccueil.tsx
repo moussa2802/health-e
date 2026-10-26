@@ -10,7 +10,7 @@
  */
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { ArrowRight, Bell, Check, ChevronDown, ChevronLeft, ClipboardCheck, Clock, CloudSun, Copy, EyeOff, ListChecks, Lock, MessagesSquare, Mic, Pencil, Phone, Plus, Send, Sparkles, Sprout, Trash2, Wind } from 'lucide-react';
+import { ArrowRight, Bell, Heart, Mail, PawPrint, Users, Check, ChevronDown, ChevronLeft, ClipboardCheck, Clock, CloudSun, Copy, EyeOff, ListChecks, Lock, MessagesSquare, Mic, Pencil, Phone, Plus, Send, Sparkles, Sprout, Trash2, Wind } from 'lucide-react';
 import './accueil.css';
 import DrLoAvatar, { type DrLoState } from './DrLoAvatar';
 import DrLoIsland from './DrLoIsland';
@@ -27,6 +27,7 @@ import {
   addExchange,
   enterCrisis,
   afterTest,
+  pickNextScale,
   alertDuringTest,
   askQuestion,
   beginChatTest,
@@ -72,6 +73,7 @@ import { invalidateTalkContext, rememberNow, talk as talkToDrLo, type TalkAction
 /** Messages offerts chaque jour avec Dr Lô (même valeur que netlify/functions/_chatAllowance.js). */
 const FREE_MESSAGES = 15;
 import { useDictation } from '../../hooks/useDictation';
+import { ShowcaseCards, DiscoveryRow } from './ShowcaseCards';
 import { fetchResultComment } from '../../services/drloResultService';
 import { startChatTest, recordAnswer, finishChatTest, loadScale } from '../../services/chatTestRunner';
 import { routeText } from '../../services/drloRouteService';
@@ -775,6 +777,7 @@ const ConversationAccueil: React.FC = () => {
     // Une seule pastille « extra », sur le premier écran tant que la personne n'a rien dit ;
     // ensuite les raccourcis passent dans le menu « + » pour garder la discussion claire.
     ...(extrasAllowed && !state.flow && !moodToday && lastUser < 0 && !breathing ? [{ label: 'Noter mon humeur · 30 s', kind: 'mood' as const }] : []),
+    ...(state.step === 'need' && !state.flow && lastUser < 0 && !breathing ? [{ label: 'Mon couple', kind: 'home' as const, q: { label: 'Mon couple', value: 'home:couple' } }] : []),
     ...(breathing ? [{ label: 'Arrêter l\'exercice', kind: 'breath' as const }] : []),
   ];
   const chatModeNow = inChat;
@@ -787,6 +790,13 @@ const ConversationAccueil: React.FC = () => {
 
   // ── Page d'accueil : toujours une salutation et une recommandation, jamais les derniers messages ──
   const hasTalked = messages.some(m => m.from === 'user');
+  const nextDiscoveries = (() => {
+    const done = Object.keys(results ?? {});
+    const need = state.need ?? 'decouvre';
+    const a = pickNextScale(need, done);
+    const b = a ? pickNextScale(need, [...done], [a]) : null;
+    return [a, b].filter((x): x is string => !!x);
+  })();
   const homeTestLabel = state.activeTest ? getScaleMeta(state.activeTest.scaleId).label : state.prescribed ? getScaleMeta(state.prescribed).label : '';
   const testing = state.step === 'testing' && !!state.activeTest;
   const pendingTest = !testing && state.prescribed && !results?.[state.prescribed] ? state.prescribed : null;
@@ -882,6 +892,7 @@ const ConversationAccueil: React.FC = () => {
     if (c.kind === 'mood') { trackAccueil('mood_open'); setMode('mood'); return; }
     if (c.kind === 'home') {
       const v = c.q!.value;
+      if (v === 'home:couple') { navigate('/assessment/compatibility'); return; }
       setInChat(true);
       if (v.startsWith('home:test:')) void startTest(v.slice(10));
       if (v === 'home:programme') offerProgramme(state, 'Mon programme Dr Lô');
@@ -1807,6 +1818,10 @@ const ConversationAccueil: React.FC = () => {
                       ...(!moodToday ? [{ label: 'Noter mon humeur', hint: '30 s', icon: CloudSun, go: () => { trackAccueil('mood_open'); setMode('mood'); } }] : []),
                       { label: 'Respirer avec moi', hint: '1 min', icon: Wind, go: () => startBreathing() },
                       ...(isAuthenticated ? [{ label: 'Mon programme Dr Lô', hint: prog && prog.status === 'active' && progRemaining ? `${progRemaining} à faire` : '', icon: ClipboardCheck, go: () => (prog ? setProgOpen(true) : offerProgramme(state, 'Mon programme Dr Lô')) }] : []),
+                      { label: 'Mon animal-totem', hint: '', icon: PawPrint, go: () => navigate('/assessment/totem') },
+                      { label: 'Compatibilité de couple', hint: '', icon: Heart, go: () => navigate('/assessment/compatibility') },
+                      { label: 'Défi : tes proches te connaissent ?', hint: '', icon: Users, go: () => navigate(isAuthenticated ? '/defi' : '/decouvre') },
+                      { label: 'Écrire au vrai Dr Lô', hint: '', icon: Mail, go: () => navigate('/question') },
                       { label: 'Tous les tests', hint: '', icon: ListChecks, go: () => navigate('/assessment') },
                       { label: isAuthenticated ? 'Mon espace bien-être' : 'Ce que propose Health-e', hint: '', icon: Sprout, go: () => navigate('/espace') },
                     ].map(it => (
@@ -2252,6 +2267,7 @@ const ConversationAccueil: React.FC = () => {
             </div>
           </section>
         )}
+        {isAuthenticated && <DiscoveryRow ids={nextDiscoveries} onStart={id => { setInChat(true); void startTest(id); }} />}
         </>) : (<>
         {/* Première visite : la conversation d'accueil, au centre */}
         <div style={{ marginTop: 16, textAlign: 'center' }}>
@@ -2300,6 +2316,16 @@ const ConversationAccueil: React.FC = () => {
         <div style={{ marginTop: 16, minHeight: 140 }}>
           {controls}
         </div>
+
+        {!isAuthenticated ? (
+          <ShowcaseCards
+            onTotem={() => onChip({ label: 'Découvrir mon animal-totem', kind: 'flow', q: { label: 'Découvrir mon animal-totem', value: 'need:connaitre' } })}
+            onCompat={() => navigate('/assessment/compatibility')}
+            onDefi={() => navigate('/decouvre')}
+          />
+        ) : (
+          <DiscoveryRow ids={nextDiscoveries} onStart={id => { setInChat(true); void startTest(id); }} />
+        )}
         </>)}
 
         </>)}
