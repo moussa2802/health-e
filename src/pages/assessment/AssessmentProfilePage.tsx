@@ -232,7 +232,7 @@ const ScaleRow: React.FC<ScaleRowProps> = ({ scale, result, onStart, loading }) 
               <>
                 Refaire
                 {freeRetake ? (
-                  <span className="inline-flex items-center rounded-md px-1.5 py-px text-[10px] font-extrabold uppercase" style={{ background: 'rgba(159,188,175,.22)', color: '#3C7A5A' }}>Gratuit</span>
+                  <span className="inline-flex items-center rounded-md px-1.5 py-px text-[10px] font-extrabold uppercase" style={{ background: 'rgba(159,188,175,.22)', color: '#7FD1A0' }}>Gratuit</span>
                 ) : (
                   <span className="inline-flex items-center gap-0.5 rounded-md px-1.5 py-px" style={{ background: 'rgba(23,24,27,.06)' }}>
                     <img src="/etincelle.png" alt="" className="w-3 h-3 rounded-full object-cover" />

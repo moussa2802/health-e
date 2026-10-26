@@ -58,6 +58,9 @@ import TestCode from '../../components/assessment/TestCode';
 import type { ScaleResult, AssessmentScale } from '../../types/assessment';
 import type { SexualHealthFilter } from '../../types/onboarding';
 
+const LIGHT_ACCENT: Record<string, string> = { '#4A5D57': '#9DBFAF', '#B5522F': '#F09A7A', '#8F6A1F': '#E9C88F' };
+const lightAccent = (c: string) => LIGHT_ACCENT[c.toUpperCase()] ?? c;
+
 // ── Design tokens (severity) ────────────────────────────────────────────────
 // ok=#3C7A5A · gold=#8F6A1F · accent=#B5522F · danger=#B23A3A
 
@@ -67,6 +70,16 @@ function getSeverityColor(severity: string): string {
     case 'mild': return '#8F6A1F';
     case 'moderate': return '#B5522F';
     case 'severe': case 'alert': return '#B23A3A';
+    default: return '#CFC6B8';
+  }
+}
+
+function getSeverityText(severity: string): string {
+  switch (severity) {
+    case 'positive': case 'none': case 'minimal': return '#7FD1A0';
+    case 'mild': return '#E9C88F';
+    case 'moderate': return '#F0A06F';
+    case 'severe': case 'alert': return '#F09A7A';
     default: return '#CFC6B8';
   }
 }
@@ -197,7 +210,7 @@ const ScaleRow: React.FC<{
             <div className="flex items-center gap-2 mt-1 flex-wrap">
               <span
                 className="inline-block px-2.5 py-0.5 rounded-full text-[11px] font-bold"
-                style={{ background: getSeverityBg(result.interpretation.severity), color: getSeverityColor(result.interpretation.severity) }}
+                style={{ background: getSeverityBg(result.interpretation.severity), color: getSeverityText(result.interpretation.severity) }}
               >
                 {result.interpretation.label}
               </span>
@@ -212,7 +225,7 @@ const ScaleRow: React.FC<{
                   type="button"
                   onClick={() => onToggle(scale.id)}
                   className="bg-transparent border-0 p-0 text-[11px] font-bold cursor-pointer"
-                  style={{ color: catColor.accent }}
+                  style={{ color: lightAccent(catColor.accent) }}
                 >
                   {isExpanded ? 'Masquer' : 'Voir mon analyse'}
                 </button>
@@ -256,7 +269,7 @@ const ScaleRow: React.FC<{
                         </div>
                       )}
                       {/* 3 Conseils */}
-                      <div className="flex items-center gap-1 text-[10px] font-bold uppercase mb-1.5 tracking-wide" style={{ color: catColor.accent }}>
+                      <div className="flex items-center gap-1 text-[10px] font-bold uppercase mb-1.5 tracking-wide" style={{ color: lightAccent(catColor.accent) }}>
                         <CheckCircle2 size={11} /> Mes 3 conseils
                       </div>
                       <div className="flex flex-col gap-2">
@@ -609,7 +622,7 @@ const ProfileCard: React.FC<{
                 const sevColor = getSeverityColor(result.interpretation.severity);
                 return (
                   <div key={scale.id} className="flex items-center gap-2 rounded-lg px-2.5 py-1.5" style={{ background: 'rgba(255,255,255,.06)' }}>
-                    <span className="w-5 flex items-center justify-center flex-shrink-0" style={{ color: sevColor }}>
+                    <span className="w-5 flex items-center justify-center flex-shrink-0" style={{ color: getSeverityText(result.interpretation.severity) }}>
                       <meta.icon size={15} />
                     </span>
                     <span className="text-xs font-semibold text-ink flex-1 min-w-0">
@@ -617,7 +630,7 @@ const ProfileCard: React.FC<{
                     </span>
                     <span
                       className="inline-flex items-center gap-1 text-[11px] font-bold rounded-full px-2.5 py-0.5 whitespace-nowrap flex-shrink-0"
-                      style={{ background: `${sevColor}18`, color: sevColor, border: `1px solid ${sevColor}30` }}
+                      style={{ background: `${sevColor}18`, color: getSeverityText(result.interpretation.severity), border: `1px solid ${sevColor}30` }}
                     >
                       {result.interpretation.label}
                     </span>
@@ -1310,7 +1323,7 @@ const AssessmentCategoryPage: React.FC = () => {
                     const sevColor = getSeverityColor(result.interpretation.severity);
                     return (
                       <div key={scale.id} className="flex items-center gap-2 rounded-lg px-2.5 py-1.5" style={{ background: 'rgba(233,200,143,.13)' }}>
-                        <span className="w-5 flex items-center justify-center flex-shrink-0" style={{ color: sevColor }}>
+                        <span className="w-5 flex items-center justify-center flex-shrink-0" style={{ color: getSeverityText(result.interpretation.severity) }}>
                           <meta.icon size={14} />
                         </span>
                         <span className="text-[11px] font-semibold text-ink flex-1 min-w-0">
@@ -1318,7 +1331,7 @@ const AssessmentCategoryPage: React.FC = () => {
                         </span>
                         <span
                           className="inline-flex items-center gap-1 text-[10px] font-bold rounded-full px-2 py-0.5 whitespace-nowrap flex-shrink-0"
-                          style={{ background: `${sevColor}18`, color: sevColor, border: `1px solid ${sevColor}30` }}
+                          style={{ background: `${sevColor}18`, color: getSeverityText(result.interpretation.severity), border: `1px solid ${sevColor}30` }}
                         >
                           {result.interpretation.label}
                         </span>
