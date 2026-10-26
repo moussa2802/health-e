@@ -39,6 +39,10 @@ export type Card =
   | { type: 'signup'; mode?: 'signup' | 'login' }
   | { type: 'link_account' }
   | { type: 'result'; path: string }
+  /** Carte du résultat à partager (WhatsApp, story) : affichée dans la conversation. */
+  | { type: 'result_card'; scaleId: string }
+  /** Silhouette floue du totem + progression : « Plus que N tests ». */
+  | { type: 'totem_teaser'; remaining: number; total: number }
   | { type: 'go'; to: GoTarget }
   | { type: 'defi_preview'; items?: { text: string; tag?: 'perso' | 'totem'; note?: string }[]; questions?: string[] }
   | { type: 'defi_share'; slug: string }
@@ -133,7 +137,7 @@ export interface Known {
 export const NEED_TO_SCALE: Record<Need, string> = {
   stress: 'gad7',      // Anxiété
   mal: 'phq9',         // Humeur & Dépression
-  couple: 'ecr_r',     // Style d'attachement (les tests « vie intime » demandent un compte)
+  couple: 'rses',      // Estime de soi (court : le test d'attachement fait 36 questions, trop long pour un premier test)
   connaitre: 'big_five', // Personnalité
   decouvre: 'big_five',
 };
@@ -294,8 +298,28 @@ export function addExchange(s: AccueilState, userText: string | null, drlo: (str
   return out;
 }
 
+/** Tests longs (> 10 questions) : jamais proposés avant d'avoir fait quelques tests courts. */
+export const LONG_SCALES = ['ecr_r'];
+const MIN_DONE_BEFORE_LONG = 3;
+
 export function pickNextScale(need: Need, done: string[], exclude: string[] = []): string | null {
-  return NEXT_ORDER[need].find(id => !done.includes(id) && !exclude.includes(id)) ?? null;
+  const longOk = done.length >= MIN_DONE_BEFORE_LONG;
+  return NEXT_ORDER[need].find(id => !done.includes(id) && !exclude.includes(id) && (longOk || !LONG_SCALES.includes(id))) ?? null;
+}
+
+/** Les 7 tests du totem (même liste que TOTEM_REQUIRED_SCALES dans totemAlgorithm.ts, dupliquée ici pour rester testable sans bundler). */
+const TOTEM_REQUIRED_SCALES = ['big_five', 'rses', 'ecr_r', 'brs', 'gad7', 'pss10', 'phq9'];
+
+/** Combien de tests manquent avant de pouvoir révéler le totem (7 tests psy). */
+export function totemRemaining(doneScaleIds: string[]): { remaining: number; total: number } {
+  const total = TOTEM_REQUIRED_SCALES.length;
+  return { remaining: TOTEM_REQUIRED_SCALES.filter(id => !doneScaleIds.includes(id)).length, total };
+}
+
+function totemLine(remaining: number): string {
+  return remaining > 0
+    ? `Plus que ${remaining} test${remaining > 1 ? 's' : ''} pour découvrir ton animal-totem.`
+    : `Tu as tout ce qu'il faut : ton animal-totem est prêt à être révélé.`;
 }
 
 // ── Démarrage ─────────────────────────────────────────────────────────────────
@@ -527,6 +551,8 @@ export interface AfterTestCtx {
   guestRemaining: number | null;
   /** Lien vers le résultat détaillé (test fait dans la conversation). */
   resultPath?: string;
+  /** Commentaire de Dr Lô sur la personne (IA, quelques phrases). Absent = texte par défaut. */
+  aiComment?: string;
 }
 
 export function afterTest(state: AccueilState, o: TestOutcome, ctx: AfterTestCtx, k: Known): AccueilState {
@@ -541,6 +567,9 @@ export function afterTest(state: AccueilState, o: TestOutcome, ctx: AfterTestCtx
     : `Tu as terminé le test « ${label} » 👏 Ton repère : « ${o.resultLabel} ».`,
     ctx.resultPath ? { type: 'result', path: ctx.resultPath } : undefined);
 
+  // Le vrai commentaire de Dr Lô (jamais pour une réponse critique : messages validés seulement)
+  if (!critical && ctx.aiComment && ctx.aiComment.trim()) s = push(s, 'drlo', ctx.aiComment.trim());
+
   // Une réponse critique (ex. idées noires) compte plus que le score global :
   // pas de « c'est rassurant », pas de test suivant proposé, orientation humaine.
   if (critical) {
@@ -551,28 +580,37 @@ export function afterTest(state: AccueilState, o: TestOutcome, ctx: AfterTestCtx
 
   if (o.referralRequired || o.severity === 'severe' || o.severity === 'alert') {
     s = push(s, 'drlo', `Ce résultat montre que tu traverses une période vraiment difficile. Je ne pose pas de diagnostic, mais je te conseille d'en parler à un professionnel de santé : tu mérites d'être ${g(s, 'accompagné', 'accompagnée')}.`, { type: 'crisis' });
-  } else if (o.severity === 'moderate') {
+  } else if (o.severity === 'moderate' && !ctx.aiComment) {
     s = push(s, 'drlo', `Ça montre que ça pèse vraiment en ce moment. C'est déjà un pas de l'avoir mis en lumière.`);
   } else if ((o.alertLevel ?? 0) >= 2) {
     s = push(s, 'drlo', `Dans l'ensemble, c'est plutôt modéré. Mais une de tes réponses mérite qu'on s'y arrête : le détail est dans ton résultat, et en parler à un professionnel peut vraiment aider.`);
-  } else {
+  } else if (!ctx.aiComment) {
     s = push(s, 'drlo', `C'est plutôt rassurant. Ça ne veut pas dire que tout est simple, mais tu as des ressources.`);
   }
 
   const done = [...k.doneScaleIds, o.scaleId];
   const next = pickNextScale(s.need ?? 'decouvre', done);
+  const tt = totemRemaining(done);
+
+  // La carte du résultat à partager, puis la progression vers le totem (silhouette floue)
+  s = push(s, 'drlo', 'Si tu veux, partage ton résultat : une carte prête pour WhatsApp ou une story.', { type: 'result_card', scaleId: o.scaleId });
 
   if (ctx.guestRemaining !== null && ctx.guestRemaining <= 0) {
-    s = push(s, 'drlo', `Ton portrait se dessine : ${ctx.portraitPct} %. Tu as utilisé tes tests gratuits : crée ton compte pour le garder et qu'on continue ensemble.`, { type: 'signup' });
+    s = push(s, 'drlo', `${totemLine(tt.remaining)} Tu as fait tes tests gratuits : crée ton compte pour garder ton résultat et continuer vers ton totem.`, { type: 'signup' });
     return { ...s, step: 'prescribed' };
   }
+  if (tt.remaining === 0) {
+    s = push(s, 'drlo', totemLine(0), { type: 'go', to: 'totem' });
+    return { ...s, step: 'prescribed' };
+  }
+  s = push(s, 'drlo', totemLine(tt.remaining), { type: 'totem_teaser', remaining: tt.remaining, total: tt.total });
   if (!next) {
-    s = push(s, 'drlo', `Ton portrait se dessine : ${ctx.portraitPct} %. Il reste encore plein de pièces à découvrir dans le catalogue.`);
+    s = push(s, 'drlo', 'Il reste encore plein de pièces à découvrir dans le catalogue.');
     return { ...s, step: 'prescribed' };
   }
   const why = WHY_NEXT[next];
   const rest = ctx.guestRemaining !== null ? ` Il te reste ${ctx.guestRemaining} test${ctx.guestRemaining > 1 ? 's' : ''} gratuit${ctx.guestRemaining > 1 ? 's' : ''}.` : '';
-  s = push(s, 'drlo', `Ton portrait se dessine : ${ctx.portraitPct} %. La prochaine pièce, c'est « ${k.labelOf(next)} »${why ? `, pour ${why}` : ''}. On en reparle juste après ?${rest}`, { type: 'test', scaleId: next });
+  s = push(s, 'drlo', `La prochaine pièce, c'est « ${k.labelOf(next)} »${why ? `, pour ${why}` : ''}. On y va ?${rest}`, { type: 'test', scaleId: next });
   return { ...s, step: 'prescribed', prescribed: next };
 }
 

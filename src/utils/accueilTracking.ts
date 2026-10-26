@@ -18,7 +18,7 @@ export type AccueilEvent =
   | 'cycle_set' | 'cycle_period' | 'mood_erase_all' | 'espace_view'
   | 'question_sent' | 'queue_join' | 'invite_share'
   | 'programme_offer' | 'programme_proposed' | 'programme_start' | 'programme_open' | 'programme_bilan' | 'programme_end'
-  | 'reminders_offer';
+  | 'reminders_offer' | 'result_share';
 
 export function trackAccueil(event: AccueilEvent, params: Record<string, string | number | boolean> = {}): void {
   try {

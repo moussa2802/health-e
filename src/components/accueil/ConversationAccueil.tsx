@@ -51,6 +51,8 @@ import {
   type QuickReply,
 } from '../../utils/accueilFlow';
 import { computePortrait } from '../../utils/drLoGuide';
+import ResultShareCard from './ResultShareCard';
+import TotemTeaserCard from './TotemTeaserCard';
 import { getMoment, greetingFor, PALETTES, type MomentPalette } from '../../utils/drloMoment';
 import {
   dayKey, loadMoods, MOOD_STORAGE_PREFIX, moodById, moodReply, MOODS, type MoodId,
@@ -70,6 +72,7 @@ import { invalidateTalkContext, rememberNow, talk as talkToDrLo, type TalkAction
 /** Messages offerts chaque jour avec Dr Lô (même valeur que netlify/functions/_chatAllowance.js). */
 const FREE_MESSAGES = 15;
 import { useDictation } from '../../hooks/useDictation';
+import { fetchResultComment } from '../../services/drloResultService';
 import { startChatTest, recordAnswer, finishChatTest, loadScale } from '../../services/chatTestRunner';
 import { routeText } from '../../services/drloRouteService';
 import { checkCompatCode, defiCreate, defiPreview, defiUrl, loadSocialProfile, runCompat, type DefiInput } from '../../services/socialChat';
@@ -83,7 +86,7 @@ import { getTotemProgress, getTotemSignature, totemWords, type TotemAnimal } fro
 import {
   convStorageKey, createConv, deleteConv, loadIndex, MAIN_ID, renameConv, saveIndex, sortedConvs, touchConv, type ConvIndex,
 } from '../../utils/conversations';
-import { KORIS_COSTS, isTestFreeRetake } from '../../services/korisService';
+import { KORIS_COSTS, isTestFreeRetake, isFirstTestFree } from '../../services/korisService';
 import ProgrammePanel from './ProgrammePanel';
 import NotificationsPanel, { NotifOptinCard, type LiveItem } from './NotificationsPanel';
 import { loadInbox, type InboxItem } from '../../services/inboxService';
@@ -1305,6 +1308,19 @@ const ConversationAccueil: React.FC = () => {
       setResults(newResults);
       const doneCore = [...MENTAL_HEALTH_SCALES, ...SEXUAL_HEALTH_SCALES].filter(x => newResults[x.id]).length;
       const remaining = Math.max(0, GUEST_MAX_TESTS - getGuestCount());
+      const aiComment = await fetchResultComment({
+        scaleId: t.scaleId,
+        scaleLabel: label(t.scaleId),
+        resultLabel: result.interpretation?.label ?? '',
+        severity: result.interpretation?.severity ?? 'none',
+        description: result.interpretation?.description,
+        subscales: result.subscaleScores,
+        prenom: known.prenom,
+        genre: known.genre,
+        guest: !isAuthenticated,
+        alertLevel: result.alertLevel ?? 0,
+        referralRequired: !!result.interpretation?.referralRequired,
+      }) ?? undefined;
       const cur = stateRef.current ?? s;
       const next = afterTest(cur, {
         scaleId: t.scaleId,
@@ -1316,6 +1332,7 @@ const ConversationAccueil: React.FC = () => {
         portraitPct: computePortrait({ doneCore, totalCore: TOTAL_CORE, journalCount: 0, chatCount: 0 }),
         guestRemaining: isAuthenticated ? null : remaining,
         resultPath: resultsPath,
+        aiComment,
       }, { ...known, doneScaleIds: Object.keys(newResults), guestRemaining: remaining });
       const sig = isAuthenticated && !progRef.current ? programmeSignals(newResults).find(x => x.scaleId === t.scaleId) : undefined;
       apply(sig ? addExchange(next, null, [programmeInvite(sig)]) : next, cur, 'reading');
@@ -1709,8 +1726,9 @@ const ConversationAccueil: React.FC = () => {
                     card={m.card!}
                     palette={palette}
                     busy={!!testBusy || state.step === 'testing'}
-                    costLabel={(id: string) => (!isAuthenticated || isTestFreeRetake(results?.[id]?.completedAt as Date | undefined) ? 'gratuit' : credits(KORIS_COSTS.test))}
+                    costLabel={(id: string) => (!isAuthenticated || isTestFreeRetake(results?.[id]?.completedAt as Date | undefined) || isFirstTestFree(Object.keys(results ?? {}).length, !!results?.[id]) ? 'gratuit' : credits(KORIS_COSTS.test))}
                     onStart={startTest}
+                    results={results}
                     onOpen={(path: string) => navigate(path)}
                     prenom={state.prenom}
                     genre={state.genre}
@@ -2351,7 +2369,8 @@ const ChatCard: React.FC<{
   prog?: ProgCardEnv;
   notif?: { uid: string; onDone: (text: string) => void; onSettings: () => void };
   onQuick?: (what: 'breath' | 'mood' | 'programme') => void;
-}> = ({ card, palette, busy, costLabel, onStart, onOpen, prenom, genre, onLinked, onGo, prog, notif, onQuick }) => {
+  results?: Record<string, ScaleResult> | null;
+}> = ({ card, palette, busy, costLabel, onStart, onOpen, prenom, genre, onLinked, onGo, prog, notif, onQuick, results }) => {
   if (card.type === 'quick') {
     const QL = { breath: 'Respirer 1 minute avec moi', mood: 'Noter mon humeur', programme: 'Voir le programme qui me conviendrait' } as const;
     return onQuick ? (
@@ -2458,6 +2477,8 @@ const ChatCard: React.FC<{
   }
   if (card.type === 'signup') return <SignupCard mode={card.mode ?? 'signup'} prenom={prenom} genre={genre} palette={palette} />;
   if (card.type === 'link_account') return <LinkAccountCard palette={palette} onLinked={onLinked} />;
+  if (card.type === 'result_card') return <ResultShareCard scaleId={card.scaleId} result={results?.[card.scaleId]} />;
+  if (card.type === 'totem_teaser') return <TotemTeaserCard remaining={card.remaining} total={card.total} />;
   if (card.type === 'result') {
     return (
       <div className="drl-in" style={{ marginTop: 10 }}>

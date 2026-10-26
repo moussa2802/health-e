@@ -52,6 +52,7 @@ import {
 } from '../../utils/drLoGuide';
 import { db } from '../../utils/firebase';
 
+import { TOTEM_REQUIRED_SCALES } from '../../utils/totemAlgorithm';
 import lionImg from '../../assets/totems/lion.jpg';
 import loupImg from '../../assets/totems/loup.jpg';
 import cerfImg from '../../assets/totems/cerf.jpg';
@@ -285,7 +286,9 @@ const AssessmentHomePage: React.FC = () => {
 
   // ── Accueil proactif de Dr Lô (Modif B) ──
   // Portrait : tests (70 %) + journal (15 %) + conversations (15 %)
-  const portraitPct = computePortrait({ doneCore, totalCore, journalCount, chatCount });
+  const totemDone = TOTEM_REQUIRED_SCALES.filter(id => profileResults[id]).length;
+  const portraitPct = Math.round((totemDone / TOTEM_REQUIRED_SCALES.length) * 100);
+  void computePortrait;
   const ringOffset = RING_C - (portraitPct / 100) * RING_C;
 
   // Dernier test terminé + jours d'activité (tests + journal) pour la série
@@ -462,8 +465,8 @@ const AssessmentHomePage: React.FC = () => {
                   transform="rotate(-90 37 37)"
                   style={{ transition: 'stroke-dashoffset 1.3s cubic-bezier(.2,.7,.3,1)' }}
                 />
-                <text x="37" y="37" textAnchor="middle" dominantBaseline="central" className="font-display" fill="#F4F1E9" fontSize="17" fontWeight="700">
-                  {portraitPct}%
+                <text x="37" y="37" textAnchor="middle" dominantBaseline="central" className="font-display" fill="#F4F1E9" fontSize="15" fontWeight="700">
+                  {totemDone}/{TOTEM_REQUIRED_SCALES.length}
                 </text>
               </svg>
             </div>
@@ -476,7 +479,12 @@ const AssessmentHomePage: React.FC = () => {
                 )}
               </h2>
               <p className="text-[12px] text-white/70 m-0 mt-0.5">
-                Ton portrait se dessine : <span className="text-white font-bold">{portraitPct} %</span>
+                {(() => {
+                  const left = Math.max(0, 7 - totemDone);
+                  return left > 0
+                    ? <>Plus que <span className="text-white font-bold">{left}</span> test{left > 1 ? 's' : ''} pour découvrir ton totem</>
+                    : <>Ton animal-totem est prêt à être révélé</>;
+                })()}
               </p>
               <p className="text-[11px] text-white/45 m-0 mt-0.5 flex items-center gap-2 flex-wrap">
                 <span><span className="text-white/75 font-bold">{doneCore}</span>/{totalCore} tests</span>

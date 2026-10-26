@@ -147,6 +147,13 @@ export interface TestSpendResult {
 
 const FREE_RETAKE_DAYS = 30;
 
+/** Les 3 premiers tests d'un compte sont offerts (même règle côté serveur : koris-spend.js). */
+export const FREE_FIRST_TESTS = 3;
+
+export function isFirstTestFree(doneCount: number, alreadyTaken: boolean): boolean {
+  return !alreadyTaken && doneCount < FREE_FIRST_TESTS;
+}
+
 export function isTestFreeRetake(lastTakenAt: string | Date | undefined): boolean {
   if (!lastTakenAt) return false;
   const ts = lastTakenAt instanceof Date ? lastTakenAt.getTime() : new Date(lastTakenAt).getTime();

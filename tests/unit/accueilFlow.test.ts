@@ -2,7 +2,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  startConversation, respond, afterTest, getQuickReplies, detectCrisis, classifyNeed,
+  startConversation, respond, afterTest, pickNextScale, getQuickReplies, detectCrisis, classifyNeed,
   parsePrenom, parseAge, type Known, type AccueilState,
 } from '../../src/utils/accueilFlow.ts';
 
@@ -39,7 +39,7 @@ test('stress → genre → âge → carte test Anxiété (3 échanges, prénom p
 
 test('correspondances besoin → test', () => {
   assert.equal(guestToPrescription('need:mal').prescribed, 'phq9');
-  assert.equal(guestToPrescription('need:couple').prescribed, 'ecr_r');
+  assert.equal(guestToPrescription('need:couple').prescribed, 'rses'); // jamais un test de 36 questions en premier
   assert.equal(guestToPrescription('need:connaitre').prescribed, 'big_five');
   assert.equal(guestToPrescription('need:decouvre').prescribed, 'big_five');
 });
@@ -110,11 +110,15 @@ test('après le test : commentaire + portrait + prochaine pièce (règle d\'or)'
   let s = guestToPrescription('need:stress');
   const k = { ...guest, doneScaleIds: ['gad7'] };
   s = afterTest(s, { scaleId: 'gad7', resultLabel: 'Anxiété légère', severity: 'mild', referralRequired: false }, { portraitPct: 3, guestRemaining: 2 }, k);
-  const txt = s.messages.slice(-3).map(m => m.text).join(' ');
+  const txt = s.messages.slice(-5).map(m => m.text).join(' ');
   assert.match(txt, /Anxiété légère/);
-  assert.match(txt, /portrait se dessine : 3 %/);
+  assert.match(txt, /Plus que 6 tests pour découvrir ton animal-totem/);
+  assert.doesNotMatch(txt, /portrait se dessine/);
   assert.match(txt, /2 tests gratuits/);
   assert.equal(s.prescribed, 'pss10');
+  const kinds = s.messages.map(m => m.card?.type);
+  assert.ok(kinds.includes('result_card'), 'carte de résultat partageable');
+  assert.ok(kinds.includes('totem_teaser'), 'silhouette du totem');
   // pas de double commentaire
   const again = afterTest(s, { scaleId: 'gad7', resultLabel: 'x', severity: 'mild', referralRequired: false }, { portraitPct: 3, guestRemaining: 2 }, k);
   assert.equal(again.messages.length, s.messages.length);
@@ -149,4 +153,19 @@ test('crise en wolof (plusieurs orthographes)', () => {
   for (const t of ['dama bëgg dem', 'dama sonn', 'nanga def', 'dama bëgg xam sama bopp', 'idée']) {
     assert.ok(!detectCrisis(t), t);
   }
+});
+
+test('jamais le test d\'attachement (36 questions) juste après un premier test', () => {
+  assert.equal(pickNextScale('couple', ['rses']), 'big_five');
+  assert.ok(!['ecr_r'].includes(pickNextScale('connaitre', ['big_five']) ?? ''));
+  assert.equal(pickNextScale('connaitre', ['big_five', 'rses', 'brs']), 'ecr_r'); // plus tard, c'est permis
+});
+
+test('dernier test du totem : plus de silhouette, on propose de le révéler', () => {
+  const k = { ...guest, isAuthenticated: true, doneScaleIds: ['big_five', 'rses', 'ecr_r', 'brs', 'gad7', 'pss10'] };
+  let s = guestToPrescription('need:stress');
+  s = afterTest(s, { scaleId: 'phq9', resultLabel: 'Moral plutôt bon', severity: 'minimal', referralRequired: false }, { portraitPct: 50, guestRemaining: null }, k);
+  const last = s.messages[s.messages.length - 1];
+  assert.match(last.text, /totem est prêt/);
+  assert.deepEqual(last.card, { type: 'go', to: 'totem' });
 });
