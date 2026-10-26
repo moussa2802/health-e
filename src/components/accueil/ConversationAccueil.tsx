@@ -272,6 +272,8 @@ const ConversationAccueil: React.FC = () => {
   const [notifView, setNotifView] = useState<'list' | 'settings' | null>(null);
   const [pushOn, setPushOn] = useState<boolean | null>(null);
   const [pushHour, setPushHour] = useState(19);
+  /** Messages offerts restants aujourd'hui (connu après le premier message). */
+  const [freeLeft, setFreeLeft] = useState<number | null>(null);
   /** Reprendre l'activation des rappels dans le chat (retour depuis TikTok, l'écran d'accueil…). */
   const [resumeAsk, setResumeAsk] = useState<null | 'link' | `auto:${string}`>(null);
   const [state, setState] = useState<AccueilState | null>(null);
@@ -1602,8 +1604,6 @@ const ConversationAccueil: React.FC = () => {
     if (draft) setInput(draft);
   };
 
-  /** Messages offerts restants aujourd'hui (connu après le premier message). */
-  const [freeLeft, setFreeLeft] = useState<number | null>(null);
 
   /**
    * LE Dr Lô : chaque message d'une personne connectée lui arrive, avec son profil, sa mémoire
