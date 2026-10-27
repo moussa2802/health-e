@@ -8,6 +8,7 @@ import React, { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import DrLoShell, { DC, card, usePalette } from '../../components/accueil/DrLoShell';
 import MessageComments from '../../components/accueil/MessageComments';
+import RealDrLoBadge, { RealDrLoPhoto } from '../../components/accueil/RealDrLoBadge';
 import { useAuth } from '../../contexts/AuthContext';
 import {
   getInbox, openMessage, reactToMessage, REACTIONS,
@@ -60,7 +61,8 @@ const MessagesDrLoPage: React.FC = () => {
         {msg && (
           <>
             <article style={{ ...card, marginTop: 16 }}>
-              <p style={{ margin: 0, fontSize: 12, color: DC.faint }}>{day(msg.at)}</p>
+              <RealDrLoBadge palette={palette} kind={msg.audio ? 'vocal' : 'texte'} />
+              <p style={{ margin: '12px 0 0', fontSize: 12, color: DC.faint }}>{day(msg.at)}</p>
               {msg.audio && (audioUrl
                 ? <audio controls preload="metadata" src={audioUrl} aria-label="Le vocal de Dr Lô" style={{ width: '100%', marginTop: 10 }} />
                 : <p style={{ margin: '10px 0 0', fontSize: 14, color: DC.muted }}>Le vocal n'est pas disponible pour le moment. Réessaie dans un instant.</p>)}
@@ -92,11 +94,14 @@ const MessagesDrLoPage: React.FC = () => {
       {items && items.length === 0 && <p style={{ marginTop: 16, color: DC.muted, fontSize: 15, lineHeight: 1.55 }}>Pas encore de message. Quand Dr Lô t'en laissera un, tu le retrouveras ici.</p>}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 16 }}>
         {(items ?? []).map(i => (
-          <Link key={i.id} to={`/messages-dr-lo/${i.id}`} className="drl-btn" style={{ ...card, textDecoration: 'none', display: 'block', borderColor: i.seen ? DC.line : palette.accent }}>
+          <Link key={i.id} to={`/messages-dr-lo/${i.id}`} className="drl-btn" style={{ ...card, textDecoration: 'none', display: 'flex', gap: 12, alignItems: 'flex-start', borderColor: i.seen ? DC.line : palette.accent }}>
+            <RealDrLoPhoto size={40} palette={palette} />
+            <span style={{ flex: 1, minWidth: 0 }}>
             <span style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: DC.faint }}>
               <span>{day(i.at)}</span>{!i.seen && <b style={{ color: palette.accent }}>Nouveau</b>}
             </span>
             <span style={{ marginTop: 6, fontSize: 15, lineHeight: 1.5, color: DC.soft, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' } as React.CSSProperties}>{i.text || '🎙 Un vocal de Dr Lô'}</span>
+          </span>
           </Link>
         ))}
       </div>

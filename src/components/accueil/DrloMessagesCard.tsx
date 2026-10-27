@@ -4,7 +4,7 @@
  */
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Mail } from 'lucide-react';
+import { RealDrLoPhoto } from './RealDrLoBadge';
 import { DC } from './DrLoShell';
 import type { MomentPalette } from '../../utils/drloMoment';
 import { getInbox } from '../../services/drloBroadcastService';
@@ -23,8 +23,11 @@ const DrloMessagesCard: React.FC<{ uid: string; palette: MomentPalette }> = ({ u
   return (
     <Link to={first.unread > 1 ? '/messages-dr-lo' : `/messages-dr-lo/${first.id}`} className="drl-in drl-btn"
       style={{ display: 'flex', alignItems: 'center', gap: 12, textDecoration: 'none', padding: '12px 14px', borderRadius: 18, border: `1px solid ${palette.accent}`, background: 'rgba(242,182,109,.10)', color: DC.text }}>
-      <Mail size={20} color={palette.accent} aria-hidden="true" />
-      <span style={{ flex: 1, fontSize: 15, fontWeight: 700 }}>Dr Lô t'a laissé un message</span>
+      <RealDrLoPhoto size={40} palette={palette} />
+      <span style={{ flex: 1 }}>
+        <span style={{ display: 'block', fontSize: 15, fontWeight: 700 }}>Dr Lô t'a laissé un message</span>
+        <span style={{ display: 'block', marginTop: 1, fontSize: 12, color: DC.muted }}>Écrit par lui, pas par l'IA</span>
+      </span>
       {first.unread > 1 && <span style={{ minWidth: 22, height: 22, borderRadius: 11, background: palette.accent, color: DC.ink, fontSize: 12.5, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 6px' }}>{first.unread}</span>}
     </Link>
   );

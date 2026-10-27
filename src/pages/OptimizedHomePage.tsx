@@ -31,9 +31,6 @@ const OptimizedHomePage: React.FC = () => {
         <Link to="/conditions" className="inline-flex min-h-[44px] items-center text-[#A79E90] no-underline transition-colors hover:text-[#F2B66D]">
           Conditions
         </Link>
-        <Link to="/professional/access" className="inline-flex min-h-[44px] items-center text-[#A79E90] no-underline transition-colors hover:text-[#F2B66D]">
-          Espace professionnel
-        </Link>
         <Link to="/equipe" className="inline-flex min-h-[44px] items-center text-[#A79E90] no-underline transition-colors hover:text-[#F2B66D]">
           Accès équipe
         </Link>
