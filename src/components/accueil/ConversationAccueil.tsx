@@ -92,6 +92,7 @@ import {
 import { KORIS_COSTS, isTestFreeRetake, isFirstTestFree } from '../../services/korisService';
 import ProgrammePanel from './ProgrammePanel';
 import DrloMessagesCard from './DrloMessagesCard';
+import DrloInboxButton from './DrloInboxButton';
 import NotificationsPanel, { NotifOptinCard, type LiveItem } from './NotificationsPanel';
 import { loadInbox, type InboxItem } from '../../services/inboxService';
 import { canProposeReminders, loadPrefs, markSeen, noteProposed, permissionState, pushSupport } from '../../services/pushService';
@@ -2191,7 +2192,10 @@ const ConversationAccueil: React.FC = () => {
 
         {/* Dr Lô */}
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: 18 }}>
-          <DrLoAvatar state={avatarState} palette={palette} aura={isAuthenticated && !korisLoading ? balance / AURA_FULL : null} />
+          <div style={{ position: 'relative', width: '100%', display: 'flex', justifyContent: 'center' }}>
+            <DrLoAvatar state={avatarState} palette={palette} aura={isAuthenticated && !korisLoading ? balance / AURA_FULL : null} />
+            {isAuthenticated && currentUser && <DrloInboxButton uid={currentUser.id} palette={palette} />}
+          </div>
           {statusLabel ? (
             <p role="status" className="drl-in" key={statusLabel}
               style={breathing

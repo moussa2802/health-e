@@ -25,6 +25,7 @@ const MessagesDrLoPage: React.FC = () => {
   const navigate = useNavigate();
   const { isAuthenticated, authReady } = useAuth();
   const [items, setItems] = useState<InboxItem[] | null>(null);
+  const [news, setNews] = useState({ unread: 0, replies: 0, comments: 0 });
   const [msg, setMsg] = useState<InboxItem | null>(null);
   const [counts, setCounts] = useState<Counts | null>(null);
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
@@ -39,7 +40,7 @@ const MessagesDrLoPage: React.FC = () => {
       openMessage(id).then(r => { setMsg(r.message); setAudioUrl(r.audioUrl ?? null); setCounts(r.counts); setMine(r.message.reaction); })
         .catch(() => setError('Ce message n\'est plus disponible.'));
     } else {
-      getInbox().then(r => setItems(r.items)).catch(() => setError('Impossible de charger tes messages pour le moment.'));
+      getInbox().then(r => { setItems(r.items); setNews({ unread: r.unread, replies: r.newReplies ?? 0, comments: r.newComments ?? 0 }); }).catch(() => setError('Impossible de charger tes messages pour le moment.'));
     }
   }, [id, authReady, isAuthenticated, navigate]);
 
@@ -92,6 +93,20 @@ const MessagesDrLoPage: React.FC = () => {
       {error && <p role="alert" style={{ marginTop: 16, color: DC.muted, fontSize: 15 }}>{error}</p>}
       {!items && !error && <p style={{ marginTop: 16, color: DC.faint }}>Un instant…</p>}
       {items && items.length === 0 && <p style={{ marginTop: 16, color: DC.muted, fontSize: 15, lineHeight: 1.55 }}>Pas encore de message. Quand Dr Lô t'en laissera un, tu le retrouveras ici.</p>}
+      {items && items.length > 0 && (
+        <section aria-label="Du nouveau" style={{ ...card, marginTop: 16, borderColor: (news.unread + news.replies + news.comments) > 0 ? palette.accent : DC.line }}>
+          <p style={{ margin: 0, fontSize: 12, letterSpacing: '.12em', textTransform: 'uppercase', color: palette.accent, fontWeight: 700 }}>Du nouveau</p>
+          {(news.unread + news.replies + news.comments) === 0 ? (
+            <p style={{ margin: '8px 0 0', fontSize: 14.5, color: DC.muted }}>Tu es à jour. Rien de nouveau pour le moment.</p>
+          ) : (
+            <ul style={{ margin: '8px 0 0', padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 6, fontSize: 15, color: DC.text }}>
+              {news.unread > 0 && <li>📩 {news.unread} nouveau{news.unread > 1 ? 'x' : ''} message{news.unread > 1 ? 's' : ''} de Dr Lô</li>}
+              {news.replies > 0 && <li>💬 Dr Lô a répondu à {news.replies > 1 ? `${news.replies} de tes commentaires` : 'un de tes commentaires'}</li>}
+              {news.comments > 0 && <li>🗨 {news.comments} nouveau{news.comments > 1 ? 'x' : ''} commentaire{news.comments > 1 ? 's' : ''} de la communauté</li>}
+            </ul>
+          )}
+        </section>
+      )}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 16 }}>
         {(items ?? []).map(i => (
           <Link key={i.id} to={`/messages-dr-lo/${i.id}`} className="drl-btn" style={{ ...card, textDecoration: 'none', display: 'flex', gap: 12, alignItems: 'flex-start', borderColor: i.seen ? DC.line : palette.accent }}>
@@ -101,6 +116,14 @@ const MessagesDrLoPage: React.FC = () => {
               <span>{day(i.at)}</span>{!i.seen && <b style={{ color: palette.accent }}>Nouveau</b>}
             </span>
             <span style={{ marginTop: 6, fontSize: 15, lineHeight: 1.5, color: DC.soft, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' } as React.CSSProperties}>{i.text || '🎙 Un vocal de Dr Lô'}</span>
+            {(i.commentsOpen || (i.newReplies ?? 0) > 0) && (
+              <span style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 8 }}>
+                {(i.newReplies ?? 0) > 0 && <span style={{ fontSize: 12, fontWeight: 700, padding: '3px 9px', borderRadius: 999, background: 'rgba(242,182,109,.16)', color: palette.accent }}>Dr Lô t'a répondu</span>}
+                {i.commentsOpen && <span style={{ fontSize: 12, fontWeight: 600, padding: '3px 9px', borderRadius: 999, background: DC.glass, color: (i.newComments ?? 0) > 0 ? palette.accent : DC.muted }}>
+                  💬 {i.commentsTotal ?? 0} commentaire{(i.commentsTotal ?? 0) > 1 ? 's' : ''}{(i.newComments ?? 0) > 0 ? ` · ${i.newComments} nouveau${(i.newComments ?? 0) > 1 ? 'x' : ''}` : ''}
+                </span>}
+              </span>
+            )}
           </span>
           </Link>
         ))}

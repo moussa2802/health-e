@@ -164,12 +164,25 @@ exports.handler = async (event) => {
       const ids = Object.keys(rmap);
       const refs = ids.map((id) => db.collection('broadcasts').doc(id));
       const snaps = await db.getAll(...refs);
+      // Du neuf côté commentaires : réponses de Dr Lô aux commentaires de la personne, et commentaires des autres depuis sa dernière visite
+      const mineSnap = await db.collection('broadcastComments').where('uid', '==', uid).limit(200).get().catch(() => null);
+      const myRows = mineSnap ? mineSnap.docs.map((d) => d.data()) : [];
       const items = snaps
         .filter((s) => s.exists && !s.data().hidden && ['sending', 'sent'].includes(s.data().status))
-        .map((s) => publicMessage(s.id, s.data(), rmap[s.id]))
+        .map((s) => {
+          const r = rmap[s.id] || {};
+          const b = s.data();
+          const total = b.commentsOpen ? Math.max(0, Number(b.stats && b.stats.comments) || 0) : 0;
+          const newReplies = myRows.filter((c) => c.broadcastId === s.id && c.status === 'public' && !c.hidden && c.reply && Number(c.reply.at) > (Number(r.repliesSeenAt) || 0)).length;
+          const newComments = b.commentsOpen ? Math.max(0, total - (Number(r.commentsSeen) || 0)) : 0;
+          return { ...publicMessage(s.id, b, r), commentsTotal: total, newComments, newReplies };
+        })
         .sort((a, b) => b.at - a.at)
         .slice(0, 30);
-      return reply(200, { items, unread: items.filter((i) => !i.seen).length });
+      const unread = items.filter((i) => !i.seen).length;
+      const newReplies = items.reduce((n, i) => n + i.newReplies, 0);
+      const newComments = items.reduce((n, i) => n + i.newComments, 0);
+      return reply(200, { items, unread, newReplies, newComments, badge: unread + newReplies + newComments });
     }
 
     if (action === 'open' || action === 'react') {
@@ -247,6 +260,8 @@ exports.handler = async (event) => {
       if (action === 'comments') {
         const items = C.sortComments(rows.filter((c) => C.visible(c) || (c.uid === uid && c.status === 'public' && !c.hidden)))
           .slice(0, 80).map((c) => ({ id: c.id, name: c.name, text: c.text, at: c.createdAt, mine: c.uid === uid, pinned: !!c.pinned, reply: c.reply || null }));
+        // La personne vient de tout voir : on remet les compteurs « nouveau » à zéro
+        await db.collection('broadcastRecipients').doc(B.recipientId(bid, uid)).update({ repliesSeenAt: Date.now(), commentsSeen: Math.max(0, Number(b.stats && b.stats.comments) || 0) }).catch(() => {});
         return reply(200, { open: !!b.commentsOpen, items });
       }
 
@@ -274,6 +289,7 @@ exports.handler = async (event) => {
 
       const ref = await db.collection('broadcastComments').add({ broadcastId: bid, uid, name: idt.name, mode: idt.mode, text: v.text, status: 'public', hidden: false, pinned: false, reports: 0, reportedBy: [], reply: null, createdAt: admin.firestore.FieldValue.serverTimestamp() });
       await db.collection('broadcasts').doc(bid).update({ 'stats.comments': inc(1) }).catch(() => {});
+      await db.collection('broadcastRecipients').doc(B.recipientId(bid, uid)).update({ commentsSeen: inc(1) }).catch(() => {});
       return reply(200, { ok: true, published: true, id: ref.id });
     }
 
