@@ -7,10 +7,16 @@
  *   drlo_create  { text, audience, sendAt? }      → envoie maintenant, ou programme (sendAt = ms)
  *   drlo_list                                     → les derniers messages et leurs chiffres
  *   drlo_hide    { id, hidden }                   → masquer / réafficher un message chez les destinataires
+ *   drlo_comment_reply { commentId, text?, audio? } → répondre (texte et/ou vocal) ; la discussion continue
+ *   drlo_comment_edit  { commentId, index, text?, audio?, removeAudio? } → modifier une de ses réponses (la personne voit « mis à jour »)
+ *   drlo_comment_close { commentId, closed }      → clôturer / rouvrir la discussion (clôturée : la personne ne peut plus écrire)
+ *   drlo_delete  { id }                           → supprimer pour de bon (message, destinataires, commentaires, vocal)
  * Personne connectée :
  *   inbox                                         → mes messages de Dr Lô
  *   open         { id }                           → lire un message (marqué lu)
  *   react        { id, reaction }                 → ❤️ 🙏 💪 (reaction null = retirer)
+ *   comment_followup { commentId, text }          → répondre à Dr Lô (à tour de rôle, tant que la discussion est ouverte)
+ *   listen       { id }                           → compte l'écoute du vocal (une fois par personne)
  */
 const { admin, db, verifyAuth } = require('./_firebase');
 const B = require('./_drloBroadcast');
@@ -33,9 +39,35 @@ async function isDrLo(uid) {
   return s.exists && s.data().drlo === true;
 }
 
-const adminComment = (id, c) => ({
+async function signedUrl(path) {
+  try {
+    const [u] = await admin.storage().bucket(BUCKET).file(path).getSignedUrl({ action: 'read', expires: Date.now() + 2 * 3600 * 1000 });
+    return u;
+  } catch (e) { console.error('audio url', e.message); return null; }
+}
+const dropFile = (path) => (path ? admin.storage().bucket(BUCKET).file(path).delete().catch(() => {}) : Promise.resolve());
+
+/** Enregistre le vocal d'une réponse AVANT de modifier la discussion. { audio } ou { error, status }. */
+async function saveReplyAudio(bid, cid, raw) {
+  const au = B.validateAudio(raw);
+  if (au.error) return { error: au.error, status: 400 };
+  const path = `broadcasts/${bid}/comments/${cid}-${Date.now()}.${au.ext}`;
+  try {
+    await admin.storage().bucket(BUCKET).file(path).save(au.buffer, { contentType: au.mime, resumable: false, metadata: { cacheControl: 'private, max-age=0' } });
+  } catch (e) {
+    console.error('drlo-broadcast reply vocal storage', BUCKET, e.code, e.message);
+    return { error: 'Le vocal n\'a pas pu être enregistré (stockage indisponible ou non autorisé). Rien n\'a été envoyé.', status: 502 };
+  }
+  return { audio: { path, mime: au.mime, durationSec: au.durationSec } };
+}
+
+const adminComment = async (id, c) => ({
   id, name: c.status === 'distress' ? 'Anonyme' : (c.name || 'Anonyme'), text: c.text, status: c.status, hidden: !!c.hidden, pinned: !!c.pinned,
-  reports: Number(c.reports) || 0, reply: c.reply || null, createdAt: ms(c.createdAt),
+  reports: Number(c.reports) || 0, closed: !!c.closed, createdAt: ms(c.createdAt), lastUserAt: Number(c.lastUserAt) || 0,
+  thread: await Promise.all(C.threadOf(c).map(async (e, index) => ({
+    index, from: e.from, text: e.text || '', at: Number(e.at) || 0, editedAt: Number(e.editedAt) || null,
+    audioSec: e.audio ? Number(e.audio.durationSec) || 0 : 0, audioUrl: e.audio && e.audio.path ? await signedUrl(e.audio.path) : null,
+  }))),
 });
 
 const publicMessage = (id, b, r) => ({
@@ -120,6 +152,14 @@ exports.handler = async (event) => {
         const since = Number(st.data().communitySeenAt);
         const snap = await db.collection('broadcastComments').where('createdAt', '>', new Date(since)).limit(300).get();
         const byBroadcast = {}; let community = 0; let distress = 0;
+        // Nouveaux messages des personnes dans une discussion déjà ouverte
+        const fu = await db.collection('broadcastComments').where('lastUserAt', '>', since).limit(300).get().catch(() => null);
+        const counted = new Set(snap.docs.map((d) => d.id));
+        if (fu) fu.docs.forEach((d) => {
+          const c = d.data();
+          if (counted.has(d.id) || c.hidden || c.status !== 'public') return;
+          community += 1; byBroadcast[c.broadcastId] = (byBroadcast[c.broadcastId] || 0) + 1;
+        });
         snap.docs.forEach((d) => {
           const c = d.data();
           if (c.status === 'distress') { distress += 1; community += 1; byBroadcast[c.broadcastId] = (byBroadcast[c.broadcastId] || 0) + 1; return; }
@@ -147,6 +187,31 @@ exports.handler = async (event) => {
         return reply(200, { ok: true });
       }
 
+      if (action === 'drlo_delete') {
+        const id = String(body.id || '');
+        if (!id) return reply(400, { error: 'Message manquant' });
+        const bRef = db.collection('broadcasts').doc(id);
+        const bSnap = await bRef.get();
+        if (!bSnap.exists) return reply(200, { ok: true });
+        const b = bSnap.data();
+        if (b.status === 'sending') return reply(409, { error: 'Ce message est en cours d\'envoi. Réessaie dans une minute.' });
+        const purge = async (col) => {
+          for (;;) {
+            const snap = await db.collection(col).where('broadcastId', '==', id).limit(400).get();
+            if (snap.empty) break;
+            const batch = db.batch();
+            snap.docs.forEach((d) => batch.delete(d.ref));
+            await batch.commit();
+            if (snap.size < 400) break;
+          }
+        };
+        await admin.storage().bucket(BUCKET).deleteFiles({ prefix: `broadcasts/${id}/` }).catch(() => {});
+        await purge('broadcastComments');
+        await purge('broadcastRecipients');
+        await bRef.delete();
+        return reply(200, { ok: true });
+      }
+
       if (action === 'drlo_comments_open') {
         if (!body.id) return reply(400, { error: 'Message manquant' });
         await db.collection('broadcasts').doc(String(body.id)).update({ commentsOpen: body.open === true });
@@ -154,21 +219,52 @@ exports.handler = async (event) => {
       }
       if (action === 'drlo_comments') {
         const s = await db.collection('broadcastComments').where('broadcastId', '==', String(body.id || '')).limit(300).get();
-        const items = s.docs.map((d) => ({ ...adminComment(d.id, d.data()) })).sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0) || b.createdAt - a.createdAt);
+        const items = (await Promise.all(s.docs.map((d) => adminComment(d.id, d.data())))).sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0) || b.createdAt - a.createdAt);
         return reply(200, { items });
       }
-      if (['drlo_comment_hide', 'drlo_comment_pin', 'drlo_comment_reply'].includes(action)) {
+      if (['drlo_comment_hide', 'drlo_comment_pin', 'drlo_comment_close'].includes(action)) {
         const ref = db.collection('broadcastComments').doc(String(body.commentId || 'x'));
         const snap = await ref.get();
         if (!snap.exists) return reply(404, { error: 'Commentaire introuvable' });
         if (action === 'drlo_comment_hide') await ref.update({ hidden: body.hidden !== false });
         else if (action === 'drlo_comment_pin') await ref.update({ pinned: body.pinned !== false });
-        else {
-          if (snap.data().status !== 'public') return reply(400, { error: 'Ce commentaire n\'est pas public.' });
-          const v = C.validateComment(body.text, C.MAX_REPLY);
-          if (v.error) return reply(400, { error: v.error });
-          await ref.update({ reply: { text: v.text, at: Date.now() } });
+        else await ref.update({ closed: body.closed !== false });
+        return reply(200, { ok: true });
+      }
+      if (action === 'drlo_comment_reply' || action === 'drlo_comment_edit') {
+        const ref = db.collection('broadcastComments').doc(String(body.commentId || 'x'));
+        const snap = await ref.get();
+        if (!snap.exists) return reply(404, { error: 'Commentaire introuvable' });
+        const c = snap.data();
+        if (c.status !== 'public') return reply(400, { error: 'Ce commentaire n\'est pas public.' });
+        const thread = C.threadOf(c).map((e) => ({ ...e }));
+        const editing = action === 'drlo_comment_edit';
+        const idx = Number(body.index);
+        const target = editing ? thread[idx] : null;
+        if (editing && (!target || target.from !== 'drlo')) return reply(400, { error: 'Cette réponse est introuvable.' });
+        if (!editing && c.closed) return reply(409, { error: 'Cette discussion est clôturée. Rouvre-la pour répondre.' });
+        if (!editing && thread.length >= C.MAX_THREAD) return reply(400, { error: 'Cette discussion est déjà très longue.' });
+        const keepsAudio = editing && !!target.audio && !body.audio && body.removeAudio !== true;
+        const v = C.validateEntry(body.text, !!body.audio || keepsAudio);
+        if (v.error) return reply(400, { error: v.error });
+        let newAudio = null;
+        if (body.audio) {
+          const sv = await saveReplyAudio(c.broadcastId, snap.id, body.audio);
+          if (sv.error) return reply(sv.status, { error: sv.error });
+          newAudio = sv.audio;
         }
+        const now = Date.now();
+        let oldPath = null;
+        if (editing) {
+          if (newAudio || body.removeAudio === true) oldPath = target.audio && target.audio.path;
+          const next = { ...target, text: v.text, editedAt: now };
+          if (newAudio) next.audio = newAudio; else if (body.removeAudio === true) delete next.audio;
+          thread[idx] = next;
+        } else {
+          thread.push({ from: 'drlo', text: v.text, at: now, ...(newAudio ? { audio: newAudio } : {}) });
+        }
+        await ref.update({ thread, reply: admin.firestore.FieldValue.delete() });
+        await dropFile(oldPath);
         return reply(200, { ok: true });
       }
       return reply(400, { error: 'Action inconnue' });
@@ -191,7 +287,7 @@ exports.handler = async (event) => {
           const r = rmap[s.id] || {};
           const b = s.data();
           const total = b.commentsOpen ? Math.max(0, Number(b.stats && b.stats.comments) || 0) : 0;
-          const newReplies = myRows.filter((c) => c.broadcastId === s.id && c.status === 'public' && !c.hidden && c.reply && Number(c.reply.at) > (Number(r.repliesSeenAt) || 0)).length;
+          const newReplies = myRows.filter((c) => c.broadcastId === s.id && c.status === 'public' && !c.hidden && C.lastDrloAt(c) > (Number(r.repliesSeenAt) || 0)).length;
           const newComments = b.commentsOpen && !r.muted ? Math.max(0, total - (Number(r.commentsSeen) || 0)) : 0;
           return { ...publicMessage(s.id, b, r), commentsTotal: total, newComments, newReplies };
         })
@@ -212,7 +308,7 @@ exports.handler = async (event) => {
       return reply(200, { ok: true, muted: body.muted !== false });
     }
 
-    if (action === 'open' || action === 'react') {
+    if (action === 'open' || action === 'react' || action === 'listen') {
       const id = String(body.id || '');
       if (!id) return reply(400, { error: 'Message manquant' });
       const rRef = db.collection('broadcastRecipients').doc(B.recipientId(id, uid));
@@ -238,6 +334,13 @@ exports.handler = async (event) => {
         return reply(200, { message: publicMessage(id, b, { ...r, seenAt: r.seenAt || Date.now() }), counts, audioUrl });
       }
 
+      if (action === 'listen') {
+        if (!b.audio || r.listenedAt) return reply(200, { ok: true });
+        await rRef.update({ listenedAt: Date.now() });
+        await bRef.update({ 'stats.listens': inc(1) }).catch(() => {});
+        return reply(200, { ok: true });
+      }
+
       const next = B.cleanReaction(body.reaction);
       if (body.reaction !== null && body.reaction !== undefined && next === null) return reply(400, { error: 'Réaction inconnue' });
       const prev = r.reaction || null;
@@ -252,8 +355,8 @@ exports.handler = async (event) => {
     }
 
     // ── Commentaires (seulement pour les destinataires du message, si Dr Lô les a ouverts) ──
-    if (['comments', 'comment_add', 'comment_report', 'comment_delete'].includes(action)) {
-      const mineOnly = action === 'comment_report' || action === 'comment_delete';
+    if (['comments', 'comment_add', 'comment_report', 'comment_delete', 'comment_followup'].includes(action)) {
+      const mineOnly = action === 'comment_report' || action === 'comment_delete' || action === 'comment_followup';
       let bid = String(body.id || '');
       let cRef = null;
       if (mineOnly) {
@@ -264,6 +367,7 @@ exports.handler = async (event) => {
         if (action === 'comment_delete') {
           if (cs.data().uid !== uid) return reply(403, { error: 'Ce n\'est pas ton commentaire.' });
           await cRef.delete();
+          await admin.storage().bucket(BUCKET).deleteFiles({ prefix: `broadcasts/${bid}/comments/${cRef.id}-` }).catch(() => {});
           await db.collection('broadcasts').doc(bid).update({ 'stats.comments': inc(-1) }).catch(() => {});
           return reply(200, { ok: true });
         }
@@ -281,12 +385,47 @@ exports.handler = async (event) => {
         return reply(200, { ok: true });
       }
 
+      if (action === 'comment_followup') {
+        const cur = (await cRef.get()).data();
+        if (cur.uid !== uid) return reply(403, { error: 'Ce n\'est pas ton commentaire.' });
+        if (cur.status !== 'public' || cur.hidden) return reply(404, { error: 'Commentaire introuvable' });
+        const v = C.validateComment(body.text);
+        if (v.error) return reply(400, { error: v.error });
+        const mod = C.moderate(v.text);
+        if (!mod.ok && mod.reason === 'crisis') {
+          // Jamais publié : message privé de soutien, et un signal sans identité pour Dr Lô
+          await db.collection('broadcastComments').add({ broadcastId: bid, uid, name: cur.name || 'Anonyme', text: v.text, status: 'distress', hidden: true, reports: 0, createdAt: admin.firestore.FieldValue.serverTimestamp() });
+          await sendToUser(uid, C.CRISIS_NOTIF).catch(() => {});
+          return reply(200, { ok: true, published: false, support: true });
+        }
+        if (!mod.ok) return reply(400, { error: C.REASON_TEXT[mod.reason] || 'Message non accepté.' });
+        const now = Date.now();
+        const result = await db.runTransaction(async (tx) => {
+          const fresh = (await tx.get(cRef)).data();
+          const can = C.userCanFollowUp(fresh);
+          if (!can.ok) return can;
+          tx.update(cRef, { thread: [...C.threadOf(fresh), { from: 'user', text: v.text, at: now }], reply: admin.firestore.FieldValue.delete(), lastUserAt: now });
+          return { ok: true };
+        });
+        if (!result.ok) return reply(400, { error: result.error });
+        return reply(200, { ok: true, published: true });
+      }
+
       const all = await db.collection('broadcastComments').where('broadcastId', '==', bid).limit(300).get();
       const rows = all.docs.map((d) => ({ id: d.id, ...d.data(), createdAt: ms(d.data().createdAt) }));
 
       if (action === 'comments') {
-        const items = C.sortComments(rows.filter((c) => C.visible(c) || (c.uid === uid && c.status === 'public' && !c.hidden)))
-          .slice(0, 80).map((c) => ({ id: c.id, name: c.name, text: c.text, at: c.createdAt, mine: c.uid === uid, pinned: !!c.pinned, reply: c.reply || null }));
+        const seenBefore = Number(rSnap.data().repliesSeenAt) || 0;
+        const shown = C.sortComments(rows.filter((c) => C.visible(c) || (c.uid === uid && c.status === 'public' && !c.hidden))).slice(0, 80);
+        const items = await Promise.all(shown.map(async (c) => {
+          const th = C.threadOf(c);
+          const entries = await Promise.all(th.map(async (e) => ({
+            ...C.presentEntry(e, seenBefore),
+            audioUrl: e.audio && e.audio.path ? await signedUrl(e.audio.path) : null,
+          })));
+          const mine = c.uid === uid;
+          return { id: c.id, name: c.name, text: c.text, at: c.createdAt, mine, pinned: !!c.pinned, thread: entries, closed: !!c.closed, canReply: mine && C.userCanFollowUp(c).ok };
+        }));
         // La personne vient de tout voir : on remet les compteurs « nouveau » à zéro
         await db.collection('broadcastRecipients').doc(B.recipientId(bid, uid)).update({ repliesSeenAt: Date.now(), commentsSeen: Math.max(0, Number(b.stats && b.stats.comments) || 0) }).catch(() => {});
         return reply(200, { open: !!b.commentsOpen, items });

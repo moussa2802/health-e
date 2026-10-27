@@ -47,3 +47,46 @@ test('le message de soutien cite 1515 et le CHU Fann, sans écriture inclusive',
   assert.match(C.CRISIS_NOTIF.inboxBody, /33 869 18 20/);
   assert.doesNotMatch(C.CRISIS_NOTIF.inboxBody, /\(e\)/);
 });
+
+test('discussion : un ancien commentaire avec `reply` est lu comme un message de Dr Lô', () => {
+  const t = C.threadOf({ text: 'Merci', reply: { text: 'Avec plaisir', at: 5 } });
+  assert.deepStrictEqual(t, [{ from: 'drlo', text: 'Avec plaisir', at: 5 }]);
+  assert.deepStrictEqual(C.threadOf({ text: 'Merci' }), []);
+  assert.strictEqual(C.threadOf({ thread: [{ from: 'drlo', text: 'x', at: 1 }], reply: { text: 'vieux', at: 0 } }).length, 1);
+});
+test('discussion : la personne répond à tour de rôle, tant que Dr Lô ne clôture pas', () => {
+  const drlo = { from: 'drlo', text: 'a', at: 1 };
+  const user = { from: 'user', text: 'b', at: 2 };
+  assert.strictEqual(C.userCanFollowUp({ thread: [] }).ok, false);
+  assert.strictEqual(C.userCanFollowUp({ thread: [drlo] }).ok, true);
+  assert.strictEqual(C.userCanFollowUp({ thread: [drlo, user] }).ok, false);
+  assert.strictEqual(C.userCanFollowUp({ thread: [drlo, user, drlo] }).ok, true);
+  assert.strictEqual(C.userCanFollowUp({ thread: [drlo], closed: true }).ok, false);
+  assert.match(C.userCanFollowUp({ thread: [drlo], closed: true }).error, /clôturé/);
+  assert.strictEqual(C.userCanFollowUp({ reply: { text: 'x', at: 1 } }).ok, true);
+  const long = Array.from({ length: C.MAX_THREAD }, (_, i) => ({ from: i % 2 ? 'user' : 'drlo', text: 'x', at: i }));
+  assert.strictEqual(C.userCanFollowUp({ thread: long.slice(0, C.MAX_THREAD - 1).concat([{ from: 'drlo', text: 'x', at: 99 }]) }).ok, false);
+});
+test('discussion : une modification de Dr Lô compte comme du neuf pour la personne', () => {
+  const c = { thread: [{ from: 'drlo', text: 'a', at: 100 }] };
+  assert.strictEqual(C.lastDrloAt(c), 100);
+  c.thread[0].editedAt = 300;
+  assert.strictEqual(C.lastDrloAt(c), 300);
+  assert.strictEqual(C.lastDrloAt({ thread: [{ from: 'user', text: 'b', at: 900 }] }), 0);
+});
+test('discussion : « nouveau » et « mis à jour » selon la dernière visite', () => {
+  const seen = 200;
+  assert.deepStrictEqual([C.presentEntry({ from: 'drlo', text: 'a', at: 100 }, seen).fresh, C.presentEntry({ from: 'drlo', text: 'a', at: 100 }, seen).updated], [false, false]);
+  const edited = C.presentEntry({ from: 'drlo', text: 'a', at: 100, editedAt: 300 }, seen);
+  assert.deepStrictEqual([edited.fresh, edited.updated, edited.editedAt], [false, true, 300]);
+  const neuf = C.presentEntry({ from: 'drlo', text: 'a', at: 250, editedAt: 300 }, seen);
+  assert.deepStrictEqual([neuf.fresh, neuf.updated], [true, false]);
+  assert.strictEqual(C.presentEntry({ from: 'user', text: 'b', at: 999 }, seen).fresh, false);
+  assert.strictEqual(C.presentEntry({ from: 'drlo', text: '', at: 1, audio: { durationSec: 12 } }, 0).audioSec, 12);
+});
+test('réponse de Dr Lô : le texte est facultatif avec un vocal', () => {
+  assert.strictEqual(C.validateEntry('', true).text, '');
+  assert.ok(C.validateEntry('', false).error);
+  assert.strictEqual(C.validateEntry('  Merci  ', true).text, 'Merci');
+  assert.ok(C.validateEntry('x'.repeat(601), true).error);
+});

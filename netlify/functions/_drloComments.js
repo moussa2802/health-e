@@ -8,6 +8,7 @@ const MAX_COMMENT = 400;
 const MAX_REPLY = 600;
 const REPORTS_TO_HIDE = 3;
 const PER_MESSAGE_LIMIT = 3; // commentaires par personne et par message
+const MAX_THREAD = 40; // messages échangés dans une discussion, après le commentaire de départ
 
 const fold = (s) => String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
 
@@ -84,4 +85,49 @@ function sortComments(list) {
   return [...list].sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0) || b.createdAt - a.createdAt);
 }
 
-module.exports = { MAX_COMMENT, MAX_REPLY, REPORTS_TO_HIDE, PER_MESSAGE_LIMIT, moderate, REASON_TEXT, validateComment, resolveIdentity, CRISIS_NOTIF, visible, sortComments };
+/**
+ * Discussion sous un commentaire : les messages échangés APRÈS le commentaire de départ.
+ * Entrée : { from:'user'|'drlo', text, at, editedAt?, audio?:{ path, mime, durationSec } }.
+ * Les anciens commentaires n'ont qu'un champ `reply` : on le lit comme un premier message de Dr Lô.
+ */
+function threadOf(c) {
+  if (Array.isArray(c.thread)) return c.thread;
+  return c.reply && c.reply.text ? [{ from: 'drlo', text: c.reply.text, at: Number(c.reply.at) || 0 }] : [];
+}
+const entryTime = (e) => Number(e.editedAt) || Number(e.at) || 0;
+
+/** Dernière nouveauté côté Dr Lô (réponse ou modification) : sert à prévenir la personne. */
+function lastDrloAt(c) {
+  return threadOf(c).reduce((m, e) => (e.from === 'drlo' ? Math.max(m, entryTime(e)) : m), 0);
+}
+
+/** La personne peut-elle écrire à nouveau ? Un message à la fois, tant que Dr Lô n'a pas clôturé. */
+function userCanFollowUp(c) {
+  const t = threadOf(c);
+  if (c.closed) return { ok: false, error: 'Dr Lô a clôturé cette discussion.' };
+  if (!t.some((e) => e.from === 'drlo')) return { ok: false, error: 'Dr Lô n\'a pas encore répondu.' };
+  if (t[t.length - 1].from === 'user') return { ok: false, error: 'Dr Lô n\'a pas encore répondu à ton dernier message.' };
+  if (t.length >= MAX_THREAD) return { ok: false, error: 'Cette discussion est déjà très longue.' };
+  return { ok: true };
+}
+
+/** Texte d'une réponse de Dr Lô : facultatif quand il y a un vocal. */
+function validateEntry(text, hasAudio, max = MAX_REPLY) {
+  if (hasAudio && !String(text || '').trim()) return { text: '' };
+  return validateComment(text, max);
+}
+
+/** Ce que voit la personne : « nouveau » ou « mis à jour » par rapport à sa dernière visite. */
+function presentEntry(e, seenBefore) {
+  const at = Number(e.at) || 0;
+  const edited = Number(e.editedAt) || 0;
+  const drlo = e.from === 'drlo';
+  return {
+    from: e.from, text: e.text || '', at, editedAt: edited || null,
+    audioSec: e.audio ? Number(e.audio.durationSec) || 0 : 0,
+    fresh: drlo && at > seenBefore,
+    updated: drlo && edited > seenBefore && at <= seenBefore,
+  };
+}
+
+module.exports = { MAX_THREAD, threadOf, entryTime, lastDrloAt, userCanFollowUp, validateEntry, presentEntry, MAX_COMMENT, MAX_REPLY, REPORTS_TO_HIDE, PER_MESSAGE_LIMIT, moderate, REASON_TEXT, validateComment, resolveIdentity, CRISIS_NOTIF, visible, sortComments };

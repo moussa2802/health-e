@@ -6,11 +6,12 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Eye, EyeOff, Loader2, Mic, Send, Square, Trash2 } from 'lucide-react';
 import { blobToBase64, MAX_VOICE_SEC, useVoiceRecorder } from '../../hooks/useVoiceRecorder';
 import { DC, card } from './DrLoShell';
+import ReplyComposer from './ReplyComposer';
 import type { MomentPalette } from '../../utils/drloMoment';
 import { SCALE_META } from '../../utils/scaleMeta';
 import {
-  countAudience, createBroadcast, hideBroadcast, listBroadcasts,
-  adminComments, adminCommentAct, replyComment, setCommentsOpen,
+  countAudience, createBroadcast, deleteBroadcast, hideBroadcast, listBroadcasts,
+  adminComments, adminCommentAct, closeComment, editReply, replyComment, setCommentsOpen,
   type AdminComment, type Audience, type BroadcastRow, type Level,
 } from '../../services/drloBroadcastService';
 
@@ -22,6 +23,7 @@ const LEVELS: { id: Level; label: string }[] = [
 ];
 const PROGS = [{ id: 'stress', label: 'Stress' }, { id: 'humeur', label: 'Humeur' }, { id: 'sommeil', label: 'Sommeil' }];
 const fmt = (t: number) => (t ? new Date(t).toLocaleString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : '');
+const mmss = (n: number) => `${Math.floor(n / 60)}:${String(n % 60).padStart(2, '0')}`;
 const STATUS: Record<string, string> = { scheduled: 'Programmé', launching: 'Envoi…', sending: 'Envoi en cours', sent: 'Envoyé' };
 
 const field: React.CSSProperties = { width: '100%', boxSizing: 'border-box', borderRadius: 14, border: `1px solid ${DC.line}`, background: 'rgba(255,255,255,.06)', padding: '12px 14px', fontFamily: 'inherit', fontSize: 16, color: DC.text, outline: 'none' };
@@ -30,7 +32,7 @@ const field: React.CSSProperties = { width: '100%', boxSizing: 'border-box', bor
 const CommentsAdmin: React.FC<{ row: BroadcastRow; palette: MomentPalette; onChange: () => void }> = ({ row, palette, onChange }) => {
   const [open, setOpen] = useState(false);
   const [items, setItems] = useState<AdminComment[] | null>(null);
-  const [drafts, setDrafts] = useState<Record<string, string>>({});
+  const [editing, setEditing] = useState<string | null>(null);
   const [err, setErr] = useState('');
   const load = () => adminComments(row.id).then(r => setItems(r.items)).catch(e => setErr(e instanceof Error ? e.message : 'Erreur'));
   useEffect(() => { if (open) load(); }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -59,18 +61,46 @@ const CommentsAdmin: React.FC<{ row: BroadcastRow; palette: MomentPalette; onCha
                 {c.status === 'distress' ? 'Détresse (non publié)' : c.name}{c.pinned ? ' · épinglé' : ''}{c.hidden && c.status !== 'distress' ? ' · masqué' : ''}{c.reports > 0 ? ` · signalé ${c.reports} fois` : ''}
               </p>
               <p style={{ margin: '4px 0 0', fontSize: 14, lineHeight: 1.5, color: DC.text, whiteSpace: 'pre-wrap' }}>{c.text}</p>
-              {c.reply && <p style={{ margin: '6px 0 0', fontSize: 13.5, color: palette.accent, whiteSpace: 'pre-wrap' }}>Ta réponse : {c.reply.text}</p>}
+              {c.thread.map(e => {
+                const key = `${c.id}:${e.index}`;
+                const mine = e.from === 'drlo';
+                return (
+                  <div key={key} style={{ marginTop: 8, borderLeft: `2px solid ${mine ? palette.accent : DC.line}`, paddingLeft: 10 }}>
+                    <p style={{ margin: 0, fontSize: 12, fontWeight: 700, color: mine ? palette.accent : DC.faint }}>
+                      {mine ? 'Toi' : c.name}{e.editedAt ? ' · modifié' : ''} · {fmt(e.editedAt ?? e.at)}
+                    </p>
+                    {editing === key ? (
+                      <div style={{ marginTop: 6 }}>
+                        <ReplyComposer initialText={e.text} existingAudio={e.audioSec ? { url: e.audioUrl ?? null, sec: e.audioSec } : null} placeholder="Ta réponse" submitLabel="Enregistrer la modification"
+                          onSubmit={async (t, clip, removeAudio) => { await editReply(c.id, e.index, { text: t, audio: clip, removeAudio }); setEditing(null); await load(); }}
+                          onCancel={() => setEditing(null)} />
+                        <p style={{ margin: '6px 0 0', fontSize: 12, color: DC.faint }}>La personne verra que ta réponse a été mise à jour.</p>
+                      </div>
+                    ) : (
+                      <>
+                        {e.audioSec > 0 && (e.audioUrl
+                          ? <audio controls preload="metadata" src={e.audioUrl} aria-label={mine ? 'Ton vocal' : 'Vocal'} style={{ width: '100%', height: 40, marginTop: 6 }} />
+                          : <p style={{ margin: '6px 0 0', fontSize: 13, color: DC.muted }}>Vocal de {mmss(e.audioSec)}</p>)}
+                        {e.text && <p style={{ margin: '4px 0 0', fontSize: 14, lineHeight: 1.5, color: mine ? palette.accent : DC.text, whiteSpace: 'pre-wrap' }}>{e.text}</p>}
+                        {mine && <button type="button" onClick={() => setEditing(key)} style={{ ...btn, marginTop: 6 }}>Modifier</button>}
+                      </>
+                    )}
+                  </div>
+                );
+              })}
+              {c.status === 'public' && c.thread.length > 0 && c.thread[c.thread.length - 1].from === 'user' && !c.closed && (
+                <p style={{ margin: '8px 0 0', fontSize: 12.5, fontWeight: 700, color: '#F0C987' }}>La personne t'a répondu : à toi.</p>
+              )}
               {c.status === 'public' && (
                 <div style={{ marginTop: 8 }}>
-                  {!c.reply && (
-                    <div style={{ display: 'flex', gap: 6 }}>
-                      <input aria-label="Répondre" value={drafts[c.id] ?? ''} onChange={e => setDrafts(d => ({ ...d, [c.id]: e.target.value }))} placeholder="Répondre publiquement…" className="drl-input" style={{ ...field, minHeight: 38, padding: '0 10px', fontSize: 14, flex: 1 }} />
-                      <button type="button" disabled={(drafts[c.id] ?? '').trim().length < 2} onClick={() => act(replyComment(c.id, drafts[c.id]).then(() => setDrafts(d => ({ ...d, [c.id]: '' }))))} style={{ ...btn, opacity: (drafts[c.id] ?? '').trim().length < 2 ? 0.4 : 1 }}>Envoyer</button>
-                    </div>
-                  )}
-                  <div style={{ display: 'flex', gap: 6, marginTop: 6 }}>
+                  {c.closed
+                    ? <p style={{ margin: 0, fontSize: 13, color: DC.muted }}>Discussion clôturée : la personne ne peut plus écrire.</p>
+                    : <ReplyComposer placeholder={c.thread.length ? 'Continuer la discussion…' : 'Répondre publiquement…'} submitLabel="Envoyer"
+                        onSubmit={async (t, clip) => { await replyComment(c.id, t, clip); await load(); }} />}
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 8 }}>
                     <button type="button" onClick={() => act(adminCommentAct(c.id, 'pin', !c.pinned))} style={btn}>{c.pinned ? 'Désépingler' : 'Épingler'}</button>
                     <button type="button" onClick={() => act(adminCommentAct(c.id, 'hide', !c.hidden))} style={btn}>{c.hidden ? 'Réafficher' : 'Masquer'}</button>
+                    {c.thread.length > 0 && <button type="button" onClick={() => act(closeComment(c.id, !c.closed))} style={btn}>{c.closed ? 'Rouvrir la discussion' : 'Clôturer la discussion'}</button>}
                   </div>
                 </div>
               )}
@@ -99,9 +129,11 @@ const CommunityPanel: React.FC<{ palette: MomentPalette; newByBroadcast?: Record
   const [msg, setMsg] = useState('');
   const [err, setErr] = useState('');
   const [rows, setRows] = useState<BroadcastRow[]>([]);
+  const [delId, setDelId] = useState<string | null>(null);
+  const [delBusy, setDelBusy] = useState(false);
+  const [delError, setDelError] = useState('');
   const seq = useRef(0);
   const voice = useVoiceRecorder();
-  const mmss = (n: number) => `${Math.floor(n / 60)}:${String(n % 60).padStart(2, '0')}`;
 
   const audience: Audience = useMemo(() => {
     if (all) return { all: true };
@@ -115,6 +147,12 @@ const CommunityPanel: React.FC<{ palette: MomentPalette; newByBroadcast?: Record
   const hasCriteria = all || !!scaleId || totems.length > 0 || progs.length > 0 || !!activity;
 
   const refresh = () => listBroadcasts().then(r => setRows(r.items)).catch(() => {});
+  const remove = async (id: string) => {
+    setDelBusy(true); setDelError('');
+    try { await deleteBroadcast(id); setDelId(null); await refresh(); }
+    catch (e) { setDelError(e instanceof Error ? e.message : 'Suppression impossible pour le moment.'); }
+    finally { setDelBusy(false); }
+  };
   useEffect(() => { refresh(); }, []);
 
   // Nombre de personnes visées, en direct (sans jamais afficher de noms)
@@ -277,7 +315,8 @@ const CommunityPanel: React.FC<{ palette: MomentPalette; newByBroadcast?: Record
             {r.audio && <p style={{ margin: '8px 0 0', fontSize: 13, color: palette.accent, display: 'inline-flex', alignItems: 'center', gap: 5 }}><Mic size={13} aria-hidden="true" /> Vocal de {mmss(r.audio.durationSec)}</p>}
             {r.text && <p style={{ margin: '8px 0 0', fontSize: 14.5, lineHeight: 1.55, color: DC.text, whiteSpace: 'pre-wrap' }}>{r.text}</p>}
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 10, fontSize: 13, color: DC.muted }}>
-              <span>👁 {r.stats.views}</span>
+              <span title={`${r.stats.views} sur ${r.audienceCount} personne${r.audienceCount > 1 ? 's' : ''}`}>👁 {r.stats.views} vu{r.stats.views > 1 ? 's' : ''}</span>
+              {r.audio && <span>🎧 {r.stats.listens ?? 0} écoute{(r.stats.listens ?? 0) > 1 ? 's' : ''}</span>}
               <span>❤️ {r.stats.reactions.heart}</span>
               <span>🙏 {r.stats.reactions.pray}</span>
               <span>💪 {r.stats.reactions.strong}</span>
@@ -285,7 +324,21 @@ const CommunityPanel: React.FC<{ palette: MomentPalette; newByBroadcast?: Record
                 style={{ marginLeft: 'auto', minHeight: 36, padding: '0 10px', borderRadius: 10, border: `1px solid ${DC.line}`, background: DC.glass, color: DC.muted, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 12.5 }}>
                 {r.hidden ? <Eye size={14} aria-hidden="true" /> : <EyeOff size={14} aria-hidden="true" />} {r.hidden ? 'Réafficher' : 'Masquer'}
               </button>
+              <button type="button" onClick={() => { setDelId(r.id); setDelError(''); }} aria-label="Supprimer ce message" className="drl-btn"
+                style={{ minHeight: 36, padding: '0 10px', borderRadius: 10, border: `1px solid ${DC.line}`, background: DC.glass, color: '#E8664F', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 12.5 }}>
+                <Trash2 size={14} aria-hidden="true" /> Supprimer
+              </button>
             </div>
+            {delId === r.id && (
+              <div role="alertdialog" aria-label="Supprimer ce message" style={{ marginTop: 10, padding: 12, borderRadius: 12, border: `1px solid ${DC.line}`, background: DC.glass }}>
+                <p style={{ margin: 0, fontSize: 13.5, lineHeight: 1.5, color: DC.text }}>Supprimer ce message pour de bon ? Il disparaît chez tout le monde, avec ses commentaires et son vocal. Tu ne pourras pas le récupérer.</p>
+                {delError && <p role="alert" style={{ margin: '6px 0 0', fontSize: 13, color: '#E8664F' }}>{delError}</p>}
+                <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
+                  <button type="button" onClick={() => remove(r.id)} disabled={delBusy} className="drl-btn" style={{ flex: 1, minHeight: 42, borderRadius: 999, border: 0, background: '#E8664F', color: '#fff', fontWeight: 700, cursor: 'pointer' }}>{delBusy ? 'Suppression…' : 'Oui, supprimer'}</button>
+                  <button type="button" onClick={() => { setDelId(null); setDelError(''); }} className="drl-btn" style={{ minHeight: 42, padding: '0 16px', borderRadius: 999, border: `1px solid ${DC.line}`, background: DC.glass, color: DC.muted, fontWeight: 600, cursor: 'pointer' }}>Annuler</button>
+                </div>
+              </div>
+            )}
             {!r.hidden && r.status !== 'scheduled' && <CommentsAdmin row={r} palette={palette} onChange={refresh} />}
           </article>
         ))}

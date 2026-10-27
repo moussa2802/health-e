@@ -12,7 +12,7 @@ import MessageComments from '../../components/accueil/MessageComments';
 import RealDrLoBadge, { RealDrLoPhoto } from '../../components/accueil/RealDrLoBadge';
 import { useAuth } from '../../contexts/AuthContext';
 import {
-  getInbox, muteMessage, openMessage, reactToMessage, REACTIONS,
+  getInbox, markListened, muteMessage, openMessage, reactToMessage, REACTIONS,
   type Counts, type InboxItem, type Reaction,
 } from '../../services/drloBroadcastService';
 
@@ -80,7 +80,7 @@ const MessagesDrLoPage: React.FC = () => {
               <RealDrLoBadge palette={palette} kind={msg.audio ? 'vocal' : 'texte'} />
               <p style={{ margin: '12px 0 0', fontSize: 12, color: DC.faint }}>{day(msg.at)}</p>
               {msg.audio && (audioUrl
-                ? <audio controls preload="metadata" src={audioUrl} aria-label="Le vocal de Dr Lô" style={{ width: '100%', marginTop: 10 }} />
+                ? <audio controls preload="metadata" src={audioUrl} onPlay={() => { if (id) markListened(id).catch(() => {}); }} aria-label="Le vocal de Dr Lô" style={{ width: '100%', marginTop: 10 }} />
                 : <p style={{ margin: '10px 0 0', fontSize: 14, color: DC.muted }}>Le vocal n'est pas disponible pour le moment. Réessaie dans un instant.</p>)}
               {msg.text && <p style={{ margin: '10px 0 0', fontSize: 16.5, lineHeight: 1.65, color: DC.text, whiteSpace: 'pre-wrap' }}>{msg.text}</p>}
             </article>
@@ -137,7 +137,7 @@ const MessagesDrLoPage: React.FC = () => {
                 <span style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: DC.faint }}>
                   <span>{day(i.at)}</span>{!i.seen && <b style={{ color: palette.accent }}>Nouveau</b>}
                 </span>
-                <span style={{ display: 'block', marginTop: 6, fontSize: 15, lineHeight: 1.5, color: DC.soft, overflow: 'hidden', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', ...{ display: '-webkit-box' } } as React.CSSProperties}>{i.text || '🎙 Un vocal de Dr Lô'}</span>
+                <span style={{ display: '-webkit-box', marginTop: 6, fontSize: 15, lineHeight: 1.5, color: DC.soft, overflow: 'hidden', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' } as React.CSSProperties}>{i.text || '🎙 Un vocal de Dr Lô'}</span>
                 {(i.commentsOpen || (i.newReplies ?? 0) > 0) && (
                   <span style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 6, marginTop: 8, paddingRight: 52 }}>
                     {(i.newReplies ?? 0) > 0 && <span style={{ fontSize: 12, fontWeight: 700, padding: '3px 9px', borderRadius: 999, background: 'rgba(242,182,109,.16)', color: palette.accent }}>Dr Lô t'a répondu</span>}
