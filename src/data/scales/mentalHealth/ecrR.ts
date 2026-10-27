@@ -3,7 +3,7 @@ import type { AssessmentScale } from '../../../types/assessment';
 // ECR-R : Experiences in Close Relationships — Revised (Fraley, Waller & Brennan, 2000)
 // 36 items, échelle 1-7
 // Sous-échelles : Anxiété (18 items) + Évitement (18 items) — voir `subscales` plus bas.
-// Correction du 22 oct. 2026 (scoringVersion 2) : l'item 22 (« serein(e) à l'idée d'être quitté(e) »,
+// Correction du 22 oct. 2026 (scoringVersion 2) : l'item 22 (« serein à l'idée d'être quitté »,
 // = « I rarely worry about my partner leaving me ») appartient à l'ANXIÉTÉ (inversé), et l'item 19
 // (« du mal à compter sur ses partenaires » = « I find it difficult to allow myself to depend on
 // romantic partners ») à l'ÉVITEMENT, comme dans l'original de Fraley et al. (2000).
@@ -92,7 +92,7 @@ export const ECR_R: AssessmentScale = {
       key: 'anxiety',
       label: "Anxiété d'attachement",
       itemIds: [1,3,5,7,9,11,13,15,17,22,21,23,25,27,29,31,33,35],
-      reverseIds: [22],       // « serein(e) à l'idée d'être quitté(e) » : formulation inversée
+      reverseIds: [22],       // « serein à l'idée d'être quitté » : formulation inversée
       range: { min: 1, max: 7 },
       scoringMode: 'mean',    // moyenne sur 18 items
     },

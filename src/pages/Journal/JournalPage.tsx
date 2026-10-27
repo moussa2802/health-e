@@ -22,12 +22,12 @@ export interface JournalEntry {
 }
 
 const HUMEURS: Record<string, string> = {
-  '😊': 'Heureux(se)',
+  '😊': 'Joie',
   '😐': 'Neutre',
   '😔': 'Triste',
-  '😰': 'Anxieux(se)',
+  '😰': 'Anxiété',
   '😡': 'En colère',
-  '🥰': 'Amoureux(se)',
+  '🥰': 'Amour',
 };
 
 function groupByPeriod(entries: JournalEntry[]) {

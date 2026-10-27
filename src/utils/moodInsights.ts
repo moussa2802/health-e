@@ -74,7 +74,7 @@ export interface Remark { text: string; tone: 'calm' | 'care'; suggestTest?: 'ps
 
 /** Ce que Dr Lô remarque. Priorité : une période difficile → orientation humaine. */
 export function remark(moods: MoodMap, today: string, prenom?: string, genre?: 'homme' | 'femme'): Remark {
-  const seul = genre === 'femme' ? 'seule' : genre === 'homme' ? 'seul' : 'seul(e)';
+  const seul = genre === 'femme' ? 'seule' : genre === 'homme' ? 'seul' : 'sans soutien';
   const last14 = lastDays(today, 14);
   const low = last14.filter(d => { const s = scoreOf(moods, d); return s !== null && s <= 2; }).length;
   if (low >= 5) {

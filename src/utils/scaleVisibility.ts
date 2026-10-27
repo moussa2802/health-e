@@ -31,7 +31,7 @@ export function getGreyedScales(
         unlockPrompt: 'Ta situation a changé ?',
         options: [
           { value: 'en_couple', label: 'En couple' },
-          { value: 'marie', label: 'Marié(e)' },
+          { value: 'marie', label: 'Dans un mariage' },
           { value: 'polygamie', label: 'En situation de polygamie' },
           { value: 'complique', label: "C'est compliqué" },
         ],

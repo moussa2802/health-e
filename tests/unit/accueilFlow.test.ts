@@ -103,7 +103,7 @@ test('moins de 18 ans → aucun test, orientation adulte de confiance', () => {
   assert.equal(s.step, 'minor');
   assert.equal(s.prescribed, undefined);
   assert.equal(cards(s).filter(c => c?.type === 'test').length, 0);
-  assert.deepEqual(getQuickReplies(s, guest), []);
+  assert.deepEqual(getQuickReplies(s, guest).map(q => q.value), ['minor:mistake']);
 });
 
 test('après le test : commentaire + portrait + prochaine pièce (règle d\'or)', () => {
@@ -168,4 +168,19 @@ test('dernier test du totem : plus de silhouette, on propose de le révéler', (
   const last = s.messages[s.messages.length - 1];
   assert.match(last.text, /totem est prêt/);
   assert.deepEqual(last.card, { type: 'go', to: 'totem' });
+});
+
+test('moins de 18 ans : « je me suis trompé d\'âge » demande une confirmation, puis redemande l\'âge', () => {
+  const k: any = { prenom: 'A', genre: 'homme', doneScaleIds: [], labelOf: (x: string) => x, guestRemaining: 3 };
+  let s: any = { ...startConversation(k), step: 'age', genre: 'homme' };
+  s = respond(s, { value: 'age:minor', label: 'Moins de 18 ans' }, k);
+  assert.equal(s.step, 'minor');
+  assert.equal(getQuickReplies(s, k)[0].value, 'minor:mistake');
+  s = respond(s, { value: 'minor:mistake', label: 'x' }, k);
+  assert.equal(s.step, 'minor');
+  assert.deepEqual(getQuickReplies(s, k).map((q: any) => q.value), ['minor:confirm', 'minor:stay']);
+  const stay = respond(s, { value: 'minor:stay', label: 'x' }, k);
+  assert.equal(stay.step, 'minor');
+  const ok = respond(s, { value: 'minor:confirm', label: 'x' }, k);
+  assert.equal(ok.step, 'age');
 });

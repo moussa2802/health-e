@@ -73,6 +73,7 @@ import { invalidateTalkContext, rememberNow, talk as talkToDrLo, type TalkAction
 /** Messages offerts chaque jour avec Dr Lô (même valeur que netlify/functions/_chatAllowance.js). */
 const FREE_MESSAGES = 15;
 import { useDictation } from '../../hooks/useDictation';
+import { useDiscretHint } from '../../utils/discretHint';
 import { ShowcaseCards, DiscoveryRow } from './ShowcaseCards';
 import { fetchResultComment } from '../../services/drloResultService';
 import { startChatTest, recordAnswer, finishChatTest, loadScale } from '../../services/chatTestRunner';
@@ -288,6 +289,7 @@ const ConversationAccueil: React.FC = () => {
   const [mode, setMode] = useState<'home' | 'mood'>('home');
   const [showHistory, setShowHistory] = useState(false);
   const [veiled, setVeiled] = useState(false);
+  const discret = useDiscretHint();
   const [noted, setNoted] = useState<{ day: string; cancelled: boolean } | null>(null);
   const [breath, setBreath] = useState<{ inhale: boolean } | null>(null);
   const [reveal, setReveal] = useState({ nonce: 0, from: 0, hint: 'thinking' as Hint });
@@ -1960,8 +1962,8 @@ const ConversationAccueil: React.FC = () => {
             )) : (
               <button onClick={() => openSignup('login', 'Me connecter')} className="drl-btn" style={{ ...pill, border: `1px solid ${C.line}`, color: C.text, cursor: 'pointer' }}>Se connecter</button>
             )}
-            <button onClick={() => setVeiled(true)} aria-label="Masquer l'écran" className="drl-btn"
-              style={{ width: 40, height: 40, borderRadius: 12, border: `1px solid ${C.line}`, background: 'transparent', color: C.muted, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+            <button onClick={() => { discret.dismiss(); setVeiled(true); }} aria-label="Masquer l'écran" className="drl-btn"
+              style={{ width: 40, height: 40, padding: 0, borderRadius: 12, border: `1px solid ${C.line}`, background: 'transparent', color: C.muted, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: 12.5, fontWeight: 600 }}>
               <EyeOff size={17} aria-hidden="true" />
             </button>
           </header>
@@ -2071,8 +2073,13 @@ const ConversationAccueil: React.FC = () => {
               {(phase === 'thinking' || phase === 'reading' || routing || testBusy) && partial === null && (
                 <div role="status" aria-label="Dr Lô écrit" style={{ display: 'flex', alignItems: 'flex-end', gap: 8 }}>
                   <img src="/dr-lo.png" alt="" width={28} height={28} style={{ width: 28, height: 28, borderRadius: '50%', objectFit: 'cover', objectPosition: 'top' }} />
-                  <div style={{ display: 'inline-flex', gap: 5, padding: '12px 14px', borderRadius: '18px 18px 18px 4px', background: 'rgba(255,255,255,.07)' }}>
-                    {[0, 0.15, 0.3].map(d => <span key={d} className="drl-dot" style={{ width: 7, height: 7, borderRadius: '50%', background: C.muted, animationDelay: `${d}s` }} />)}
+                  <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '12px 14px', borderRadius: '18px 18px 18px 4px', background: 'rgba(255,255,255,.07)' }}>
+                    <span style={{ display: 'inline-flex', gap: 5 }}>
+                      {[0, 0.15, 0.3].map(d => <span key={d} className="drl-dot" style={{ width: 7, height: 7, borderRadius: '50%', background: C.muted, animationDelay: `${d}s` }} />)}
+                    </span>
+                    {typeof routing === 'string' && routing && (
+                      <span style={{ fontSize: 13, color: C.muted }}>Dr Lô {routing.charAt(0).toLowerCase() + routing.slice(1)}…</span>
+                    )}
                   </div>
                 </div>
               )}
@@ -2148,7 +2155,7 @@ const ConversationAccueil: React.FC = () => {
         <header style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
           <span style={{ display: 'inline-flex', alignItems: 'center', gap: 7, fontSize: 12.5, fontWeight: 600, color: C.muted }}>
             <Lock size={14} aria-hidden="true" />
-            Privé · visible par toi {fem ? 'seule' : genreKnown === 'homme' ? 'seul' : 'seul(e)'}
+            Privé · visible par toi {fem ? 'seule' : genreKnown === 'homme' ? 'seul' : 'uniquement'}
           </span>
           <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
             {isAuthenticated ? (
@@ -2172,9 +2179,9 @@ const ConversationAccueil: React.FC = () => {
                 )}
               </button>
             )}
-            <button onClick={() => setVeiled(true)} aria-label="Masquer l'écran" title="Masquer l'écran" className="drl-btn"
-              style={{ width: 44, height: 44, borderRadius: 13, border: `1px solid ${C.line}`, background: C.glass, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: C.muted }}>
-              <EyeOff size={20} aria-hidden="true" />
+            <button onClick={() => { discret.dismiss(); setVeiled(true); }} aria-label="Masquer l'écran" title="Masquer l'écran" className="drl-btn"
+              style={{ minWidth: 44, height: 44, padding: discret.show ? '0 12px' : 0, gap: 6, borderRadius: 13, border: `1px solid ${C.line}`, background: C.glass, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: C.muted, fontSize: 12.5, fontWeight: 600 }}>
+              <EyeOff size={20} aria-hidden="true" />{discret.show && <span>Discret</span>}
             </button>
           </span>
         </header>
@@ -2591,7 +2598,7 @@ const TestPanel: React.FC<{
   const hasPrev = !!previousItem(scale, answers, item?.id ?? null);
   const link: React.CSSProperties = { border: 0, background: 'transparent', color: C.muted, fontSize: 13, fontWeight: 600, cursor: 'pointer', minHeight: 40, padding: '0 6px', textDecoration: 'underline', textUnderlineOffset: 3 };
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
       <div aria-label={`${label} : question ${Math.min(p.done + 1, p.total)} sur ${p.total}`}>
         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, fontWeight: 600, color: C.faint, marginBottom: 6 }}>
           <span>{label}</span>
@@ -2602,15 +2609,17 @@ const TestPanel: React.FC<{
         </div>
       </div>
       {!hidden && item && (
-        <div className="drl-in" style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <div className="drl-in" style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
           {scale.instructions && !/(…|\.\.\.)\s*$/.test(scale.instructions) && (
-            <p style={{ margin: '2px 0 2px', fontSize: 12, color: C.faint, textAlign: 'center', lineHeight: 1.45 }}>{scale.instructions}</p>
+            <p style={{ margin: '0', fontSize: 11.5, color: C.faint, textAlign: 'center', lineHeight: 1.4 }}>{scale.instructions}</p>
           )}
+          {/* La question reste TOUJOURS visible, au-dessus des réponses (même sur un petit écran) */}
+          <p aria-live="polite" style={{ margin: '2px 0 2px', fontSize: 15.5, fontWeight: 700, color: C.title, textAlign: 'center', lineHeight: 1.4 }}>{item.text}</p>
           {item.options.map(o => {
             const chosen = answers[item.id] === o.value;
             return (
               <button key={o.value} onClick={() => onAnswer(o)} disabled={busy} className="drl-btn"
-                style={{ minHeight: 50, padding: '10px 16px', borderRadius: 16, textAlign: 'left', cursor: busy ? 'default' : 'pointer',
+                style={{ minHeight: 44, padding: '7px 16px', borderRadius: 14, textAlign: 'left', cursor: busy ? 'default' : 'pointer',
                   border: `1px solid ${chosen ? palette.accent : 'rgba(242,182,109,.30)'}`,
                   background: chosen ? 'rgba(242,182,109,.20)' : 'rgba(255,255,255,.05)', color: C.text,
                   display: 'flex', flexDirection: 'column', gap: 2 }}>

@@ -87,6 +87,8 @@ export interface QuickReply {
 export interface AccueilState {
   v: 1;
   step: Step;
+  /** Étape « moins de 18 ans » : la personne a dit s'être trompée, on lui demande de confirmer. */
+  minorAsk?: boolean;
   /** Étape à reprendre après le protocole de crise. */
   resumeStep?: Step;
   need?: Need;
@@ -163,7 +165,7 @@ export const WHY_NEXT: Record<string, string> = {
 };
 
 export const NEED_REPLIES: QuickReply[] = [
-  { label: 'Je suis stressé(e)', value: 'need:stress' },
+  { label: 'Le stress me pèse', value: 'need:stress' },
   { label: 'Je veux mieux me connaître', value: 'need:connaitre' },
   { label: 'Ça ne va pas en ce moment', value: 'need:mal' },
   { label: 'Problème de couple / vie intime', value: 'need:couple' },
@@ -359,6 +361,9 @@ export function getQuickReplies(s: AccueilState, _k: Known): QuickReply[] {
       // Les raccourcis (humeur, respiration, tests, espace) sont dans le menu « + ».
       return [];
     case 'minor':
+      return s.minorAsk
+        ? [{ label: 'Oui, j\'ai 18 ans ou plus', value: 'minor:confirm' }, { label: 'Non, j\'ai moins de 18 ans', value: 'minor:stay' }]
+        : [{ label: `Je me suis ${g(s, 'trompé', 'trompée')} d'âge`, value: 'minor:mistake' }];
     case 'testing':
       return [];
   }
@@ -427,14 +432,28 @@ export function respond(state: AccueilState, input: Input, k: Known): AccueilSta
   // 1. Crise : prioritaire sur tout, à chaque saisie libre
   if (text && detectCrisis(text)) return enterCrisis(s);
 
-  if (s.step === 'minor') return s;
+  if (s.step === 'minor') {
+    if (value === 'minor:mistake') {
+      s = push(s, 'drlo', `Pas de souci, ça arrive. Je te le redemande une fois : Health-e est réservé aux adultes. Tu as bien 18 ans ou plus ?`);
+      return { ...s, minorAsk: true };
+    }
+    if (value === 'minor:confirm') {
+      s = push(s, 'drlo', `D'accord, merci de me le confirmer. On reprend : dans quelle tranche d'âge te trouves-tu ?`);
+      return { ...s, minorAsk: false, step: 'age' };
+    }
+    if (value === 'minor:stay') {
+      s = push(s, 'drlo', `Merci pour ta franchise. Reviens quand tu auras 18 ans : en attendant, parle à un adulte de confiance si quelque chose te pèse.`);
+      return { ...s, minorAsk: false };
+    }
+    return s;
+  }
 
   if (s.step === 'crisis') {
     if (value === 'crisis:safe') {
       s = push(s, 'drlo', `D'accord. Merci de me le dire. Les numéros restent juste au-dessus si tu en as besoin, à n'importe quel moment.`);
       const back = s.resumeStep ?? 'need';
       s = { ...s, step: back, resumeStep: undefined };
-      if (back === 'need' || back === 'need_clarify') return push(s, 'drlo', `Quand tu te sens prêt(e) : qu'est-ce qui t'amène ici ?`);
+      if (back === 'need' || back === 'need_clarify') return push(s, 'drlo', `Quand tu veux : qu'est-ce qui t'amène ici ?`);
       if (back === 'testing') return push(s, 'drlo', `On reprend quand tu veux, à ton rythme. Tu peux aussi mettre le test en pause.`);
       // Un test était déjà proposé : on ne le repropose pas juste après une crise
       if (back === 'prescribed') return push(s, 'drlo', `Je reste là. On peut parler, respirer un moment, ou continuer plus tard : c'est toi qui choisis.`);

@@ -26,7 +26,7 @@ export const GAD7: AssessmentScale = {
   shortName: "GAD-7",
   category: 'mental_health',
   description: "Mesure la sévérité de l'anxiété généralisée au cours des 2 dernières semaines.",
-  instructions: "Au cours des 2 dernières semaines, à quelle fréquence as-tu été gêné(e) par les problèmes suivants :",
+  instructions: "Au cours des 2 dernières semaines, à quelle fréquence as-tu été {{gêné|gênée}} par les problèmes suivants :",
   timeEstimateMinutes: 3,
   reference: "Spitzer, R.L., Kroenke, K., Williams, J.B.W., & Löwe, B. (2006). A brief measure for assessing generalized anxiety disorder. Archives of Internal Medicine, 166(10), 1092–1097.",
   adaptationNote: "Traduction validée FR, adaptée au tutoiement (registre uniquement). Aucun changement de contenu ni d'ordre des items.",
@@ -76,7 +76,7 @@ export const GAD7: AssessmentScale = {
     },
     {
       id: 6,
-      text: "Une tendance à être facilement contrarié(e) ou irritable",
+      text: "Une tendance à être facilement {{contrarié|contrariée}} ou irritable",
       type: 'frequency',
       options: opts,
     },

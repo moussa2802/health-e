@@ -2,7 +2,7 @@ import type { ScaleExperience } from '../../types/experience';
 
 export const NSSS_EXPERIENCE: ScaleExperience = {
   input: 'agreement-scale',
-  answerPrompt: 'À quel point es-tu satisfait(e) ?',
+  answerPrompt: 'À quel point es-tu {{satisfait|satisfaite}} ?',
   tone: 'normal',
   introScreen: {
     title: 'Satisfaction Sexuelle Globale',

@@ -57,7 +57,8 @@ const ConfierPanel: React.FC<{
   stateRef.current = state;
   const listRef = useRef<HTMLDivElement>(null);
   const dictation = useDictation(setDraft);
-  const seul = genre === 'femme' ? 'seule' : genre === 'homme' ? 'seul' : 'seul(e)';
+  const seul = genre === 'femme' ? 'seule' : genre === 'homme' ? 'seul' : 'uniquement';
+  const sansAide = genre === 'femme' ? 'seule' : genre === 'homme' ? 'seul' : 'sans soutien';
   // Carnets : la personne range ses confidences (famille, amis, couple…)
   const owner = userId ?? 'guest';
   const [carnet, setCarnet] = useState(() => currentCarnet(owner));
@@ -226,7 +227,7 @@ const ConfierPanel: React.FC<{
           return (
             <div key={it.id} className="drl-in" style={{ borderRadius: 18, border: '1px solid rgba(180,195,220,.4)', background: 'rgba(180,195,220,.10)', padding: 14, textAlign: 'left' }}>
               <p style={{ margin: 0, fontSize: 14, lineHeight: 1.5, color: CONFIER.text }}>
-                Ce que tu viens d'écrire est important, et je suis content que tu l'aies posé ici. Tu n'as pas à traverser ça {seul}.
+                Ce que tu viens d'écrire est important, et je suis content que tu l'aies posé ici. Tu n'as pas à traverser ça {sansAide}.
               </p>
               <p style={{ margin: '8px 0 6px', fontSize: 13, fontWeight: 700, color: '#B4C3DC' }}>Là, tu as besoin d'une vraie personne. Appelle maintenant :</p>
               <ul style={{ margin: 0, padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 6 }}>

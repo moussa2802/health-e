@@ -13,12 +13,12 @@ import { isAiAvailable } from '../../utils/aiCircuitBreaker';
 import { CREDIT, credits } from '../../config/creditName';
 
 const HUMEURS = [
-  { emoji: '😊', label: 'Heureux(se)', icon: Smile },
+  { emoji: '😊', label: 'Joie', icon: Smile },
   { emoji: '😐', label: 'Neutre', icon: Meh },
   { emoji: '😔', label: 'Triste', icon: Frown },
-  { emoji: '😰', label: 'Anxieux(se)', icon: Annoyed },
+  { emoji: '😰', label: 'Anxiété', icon: Annoyed },
   { emoji: '😡', label: 'En colère', icon: Angry },
-  { emoji: '🥰', label: 'Amoureux(se)', icon: Heart },
+  { emoji: '🥰', label: 'Amour', icon: Heart },
 ];
 
 const THEMES = ['Relations', 'Travail', 'Famille', 'Santé', 'Émotions', 'Autre'];

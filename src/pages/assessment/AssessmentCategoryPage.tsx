@@ -481,7 +481,7 @@ const ProfileCard: React.FC<{
             </p>
             {dateStr && (
               <p className="m-0 mt-0.5 text-[11px] font-medium" style={{ color: 'rgba(255,255,255,0.65)' }}>
-                Évalué·e le {dateStr}
+                Fait le {dateStr}
               </p>
             )}
           </div>

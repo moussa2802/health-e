@@ -61,9 +61,9 @@ export function getHiddenScaleIds(profile: OnboardingProfile): string[] {
 export function buildDemographique(profile: OnboardingProfile): Record<string, string> {
   const labels: Record<string, string> = {
     homme: 'Homme', femme: 'Femme', autre: 'Autre', non_specifie: '',
-    celibataire: 'Célibataire', en_couple: 'En couple', marie: 'Marié(e)',
-    polygamie: 'En situation de polygamie', separe_divorce: 'Séparé(e)/Divorcé(e)',
-    veuf: 'Veuf(ve)', complique: "Situation complexe",
+    celibataire: 'Célibataire', en_couple: 'En couple', marie: 'Dans un mariage',
+    polygamie: 'En situation de polygamie', separe_divorce: 'Séparation ou divorce',
+    veuf: 'Veuvage', complique: "Situation complexe",
   };
 
   return {

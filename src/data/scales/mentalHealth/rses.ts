@@ -30,14 +30,14 @@ export const RSES: AssessmentScale = {
   items: [
     { id: 1,  text: "Je pense que je suis une personne de valeur, au moins égale à n'importe qui d'autre",       type: 'likert', options: opts },
     { id: 2,  text: "Je pense que je possède un certain nombre de belles qualités",                               type: 'likert', options: opts },
-    { id: 3,  text: "Tout bien considéré, je suis porté(e) à me considérer comme un(e) raté(e)",                  type: 'likert', options: opts, reversed: true },
+    { id: 3,  text: "Tout bien considéré, je suis {{porté|portée}} à me considérer comme {{un|une}} {{raté|ratée}}",                  type: 'likert', options: opts, reversed: true },
     { id: 4,  text: "Je suis capable de faire les choses aussi bien que la majorité des gens",                     type: 'likert', options: opts },
-    { id: 5,  text: "Je sens peu de raisons d'être fier(e) de moi",                                               type: 'likert', options: opts, reversed: true },
+    { id: 5,  text: "Je sens peu de raisons d'être {{fier|fière}} de moi",                                               type: 'likert', options: opts, reversed: true },
     { id: 6,  text: "J'ai une attitude positive vis-à-vis de moi-même",                                           type: 'likert', options: opts },
-    { id: 7,  text: "Dans l'ensemble, je suis satisfait(e) de moi",                                               type: 'likert', options: opts },
+    { id: 7,  text: "Dans l'ensemble, je suis {{satisfait|satisfaite}} de moi",                                               type: 'likert', options: opts },
     { id: 8,  text: "J'aimerais avoir plus de respect pour moi-même",                                             type: 'likert', options: opts, reversed: true },
     { id: 9,  text: "Parfois je me sens vraiment inutile",                                                        type: 'likert', options: opts, reversed: true },
-    { id: 10, text: "Il m'arrive de penser que je suis un(e) bon(ne) à rien",                                     type: 'likert', options: opts, reversed: true },
+    { id: 10, text: "Il m'arrive de penser que je suis {{un bon|une bonne}} à rien",                                     type: 'likert', options: opts, reversed: true },
   ],
   interpretation: [
     {
@@ -47,7 +47,7 @@ export const RSES: AssessmentScale = {
       alertLevel: 2,
       description: "Tu portes un regard très dur sur toi-même — c'est comme si tu te regardais à travers un miroir déformant qui ne montre que les défauts.",
       referralRequired: true,
-      recommendation: "Un accompagnement psychologique peut t'aider à reconstruire une image de toi plus juste et plus douce. Tu mérites de te voir tel(le) que tu es vraiment."
+      recommendation: "Un accompagnement psychologique peut t'aider à reconstruire une image de toi plus juste et plus douce. Tu mérites de te voir {{tel|telle}} que tu es vraiment."
     },
     {
       min: 15, max: 25,

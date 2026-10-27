@@ -112,11 +112,11 @@ const SDI2_DYADIC_OVERRIDES_A: Record<number, string> = {
   1:  "À quelle fréquence ressens-tu de l'attirance sexuelle pour quelqu'un (dans ta vie réelle ou dans tes pensées) ?",
   2:  "Quelle est l'intensité de ton envie d'avoir un jour des expériences intimes avec quelqu'un ?",
   3:  "À quel point aimerais-tu te rapprocher intimement de quelqu'un que tu trouves attrayant ?",
-  4:  "Si quelqu'un que tu aimes bien te proposait une proximité intime, serais-tu réceptif(ve) ?",
+  4:  "Si quelqu'un que tu aimes bien te proposait une proximité intime, serais-tu {{réceptif|réceptive}} ?",
   5:  "Idéalement, à quelle fréquence aimerais-tu vivre des moments d'intimité physique avec quelqu'un ?",
   6:  "Comment évalues-tu ton niveau d'intérêt actuel pour une intimité physique avec quelqu'un ?",
   7:  "À quelle fréquence as-tu des pensées ou des fantasmes sexuels en rapport avec une personne ?",
-  8:  "À quel point es-tu attiré(e) sexuellement par des personnes de ta vie ou de tes pensées ?",
+  8:  "À quel point es-tu {{attiré|attirée}} sexuellement par des personnes de ta vie ou de tes pensées ?",
   9:  "Dans quelle mesure ces envies ou attirances influencent-elles ton humeur générale ?",
 };
 
@@ -159,20 +159,20 @@ const FSFI_ITEM_OVERRIDES_B: Record<number, string> = {
   3:  "Au cours des 4 dernières semaines, à quelle fréquence as-tu ressenti de l'éveil sexuel lors d'une expérience intime ou sensuelle ?",
   4:  "Au cours des 4 dernières semaines, comment évalues-tu ton niveau d'éveil lors de tes moments intimes ou sensuels ?",
   5:  "Au cours des 4 dernières semaines, quelle confiance avais-tu de pouvoir ressentir de l'excitation dans un moment intime ?",
-  6:  "Au cours des 4 dernières semaines, à quelle fréquence étais-tu satisfait(e) de ta réponse d'éveil lors de tes moments intimes ?",
+  6:  "Au cours des 4 dernières semaines, à quelle fréquence étais-tu {{satisfait|satisfaite}} de ta réponse d'éveil lors de tes moments intimes ?",
   // Lubrification → réponse corporelle
   7:  "Au cours des 4 dernières semaines, à quelle fréquence as-tu ressenti une réponse physique (chaleur, sensations) lors d'une expérience intime ?",
   8:  "Au cours des 4 dernières semaines, à quel point était-il facile de ressentir une réponse physique d'excitation ?",
   9:  "Au cours des 4 dernières semaines, à quelle fréquence cette réponse physique s'est-elle maintenue tout au long de l'expérience ?",
   10: "Au cours des 4 dernières semaines, à quel point était-il facile de maintenir cette réponse physique jusqu'à la fin ?",
   // Orgasme → adapté sans mentionner pénétration
-  11: "Au cours des 4 dernières semaines, à quelle fréquence as-tu pu atteindre l'orgasme lors d'une expérience intime ou seul(e) ?",
-  12: "Au cours des 4 dernières semaines, quelle a été la difficulté à atteindre l'orgasme lors d'une expérience intime ou seul(e) ?",
-  13: "Au cours des 4 dernières semaines, à quel point étais-tu satisfait(e) de ta capacité à atteindre l'orgasme ?",
+  11: "Au cours des 4 dernières semaines, à quelle fréquence as-tu pu atteindre l'orgasme lors d'une expérience intime ou {{seul|seule}} ?",
+  12: "Au cours des 4 dernières semaines, quelle a été la difficulté à atteindre l'orgasme lors d'une expérience intime ou {{seul|seule}} ?",
+  13: "Au cours des 4 dernières semaines, à quel point étais-tu {{satisfait|satisfaite}} de ta capacité à atteindre l'orgasme ?",
   // Satisfaction → expériences intimes
-  14: "Au cours des 4 dernières semaines, à quel point étais-tu satisfait(e) de l'intimité émotionnelle vécue dans tes expériences ?",
-  15: "Au cours des 4 dernières semaines, à quel point étais-tu satisfait(e) de tes expériences intimes, telles qu'elles sont ?",
-  16: "Au cours des 4 dernières semaines, à quel point étais-tu satisfait(e) de ta vie intime en général ?",
+  14: "Au cours des 4 dernières semaines, à quel point étais-tu {{satisfait|satisfaite}} de l'intimité émotionnelle vécue dans tes expériences ?",
+  15: "Au cours des 4 dernières semaines, à quel point étais-tu {{satisfait|satisfaite}} de tes expériences intimes, telles qu'elles sont ?",
+  16: "Au cours des 4 dernières semaines, à quel point étais-tu {{satisfait|satisfaite}} de ta vie intime en général ?",
   // Douleur/pénétration → inconfort corporel général
   17: "Au cours des 4 dernières semaines, as-tu ressenti une gêne ou une douleur lors d'une expérience intime ou sensuelle ?",
   18: "Au cours des 4 dernières semaines, as-tu ressenti une gêne ou une douleur après une expérience intime ou sensuelle ?",

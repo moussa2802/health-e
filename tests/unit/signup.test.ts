@@ -34,7 +34,7 @@ const k: Known = { isAuthenticated: false, guestRemaining: 0, doneScaleIds: [], 
 
 test('invitation dans le chat + accueil après inscription', () => {
   let s = startConversation(k);
-  s = respond(s, { value: 'need:stress', label: 'Je suis stressé(e)' }, k);
+  s = respond(s, { value: 'need:stress', label: 'Le stress me pèse' }, k);
   s = { ...s, prenom: 'Awa' };
   const inv = signupInvite(s, 'signup', 'Créer mon compte');
   const last = inv.messages.at(-1)!;

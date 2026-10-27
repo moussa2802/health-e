@@ -43,8 +43,8 @@ const Q3: Question = {
   id: 'q3',
   text: "Est-ce que tu te sens à l'aise\npour répondre à des questions\nsur ta vie intime aujourd'hui ?",
   options: [
-    { id: 'a_laise', label: "Oui, je suis prêt(e)" },
-    { id: 'hesitant', label: "Un peu hésitant(e) mais\nje veux essayer" },
+    { id: 'a_laise', label: "Oui, ça me va" },
+    { id: 'hesitant', label: "J'hésite un peu, mais\nje veux essayer" },
     { id: 'pas_a_laise', label: "Pas vraiment —\nje préfère passer" },
   ],
 };
@@ -300,7 +300,7 @@ const SexualAccessGate: React.FC<Props> = ({ userId, onGranted }) => {
       <div className="bg-sage-soft border border-sage/10 rounded-block p-5 mb-5">
         <p className="text-sm text-ink-soft leading-relaxed">Pour évaluer ta vie intime, on a besoin d'expériences vécues sur lesquelles se baser.</p>
         <p className="text-sm text-ink-soft leading-relaxed mt-3">Sans ces éléments, nos outils d'évaluation ne peuvent pas te donner des résultats pertinents.</p>
-        <p className="text-sm text-ok font-semibold leading-relaxed mt-3">Cette section t'attend quand tu seras prêt(e)</p>
+        <p className="text-sm text-ok font-semibold leading-relaxed mt-3">Cette section t'attend quand le moment sera venu</p>
       </div>
       <a href="/assessment/mental" className="block py-3 rounded-xl border border-line text-muted text-[13px] font-semibold no-underline text-center hover:bg-paper transition-colors">
         <ArrowLeft size={14} className="inline mr-1.5" />Retour à mon profil psychologique

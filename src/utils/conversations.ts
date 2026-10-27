@@ -13,6 +13,8 @@ export interface ConvMeta {
   updatedAt: string;
   /** Premier ou dernier message de la personne, pour s'y retrouver */
   preview?: string;
+  /** Titre donné par défaut (la date) : il sera remplacé par le début du premier message. */
+  auto?: boolean;
 }
 
 export interface ConvIndex {
@@ -64,14 +66,18 @@ export function defaultTitle(d = new Date()): string {
 
 export function createConv(idx: ConvIndex, title?: string, now = new Date()): { idx: ConvIndex; id: string } {
   const id = `c${now.getTime().toString(36)}`;
-  const meta: ConvMeta = { id, title: (title && cleanTitle(title)) || defaultTitle(now), updatedAt: now.toISOString() };
+  const meta: ConvMeta = { id, title: (title && cleanTitle(title)) || defaultTitle(now), updatedAt: now.toISOString(), ...(title && cleanTitle(title) ? {} : { auto: true }) };
   return { idx: { ...idx, current: id, list: [...idx.list, meta] }, id };
 }
 
 export function renameConv(idx: ConvIndex, id: string, title: string): ConvIndex {
   const t = cleanTitle(title);
   if (!t) return idx;
-  return { ...idx, list: idx.list.map(c => (c.id === id ? { ...c, title: t } : c)) };
+  return { ...idx, list: idx.list.map(c => {
+    if (c.id !== id) return c;
+    const { auto: _auto, ...rest } = c;
+    return { ...rest, title: t };
+  }) };
 }
 
 /** La discussion principale ne se supprime pas (on peut l'effacer). */
@@ -80,8 +86,30 @@ export function deleteConv(idx: ConvIndex, id: string): ConvIndex {
   return { ...idx, current: idx.current === id ? MAIN_ID : idx.current, list: idx.list.filter(c => c.id !== id), deleted: [...(idx.deleted ?? []), id] };
 }
 
+/** Un titre court tiré du début d'un message (coupé au mot, 32 caractères au plus). */
+export function titleFromMessage(text: string): string | null {
+  const n = text.replace(/[<>]/g, '').replace(/\s+/g, ' ').trim();
+  if (n.length < 3) return null;
+  if (n.length <= 32) return cleanTitle(n.replace(/[.!?…]+$/, ''));
+  const cut = n.slice(0, 32);
+  const sp = cut.lastIndexOf(' ');
+  return cleanTitle(`${(sp > 14 ? cut.slice(0, sp) : cut).replace(/[,;:.\s]+$/, '')}…`);
+}
+
 export function touchConv(idx: ConvIndex, id: string, preview?: string, now = new Date()): ConvIndex {
-  return { ...idx, list: idx.list.map(c => (c.id === id ? { ...c, updatedAt: now.toISOString(), ...(preview ? { preview: preview.slice(0, 80) } : {}) } : c)) };
+  return {
+    ...idx,
+    list: idx.list.map(c => {
+      if (c.id !== id) return c;
+      const next: ConvMeta = { ...c, updatedAt: now.toISOString(), ...(preview ? { preview: preview.slice(0, 80) } : {}) };
+      // Discussion sans titre choisi : elle prend le nom de son premier message, pour qu'on s'y retrouve
+      if (c.auto && c.id !== MAIN_ID && preview) {
+        const t = titleFromMessage(preview);
+        if (t) { next.title = t; delete next.auto; }
+      }
+      return next;
+    }),
+  };
 }
 
 /** Principale d'abord, puis les plus récentes. */

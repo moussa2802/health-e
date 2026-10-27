@@ -194,7 +194,7 @@ const DomainePage: React.FC = () => {
         <section style={{ marginTop: 18, display: 'flex', flexDirection: 'column', gap: 10 }}>
           {[
             { icon: Crown, title: 'Le Défi · Kan moo ma gën a xam ?', text: defis ? `${defis} défi${defis > 1 ? 's' : ''} en cours. Tes proches devinent tes réponses : qui te connaît le mieux ?` : 'Tes proches devinent tes réponses, et tu découvres qui te connaît le mieux.', cta: 'Lancer un défi avec Dr Lô', flow: 'defi' as const, extra: defis ? { label: 'Voir mes défis', to: '/defi' } : null },
-            { icon: Users, title: 'Compatibilité', text: 'Partenaire, crush, ami(e) : partage ton code, l\'autre fait ses tests, et Dr Lô compare vos profils.', cta: 'Comparer avec Dr Lô', flow: 'compat' as const, extra: { label: 'Mes comparaisons', to: '/assessment/compatibility' } },
+            { icon: Users, title: 'Compatibilité', text: 'Partenaire, crush, ami : partage ton code, l\'autre fait ses tests, et Dr Lô compare vos profils.', cta: 'Comparer avec Dr Lô', flow: 'compat' as const, extra: { label: 'Mes comparaisons', to: '/assessment/compatibility' } },
           ].map(c => (
             <div key={c.title} style={{ ...card, borderColor: `${DC.social}55`, background: `${DC.social}10` }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>

@@ -22,7 +22,8 @@ type RawPrompt = Pick<PendingPrompt, 'titre' | 'invitation' | 'questions_suggere
 // ── Genre adaptation ──────────────────────────────────────────────────────────
 
 function adapt(text: string, genre?: string): string {
-  if (genre === 'homme') {
+  // Genre inconnu : on écrit au masculin plutôt que de laisser « (e) » à l'écran
+  if (genre !== 'femme') {
     return text
       .replace(/\(e\)/g, '')
       .replace(/\(ère\)/g, '')

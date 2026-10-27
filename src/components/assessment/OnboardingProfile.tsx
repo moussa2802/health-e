@@ -84,10 +84,10 @@ const QUESTIONS: Question[] = [
     options: [
       { value: 'celibataire',    label: 'Célibataire',                  icon: User },
       { value: 'en_couple',      label: 'En couple',                    icon: Users },
-      { value: 'marie',          label: 'Marié(e)',                     icon: Heart },
+      { value: 'marie',          label: 'Dans un mariage',             icon: Heart },
       { value: 'polygamie',      label: 'En situation de polygamie',    icon: UsersRound },
-      { value: 'separe_divorce', label: 'Séparé(e) / Divorcé(e)',       icon: UserMinus },
-      { value: 'veuf',           label: 'Veuf(ve)',                     icon: Feather },
+      { value: 'separe_divorce', label: 'Séparation / divorce',       icon: UserMinus },
+      { value: 'veuf',           label: 'Veuvage',                    icon: Feather },
       { value: 'complique',      label: "C'est compliqué",              icon: HelpCircle },
     ],
   },
@@ -114,9 +114,9 @@ const QUESTIONS: Question[] = [
   {
     key: 'situation_mariage',
     type: 'choice',
-    drLoSays: "As-tu déjà été marié(e) ou tu l'es actuellement ?",
+    drLoSays: "Est-ce que tu as déjà été dans un mariage, ou tu y es actuellement ?",
     options: [
-      { value: 'actuellement',    label: 'Oui, actuellement marié(e)', icon: Heart },
+      { value: 'actuellement',    label: 'Oui, actuellement', icon: Heart },
       { value: 'plus_maintenant', label: 'Oui, mais plus maintenant',  icon: UserMinus },
       { value: 'jamais',          label: 'Non, jamais',                icon: User },
     ],

@@ -4,6 +4,7 @@ import { BatteryCharging, ChevronDown, ChevronLeft, ChevronRight, ClipboardCheck
 import { useAuth } from '../../contexts/AuthContext';
 import { useDefiFlag } from '../../hooks/useDefiFlag';
 import { acceptPendingTotem, getProfileProgress, revealTotem, saveTotem } from '../../services/evaluationService';
+import { loadProgramme } from '../../services/programmeService';
 import { acceptTotemDefi, defiActive as isDefiActive, loadTotemDefi, type TotemDefi } from '../../services/totemService';
 import { getArchetype, getArchetypeId } from '../../utils/profileArchetype';
 import { shareResultCard } from '../../utils/shareCard';
@@ -153,6 +154,13 @@ const TotemProfilePage: React.FC = () => {
   const [pending, setPending] = useState<TotemAnimal | null>(null);
   const [evolving, setEvolving] = useState(false);
   const [evolvedFrom, setEvolvedFrom] = useState<TotemAnimal | null>(null);
+  const [progActive, setProgActive] = useState(false);
+  useEffect(() => {
+    if (!isAuthenticated || !currentUser) return;
+    let cancelled = false;
+    loadProgramme(currentUser.id).then(p => { if (!cancelled) setProgActive(!!p && p.status === 'active' && !p.result); }).catch(() => {});
+    return () => { cancelled = true; };
+  }, [isAuthenticated, currentUser?.id]);
 
   useEffect(() => {
     if (!isAuthenticated || !currentUser) { setLoading(false); return; }
@@ -389,7 +397,7 @@ const TotemProfilePage: React.FC = () => {
               Ta jauge « {RING_SHORT_LABELS[lowest.scaleId] ?? lowest.label} » est la plus basse ({lowest.fillPercent} %). C'est elle qui ferait le plus briller {w.ton}. Ton totem évolue avec toi : quand tu refais le test et que ça a bougé, il rayonne davantage.
             </p>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-              {lowAxis && <button onClick={() => navigate('/', { state: { programme: true } })} style={primary}>Un programme pour ça</button>}
+              {lowAxis && <button onClick={() => navigate('/', { state: { programme: true } })} style={primary}>{progActive ? 'Voir mon programme' : 'Un programme pour ça'}</button>}
               <button onClick={() => navigate('/', { state: { prescribe: lowest.scaleId } })} style={lowAxis ? ghost : primary}>Refaire ce test avec Dr Lô</button>
             </div>
           </section>

@@ -1,6 +1,6 @@
 /**
  * DrLoShell — cadre commun des écrans « Mon Dr Lô » (thème chaud sombre) :
- * fond selon le moment de la journée, retour, « visible par toi seul(e) », masquer l'écran.
+ * fond selon le moment de la journée, retour, « visible par toi seul », masquer l'écran.
  */
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
@@ -30,7 +30,7 @@ const DrLoShell: React.FC<{
   children: React.ReactNode;
 }> = ({ back, genre, palette, children }) => {
   const [veiled, setVeiled] = useState(false);
-  const seul = genre === 'femme' ? 'seule' : genre === 'homme' ? 'seul' : 'seul(e)';
+  const seul = genre === 'femme' ? 'seule' : genre === 'homme' ? 'seul' : 'uniquement';
   return (
     <div className="drl-screen font-sans" style={{ minHeight: '100svh', background: palette.bg, color: DC.text, position: 'relative' }}>
       <div style={{ maxWidth: 520, margin: '0 auto', padding: '16px 18px 28px', boxSizing: 'border-box' }}>

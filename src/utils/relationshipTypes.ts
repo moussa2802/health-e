@@ -254,7 +254,7 @@ export const RELATIONSHIP_CATEGORIES: RelationshipMainType[] = [
       {
         id: 'ami_proche',
         emoji: '😊',
-        label: 'Ami(e) proche',
+        label: 'Ami proche',
         description: 'Une amitié solide de plus de 6 mois',
         drLoContext: {
           angleAnalyse: "Analyser la solidité d'une amitié bien installée. Identifier les ressources et les zones de friction possibles.",
@@ -265,7 +265,7 @@ export const RELATIONSHIP_CATEGORIES: RelationshipMainType[] = [
       {
         id: 'meilleur_ami',
         emoji: '🏆',
-        label: 'Meilleur(e) ami(e)',
+        label: 'Meilleur ami',
         description: "Mon/ma best — on se connaît depuis des années",
         drLoContext: {
           angleAnalyse: "Analyser la profondeur et la solidité de ce lien fort. Identifier les ressources et les zones de friction possibles dans une amitié profonde.",
@@ -277,7 +277,7 @@ export const RELATIONSHIP_CATEGORIES: RelationshipMainType[] = [
       {
         id: 'ami_enfance',
         emoji: '🌍',
-        label: "Ami(e) d'enfance",
+        label: "Ami d'enfance",
         description: 'On se connaît depuis tout petits',
         drLoContext: {
           angleAnalyse: "Analyser une amitié de longue date forgée dans l'enfance. Identifier l'évolution des deux personnes et la solidité du lien dans le temps.",
@@ -289,7 +289,7 @@ export const RELATIONSHIP_CATEGORIES: RelationshipMainType[] = [
       {
         id: 'ami_virtuel',
         emoji: '📱',
-        label: 'Ami(e) virtuel(le)',
+        label: 'Ami virtuel',
         description: 'Une relation surtout en ligne',
         drLoContext: {
           angleAnalyse: "Analyser une amitié principalement digitale. Identifier les forces de cette connexion virtuelle et les défis d'une relation à distance.",

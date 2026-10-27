@@ -1,3 +1,5 @@
+import { getOnboardingProfile } from './onboardingProfile';
+import { resolveGender } from './gender';
 /**
  * Descriptions concrètes pour chaque option de réponse.
  * Chaque label est traduit en langage clair pour guider l'utilisateur.
@@ -7,54 +9,26 @@
 // ── Overrides par scale ───────────────────────────────────────────────────────
 
 const GAD7_PHQ9: Record<string, string> = {
-  'jamais':                     "Ça ne m'est pas arrivé du tout ces 2 dernières semaines",
   'plusieurs jours':            "Ça m'est arrivé 1 à 6 jours sur les 14 derniers",
   'plus de la moitié du temps': "Ça m'est arrivé 7 à 11 jours — plus souvent qu'autrement",
   'presque tous les jours':     "Ça m'est arrivé 12 à 14 jours — quasi quotidiennement",
   // item fonctionnel (item 8 GAD-7)
-  'pas du tout difficile':      "Je fonctionne normalement, comme d'habitude",
-  'un peu difficile':           "Quelques petits défis, mais ça passe",
-  'assez difficile':            "C'est vraiment compliqué au quotidien",
-  'extrêmement difficile':      "J'ai beaucoup de mal à fonctionner normalement",
 };
 
 const PSS10: Record<string, string> = {
-  'jamais':         "Ça ne m'est pas arrivé du tout ce dernier mois",
-  'presque jamais': "1 ou 2 fois en tout sur le mois",
-  'parfois':        "De temps en temps, sans régularité",
   'assez souvent':  "Ça revenait plusieurs fois par semaine",
-  'très souvent':   "C'était presque quotidien",
 };
 
 const PCL5: Record<string, string> = {
-  'pas du tout':  "Non, ça ne me perturbe pas",
-  'un peu':       "Légèrement, mais c'est gérable",
-  'modérément':   "Ça me dérange assez régulièrement",
-  'beaucoup':     "C'est difficile à gérer au quotidien",
-  'extrêmement':  "Ça m'envahit complètement",
 };
 
 const PG13_FREQ: Record<string, string> = {
-  'jamais':   "Non, ça ne m'est pas arrivé",
-  'rarement': "1 ou 2 fois — vraiment rarement",
-  'parfois':  "De temps en temps, sans régularité",
-  'souvent':  "Ça revenait régulièrement",
-  'toujours': "C'est quasiment permanent",
 };
 
 const PG13_INTENSITY: Record<string, string> = {
-  'pas du tout': "Non, pas du tout ressenti",
-  'un peu':      "Légèrement, de façon passagère",
-  'modérément':  "C'est présent assez souvent",
-  'beaucoup':    "C'est intense et fréquent",
-  'énormément':  "C'est envahissant — ça prend toute la place",
 };
 
 const CECA_Q: Record<string, string> = {
-  'jamais':   "Non, ça ne s'est jamais passé",
-  'rarement': "1 ou 2 fois, dans mon enfance",
-  'parfois':  "Ça arrivait de temps en temps",
-  'souvent':  "Ça arrivait régulièrement",
 };
 
 // ── Hints génériques (toutes les scales restantes) ────────────────────────────
@@ -77,10 +51,8 @@ const GENERIC: Record<string, string> = {
   'souvent':        "Ça revient régulièrement",
   'très souvent':   "C'est presque tout le temps",
   'toujours':       "C'est quasiment permanent",
-  'presque jamais': "Très rarement — presque jamais",
 
   // Intensité / perturbation générale
-  'pas du tout':  "Non, pas du tout",
   'un peu':       "Légèrement, de façon passagère",
   'modérément':   "Assez présent dans ma vie",
   'beaucoup':     "C'est fort et fréquent",
@@ -91,18 +63,15 @@ const GENERIC: Record<string, string> = {
   'pas du tout difficile':  "Aucun problème à ce niveau",
   'un peu difficile':       "Un peu difficile, mais ça passe",
   'assez difficile':        "Vraiment compliqué",
-  'extrêmement difficile':  "Presque impossible à gérer",
 
   // Binaire Oui / Non (ACE, PG-13...)
   'oui': "Oui, ça s'est passé",
   'non':  "Non, ça ne s'est pas passé",
 
   // Satisfaction sexuelle (NSSS)
-  'pas du tout satisfait(e)':  "Vraiment pas satisfait(e) du tout",
-  'un peu satisfait(e)':       "Un peu, mais vraiment pas assez",
-  'modérément satisfait(e)':   "Assez bien — sans être enthousiaste",
-  'très satisfait(e)':         "Vraiment bien — je suis content(e)",
-  'extrêmement satisfait(e)':  "Parfait — je ne pourrais pas demander mieux",
+  'pas du tout satisfait':  "Vraiment pas {{satisfait|satisfaite}} du tout",
+  'un peu satisfait':       "Un peu, mais vraiment pas assez",
+  'extrêmement satisfait':  "Parfait — je ne pourrais pas demander mieux",
 
   // Pression sociale (jamais/toujours avec slash)
   'jamais / pas du tout':    "Non, ça ne me concerne pas du tout",
@@ -131,16 +100,12 @@ const GENERIC: Record<string, string> = {
   'pas difficile':            "Aucun problème à ce niveau",
 
   // Satisfaction relation (FSFI/IIEF)
-  'très insatisfait(e)':                      "Vraiment pas satisfait(e) du tout",
-  'modérément insatisfait(e)':                "Plutôt pas satisfait(e)",
-  'également satisfait(e)/insatisfait(e)':    "Moitié-moitié — ni bien ni mal",
-  'modérément satisfait(e)':                  "Assez satisfait(e) — ça va plutôt bien",
   // IIEF (masculin)
-  'très insatisfait':                  "Vraiment pas satisfait du tout",
-  'modérément insatisfait':            "Plutôt pas satisfait",
+  'très insatisfait':                  "Vraiment pas {{satisfait|satisfaite}} du tout",
+  'modérément insatisfait':            "Plutôt pas {{satisfait|satisfaite}}",
   'également satisfait/insatisfait':   "Moitié-moitié — ni bien ni mal",
-  'modérément satisfait':              "Assez satisfait — ça va plutôt bien",
-  'très satisfait':                    "Très satisfait — vraiment bien",
+  'modérément satisfait':              "Assez {{satisfait|satisfaite}} — ça va plutôt bien",
+  'très satisfait':                    "Très {{satisfait|satisfaite}} — vraiment bien",
 
   // Aucune activité (FSFI/IIEF item 0)
   'aucune activité sexuelle':  "Je n'ai pas eu d'activité sexuelle ce mois-ci",
@@ -163,15 +128,22 @@ const SCALE_OVERRIDES: Record<string, Record<string, string>> = {
 
 // ── Fonction principale ───────────────────────────────────────────────────────
 
+function resolveHint(hint: string | null): string | null {
+  if (hint === null) return null;
+  const genre = getOnboardingProfile()?.genre === 'femme' ? 'femme' : 'homme';
+  return resolveGender(hint, genre);
+}
+
 export function getOptionHint(label: string, scaleId?: string): string | null {
-  const key = label.toLowerCase().trim();
+  // « satisfaite » et « satisfait » partagent le même indice
+  const key = label.toLowerCase().trim().replace(/\b(in)?satisfaite\b/g, '$1satisfait');
 
   // 1. Override spécifique à la scale
   if (scaleId && SCALE_OVERRIDES[scaleId]) {
     const override = SCALE_OVERRIDES[scaleId][key];
-    if (override) return override;
+    if (override) return resolveHint(override);
   }
 
   // 2. Hint générique
-  return GENERIC[key] ?? null;
+  return resolveHint(GENERIC[key] ?? null);
 }

@@ -21,6 +21,7 @@ export function resolveScaleGender(scale: AssessmentScale, gender: UserGender): 
   const r = (t: string) => resolveGender(t, gender);
   return {
     ...scale,
+    description: r(scale.description),
     instructions: r(scale.instructions),
     warningMessage: r(scale.warningMessage),
     items: scale.items.map(item => ({

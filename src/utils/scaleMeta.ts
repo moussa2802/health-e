@@ -54,13 +54,13 @@ export const SCALE_META: Record<string, ScaleMeta> = {
   griss_base:         { icon: Sparkles,       label: 'Satisfaction de couple',         description: 'Évalue la satisfaction globale dans ta relation de couple.', category: 'sexual' },
 
   // ── Bonus ──
-  bonus_narcissisme:  { icon: Theater,        label: 'Traits narcissiques',             description: 'Es-tu vraiment toxique ou juste incompris(e) ?', category: 'bonus' },
+  bonus_narcissisme:  { icon: Theater,        label: 'Traits narcissiques',             description: 'Es-tu vraiment toxique, ou juste mal compris ?', category: 'bonus' },
   bonus_personnalite: { icon: Wind,           label: 'Traits de personnalité',          description: 'Est-ce que ton caractère cache quelque chose ?', category: 'bonus' },
   bonus_dependance:   { icon: Ribbon,         label: 'Dépendance affective',             description: 'Aimes-tu trop ou juste assez ?', category: 'bonus' },
   bonus_hsp:          { icon: Waves,          label: 'Hypersensibilité (HSP)',           description: 'Ressens-tu plus que les autres ?', category: 'bonus' },
   bonus_hpi:          { icon: BrainCircuit,   label: 'Haut Potentiel Intellectuel',      description: 'Ton cerveau tourne-t-il à une vitesse différente ?', category: 'bonus' },
   bonus_tdah:         { icon: RefreshCw,      label: 'TDAH Adulte',                      description: 'Ton cerveau est-il toujours en mode turbo ?', category: 'bonus' },
-  bonus_manipulation: { icon: Drama,          label: 'Manipulation & Toxicité',          description: 'Es-tu plus manipulateur(rice) que tu ne le crois ?', category: 'bonus' },
+  bonus_manipulation: { icon: Drama,          label: 'Manipulation & Toxicité',          description: 'Manipules-tu plus que tu ne le crois ?', category: 'bonus' },
   bonus_burnout:      { icon: Gauge,          label: 'Burnout professionnel',            description: 'Ton corps te dit-il d\'arrêter ?', category: 'bonus' },
   bonus_jalousie:     { icon: Angry,          label: 'Jalousie',                         description: 'La jalousie te contrôle-t-elle ?', category: 'bonus' },
   bonus_eq:           { icon: Lightbulb,      label: 'Intelligence émotionnelle',        description: 'Quel est ton vrai QE émotionnel ?', category: 'bonus' },

@@ -648,7 +648,7 @@ const AssessmentHomePage: React.FC = () => {
               </div>
               <p className="text-[14px] font-bold text-[#F4F1E9] m-0 mt-2.5 leading-tight">Compare-toi à un proche</p>
               <p className="text-[11px] m-0 mt-1 leading-snug" style={{ color: 'rgba(244,241,233,0.65)' }}>
-                Couple, ami(e), famille…
+                Couple, amitié, famille…
               </p>
               <p className="text-[12px] font-semibold m-0 mt-auto pt-2 flex items-center gap-1" style={{ color: TILE_TERRACOTTA }}>
                 Tester <ArrowRight size={12} />

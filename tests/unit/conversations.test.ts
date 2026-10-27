@@ -25,3 +25,16 @@ test('la discussion principale garde l\'ancienne clé', () => {
   assert.equal(convStorageKey('he_accueil_v1:', 'uid1', 'cx'), 'he_accueil_v1:uid1:cx');
   assert.match(defaultTitle(new Date('2026-10-23T10:00:00')), /^Discussion du 23 oct\./);
 });
+
+test('une discussion sans titre choisi prend le nom de son premier message', async () => {
+  const m = await import('../../src/utils/conversations.ts');
+  const { idx, id } = m.createConv(m.emptyIndex());
+  const a = m.touchConv(idx, id, 'Je n\'arrive plus à dormir depuis que mon travail a changé de rythme');
+  const t = a.list.find((c: any) => c.id === id)!.title;
+  assert.match(t, /^Je n'arrive plus à dormir/);
+  assert.ok(t.length <= 33);
+  const b = m.touchConv(a, id, 'Autre chose');
+  assert.equal(b.list.find((c: any) => c.id === id)!.title, t);
+  const named = m.renameConv(idx, id, 'Mon couple');
+  assert.equal(m.touchConv(named, id, 'Salut').list.find((c: any) => c.id === id)!.title, 'Mon couple');
+});

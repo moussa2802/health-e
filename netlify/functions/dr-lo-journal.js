@@ -1,4 +1,5 @@
 const { verifyAuth } = require('./_firebase');
+const { buildJournalSystem, buildJournalUser, cleanJournalReply } = require('./_drloJournal');
 const { reserveKoris, commitKoris, releaseKoris } = require('./_koris');
 
 const headers = {
@@ -37,43 +38,8 @@ exports.handler = async (event) => {
   }
   const { holdId } = reservation;
 
-  const prenom = context.prenom || 'toi';
-
-  const prompt = `Tu es Dr Lô, médecin IA bienveillant de Health-e.
-
-PROFIL DE ${prenom} :
-- Genre : ${context.genre || 'non renseigné'}
-- Âge : ${context.age || 'non renseigné'}
-- Situation : ${context.situation || 'non renseignée'}
-- Profil psychologique résumé : ${context.resume_profil || 'non disponible'}
-
-ENTRÉE DU JOURNAL :
-Date : ${entry.date || 'aujourd\'hui'}
-Humeur : ${entry.humeur || 'non précisée'}
-Thèmes : ${(entry.themes || []).join(', ') || 'aucun'}
-Contenu : "${entry.contenu}"
-
-Réponds à cette entrée de journal en tant que Dr Lô.
-
-STRUCTURE DE TA RÉPONSE :
-
-👁️ Ce que je ressens en lisant ça
-[1-2 phrases empathiques]
-
-💡 Ce que ça m'inspire
-[1-2 observations bienveillantes basées sur le profil]
-
-🌱 Un conseil pour aujourd'hui
-[1 conseil concret et actionnable]
-
-RÈGLES :
-- Tutoiement obligatoire
-- Maximum 100 mots au total
-- Chaleureux comme un ami médecin
-- Jamais de diagnostic
-- Utilise le profil pour personnaliser
-- Sensibilité culturelle africaine (contexte sénégalais)
-- Jamais minimiser ce que la personne ressent`;
+  const system = buildJournalSystem();
+  const prompt = buildJournalUser(entry, context);
 
   const MODELS = [
     'claude-haiku-4-5-20251001',
@@ -89,14 +55,14 @@ RÈGLES :
           'x-api-key': apiKey,
           'anthropic-version': '2023-06-01',
         },
-        body: JSON.stringify({ model, max_tokens: 250, messages: [{ role: 'user', content: prompt }] }),
+        body: JSON.stringify({ model, max_tokens: 260, system, messages: [{ role: 'user', content: prompt }] }),
       });
 
       if (response.ok) {
         const data = await response.json();
         await commitKoris(holdId);
         console.log(`dr-lo-journal OK with model ${model}`);
-        return { statusCode: 200, headers, body: JSON.stringify({ response: data?.content?.[0]?.text ?? '', koris_debited: true }) };
+        return { statusCode: 200, headers, body: JSON.stringify({ response: cleanJournalReply(data?.content?.[0]?.text ?? ''), koris_debited: true }) };
       }
 
       const err = await response.text();
