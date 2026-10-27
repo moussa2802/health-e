@@ -1,6 +1,6 @@
 /**
  * MessageComments — les commentaires sous un message de Dr Lô.
- * Visibles par tous les destinataires. Identité au choix : Anonyme (par défaut), prénom, ou pseudo.
+ * Visibles par tous les destinataires. Identité au choix : prénom (par défaut), anonyme ou pseudo.
  * Un mot de détresse n'est jamais publié : la personne reçoit un message de soutien (1515, CHU Fann).
  */
 import React, { useEffect, useState } from 'react';
@@ -19,13 +19,13 @@ const ago = (t: number) => { const m = Math.round((Date.now() - t) / 60000); ret
 
 function loadIdentity(): { mode: IdentityMode; pseudo: string } {
   try { const v = JSON.parse(localStorage.getItem(KEY) || '{}'); if (['anon', 'prenom', 'pseudo'].includes(v.mode)) return { mode: v.mode, pseudo: String(v.pseudo || '') }; } catch { /* ignore */ }
-  return { mode: 'anon', pseudo: '' };
+  return { mode: 'prenom', pseudo: '' }; // par défaut : le prénom. Anonyme ou pseudo, c'est un choix.
 }
 
 const mmss = (n: number) => `${Math.floor(n / 60)}:${String(Math.round(n % 60)).padStart(2, '0')}`;
 
 /** Un échange sous un commentaire : Dr Lô (texte ou vocal) et la réponse de la personne. */
-const ThreadView: React.FC<{ entries: ThreadEntry[]; author: string; palette: MomentPalette }> = ({ entries, author, palette }) => (
+export const ThreadView: React.FC<{ entries: ThreadEntry[]; author: string; palette: MomentPalette }> = ({ entries, author, palette }) => (
   <>
     {entries.map((e, i) => {
       const drlo = e.from === 'drlo';
@@ -48,7 +48,7 @@ const ThreadView: React.FC<{ entries: ThreadEntry[]; author: string; palette: Mo
 );
 
 /** La personne répond à Dr Lô, à tour de rôle, jusqu'à la clôture. */
-const FollowUp: React.FC<{ commentId: string; palette: MomentPalette; onSent: () => void }> = ({ commentId, palette, onSent }) => {
+export const FollowUp: React.FC<{ send: (text: string) => Promise<{ support?: boolean }>; palette: MomentPalette; onSent: () => void }> = ({ send, palette, onSent }) => {
   const [text, setText] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
@@ -57,7 +57,7 @@ const FollowUp: React.FC<{ commentId: string; palette: MomentPalette; onSent: ()
     e.preventDefault();
     setBusy(true); setError(''); setSupport(false);
     try {
-      const r = await followUpComment(commentId, text);
+      const r = await send(text);
       setText('');
       if (r.support) setSupport(true); else onSent();
     } catch (er: unknown) { setError(er instanceof Error ? er.message : 'Erreur'); }
@@ -112,7 +112,7 @@ const MessageComments: React.FC<{ messageId: string; palette: MomentPalette }> =
 
   if (items === null) return null;
   const chip = (on: boolean): React.CSSProperties => ({ minHeight: 36, padding: '0 12px', borderRadius: 999, cursor: 'pointer', fontSize: 13, fontWeight: 600, border: `1px solid ${on ? palette.accent : DC.line}`, background: on ? 'rgba(242,182,109,.15)' : DC.glass, color: on ? palette.accent : DC.muted });
-  const MODES: { id: IdentityMode; label: string }[] = [{ id: 'anon', label: 'Anonyme' }, { id: 'prenom', label: 'Mon prénom' }, { id: 'pseudo', label: 'Un pseudo' }];
+  const MODES: { id: IdentityMode; label: string }[] = [{ id: 'prenom', label: 'Mon prénom' }, { id: 'anon', label: 'Anonyme' }, { id: 'pseudo', label: 'Un pseudo' }];
 
   return (
     <section aria-label="Commentaires" style={{ marginTop: 22 }}>
@@ -158,7 +158,7 @@ const MessageComments: React.FC<{ messageId: string; palette: MomentPalette }> =
             <p style={{ margin: 0, fontSize: 12.5, color: DC.faint }}><b style={{ color: DC.soft }}>{c.name}</b>{c.mine ? ' (toi)' : ''}{c.pinned ? ' · épinglé' : ''} · {ago(c.at)}</p>
             <p style={{ margin: '6px 0 0', fontSize: 15, lineHeight: 1.55, color: DC.text, whiteSpace: 'pre-wrap' }}>{c.text}</p>
             <ThreadView entries={c.thread} author={c.mine ? 'Toi' : c.name} palette={palette} />
-            {c.mine && c.canReply && <FollowUp commentId={c.id} palette={palette} onSent={load} />}
+            {c.mine && c.canReply && <FollowUp send={t => followUpComment(c.id, t)} palette={palette} onSent={load} />}
             {c.mine && c.closed && c.thread.length > 0 && <p style={{ margin: '10px 0 0', fontSize: 13, color: DC.muted }}>Dr Lô a clôturé cette discussion.</p>}
             {c.mine && !c.closed && !c.canReply && c.thread.length > 0 && c.thread[c.thread.length - 1].from === 'user' && <p style={{ margin: '10px 0 0', fontSize: 13, color: DC.muted }}>Dr Lô te répondra ici.</p>}
             <div style={{ marginTop: 8, textAlign: 'right' }}>

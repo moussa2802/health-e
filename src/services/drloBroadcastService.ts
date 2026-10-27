@@ -83,3 +83,8 @@ export const editReply = (commentId: string, index: number, edit: { text: string
 export const closeComment = (commentId: string, closed: boolean) => call<{ ok: boolean }>({ action: 'drlo_comment_close', commentId, closed });
 export const followUpComment = (commentId: string, text: string) =>
   call<{ ok: boolean; published: boolean; support?: boolean }>({ action: 'comment_followup', commentId, text });
+
+// Qui a vu / écouté (message envoyé à tout le monde ; sinon seulement des totaux)
+export interface AudienceRow { name: string; at: number }
+export const getAudience = (id: string, kind: 'seen' | 'listened' | 'unseen', after?: string) =>
+  call<{ restricted: boolean; items: AudienceRow[]; next: string | null }>({ action: 'drlo_audience', id, kind, after });

@@ -13,6 +13,7 @@ import {
   countAudience, createBroadcast, deleteBroadcast, hideBroadcast, listBroadcasts,
   adminComments, adminCommentAct, closeComment, editReply, replyComment, setCommentsOpen,
   type AdminComment, type Audience, type BroadcastRow, type Level,
+  getAudience, type AudienceRow,
 } from '../../services/drloBroadcastService';
 
 const MAX = 1200;
@@ -112,7 +113,78 @@ const CommentsAdmin: React.FC<{ row: BroadcastRow; palette: MomentPalette; onCha
   );
 };
 
+/** Qui a vu, écouté ou pas encore vu : liste paginée avec recherche, pensée pour des milliers de personnes. */
+const AudienceList: React.FC<{ row: BroadcastRow; palette: MomentPalette; initial: 'seen' | 'listened' | 'unseen' }> = ({ row, palette, initial }) => {
+  const [kind, setKind] = useState<'seen' | 'listened' | 'unseen'>(initial);
+  const [items, setItems] = useState<AudienceRow[]>([]);
+  const [next, setNext] = useState<string | null>(null);
+  const [restricted, setRestricted] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [done, setDone] = useState(false);
+  const [q, setQ] = useState('');
+  const [err, setErr] = useState('');
+  const seq = useRef(0);
+  const load = (k: typeof kind, after?: string) => {
+    const mine = ++seq.current;
+    setLoading(true); setErr('');
+    getAudience(row.id, k, after).then(r => {
+      if (mine !== seq.current) return;
+      setRestricted(r.restricted);
+      setItems(prev => (after ? [...prev, ...r.items] : r.items));
+      setNext(r.next); setDone(true);
+    }).catch(e => { if (mine === seq.current) setErr(e instanceof Error ? e.message : 'Erreur'); }).finally(() => { if (mine === seq.current) setLoading(false); });
+  };
+  useEffect(() => { setItems([]); setNext(null); setDone(false); setQ(''); load(kind); }, [kind]); // eslint-disable-line react-hooks/exhaustive-deps
+  const total = kind === 'seen' ? row.stats.views : kind === 'listened' ? (row.stats.listens ?? 0) : Math.max(0, row.audienceCount - row.stats.views);
+  const shown = q.trim() ? items.filter(i => i.name.toLowerCase().includes(q.trim().toLowerCase())) : items;
+  const tab = (k: typeof kind, label: string, n: number) => (
+    <button key={k} type="button" onClick={() => setKind(k)} aria-pressed={kind === k} className="drl-btn"
+      style={{ minHeight: 40, padding: '0 12px', borderRadius: 999, cursor: 'pointer', fontSize: 13, fontWeight: 700, border: `1px solid ${kind === k ? palette.accent : DC.line}`, background: kind === k ? 'rgba(242,182,109,.15)' : DC.glass, color: kind === k ? palette.accent : DC.muted }}>
+      {label} · {n}
+    </button>
+  );
+  const pct = row.audienceCount > 0 ? Math.min(100, Math.round((total / row.audienceCount) * 100)) : 0;
+  const when = (t: number) => (t ? new Date(t).toLocaleString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : '');
+  return (
+    <div style={{ marginTop: 10, borderRadius: 14, border: `1px solid ${DC.line}`, background: 'rgba(255,255,255,.03)', padding: 12 }}>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+        {tab('seen', 'Ont vu', row.stats.views)}
+        {row.audio && tab('listened', 'Ont écouté', row.stats.listens ?? 0)}
+        {tab('unseen', 'Pas encore vu', Math.max(0, row.audienceCount - row.stats.views))}
+      </div>
+      <div aria-hidden="true" style={{ height: 6, borderRadius: 3, background: 'rgba(255,255,255,.08)', marginTop: 10, overflow: 'hidden' }}><div style={{ width: `${pct}%`, height: '100%', background: palette.accent }} /></div>
+      <p style={{ margin: '6px 0 0', fontSize: 12, color: DC.faint }}>{total} sur {row.audienceCount} personne{row.audienceCount > 1 ? 's' : ''} ({pct} %)</p>
+      {restricted ? (
+        <p style={{ margin: '10px 0 0', fontSize: 13, lineHeight: 1.5, color: DC.muted }}>Ce message vise un groupe précis (test, totem ou programme). Pour que personne ne soit reconnu, seuls les totaux sont affichés.</p>
+      ) : (
+        <>
+          <input type="search" value={q} onChange={e => setQ(e.target.value)} placeholder="Chercher un prénom" aria-label="Chercher un prénom" className="drl-input"
+            style={{ ...field, minHeight: 44, marginTop: 10, padding: '0 14px' }} />
+          {err && <p role="alert" style={{ margin: '8px 0 0', color: '#F09A7A', fontSize: 13 }}>{err}</p>}
+          <ul style={{ listStyle: 'none', margin: '8px 0 0', padding: 0, maxHeight: 320, overflowY: 'auto', WebkitOverflowScrolling: 'touch' }}>
+            {shown.map((i, idx) => (
+              <li key={`${i.name}-${idx}`} style={{ display: 'flex', alignItems: 'center', gap: 10, minHeight: 42, borderTop: idx ? `1px solid ${DC.line}` : undefined }}>
+                <span aria-hidden="true" style={{ width: 28, height: 28, flexShrink: 0, borderRadius: '50%', background: 'rgba(242,182,109,.16)', color: palette.accent, fontSize: 12.5, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{i.name.slice(0, 1).toUpperCase()}</span>
+                <span style={{ flex: 1, minWidth: 0, fontSize: 14, color: DC.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{i.name}</span>
+                {kind !== 'unseen' && <span style={{ fontSize: 12, color: DC.faint, flexShrink: 0 }}>{when(i.at)}</span>}
+              </li>
+            ))}
+            {done && !loading && shown.length === 0 && <li style={{ padding: '10px 0', fontSize: 13.5, color: DC.faint }}>{q.trim() ? 'Aucun prénom trouvé parmi ceux chargés.' : 'Personne pour l\'instant.'}</li>}
+          </ul>
+          {loading && <Loader2 size={16} className="animate-spin" aria-label="Chargement" style={{ marginTop: 8 }} />}
+          {next && !loading && (
+            <button type="button" onClick={() => load(kind, next)} className="drl-btn" style={{ marginTop: 8, width: '100%', minHeight: 44, borderRadius: 12, border: `1px solid ${DC.line}`, background: DC.glass, color: DC.soft, cursor: 'pointer', fontSize: 13.5, fontWeight: 600 }}>
+              Voir plus ({items.length} affichés)
+            </button>
+          )}
+        </>
+      )}
+    </div>
+  );
+};
+
 const CommunityPanel: React.FC<{ palette: MomentPalette; newByBroadcast?: Record<string, number> }> = ({ palette, newByBroadcast = {} }) => {
+  const [aud, setAud] = useState<{ id: string; kind: 'seen' | 'listened' | 'unseen' } | null>(null);
   const [text, setText] = useState('');
   const [all, setAll] = useState(true);
   const [scaleId, setScaleId] = useState('');
@@ -315,12 +387,15 @@ const CommunityPanel: React.FC<{ palette: MomentPalette; newByBroadcast?: Record
             {r.audio && <p style={{ margin: '8px 0 0', fontSize: 13, color: palette.accent, display: 'inline-flex', alignItems: 'center', gap: 5 }}><Mic size={13} aria-hidden="true" /> Vocal de {mmss(r.audio.durationSec)}</p>}
             {r.text && <p style={{ margin: '8px 0 0', fontSize: 14.5, lineHeight: 1.55, color: DC.text, whiteSpace: 'pre-wrap' }}>{r.text}</p>}
             <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '6px 14px', marginTop: 10, fontSize: 13, color: DC.muted }}>
-              <span title={`${r.stats.views} sur ${r.audienceCount} personne${r.audienceCount > 1 ? 's' : ''}`}>👁 {r.stats.views} vu{r.stats.views > 1 ? 's' : ''}</span>
-              {r.audio && <span>🎧 {r.stats.listens ?? 0} écoute{(r.stats.listens ?? 0) > 1 ? 's' : ''}</span>}
+              <button type="button" onClick={() => setAud(aud?.id === r.id && aud.kind === 'seen' ? null : { id: r.id, kind: 'seen' })} aria-expanded={aud?.id === r.id} aria-label="Voir qui a vu ce message" className="drl-btn"
+                style={{ minHeight: 40, padding: '0 10px', borderRadius: 10, border: `1px solid ${aud?.id === r.id ? palette.accent : DC.line}`, background: DC.glass, color: DC.soft, cursor: 'pointer', fontSize: 13 }}>👁 {r.stats.views} vu{r.stats.views > 1 ? 's' : ''} sur {r.audienceCount}</button>
+              {r.audio && <button type="button" onClick={() => setAud(aud?.id === r.id && aud.kind === 'listened' ? null : { id: r.id, kind: 'listened' })} aria-label="Voir qui a écouté ce vocal" className="drl-btn"
+                style={{ minHeight: 40, padding: '0 10px', borderRadius: 10, border: `1px solid ${DC.line}`, background: DC.glass, color: DC.soft, cursor: 'pointer', fontSize: 13 }}>🎧 {r.stats.listens ?? 0} écoute{(r.stats.listens ?? 0) > 1 ? 's' : ''}</button>}
               <span>❤️ {r.stats.reactions.heart}</span>
               <span>🙏 {r.stats.reactions.pray}</span>
               <span>💪 {r.stats.reactions.strong}</span>
             </div>
+            {aud?.id === r.id && <AudienceList key={`${r.id}-${aud.kind}`} row={r} palette={palette} initial={aud.kind} />}
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 10 }}>
               <button type="button" onClick={() => hideBroadcast(r.id, !r.hidden).then(refresh).catch(() => {})} aria-label={r.hidden ? 'Réafficher' : 'Masquer'} className="drl-btn"
                 style={{ flex: '1 1 130px', minHeight: 44, padding: '0 12px', borderRadius: 12, border: `1px solid ${DC.line}`, background: DC.glass, color: DC.muted, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6, fontSize: 13.5 }}>

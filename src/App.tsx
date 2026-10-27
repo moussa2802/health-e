@@ -198,6 +198,7 @@ const AppChrome: React.FC = () => {
             <Route path="/drlo" element={<DrLoConsole />} />
             <Route path="/equipe" element={<EquipePage />} />
             <Route path="/messages-dr-lo" element={<MessagesDrLoPage />} />
+            <Route path="/messages-dr-lo/discussion/:qid" element={<MessagesDrLoPage />} />
             <Route path="/messages-dr-lo/:id" element={<MessagesDrLoPage />} />
 
             {/* Companion app — layout mobile plein écran, distinct du site */}

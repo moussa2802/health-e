@@ -9,10 +9,11 @@ import { Link } from 'react-router-dom';
 import { Phone, Share2 } from 'lucide-react';
 import DrLoShell, { DC, card, usePalette } from '../../components/accueil/DrLoShell';
 import PaliersCard from '../../components/accueil/PaliersCard';
+import { RealDrLoPhoto } from '../../components/accueil/RealDrLoBadge';
 import { useAuth } from '../../contexts/AuthContext';
 import { getOnboardingProfile } from '../../utils/onboardingProfile';
 import {
-  getDrloStatus, joinDrloQueue, submitDrloQuestion, markDrloAnswersSeen, inviteLink,
+  getDrloStatus, joinDrloQueue, submitDrloQuestion, inviteLink,
   type DrloStatus, type SubmitInput,
 } from '../../services/drloQuestionService';
 import { trackAccueil } from '../../utils/accueilTracking';
@@ -47,7 +48,6 @@ const QuestionPage: React.FC = () => {
 
   const load = () => getDrloStatus().then(s => {
     setStatus(s);
-    if (s.questions.some(q => q.answer && !q.seen)) markDrloAnswersSeen().catch(() => {});
   }).catch(e => setError(e.message));
 
   useEffect(() => { if (isAuthenticated && currentUser) load(); }, [isAuthenticated, currentUser?.id]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -102,7 +102,7 @@ const QuestionPage: React.FC = () => {
     );
   }
 
-  const answered = status?.questions.filter(q => q.answer) ?? [];
+  const answered = status?.questions.filter(q => q.thread.length > 0) ?? [];
   const pending = status?.questions.find(q => q.status === 'pending');
 
   return (
@@ -120,16 +120,22 @@ const QuestionPage: React.FC = () => {
 
       {/* Réponses */}
       {answered.map(q => (
-        <section key={q.id} style={{ ...card, marginTop: 14, borderColor: 'rgba(127,209,160,.35)', background: 'rgba(127,209,160,.06)' }}>
+        <section key={q.id} style={{ ...card, marginTop: 14, borderColor: q.news > 0 ? palette.accent : 'rgba(127,209,160,.35)', background: 'rgba(127,209,160,.06)' }}>
           <p style={{ margin: 0, fontSize: 12, color: DC.faint }}>Ta question du {fmt(q.createdAt)}</p>
           <p style={{ margin: '4px 0 0', fontSize: 14, color: DC.muted, fontStyle: 'italic', whiteSpace: 'pre-wrap' }}>« {q.text} »</p>
           <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, marginTop: 12 }}>
-            <img src="/dr-lo.png" alt="Dr Lô" width={32} height={32} style={{ width: 32, height: 32, borderRadius: '50%', objectFit: 'cover', objectPosition: 'top', border: `2px solid ${palette.accent}`, flexShrink: 0 }} />
-            <div>
+            <RealDrLoPhoto size={36} palette={palette} />
+            <div style={{ minWidth: 0 }}>
               <p style={{ margin: 0, fontSize: 12.5, fontWeight: 700, color: palette.accent }}>
-                Dr Lô{q.status === 'referred' ? ' · orientation vers un confrère' : ''}{q.answer ? ` · ${fmt(q.answer.at)}` : ''}
+                Dr Lô, le vrai{q.status === 'referred' ? ' · orientation vers un confrère' : ''}{q.answer ? ` · ${fmt(q.answer.at)}` : ''}
+                {q.news > 0 && <span style={{ marginLeft: 8, color: '#F0C987' }}>{q.thread.some(e => e.updated) ? 'Mis à jour' : 'Nouveau'}</span>}
               </p>
-              <p style={{ margin: '4px 0 0', fontSize: 15, lineHeight: 1.55, color: DC.text, whiteSpace: 'pre-wrap' }}>{q.answer!.text}</p>
+              <p style={{ margin: '4px 0 0', fontSize: 15, lineHeight: 1.55, color: DC.text, whiteSpace: 'pre-wrap', overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 4, WebkitBoxOrient: 'vertical' } as React.CSSProperties}>
+                {q.answer?.text || '🎙 Un vocal de Dr Lô'}
+              </p>
+              <Link to={`/messages-dr-lo/discussion/${q.id}`} className="drl-btn" style={{ display: 'inline-flex', alignItems: 'center', minHeight: 44, marginTop: 6, color: palette.accent, fontWeight: 700, fontSize: 14 }}>
+                {q.closed ? 'Voir la discussion' : q.canReply ? 'Ouvrir et répondre' : 'Ouvrir la discussion'}
+              </Link>
             </div>
           </div>
         </section>

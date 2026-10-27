@@ -169,6 +169,35 @@ exports.handler = async (event) => {
         return reply(200, { community, distress, byBroadcast });
       }
 
+      // Qui a vu / écouté / pas encore vu. Seulement pour un message envoyé à tout le monde ou à un groupe large :
+      // un ciblage précis (test, totem, programme) ne montre que des totaux, pour que personne ne soit reconnu.
+      if (action === 'drlo_audience') {
+        const id = String(body.id || '');
+        const kind = ['seen', 'listened', 'unseen'].includes(body.kind) ? body.kind : 'seen';
+        if (!id) return reply(400, { error: 'Message manquant' });
+        const bSnap = await db.collection('broadcasts').doc(id).get();
+        if (!bSnap.exists) return reply(404, { error: 'Message introuvable' });
+        const b = bSnap.data();
+        if (B.isFineTargeted(b.audience || {})) return reply(200, { restricted: true, items: [], next: null });
+        const match = (r) => (kind === 'seen' ? !!r.seenAt : kind === 'listened' ? !!r.listenedAt : !r.seenAt);
+        const found = [];
+        let last = body.after ? await db.collection('broadcastRecipients').doc(String(body.after)).get() : null;
+        let exhausted = false;
+        for (let round = 0; round < 4 && found.length < 80 && !exhausted; round++) {
+          let q = db.collection('broadcastRecipients').where('broadcastId', '==', id).orderBy(admin.firestore.FieldPath.documentId()).limit(500);
+          if (last && last.exists) q = q.startAfter(last);
+          const page = await q.get();
+          if (page.empty) { exhausted = true; break; }
+          last = page.docs[page.docs.length - 1];
+          page.docs.forEach((d) => { const r = d.data(); if (match(r)) found.push({ uid: r.uid, at: kind === 'listened' ? Number(r.listenedAt) : Number(r.seenAt) || 0 }); });
+          if (page.size < 500) exhausted = true;
+        }
+        const snaps = found.length ? await db.getAll(...found.map((f) => db.collection('userProfiles').doc(f.uid)), { fieldMask: ['onboardingProfile.prenom'] }) : [];
+        const names = Object.fromEntries(snaps.map((x) => [x.id, (x.exists && x.data().onboardingProfile && x.data().onboardingProfile.prenom) || '']));
+        const items = found.map((f) => ({ name: String(names[f.uid] || '').slice(0, 30) || 'Sans prénom', at: f.at })).sort((a, b2) => b2.at - a.at || a.name.localeCompare(b2.name));
+        return reply(200, { restricted: false, items, next: exhausted ? null : last.id });
+      }
+
       if (action === 'drlo_list') {
         const s = await db.collection('broadcasts').orderBy('createdAt', 'desc').limit(50).get();
         const items = s.docs.map((d) => {

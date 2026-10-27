@@ -9,11 +9,15 @@ import { RealDrLoPhoto } from './RealDrLoBadge';
 import { DC } from './DrLoShell';
 import type { MomentPalette } from '../../utils/drloMoment';
 import { getInbox } from '../../services/drloBroadcastService';
+import { getMyThreads } from '../../services/drloQuestionService';
 
 const DrloInboxButton: React.FC<{ uid: string; palette: MomentPalette }> = ({ uid, palette }) => {
   const [badge, setBadge] = useState(0);
   const load = useCallback(() => {
-    getInbox().then(r => setBadge(r.badge ?? r.unread)).catch(() => {});
+    Promise.all([
+      getInbox().then(r => r.badge ?? r.unread).catch(() => 0),
+      getMyThreads().then(r => r.news).catch(() => 0),
+    ]).then(([a, b]) => setBadge(a + b));
   }, []);
   useEffect(() => {
     load();
