@@ -17,6 +17,7 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.39.0",
+    "@breezystack/lamejs": "^1.2.7",
     "@sentry/react": "^10.45.0",
     "@sentry/vite-plugin": "^5.1.1",
     "date-fns": "^3.3.1",

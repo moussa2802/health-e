@@ -46,6 +46,7 @@ const publicMessage = (id, b, r) => ({
   reaction: (r && r.reaction) || null,
   commentsOpen: !!b.commentsOpen,
   audio: b.audio ? { durationSec: b.audio.durationSec } : null,
+  muted: !!(r && r.muted),
 });
 
 exports.handler = async (event) => {
@@ -111,6 +112,23 @@ exports.handler = async (event) => {
         return reply(200, { ok: true, id: ref.id, status: pending ? 'sending' : 'sent', count: n });
       }
 
+      if (action === 'drlo_activity' || action === 'drlo_seen') {
+        const stRef = db.collection('drloState').doc(uid);
+        if (action === 'drlo_seen') { await stRef.set({ communitySeenAt: Date.now() }, { merge: true }); return reply(200, { ok: true }); }
+        const st = await stRef.get();
+        if (!st.exists || !st.data().communitySeenAt) { await stRef.set({ communitySeenAt: Date.now() }, { merge: true }); return reply(200, { community: 0, distress: 0, byBroadcast: {} }); }
+        const since = Number(st.data().communitySeenAt);
+        const snap = await db.collection('broadcastComments').where('createdAt', '>', new Date(since)).limit(300).get();
+        const byBroadcast = {}; let community = 0; let distress = 0;
+        snap.docs.forEach((d) => {
+          const c = d.data();
+          if (c.status === 'distress') { distress += 1; community += 1; byBroadcast[c.broadcastId] = (byBroadcast[c.broadcastId] || 0) + 1; return; }
+          if (c.hidden || c.status !== 'public') return;
+          community += 1; byBroadcast[c.broadcastId] = (byBroadcast[c.broadcastId] || 0) + 1;
+        });
+        return reply(200, { community, distress, byBroadcast });
+      }
+
       if (action === 'drlo_list') {
         const s = await db.collection('broadcasts').orderBy('createdAt', 'desc').limit(50).get();
         const items = s.docs.map((d) => {
@@ -174,7 +192,7 @@ exports.handler = async (event) => {
           const b = s.data();
           const total = b.commentsOpen ? Math.max(0, Number(b.stats && b.stats.comments) || 0) : 0;
           const newReplies = myRows.filter((c) => c.broadcastId === s.id && c.status === 'public' && !c.hidden && c.reply && Number(c.reply.at) > (Number(r.repliesSeenAt) || 0)).length;
-          const newComments = b.commentsOpen ? Math.max(0, total - (Number(r.commentsSeen) || 0)) : 0;
+          const newComments = b.commentsOpen && !r.muted ? Math.max(0, total - (Number(r.commentsSeen) || 0)) : 0;
           return { ...publicMessage(s.id, b, r), commentsTotal: total, newComments, newReplies };
         })
         .sort((a, b) => b.at - a.at)
@@ -183,6 +201,15 @@ exports.handler = async (event) => {
       const newReplies = items.reduce((n, i) => n + i.newReplies, 0);
       const newComments = items.reduce((n, i) => n + i.newComments, 0);
       return reply(200, { items, unread, newReplies, newComments, badge: unread + newReplies + newComments });
+    }
+
+    if (action === 'mute') {
+      const id = String(body.id || '');
+      if (!id) return reply(400, { error: 'Message manquant' });
+      const rRef = db.collection('broadcastRecipients').doc(B.recipientId(id, uid));
+      if (!(await rRef.get()).exists) return reply(404, { error: 'Message introuvable' });
+      await rRef.update({ muted: body.muted !== false });
+      return reply(200, { ok: true, muted: body.muted !== false });
     }
 
     if (action === 'open' || action === 'react') {

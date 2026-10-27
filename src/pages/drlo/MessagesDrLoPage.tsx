@@ -6,12 +6,13 @@
  */
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Bell, BellOff } from 'lucide-react';
 import DrLoShell, { DC, card, usePalette } from '../../components/accueil/DrLoShell';
 import MessageComments from '../../components/accueil/MessageComments';
 import RealDrLoBadge, { RealDrLoPhoto } from '../../components/accueil/RealDrLoBadge';
 import { useAuth } from '../../contexts/AuthContext';
 import {
-  getInbox, openMessage, reactToMessage, REACTIONS,
+  getInbox, muteMessage, openMessage, reactToMessage, REACTIONS,
   type Counts, type InboxItem, type Reaction,
 } from '../../services/drloBroadcastService';
 
@@ -52,6 +53,20 @@ const MessagesDrLoPage: React.FC = () => {
     catch { setMine(mine); }
   };
 
+  const toggleMute = async (mid: string, muted: boolean) => {
+    setItems(list => list && list.map(i => (i.id === mid ? { ...i, muted, newComments: muted ? 0 : i.newComments } : i)));
+    setMsg(m => (m && m.id === mid ? { ...m, muted } : m));
+    try { await muteMessage(mid, muted); } catch { setItems(list => list && list.map(i => (i.id === mid ? { ...i, muted: !muted } : i))); setMsg(m => (m && m.id === mid ? { ...m, muted: !muted } : m)); }
+  };
+  const muteBtn = (mid: string, muted: boolean, style?: React.CSSProperties): React.ReactElement => (
+    <button type="button" onClick={() => toggleMute(mid, !muted)} aria-pressed={muted}
+      aria-label={muted ? 'Réactiver les alertes de commentaires sur ce message' : 'Ne plus être alerté des commentaires sur ce message'}
+      title={muted ? 'Alertes coupées. Toucher pour réactiver' : 'Couper les alertes de commentaires'} className="drl-btn"
+      style={{ width: 44, height: 44, borderRadius: 14, border: `1px solid ${DC.line}`, background: DC.glass, color: muted ? DC.faint : palette.accent, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', ...style }}>
+      {muted ? <BellOff size={18} aria-hidden="true" /> : <Bell size={18} aria-hidden="true" />}
+    </button>
+  );
+
   if (id) {
     return (
       <DrLoShell back={{ to: '/messages-dr-lo', label: 'Mes messages' }} palette={palette}>
@@ -79,6 +94,12 @@ const MessagesDrLoPage: React.FC = () => {
               ))}
             </div>
             <p style={{ margin: '10px 0 0', fontSize: 12.5, color: DC.faint, textAlign: 'center' }}>Dr Lô ne voit que des totaux, jamais qui a réagi.</p>
+            {msg.commentsOpen && (
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginTop: 14 }}>
+                <p style={{ margin: 0, fontSize: 12.5, color: DC.faint }}>{msg.muted ? 'Alertes de commentaires coupées' : 'Tu es alerté des nouveaux commentaires'}</p>
+                {muteBtn(msg.id, !!msg.muted)}
+              </div>
+            )}
             {msg.commentsOpen && <MessageComments messageId={msg.id} palette={palette} />}
           </>
         )}
@@ -109,23 +130,30 @@ const MessagesDrLoPage: React.FC = () => {
       )}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 16 }}>
         {(items ?? []).map(i => (
-          <Link key={i.id} to={`/messages-dr-lo/${i.id}`} className="drl-btn" style={{ ...card, textDecoration: 'none', display: 'flex', gap: 12, alignItems: 'flex-start', borderColor: i.seen ? DC.line : palette.accent }}>
-            <RealDrLoPhoto size={40} palette={palette} />
-            <span style={{ flex: 1, minWidth: 0 }}>
-            <span style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: DC.faint }}>
-              <span>{day(i.at)}</span>{!i.seen && <b style={{ color: palette.accent }}>Nouveau</b>}
-            </span>
-            <span style={{ marginTop: 6, fontSize: 15, lineHeight: 1.5, color: DC.soft, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' } as React.CSSProperties}>{i.text || '🎙 Un vocal de Dr Lô'}</span>
-            {(i.commentsOpen || (i.newReplies ?? 0) > 0) && (
-              <span style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 8 }}>
-                {(i.newReplies ?? 0) > 0 && <span style={{ fontSize: 12, fontWeight: 700, padding: '3px 9px', borderRadius: 999, background: 'rgba(242,182,109,.16)', color: palette.accent }}>Dr Lô t'a répondu</span>}
-                {i.commentsOpen && <span style={{ fontSize: 12, fontWeight: 600, padding: '3px 9px', borderRadius: 999, background: DC.glass, color: (i.newComments ?? 0) > 0 ? palette.accent : DC.muted }}>
-                  💬 {i.commentsTotal ?? 0} commentaire{(i.commentsTotal ?? 0) > 1 ? 's' : ''}{(i.newComments ?? 0) > 0 ? ` · ${i.newComments} nouveau${(i.newComments ?? 0) > 1 ? 'x' : ''}` : ''}
-                </span>}
+          <div key={i.id} style={{ position: 'relative' }}>
+            <Link to={`/messages-dr-lo/${i.id}`} className="drl-btn" style={{ ...card, textDecoration: 'none', display: 'flex', gap: 12, alignItems: 'flex-start', borderColor: i.seen && !(i.newReplies || i.newComments) ? DC.line : palette.accent, paddingBottom: i.commentsOpen ? 16 : undefined }}>
+              <RealDrLoPhoto size={40} palette={palette} />
+              <span style={{ flex: 1, minWidth: 0 }}>
+                <span style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: DC.faint }}>
+                  <span>{day(i.at)}</span>{!i.seen && <b style={{ color: palette.accent }}>Nouveau</b>}
+                </span>
+                <span style={{ display: 'block', marginTop: 6, fontSize: 15, lineHeight: 1.5, color: DC.soft, overflow: 'hidden', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', ...{ display: '-webkit-box' } } as React.CSSProperties}>{i.text || '🎙 Un vocal de Dr Lô'}</span>
+                {(i.commentsOpen || (i.newReplies ?? 0) > 0) && (
+                  <span style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 6, marginTop: 8, paddingRight: 52 }}>
+                    {(i.newReplies ?? 0) > 0 && <span style={{ fontSize: 12, fontWeight: 700, padding: '3px 9px', borderRadius: 999, background: 'rgba(242,182,109,.16)', color: palette.accent }}>Dr Lô t'a répondu</span>}
+                    {i.commentsOpen && (
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 12.5, fontWeight: 600, color: DC.muted }}>
+                        💬 {i.commentsTotal ?? 0}
+                        {(i.newComments ?? 0) > 0 && <span aria-label={`${i.newComments} nouveau${(i.newComments ?? 0) > 1 ? 'x' : ''}`} style={{ minWidth: 20, height: 20, padding: '0 6px', boxSizing: 'border-box', borderRadius: 10, background: '#E8664F', color: '#fff', fontSize: 11.5, fontWeight: 800, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>{i.newComments}</span>}
+                        {i.muted && <span style={{ fontSize: 11.5, color: DC.faint }}>alertes coupées</span>}
+                      </span>
+                    )}
+                  </span>
+                )}
               </span>
-            )}
-          </span>
-          </Link>
+            </Link>
+            {i.commentsOpen && muteBtn(i.id, !!i.muted, { position: 'absolute', right: 10, bottom: 10, width: 40, height: 40, borderRadius: 12 })}
+          </div>
         ))}
       </div>
     </DrLoShell>

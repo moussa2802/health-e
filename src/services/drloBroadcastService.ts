@@ -20,7 +20,7 @@ export interface Audience {
   activity?: 'nouveaux' | 'absents' | null;
 }
 export interface Counts { heart: number; pray: number; strong: number }
-export interface InboxItem { id: string; text: string; at: number; seen: boolean; reaction: Reaction | null; commentsOpen: boolean; audio?: { durationSec: number } | null; commentsTotal?: number; newComments?: number; newReplies?: number }
+export interface InboxItem { id: string; text: string; at: number; seen: boolean; reaction: Reaction | null; commentsOpen: boolean; audio?: { durationSec: number } | null; commentsTotal?: number; newComments?: number; newReplies?: number; muted?: boolean }
 export interface BroadcastRow {
   id: string; text: string; audience: Audience; audienceCount: number; status: string; hidden: boolean;
   createdAt: number; sendAt: number; stats: { views: number; reactions: Counts; comments?: number }; commentsOpen?: boolean; audio?: { durationSec: number } | null;
@@ -44,9 +44,12 @@ export interface VoiceClip { data: string; mime: string; durationSec: number }
 export const createBroadcast = (text: string, audience: Audience, sendAt?: number, audio?: VoiceClip) =>
   call<{ ok: boolean; id: string; status: string; count: number }>({ action: 'drlo_create', text, audience, sendAt, audio });
 export const listBroadcasts = () => call<{ items: BroadcastRow[] }>({ action: 'drlo_list' });
+export const getDrloActivity = () => call<{ community: number; distress: number; byBroadcast: Record<string, number> }>({ action: 'drlo_activity' });
+export const markCommunitySeen = () => call<{ ok: boolean }>({ action: 'drlo_seen' });
 export const hideBroadcast = (id: string, hidden: boolean) => call<{ ok: boolean }>({ action: 'drlo_hide', id, hidden });
 
 // Personne connectée
+export const muteMessage = (id: string, muted: boolean) => call<{ ok: boolean; muted: boolean }>({ action: 'mute', id, muted });
 export const getInbox = () => call<{ items: InboxItem[]; unread: number; newReplies?: number; newComments?: number; badge?: number }>({ action: 'inbox' });
 export const openMessage = (id: string) => call<{ message: InboxItem; counts: Counts; audioUrl?: string | null }>({ action: 'open', id });
 export const reactToMessage = (id: string, reaction: Reaction | null) => call<{ ok: boolean; reaction: Reaction | null; counts: Counts }>({ action: 'react', id, reaction });

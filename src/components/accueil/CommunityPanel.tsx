@@ -82,7 +82,7 @@ const CommentsAdmin: React.FC<{ row: BroadcastRow; palette: MomentPalette; onCha
   );
 };
 
-const CommunityPanel: React.FC<{ palette: MomentPalette }> = ({ palette }) => {
+const CommunityPanel: React.FC<{ palette: MomentPalette; newByBroadcast?: Record<string, number> }> = ({ palette, newByBroadcast = {} }) => {
   const [text, setText] = useState('');
   const [all, setAll] = useState(true);
   const [scaleId, setScaleId] = useState('');
@@ -133,7 +133,7 @@ const CommunityPanel: React.FC<{ palette: MomentPalette }> = ({ palette }) => {
   const tooFew = !!count && count.fine && count.count < count.min;
   const sendAt = later && when ? new Date(when).getTime() : 0;
   const whenOk = !later || (sendAt > Date.now() + 60000);
-  const canSend = (text.trim().length >= 2 || !!voice.clip) && voice.state !== 'recording' && hasCriteria && !!count && count.count > 0 && !tooFew && whenOk && !busy;
+  const canSend = (text.trim().length >= 2 || !!voice.clip) && voice.state !== 'recording' && voice.state !== 'processing' && hasCriteria && !!count && count.count > 0 && !tooFew && whenOk && !busy;
 
   const send = async () => {
     setBusy(true); setErr(''); setMsg('');
@@ -173,6 +173,8 @@ const CommunityPanel: React.FC<{ palette: MomentPalette }> = ({ palette }) => {
             <button type="button" onClick={voice.stop} className="drl-btn" aria-label="Arrêter l'enregistrement" style={{ minHeight: 44, padding: '0 14px', borderRadius: 999, border: '1px solid rgba(240,154,122,.6)', background: 'rgba(240,154,122,.12)', color: DC.text, fontWeight: 700, fontSize: 14, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 8 }}>
               <Square size={14} fill="currentColor" aria-hidden="true" /> Enregistrement… {mmss(voice.elapsed)} / {mmss(MAX_VOICE_SEC)}
             </button>
+          ) : voice.state === 'processing' ? (
+            <p role="status" style={{ margin: 0, fontSize: 14, color: DC.muted }}>Préparation du vocal pour tous les téléphones…</p>
           ) : voice.state === 'ready' && voice.clip ? (
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <audio controls src={voice.clip.url} style={{ flex: 1, minWidth: 0, height: 40 }} />
@@ -267,7 +269,10 @@ const CommunityPanel: React.FC<{ palette: MomentPalette }> = ({ palette }) => {
           <article key={r.id} style={{ ...card, opacity: r.hidden ? 0.55 : 1 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, fontSize: 12, color: DC.faint }}>
               <span>{STATUS[r.status] ?? r.status} · {fmt(r.status === 'scheduled' ? r.sendAt : r.createdAt)}{r.hidden ? ' · masqué' : ''}</span>
-              <span>{r.audienceCount} personne{r.audienceCount > 1 ? 's' : ''}</span>
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                {(newByBroadcast[r.id] ?? 0) > 0 && <b aria-label={`${newByBroadcast[r.id]} nouvelle${newByBroadcast[r.id] > 1 ? 's' : ''} interaction${newByBroadcast[r.id] > 1 ? 's' : ''}`} style={{ minWidth: 20, height: 20, padding: '0 6px', boxSizing: 'border-box', borderRadius: 10, background: '#E8664F', color: '#fff', fontSize: 11.5, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>{newByBroadcast[r.id]}</b>}
+                {r.audienceCount} personne{r.audienceCount > 1 ? 's' : ''}
+              </span>
             </div>
             {r.audio && <p style={{ margin: '8px 0 0', fontSize: 13, color: palette.accent, display: 'inline-flex', alignItems: 'center', gap: 5 }}><Mic size={13} aria-hidden="true" /> Vocal de {mmss(r.audio.durationSec)}</p>}
             {r.text && <p style={{ margin: '8px 0 0', fontSize: 14.5, lineHeight: 1.55, color: DC.text, whiteSpace: 'pre-wrap' }}>{r.text}</p>}
