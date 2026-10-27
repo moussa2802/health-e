@@ -228,7 +228,7 @@ const EspacePage: React.FC = () => {
               </button>
             )}
           </div>
-          <button onClick={() => navigate('/', { state: uid ? { flow: 'defi' } : { signup: true } })} className="drl-btn" style={{ ...tile(DC.gold), textAlign: 'left' }}>
+          <button onClick={() => (uid ? navigate('/defi') : navigate('/', { state: { signup: true } }))} className="drl-btn" style={{ ...tile(DC.gold), textAlign: 'left' }}>
             <Crown size={20} color={DC.gold} aria-hidden="true" />
             <span style={{ fontSize: 15, fontWeight: 700 }}>Défi</span>
             <span style={{ fontSize: 12.5, color: DC.muted }}>{defis ? `${defis} en cours` : 'Qui te connaît le mieux ?'}</span>

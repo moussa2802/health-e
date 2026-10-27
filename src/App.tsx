@@ -54,6 +54,8 @@ const DomainePage = lazy(() => import("./pages/drlo/DomainePage"));
 const HumeurPage = lazy(() => import("./pages/drlo/HumeurPage"));
 const QuestionPage = lazy(() => import("./pages/drlo/QuestionPage"));
 const DrLoConsole = lazy(() => import("./pages/drlo/DrLoConsole"));
+const EquipePage = lazy(() => import("./pages/drlo/EquipePage"));
+const MessagesDrLoPage = lazy(() => import("./pages/drlo/MessagesDrLoPage"));
 const PatientDashboard = lazy(() => import("./pages/patient/PatientDashboard"));
 const ProfessionalDashboard = lazy(
   () => import("./pages/professional/ProfessionalDashboard")
@@ -177,7 +179,7 @@ const AppChrome: React.FC = () => {
   const isChromeless = isAdminRoute || isAppRoute || isDefiJouer;
   // Accueil : le premier écran est Dr Lô en plein écran (pas d'en-tête ni de pied de page du site)
   // Écrans « Mon Dr Lô » (thème chaud sombre, plein écran) : pas d'en-tête ni de pied de page du site
-  const isHome = pathname === "/" || pathname === "/espace" || pathname.startsWith("/espace/") || pathname === "/humeur" || pathname === "/question" || pathname === "/drlo" || pathname === "/assessment/totem" || pathname.startsWith("/assessment/results/") || pathname === "/defi" || pathname.startsWith("/defi/") || pathname === "/decouvre" || pathname === "/assessment/compatibility" || pathname === "/assessment" || pathname.startsWith("/assessment/") || pathname === "/acheter-koris";
+  const isHome = pathname === "/" || pathname === "/espace" || pathname.startsWith("/espace/") || pathname === "/humeur" || pathname === "/question" || pathname === "/drlo" || pathname === "/equipe" || pathname === "/confidentialite" || pathname === "/conditions" || pathname === "/ethique" || pathname === "/messages-dr-lo" || pathname.startsWith("/messages-dr-lo/") || pathname === "/assessment/totem" || pathname.startsWith("/assessment/results/") || pathname === "/defi" || pathname.startsWith("/defi/") || pathname === "/decouvre" || pathname === "/assessment/compatibility" || pathname === "/assessment" || pathname.startsWith("/assessment/") || pathname === "/acheter-koris";
   const { currentUser } = useAuth();
   const userId = currentUser?.id ?? null;
 
@@ -194,6 +196,9 @@ const AppChrome: React.FC = () => {
             <Route path="/question" element={<QuestionPage />} />
             {/* Espace du vrai Dr Lô : séparé de l'admin, rôle staff/{uid}.drlo */}
             <Route path="/drlo" element={<DrLoConsole />} />
+            <Route path="/equipe" element={<EquipePage />} />
+            <Route path="/messages-dr-lo" element={<MessagesDrLoPage />} />
+            <Route path="/messages-dr-lo/:id" element={<MessagesDrLoPage />} />
 
             {/* Companion app — layout mobile plein écran, distinct du site */}
             <Route

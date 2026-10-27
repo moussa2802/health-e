@@ -9,6 +9,10 @@
 [functions."push-daily"]
   schedule = "@hourly"
 
+# Messages de Dr Lô programmés : chaque heure, on envoie ceux dont l'heure est venue
+[functions."broadcast-scheduled"]
+  schedule = "@hourly"
+
 [[headers]]
   for = "/index.html"
   [headers.values]

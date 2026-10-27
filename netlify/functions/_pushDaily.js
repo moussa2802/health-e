@@ -16,6 +16,7 @@ const KIND_PREF = {
   retest: 'totem',
   totem: 'totem',
   drlo_answer: 'drlo',
+  broadcast: 'drlo',
   defi_response: 'social',
   nudge: 'nudge',
 };

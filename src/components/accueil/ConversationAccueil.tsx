@@ -91,6 +91,7 @@ import {
 } from '../../utils/conversations';
 import { KORIS_COSTS, isTestFreeRetake, isFirstTestFree } from '../../services/korisService';
 import ProgrammePanel from './ProgrammePanel';
+import DrloMessagesCard from './DrloMessagesCard';
 import NotificationsPanel, { NotifOptinCard, type LiveItem } from './NotificationsPanel';
 import { loadInbox, type InboxItem } from '../../services/inboxService';
 import { canProposeReminders, loadPrefs, markSeen, noteProposed, permissionState, pushSupport } from '../../services/pushService';
@@ -1792,6 +1793,7 @@ const ConversationAccueil: React.FC = () => {
                   onFinish={() => { void finishTest(state, testScale); }}
                 />
               )}
+              {!chatModeNow && !revealing && !routing && isAuthenticated && currentUser && <DrloMessagesCard uid={currentUser.id} palette={palette} />}
               {!chatModeNow && !revealing && !routing && (hasTalked ? [] : chips).length > 0 && (
                 <div className="drl-in" style={{ display: 'flex', flexWrap: 'wrap', gap: 8, justifyContent: 'center' }}>
                   {(hasTalked ? [] : chips).map(c => (
@@ -1824,6 +1826,7 @@ const ConversationAccueil: React.FC = () => {
                       { label: 'Compatibilité de couple', hint: '', icon: Heart, go: () => navigate('/assessment/compatibility') },
                       { label: 'Défi : tes proches te connaissent ?', hint: '', icon: Users, go: () => navigate(isAuthenticated ? '/defi' : '/decouvre') },
                       { label: 'Écrire au vrai Dr Lô', hint: '', icon: Mail, go: () => navigate('/question') },
+                      ...(isAuthenticated ? [{ label: 'Les messages de Dr Lô', hint: '', icon: MessagesSquare, go: () => navigate('/messages-dr-lo') }] : []),
                       { label: 'Tous les tests', hint: '', icon: ListChecks, go: () => navigate('/assessment') },
                       { label: isAuthenticated ? 'Mon espace bien-être' : 'Ce que propose Health-e', hint: '', icon: Sprout, go: () => navigate('/espace') },
                     ].map(it => (

@@ -24,15 +24,20 @@ const OptimizedHomePage: React.FC = () => {
         <strong className="text-[#F4EEE4]">Health-e</strong>
         {" "}— Ces évaluations ne remplacent pas un professionnel de santé.
       </span>
-      <div className="flex items-center gap-3">
-        <Link to="/confidentialite" className="text-[#A79E90] no-underline transition-colors hover:text-[#F2B66D]">
+      <nav aria-label="Liens du site" className="flex flex-wrap items-center justify-center gap-x-5 gap-y-0">
+        <Link to="/confidentialite" className="inline-flex min-h-[44px] items-center text-[#A79E90] no-underline transition-colors hover:text-[#F2B66D]">
           Confidentialité
         </Link>
-        <span>·</span>
-        <Link to="/professionals" className="text-[#A79E90] no-underline transition-colors hover:text-[#F2B66D]">
-          Professionnels
+        <Link to="/conditions" className="inline-flex min-h-[44px] items-center text-[#A79E90] no-underline transition-colors hover:text-[#F2B66D]">
+          Conditions
         </Link>
-      </div>
+        <Link to="/professional/access" className="inline-flex min-h-[44px] items-center text-[#A79E90] no-underline transition-colors hover:text-[#F2B66D]">
+          Espace professionnel
+        </Link>
+        <Link to="/equipe" className="inline-flex min-h-[44px] items-center text-[#A79E90] no-underline transition-colors hover:text-[#F2B66D]">
+          Accès équipe
+        </Link>
+      </nav>
     </div>
   </div>
   );

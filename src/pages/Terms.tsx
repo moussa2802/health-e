@@ -1,4 +1,5 @@
 import React from "react";
+import { Link } from "react-router-dom";
 import { FileText, Check, Mail } from "lucide-react";
 import { useLanguage } from "../contexts/LanguageContext";
 
@@ -6,23 +7,26 @@ const Terms: React.FC = () => {
   const { language } = useLanguage();
 
   return (
-    <div className="min-h-screen bg-paper px-4 py-12">
+    <div className="min-h-screen bg-[#130F0C] px-4 py-12">
       <div className="mx-auto max-w-3xl">
+        <Link to="/" className="mb-6 inline-flex min-h-[44px] items-center gap-2 text-sm font-semibold text-[#A79E90] no-underline hover:text-[#F2B66D]">
+          ← Accueil
+        </Link>
         <div className="mb-8 text-center">
-          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-sage-soft">
-            <FileText className="h-8 w-8 text-sage" />
+          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-white/[0.08]">
+            <FileText className="h-8 w-8 text-[#9DBFAF]" />
           </div>
-          <h1 className="font-display text-3xl font-bold text-ink">
+          <h1 className="font-display text-3xl font-bold text-[#F4EEE4]">
             {language === "fr" ? "Conditions d'utilisation" : "Terms of Use"}
           </h1>
         </div>
 
-        <div className="rounded-block border border-line bg-card p-6 shadow-soft sm:p-8">
-          <div className="text-ink-soft">
+        <div className="rounded-block border border-white/[0.12] bg-white/[0.05] p-6 shadow-none sm:p-8">
+          <div className="text-[#CFC6B8]">
             {language === "fr" ? (
               <>
                 <section className="mb-8">
-                  <h2 className="font-display mb-3 text-2xl font-semibold text-ink">
+                  <h2 className="font-display mb-3 text-2xl font-semibold text-[#F4EEE4]">
                     1. Bienvenue sur Health-e
                   </h2>
                   <p className="leading-relaxed">
@@ -34,7 +38,7 @@ const Terms: React.FC = () => {
                 </section>
 
                 <section className="mb-8">
-                  <h3 className="font-display mb-3 text-xl font-semibold text-ink">
+                  <h3 className="font-display mb-3 text-xl font-semibold text-[#F4EEE4]">
                     2. Acceptation des conditions
                   </h3>
                   <p className="leading-relaxed">
@@ -45,7 +49,7 @@ const Terms: React.FC = () => {
                 </section>
 
                 <section className="mb-8">
-                  <h3 className="font-display mb-3 text-xl font-semibold text-ink">
+                  <h3 className="font-display mb-3 text-xl font-semibold text-[#F4EEE4]">
                     3. Description du service
                   </h3>
                   <p className="mb-3 leading-relaxed">
@@ -65,7 +69,7 @@ const Terms: React.FC = () => {
                 </section>
 
                 <section className="mb-8">
-                  <h3 className="font-display mb-3 text-xl font-semibold text-ink">
+                  <h3 className="font-display mb-3 text-xl font-semibold text-[#F4EEE4]">
                     4. Éligibilité
                   </h3>
                   <p className="leading-relaxed">
@@ -76,7 +80,7 @@ const Terms: React.FC = () => {
                 </section>
 
                 <section className="mb-8">
-                  <h3 className="font-display mb-3 text-xl font-semibold text-ink">
+                  <h3 className="font-display mb-3 text-xl font-semibold text-[#F4EEE4]">
                     5. Comptes utilisateurs
                   </h3>
                   <p className="leading-relaxed">
@@ -88,33 +92,33 @@ const Terms: React.FC = () => {
                 </section>
 
                 <section className="mb-8">
-                  <h3 className="font-display mb-3 text-xl font-semibold text-ink">
+                  <h3 className="font-display mb-3 text-xl font-semibold text-[#F4EEE4]">
                     6. Responsabilités des utilisateurs
                   </h3>
-                  <h4 className="mb-2 font-display text-base font-semibold text-ink">
+                  <h4 className="mb-2 font-display text-base font-semibold text-[#F4EEE4]">
                     Pour les patients :
                   </h4>
                   <ul className="mb-4 space-y-2">
                     <li className="flex gap-2">
-                      <Check className="mt-1 h-4 w-4 flex-shrink-0 text-sage" />
+                      <Check className="mt-1 h-4 w-4 flex-shrink-0 text-[#9DBFAF]" />
                       <span>Fournir des informations exactes et sincères ;</span>
                     </li>
                     <li className="flex gap-2">
-                      <Check className="mt-1 h-4 w-4 flex-shrink-0 text-sage" />
+                      <Check className="mt-1 h-4 w-4 flex-shrink-0 text-[#9DBFAF]" />
                       <span>
                         Utiliser le service uniquement dans un cadre de santé
                         légitime et respectueux ;
                       </span>
                     </li>
                     <li className="flex gap-2">
-                      <Check className="mt-1 h-4 w-4 flex-shrink-0 text-sage" />
+                      <Check className="mt-1 h-4 w-4 flex-shrink-0 text-[#9DBFAF]" />
                       <span>
                         Respecter les rendez-vous fixés ou les annuler dans un délai
                         raisonnable ;
                       </span>
                     </li>
                     <li className="flex gap-2">
-                      <Check className="mt-1 h-4 w-4 flex-shrink-0 text-sage" />
+                      <Check className="mt-1 h-4 w-4 flex-shrink-0 text-[#9DBFAF]" />
                       <span>
                         Ne pas enregistrer, partager ou diffuser une consultation
                         sans consentement explicite.
@@ -122,26 +126,26 @@ const Terms: React.FC = () => {
                     </li>
                   </ul>
 
-                  <h4 className="mb-2 font-display text-base font-semibold text-ink">
+                  <h4 className="mb-2 font-display text-base font-semibold text-[#F4EEE4]">
                     Pour les professionnels :
                   </h4>
                   <ul className="space-y-2">
                     <li className="flex gap-2">
-                      <Check className="mt-1 h-4 w-4 flex-shrink-0 text-sage" />
+                      <Check className="mt-1 h-4 w-4 flex-shrink-0 text-[#9DBFAF]" />
                       <span>
                         Maintenir à jour leurs qualifications, diplômes et
                         autorisations légales d'exercice ;
                       </span>
                     </li>
                     <li className="flex gap-2">
-                      <Check className="mt-1 h-4 w-4 flex-shrink-0 text-sage" />
+                      <Check className="mt-1 h-4 w-4 flex-shrink-0 text-[#9DBFAF]" />
                       <span>
                         Respecter la confidentialité des patients et le secret
                         professionnel ;
                       </span>
                     </li>
                     <li className="flex gap-2">
-                      <Check className="mt-1 h-4 w-4 flex-shrink-0 text-sage" />
+                      <Check className="mt-1 h-4 w-4 flex-shrink-0 text-[#9DBFAF]" />
                       <span>
                         Assurer eux-mêmes la tenue et la conservation des dossiers
                         médicaux conformément à la législation de leur pays
@@ -149,7 +153,7 @@ const Terms: React.FC = () => {
                       </span>
                     </li>
                     <li className="flex gap-2">
-                      <Check className="mt-1 h-4 w-4 flex-shrink-0 text-sage" />
+                      <Check className="mt-1 h-4 w-4 flex-shrink-0 text-[#9DBFAF]" />
                       <span>
                         Être ponctuels et disponibles selon les créneaux proposés.
                       </span>
@@ -158,7 +162,7 @@ const Terms: React.FC = () => {
                 </section>
 
                 <section className="mb-8">
-                  <h3 className="font-display mb-3 text-xl font-semibold text-ink">
+                  <h3 className="font-display mb-3 text-xl font-semibold text-[#F4EEE4]">
                     7. Limitations du service
                   </h3>
                   <p className="leading-relaxed">
@@ -171,7 +175,7 @@ const Terms: React.FC = () => {
                 </section>
 
                 <section className="mb-8">
-                  <h3 className="font-display mb-3 text-xl font-semibold text-ink">
+                  <h3 className="font-display mb-3 text-xl font-semibold text-[#F4EEE4]">
                     8. Paiements et remboursements
                   </h3>
                   <p className="leading-relaxed">
@@ -184,7 +188,7 @@ const Terms: React.FC = () => {
                 </section>
 
                 <section className="mb-8">
-                  <h3 className="font-display mb-3 text-xl font-semibold text-ink">
+                  <h3 className="font-display mb-3 text-xl font-semibold text-[#F4EEE4]">
                     9. Propriété intellectuelle
                   </h3>
                   <p className="leading-relaxed">
@@ -196,7 +200,7 @@ const Terms: React.FC = () => {
                 </section>
 
                 <section className="mb-8">
-                  <h3 className="font-display mb-3 text-xl font-semibold text-ink">
+                  <h3 className="font-display mb-3 text-xl font-semibold text-[#F4EEE4]">
                     10. Confidentialité
                   </h3>
                   <p className="leading-relaxed">
@@ -209,7 +213,7 @@ const Terms: React.FC = () => {
                 </section>
 
                 <section className="mb-8">
-                  <h3 className="font-display mb-3 text-xl font-semibold text-ink">
+                  <h3 className="font-display mb-3 text-xl font-semibold text-[#F4EEE4]">
                     11. Limitation de responsabilité
                   </h3>
                   <p className="leading-relaxed">
@@ -223,7 +227,7 @@ const Terms: React.FC = () => {
                 </section>
 
                 <section className="mb-8">
-                  <h3 className="font-display mb-3 text-xl font-semibold text-ink">
+                  <h3 className="font-display mb-3 text-xl font-semibold text-[#F4EEE4]">
                     12. Indemnisation
                   </h3>
                   <p className="leading-relaxed">
@@ -234,7 +238,7 @@ const Terms: React.FC = () => {
                 </section>
 
                 <section className="mb-8">
-                  <h3 className="font-display mb-3 text-xl font-semibold text-ink">
+                  <h3 className="font-display mb-3 text-xl font-semibold text-[#F4EEE4]">
                     13. Modifications des conditions
                   </h3>
                   <p className="leading-relaxed">
@@ -246,7 +250,7 @@ const Terms: React.FC = () => {
                 </section>
 
                 <section className="mb-8">
-                  <h3 className="font-display mb-3 text-xl font-semibold text-ink">
+                  <h3 className="font-display mb-3 text-xl font-semibold text-[#F4EEE4]">
                     14. Résiliation
                   </h3>
                   <p className="leading-relaxed">
@@ -257,7 +261,7 @@ const Terms: React.FC = () => {
                 </section>
 
                 <section className="mb-8">
-                  <h3 className="font-display mb-3 text-xl font-semibold text-ink">
+                  <h3 className="font-display mb-3 text-xl font-semibold text-[#F4EEE4]">
                     15. Loi applicable
                   </h3>
                   <p className="leading-relaxed">
@@ -268,15 +272,15 @@ const Terms: React.FC = () => {
                 </section>
 
                 <section className="mb-0">
-                  <h3 className="font-display mb-3 text-xl font-semibold text-ink">
+                  <h3 className="font-display mb-3 text-xl font-semibold text-[#F4EEE4]">
                     16. Contact
                   </h3>
                   <p className="flex flex-wrap items-center gap-1 leading-relaxed">
-                    <Mail className="h-4 w-4 flex-shrink-0 text-accent" />
+                    <Mail className="h-4 w-4 flex-shrink-0 text-[#F2B66D]" />
                     Pour toute question ou clarification :{" "}
                     <a
                       href="mailto:healthe.service@gmail.com"
-                      className="font-medium text-accent hover:text-accent/80"
+                      className="font-medium text-[#F2B66D] hover:text-[#F2B66D]/80"
                     >
                       healthe.service@gmail.com
                     </a>
@@ -286,7 +290,7 @@ const Terms: React.FC = () => {
             ) : (
               <>
                 <section className="mb-8">
-                  <h2 className="font-display mb-3 text-2xl font-semibold text-ink">
+                  <h2 className="font-display mb-3 text-2xl font-semibold text-[#F4EEE4]">
                     1. Welcome to Health-e
                   </h2>
                   <p className="leading-relaxed">
@@ -297,7 +301,7 @@ const Terms: React.FC = () => {
                 </section>
 
                 <section className="mb-8">
-                  <h3 className="font-display mb-3 text-xl font-semibold text-ink">
+                  <h3 className="font-display mb-3 text-xl font-semibold text-[#F4EEE4]">
                     2. Acceptance of Terms
                   </h3>
                   <p className="leading-relaxed">
@@ -308,7 +312,7 @@ const Terms: React.FC = () => {
                 </section>
 
                 <section className="mb-8">
-                  <h3 className="font-display mb-3 text-xl font-semibold text-ink">
+                  <h3 className="font-display mb-3 text-xl font-semibold text-[#F4EEE4]">
                     3. Service Description
                   </h3>
                   <p className="mb-3 leading-relaxed">
@@ -328,7 +332,7 @@ const Terms: React.FC = () => {
                 </section>
 
                 <section className="mb-8">
-                  <h3 className="font-display mb-3 text-xl font-semibold text-ink">
+                  <h3 className="font-display mb-3 text-xl font-semibold text-[#F4EEE4]">
                     4. Eligibility
                   </h3>
                   <p className="leading-relaxed">
@@ -340,7 +344,7 @@ const Terms: React.FC = () => {
                 </section>
 
                 <section className="mb-8">
-                  <h3 className="font-display mb-3 text-xl font-semibold text-ink">
+                  <h3 className="font-display mb-3 text-xl font-semibold text-[#F4EEE4]">
                     5. User Accounts
                   </h3>
                   <p className="leading-relaxed">
@@ -352,33 +356,33 @@ const Terms: React.FC = () => {
                 </section>
 
                 <section className="mb-8">
-                  <h3 className="font-display mb-3 text-xl font-semibold text-ink">
+                  <h3 className="font-display mb-3 text-xl font-semibold text-[#F4EEE4]">
                     6. User Responsibilities
                   </h3>
-                  <h4 className="mb-2 font-display text-base font-semibold text-ink">
+                  <h4 className="mb-2 font-display text-base font-semibold text-[#F4EEE4]">
                     For Patients:
                   </h4>
                   <ul className="mb-4 space-y-2">
                     <li className="flex gap-2">
-                      <Check className="mt-1 h-4 w-4 flex-shrink-0 text-sage" />
+                      <Check className="mt-1 h-4 w-4 flex-shrink-0 text-[#9DBFAF]" />
                       <span>Provide accurate and sincere information;</span>
                     </li>
                     <li className="flex gap-2">
-                      <Check className="mt-1 h-4 w-4 flex-shrink-0 text-sage" />
+                      <Check className="mt-1 h-4 w-4 flex-shrink-0 text-[#9DBFAF]" />
                       <span>
                         Use the service only in a legitimate and respectful health
                         context;
                       </span>
                     </li>
                     <li className="flex gap-2">
-                      <Check className="mt-1 h-4 w-4 flex-shrink-0 text-sage" />
+                      <Check className="mt-1 h-4 w-4 flex-shrink-0 text-[#9DBFAF]" />
                       <span>
                         Respect scheduled appointments or cancel them within a
                         reasonable timeframe;
                       </span>
                     </li>
                     <li className="flex gap-2">
-                      <Check className="mt-1 h-4 w-4 flex-shrink-0 text-sage" />
+                      <Check className="mt-1 h-4 w-4 flex-shrink-0 text-[#9DBFAF]" />
                       <span>
                         Do not record, share, or broadcast a consultation without
                         explicit consent.
@@ -386,25 +390,25 @@ const Terms: React.FC = () => {
                     </li>
                   </ul>
 
-                  <h4 className="mb-2 font-display text-base font-semibold text-ink">
+                  <h4 className="mb-2 font-display text-base font-semibold text-[#F4EEE4]">
                     For Professionals:
                   </h4>
                   <ul className="space-y-2">
                     <li className="flex gap-2">
-                      <Check className="mt-1 h-4 w-4 flex-shrink-0 text-sage" />
+                      <Check className="mt-1 h-4 w-4 flex-shrink-0 text-[#9DBFAF]" />
                       <span>
                         Keep their qualifications, diplomas, and legal practice
                         authorizations up to date;
                       </span>
                     </li>
                     <li className="flex gap-2">
-                      <Check className="mt-1 h-4 w-4 flex-shrink-0 text-sage" />
+                      <Check className="mt-1 h-4 w-4 flex-shrink-0 text-[#9DBFAF]" />
                       <span>
                         Respect patient confidentiality and professional secrecy;
                       </span>
                     </li>
                     <li className="flex gap-2">
-                      <Check className="mt-1 h-4 w-4 flex-shrink-0 text-sage" />
+                      <Check className="mt-1 h-4 w-4 flex-shrink-0 text-[#9DBFAF]" />
                       <span>
                         Ensure themselves the maintenance and preservation of
                         medical records in accordance with the legislation of their
@@ -412,7 +416,7 @@ const Terms: React.FC = () => {
                       </span>
                     </li>
                     <li className="flex gap-2">
-                      <Check className="mt-1 h-4 w-4 flex-shrink-0 text-sage" />
+                      <Check className="mt-1 h-4 w-4 flex-shrink-0 text-[#9DBFAF]" />
                       <span>
                         Be punctual and available according to the proposed time
                         slots.
@@ -422,7 +426,7 @@ const Terms: React.FC = () => {
                 </section>
 
                 <section className="mb-8">
-                  <h3 className="font-display mb-3 text-xl font-semibold text-ink">
+                  <h3 className="font-display mb-3 text-xl font-semibold text-[#F4EEE4]">
                     7. Service Limitations
                   </h3>
                   <p className="leading-relaxed">
@@ -434,7 +438,7 @@ const Terms: React.FC = () => {
                 </section>
 
                 <section className="mb-8">
-                  <h3 className="font-display mb-3 text-xl font-semibold text-ink">
+                  <h3 className="font-display mb-3 text-xl font-semibold text-[#F4EEE4]">
                     8. Payments and Refunds
                   </h3>
                   <p className="leading-relaxed">
@@ -446,7 +450,7 @@ const Terms: React.FC = () => {
                 </section>
 
                 <section className="mb-8">
-                  <h3 className="font-display mb-3 text-xl font-semibold text-ink">
+                  <h3 className="font-display mb-3 text-xl font-semibold text-[#F4EEE4]">
                     9. Intellectual Property
                   </h3>
                   <p className="leading-relaxed">
@@ -458,7 +462,7 @@ const Terms: React.FC = () => {
                 </section>
 
                 <section className="mb-8">
-                  <h3 className="font-display mb-3 text-xl font-semibold text-ink">
+                  <h3 className="font-display mb-3 text-xl font-semibold text-[#F4EEE4]">
                     10. Confidentiality
                   </h3>
                   <p className="leading-relaxed">
@@ -470,7 +474,7 @@ const Terms: React.FC = () => {
                 </section>
 
                 <section className="mb-8">
-                  <h3 className="font-display mb-3 text-xl font-semibold text-ink">
+                  <h3 className="font-display mb-3 text-xl font-semibold text-[#F4EEE4]">
                     11. Limitation of Liability
                   </h3>
                   <p className="leading-relaxed">
@@ -483,7 +487,7 @@ const Terms: React.FC = () => {
                 </section>
 
                 <section className="mb-8">
-                  <h3 className="font-display mb-3 text-xl font-semibold text-ink">
+                  <h3 className="font-display mb-3 text-xl font-semibold text-[#F4EEE4]">
                     12. Indemnification
                   </h3>
                   <p className="leading-relaxed">
@@ -494,7 +498,7 @@ const Terms: React.FC = () => {
                 </section>
 
                 <section className="mb-8">
-                  <h3 className="font-display mb-3 text-xl font-semibold text-ink">
+                  <h3 className="font-display mb-3 text-xl font-semibold text-[#F4EEE4]">
                     13. Modifications to Terms
                   </h3>
                   <p className="leading-relaxed">
@@ -505,7 +509,7 @@ const Terms: React.FC = () => {
                 </section>
 
                 <section className="mb-8">
-                  <h3 className="font-display mb-3 text-xl font-semibold text-ink">
+                  <h3 className="font-display mb-3 text-xl font-semibold text-[#F4EEE4]">
                     14. Termination
                   </h3>
                   <p className="leading-relaxed">
@@ -516,7 +520,7 @@ const Terms: React.FC = () => {
                 </section>
 
                 <section className="mb-8">
-                  <h3 className="font-display mb-3 text-xl font-semibold text-ink">
+                  <h3 className="font-display mb-3 text-xl font-semibold text-[#F4EEE4]">
                     15. Applicable Law
                   </h3>
                   <p className="leading-relaxed">
@@ -527,15 +531,15 @@ const Terms: React.FC = () => {
                 </section>
 
                 <section className="mb-0">
-                  <h3 className="font-display mb-3 text-xl font-semibold text-ink">
+                  <h3 className="font-display mb-3 text-xl font-semibold text-[#F4EEE4]">
                     16. Contact
                   </h3>
                   <p className="flex flex-wrap items-center gap-1 leading-relaxed">
-                    <Mail className="h-4 w-4 flex-shrink-0 text-accent" />
+                    <Mail className="h-4 w-4 flex-shrink-0 text-[#F2B66D]" />
                     For any questions or clarifications:{" "}
                     <a
                       href="mailto:healthe.service@gmail.com"
-                      className="font-medium text-accent hover:text-accent/80"
+                      className="font-medium text-[#F2B66D] hover:text-[#F2B66D]/80"
                     >
                       healthe.service@gmail.com
                     </a>

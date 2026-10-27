@@ -193,8 +193,8 @@ const DomainePage: React.FC = () => {
       {loaded && d === 'social' && (
         <section style={{ marginTop: 18, display: 'flex', flexDirection: 'column', gap: 10 }}>
           {[
-            { icon: Crown, title: 'Le Défi · Kan moo ma gën a xam ?', text: defis ? `${defis} défi${defis > 1 ? 's' : ''} en cours. Tes proches devinent tes réponses : qui te connaît le mieux ?` : 'Tes proches devinent tes réponses, et tu découvres qui te connaît le mieux.', cta: 'Lancer un défi avec Dr Lô', flow: 'defi' as const, extra: defis ? { label: 'Voir mes défis', to: '/defi' } : null },
-            { icon: Users, title: 'Compatibilité', text: 'Partenaire, crush, ami : partage ton code, l\'autre fait ses tests, et Dr Lô compare vos profils.', cta: 'Comparer avec Dr Lô', flow: 'compat' as const, extra: { label: 'Mes comparaisons', to: '/assessment/compatibility' } },
+            { icon: Crown, title: 'Le Défi · Kan moo ma gën a xam ?', text: defis ? `${defis} défi${defis > 1 ? 's' : ''} en cours. Tes proches devinent tes réponses : qui te connaît le mieux ?` : 'Tes proches devinent tes réponses, et tu découvres qui te connaît le mieux.', cta: defis ? 'Voir mes défis' : 'Ouvrir les défis', to: '/defi', flow: 'defi' as const, extra: { label: 'Le lancer avec Dr Lô', flow: 'defi' as const } },
+            { icon: Users, title: 'Compatibilité', text: 'Partenaire, crush, ami : partage ton code, l\'autre fait ses tests, et Dr Lô compare vos profils.', cta: 'Ouvrir la compatibilité', to: '/assessment/compatibility', flow: 'compat' as const, extra: { label: 'La faire avec Dr Lô', flow: 'compat' as const } },
           ].map(c => (
             <div key={c.title} style={{ ...card, borderColor: `${DC.social}55`, background: `${DC.social}10` }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -203,12 +203,12 @@ const DomainePage: React.FC = () => {
               </div>
               <p style={{ margin: '8px 0 12px', fontSize: 13.5, lineHeight: 1.5, color: DC.soft }}>{c.text}</p>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                <button onClick={() => navigate('/', { state: uid ? { flow: c.flow } : { signup: true } })} className="drl-btn"
+                <button onClick={() => (uid ? navigate(c.to) : navigate('/', { state: { signup: true } }))} className="drl-btn"
                   style={{ minHeight: 44, padding: '0 16px', borderRadius: 999, border: 0, background: palette.primary, color: DC.ink, fontSize: 14, fontWeight: 700, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
                   {uid ? c.cta : 'Créer mon espace d\'abord'} <ArrowRight size={16} aria-hidden="true" />
                 </button>
                 {uid && c.extra && (
-                  <button onClick={() => navigate(c.extra!.to)} className="drl-btn"
+                  <button onClick={() => navigate('/', { state: { flow: c.extra!.flow } })} className="drl-btn"
                     style={{ minHeight: 44, padding: '0 16px', borderRadius: 999, border: `1px solid ${DC.line}`, background: DC.glass, color: DC.text, fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>
                     {c.extra.label}
                   </button>
