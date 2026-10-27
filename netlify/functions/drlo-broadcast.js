@@ -86,17 +86,25 @@ exports.handler = async (event) => {
           return reply(400, { error: `Ce ciblage ne concerne que ${count} personne${count > 1 ? 's' : ''} : il en faut au moins ${B.MIN_TARGETED} pour que personne ne soit reconnu.` });
         }
         const ref = db.collection('broadcasts').doc();
+        // Le vocal est enregistré AVANT le message : s'il échoue, rien n'est créé ni envoyé
+        let audioMeta = null;
+        if (au) {
+          const path = `broadcasts/${ref.id}/vocal.${au.ext}`;
+          try {
+            await admin.storage().bucket(BUCKET).file(path).save(au.buffer, { contentType: au.mime, resumable: false, metadata: { cacheControl: 'private, max-age=0' } });
+          } catch (e) {
+            console.error('drlo-broadcast vocal storage', BUCKET, e.code, e.message);
+            return reply(502, { error: 'Le vocal n\'a pas pu être enregistré (stockage indisponible ou non autorisé). Rien n\'a été envoyé.' });
+          }
+          audioMeta = { path, mime: au.mime, durationSec: au.durationSec, bytes: au.buffer.length };
+        }
         await ref.set({
           kind: au ? 'audio' : 'text', text: t.text, audience: a.audience, audienceCount: count, commentsOpen: false,
           status: scheduled ? 'scheduled' : 'launching', hidden: false,
           createdAt: admin.firestore.FieldValue.serverTimestamp(), sendAt: scheduled ? sendAt : Date.now(), createdBy: uid,
           stats: { views: 0, reactions: { heart: 0, pray: 0, strong: 0 } },
+          ...(audioMeta ? { audio: audioMeta } : {}),
         });
-        if (au) {
-          const path = `broadcasts/${ref.id}/vocal.${au.ext}`;
-          await admin.storage().bucket(BUCKET).file(path).save(au.buffer, { contentType: au.mime, resumable: false, metadata: { cacheControl: 'private, max-age=0' } });
-          await ref.update({ audio: { path, mime: au.mime, durationSec: au.durationSec, bytes: au.buffer.length } });
-        }
         if (scheduled) return reply(200, { ok: true, id: ref.id, status: 'scheduled', count });
         const n = await S.launch(ref.id, a.audience);
         const pending = await S.deliverPending(ref.id, 15000);

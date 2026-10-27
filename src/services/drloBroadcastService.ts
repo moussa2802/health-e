@@ -31,7 +31,10 @@ async function call<T>(body: Record<string, unknown>): Promise<T> {
     method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
   });
   const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw Object.assign(new Error((data as { error?: string }).error ?? 'Erreur'), { status: res.status });
+  if (!res.ok) {
+    const fallback = res.status === 413 ? 'Le vocal est trop lourd pour être envoyé. Fais-en un plus court.' : `Erreur ${res.status}`;
+    throw Object.assign(new Error((data as { error?: string }).error ?? fallback), { status: res.status });
+  }
   return data as T;
 }
 
