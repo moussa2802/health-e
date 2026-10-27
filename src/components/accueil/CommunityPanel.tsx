@@ -314,19 +314,21 @@ const CommunityPanel: React.FC<{ palette: MomentPalette; newByBroadcast?: Record
             </div>
             {r.audio && <p style={{ margin: '8px 0 0', fontSize: 13, color: palette.accent, display: 'inline-flex', alignItems: 'center', gap: 5 }}><Mic size={13} aria-hidden="true" /> Vocal de {mmss(r.audio.durationSec)}</p>}
             {r.text && <p style={{ margin: '8px 0 0', fontSize: 14.5, lineHeight: 1.55, color: DC.text, whiteSpace: 'pre-wrap' }}>{r.text}</p>}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 10, fontSize: 13, color: DC.muted }}>
+            <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '6px 14px', marginTop: 10, fontSize: 13, color: DC.muted }}>
               <span title={`${r.stats.views} sur ${r.audienceCount} personne${r.audienceCount > 1 ? 's' : ''}`}>👁 {r.stats.views} vu{r.stats.views > 1 ? 's' : ''}</span>
               {r.audio && <span>🎧 {r.stats.listens ?? 0} écoute{(r.stats.listens ?? 0) > 1 ? 's' : ''}</span>}
               <span>❤️ {r.stats.reactions.heart}</span>
               <span>🙏 {r.stats.reactions.pray}</span>
               <span>💪 {r.stats.reactions.strong}</span>
+            </div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 10 }}>
               <button type="button" onClick={() => hideBroadcast(r.id, !r.hidden).then(refresh).catch(() => {})} aria-label={r.hidden ? 'Réafficher' : 'Masquer'} className="drl-btn"
-                style={{ marginLeft: 'auto', minHeight: 36, padding: '0 10px', borderRadius: 10, border: `1px solid ${DC.line}`, background: DC.glass, color: DC.muted, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 12.5 }}>
-                {r.hidden ? <Eye size={14} aria-hidden="true" /> : <EyeOff size={14} aria-hidden="true" />} {r.hidden ? 'Réafficher' : 'Masquer'}
+                style={{ flex: '1 1 130px', minHeight: 44, padding: '0 12px', borderRadius: 12, border: `1px solid ${DC.line}`, background: DC.glass, color: DC.muted, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6, fontSize: 13.5 }}>
+                {r.hidden ? <Eye size={16} aria-hidden="true" /> : <EyeOff size={16} aria-hidden="true" />} {r.hidden ? 'Réafficher' : 'Masquer'}
               </button>
               <button type="button" onClick={() => { setDelId(r.id); setDelError(''); }} aria-label="Supprimer ce message" className="drl-btn"
-                style={{ minHeight: 36, padding: '0 10px', borderRadius: 10, border: `1px solid ${DC.line}`, background: DC.glass, color: '#E8664F', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 12.5 }}>
-                <Trash2 size={14} aria-hidden="true" /> Supprimer
+                style={{ flex: '1 1 130px', minHeight: 44, padding: '0 12px', borderRadius: 12, border: '1px solid rgba(232,102,79,.55)', background: 'rgba(232,102,79,.08)', color: '#E8664F', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6, fontSize: 13.5, fontWeight: 600 }}>
+                <Trash2 size={16} aria-hidden="true" /> Supprimer
               </button>
             </div>
             {delId === r.id && (
