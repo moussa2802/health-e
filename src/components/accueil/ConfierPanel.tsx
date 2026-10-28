@@ -5,14 +5,17 @@
  * et donne son avis seulement si on le demande (1 Kori, comme le journal classique).
  */
 import React, { useEffect, useRef, useState } from 'react';
-import { BookOpen, Check, Feather, Mic, Phone, Send } from 'lucide-react';
+import { BookOpen, CalendarDays, Check, ChevronRight, Feather, Mic, Phone, Send } from 'lucide-react';
 import {
-  addAdvice, addNote, deposit, emptyConfier, hasLiveEntries, markCancelled, markError, markSaved,
+  addAdvice, addNote, deposit, emptyConfier, entries, hasLiveEntries, joinParagraphs, markCancelled, markError, markSaved, removeParagraph, setDayPage,
   pendingForAdvice, rebuildToday, MAX_ENTRY_CHARS, type ConfierState,
 } from '../../utils/confierFlow';
 import {
-  addCarnet, askAdvice, currentCarnet, listJournal, loadCarnets, removeConfidence, saveConfidence, setCurrentCarnet,
+  addCarnet, askAdvice, currentCarnet, DEFAULT_CARNET, getConfidence, listJournal, loadCarnets, removeConfidence, saveConfidence, setCurrentCarnet, updateConfidence,
+  type JournalItem,
 } from '../../services/confierService';
+import { Link } from 'react-router-dom';
+import { EntryCard, fullDate, PROGRAMME, sortCarnets } from './JournalEntryCard';
 import { useDictation } from '../../hooks/useDictation';
 import { useKoris } from '../../contexts/KorisContext';
 import { KORIS_COSTS } from '../../services/korisService';
@@ -22,7 +25,6 @@ import type { DrLoState } from './DrLoAvatar';
 import { CREDIT, credits } from '../../config/creditName';
 
 import { CONFIER } from './confierTheme';
-import JournalView from './JournalView';
 import { dayKey } from '../../utils/moodLog';
 
 export { CONFIER };
@@ -61,11 +63,14 @@ const ConfierPanel: React.FC<{
   const sansAide = genre === 'femme' ? 'seule' : genre === 'homme' ? 'seul' : 'sans soutien';
   // Carnets : la personne range ses confidences (famille, amis, couple…)
   const owner = userId ?? 'guest';
-  const [carnet, setCarnet] = useState(() => currentCarnet(owner));
-  const [carnets, setCarnets] = useState(() => loadCarnets(owner));
+  const pickable = (list: string[]) => sortCarnets(list).filter(c => c !== PROGRAMME);
+  const startCarnet = () => { const c = currentCarnet(owner); return c === PROGRAMME ? DEFAULT_CARNET : c; };
+  const [carnet, setCarnet] = useState(startCarnet);
+  const [carnets, setCarnets] = useState(() => pickable(loadCarnets(owner)));
+  const [recent, setRecent] = useState<JournalItem[] | null>(null);
   const [pickCarnet, setPickCarnet] = useState(false);
   const [newCarnet, setNewCarnet] = useState<string | null>(null);
-  useEffect(() => { setCarnet(currentCarnet(owner)); setCarnets(loadCarnets(owner)); }, [owner]);
+  useEffect(() => { setCarnet(startCarnet()); setCarnets(pickable(loadCarnets(owner))); }, [owner]); // eslint-disable-line react-hooks/exhaustive-deps
   const chooseCarnet = (c: string) => { setCarnet(c); setCurrentCarnet(owner, c); setPickCarnet(false); setNewCarnet(null); };
 
   useEffect(() => { setState(load(key)); }, [key]);
@@ -75,10 +80,16 @@ const ConfierPanel: React.FC<{
     let off = false;
     listJournal(userId, 80).then(list => {
       if (off) return;
-      setCarnets(loadCarnets(owner, list.map(i => i.carnet)));
+      setCarnets(pickable(loadCarnets(owner, list.map(i => i.carnet))));
+      setRecent(list);
+      // Pages du jour déjà commencées (autre téléphone) : on continue d'y écrire
+      const today = dayKey();
+      const pages: Record<string, string> = {};
+      for (const i of [...list].reverse()) if (i.source === 'confier' && i.date && dayKey(new Date(i.date)) === today) pages[i.carnet] = i.id;
+      if (Object.keys(pages).length) setState(cur => ({ ...cur, pages: { ...pages, ...(cur.pages ?? {}) } }));
       if (stateRef.current.items.length) return;
       const rebuilt = rebuildToday(list, dayKey(), iso => dayKey(new Date(iso)));
-      if (rebuilt) setState(cur => (cur.items.length ? cur : rebuilt));
+      if (rebuilt) setState(cur => (cur.items.length ? cur : { ...rebuilt, pages: cur.pages }));
     }).catch(() => {});
     return () => { off = true; };
   }, [userId]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -106,8 +117,18 @@ const ConfierPanel: React.FC<{
     trackAccueil('confier_entry', { guest: !userId }); // jamais le contenu
     if (crisis) trackAccueil('crisis', { at: 'confier' });
     try {
-      const journalId = await saveConfidence(userId, text, carnet);
-      update(s => markSaved(s, entryId, journalId));
+      // Même jour, même carnet : le passage s'ajoute à la page du jour (sinon une nouvelle page)
+      const pageId = stateRef.current.pages?.[carnet];
+      const page = pageId ? await getConfidence(userId, pageId).catch(() => null) : null;
+      let journalId: string;
+      if (pageId && page) {
+        await updateConfidence(userId, pageId, { contenu: joinParagraphs(page.contenu, text) });
+        journalId = pageId;
+      } else {
+        journalId = await saveConfidence(userId, text, carnet);
+      }
+      update(s => setDayPage(markSaved(s, entryId, journalId), carnet, journalId));
+      setRecent(null);
     } catch {
       update(s => markError(s, entryId));
     }
@@ -115,8 +136,21 @@ const ConfierPanel: React.FC<{
 
   const onCancel = async (entryId: string, journalId: string | null) => {
     if (!journalId) return;
+    const entry = entries(stateRef.current).find(e => e.id === entryId);
     try {
-      await removeConfidence(userId, journalId);
+      // On retire seulement ce passage de la page du jour ; la page disparaît si elle devient vide
+      const page = await getConfidence(userId, journalId);
+      const whole = !!page && !!entry && page.contenu.trim() === entry.text.trim();
+      const rest = page && entry && !whole ? removeParagraph(page.contenu, entry.text) : '';
+      if (page && entry && rest && rest === page.contenu.trim()) {
+        // Le passage a été modifié entre-temps dans Mon journal : on ne touche à rien
+        update(s => addNote(s, 'Ce passage a été modifié dans ton journal : retire-le depuis Mon journal si tu veux.'));
+        return;
+      }
+      if (rest) await updateConfidence(userId, journalId, { contenu: rest });
+      else await removeConfidence(userId, journalId);
+      if (!rest) update(s => ({ ...s, pages: Object.fromEntries(Object.entries(s.pages ?? {}).filter(([, v]) => v !== journalId)) }));
+      setRecent(null);
       update(s => markCancelled(s, entryId));
       trackAccueil('confier_cancel');
     } catch {
@@ -140,27 +174,61 @@ const ConfierPanel: React.FC<{
     } else update(s => addNote(s, 'Je n\'arrive pas à te répondre maintenant. Ce que tu as écrit est bien dans ton journal ; redemande-moi dans un moment.'));
   };
 
+  useEffect(() => {
+    if (view !== 'journal' || recent !== null) return;
+    let off = false;
+    listJournal(userId, 80).then(l => { if (!off) setRecent(l); }).catch(() => { if (!off) setRecent([]); });
+    return () => { off = true; };
+  }, [view, recent, userId]);
+
   const pending = pendingForAdvice(state);
   const resources = getCrisisResources();
 
-  const savedCount = state.items.filter(i => i.kind === 'entry' && i.status === 'saved').length;
   const tabs = (
     <div role="tablist" aria-label="Me confier" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 4, padding: 4, borderRadius: 12, background: 'rgba(201,184,228,.08)', border: `1px solid ${CONFIER.line}` }}>
       {(['write', 'journal'] as const).map(v => (
         <button key={v} role="tab" aria-selected={view === v} onClick={() => onView?.(v)} className="drl-btn"
           style={{ minHeight: 36, borderRadius: 9, border: 0, cursor: 'pointer', fontSize: 13.5, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
             background: view === v ? 'rgba(201,184,228,.25)' : 'transparent', color: view === v ? CONFIER.text : CONFIER.muted }}>
-          {v === 'write' ? <><Feather size={14} aria-hidden="true" /> Écrire</> : <><BookOpen size={14} aria-hidden="true" /> Mon journal</>}
+          {v === 'write' ? <><Feather size={14} aria-hidden="true" /> Me confier</> : <><BookOpen size={14} aria-hidden="true" /> Mon journal</>}
         </button>
       ))}
     </div>
   );
 
   if (view === 'journal') {
+    // Aperçu du vrai journal (même design que la page « Mon journal ») : la page du jour, puis les dernières pages
+    const pages = (recent ?? []).slice(0, 4);
     return (
       <div className="drl-in" style={{ display: 'flex', flexDirection: 'column', gap: 12, marginTop: 14 }}>
         {tabs}
-        <JournalView userId={userId} refreshKey={savedCount} onWrite={() => onView?.('write')} />
+        <Link to="/journal" className="drl-btn" style={{ minHeight: 50, borderRadius: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, textDecoration: 'none', fontSize: 15, fontWeight: 700, background: 'linear-gradient(180deg, #D8CAF0 0%, #B9A6D6 100%)', color: CONFIER.ink }}>
+          <BookOpen size={17} aria-hidden="true" /> Ouvrir mon journal
+        </Link>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <Link to="/journal" state={{ view: 'calendrier' }} onClick={() => { try { localStorage.setItem('he_journal_view', 'calendrier'); } catch { /* ignore */ } }} className="drl-btn"
+            style={{ flex: 1, minHeight: 42, borderRadius: 12, border: `1px solid ${CONFIER.line}`, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, textDecoration: 'none', color: CONFIER.text, fontSize: 13.5, fontWeight: 600 }}>
+            <CalendarDays size={15} aria-hidden="true" /> Calendrier
+          </Link>
+          <Link to="/journal/ecrire" className="drl-btn"
+            style={{ flex: 1, minHeight: 42, borderRadius: 12, border: `1px solid ${CONFIER.line}`, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, textDecoration: 'none', color: CONFIER.text, fontSize: 13.5, fontWeight: 600 }}>
+            <Feather size={15} aria-hidden="true" /> Page complète
+          </Link>
+        </div>
+        {recent === null ? <p style={{ margin: '6px 0', textAlign: 'center', fontSize: 13.5, color: CONFIER.faint }}>J'ouvre ton journal…</p>
+          : pages.length === 0 ? (
+            <p style={{ margin: '6px 0', textAlign: 'center', fontSize: 14, color: CONFIER.muted, lineHeight: 1.5 }}>Ton journal est encore vide. Ce que tu confies ici devient ta page du jour.</p>
+          ) : (
+            <>
+              <p style={{ margin: '4px 0 0', fontSize: 12, letterSpacing: '.08em', textTransform: 'uppercase', fontWeight: 700, color: CONFIER.accent }}>Mes dernières pages</p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8, textAlign: 'left' }}>{pages.map(it => <EntryCard key={it.id} it={it} />)}</div>
+              {(recent?.length ?? 0) > pages.length && (
+                <Link to="/journal" style={{ alignSelf: 'center', minHeight: 40, display: 'inline-flex', alignItems: 'center', gap: 4, color: CONFIER.accent, fontSize: 13.5, fontWeight: 700, textDecoration: 'none' }}>
+                  Voir les {recent!.length} pages <ChevronRight size={15} aria-hidden="true" />
+                </Link>
+              )}
+            </>
+          )}
         <p style={{ margin: 0, textAlign: 'center', fontSize: 12, color: CONFIER.faint }}>
           Visible par toi {seul}{!userId && ' · Sans compte, ton journal reste sur ce téléphone'}
         </p>
@@ -172,17 +240,26 @@ const ConfierPanel: React.FC<{
     <div className="drl-in" style={{ display: 'flex', flexDirection: 'column', gap: 12, marginTop: 14 }}>
       {tabs}
       <div ref={listRef} aria-live="polite" style={{ display: 'flex', flexDirection: 'column', gap: 10, maxHeight: '46vh', overflowY: 'auto', paddingRight: 2 }}>
+        {/* La page du jour : tout ce qu'on confie aujourd'hui dans ce carnet va sur une même page du journal */}
         <div style={{ borderRadius: 18, border: `1px solid ${CONFIER.line}`, background: CONFIER.tint, padding: 14, textAlign: 'left' }}>
-          <p style={{ margin: 0, display: 'flex', alignItems: 'center', gap: 7, fontSize: 13, fontWeight: 700, color: CONFIER.accent }}>
-            <Feather size={15} aria-hidden="true" /> Ton journal privé
+          <p style={{ margin: 0, fontSize: 11.5, letterSpacing: '.1em', textTransform: 'uppercase', fontWeight: 800, color: CONFIER.accent, display: 'flex', alignItems: 'center', gap: 6 }}>
+            <Feather size={13} aria-hidden="true" /> Ma page du jour · {carnet}
           </p>
-          <p style={{ margin: '8px 0 0', fontFamily: 'Fraunces, serif', fontStyle: 'italic', fontSize: 15.5, lineHeight: 1.5, color: CONFIER.text }}>
-            « C'est ton espace. Écris ce que tu veux, comme ça vient. Je lis, je ne juge pas, et je ne t'interromps pas. »
-          </p>
+          <p style={{ margin: '4px 0 0', fontFamily: 'Fraunces, serif', fontSize: 19, fontWeight: 600, color: CONFIER.text }}>{fullDate(new Date())}</p>
+          {state.items.length === 0 ? (
+            <p style={{ margin: '8px 0 0', fontFamily: 'Fraunces, serif', fontStyle: 'italic', fontSize: 15, lineHeight: 1.5, color: CONFIER.muted }}>
+              « Écris ce que tu veux, comme ça vient. Je lis, je ne juge pas, et je ne t'interromps pas. »
+            </p>
+          ) : null}
           <p style={{ margin: '8px 0 0', fontSize: 12, color: CONFIER.faint, lineHeight: 1.45 }}>
-            Tout ce que tu écris ici va dans ton journal, rangé par jour. Écrire est gratuit.
+            Tout ce que tu confies aujourd'hui s'ajoute à cette page de ton journal. Écrire est gratuit.
             {!userId && ' Sans compte, ton journal reste sur ce téléphone.'}
           </p>
+          {state.pages?.[carnet] && (
+            <Link to={`/journal/${state.pages[carnet]}`} style={{ marginTop: 6, minHeight: 32, display: 'inline-flex', alignItems: 'center', gap: 4, color: CONFIER.accent, fontSize: 13, fontWeight: 700, textDecoration: 'none' }}>
+              Voir ma page dans le journal <ChevronRight size={14} aria-hidden="true" />
+            </Link>
+          )}
         </div>
 
         {state.items.map(it => {
@@ -198,11 +275,11 @@ const ConfierPanel: React.FC<{
                   {it.status === 'saving' && <span style={{ color: CONFIER.faint }}>Enregistrement…</span>}
                   {it.status === 'saved' && (
                     <>
-                      <span style={{ color: '#9DBFAF', display: 'inline-flex', alignItems: 'center', gap: 5 }}><Check size={13} strokeWidth={2.6} aria-hidden="true" /> Ajouté à ton journal</span>
+                      <span style={{ color: '#9DBFAF', display: 'inline-flex', alignItems: 'center', gap: 5 }}><Check size={13} strokeWidth={2.6} aria-hidden="true" /> Ajouté à ta page du jour</span>
                       <button onClick={() => onCancel(it.id, it.journalId)} style={{ minHeight: 32, padding: '0 4px', border: 0, background: 'transparent', color: CONFIER.muted, fontSize: 12, fontWeight: 700, textDecoration: 'underline', textUnderlineOffset: 3, cursor: 'pointer' }}>Annuler</button>
                     </>
                   )}
-                  {it.status === 'cancelled' && <span style={{ color: CONFIER.faint }}>Retiré du journal</span>}
+                  {it.status === 'cancelled' && <span style={{ color: CONFIER.faint }}>Retiré de ta page</span>}
                   {it.status === 'error' && <span style={{ color: '#F09A7A' }}>Pas enregistré (connexion). Copie-le avant de quitter.</span>}
                 </div>
               </div>
@@ -281,9 +358,9 @@ const ConfierPanel: React.FC<{
             ) : (
               <span style={{ display: 'inline-flex', gap: 6 }}>
                 <input autoFocus value={newCarnet} maxLength={24} onChange={e => setNewCarnet(e.target.value)} placeholder="Ex. Mes sœurs" aria-label="Nom du nouveau carnet"
-                  onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); const list = addCarnet(owner, newCarnet); setCarnets(list); const n = list.find(x => x.toLowerCase() === newCarnet.trim().toLowerCase()); if (n) chooseCarnet(n); } }}
+                  onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); const list = addCarnet(owner, newCarnet); setCarnets(pickable(list)); const n = list.find(x => x.toLowerCase() === newCarnet.trim().toLowerCase()); if (n) chooseCarnet(n); } }}
                   className="drl-input" style={{ minHeight: 34, width: 140, borderRadius: 999, border: `1px solid ${CONFIER.accent}`, background: 'rgba(255,255,255,.06)', color: CONFIER.text, padding: '0 12px', fontSize: 14, fontFamily: 'inherit', outline: 'none' }} />
-                <button type="button" onClick={() => { const list = addCarnet(owner, newCarnet); setCarnets(list); const n = list.find(x => x.toLowerCase() === newCarnet.trim().toLowerCase()); if (n) chooseCarnet(n); }}
+                <button type="button" onClick={() => { const list = addCarnet(owner, newCarnet); setCarnets(pickable(list)); const n = list.find(x => x.toLowerCase() === newCarnet.trim().toLowerCase()); if (n) chooseCarnet(n); }}
                   style={{ minHeight: 34, padding: '0 12px', borderRadius: 999, border: 0, background: CONFIER.accent, color: CONFIER.ink, fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>OK</button>
               </span>
             )}
@@ -321,7 +398,7 @@ const ConfierPanel: React.FC<{
 
       <p style={{ margin: 0, textAlign: 'center', fontSize: 12, color: CONFIER.faint }}>
         Visible par toi {seul}
-        {hasLiveEntries(state) && <> · <button type="button" onClick={() => onView?.('journal')} style={{ border: 0, background: 'transparent', padding: 0, cursor: 'pointer', color: CONFIER.accent, fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 12 }}><BookOpen size={12} aria-hidden="true" /> Relire mon journal</button></>}
+        {hasLiveEntries(state) && <> · <Link to="/journal" style={{ color: CONFIER.accent, fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 12, textDecoration: 'none' }}><BookOpen size={12} aria-hidden="true" /> Ouvrir mon journal</Link></>}
       </p>
     </div>
   );

@@ -5,7 +5,7 @@
  *    fonction dr-lo-journal (même tarif : 1 Kori).
  *  - Invité : dans le navigateur uniquement (aucun envoi au serveur).
  */
-import { collection, addDoc, deleteDoc, doc, updateDoc, getDocs, query, orderBy, limit } from 'firebase/firestore';
+import { collection, addDoc, deleteDoc, doc, updateDoc, getDoc, getDocs, query, orderBy, limit } from 'firebase/firestore';
 import { db } from '../utils/firebase';
 import { authedFetch } from '../utils/authedFetch';
 import { getOnboardingProfile } from '../utils/onboardingProfile';
@@ -100,6 +100,17 @@ export async function updateConfidence(userId: string | null, journalId: string,
   await updateDoc(doc(fs, 'users', userId, 'journal', journalId), { ...patch, updated_at: new Date().toISOString() });
 }
 
+/** Relire une page (pour y ajouter un passage sans écraser ce qui a été modifié ailleurs). null = elle n'existe plus. */
+export async function getConfidence(userId: string | null, journalId: string): Promise<{ contenu: string; carnet: string } | null> {
+  if (!userId) { const e = readGuest().find(x => x.id === journalId); return e ? { contenu: e.contenu, carnet: e.carnet || DEFAULT_CARNET } : null; }
+  const fs = db;
+  if (!fs) throw new Error('Firestore indisponible');
+  const snap = await getDoc(doc(fs, 'users', userId, 'journal', journalId));
+  if (!snap.exists()) return null;
+  const x = snap.data();
+  return { contenu: (x.contenu as string) ?? '', carnet: (x.carnet as string) || DEFAULT_CARNET };
+}
+
 export type AdviceOutcome = { ok: true; text: string } | { ok: false; reason: 'no_koris' | 'unavailable' };
 
 export async function askAdvice(userId: string, text: string, lastJournalId: string | null): Promise<AdviceOutcome> {
@@ -152,13 +163,15 @@ export interface JournalItem {
   humeur: string;
   drLo: string | null;
   carnet: string;
+  /** 'confier' = écrit en se confiant à Dr Lô (page du jour) */
+  source?: string;
 }
 
 /** Les entrées les plus récentes d'abord (compte : Firestore ; invité : ce téléphone). */
 export async function listJournal(userId: string | null, max = 120): Promise<JournalItem[]> {
   if (!userId) {
     return readGuest()
-      .map(e => ({ id: e.id, date: e.date, contenu: e.contenu, humeur: e.humeur || '', drLo: null, carnet: e.carnet || DEFAULT_CARNET }))
+      .map(e => ({ id: e.id, date: e.date, contenu: e.contenu, humeur: e.humeur || '', drLo: null, carnet: e.carnet || DEFAULT_CARNET, source: 'confier' }))
       .sort((a, b) => (a.date < b.date ? 1 : -1));
   }
   const fs = db;
@@ -173,6 +186,7 @@ export async function listJournal(userId: string | null, max = 120): Promise<Jou
       humeur: (x.humeur as string) ?? '',
       drLo: (x.dr_lo_response as string | null) ?? null,
       carnet: (x.carnet as string) || DEFAULT_CARNET,
+      source: (x.source as string) || undefined,
     };
   });
 }

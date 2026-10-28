@@ -19,6 +19,11 @@ export interface ConfierState {
   seq: number;
   /** Nombre d'entrées déjà soumises à l'avis de Dr Lô. */
   advisedUpTo: number;
+  /**
+   * La « page du jour » de chaque carnet (id du journal) : tout ce qu'on confie le même jour dans le
+   * même carnet s'ajoute à UNE page du journal, comme dans un journal intime (pas une page par message).
+   */
+  pages?: Record<string, string>;
 }
 
 export const MAX_ITEMS = 40;
@@ -140,4 +145,26 @@ export function rebuildToday(
     }
   });
   return { v: 1, items, seq, advisedUpTo };
+}
+
+/** Ajoute un passage à une page (paragraphes séparés par une ligne vide). */
+export function joinParagraphs(existing: string, text: string): string {
+  const a = existing.trim();
+  const b = text.trim();
+  return a ? `${a}\n\n${b}`.slice(0, MAX_ENTRY_CHARS * 4) : b;
+}
+
+/** Retire un passage d'une page (le dernier identique) ; '' si la page devient vide. */
+export function removeParagraph(content: string, text: string): string {
+  const parts = content.split(/\n{2,}/);
+  const t = text.trim();
+  for (let i = parts.length - 1; i >= 0; i--) {
+    if (parts[i].trim() === t) { parts.splice(i, 1); break; }
+  }
+  return parts.map(p => p.trim()).filter(Boolean).join('\n\n');
+}
+
+/** Mémorise la page du jour d'un carnet. */
+export function setDayPage(s: ConfierState, carnet: string, journalId: string): ConfierState {
+  return { ...s, pages: { ...(s.pages ?? {}), [carnet]: journalId } };
 }

@@ -1,6 +1,7 @@
 import '../../components/accueil/accueil.css';
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { clearInvite, inviteFromUrl, inviteLink, inviteMessage, loadInvite, saveInvite, type CompatInvite } from '../../utils/compatInvite';
 import {
   Heart, Home, Users, Briefcase, Key, Brain, Flame, Copy, Check, Lock,
   ChevronRight, ChevronDown, ChevronLeft, Sparkles, Loader2, AlertCircle, AlertTriangle,
@@ -50,6 +51,18 @@ function scoreStyle(score: number) {
 
 const CompatibilityPage: React.FC = () => {
   const { currentUser, isAuthenticated } = useAuth();
+  const navigate = useNavigate();
+  // Invitation par lien (/compat/:code?s=…) : les codes de l'autre personne sont déjà là, rien à taper
+  const { code: inviteCode } = useParams<{ code?: string }>();
+  const [searchParams] = useSearchParams();
+  const [invite] = useState<CompatInvite | null>(() => {
+    const fromUrl = inviteFromUrl(inviteCode, searchParams.get('s'));
+    if (fromUrl) { saveInvite(fromUrl); return fromUrl; }
+    return loadInvite();
+  });
+  const inviteRef = useRef(invite);
+  const [inviteSelf, setInviteSelf] = useState(false);
+  const [linkCopied, setLinkCopied] = useState(false);
   const { canAfford, refreshBalance, balance, getCost } = useKoris();
 
   const [myIdMental, setMyIdMental] = useState<string | null>(null);
@@ -124,6 +137,23 @@ const CompatibilityPage: React.FC = () => {
     }, 600);
   }, [currentUser]);
 
+  /** Remet les codes de l'invitation dans le formulaire (et les vérifie). */
+  const applyInvite = useCallback(() => {
+    const inv = inviteRef.current;
+    if (!inv || !currentUser) return;
+    if (inv.m) { setPartnerMentalId(inv.m); validateCode(inv.m, 'mental'); }
+    if (inv.s) { setPartnerSexualId(inv.s); validateCode(inv.s, 'sexual'); }
+  }, [currentUser, validateCode]);
+
+  // Arrivée par un lien d'invitation : codes pré-remplis, et on descend au formulaire
+  useEffect(() => {
+    const inv = inviteRef.current;
+    if (!inv || !currentUser || loadingProfile) return;
+    if ((inv.m && inv.m === myIdMental) || (inv.s && inv.s === myIdSexual)) { setInviteSelf(true); inviteRef.current = null; clearInvite(); return; }
+    applyInvite();
+    window.setTimeout(() => formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 300);
+  }, [currentUser, loadingProfile, myIdMental, myIdSexual, applyInvite]);
+
   // Reset sub-type when main category changes
   useEffect(() => {
     if (skipResetRef.current) {
@@ -136,7 +166,8 @@ const CompatibilityPage: React.FC = () => {
     setFormError(null);
     setMentalValidation(null);
     setSexualValidation(null);
-  }, [mainCategoryId]);
+    applyInvite();
+  }, [mainCategoryId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (isAuthenticated && currentUser) {
@@ -250,6 +281,7 @@ const CompatibilityPage: React.FC = () => {
 
       setCurrentResult(result);
       setCurrentPartnerPrenom(partnerPrenom || '');
+      if (inviteRef.current) { clearInvite(); inviteRef.current = null; }
       getCompatibilityHistory(currentUser.id).then(setHistory).catch(() => {});
       await refreshBalance();
     } catch (err: unknown) {
@@ -504,6 +536,35 @@ const CompatibilityPage: React.FC = () => {
           </p>
         </div>
 
+        {/* ── Invitation reçue par lien ── */}
+        {invite && !inviteSelf && !currentResult && (() => {
+          const prenom = mentalValidation?.valid ? mentalValidation.prenom : sexualValidation?.valid ? sexualValidation.prenom : null;
+          return (
+            <div className="rounded-block px-5 py-5 mb-5" style={{ border: '1px solid rgba(233,167,184,.5)', background: 'linear-gradient(135deg, rgba(233,167,184,.18), rgba(242,182,109,.08))' }}>
+              <p className="m-0 text-[12px] font-extrabold uppercase tracking-[0.12em]" style={{ color: '#E9A7B8' }}>Invitation</p>
+              <p className="m-0 mt-1 font-display text-[21px] font-semibold text-ink leading-snug">{prenom ? `${prenom} t'invite` : 'On t\'invite'} à comparer vos profils 💞</p>
+              {!isAuthenticated ? (
+                <>
+                  <p className="m-0 mt-2 text-[14px] text-ink-soft leading-relaxed">Crée ton espace (gratuit), fais tes évaluations avec Dr Lô, puis reviens sur ce lien : tout sera prêt, rien à recopier.</p>
+                  <button onClick={() => navigate('/', { state: { signup: true } })} className="mt-3 w-full min-h-[48px] rounded-[14px] border-0 bg-gold text-ink text-[15px] font-bold cursor-pointer">Créer mon espace</button>
+                </>
+              ) : !loadingProfile && !myIdMental && !myIdSexual ? (
+                <>
+                  <p className="m-0 mt-2 text-[14px] text-ink-soft leading-relaxed">Pour comparer, Dr Lô a besoin de ton profil : 8 évaluations psychologiques (ou 5 de vie intime pour un couple). Ton invitation est gardée : reviens ici quand c'est fait.</p>
+                  <Link to="/espace/mental" className="mt-3 w-full min-h-[48px] rounded-[14px] bg-gold text-ink text-[15px] font-bold no-underline flex items-center justify-center">Faire mes évaluations</Link>
+                </>
+              ) : (
+                <p className="m-0 mt-2 text-[14px] text-ink-soft leading-relaxed">Son code est déjà rempli. Choisis juste ce que vous êtes l'un pour l'autre, puis touche « Découvrir notre compatibilité ».</p>
+              )}
+            </div>
+          );
+        })()}
+        {inviteSelf && (
+          <div className="bg-gold-soft border border-gold/25 rounded-2xl px-5 py-4 mb-5">
+            <p className="m-0 text-sm text-ink-soft">C'est ton propre lien d'invitation : envoie-le à la personne avec qui tu veux faire le test.</p>
+          </div>
+        )}
+
         {/* ── Mes codes ── */}
         <div className="bg-card border border-line rounded-block shadow-soft px-6 py-6 mb-5">
           <div className="flex items-center gap-2.5 mb-5">
@@ -586,6 +647,29 @@ const CompatibilityPage: React.FC = () => {
             </div>
           )}
         </div>
+
+        {/* ── Inviter par un lien (plus simple que de recopier un code) ── */}
+        {isAuthenticated && !loadingProfile && (myIdMental || myIdSexual) && !(invite && !inviteSelf && !currentResult) && (() => {
+          const link = inviteLink(window.location.origin, myIdMental, myIdSexual);
+          if (!link) return null;
+          const text = inviteMessage(link);
+          const shareIt = async () => {
+            if (navigator.share) { try { await navigator.share({ title: 'Test de compatibilité Health-e', text }); return; } catch { /* annulé */ } }
+            window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank', 'noopener');
+          };
+          return (
+            <div className="rounded-block px-5 py-5 mb-5" style={{ border: '1px solid rgba(242,182,109,.45)', background: 'rgba(242,182,109,.08)' }}>
+              <p className="m-0 text-[15px] font-bold text-ink">Inviter quelqu'un par un lien</p>
+              <p className="m-0 mt-1 text-[13px] text-ink-soft leading-relaxed">L'autre personne touche le lien, choisit votre relation, et c'est parti : rien à recopier. Le lien ne montre aucun de tes résultats.</p>
+              <button onClick={() => void shareIt()} className="mt-3 w-full min-h-[50px] rounded-[14px] border-0 bg-gold text-ink text-[15px] font-bold cursor-pointer flex items-center justify-center gap-2">
+                <Share2 size={17} /> Envoyer le lien (WhatsApp…)
+              </button>
+              <button onClick={() => copy(link, setLinkCopied)} className="mt-2 w-full min-h-[44px] rounded-[14px] border border-line bg-transparent text-ink text-[14px] font-semibold cursor-pointer flex items-center justify-center gap-2">
+                {linkCopied ? <><Check size={15} /> Lien copié</> : <><Copy size={15} /> Copier le lien</>}
+              </button>
+            </div>
+          );
+        })()}
 
         {/* ── Bannière si aucun code ── */}
         {isAuthenticated && !loadingProfile && !myIdMental && !myIdSexual && (

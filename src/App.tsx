@@ -27,6 +27,7 @@ import LoadingSpinner from "./components/ui/LoadingSpinner";
 import ErrorBoundary from "./components/ui/ErrorBoundary";
 import ScrollToTop from "./components/utils/ScrollToTop";
 import FloatingChat from "./components/DrLoChat/FloatingChat";
+import CompatInviteResume from "./components/CompatInviteResume";
 import UpdateBanner from "./components/ui/UpdateBanner";
 import WelcomeFlow from "./components/Onboarding/WelcomeFlow";
 import HelpButton from "./components/Onboarding/HelpButton";
@@ -182,7 +183,7 @@ const AppChrome: React.FC = () => {
   const isChromeless = isAdminRoute || isAppRoute || isDefiJouer;
   // Accueil : le premier écran est Dr Lô en plein écran (pas d'en-tête ni de pied de page du site)
   // Écrans « Mon Dr Lô » (thème chaud sombre, plein écran) : pas d'en-tête ni de pied de page du site
-  const isHome = pathname === "/" || pathname === "/espace" || pathname.startsWith("/espace/") || pathname === "/humeur" || pathname === "/journal" || pathname.startsWith("/journal/") || pathname === "/question" || pathname === "/drlo" || pathname === "/equipe" || pathname === "/confidentialite" || pathname === "/conditions" || pathname === "/ethique" || pathname === "/messages-dr-lo" || pathname.startsWith("/messages-dr-lo/") || pathname === "/chaines" || pathname.startsWith("/chaines/") || pathname === "/assessment/totem" || pathname.startsWith("/assessment/results/") || pathname === "/defi" || pathname.startsWith("/defi/") || pathname === "/decouvre" || pathname === "/assessment/compatibility" || pathname === "/assessment" || pathname.startsWith("/assessment/") || pathname === "/acheter-koris";
+  const isHome = pathname === "/" || pathname === "/espace" || pathname.startsWith("/espace/") || pathname === "/humeur" || pathname === "/journal" || pathname.startsWith("/journal/") || pathname === "/question" || pathname === "/drlo" || pathname === "/equipe" || pathname === "/confidentialite" || pathname === "/conditions" || pathname === "/ethique" || pathname === "/messages-dr-lo" || pathname.startsWith("/messages-dr-lo/") || pathname === "/chaines" || pathname.startsWith("/chaines/") || pathname === "/assessment/totem" || pathname.startsWith("/assessment/results/") || pathname === "/defi" || pathname.startsWith("/defi/") || pathname === "/decouvre" || pathname === "/assessment/compatibility" || pathname.startsWith("/compat/") || pathname === "/assessment" || pathname.startsWith("/assessment/") || pathname === "/acheter-koris";
   const { currentUser } = useAuth();
   const userId = currentUser?.id ?? null;
 
@@ -524,6 +525,7 @@ const AppChrome: React.FC = () => {
             <Route path="/assessment/quiz/:sessionId" element={<AssessmentQuizPage />} />
             <Route path="/assessment/results/:sessionId" element={<AssessmentResultsPage />} />
             <Route path="/assessment/compatibility" element={<CompatibilityPage />} />
+            <Route path="/compat/:code" element={<CompatibilityPage />} />
             <Route path="/assessment/test/:scaleId" element={<TestCodeRedirect />} />
             <Route path="/assessment/profile" element={<AssessmentProfilePage />} />
             <Route path="/assessment/totem" element={<TotemProfilePage />} />
@@ -536,6 +538,7 @@ const AppChrome: React.FC = () => {
       </main>
       {!isChromeless && !isHome && <Footer />}
       {!isChromeless && <FloatingChat userId={userId} />}
+      <CompatInviteResume />
       {!isChromeless && !isHome && !!currentUser && <FloatingKori />}
       {!isChromeless && <NoKorisModal />}
       {!isChromeless && <KorisWelcome />}

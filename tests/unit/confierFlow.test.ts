@@ -65,3 +65,16 @@ test('l\'accusé de réception reprend le thème, sans conseil', () => {
   assert.match(ackFor(1, 'mon patron me met la pression'), /travail/);
   assert.equal(ackFor(1, 'rien de spécial'), 'Je t\'entends.');
 });
+
+test('page du jour : les passages s\'ajoutent à une même page, et s\'en retirent', async () => {
+  const { joinParagraphs, removeParagraph, setDayPage } = await import('../../src/utils/confierFlow.ts');
+  let page = joinParagraphs('', '  Matin difficile.  ');
+  assert.equal(page, 'Matin difficile.');
+  page = joinParagraphs(page, 'Ça va mieux ce soir.');
+  assert.equal(page, 'Matin difficile.\n\nÇa va mieux ce soir.');
+  assert.equal(removeParagraph(page, 'Ça va mieux ce soir.'), 'Matin difficile.');
+  assert.equal(removeParagraph('Seul passage', 'Seul passage'), '');
+  assert.equal(removeParagraph(page, 'introuvable'), page);
+  const s = setDayPage(emptyConfier(), 'Famille', 'j9');
+  assert.deepEqual(s.pages, { Famille: 'j9' });
+});
