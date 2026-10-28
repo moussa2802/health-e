@@ -7,6 +7,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Lock, Mic } from 'lucide-react';
 import { DC, card } from './DrLoShell';
 import { RealDrLoPhoto } from './RealDrLoBadge';
+import LoadingCards from './LoadingCards';
 import ChannelComments from './ChannelComments';
 import type { MomentPalette } from '../../utils/drloMoment';
 import { REACTIONS, type Reaction } from '../../services/drloBroadcastService';
@@ -114,7 +115,7 @@ const ChannelFeed: React.FC<{ channelId: string; member: boolean; palette: Momen
     return () => window.clearTimeout(t);
   }, [posts, member, channelId]);
   if (error) return <p role="alert" style={{ marginTop: 14, color: '#F09A7A', fontSize: 13.5 }}>{error}</p>;
-  if (!posts) return <p style={{ marginTop: 14, color: DC.faint, fontSize: 14 }}>Un instant…</p>;
+  if (!posts) return <LoadingCards label="Chargement des publications…" withMedia />;
   if (posts.length === 0) return <p style={{ marginTop: 14, color: DC.muted, fontSize: 14.5, lineHeight: 1.55 }}>Dr Lô n'a pas encore publié ici. Tu seras prévenu dès la première publication.</p>;
   return (
     <section aria-label="Publications" style={{ display: 'flex', flexDirection: 'column', gap: 12, marginTop: 14 }}>

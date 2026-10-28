@@ -222,7 +222,7 @@ export function pickGuideMessage(i: GuideInput): GuideMessage {
     cta: 'En parler avec Dr Lô',
     action: {
       kind: 'chat',
-      greeting: `Content de te revoir ${toi} ! Ton portrait se précise. Qu'est-ce qui t'occupe l'esprit en ce moment ?`,
+      greeting: `Ton portrait se précise${i.prenom ? `, ${i.prenom}` : ''}. Qu'est-ce qui t'occupe l'esprit en ce moment ?`,
     },
   };
 }

@@ -5,7 +5,7 @@
  * Rien du profil n'est partagé par défaut ; intime et journal exclus sauf accord explicite.
  */
 import React, { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { Phone, Share2 } from 'lucide-react';
 import DrLoShell, { DC, card, usePalette } from '../../components/accueil/DrLoShell';
 import PaliersCard from '../../components/accueil/PaliersCard';
@@ -36,6 +36,9 @@ const label: React.CSSProperties = { display: 'flex', alignItems: 'flex-start', 
 
 const QuestionPage: React.FC = () => {
   const palette = usePalette();
+  // Retour : là d'où l'on vient (Les messages de Dr Lô, Mon espace…), Mon espace par défaut
+  const from = (useLocation().state as { from?: string } | null)?.from;
+  const backTo = from === '/messages-dr-lo' ? { to: '/messages-dr-lo', label: 'Retour aux messages de Dr Lô' } : { to: '/espace', label: 'Retour à mon espace' };
   const { isAuthenticated, currentUser } = useAuth();
   const genre = getOnboardingProfile()?.genre;
   const [status, setStatus] = useState<DrloStatus | null>(null);
@@ -93,7 +96,7 @@ const QuestionPage: React.FC = () => {
 
   if (!isAuthenticated) {
     return (
-      <DrLoShell back={{ to: '/espace', label: 'Retour à mon espace' }} genre={genre} palette={palette}>
+      <DrLoShell back={backTo} genre={genre} palette={palette}>
         <h1 style={{ ...h1, marginTop: 22 }}>Écrire au vrai Dr Lô</h1>
         <p style={{ fontSize: 15, lineHeight: 1.55, color: DC.soft }}>Pour lui écrire, il te faut un espace personnel : c'est là qu'arrivera sa réponse.</p>
         <Link to="/" state={{ signup: true }} className="drl-btn" style={{ display: 'inline-flex', minHeight: 48, padding: '0 20px', alignItems: 'center', borderRadius: 999, background: palette.primary, color: DC.ink, fontWeight: 700, textDecoration: 'none' }}>Créer mon espace</Link>
@@ -106,7 +109,7 @@ const QuestionPage: React.FC = () => {
   const pending = status?.questions.find(q => q.status === 'pending');
 
   return (
-    <DrLoShell back={{ to: '/espace', label: 'Retour à mon espace' }} genre={genre} palette={palette}>
+    <DrLoShell back={backTo} genre={genre} palette={palette}>
       <div style={{ marginTop: 18 }}>
         <p style={{ margin: 0, fontSize: 12, letterSpacing: '.14em', textTransform: 'uppercase', color: DC.gold, fontWeight: 700 }}>
           {status?.paliers.unlocked ? 'Débloqué · gratuit, ta récompense' : 'Ta récompense'}

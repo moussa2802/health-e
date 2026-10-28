@@ -7,6 +7,7 @@ import React, { useEffect, useState } from 'react';
 import { SendHorizontal } from 'lucide-react';
 import { DC } from './DrLoShell';
 import TotemAvatar from './TotemAvatar';
+import LoadingCards from './LoadingCards';
 import { FollowUp, ThreadView } from './MessageComments';
 import type { MomentPalette } from '../../utils/drloMoment';
 import type { IdentityMode, PublicComment } from '../../services/drloBroadcastService';
@@ -45,7 +46,7 @@ const ChannelComments: React.FC<{ postId: string; palette: MomentPalette; onCoun
     } catch (er: unknown) { setError(er instanceof Error ? er.message : 'Erreur'); }
     finally { setBusy(false); }
   };
-  if (items === null) return <p style={{ margin: '10px 0 0', fontSize: 13, color: DC.faint }}>Un instant…</p>;
+  if (items === null) return <LoadingCards label="Chargement des commentaires…" count={1} />;
   const chip = (on: boolean): React.CSSProperties => ({ minHeight: 36, padding: '0 12px', borderRadius: 999, cursor: 'pointer', fontSize: 13, fontWeight: 600, border: `1px solid ${on ? palette.accent : DC.line}`, background: on ? 'rgba(242,182,109,.15)' : DC.glass, color: on ? palette.accent : DC.muted });
   const MODES: { id: IdentityMode; label: string }[] = [{ id: 'prenom', label: 'Mon prénom' }, { id: 'anon', label: 'Anonyme' }, { id: 'pseudo', label: 'Un pseudo' }];
   const link: React.CSSProperties = { background: 'none', border: 0, color: DC.faint, fontSize: 12.5, cursor: 'pointer', minHeight: 32 };

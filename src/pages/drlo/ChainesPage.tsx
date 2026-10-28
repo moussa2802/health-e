@@ -9,6 +9,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { Bell, BellOff, Check, ChevronRight, Circle, Loader2, Users } from 'lucide-react';
 import DrLoShell, { DC, card, usePalette } from '../../components/accueil/DrLoShell';
 import { RealDrLoPhoto } from '../../components/accueil/RealDrLoBadge';
+import LoadingCards from '../../components/accueil/LoadingCards';
 import ChannelFeed from '../../components/accueil/ChannelFeed';
 import { useAuth } from '../../contexts/AuthContext';
 import { SCALE_META } from '../../utils/scaleMeta';
@@ -89,7 +90,7 @@ const List: React.FC<{ palette: ReturnType<typeof usePalette> }> = ({ palette })
       <h1 style={h1}>Les chaînes</h1>
       <p style={{ margin: '8px 0 0', fontSize: 14.5, color: DC.muted, lineHeight: 1.55 }}>Des espaces thématiques où Dr Lô publie des vocaux et des textes dans la durée. Tu entres une fois, tu restes aussi longtemps que tu veux.</p>
       {error && <p role="alert" style={{ marginTop: 16, color: '#F09A7A', fontSize: 14 }}>{error}</p>}
-      {!items && !error && <Loader2 className="animate-spin" aria-label="Chargement" style={{ marginTop: 20 }} />}
+      {!items && !error && <LoadingCards label="Chargement des chaînes…" />}
       {items && items.length === 0 && <p style={{ marginTop: 16, color: DC.muted, fontSize: 15 }}>Pas encore de chaîne. Dr Lô en ouvrira bientôt.</p>}
       {mine.length > 0 && <section aria-label="Mes chaînes" style={{ marginTop: 20 }}><h2 style={{ margin: 0, fontSize: 15, fontWeight: 700, color: DC.text }}>Mes chaînes</h2><div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginTop: 10 }}>{mine.map(row)}</div></section>}
       {others.length > 0 && <section aria-label="À découvrir" style={{ marginTop: 20 }}><h2 style={{ margin: 0, fontSize: 15, fontWeight: 700, color: DC.text }}>À découvrir</h2><div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginTop: 10 }}>{others.map(row)}</div></section>}
@@ -112,7 +113,7 @@ const Detail: React.FC<{ id: string; palette: ReturnType<typeof usePalette> }> =
   useEffect(() => { load(); }, [id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (error) return <p role="alert" style={{ marginTop: 20, color: DC.muted, fontSize: 15 }}>{error} <Link to="/chaines" style={{ color: palette.accent }}>Retour aux chaînes</Link></p>;
-  if (!c) return <Loader2 className="animate-spin" aria-label="Chargement" style={{ marginTop: 20 }} />;
+  if (!c) return <LoadingCards label="Ouverture de la chaîne…" count={1} withMedia />;
 
   const miss = (f: (m: Missing) => boolean) => c.missing.find(f);
   const row = (ok: boolean, text: string, m?: Missing) => {

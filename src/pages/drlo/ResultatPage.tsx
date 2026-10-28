@@ -22,6 +22,7 @@ import { isSexualFilterComplete } from '../../utils/sexualHealthFilter';
 import { getCrisisResources } from '../../data/crisisResources';
 import { trackAccueil } from '../../utils/accueilTracking';
 import { openDrLoChat } from '../../components/DrLoChat/drLoEvents';
+import { getScaleMeta } from '../../utils/scaleMeta';
 import { toDate } from '../../utils/drLoGuide';
 import type { ScaleResult } from '../../types/assessment';
 
@@ -74,7 +75,7 @@ const ResultatPage: React.FC = () => {
     if (intime) navigate(isSexualFilterComplete() ? `/assessment/test/${scale.id}` : `/assessment/sexual?from=espace&test=${scale.id}`);
     else navigate('/', { state: { prescribe: scale.id } });
   };
-  const talk = () => openDrLoChat({ draft: `Je voudrais parler de mon résultat « ${interp.label} » au test ${scale.name}.`, source: 'resultat' });
+  const talk = () => openDrLoChat({ greeting: `Ton résultat au test « ${getScaleMeta(scale.id).label} » : « ${interp.label} ». Qu'est-ce que tu aimerais en comprendre${ob?.prenom ? `, ${ob.prenom}` : ''} ?`, source: 'resultat' });
 
   return (
     <DrLoShell back={backTo} genre={ob?.genre} palette={palette}>

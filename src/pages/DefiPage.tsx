@@ -339,6 +339,27 @@ const DefiPage: React.FC = () => {
           </div>
         )}
 
+        {/* Créer : juste avant les défis terminés, pour ne pas avoir à tout faire défiler */}
+        <div className="mb-6">
+          <button
+            onClick={() => navigate('/defi/creer')}
+            disabled={!canCreate}
+            className={`w-full py-3.5 rounded-[14px] border-none text-[15px] font-bold cursor-pointer shadow-soft flex items-center justify-center gap-2 ${
+              canCreate
+                ? 'bg-gold text-white'
+                : 'bg-line text-muted cursor-not-allowed'
+            }`}
+          >
+            {hasActiveDefis || terminatedDefis.length > 0 ? <Plus size={16} /> : <Sparkles size={16} />}
+            {hasActiveDefis || terminatedDefis.length > 0 ? 'Créer un nouveau défi' : 'Créer mon défi'}
+          </button>
+          {!canCreate && (
+            <p className="text-[12px] text-muted text-center m-0 mt-2">
+              Maximum 3 défis actifs simultanément
+            </p>
+          )}
+        </div>
+
         {terminatedDefis.length > 0 && (
           <div className="mb-6">
             <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-muted m-0 mb-3">
@@ -396,23 +417,6 @@ const DefiPage: React.FC = () => {
           </div>
         )}
 
-        <button
-          onClick={() => navigate('/defi/creer')}
-          disabled={!canCreate}
-          className={`w-full py-3.5 rounded-[14px] border-none text-[15px] font-bold cursor-pointer shadow-soft flex items-center justify-center gap-2 ${
-            canCreate
-              ? 'bg-gold text-white'
-              : 'bg-line text-muted cursor-not-allowed'
-          }`}
-        >
-          {hasActiveDefis || terminatedDefis.length > 0 ? <Plus size={16} /> : <Sparkles size={16} />}
-          {hasActiveDefis || terminatedDefis.length > 0 ? 'Créer un nouveau défi' : 'Créer mon défi'}
-        </button>
-        {!canCreate && (
-          <p className="text-[12px] text-muted text-center m-0 mt-2">
-            Maximum 3 défis actifs simultanément
-          </p>
-        )}
       </div>
     </div>
   );

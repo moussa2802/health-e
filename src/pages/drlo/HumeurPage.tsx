@@ -4,7 +4,7 @@
  * Des tendances, jamais des notes ni des diagnostics. Données privées, effaçables.
  */
 import React, { useEffect, useMemo, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { ChevronLeft, ChevronRight, Phone, Trash2 } from 'lucide-react';
 import DrLoShell, { DC, card, usePalette } from '../../components/accueil/DrLoShell';
 import MoodIcon from '../../components/accueil/MoodIcon';
@@ -15,6 +15,7 @@ import { fetchMoods, recordMood, deleteMood, deleteAllMoods, getCycle, saveCycle
 import { monthCells, remark, series, trend, weekdayAverages, cycleRemark, countNoted, lastDays, WEEKDAYS, MOOD_SCORE } from '../../utils/moodInsights';
 import { addDays, newPeriodStart } from '../../utils/cycleCalc';
 import { getScaleMeta } from '../../utils/scaleMeta';
+import { openDrLoChat } from '../../components/DrLoChat/drLoEvents';
 import { trackAccueil } from '../../utils/accueilTracking';
 
 const MONTHS = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
@@ -145,7 +146,10 @@ const HumeurPage: React.FC = () => {
           {rem.tone === 'care' && (
             <a href="tel:1515" className="drl-btn" style={{ ...chip, textDecoration: 'none', color: '#DCE5F2', borderColor: 'rgba(180,195,220,.45)' }}><Phone size={14} aria-hidden="true" /> 1515</a>
           )}
-          <Link to="/" className="drl-btn" style={{ ...chip, textDecoration: 'none' }}>En parler avec Dr Lô</Link>
+          <button type="button" onClick={() => openDrLoChat({ greeting: rem.tone === 'care'
+            ? `J'ai vu que ces derniers jours ont été durs pour toi${prenom ? `, ${prenom}` : ''}. Tu veux me dire ce qui pèse le plus en ce moment ?`
+            : `On regarde ton humeur de ces derniers jours ensemble${prenom ? `, ${prenom}` : ''} ? Dis-moi ce qui t'a fait du bien, ou ce qui t'a pesé.`, source: 'humeur' })}
+            className="drl-btn" style={chip}>En parler avec Dr Lô</button>
           {rem.suggestTest && (
             <button onClick={() => goTest(rem.suggestTest!)} className="drl-btn" style={{ ...chip, background: 'rgba(242,182,109,.12)', borderColor: 'rgba(242,182,109,.4)' }}>
               Faire le test « {getScaleMeta(rem.suggestTest).label} » avec Dr Lô

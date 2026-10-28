@@ -22,7 +22,7 @@ import type { AssessmentScale, ScaleResult } from '../../types/assessment';
 type Domaine = 'mental' | 'social' | 'intime';
 
 const TITLES: Record<Domaine, { title: string; intro: string; color: string }> = {
-  mental: { title: 'Mental', intro: 'Ce que tes tests disent de toi, pièce par pièce. Touche un test pour le voir ou le faire avec Dr Lô.', color: DC.sage },
+  mental: { title: 'Mental', intro: 'Ce que tes tests disent de toi, pièce par pièce. Touche un test fait pour voir ton résultat, la flèche pour en savoir plus.', color: DC.sage },
   social: { title: 'Compatibilité', intro: 'Toi et l\'autre : partenaire, crush ou ami, découvrez ce qui vous rapproche et ce qui peut coincer.', color: DC.social },
   intime: { title: 'Intime', intro: 'Ta vie intime, en toute discrétion. Rien de cette partie n\'est jamais partagé sans ton accord.', color: DC.intime },
 };
@@ -101,8 +101,9 @@ const DomainePage: React.FC = () => {
     const Icon = m.icon;
     return (
       <li key={s.id} style={{ ...card, padding: 0, overflow: 'hidden', opacity: g && !r ? 0.6 : 1 }}>
-        <button onClick={() => setOpen(isOpen ? null : s.id)} aria-expanded={isOpen} className="drl-btn"
-          style={{ width: '100%', minHeight: 60, padding: '12px 14px', border: 0, background: 'transparent', color: DC.text, display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer', textAlign: 'left' }}>
+        <div style={{ display: 'flex', alignItems: 'center' }}>
+        <button onClick={() => (r ? navigate(`/espace/resultat/${s.id}`) : setOpen(isOpen ? null : s.id))} aria-label={r ? `${m.label} : voir mon résultat` : undefined} className="drl-btn"
+          style={{ flex: 1, minWidth: 0, minHeight: 60, padding: '12px 4px 12px 14px', border: 0, background: 'transparent', color: DC.text, display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer', textAlign: 'left' }}>
           <span style={{ width: 38, height: 38, borderRadius: 12, background: `${meta.color}22`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
             <Icon size={18} color={meta.color} aria-hidden="true" />
           </span>
@@ -115,8 +116,12 @@ const DomainePage: React.FC = () => {
               {r ? `${r.interpretation?.label ?? 'Fait'}${at ? ` · ${since(at)}` : ''}` : g ? 'Ne te concerne pas pour l\'instant' : 'À découvrir'}
             </span>
           </span>
+        </button>
+        <button onClick={() => setOpen(isOpen ? null : s.id)} aria-expanded={isOpen} aria-label={isOpen ? 'Replier' : 'Déplier'} className="drl-btn"
+          style={{ width: 48, minHeight: 60, flexShrink: 0, border: 0, background: 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <ChevronDown size={18} color={DC.muted} aria-hidden="true" style={{ transform: isOpen ? 'rotate(180deg)' : 'none', transition: 'transform .2s' }} />
         </button>
+        </div>
         {isOpen && (
           <div className="drl-in" style={{ padding: '0 14px 14px', display: 'flex', flexDirection: 'column', gap: 10 }}>
             <p style={{ margin: 0, fontSize: 13.5, lineHeight: 1.5, color: DC.soft }}>{m.description}</p>

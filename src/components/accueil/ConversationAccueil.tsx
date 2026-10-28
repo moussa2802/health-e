@@ -24,7 +24,7 @@ import { AURA_FULL, CREDIT, LOW_CREDIT, credits } from '../../config/creditName'
 import { useAuth } from '../../contexts/AuthContext';
 import { useKoris } from '../../contexts/KorisContext';
 import {
-  addExchange,
+  addExchange, addOpener,
   enterCrisis,
   afterTest,
   pickNextScale,
@@ -1647,8 +1647,7 @@ const ConversationAccueil: React.FC = () => {
     if (!isAuthenticated || !currentUser) { openSignup('signup'); return; }
     trackAccueil('free_chat');
     const cur = stateRef.current ?? cur0;
-    const items: string[] = opening ? [opening] : [talkIntro()];
-    const next = { ...addExchange(cur, null, items), flow: undefined };
+    const next = { ...addOpener(cur, opening ?? talkIntro()), flow: undefined };
     const withTalk = { ...next, talk: cur.talk ?? { conv: `conv_${Date.now()}`, start: 0, opening } };
     apply(withTalk, cur);
     if (draft) setInput(draft);

@@ -140,7 +140,7 @@ const EspacePage: React.FC = () => {
   const domains = [
     { key: 'mental', label: 'Mental', icon: Brain, color: DC.sage, word: doneMental ? `${doneMental} / ${MENTAL_HEALTH_SCALES.length} tests` : 'À découvrir', to: '/espace/mental' },
     { key: 'humeur', label: 'Humeur', icon: CloudSun, color: DC.gold, word: humeurWord, to: '/humeur' },
-    { key: 'social', label: 'Compatibilité', icon: Users, color: DC.social, word: 'Toi et l\'autre', to: '/espace/social' },
+    { key: 'social', label: 'Compatibilité', icon: Users, color: DC.social, word: 'Toi et l\'autre', to: '/assessment/compatibility' },
   ];
 
   return (

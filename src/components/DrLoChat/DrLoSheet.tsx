@@ -10,7 +10,7 @@ import { ArrowRight, Loader2, Maximize2, Phone, Send, X } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useKoris } from '../../contexts/KorisContext';
 import { KORIS_COSTS } from '../../services/korisService';
-import { addExchange, enterCrisis, GO, type AccueilState, type Card } from '../../utils/accueilFlow';
+import { addExchange, addOpener, enterCrisis, GO, type AccueilState, type Card } from '../../utils/accueilFlow';
 import { convStorageKey, loadIndex } from '../../utils/conversations';
 import { trimForCloud } from '../../utils/threadSync';
 import { pullThread, pushThread } from '../../services/threadSyncService';
@@ -79,7 +79,7 @@ const DrLoSheet: React.FC<Props> = ({ open, greeting, draft, onClose }) => {
     setMissing(false);
     const boot = (s: AccueilState) => {
       let next = s;
-      if (greeting) next = { ...addExchange(next, null, [greeting]), talk: next.talk ?? { conv: `conv_${Date.now()}`, start: next.messages.length, opening: greeting } };
+      if (greeting) next = { ...addOpener(next, greeting), talk: { ...(next.talk ?? { conv: `conv_${Date.now()}`, start: next.messages.length }), opening: greeting } };
       setState(next);
       if (greeting) save(storage, idx.current, next);
     };

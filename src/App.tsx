@@ -182,7 +182,7 @@ const AppChrome: React.FC = () => {
   const isChromeless = isAdminRoute || isAppRoute || isDefiJouer;
   // Accueil : le premier écran est Dr Lô en plein écran (pas d'en-tête ni de pied de page du site)
   // Écrans « Mon Dr Lô » (thème chaud sombre, plein écran) : pas d'en-tête ni de pied de page du site
-  const isHome = pathname === "/" || pathname === "/espace" || pathname.startsWith("/espace/") || pathname === "/humeur" || pathname === "/journal" || pathname === "/question" || pathname === "/drlo" || pathname === "/equipe" || pathname === "/confidentialite" || pathname === "/conditions" || pathname === "/ethique" || pathname === "/messages-dr-lo" || pathname.startsWith("/messages-dr-lo/") || pathname === "/chaines" || pathname.startsWith("/chaines/") || pathname === "/assessment/totem" || pathname.startsWith("/assessment/results/") || pathname === "/defi" || pathname.startsWith("/defi/") || pathname === "/decouvre" || pathname === "/assessment/compatibility" || pathname === "/assessment" || pathname.startsWith("/assessment/") || pathname === "/acheter-koris";
+  const isHome = pathname === "/" || pathname === "/espace" || pathname.startsWith("/espace/") || pathname === "/humeur" || pathname === "/journal" || pathname.startsWith("/journal/") || pathname === "/question" || pathname === "/drlo" || pathname === "/equipe" || pathname === "/confidentialite" || pathname === "/conditions" || pathname === "/ethique" || pathname === "/messages-dr-lo" || pathname.startsWith("/messages-dr-lo/") || pathname === "/chaines" || pathname.startsWith("/chaines/") || pathname === "/assessment/totem" || pathname.startsWith("/assessment/results/") || pathname === "/defi" || pathname.startsWith("/defi/") || pathname === "/decouvre" || pathname === "/assessment/compatibility" || pathname === "/assessment" || pathname.startsWith("/assessment/") || pathname === "/acheter-koris";
   const { currentUser } = useAuth();
   const userId = currentUser?.id ?? null;
 
@@ -500,8 +500,9 @@ const AppChrome: React.FC = () => {
             {/* Journal Routes */}
             {/* Le journal vit désormais dans « Me confier » (une seule entité pour écrire et relire) */}
             <Route path="/journal" element={<MonJournalPage />} />
-            <Route path="/journal/new" element={<Navigate to="/journal" replace state={{ write: true }} />} />
-            <Route path="/journal/:id" element={<Navigate to="/journal" replace />} />
+            <Route path="/journal/new" element={<Navigate to="/journal/ecrire" replace />} />
+            <Route path="/journal/:id" element={<MonJournalPage />} />
+            <Route path="/journal/:id/:edit" element={<MonJournalPage />} />
 
             {/* Mon Espace */}
             <Route path="/mon-espace" element={<Navigate to="/espace" replace />} />

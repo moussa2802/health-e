@@ -32,7 +32,7 @@ const WriteDrLoCard: React.FC<{ palette: MomentPalette }> = ({ palette }) => {
         </div>
       </div>
       {ready ? (
-        <Link to="/question" className="drl-btn" style={{ marginTop: 12, minHeight: 46, borderRadius: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, textDecoration: 'none', fontSize: 14.5, fontWeight: 700, background: palette.primary, color: DC.ink }}>
+        <Link to="/question" state={{ from: '/messages-dr-lo' }} className="drl-btn" style={{ marginTop: 12, minHeight: 46, borderRadius: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, textDecoration: 'none', fontSize: 14.5, fontWeight: 700, background: palette.primary, color: DC.ink }}>
           {unseen ? 'Lire sa réponse' : 'Lui écrire'}
         </Link>
       ) : (

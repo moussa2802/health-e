@@ -118,6 +118,8 @@ export interface AccueilState {
   talk?: { conv: string; start: number; opening?: string | null };
   /** Dernier enregistrement (ISO) : la copie la plus récente l'emporte entre téléphones. */
   savedAt?: string;
+  /** Id du dernier message d'ouverture de Dr Lô (« En parler avec Dr Lô ») : remplacé, jamais empilé, tant que personne n'a répondu. */
+  openerId?: string;
 }
 
 /** Ce que l'interface sait déjà de la personne (compte, onboarding existant). */
@@ -300,6 +302,20 @@ export function addExchange(s: AccueilState, userText: string | null, drlo: (str
   let out = userText ? push(s, 'user', userText) : s;
   for (const t of drlo) out = typeof t === 'string' ? push(out, 'drlo', t) : push(out, 'drlo', t.text, t.card);
   return out;
+}
+
+/**
+ * Message d'ouverture (« En parler avec Dr Lô » depuis une autre page) : s'il y a déjà une ouverture
+ * restée sans réponse en bas du fil, on la REMPLACE (pas de « Content de te revoir » répété 4 fois) ;
+ * une ouverture identique au dernier message de Dr Lô n'est pas ajoutée.
+ */
+export function addOpener(s: AccueilState, text: string): AccueilState {
+  const last = s.messages[s.messages.length - 1];
+  if (last && last.from === 'drlo' && (last.id === s.openerId || last.text === text) && !last.card) {
+    return { ...s, openerId: last.id, messages: [...s.messages.slice(0, -1), { ...last, text }] };
+  }
+  const out = push(s, 'drlo', text);
+  return { ...out, openerId: out.messages[out.messages.length - 1].id };
 }
 
 /** Tests longs (> 10 questions) : jamais proposés avant d'avoir fait quelques tests courts. */

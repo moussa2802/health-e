@@ -4,7 +4,8 @@
  * quand le journal grandit. On peut relire l'avis de Dr Lô et supprimer une entrée.
  */
 import React, { useEffect, useMemo, useState } from 'react';
-import { Search, Trash2 } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Pencil, Search, Trash2 } from 'lucide-react';
 import { listJournal, removeConfidence, type JournalItem } from '../../services/confierService';
 import { CONFIER } from './confierTheme';
 
@@ -109,10 +110,13 @@ const JournalView: React.FC<{ userId: string | null; refreshKey: number; onWrite
                 <article key={it.id} style={{ borderRadius: 16, border: `1px solid ${CONFIER.line}`, background: CONFIER.tint, padding: '10px 13px', textAlign: 'left' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
                     <span style={{ fontSize: 11.5, color: CONFIER.faint }}>{time}{it.humeur ? ` · ${it.humeur}` : ''}{!carnet && carnetCounts.length > 1 ? ` · ${it.carnet}` : ''}</span>
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                    {userId && <Link to={`/journal/${it.id}/modifier`} aria-label="Modifier cette page" style={{ color: CONFIER.faint, display: 'inline-flex', alignItems: 'center', minHeight: 28, padding: '0 4px' }}><Pencil size={13} aria-hidden="true" /></Link>}
                     <button onClick={() => void onDelete(it.id)} aria-label={confirm === it.id ? 'Confirmer la suppression' : 'Supprimer cette entrée'}
                       style={{ border: 0, background: 'transparent', color: confirm === it.id ? '#E8A0A0' : CONFIER.faint, fontSize: 12, fontWeight: 700, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 4, minHeight: 28 }}>
                       <Trash2 size={13} aria-hidden="true" /> {confirm === it.id ? 'Supprimer ?' : ''}
                     </button>
+                    </span>
                   </div>
                   <p onClick={() => long && setOpen(isOpen ? null : it.id)}
                     style={{ margin: '4px 0 0', fontSize: 14.5, lineHeight: 1.55, color: CONFIER.text, whiteSpace: 'pre-wrap', cursor: long ? 'pointer' : 'default' }}>

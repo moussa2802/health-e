@@ -10,6 +10,7 @@ import { Bell, BellOff } from 'lucide-react';
 import DrLoShell, { DC, card, usePalette } from '../../components/accueil/DrLoShell';
 import MessageComments, { FollowUp, ThreadView } from '../../components/accueil/MessageComments';
 import RealDrLoBadge, { RealDrLoPhoto } from '../../components/accueil/RealDrLoBadge';
+import LoadingCards from '../../components/accueil/LoadingCards';
 import WriteDrLoCard from '../../components/accueil/WriteDrLoCard';
 import ChannelsLinkCard from '../../components/accueil/ChannelsLinkCard';
 import { useAuth } from '../../contexts/AuthContext';
@@ -91,7 +92,7 @@ const MessagesDrLoPage: React.FC = () => {
         <p style={{ margin: '18px 0 0', fontSize: 12, letterSpacing: '.14em', textTransform: 'uppercase', color: palette.accent, fontWeight: 700 }}>Dr Lô</p>
         <h1 style={h1}>Ta discussion avec Dr Lô</h1>
         {error && <p role="alert" style={{ marginTop: 16, color: DC.muted, fontSize: 15 }}>{error}</p>}
-        {!disc && !error && <p style={{ marginTop: 16, color: DC.faint }}>Un instant…</p>}
+        {!disc && !error && <LoadingCards label="Ouverture de la discussion…" count={1} />}
         {disc && !q && <p style={{ marginTop: 16, color: DC.muted, fontSize: 15 }}>Cette discussion n'est plus disponible. <Link to="/messages-dr-lo" style={{ color: palette.accent }}>Retour</Link></p>}
         {q && (
           <>
@@ -117,7 +118,7 @@ const MessagesDrLoPage: React.FC = () => {
         <p style={{ margin: '18px 0 0', fontSize: 12, letterSpacing: '.14em', textTransform: 'uppercase', color: palette.accent, fontWeight: 700 }}>Dr Lô</p>
         <h1 style={h1}>Un message pour toi</h1>
         {error && <p role="alert" style={{ marginTop: 16, color: DC.muted, fontSize: 15 }}>{error} <Link to="/" style={{ color: palette.accent }}>Retour</Link></p>}
-        {!msg && !error && <p style={{ marginTop: 16, color: DC.faint }}>Un instant…</p>}
+        {!msg && !error && <LoadingCards label="Ouverture du message…" count={1} withMedia />}
         {msg && (
           <>
             <article style={{ ...card, marginTop: 16 }}>
@@ -158,7 +159,7 @@ const MessagesDrLoPage: React.FC = () => {
       <ChannelsLinkCard palette={palette} />
       <WriteDrLoCard palette={palette} />
       {error && <p role="alert" style={{ marginTop: 16, color: DC.muted, fontSize: 15 }}>{error}</p>}
-      {!items && !error && <p style={{ marginTop: 16, color: DC.faint }}>Un instant…</p>}
+      {!items && !error && <LoadingCards label="Chargement des messages…" />}
       {items && items.length === 0 && !(disc && disc.length > 0) && <p style={{ marginTop: 16, color: DC.muted, fontSize: 15, lineHeight: 1.55 }}>Pas encore de message. Quand Dr Lô t'en laissera un, tu le retrouveras ici.</p>}
       {((items && items.length > 0) || (disc && disc.length > 0)) && (
         <section aria-label="Du nouveau" style={{ ...card, marginTop: 16, borderColor: (news.unread + news.replies + news.comments + discNews) > 0 ? palette.accent : DC.line }}>

@@ -12,7 +12,7 @@ import { getOnboardingProfile } from '../utils/onboardingProfile';
 
 const GUEST_KEY = 'he_confier_guest_journal';
 
-interface GuestEntry { id: string; contenu: string; date: string; carnet?: string }
+interface GuestEntry { id: string; contenu: string; date: string; carnet?: string; humeur?: string }
 
 // ── Carnets : séparer ses confidences (famille, amis, couple…) ──────────────
 
@@ -59,18 +59,18 @@ function writeGuest(list: GuestEntry[]) {
   try { localStorage.setItem(GUEST_KEY, JSON.stringify(list)); } catch { /* stockage indisponible */ }
 }
 
-export async function saveConfidence(userId: string | null, text: string, carnet: string = DEFAULT_CARNET): Promise<string> {
+export async function saveConfidence(userId: string | null, text: string, carnet: string = DEFAULT_CARNET, humeur = ''): Promise<string> {
   const now = new Date().toISOString();
   if (!userId) {
     const id = `g${Date.now()}`;
-    writeGuest([...readGuest(), { id, contenu: text, date: now, carnet }]);
+    writeGuest([...readGuest(), { id, contenu: text, date: now, carnet, humeur }]);
     return id;
   }
   const fs = db;
   if (!fs) throw new Error('Firestore indisponible');
   const ref = await addDoc(collection(fs, 'users', userId, 'journal'), {
     date: now,
-    humeur: '',
+    humeur,
     contenu: text,
     themes: [],
     dr_lo_response: null,
@@ -90,6 +90,14 @@ export async function removeConfidence(userId: string | null, journalId: string)
   const fs = db;
   if (!fs) throw new Error('Firestore indisponible');
   await deleteDoc(doc(fs, 'users', userId, 'journal', journalId));
+}
+
+/** Modifier une page déjà écrite (texte, carnet, humeur). La date d'origine est gardée. */
+export async function updateConfidence(userId: string | null, journalId: string, patch: { contenu?: string; carnet?: string; humeur?: string }): Promise<void> {
+  if (!userId) { writeGuest(readGuest().map(e => (e.id === journalId ? { ...e, ...patch } : e))); return; }
+  const fs = db;
+  if (!fs) throw new Error('Firestore indisponible');
+  await updateDoc(doc(fs, 'users', userId, 'journal', journalId), { ...patch, updated_at: new Date().toISOString() });
 }
 
 export type AdviceOutcome = { ok: true; text: string } | { ok: false; reason: 'no_koris' | 'unavailable' };
@@ -150,7 +158,7 @@ export interface JournalItem {
 export async function listJournal(userId: string | null, max = 120): Promise<JournalItem[]> {
   if (!userId) {
     return readGuest()
-      .map(e => ({ id: e.id, date: e.date, contenu: e.contenu, humeur: '', drLo: null, carnet: e.carnet || DEFAULT_CARNET }))
+      .map(e => ({ id: e.id, date: e.date, contenu: e.contenu, humeur: e.humeur || '', drLo: null, carnet: e.carnet || DEFAULT_CARNET }))
       .sort((a, b) => (a.date < b.date ? 1 : -1));
   }
   const fs = db;

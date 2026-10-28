@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Heart, Home, Users, Briefcase, Key, Brain, Flame, Copy, Check, Lock,
-  ChevronRight, ChevronDown, Sparkles, Loader2, AlertCircle, AlertTriangle,
+  ChevronRight, ChevronDown, ChevronLeft, Sparkles, Loader2, AlertCircle, AlertTriangle,
   ThumbsUp, Stethoscope, Zap, RefreshCw, Trash2, TrendingUp, TrendingDown,
   Clock as ClockIcon, CheckCircle2, XCircle, BarChart3, Share2,
 } from 'lucide-react';
@@ -485,7 +485,11 @@ const CompatibilityPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-paper drl-screen drl-page">
-      <div className="max-w-[680px] mx-auto px-5 pt-[52px] pb-20 relative z-[1]">
+      <div className="max-w-[680px] mx-auto px-5 pt-5 pb-20 relative z-[1]">
+        <Link to="/espace" aria-label="Retour à mon espace" className="drl-btn no-underline"
+          style={{ width: 44, height: 44, borderRadius: 13, border: '1px solid rgba(255,255,255,.14)', background: 'rgba(255,255,255,.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#CFC6B8', marginBottom: 24 }}>
+          <ChevronLeft size={20} />
+        </Link>
 
         {/* ── Hero ── */}
         <div className="text-center mb-12">

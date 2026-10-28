@@ -24,6 +24,8 @@ const AcheterKorisPage: React.FC = () => {
   const [searchParams] = useSearchParams();
   const { balance, refreshBalance } = useKoris();
   const [loading, setLoading] = useState<string | null>(null);
+  // On choisit d'abord une formule (elle s'allume), puis on paie avec le bouton : jamais de départ vers PayTech au premier tap.
+  const [selected, setSelected] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const isSuccess = searchParams.get('success') === 'true';
@@ -115,14 +117,19 @@ const AcheterKorisPage: React.FC = () => {
           {PACKS.map(pack => (
             <button
               key={pack.id}
-              onClick={() => handlePurchase(pack.id)}
+              onClick={() => { setSelected(pack.id); setError(null); }}
               disabled={loading !== null}
+              aria-pressed={selected === pack.id}
               className={`w-full rounded-block border p-5 text-left flex items-center justify-between transition-all ${
-                pack.popular
-                  ? 'bg-gold/5 border-gold/30 ring-2 ring-gold/20'
+                selected === pack.id
+                  ? 'bg-gold/10 border-gold ring-2 ring-gold/60'
                   : 'bg-card border-line'
               } ${loading !== null ? 'opacity-60 cursor-default' : 'cursor-pointer hover-lift'}`}
             >
+              <div className="flex items-center gap-3">
+                <span aria-hidden="true" className={`w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${selected === pack.id ? 'bg-gold border-gold' : 'border-line'}`}>
+                  {selected === pack.id && <Check size={14} strokeWidth={3} className="text-ink" />}
+                </span>
               <div>
                 {pack.popular ? (
                   <span className="text-[10px] font-bold text-gold bg-gold/10 px-2 py-0.5 rounded-pill mb-1.5 inline-block">
@@ -138,16 +145,30 @@ const AcheterKorisPage: React.FC = () => {
                   {(pack.price / pack.koris).toFixed(0)} F / {CREDIT.one}
                 </div>
               </div>
+              </div>
               <div className="text-right">
-                {loading === pack.id ? (
-                  <Loader2 size={20} className="animate-spin text-gold" />
-                ) : (
-                  <div className="text-xl font-extrabold text-gold">{formatNumber(pack.price)} F</div>
-                )}
+                <div className="text-xl font-extrabold text-gold">{formatNumber(pack.price)} F</div>
               </div>
             </button>
           ))}
         </div>
+
+        {(() => {
+          const pack = PACKS.find(p => p.id === selected);
+          if (!pack) return <p className="m-0 mt-4 text-center text-[13px] text-muted">Touche une formule pour la choisir.</p>;
+          return (
+            <div className="sticky bottom-3 mt-5">
+              <button
+                onClick={() => handlePurchase(pack.id)}
+                disabled={loading !== null}
+                className="w-full min-h-[54px] rounded-[16px] border-0 bg-gold text-ink text-[16px] font-extrabold flex items-center justify-center gap-2 cursor-pointer shadow-soft disabled:opacity-60"
+              >
+                {loading ? <><Loader2 size={18} className="animate-spin" /> Ouverture du paiement…</> : <>Payer {formatNumber(pack.price)} F · {credits(pack.koris)}</>}
+              </button>
+              <p className="m-0 mt-2 text-center text-[11.5px] text-muted">Tu seras redirigé vers PayTech (Orange Money, Wave ou carte).</p>
+            </div>
+          );
+        })()}
 
         <div className="mt-6 bg-paper rounded-xl border border-line px-4 py-3">
           <div className="text-xs font-semibold text-ink-soft mb-2">Comment ça marche ?</div>
