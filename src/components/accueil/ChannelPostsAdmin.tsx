@@ -3,8 +3,9 @@
  * suivre les publications (vus, écoutes, réactions), voir les membres (prénoms seulement, jamais leurs résultats).
  */
 import React, { useEffect, useRef, useState } from 'react';
-import { ArrowLeft, Eye, Loader2, Mic, Pencil, Send, Square, Trash2 } from 'lucide-react';
-import { blobToBase64, MAX_VOICE_SEC, useVoiceRecorder } from '../../hooks/useVoiceRecorder';
+import { ArrowLeft, Eye, Loader2, Mic, Pencil, Send, Trash2 } from 'lucide-react';
+import { blobToBase64, useVoiceRecorder } from '../../hooks/useVoiceRecorder';
+import VoiceInput from './VoiceInput';
 import { DC, card } from './DrLoShell';
 import ChannelCommentsAdmin from './ChannelCommentsAdmin';
 import type { MomentPalette } from '../../utils/drloMoment';
@@ -14,6 +15,7 @@ import {
 } from '../../services/drloChannelService';
 
 const MAX = 4000;
+const TITLE_MAX = 80;
 const mmss = (n: number) => `${Math.floor(n / 60)}:${String(n % 60).padStart(2, '0')}`;
 const when = (t: number) => (t ? new Date(t).toLocaleString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : '');
 const field: React.CSSProperties = { width: '100%', boxSizing: 'border-box', borderRadius: 14, border: `1px solid ${DC.line}`, background: 'rgba(255,255,255,.06)', padding: '12px 14px', fontFamily: 'inherit', fontSize: 16, color: DC.text, outline: 'none' };
@@ -59,6 +61,7 @@ export const MemberList: React.FC<{ channelId: string; postId?: string; kind: Au
 };
 
 const Composer: React.FC<{ channel: AdminChannel; palette: MomentPalette; onPublished: () => void }> = ({ channel, palette, onPublished }) => {
+  const [title, setTitle] = useState('');
   const [text, setText] = useState('');
   const [preview, setPreview] = useState(false);
   const [commentsOpen, setCommentsOpen] = useState(true);
@@ -72,8 +75,8 @@ const Composer: React.FC<{ channel: AdminChannel; palette: MomentPalette; onPubl
     setBusy(true); setErr(''); setMsg('');
     try {
       const audio = voice.clip ? { data: await blobToBase64(voice.clip.blob), mime: voice.clip.mime, durationSec: voice.clip.durationSec } : undefined;
-      await createPost({ channelId: channel.id, text: text.trim(), audio, preview, commentsOpen, notify });
-      setMsg(`Publié dans « ${channel.name} ».`); setText(''); setPreview(false); voice.reset(); onPublished();
+      await createPost({ channelId: channel.id, title: title.trim() || undefined, text: text.trim(), audio, preview, commentsOpen, notify });
+      setMsg(`Publié dans « ${channel.name} ».`); setTitle(''); setText(''); setPreview(false); voice.reset(); onPublished();
     } catch (e) { setErr(e instanceof Error ? e.message : 'Erreur'); }
     finally { setBusy(false); }
   };
@@ -87,27 +90,11 @@ const Composer: React.FC<{ channel: AdminChannel; palette: MomentPalette; onPubl
     <section style={card}>
       <p style={{ margin: 0, fontSize: 15, fontWeight: 700, color: DC.text }}>Nouvelle publication</p>
       {channel.status !== 'active' && <p style={{ margin: '8px 0 0', fontSize: 13.5, color: '#F09A7A' }}>Cette chaîne est archivée : réactive-la pour publier.</p>}
+      <input aria-label="Titre de la publication" maxLength={TITLE_MAX} value={title} onChange={e => setTitle(e.target.value)} placeholder="Titre (facultatif)" className="drl-input" style={{ ...field, marginTop: 10, fontWeight: 700 }} />
       <textarea aria-label="Ta publication" rows={6} maxLength={MAX} value={text} onChange={e => setText(e.target.value)} placeholder="Écris comme tu parles…" className="drl-input" style={{ ...field, marginTop: 10, lineHeight: 1.5, resize: 'vertical', minHeight: 130 }} />
       <p style={{ margin: '4px 0 0', fontSize: 12, color: DC.faint, textAlign: 'right' }}>{text.length} / {MAX}</p>
       <div style={{ marginTop: 10 }}>
-        {voice.state === 'idle' || voice.state === 'denied' ? (
-          <button type="button" onClick={voice.start} className="drl-btn" style={{ minHeight: 44, padding: '0 14px', borderRadius: 999, border: `1px solid ${DC.line}`, background: DC.glass, color: DC.soft, fontWeight: 600, fontSize: 14, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-            <Mic size={16} aria-hidden="true" /> Ajouter un vocal (3 min max)
-          </button>
-        ) : voice.state === 'recording' ? (
-          <button type="button" onClick={voice.stop} className="drl-btn" aria-label="Arrêter l'enregistrement" style={{ minHeight: 44, padding: '0 14px', borderRadius: 999, border: '1px solid rgba(240,154,122,.6)', background: 'rgba(240,154,122,.12)', color: DC.text, fontWeight: 700, fontSize: 14, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 8 }}>
-            <Square size={14} fill="currentColor" aria-hidden="true" /> Enregistrement… {mmss(voice.elapsed)} / {mmss(MAX_VOICE_SEC)}
-          </button>
-        ) : voice.state === 'processing' ? (
-          <p role="status" style={{ margin: 0, fontSize: 14, color: DC.muted }}>Préparation du vocal pour tous les téléphones…</p>
-        ) : voice.state === 'ready' && voice.clip ? (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <audio controls src={voice.clip.url} style={{ flex: 1, minWidth: 0, height: 40 }} />
-            <button type="button" onClick={voice.reset} aria-label="Supprimer le vocal" className="drl-btn" style={{ width: 44, height: 44, borderRadius: 12, border: `1px solid ${DC.line}`, background: DC.glass, color: DC.muted, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Trash2 size={16} aria-hidden="true" /></button>
-          </div>
-        ) : <p style={{ margin: 0, fontSize: 13, color: DC.faint }}>Ce navigateur ne permet pas d'enregistrer un vocal.</p>}
-        {voice.state === 'denied' && <p role="alert" style={{ margin: '6px 0 0', fontSize: 13, color: '#F09A7A' }}>Le micro est bloqué. Autorise-le dans ton navigateur puis réessaie.</p>}
-        {voice.clip && <p style={{ margin: '6px 0 0', fontSize: 12, color: DC.faint }}>Vocal de {mmss(voice.clip.durationSec)}. Le texte devient facultatif.</p>}
+        <VoiceInput voice={voice} recordLabel="Enregistrer un vocal" readyHint="Le texte devient facultatif." />
       </div>
       {sw(preview, setPreview, 'Aperçu gratuit', 'Visible et écoutable par tout le monde, même sans être membre. Pour donner envie.')}
       {sw(commentsOpen, setCommentsOpen, 'Commentaires ouverts', 'Les membres peuvent commenter et tu peux leur répondre.')}
@@ -126,6 +113,7 @@ const PostRow: React.FC<{ p: AdminPost; channelId: string; palette: MomentPalett
   const [showComments, setShowComments] = useState(false);
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(p.text);
+  const [draftTitle, setDraftTitle] = useState(p.title);
   const [confirmDel, setConfirmDel] = useState(false);
   const [busy, setBusy] = useState(false);
   const run = async (f: () => Promise<unknown>) => { setBusy(true); onError(''); try { await f(); await onChanged(); } catch (e) { onError(e instanceof Error ? e.message : 'Erreur'); } finally { setBusy(false); } };
@@ -145,13 +133,19 @@ const PostRow: React.FC<{ p: AdminPost; channelId: string; palette: MomentPalett
       </div>
       {editing ? (
         <div style={{ marginTop: 8 }}>
+          <input aria-label="Modifier le titre" maxLength={TITLE_MAX} value={draftTitle} onChange={e => setDraftTitle(e.target.value)} placeholder="Titre (facultatif)" className="drl-input" style={{ ...field, marginBottom: 8, fontWeight: 700 }} />
           <textarea aria-label="Modifier le texte" rows={5} maxLength={MAX} value={draft} onChange={e => setDraft(e.target.value)} className="drl-input" style={{ ...field, resize: 'vertical' }} />
           <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
-            <button type="button" disabled={busy || (!p.hasAudio && draft.trim().length < 2)} onClick={() => run(async () => { await updatePost(p.id, { text: draft.trim() }); setEditing(false); })} style={{ ...small, color: DC.text, borderColor: palette.accent }}>Enregistrer</button>
-            <button type="button" onClick={() => { setEditing(false); setDraft(p.text); }} style={small}>Annuler</button>
+            <button type="button" disabled={busy || (!p.hasAudio && draft.trim().length < 2)} onClick={() => run(async () => { await updatePost(p.id, { title: draftTitle.trim(), text: draft.trim() }); setEditing(false); })} style={{ ...small, color: DC.text, borderColor: palette.accent }}>Enregistrer</button>
+            <button type="button" onClick={() => { setEditing(false); setDraft(p.text); setDraftTitle(p.title); }} style={small}>Annuler</button>
           </div>
         </div>
-      ) : p.text && <p style={{ margin: '8px 0 0', fontSize: 14.5, color: DC.text, lineHeight: 1.55, whiteSpace: 'pre-wrap' }}>{p.text}</p>}
+      ) : (
+        <>
+          {p.title && <p style={{ margin: '8px 0 0', fontSize: 16, fontWeight: 700, color: DC.text, lineHeight: 1.35 }}>{p.title}</p>}
+          {p.text && <p style={{ margin: '8px 0 0', fontSize: 14.5, color: DC.text, lineHeight: 1.55, whiteSpace: 'pre-wrap' }}>{p.text}</p>}
+        </>
+      )}
       {p.audioUrl && <audio controls preload="metadata" src={p.audioUrl} aria-label="Vocal publié" style={{ width: '100%', height: 40, marginTop: 8 }} />}
       <p style={{ margin: '10px 0 0', fontSize: 12.5, color: DC.faint }}>❤️ {r.heart} · 🙏 {r.pray} · 💪 {r.strong}{p.stats.comments > 0 ? ` · 💬 ${p.stats.comments}` : ''}</p>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 8 }}>
@@ -164,7 +158,7 @@ const PostRow: React.FC<{ p: AdminPost; channelId: string; palette: MomentPalett
         <button type="button" onClick={() => setShowComments(v => !v)} aria-expanded={showComments} style={small}>💬 {showComments ? 'Fermer les commentaires' : `Commentaires (${p.stats.comments})`}</button>
         <button type="button" disabled={busy} onClick={() => run(() => updatePost(p.id, { commentsOpen: !p.commentsOpen }))} style={small}>{p.commentsOpen ? 'Fermer les commentaires aux membres' : 'Rouvrir les commentaires'}</button>
         <button type="button" disabled={busy} onClick={() => run(() => updatePost(p.id, { preview: !p.preview }))} style={small}><Eye size={14} aria-hidden="true" /> {p.preview ? 'Retirer l\'aperçu' : 'Mettre en aperçu'}</button>
-        {!editing && <button type="button" onClick={() => setEditing(true)} style={small}><Pencil size={14} aria-hidden="true" /> Modifier le texte</button>}
+        {!editing && <button type="button" onClick={() => setEditing(true)} style={small}><Pencil size={14} aria-hidden="true" /> Modifier le titre et le texte</button>}
         {!confirmDel ? <button type="button" onClick={() => setConfirmDel(true)} style={small}><Trash2 size={14} aria-hidden="true" /> Supprimer</button> : (
           <span style={{ display: 'inline-flex', gap: 6, alignItems: 'center' }}>
             <button type="button" disabled={busy} onClick={() => run(() => deletePost(p.id))} style={{ ...small, color: '#F09A7A', borderColor: 'rgba(240,154,122,.6)' }}>Oui, supprimer pour de bon</button>
@@ -177,8 +171,8 @@ const PostRow: React.FC<{ p: AdminPost; channelId: string; palette: MomentPalett
   );
 };
 
-const ChannelPostsAdmin: React.FC<{ channel: AdminChannel; palette: MomentPalette; onBack: () => void }> = ({ channel, palette, onBack }) => {
-  const [tab, setTab] = useState<'publish' | 'posts' | 'members'>('publish');
+const ChannelPostsAdmin: React.FC<{ channel: AdminChannel; palette: MomentPalette; onBack: () => void; initialTab?: 'publish' | 'posts' | 'members' }> = ({ channel, palette, onBack, initialTab = 'publish' }) => {
+  const [tab, setTab] = useState<'publish' | 'posts' | 'members'>(initialTab);
   const [posts, setPosts] = useState<AdminPost[] | null>(null);
   const [err, setErr] = useState('');
   const load = () => listPosts(channel.id).then(r => { setPosts(r.items); }).catch(e => setErr(e instanceof Error ? e.message : 'Erreur'));
@@ -190,7 +184,7 @@ const ChannelPostsAdmin: React.FC<{ channel: AdminChannel; palette: MomentPalett
     <div style={{ marginTop: 14 }}>
       <button type="button" onClick={onBack} style={{ ...small, marginBottom: 10 }}><ArrowLeft size={14} aria-hidden="true" /> Mes chaînes</button>
       <h2 style={{ margin: 0, fontFamily: 'Georgia, serif', fontSize: 21, color: DC.title }}>{channel.name}</h2>
-      <p style={{ margin: '4px 0 0', fontSize: 13, color: DC.muted }}>{channel.memberCount} membre{channel.memberCount > 1 ? 's' : ''} · {channel.price > 0 ? `${channel.price} étincelles` : 'Gratuite'}{channel.status === 'archived' ? ' · Archivée' : ''}</p>
+      <p style={{ margin: '4px 0 0', fontSize: 13, color: DC.muted }}>{channel.memberCount} membre{channel.memberCount > 1 ? 's' : ''} · {channel.price > 0 ? `${channel.price} étincelle${channel.price > 1 ? 's' : ''}` : 'Gratuite'}{channel.status === 'archived' ? ' · Archivée' : ''}</p>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, margin: '12px 0' }}>
         {t('publish', 'Publier')}{t('posts', `Publications${posts ? ` · ${posts.length}` : ''}`)}{t('members', `Membres · ${channel.memberCount}`)}
       </div>

@@ -2,6 +2,7 @@ const { db, verifyAuth } = require('./_firebase');
 const { takeSlot, giveBack } = require('./_chatAllowance');
 const { VOICE } = require('./_drloVoice');
 const { reserveKoris, commitKoris, releaseKoris } = require('./_koris');
+const CH = require('./_drloChannels');
 
 const headers = {
   'Access-Control-Allow-Origin': '*',
@@ -206,6 +207,8 @@ ${isFemme ? `11. "YAAY BOY" — avec parcimonie, seulement en encouragement/réc
     [[vrai_drlo]] → écrire une question au vrai Dr Lô (le médecin), réponse écrite sous 7 jours
     [[totem]] → voir son totem
     [[catalogue]] → voir tous les tests
+    [[chaine:ID]] → une chaîne précise du vrai Dr Lô, ID choisi UNIQUEMENT dans « Chaînes de Dr Lô » ci-dessous (respecte majuscules et minuscules)
+    [[chaines]] → voir toutes les chaînes du vrai Dr Lô
     [[crise]] → idées de mort ou de suicide, envie de se faire du mal, danger immédiat, violence subie en ce moment : l'application affiche aussitôt les numéros d'urgence. Dans ce cas ta réponse est courte, chaleureuse, et dit qu'elle a besoin d'une vraie personne maintenant.
     Quand :
     - « Je veux faire un test » (sans préciser) → choisis pour ELLE 2 ou 3 tests utiles vu ce qu'elle vit et ce qu'elle n'a pas encore fait, une demi-phrase chacun pour dire pourquoi, puis les 2 ou 3 balises [[test:ID]]. Jamais de liste de catégories.
@@ -217,27 +220,41 @@ ${isFemme ? `11. "YAAY BOY" — avec parcimonie, seulement en encouragement/réc
 18. TA MÉMOIRE — C'EST CE QUI FAIT QU'ON SE SENT CONNU
     Tes notes (« Ce que tu retiens d'elle ») viennent de vos discussions passées. Sers-t'en naturellement, comme un ami qui se souvient : « La dernière fois tu me parlais de ton travail, ça va mieux ? ». Une fois de temps en temps, quand c'est pertinent, pas à chaque message. Ne récite jamais tes notes et ne dis pas « d'après mes notes ».
 
+19. LES CHAÎNES DU VRAI DR LÔ
+    Ce sont des espaces où le vrai Dr Lô (le médecin, pas toi) publie des vocaux et des textes sur un thème. On y entre une fois, parfois avec des conditions (tests faits, âge, totem) et un prix en étincelles.
+    - Si ce qu'elle vit correspond vraiment au thème d'une chaîne, tu peux la lui proposer UNE fois dans la discussion, en une phrase, avec [[chaine:ID]]. Jamais pendant une détresse forte.
+    - Déjà membre : invite-la plutôt à écouter ce que Dr Lô y a publié, avec [[chaine:ID]].
+    - S'il lui manque un test pour entrer, dis-le simplement et propose ce test avec [[test:ID]] (c'est utile en soi, et ça lui ouvrira la chaîne).
+    - Jamais de pression pour payer ou acheter des étincelles ; ne parle du prix que si elle le demande. Ne cite jamais un résultat de test comme une condition qu'elle « rate ».
+    - Si une chaîne est réservée à un âge ou à d'autres totems qu'elle n'a pas, ne la propose pas.
+    - N'invente jamais une chaîne ; si la liste est vide, n'en parle pas.
+
+Chaînes de Dr Lô (ID, thème, situation de cette personne) :
+${context.chaines_txt || 'Aucune pour le moment.'}
+
 Tests disponibles (ID = nom) :
 ${testsDispo || 'Aucun.'}`;
 }
 
 // ── Action proposée par Dr Lô (balise en dernière ligne) ─────────────────────
 
-const TAG = /\[\[(test:[a-z0-9_]{2,40}|respiration|humeur|programme|journal|defi|compat|vrai_drlo|totem|catalogue|crise)\]\]/gi;
+const TAG = /\[\[(test:[a-z0-9_]{2,40}|chaine:[A-Za-z0-9]{4,40}|chaines|respiration|humeur|programme|journal|defi|compat|vrai_drlo|totem|catalogue|crise)\]\]/gi;
 
 /**
  * Sépare le texte et les boutons proposés (balises n'importe où, retirées du texte).
  * Crise → seul bouton gardé. Sinon : jusqu'à 3 tests, ou une seule autre action.
  */
-function splitActions(raw) {
+function splitActions(raw, channels = {}) {
   let text = String(raw || '');
   const tags = [];
-  text = text.replace(TAG, (_, t) => { tags.push(t.toLowerCase()); return ''; });
+  // Les identifiants de chaîne gardent leur casse ; une chaîne inconnue est ignorée
+  text = text.replace(TAG, (_, t) => { tags.push(/^chaine:/i.test(t) ? `chaine:${t.slice(7)}` : t.toLowerCase()); return ''; });
   text = text.replace(/\[\[[^\]]{0,60}\]\]/g, '').replace(/[ \t]+\n/g, '\n').replace(/\n{3,}/g, '\n\n').trim();
   if (tags.includes('crise')) return { text, actions: [{ kind: 'crise' }] };
   const tests = [...new Set(tags.filter(t => t.startsWith('test:')).map(t => t.slice(5)))].slice(0, 3);
   if (tests.length) return { text, actions: tests.map(scaleId => ({ kind: 'test', scaleId })) };
-  const other = tags.find(t => !t.startsWith('test:'));
+  const other = tags.find(t => !t.startsWith('test:') && (!t.startsWith('chaine:') || Object.prototype.hasOwnProperty.call(channels, t.slice(7))));
+  if (other && other.startsWith('chaine:')) return { text, actions: [{ kind: 'chaine', id: other.slice(7), name: channels[other.slice(7)] }] };
   return { text, actions: other ? [{ kind: other }] : [] };
 }
 /** Compatibilité : la première action seulement. */
@@ -324,8 +341,22 @@ exports.handler = async (event) => {
     memoire = p && p.exists && Array.isArray(p.data().drloMemory) ? p.data().drloMemory : [];
   }
 
+  // Les chaînes du vrai Dr Lô, vues pour cette personne (calculé ici : jamais pris du navigateur)
+  let chaines = { text: '', ids: {} };
+  try {
+    const [cs, ms, up, pa] = await Promise.all([
+      db.collection('channels').where('status', '==', 'active').limit(20).get(),
+      db.collection('channelMembers').where('uid', '==', user.uid).limit(50).get(),
+      db.collection('userProfiles').doc(user.uid).get(),
+      db.collection('patients').doc(user.uid).get(),
+    ]);
+    const labels = Object.fromEntries((Array.isArray(context.tests_dispo) ? context.tests_dispo : []).filter(t => t && t.id).map(t => [String(t.id), String(t.label || '').slice(0, 50)]));
+    const wallet = pa.exists ? (pa.data().korisWallet || {}) : {};
+    chaines = CH.chatSummary(cs.docs.map(d => ({ id: d.id, ...d.data() })), new Set(ms.docs.map(d => d.data().channelId)), up.exists ? up.data() : {}, Number(wallet.balance) || 0, labels);
+  } catch (e) { console.warn('dr-lo-chat chaines', e.message); }
+
   // System prompt with cache_control (stable across messages in a conversation)
-  const systemPrompt = buildSystemPrompt({ ...context, memoire });
+  const systemPrompt = buildSystemPrompt({ ...context, memoire, chaines_txt: chaines.text });
 
   // Conversation history: the last 12 messages of the thread
   const trimmedHistory = (Array.isArray(historique) ? historique : [])
@@ -363,7 +394,7 @@ exports.handler = async (event) => {
 
       if (response.ok) {
         const data = await response.json();
-        const { text, actions } = splitActions(data?.content?.[0]?.text ?? '');
+        const { text, actions } = splitActions(data?.content?.[0]?.text ?? '', chaines.ids);
         await commit();
         const cached = data?.usage?.cache_read_input_tokens || 0;
         const total = data?.usage?.input_tokens || 0;

@@ -161,3 +161,21 @@ test('supprimer une publication supprime ses commentaires seulement', async () =
   assert.equal(Object.values(store.channelComments).filter((c) => c.postId === 'p1').length, 0);
   assert.ok(store.channelComments.zzz);
 });
+
+test('photo de profil : le totem révélé (même anonyme), jamais un totem non révélé', async () => {
+  store.userProfiles.m2 = { ...(store.userProfiles.m2 || {}), totem: { animal: 'cerf', revealedAt: 1 } };
+  store.userProfiles.m3 = { onboardingProfile: { prenom: 'Fatou' }, totem: { animal: 'lion' } };
+  store.channelMembers.c1_m3 = { channelId: 'c1', uid: 'm3' };
+  store.channelPosts.p9 = { channelId: 'c1', text: 'Nouveau', status: 'published', commentsOpen: true, stats: { comments: 0 } };
+  uid = 'm2';
+  let r = await call({ action: 'comment_add', postId: 'p9', text: 'Je me reconnais là-dedans.', mode: 'anon' });
+  assert.equal(r.status, 200);
+  uid = 'm3';
+  r = await call({ action: 'comment_add', postId: 'p9', text: 'Moi aussi, merci.', mode: 'prenom' });
+  assert.equal(r.status, 200);
+  r = await call({ action: 'comments', postId: 'p9' });
+  const anon = r.body.items.find((c) => c.text === 'Je me reconnais là-dedans.');
+  const other = r.body.items.find((c) => c.text === 'Moi aussi, merci.');
+  assert.equal(anon.totem, 'cerf'); assert.equal(anon.name, 'Anonyme');
+  assert.equal(other.totem, null);
+});

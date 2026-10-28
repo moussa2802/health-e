@@ -5,7 +5,7 @@
  */
 import React, { useEffect, useState } from 'react';
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom';
-import { ArrowRight, ChevronDown, Crown, Heart, Lock, Sparkles, Users } from 'lucide-react';
+import { ArrowRight, ChevronDown, Heart, Lock, Sparkles, Users } from 'lucide-react';
 import DrLoShell, { DC, card, usePalette } from '../../components/accueil/DrLoShell';
 import { useAuth } from '../../contexts/AuthContext';
 import { getOnboardingProfile } from '../../utils/onboardingProfile';
@@ -23,7 +23,7 @@ type Domaine = 'mental' | 'social' | 'intime';
 
 const TITLES: Record<Domaine, { title: string; intro: string; color: string }> = {
   mental: { title: 'Mental', intro: 'Ce que tes tests disent de toi, pièce par pièce. Touche un test pour le voir ou le faire avec Dr Lô.', color: DC.sage },
-  social: { title: 'Social', intro: 'Toi et les autres : ce que tes proches savent de toi, et avec qui tu vibres.', color: DC.social },
+  social: { title: 'Compatibilité', intro: 'Toi et l\'autre : partenaire, crush ou ami, découvrez ce qui vous rapproche et ce qui peut coincer.', color: DC.social },
   intime: { title: 'Intime', intro: 'Ta vie intime, en toute discrétion. Rien de cette partie n\'est jamais partagé sans ton accord.', color: DC.intime },
 };
 
@@ -59,7 +59,6 @@ const DomainePage: React.FC = () => {
   const uid = isAuthenticated && currentUser ? currentUser.id : null;
   const ob = getOnboardingProfile();
   const [results, setResults] = useState<Record<string, ScaleResult>>({});
-  const [defis, setDefis] = useState(0);
   const [loaded, setLoaded] = useState(false);
   const [open, setOpen] = useState<string | null>(null);
   const d = (['mental', 'social', 'intime'].includes(domaine ?? '') ? domaine : null) as Domaine | null;
@@ -72,7 +71,6 @@ const DomainePage: React.FC = () => {
     getProfileProgress(uid).then(p => {
       if (off) return;
       setResults(p.scaleResults ?? {});
-      setDefis(p.activeDefis?.length ?? 0);
       setLoaded(true);
     }).catch(() => setLoaded(true));
     return () => { off = true; };
@@ -91,7 +89,7 @@ const DomainePage: React.FC = () => {
   const startIntime = (id: string) => {
     trackAccueil('go', { to: 'test_intime', from: 'espace_intime' });
     // Première fois : la page Vie intime pose ses questions de situation (porte d'accès dédiée)
-    navigate(isSexualFilterComplete() ? `/assessment/test/${id}` : '/assessment/sexual');
+    navigate(isSexualFilterComplete() ? `/assessment/test/${id}` : `/assessment/sexual?from=espace&test=${id}`);
   };
 
   const row = (s: AssessmentScale, intime = false) => {
@@ -132,7 +130,7 @@ const DomainePage: React.FC = () => {
                 {r ? 'Le refaire' : intime ? 'Faire ce test' : 'Le faire avec Dr Lô'}
               </button>
               {r && (
-                <button onClick={() => navigate(`/assessment/${intime ? 'sexual' : 'mental'}`)} className="drl-btn"
+                <button onClick={() => navigate(`/espace/resultat/${s.id}`)} className="drl-btn"
                   style={{ minHeight: 44, padding: '0 16px', borderRadius: 999, border: `1px solid ${DC.line}`, background: DC.glass, color: DC.text, fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>
                   Détail et conseils
                 </button>
@@ -193,7 +191,6 @@ const DomainePage: React.FC = () => {
       {loaded && d === 'social' && (
         <section style={{ marginTop: 18, display: 'flex', flexDirection: 'column', gap: 10 }}>
           {[
-            { icon: Crown, title: 'Le Défi · Kan moo ma gën a xam ?', text: defis ? `${defis} défi${defis > 1 ? 's' : ''} en cours. Tes proches devinent tes réponses : qui te connaît le mieux ?` : 'Tes proches devinent tes réponses, et tu découvres qui te connaît le mieux.', cta: defis ? 'Voir mes défis' : 'Ouvrir les défis', to: '/defi', flow: 'defi' as const, extra: { label: 'Le lancer avec Dr Lô', flow: 'defi' as const } },
             { icon: Users, title: 'Compatibilité', text: 'Partenaire, crush, ami : partage ton code, l\'autre fait ses tests, et Dr Lô compare vos profils.', cta: 'Ouvrir la compatibilité', to: '/assessment/compatibility', flow: 'compat' as const, extra: { label: 'La faire avec Dr Lô', flow: 'compat' as const } },
           ].map(c => (
             <div key={c.title} style={{ ...card, borderColor: `${DC.social}55`, background: `${DC.social}10` }}>

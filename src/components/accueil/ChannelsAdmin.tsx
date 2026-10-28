@@ -189,7 +189,7 @@ const conditionsText = (c: AdminChannel): string => {
 const ChannelsAdmin: React.FC<{ palette: MomentPalette }> = ({ palette }) => {
   const [items, setItems] = useState<AdminChannel[] | null>(null);
   const [editing, setEditing] = useState<AdminChannel | 'new' | null>(null);
-  const [managing, setManaging] = useState<string | null>(null);
+  const [managing, setManaging] = useState<{ id: string; tab: 'publish' | 'members' } | null>(null);
   const [err, setErr] = useState('');
   const [busyId, setBusyId] = useState<string | null>(null);
   const [act, setAct] = useState<ChannelsActivity['byChannel']>({});
@@ -204,8 +204,8 @@ const ChannelsAdmin: React.FC<{ palette: MomentPalette }> = ({ palette }) => {
     finally { setBusyId(null); }
   };
 
-  const managed = managing ? (items ?? []).find(c => c.id === managing) : undefined;
-  if (managed) return <ChannelPostsAdmin channel={managed} palette={palette} onBack={() => { setManaging(null); load(); }} />;
+  const managed = managing ? (items ?? []).find(c => c.id === managing.id) : undefined;
+  if (managed && managing) return <ChannelPostsAdmin channel={managed} palette={palette} initialTab={managing.tab} onBack={() => { setManaging(null); load(); }} />;
   return (
     <div style={{ marginTop: 14 }}>
       <p style={{ margin: 0, fontSize: 13.5, color: DC.muted, lineHeight: 1.5 }}>Tes chaînes : des espaces thématiques où tu publies dans la durée. Tu choisis les conditions d'entrée, le prix et le texte d'accueil. Tu vois seulement le nombre de membres.</p>
@@ -235,12 +235,13 @@ const ChannelsAdmin: React.FC<{ palette: MomentPalette }> = ({ palette }) => {
               )}
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, fontSize: 12.5, color: DC.muted }}>
                 <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><Users size={14} aria-hidden="true" /> {c.memberCount} membre{c.memberCount > 1 ? 's' : ''}</span>
-                <span>· {c.price > 0 ? `${c.price} étincelles` : 'Gratuite'}</span>
+                <span>· {c.price > 0 ? `${c.price} étincelle${c.price > 1 ? 's' : ''}` : 'Gratuite'}</span>
               </div>
               <p style={{ margin: '6px 0 0', fontSize: 12.5, color: DC.faint, lineHeight: 1.45 }}>{conditionsText(c)}</p>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 12 }}>
-                <button type="button" onClick={() => setManaging(c.id)} className="drl-btn" style={{ minHeight: 38, padding: '0 14px', borderRadius: 999, border: `1px solid ${palette.accent}`, background: 'rgba(242,182,109,.15)', color: palette.accent, fontSize: 13.5, fontWeight: 700, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 6 }}><MessageSquarePlus size={14} aria-hidden="true" /> Publier et gérer</button>
+                <button type="button" onClick={() => setManaging({ id: c.id, tab: 'publish' })} className="drl-btn" style={{ minHeight: 38, padding: '0 14px', borderRadius: 999, border: `1px solid ${palette.accent}`, background: 'rgba(242,182,109,.15)', color: palette.accent, fontSize: 13.5, fontWeight: 700, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 6 }}><MessageSquarePlus size={14} aria-hidden="true" /> Publier et gérer</button>
                 <button type="button" onClick={() => setEditing(c)} className="drl-btn" style={{ minHeight: 38, padding: '0 14px', borderRadius: 999, border: `1px solid ${DC.line}`, background: DC.glass, color: DC.text, fontSize: 13.5, fontWeight: 700, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 6 }}><Pencil size={14} aria-hidden="true" /> Modifier</button>
+                <button type="button" onClick={() => setManaging({ id: c.id, tab: 'members' })} className="drl-btn" style={{ minHeight: 38, padding: '0 14px', borderRadius: 999, border: `1px solid ${DC.line}`, background: DC.glass, color: DC.text, fontSize: 13.5, fontWeight: 700, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 6 }}><Users size={14} aria-hidden="true" /> Membres · {c.memberCount}</button>
                 <button type="button" disabled={busyId === c.id} onClick={() => toggleArchive(c)} className="drl-btn" style={{ minHeight: 38, padding: '0 14px', borderRadius: 999, border: `1px solid ${DC.line}`, background: DC.glass, color: DC.muted, fontSize: 13.5, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
                   {c.status === 'active' ? <><Archive size={14} aria-hidden="true" /> Archiver</> : <><ArchiveRestore size={14} aria-hidden="true" /> Réactiver</>}
                 </button>

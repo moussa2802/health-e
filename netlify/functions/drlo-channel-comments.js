@@ -59,7 +59,7 @@ async function saveReplyAudio(channelId, commentId, raw) {
 }
 
 const adminComment = async (id, c) => ({
-  id, name: c.status === 'distress' ? 'Anonyme' : (c.name || 'Anonyme'), text: c.text, status: c.status, hidden: !!c.hidden, pinned: !!c.pinned,
+  id, name: c.status === 'distress' ? 'Anonyme' : (c.name || 'Anonyme'), totem: c.status === 'distress' ? null : (c.totem || null), text: c.text, status: c.status, hidden: !!c.hidden, pinned: !!c.pinned,
   reports: Number(c.reports) || 0, closed: !!c.closed, createdAt: ms(c.createdAt), lastUserAt: Number(c.lastUserAt) || 0,
   thread: await Promise.all(C.threadOf(c).map(async (e, index) => ({
     index, from: e.from, text: e.text || '', at: Number(e.at) || 0, editedAt: Number(e.editedAt) || null,
@@ -201,7 +201,7 @@ exports.handler = async (event) => {
       const items = await Promise.all(shown.map(async (c) => {
         const entries = await Promise.all(C.threadOf(c).map(async (e) => ({ ...C.presentEntry(e, seenBefore), audioUrl: e.audio && e.audio.path ? await signedUrl(e.audio.path) : null })));
         const mine = c.uid === uid;
-        return { id: c.id, name: c.name, text: c.text, at: c.createdAt, mine, pinned: !!c.pinned, thread: entries, closed: !!c.closed, canReply: mine && C.userCanFollowUp(c).ok };
+        return { id: c.id, name: c.name, totem: c.totem || null, text: c.text, at: c.createdAt, mine, pinned: !!c.pinned, thread: entries, closed: !!c.closed, canReply: mine && C.userCanFollowUp(c).ok };
       }));
       await viewRef.set({ postId, channelId: post.channelId, uid, repliesSeenAt: Date.now(), commentsSeen: Math.max(0, Number(post.stats && post.stats.comments) || 0) }, { merge: true }).catch(() => {});
       return reply(200, { open: post.commentsOpen !== false, items });
@@ -213,11 +213,10 @@ exports.handler = async (event) => {
     const v = C.validateComment(body.text);
     if (v.error) return reply(400, { error: v.error });
     const mod = C.moderate(v.text);
-    let prenom = '';
-    if (body.mode === 'prenom') {
-      const up = await db.collection('userProfiles').doc(uid).get().catch(() => null);
-      prenom = (up && up.exists && up.data().onboardingProfile && up.data().onboardingProfile.prenom) || '';
-    }
+    const up = await db.collection('userProfiles').doc(uid).get().catch(() => null);
+    const upd = up && up.exists ? up.data() : null;
+    const prenom = body.mode === 'prenom' ? ((upd && upd.onboardingProfile && upd.onboardingProfile.prenom) || '') : '';
+    const totem = C.totemOf(upd); // photo de profil : le totem (révélé), jamais un résultat
     const idt = C.resolveIdentity(body.mode, { prenom, pseudo: body.pseudo });
     if (idt.error) return reply(400, { error: idt.error });
     if (!mod.ok && mod.reason === 'crisis') {
@@ -226,7 +225,7 @@ exports.handler = async (event) => {
       return reply(200, { ok: true, published: false, support: true });
     }
     if (!mod.ok) return reply(400, { error: C.REASON_TEXT[mod.reason] || 'Commentaire non accepté.' });
-    const ref = await db.collection('channelComments').add({ postId, channelId: post.channelId, uid, name: idt.name, mode: idt.mode, text: v.text, status: 'public', hidden: false, pinned: false, reports: 0, reportedBy: [], createdAt: admin.firestore.FieldValue.serverTimestamp() });
+    const ref = await db.collection('channelComments').add({ postId, channelId: post.channelId, uid, name: idt.name, mode: idt.mode, totem, text: v.text, status: 'public', hidden: false, pinned: false, reports: 0, reportedBy: [], createdAt: admin.firestore.FieldValue.serverTimestamp() });
     await pRef.update({ 'stats.comments': inc(1) }).catch(() => {});
     await viewRef.set({ postId, channelId: post.channelId, uid, commentsSeen: inc(1) }, { merge: true }).catch(() => {});
     return reply(200, { ok: true, published: true, id: ref.id });

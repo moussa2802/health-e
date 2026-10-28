@@ -62,9 +62,9 @@ export interface ThreadEntry {
   from: 'user' | 'drlo'; text: string; at: number; editedAt: number | null; audioSec: number; audioUrl?: string | null;
   fresh?: boolean; updated?: boolean;
 }
-export interface PublicComment { id: string; name: string; text: string; at: number; mine: boolean; pinned: boolean; thread: ThreadEntry[]; closed: boolean; canReply: boolean }
+export interface PublicComment { id: string; name: string; totem?: string | null; text: string; at: number; mine: boolean; pinned: boolean; thread: ThreadEntry[]; closed: boolean; canReply: boolean }
 export interface AdminComment {
-  id: string; name: string; text: string; status: 'public' | 'distress' | string; hidden: boolean; pinned: boolean; reports: number; closed: boolean;
+  id: string; name: string; totem?: string | null; text: string; status: 'public' | 'distress' | string; hidden: boolean; pinned: boolean; reports: number; closed: boolean;
   createdAt: number; lastUserAt: number; thread: (ThreadEntry & { index: number })[];
 }
 export const getComments = (id: string) => call<{ open: boolean; items: PublicComment[] }>({ action: 'comments', id });

@@ -3,7 +3,7 @@
  * Membre : tout est ouvert (texte, vocal, réactions). Non-membre : seules les publications « aperçu » sont ouvertes,
  * les autres apparaissent verrouillées (aucun contenu ni lien d'écoute n'est envoyé par le serveur).
  */
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Lock, Mic } from 'lucide-react';
 import { DC, card } from './DrLoShell';
 import { RealDrLoPhoto } from './RealDrLoBadge';
@@ -42,7 +42,7 @@ const Post: React.FC<{ p: ChannelPost; member: boolean; palette: MomentPalette }
   const text = p.text ?? '';
   const cut = !more && text.length > LONG;
   return (
-    <article style={card}>
+    <article id={`post-${p.id}`} style={{ ...card, scrollMarginTop: 16 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
         <RealDrLoPhoto size={36} palette={palette} />
         <div style={{ flex: 1 }}>
@@ -52,6 +52,7 @@ const Post: React.FC<{ p: ChannelPost; member: boolean; palette: MomentPalette }
         {p.preview && !member && <span style={{ padding: '2px 9px', borderRadius: 999, background: 'rgba(127,209,160,.15)', color: DC.ok, fontSize: 11.5, fontWeight: 700 }}>Aperçu gratuit</span>}
         {member && !p.seen && <span style={{ padding: '2px 9px', borderRadius: 999, background: 'rgba(242,182,109,.18)', color: palette.accent, fontSize: 11.5, fontWeight: 700 }}>Nouveau</span>}
       </div>
+      {p.title && <h3 style={{ margin: '12px 0 0', fontSize: 17, fontWeight: 700, color: DC.text, lineHeight: 1.35 }}>{p.title}</h3>}
       {p.audioUrl && (
         <div style={{ marginTop: 10 }}>
           <audio controls preload="metadata" src={p.audioUrl} aria-label={`Vocal de Dr Lô, ${mmss(p.audioSec)}`} style={{ width: '100%', height: 44 }} onPlay={() => { if (member) markPostListened(p.id).catch(() => {}); }} />
@@ -95,6 +96,15 @@ const ChannelFeed: React.FC<{ channelId: string; member: boolean; palette: Momen
     getFeed(channelId).then(r => { if (live) setPosts(r.posts); }).catch(e => { if (live) setError(e instanceof Error ? e.message : 'Erreur'); });
     return () => { live = false; };
   }, [channelId, member]);
+  // À l'ouverture : on descend à la première publication non lue (sinon à la plus récente). Une seule fois.
+  const scrolled = useRef(false);
+  useEffect(() => {
+    if (!posts || scrolled.current || posts.length < 2) return;
+    scrolled.current = true;
+    const target = member ? (posts.find(p => !p.locked && !p.seen) ?? posts[posts.length - 1]) : null;
+    if (!target) return;
+    window.setTimeout(() => document.getElementById(`post-${target.id}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 250);
+  }, [posts, member]);
   // Les publications ouvertes sont marquées « vues » après un court instant (membres seulement)
   useEffect(() => {
     if (!member || !posts) return;

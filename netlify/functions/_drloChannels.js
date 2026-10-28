@@ -116,4 +116,42 @@ function eligibility(profile, balance, ch) {
   return { eligible: missing.length === 0, missing };
 }
 
-module.exports = { MAX_NAME, MAX_DESC, MAX_FRAMING, MAX_PRICE, MIN_AGES, AGE_RANGES, PHOTO_TYPES, STATUSES, sanitizeRules, validateChannel, validatePhoto, ageLowerBound, eligibility };
+
+const LEVEL_WORDS = { bon: 'bon', leger: 'léger', modere: 'modéré', eleve: 'élevé' };
+
+/**
+ * Les chaînes, résumées pour Dr Lô IA (une ligne chacune) : thème, prix, membre ou non, ce qui manque pour entrer.
+ * Jamais la liste des membres ni le contenu des publications. labels = { scaleId: nom du test }.
+ * → { text, ids } (ids = identifiants valides pour la balise [[chaine:ID]]).
+ */
+function chatSummary(channels, memberIds, profile, balance, labels = {}) {
+  const lines = [];
+  const ids = {};
+  for (const c of channels.slice(0, 20)) {
+    if (!c || !c.id || c.status === 'archived') continue;
+    ids[c.id] = String(c.name || '').slice(0, 60);
+    const price = Number(c.price) || 0;
+    let line = `• [${c.id}] « ${String(c.name || '').slice(0, 60)} » : ${String(c.description || '').replace(/\s+/g, ' ').slice(0, 140)} (${price > 0 ? `${price} étincelle${price > 1 ? 's' : ''} à l'entrée` : 'gratuite'})`;
+    if (memberIds.has(c.id)) line += ' — DÉJÀ MEMBRE';
+    else {
+      const { missing } = eligibility(profile, balance, c);
+      if (!missing.length) line += ' — peut entrer';
+      else {
+        const why = missing.map((m) => {
+          const name = labels[m.scaleId] || m.scaleId;
+          if (m.kind === 'test') return `faire le test « ${name} » (${m.scaleId})${m.levels ? ` avec un résultat ${m.levels.map((l) => LEVEL_WORDS[l] || l).join(' ou ')}` : ''}`;
+          if (m.kind === 'level') return `un résultat ${m.levels.map((l) => LEVEL_WORDS[l] || l).join(' ou ')} au test « ${name} » (ne pas le lui dire comme un reproche)`;
+          if (m.kind === 'totem') return m.known ? 'réservée à d\'autres totems' : `révéler son totem`;
+          if (m.kind === 'age') return `réservée aux ${m.minAge} ans et plus`;
+          if (m.kind === 'balance') return `${m.need - m.have} étincelle${m.need - m.have > 1 ? 's' : ''} de plus`;
+          return '';
+        }).filter(Boolean);
+        line += ` — pas membre ; il lui manque : ${why.join(' ; ')}`;
+      }
+    }
+    lines.push(line);
+  }
+  return { text: lines.join('\n'), ids };
+}
+
+module.exports = { chatSummary, MAX_NAME, MAX_DESC, MAX_FRAMING, MAX_PRICE, MIN_AGES, AGE_RANGES, PHOTO_TYPES, STATUSES, sanitizeRules, validateChannel, validatePhoto, ageLowerBound, eligibility };

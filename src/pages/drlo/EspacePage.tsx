@@ -25,6 +25,7 @@ import { lastDays, MOOD_SCORE, WEEKDAYS, weekdayIndex } from '../../utils/moodIn
 import { addDays } from '../../utils/cycleCalc';
 import { getTotemProgress, getTotemSignature, totemMeaning, type TotemAnimal } from '../../utils/totemAlgorithm';
 import { trackAccueil } from '../../utils/accueilTracking';
+import { openDrLoChat } from '../../components/DrLoChat/drLoEvents';
 import PaliersCard from '../../components/accueil/PaliersCard';
 import DrloMemoryCard from '../../components/accueil/DrloMemoryCard';
 import { getDrloStatus, registerReferralIfAny, type DrloStatus } from '../../services/drloQuestionService';
@@ -110,7 +111,7 @@ const EspacePage: React.FC = () => {
   const onGuide = () => {
     const a = guide.action;
     // Un seul Dr Lô : la discussion s'ouvre dans la conversation de l'accueil
-    if (a.kind === 'chat') navigate('/', { state: { talk: { greeting: a.greeting, draft: null } } });
+    if (a.kind === 'chat') openDrLoChat({ greeting: a.greeting ?? undefined, source: 'espace' });
     else if (a.kind === 'reveal_totem') navigate('/assessment/totem');
     else if (a.kind === 'journal') navigate('/', { state: { openMood: true } });
     else if (a.kind === 'signup') navigate('/', { state: { signup: true } });
@@ -139,7 +140,7 @@ const EspacePage: React.FC = () => {
   const domains = [
     { key: 'mental', label: 'Mental', icon: Brain, color: DC.sage, word: doneMental ? `${doneMental} / ${MENTAL_HEALTH_SCALES.length} tests` : 'À découvrir', to: '/espace/mental' },
     { key: 'humeur', label: 'Humeur', icon: CloudSun, color: DC.gold, word: humeurWord, to: '/humeur' },
-    { key: 'social', label: 'Social', icon: Users, color: DC.social, word: 'Compatibilité', to: '/espace/social' },
+    { key: 'social', label: 'Compatibilité', icon: Users, color: DC.social, word: 'Toi et l\'autre', to: '/espace/social' },
   ];
 
   return (
@@ -233,7 +234,7 @@ const EspacePage: React.FC = () => {
             <span style={{ fontSize: 15, fontWeight: 700 }}>Défi</span>
             <span style={{ fontSize: 12.5, color: DC.muted }}>{defis ? `${defis} en cours` : 'Qui te connaît le mieux ?'}</span>
           </button>
-          <button onClick={() => navigate('/', { state: { tab: 'confier', journal: true } })} className="drl-btn" style={{ ...tile(DC.confier), textAlign: 'left' }}>
+          <button onClick={() => navigate('/journal')} className="drl-btn" style={{ ...tile(DC.confier), textAlign: 'left' }}>
             <BookOpen size={20} color={DC.confier} aria-hidden="true" />
             <span style={{ fontSize: 15, fontWeight: 700 }}>Journal</span>
             <span style={{ fontSize: 12.5, color: DC.muted }}>{counts.journal ? `${counts.journal} page${counts.journal > 1 ? 's' : ''} · écrire, relire` : 'Écrire, te confier'}</span>

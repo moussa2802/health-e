@@ -134,4 +134,11 @@ function presentEntry(e, seenBefore) {
   };
 }
 
-module.exports = { MAX_THREAD, threadOf, entryTime, lastDrloAt, userCanFollowUp, validateEntry, presentEntry, MAX_COMMENT, MAX_REPLY, REPORTS_TO_HIDE, PER_MESSAGE_LIMIT, moderate, REASON_TEXT, validateComment, resolveIdentity, CRISIS_NOTIF, visible, sortComments };
+const TOTEM_ANIMALS = ['lion', 'aigle', 'cheval', 'loup', 'dauphin', 'elephant', 'cerf', 'hibou', 'panthere', 'renard', 'tortue', 'ours'];
+/** Le totem affiché en photo de profil sous un commentaire : seulement s'il a été révélé (jamais un résultat de test). */
+function totemOf(profile) {
+  const t = profile && profile.totem;
+  return t && t.revealedAt && TOTEM_ANIMALS.includes(t.animal) ? t.animal : null;
+}
+
+module.exports = { totemOf, MAX_THREAD, threadOf, entryTime, lastDrloAt, userCanFollowUp, validateEntry, presentEntry, MAX_COMMENT, MAX_REPLY, REPORTS_TO_HIDE, PER_MESSAGE_LIMIT, moderate, REASON_TEXT, validateComment, resolveIdentity, CRISIS_NOTIF, visible, sortComments };

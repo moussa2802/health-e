@@ -6,6 +6,7 @@
 import React, { useEffect, useState } from 'react';
 import { SendHorizontal } from 'lucide-react';
 import { DC } from './DrLoShell';
+import TotemAvatar from './TotemAvatar';
 import { FollowUp, ThreadView } from './MessageComments';
 import type { MomentPalette } from '../../utils/drloMoment';
 import type { IdentityMode, PublicComment } from '../../services/drloBroadcastService';
@@ -87,7 +88,10 @@ const ChannelComments: React.FC<{ postId: string; palette: MomentPalette; onCoun
         {items.length === 0 && open && <p style={{ margin: 0, fontSize: 14, color: DC.faint }}>Aucun commentaire pour l'instant.</p>}
         {items.map(c => (
           <article key={c.id} style={{ padding: '10px 4px', borderTop: `1px solid ${c.pinned ? palette.accent : DC.line}` }}>
-            <p style={{ margin: 0, fontSize: 12.5, color: DC.faint }}><b style={{ color: DC.soft }}>{c.name}</b>{c.mine ? ' (toi)' : ''}{c.pinned ? ' · épinglé' : ''} · {ago(c.at)}</p>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <TotemAvatar animal={c.totem} />
+              <p style={{ margin: 0, fontSize: 12.5, color: DC.faint }}><b style={{ color: DC.soft }}>{c.name}</b>{c.mine ? ' (toi)' : ''}{c.pinned ? ' · épinglé' : ''} · {ago(c.at)}</p>
+            </div>
             <p style={{ margin: '6px 0 0', fontSize: 15, lineHeight: 1.55, color: DC.text, whiteSpace: 'pre-wrap' }}>{c.text}</p>
             <ThreadView entries={c.thread} author={c.mine ? 'Toi' : c.name} palette={palette} />
             {c.mine && c.canReply && <FollowUp send={t => followUpPostComment(c.id, t)} palette={palette} onSent={load} />}

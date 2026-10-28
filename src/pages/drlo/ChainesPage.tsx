@@ -49,7 +49,7 @@ const Cover: React.FC<{ c: Channel; h: number }> = ({ c, h }) => (
 const Pills: React.FC<{ c: Channel }> = ({ c }) => (
   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, fontSize: 12.5, color: DC.muted, alignItems: 'center' }}>
     <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><Users size={14} aria-hidden="true" /> {c.memberCount} membre{c.memberCount > 1 ? 's' : ''}</span>
-    <span style={{ padding: '2px 10px', borderRadius: 999, border: `1px solid ${DC.line}`, color: DC.gold, fontWeight: 700 }}>{c.price > 0 ? `${c.price} étincelles` : 'Gratuite'}</span>
+    <span style={{ padding: '2px 10px', borderRadius: 999, border: `1px solid ${DC.line}`, color: DC.gold, fontWeight: 700 }}>{c.price > 0 ? `${c.price} étincelle${c.price > 1 ? 's' : ''}` : 'Gratuite'}</span>
   </div>
 );
 
@@ -133,7 +133,7 @@ const Detail: React.FC<{ id: string; palette: ReturnType<typeof usePalette> }> =
   }
   if (c.rules.totems?.length) { const bad = miss(m => m.kind === 'totem'); conditions.push(row(!bad, bad ? missingText(bad) : `Totem : ${c.rules.totems.map(totemLabel).join(', ')}`, bad)); }
   if (c.rules.minAge) { const bad = miss(m => m.kind === 'age'); conditions.push(row(!bad, bad ? missingText(bad) : `${c.rules.minAge} ans et plus`, bad)); }
-  if (c.price > 0) { const bad = miss(m => m.kind === 'balance'); conditions.push(row(!bad, bad ? `${c.price} étincelles à l'entrée (tu en as ${balance}). ${missingText(bad)}` : `${c.price} étincelles à l'entrée (tu en as ${balance})`, bad)); }
+  if (c.price > 0) { const bad = miss(m => m.kind === 'balance'); conditions.push(row(!bad, bad ? `${c.price} étincelle${c.price > 1 ? 's' : ''} à l'entrée (tu en as ${balance}). ${missingText(bad)}` : `${c.price} étincelle${c.price > 1 ? 's' : ''} à l'entrée (tu en as ${balance})`, bad)); }
 
   const join = async () => {
     setBusy(true); setActErr('');
@@ -207,7 +207,7 @@ const Detail: React.FC<{ id: string; palette: ReturnType<typeof usePalette> }> =
           {actErr && <p role="alert" style={{ margin: '12px 0 0', color: '#F09A7A', fontSize: 13.5 }}>{actErr}</p>}
           {!sheet ? (
             <button type="button" disabled={!c.eligible} onClick={() => setSheet(true)} className="drl-btn" style={{ ...primary, marginTop: 14, opacity: c.eligible ? 1 : 0.45, cursor: c.eligible ? 'pointer' : 'default' }}>
-              {c.eligible ? (c.price > 0 ? `Rejoindre · ${c.price} étincelles` : 'Rejoindre gratuitement') : `Il te manque ${c.missing.length} condition${c.missing.length > 1 ? 's' : ''}`}
+              {c.eligible ? (c.price > 0 ? `Rejoindre · ${c.price} étincelle${c.price > 1 ? 's' : ''}` : 'Rejoindre gratuitement') : `Il te manque ${c.missing.length} condition${c.missing.length > 1 ? 's' : ''}`}
             </button>
           ) : (
             <section style={{ ...card, marginTop: 14, borderColor: palette.accent }} aria-label="Avant d'entrer">
@@ -218,9 +218,9 @@ const Detail: React.FC<{ id: string; palette: ReturnType<typeof usePalette> }> =
                   <input type="checkbox" checked={ack} onChange={e => setAck(e.target.checked)} /> J'ai lu et j'ai compris
                 </label>
               )}
-              <p style={{ margin: '10px 0 0', fontSize: 13, color: DC.faint, lineHeight: 1.5 }}>{c.price > 0 ? `Entrée unique : ${c.price} étincelles, non remboursables. ` : ''}Tu peux quitter la chaîne quand tu veux.</p>
+              <p style={{ margin: '10px 0 0', fontSize: 13, color: DC.faint, lineHeight: 1.5 }}>{c.price > 0 ? `Entrée unique : ${c.price} étincelle${c.price > 1 ? 's' : ''}, non remboursable${c.price > 1 ? 's' : ''}. ` : ''}Tu peux quitter la chaîne quand tu veux.</p>
               <button type="button" disabled={busy || (needAck && !ack)} onClick={join} className="drl-btn" style={{ ...primary, marginTop: 12, opacity: busy || (needAck && !ack) ? 0.45 : 1 }}>
-                {busy ? <Loader2 size={16} className="animate-spin" aria-label="Entrée en cours" /> : c.price > 0 ? `Confirmer · ${c.price} étincelles` : 'Confirmer'}
+                {busy ? <Loader2 size={16} className="animate-spin" aria-label="Entrée en cours" /> : c.price > 0 ? `Confirmer · ${c.price} étincelle${c.price > 1 ? 's' : ''}` : 'Confirmer'}
               </button>
               <button type="button" onClick={() => { setSheet(false); setAck(false); }} style={{ marginTop: 8, width: '100%', minHeight: 42, borderRadius: 999, border: `1px solid ${DC.line}`, background: DC.glass, color: DC.muted, cursor: 'pointer' }}>Annuler</button>
             </section>

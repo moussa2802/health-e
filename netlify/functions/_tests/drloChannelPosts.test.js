@@ -184,3 +184,27 @@ test('suppression : publication, vocal et vues disparaissent', async () => {
   assert.equal(Object.keys(store.channelPostViews).filter((k) => k.startsWith(vocal)).length, 0);
   assert.equal((await call({ action: 'post_delete', id: vocal })).status, 404);
 });
+
+test('titre facultatif (80 caractères), ordre : la plus ancienne en haut, titre caché si verrouillé', async () => {
+  uid = 'drlo1';
+  assert.equal((await call({ action: 'post_create', channelId: 'c1', title: 'x'.repeat(81), text: 'Bonjour' })).status, 400);
+  const a = await call({ action: 'post_create', channelId: 'c1', title: '  Le   désir  ', text: 'Premier texte' });
+  assert.equal(a.status, 200); assert.equal(a.body.post.title, 'Le désir');
+  await new Promise((r) => setTimeout(r, 5));
+  const b = await call({ action: 'post_create', channelId: 'c1', text: 'Second texte' });
+  assert.equal(b.body.post.title, '');
+  let r = await call({ action: 'post_list', channelId: 'c1' });
+  const ids = r.body.items.map((p) => p.id);
+  assert.ok(ids.indexOf(a.body.post.id) < ids.indexOf(b.body.post.id));
+  r = await call({ action: 'post_update', id: b.body.post.id, title: 'Ajouté après' });
+  assert.equal(r.body.post.title, 'Ajouté après');
+  uid = 'm1';
+  r = await call({ action: 'feed', channelId: 'c1' });
+  const fids = r.body.posts.map((p) => p.id);
+  assert.ok(fids.indexOf(a.body.post.id) < fids.indexOf(b.body.post.id));
+  assert.equal(r.body.posts.find((p) => p.id === a.body.post.id).title, 'Le désir');
+  uid = 'out';
+  r = await call({ action: 'feed', channelId: 'c1' });
+  const locked = r.body.posts.find((p) => p.id === a.body.post.id);
+  assert.equal(locked.locked, true); assert.equal(locked.title, undefined); assert.equal(locked.text, undefined);
+});

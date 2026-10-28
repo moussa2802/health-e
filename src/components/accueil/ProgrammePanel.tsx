@@ -18,6 +18,8 @@ import { resolveGender } from '../../utils/gender';
 import type { TotemAnimal } from '../../utils/totemAlgorithm';
 import type { MomentPalette } from '../../utils/drloMoment';
 import { ExerciseRunner, LearnQuiz, type ExerciseDone } from './ProgrammeExercise';
+import MoodIcon from './MoodIcon';
+import { MOODS, type MoodId } from '../../utils/moodLog';
 
 const C = {
   text: '#F4EEE4', soft: '#DCD3C5', muted: '#CFC6B8', faint: '#A79E90', title: '#FBF5EA',
@@ -49,7 +51,8 @@ export interface ProgrammePanelProps {
   onRoutineCheck: (id: string, on?: boolean) => void;
   /** Ajouter / retirer une routine du programme */
   onRoutineSet: (id: string, on: boolean) => void;
-  onMood: () => void;
+  /** Noter l'humeur du jour ici même (sans quitter le programme) : renvoie le petit mot de Dr Lô. */
+  onMood: (id: MoodId) => string;
   onBilan: () => void;
   onRetest: (scaleId: string) => void;
   onLight: (on: boolean) => void;
@@ -113,6 +116,12 @@ const ProgrammePanel: React.FC<ProgrammePanelProps> = props => {
   };
   const seed = day;
   /** Engagement tenu : on coche, Dr Lô réagit, et on déplie le suivant. */
+  /** Humeur notée ici même : Dr Lô réagit, et on déplie l'engagement suivant. */
+  const pickMood = (id: MoodId) => {
+    say(props.onMood(id));
+    const next = plan.find(e => e.kind !== 'mood' && !isDone(p, today, e.key, moods));
+    setOpen(next ? next.key : null);
+  };
   const finish = (key: EngKey, line: string) => {
     props.onToggle(key, true);
     say(line);
@@ -160,7 +169,7 @@ const ProgrammePanel: React.FC<ProgrammePanelProps> = props => {
       : g?.kind === 'write' || g?.kind === 'steps' || g?.kind === 'chips' ? `Avec Dr Lô · ${e.duration ?? '2 min'}`
       : e.duration ?? 'Dans la journée';
     const onCircle = () => {
-      if (e.kind === 'mood') { if (!done) props.onMood(); return; }
+      if (e.kind === 'mood') { if (!done) setOpen(e.key); return; }
       if (done) { props.onToggle(e.key, false); return; }
       setOpen(e.key);
     };
@@ -194,7 +203,17 @@ const ProgrammePanel: React.FC<ProgrammePanelProps> = props => {
                 ))}
               </div>
             )}
-            {expanded && e.kind === 'mood' && !done && <button onClick={props.onMood} style={{ ...primary, alignSelf: 'flex-start' }}>Noter mon humeur</button>}
+            {expanded && e.kind === 'mood' && !done && (
+              <div role="group" aria-label="Mon humeur maintenant" style={{ display: 'grid', gridTemplateColumns: 'repeat(5, minmax(0, 1fr))', gap: 6 }}>
+                {MOODS.map(md => (
+                  <button key={md.id} onClick={() => pickMood(md.id)} className="drl-mood" aria-label={md.label}
+                    style={{ minHeight: 68, borderRadius: 14, border: `1px solid ${C.line}`, background: C.glass, color: C.text, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 5, fontSize: 10.5, fontWeight: 600, cursor: 'pointer', padding: '6px 2px', fontFamily: 'inherit' }}>
+                    <MoodIcon id={md.id} color={md.color} />
+                    {md.label}
+                  </button>
+                ))}
+              </div>
+            )}
             {expanded && e.key === 'action' && g && !done && (
               <ExerciseRunner guide={g} palette={palette} committed={committed}
                 onDone={r => onExercise(e, r)}

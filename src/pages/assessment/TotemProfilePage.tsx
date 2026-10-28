@@ -263,6 +263,7 @@ const TotemProfilePage: React.FC = () => {
   const sig = getTotemSignature(animal);
   const guide = TOTEM_GUIDE[animal];
   const description = getAnimalDescription(animal, genre);
+  const archetype = getArchetype(profileResults);
   const { forces, grows } = classifyTotemDomains(profileResults);
   const radiance = getRadianceLevel(forces, grows);
   const drLoMessage = composeDrLoMessage(animal, forces, grows, radiance.level);
@@ -361,6 +362,24 @@ const TotemProfilePage: React.FC = () => {
           <p style={kicker(palette.accent)}>Ce que {w.ton} dit de toi</p>
           <p style={{ margin: '8px 0 0', fontSize: 15, lineHeight: 1.6, color: C.soft }}>{description}</p>
         </section>
+
+        {/* L'archétype : le portrait en mots, à côté du totem */}
+        {archetype.title && (
+          <section style={card} aria-label="Mon archétype">
+            <p style={kicker(palette.accent)}>Ton archétype</p>
+            <p style={{ margin: '8px 0 0', fontFamily: 'Fraunces, serif', fontSize: 22, lineHeight: 1.25, fontWeight: 600, color: C.text }}>
+              {archetype.title} <em style={{ fontStyle: 'italic', color: palette.accent }}>{archetype.subtitle}</em>
+            </p>
+            {archetype.traits.length > 0 && (
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 10 }}>
+                {archetype.traits.map(t => (
+                  <span key={t} style={{ padding: '4px 11px', borderRadius: 999, border: '1px solid rgba(255,255,255,.14)', background: 'rgba(255,255,255,.05)', fontSize: 12.5, color: C.soft }}>{t}</span>
+                ))}
+              </div>
+            )}
+            <p style={{ margin: '10px 0 0', fontSize: 14.5, lineHeight: 1.6, color: C.soft }}>{archetype.description}</p>
+          </section>
+        )}
 
         {/* Au quotidien */}
         <section style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>

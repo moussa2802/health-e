@@ -184,17 +184,19 @@ export interface TalkTurn { role: 'user' | 'assistant'; content: string }
 /** Bouton que Dr Lô propose sous sa réponse (l'appli l'affiche). `crise` = protocole d'urgence. */
 export type TalkAction =
   | { kind: 'test'; scaleId: string }
-  | { kind: 'respiration' | 'humeur' | 'programme' | 'journal' | 'defi' | 'compat' | 'vrai_drlo' | 'totem' | 'catalogue' | 'crise' };
+  | { kind: 'chaine'; id: string; name?: string }
+  | { kind: 'respiration' | 'humeur' | 'programme' | 'journal' | 'defi' | 'compat' | 'vrai_drlo' | 'totem' | 'catalogue' | 'chaines' | 'crise' };
 
 export type TalkOutcome =
   | { ok: true; text: string; actions: TalkAction[]; freeLeft: number | null; remember: boolean }
   | { ok: false; reason: 'no_koris' | 'limit' | 'error' };
 
-const TALK_ACTIONS = new Set(['respiration', 'humeur', 'programme', 'journal', 'defi', 'compat', 'vrai_drlo', 'totem', 'catalogue', 'crise']);
+const TALK_ACTIONS = new Set(['respiration', 'humeur', 'programme', 'journal', 'defi', 'compat', 'vrai_drlo', 'totem', 'catalogue', 'chaines', 'crise']);
 /** Seules des actions qui existent vraiment sur le site passent. */
 function cleanAction(a: unknown): TalkAction | null {
   if (!a || typeof a !== 'object') return null;
-  const x = a as { kind?: string; scaleId?: string };
+  const x = a as { kind?: string; scaleId?: string; id?: string; name?: string };
+  if (x.kind === 'chaine') return typeof x.id === 'string' && /^[A-Za-z0-9]{4,40}$/.test(x.id) ? { kind: 'chaine', id: x.id, ...(typeof x.name === 'string' ? { name: x.name.slice(0, 60) } : {}) } : null;
   if (x.kind === 'test') return typeof x.scaleId === 'string' && SCALE_MAP.has(x.scaleId) ? { kind: 'test', scaleId: x.scaleId } : null;
   return x.kind && TALK_ACTIONS.has(x.kind) ? ({ kind: x.kind } as TalkAction) : null;
 }

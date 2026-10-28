@@ -1,10 +1,11 @@
 /**
- * ReplyComposer — écrire ou modifier une réponse de Dr Lô : texte et/ou vocal (3 min au plus).
+ * ReplyComposer — écrire ou modifier une réponse de Dr Lô : texte et/ou vocal (enregistré ou importé, 5 min au plus).
  * Rien n'est envoyé tant que Dr Lô n'appuie pas sur le bouton.
  */
 import React, { useState } from 'react';
-import { Mic, Square, Trash2 } from 'lucide-react';
-import { blobToBase64, MAX_VOICE_SEC, useVoiceRecorder } from '../../hooks/useVoiceRecorder';
+import { Trash2 } from 'lucide-react';
+import { blobToBase64, useVoiceRecorder } from '../../hooks/useVoiceRecorder';
+import VoiceInput from './VoiceInput';
 import { DC } from './DrLoShell';
 import type { VoiceClip } from '../../services/drloBroadcastService';
 
@@ -52,25 +53,7 @@ const ReplyComposer: React.FC<Props> = ({ initialText = '', existingAudio = null
             <button type="button" onClick={() => setKeepAudio(false)} aria-label="Retirer le vocal" className="drl-btn" style={{ ...btn, width: 44, padding: 0 }}><Trash2 size={16} aria-hidden="true" /></button>
           </div>
         )}
-        {voice.state === 'recording' ? (
-          <button type="button" onClick={voice.stop} aria-label="Arrêter l'enregistrement" className="drl-btn" style={{ ...btn, minHeight: 44, border: '1px solid rgba(240,154,122,.6)', background: 'rgba(240,154,122,.12)', color: DC.text, fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 8 }}>
-            <Square size={14} fill="currentColor" aria-hidden="true" /> Enregistrement… {mmss(voice.elapsed)} / {mmss(MAX_VOICE_SEC)}
-          </button>
-        ) : voice.state === 'processing' ? (
-          <p role="status" style={{ margin: 0, fontSize: 13.5, color: DC.muted }}>Préparation du vocal pour tous les téléphones…</p>
-        ) : voice.state === 'ready' && voice.clip ? (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <audio controls src={voice.clip.url} aria-label="Nouveau vocal" style={{ flex: 1, minWidth: 0, height: 40 }} />
-            <button type="button" onClick={voice.reset} aria-label="Supprimer le vocal" className="drl-btn" style={{ ...btn, width: 44, padding: 0 }}><Trash2 size={16} aria-hidden="true" /></button>
-          </div>
-        ) : voice.state === 'unsupported' ? (
-          <p style={{ margin: 0, fontSize: 13, color: DC.faint }}>Ce navigateur ne permet pas d'enregistrer un vocal.</p>
-        ) : (
-          <button type="button" onClick={voice.start} className="drl-btn" style={{ ...btn, minHeight: 44, borderRadius: 999, display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-            <Mic size={16} aria-hidden="true" /> {existingAudio && keepAudio ? 'Remplacer par un nouveau vocal' : 'Répondre par vocal'}
-          </button>
-        )}
-        {voice.state === 'denied' && <p role="alert" style={{ margin: '6px 0 0', fontSize: 13, color: '#F09A7A' }}>Le micro est bloqué. Autorise-le dans ton navigateur puis réessaie.</p>}
+        <VoiceInput voice={voice} recordLabel={existingAudio && keepAudio ? 'Remplacer par un vocal' : 'Répondre par vocal'} />
       </div>
       {error && <p role="alert" style={{ margin: '8px 0 0', fontSize: 13, color: '#F09A7A', lineHeight: 1.45 }}>{error}</p>}
       <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>

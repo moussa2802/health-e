@@ -78,7 +78,11 @@ test('vocal : format, durée et poids contrôlés', () => {
   const v = B.validateAudio(ok);
   assert.strictEqual(v.ext, 'webm'); assert.strictEqual(v.durationSec, 62);
   assert.ok(B.validateAudio({ ...ok, mime: 'video/mp4' }).error);
-  assert.ok(B.validateAudio({ ...ok, durationSec: 200 }).error);
+  assert.ok(!B.validateAudio({ ...ok, durationSec: 200 }).error); // 5 min autorisées
+  assert.ok(!B.validateAudio({ ...ok, durationSec: 300 }).error);
+  assert.ok(B.validateAudio({ ...ok, durationSec: 320 }).error);
+  const m4a = B.validateAudio({ ...ok, mime: 'audio/x-m4a' });
+  assert.strictEqual(m4a.ext, 'm4a'); assert.strictEqual(m4a.mime, 'audio/mp4');
   assert.ok(B.validateAudio({ ...ok, durationSec: 0 }).error);
   assert.ok(B.validateAudio({ ...ok, data: Buffer.alloc(10).toString('base64') }).error);
   assert.ok(B.validateAudio({ ...ok, data: Buffer.alloc(B.MAX_AUDIO_BYTES + 1).toString('base64') }).error);

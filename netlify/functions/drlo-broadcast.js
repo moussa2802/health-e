@@ -62,7 +62,7 @@ async function saveReplyAudio(bid, cid, raw) {
 }
 
 const adminComment = async (id, c) => ({
-  id, name: c.status === 'distress' ? 'Anonyme' : (c.name || 'Anonyme'), text: c.text, status: c.status, hidden: !!c.hidden, pinned: !!c.pinned,
+  id, name: c.status === 'distress' ? 'Anonyme' : (c.name || 'Anonyme'), totem: c.status === 'distress' ? null : (c.totem || null), text: c.text, status: c.status, hidden: !!c.hidden, pinned: !!c.pinned,
   reports: Number(c.reports) || 0, closed: !!c.closed, createdAt: ms(c.createdAt), lastUserAt: Number(c.lastUserAt) || 0,
   thread: await Promise.all(C.threadOf(c).map(async (e, index) => ({
     index, from: e.from, text: e.text || '', at: Number(e.at) || 0, editedAt: Number(e.editedAt) || null,
@@ -453,7 +453,7 @@ exports.handler = async (event) => {
             audioUrl: e.audio && e.audio.path ? await signedUrl(e.audio.path) : null,
           })));
           const mine = c.uid === uid;
-          return { id: c.id, name: c.name, text: c.text, at: c.createdAt, mine, pinned: !!c.pinned, thread: entries, closed: !!c.closed, canReply: mine && C.userCanFollowUp(c).ok };
+          return { id: c.id, name: c.name, totem: c.totem || null, text: c.text, at: c.createdAt, mine, pinned: !!c.pinned, thread: entries, closed: !!c.closed, canReply: mine && C.userCanFollowUp(c).ok };
         }));
         // La personne vient de tout voir : on remet les compteurs « nouveau » à zéro
         await db.collection('broadcastRecipients').doc(B.recipientId(bid, uid)).update({ repliesSeenAt: Date.now(), commentsSeen: Math.max(0, Number(b.stats && b.stats.comments) || 0) }).catch(() => {});
@@ -466,11 +466,10 @@ exports.handler = async (event) => {
       const v = C.validateComment(body.text);
       if (v.error) return reply(400, { error: v.error });
       const mod = C.moderate(v.text);
-      let prenom = '';
-      if (body.mode === 'prenom') {
-        const up = await db.collection('userProfiles').doc(uid).get().catch(() => null);
-        prenom = (up && up.exists && up.data().onboardingProfile && up.data().onboardingProfile.prenom) || '';
-      }
+      const up = await db.collection('userProfiles').doc(uid).get().catch(() => null);
+      const upd = up && up.exists ? up.data() : null;
+      const prenom = body.mode === 'prenom' ? ((upd && upd.onboardingProfile && upd.onboardingProfile.prenom) || '') : '';
+      const totem = C.totemOf(upd); // photo de profil : le totem (révélé), jamais un résultat
       const idt = C.resolveIdentity(body.mode, { prenom, pseudo: body.pseudo });
       if (idt.error) return reply(400, { error: idt.error });
 
@@ -482,7 +481,7 @@ exports.handler = async (event) => {
       }
       if (!mod.ok) return reply(400, { error: C.REASON_TEXT[mod.reason] || 'Commentaire non accepté.' });
 
-      const ref = await db.collection('broadcastComments').add({ broadcastId: bid, uid, name: idt.name, mode: idt.mode, text: v.text, status: 'public', hidden: false, pinned: false, reports: 0, reportedBy: [], reply: null, createdAt: admin.firestore.FieldValue.serverTimestamp() });
+      const ref = await db.collection('broadcastComments').add({ broadcastId: bid, uid, name: idt.name, mode: idt.mode, totem, text: v.text, status: 'public', hidden: false, pinned: false, reports: 0, reportedBy: [], reply: null, createdAt: admin.firestore.FieldValue.serverTimestamp() });
       await db.collection('broadcasts').doc(bid).update({ 'stats.comments': inc(1) }).catch(() => {});
       await db.collection('broadcastRecipients').doc(B.recipientId(bid, uid)).update({ commentsSeen: inc(1) }).catch(() => {});
       return reply(200, { ok: true, published: true, id: ref.id });

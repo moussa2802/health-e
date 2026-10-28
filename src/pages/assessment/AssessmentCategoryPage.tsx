@@ -1103,6 +1103,10 @@ const AssessmentCategoryPage: React.FC = () => {
           if (isAuthenticated && currentUser) {
             saveSexualFilterToProfile(currentUser.id, filter as unknown as Record<string, unknown>).catch(() => {});
           }
+          // Venu de « Mon espace » pour un test précis : on y va directement (sinon retour à Intime)
+          const wanted = searchParams.get('test');
+          if (wanted) navigate(`/assessment/test/${wanted}`, { replace: true });
+          else if (searchParams.get('from') === 'espace') navigate('/espace/intime', { replace: true });
         }}
       />
     );

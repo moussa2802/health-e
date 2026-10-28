@@ -2,14 +2,14 @@
  * drlo-channel-posts — les publications des Chaînes de Dr Lô. POST { action, ... } avec le jeton Firebase.
  *
  * Espace Dr Lô (staff/{uid}.drlo === true) :
- *   post_create { channelId, text?, audio?, preview?, commentsOpen?, notify? } → publie (texte et/ou vocal ≤ 3 min, MP3) ; notify (défaut oui) = prévenir les membres
- *   post_list   { channelId }                → les publications avec leurs chiffres et le lien d'écoute
- *   post_update { id, text?, preview?, commentsOpen? }
+ *   post_create { channelId, title?, text?, audio?, preview?, commentsOpen?, notify? } → publie (titre facultatif, texte et/ou vocal ≤ 5 min) ; notify (défaut oui) = prévenir les membres
+ *   post_list   { channelId }                → les publications (de la plus ancienne à la plus récente) avec leurs chiffres et le lien d'écoute
+ *   post_update { id, title?, text?, preview?, commentsOpen? }
  *   post_delete { id }                       → supprime la publication, le vocal et les vues
  *   audience    { channelId, postId?, kind: 'all'|'seen'|'listened'|'unseen', after?, q? }
  *               → prénoms des membres (jamais de résultats de tests), paginés, avec recherche
  * Personne connectée :
- *   feed   { channelId }          → le fil : accessible si membre ou « aperçu » ; sinon la publication est verrouillée (rien du contenu)
+ *   feed   { channelId }          → le fil, de la plus ancienne à la plus récente (les 50 dernières) : accessible si membre ou « aperçu » ; sinon la publication est verrouillée (rien du contenu)
  *   seen   { channelId, ids[] }   → marque des publications comme vues (membres)
  *   listen { id }                 → compte l'écoute (membres, une fois)
  *   react  { id, reaction }       → ❤️ 🙏 💪 (membres ; reaction null = retirer)
@@ -29,6 +29,7 @@ const reply = (statusCode, body) => ({ statusCode, headers, body: JSON.stringify
 const ms = (v) => (v && typeof v.toMillis === 'function' ? v.toMillis() : typeof v === 'string' ? Date.parse(v) || 0 : Number(v) || 0);
 const inc = (n) => admin.firestore.FieldValue.increment(n);
 const MAX_POST_TEXT = 4000;
+const MAX_TITLE = 80;
 const FEED_LIMIT = 50;
 const vid = (pid, uid) => `${pid}_${uid}`;
 const mid = (cid, uid) => `${cid}_${uid}`;
@@ -46,11 +47,12 @@ async function signedUrl(path) {
 }
 const dropFile = (path) => (path ? admin.storage().bucket(BUCKET).file(path).delete().catch(() => {}) : Promise.resolve());
 const cleanText = (t) => String(t ?? '').replace(/\r/g, '').trim();
+const cleanTitle = (t) => String(t ?? '').replace(/\s+/g, ' ').trim();
 const counts = (p) => { const r = (p.stats && p.stats.reactions) || {}; return { heart: r.heart || 0, pray: r.pray || 0, strong: r.strong || 0 }; };
 
 /** Une publication telle que la voit Dr Lô. */
 const adminPost = async (id, p) => ({
-  id, channelId: p.channelId, text: p.text || '', hasAudio: !!p.audio, audioSec: p.audio ? Number(p.audio.durationSec) || 0 : 0,
+  id, channelId: p.channelId, title: p.title || '', text: p.text || '', hasAudio: !!p.audio, audioSec: p.audio ? Number(p.audio.durationSec) || 0 : 0,
   audioUrl: p.audio ? await signedUrl(p.audio.path) : null, preview: !!p.preview, commentsOpen: p.commentsOpen !== false,
   createdAt: ms(p.createdAt), stats: { views: (p.stats && p.stats.views) || 0, listens: (p.stats && p.stats.listens) || 0, reactions: counts(p), comments: (p.stats && p.stats.comments) || 0 },
 });
@@ -64,7 +66,7 @@ async function userPost(id, p, { member, view }) {
     mine: (view && view.reaction) || null, seen: !!(view && view.seenAt),
   };
   if (!open) return base;
-  return { ...base, text: p.text || '', audioUrl: p.audio ? await signedUrl(p.audio.path) : null };
+  return { ...base, title: p.title || '', text: p.text || '', audioUrl: p.audio ? await signedUrl(p.audio.path) : null };
 }
 
 /** Parcourt les membres d'une chaîne (500 par page, jusqu'à 80 résultats) et renvoie leurs prénoms. */
@@ -127,7 +129,9 @@ exports.handler = async (event) => {
         if (cs.data().status !== 'active') return reply(409, { error: 'Cette chaîne est archivée : réactive-la pour publier.' });
         const text = cleanText(body.text);
         if (text.length > MAX_POST_TEXT) return reply(400, { error: `Le texte est trop long (${MAX_POST_TEXT} caractères au plus).` });
-        if (!body.audio && text.length < 2) return reply(400, { error: 'Écris un texte ou enregistre un vocal.' });
+        if (!body.audio && text.length < 2) return reply(400, { error: 'Écris un texte ou ajoute un vocal.' });
+        const title = cleanTitle(body.title);
+        if (title.length > MAX_TITLE) return reply(400, { error: `Le titre est trop long (${MAX_TITLE} caractères au plus).` });
         const ref = db.collection('channelPosts').doc();
         let audio = null;
         if (body.audio) {
@@ -143,7 +147,7 @@ exports.handler = async (event) => {
           audio = { path, mime: au.mime, durationSec: au.durationSec };
         }
         await ref.set({
-          channelId, text, ...(audio ? { audio } : {}), preview: body.preview === true, commentsOpen: body.commentsOpen !== false, status: 'published', pushDone: body.notify === false, pushCursor: null,
+          channelId, ...(title ? { title } : {}), text, ...(audio ? { audio } : {}), preview: body.preview === true, commentsOpen: body.commentsOpen !== false, status: 'published', pushDone: body.notify === false, pushCursor: null,
           createdAt: admin.firestore.FieldValue.serverTimestamp(), createdBy: uid,
           stats: { views: 0, listens: 0, comments: 0, reactions: { heart: 0, pray: 0, strong: 0 } },
         });
@@ -158,7 +162,7 @@ exports.handler = async (event) => {
         const snap = await db.collection('channelPosts').where('channelId', '==', channelId).get();
         const items = await Promise.all(snap.docs.map((d) => adminPost(d.id, d.data())));
         items.sort((a, b) => b.createdAt - a.createdAt);
-        return reply(200, { items: items.slice(0, 100) });
+        return reply(200, { items: items.slice(0, 100).reverse() }); // de la plus ancienne à la plus récente
       }
 
       if (action === 'post_update' || action === 'post_delete') {
@@ -196,6 +200,11 @@ exports.handler = async (event) => {
           if (!p.audio && t.length < 2) return reply(400, { error: 'Une publication sans vocal doit garder un texte.' });
           upd.text = t; upd.editedAt = admin.firestore.FieldValue.serverTimestamp();
         }
+        if (body.title !== undefined) {
+          const t = cleanTitle(body.title);
+          if (t.length > MAX_TITLE) return reply(400, { error: `Le titre est trop long (${MAX_TITLE} caractères au plus).` });
+          upd.title = t; upd.editedAt = admin.firestore.FieldValue.serverTimestamp();
+        }
         if (body.preview !== undefined) upd.preview = body.preview === true;
         if (body.commentsOpen !== undefined) upd.commentsOpen = body.commentsOpen !== false;
         if (!Object.keys(upd).length) return reply(400, { error: 'Rien à modifier.' });
@@ -229,7 +238,7 @@ exports.handler = async (event) => {
       const ch = await needChannel(channelId);
       if (ch.error) return ch.error;
       const snap = await db.collection('channelPosts').where('channelId', '==', channelId).get();
-      const docs = snap.docs.filter((d) => d.data().status === 'published').sort((a, b) => ms(b.data().createdAt) - ms(a.data().createdAt)).slice(0, FEED_LIMIT);
+      const docs = snap.docs.filter((d) => d.data().status === 'published').sort((a, b) => ms(b.data().createdAt) - ms(a.data().createdAt)).slice(0, FEED_LIMIT).reverse(); // les 50 dernières, la plus ancienne en haut
       let views = {};
       if (ch.member && docs.length) {
         const vs = await db.getAll(...docs.map((d) => db.collection('channelPostViews').doc(vid(d.id, uid))));

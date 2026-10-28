@@ -60,13 +60,13 @@ export const leaveChannel = (id: string) => call<{ ok: boolean }>({ action: 'lea
 // ───────── Publications (fonction drlo-channel-posts) ─────────
 export interface VoiceClip { data: string; mime: string; durationSec: number }
 export interface AdminPost {
-  id: string; channelId: string; text: string; hasAudio: boolean; audioSec: number; audioUrl: string | null; preview: boolean; commentsOpen: boolean; createdAt: number;
+  id: string; channelId: string; title: string; text: string; hasAudio: boolean; audioSec: number; audioUrl: string | null; preview: boolean; commentsOpen: boolean; createdAt: number;
   stats: { views: number; listens: number; reactions: Counts; comments: number };
 }
 /** Une publication côté personne : verrouillée = ni texte ni lien d'écoute. */
 export interface ChannelPost {
   id: string; at: number; preview: boolean; locked: boolean; hasAudio: boolean; audioSec: number; commentsOpen: boolean; counts: Counts; comments: number;
-  mine: Reaction | null; seen: boolean; text?: string; audioUrl?: string | null;
+  mine: Reaction | null; seen: boolean; title?: string; text?: string; audioUrl?: string | null;
 }
 export type AudienceKind = 'all' | 'seen' | 'listened' | 'unseen';
 export interface MemberRow { name: string; at: number }
@@ -84,9 +84,9 @@ async function callPosts<T>(body: Record<string, unknown>): Promise<T> {
 }
 
 // Espace Dr Lô
-export const createPost = (p: { channelId: string; text?: string; audio?: VoiceClip; preview?: boolean; commentsOpen?: boolean; notify?: boolean }) => callPosts<{ ok: boolean; post: AdminPost }>({ action: 'post_create', ...p });
+export const createPost = (p: { channelId: string; title?: string; text?: string; audio?: VoiceClip; preview?: boolean; commentsOpen?: boolean; notify?: boolean }) => callPosts<{ ok: boolean; post: AdminPost }>({ action: 'post_create', ...p });
 export const listPosts = (channelId: string) => callPosts<{ items: AdminPost[] }>({ action: 'post_list', channelId });
-export const updatePost = (id: string, p: { text?: string; preview?: boolean; commentsOpen?: boolean }) => callPosts<{ ok: boolean; post: AdminPost }>({ action: 'post_update', id, ...p });
+export const updatePost = (id: string, p: { title?: string; text?: string; preview?: boolean; commentsOpen?: boolean }) => callPosts<{ ok: boolean; post: AdminPost }>({ action: 'post_update', id, ...p });
 export const deletePost = (id: string) => callPosts<{ ok: boolean }>({ action: 'post_delete', id });
 export const getMembers = (channelId: string, o: { postId?: string; kind?: AudienceKind; after?: string | null; q?: string } = {}) =>
   callPosts<{ items: MemberRow[]; next: string | null }>({ action: 'audience', channelId, kind: o.kind ?? 'all', postId: o.postId, after: o.after ?? undefined, q: o.q || undefined });

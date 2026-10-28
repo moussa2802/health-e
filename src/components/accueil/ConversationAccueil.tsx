@@ -91,8 +91,7 @@ import {
 } from '../../utils/conversations';
 import { KORIS_COSTS, isTestFreeRetake, isFirstTestFree } from '../../services/korisService';
 import ProgrammePanel from './ProgrammePanel';
-import DrloMessagesCard from './DrloMessagesCard';
-import DrloInboxButton from './DrloInboxButton';
+import VraiDrLoBand from './VraiDrLoBand';
 import NotificationsPanel, { NotifOptinCard, type LiveItem } from './NotificationsPanel';
 import { loadInbox, type InboxItem } from '../../services/inboxService';
 import { canProposeReminders, loadPrefs, markSeen, noteProposed, permissionState, pushSupport } from '../../services/pushService';
@@ -1010,12 +1009,12 @@ const ConversationAccueil: React.FC = () => {
   };
 
   /** Bouton d'une carte « go » : une autre partie du site, le chat libre ou « Me confier ». */
-  const onGo = (to: keyof typeof GO) => {
+  const onGo = (to: keyof typeof GO, pathOverride?: string) => {
     trackAccueil('go', { to });
     if (to === 'confier') { setTab('confier'); setMode('home'); return; }
     if ((to === 'defi' || to === 'compat') && isAuthenticated) { void startFlow(to, GO[to].label); return; }
     if (to === 'chat') { void enterTalk(null, null); return; }
-    const path = GO[to].path;
+    const path = pathOverride ?? GO[to].path;
     if (path) navigate(path);
   };
 
@@ -1051,6 +1050,8 @@ const ConversationAccueil: React.FC = () => {
       case 'vrai_drlo': return { type: 'go', to: 'question_drlo' };
       case 'totem': return totemAnimal ? { type: 'go', to: 'totem' } : undefined;
       case 'catalogue': return { type: 'go', to: 'catalogue' };
+      case 'chaines': return { type: 'go', to: 'chaines' };
+      case 'chaine': return { type: 'go', to: 'chaines', path: `/chaines/${a.id}`, label: a.name ? `Voir la chaîne « ${a.name} »` : 'Voir la chaîne' };
       default: return undefined;
     }
   };
@@ -1262,6 +1263,21 @@ const ConversationAccueil: React.FC = () => {
       if (!p.light) persistProg({ ...p, light: true });
     }
     apply(addExchange(state, `Mon humeur : ${moodById(id).label.toLowerCase()}`, lines), state);
+  };
+
+  /** Humeur notée depuis le programme : on reste dans le programme, Dr Lô répond par un petit mot. */
+  const pickMoodInProgramme = (id: MoodId): string => {
+    const already = !!loadMoods(moodKey)[today];
+    const uid = isAuthenticated && currentUser ? currentUser.id : null;
+    recordMood(uid, today, id).catch(() => { /* la copie locale est gardée */ });
+    setNoted({ day: today, cancelled: false });
+    trackAccueil('mood', { guest: !isAuthenticated, from: 'programme' });
+    const p = progRef.current;
+    if (p && p.status === 'active' && id === 'tres_dur' && hardStreak(loadMoods(moodKey), today) >= 3) {
+      if (!p.light) persistProg({ ...p, light: true });
+      return 'Trois jours très durs d\'affilée : je passe ton programme en version douce. Parler à quelqu\'un aide vraiment, le 1515 répond à toute heure.';
+    }
+    return moodReply(id, prenom, already);
   };
 
   const cancelMood = () => {
@@ -1794,7 +1810,6 @@ const ConversationAccueil: React.FC = () => {
                   onFinish={() => { void finishTest(state, testScale); }}
                 />
               )}
-              {!chatModeNow && !revealing && !routing && isAuthenticated && currentUser && <DrloMessagesCard uid={currentUser.id} palette={palette} />}
               {!chatModeNow && !revealing && !routing && (hasTalked ? [] : chips).length > 0 && (
                 <div className="drl-in" style={{ display: 'flex', flexWrap: 'wrap', gap: 8, justifyContent: 'center' }}>
                   {(hasTalked ? [] : chips).map(c => (
@@ -1923,7 +1938,7 @@ const ConversationAccueil: React.FC = () => {
           totem={totemInfo}
           onRoutineCheck={(id: string, on?: boolean) => persistProg(toggleRoutine(progRef.current ?? prog, today, id, on))}
           onRoutineSet={(id: string, on: boolean) => persistProg(setRoutine(progRef.current ?? prog, id, on))}
-          onMood={() => { setProgOpen(false); setInChat(false); setTab('discuter'); setMode('mood'); }}
+          onMood={pickMoodInProgramme}
           onBilan={() => { void runBilan(); }}
           onRetest={(id: string) => { setProgOpen(false); setTab('discuter'); setInChat(true); void startTest(id); }}
           onLight={(on: boolean) => persistProg({ ...prog, light: on || !!prog.fragile })}
@@ -2190,11 +2205,13 @@ const ConversationAccueil: React.FC = () => {
           </span>
         </header>
 
+        {/* Le vrai Dr Lô, au-dessus de Dr Lô IA : ses messages, ses chaînes, lui écrire */}
+        {isAuthenticated && currentUser && <VraiDrLoBand uid={currentUser.id} palette={palette} />}
+
         {/* Dr Lô */}
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: 18 }}>
           <div style={{ position: 'relative', width: '100%', display: 'flex', justifyContent: 'center' }}>
             <DrLoAvatar state={avatarState} palette={palette} aura={isAuthenticated && !korisLoading ? balance / AURA_FULL : null} />
-            {isAuthenticated && currentUser && <DrloInboxButton uid={currentUser.id} palette={palette} />}
           </div>
           {statusLabel ? (
             <p role="status" className="drl-in" key={statusLabel}
@@ -2405,7 +2422,7 @@ const ChatCard: React.FC<{
   costLabel: (scaleId: string) => string;
   onStart: (id: string) => void; onOpen: (path: string) => void;
   prenom?: string; genre?: 'homme' | 'femme'; onLinked: () => void;
-  onGo: (to: keyof typeof GO) => void;
+  onGo: (to: keyof typeof GO, path?: string) => void;
   prog?: ProgCardEnv;
   notif?: { uid: string; onDone: (text: string) => void; onSettings: () => void };
   onQuick?: (what: 'breath' | 'mood' | 'programme') => void;
@@ -2507,9 +2524,9 @@ const ChatCard: React.FC<{
     const go = GO[card.to];
     return (
       <div className="drl-in" style={{ marginTop: 10 }}>
-        <button onClick={() => onGo(card.to)} className="drl-btn"
+        <button onClick={() => onGo(card.to, card.path)} className="drl-btn"
           style={{ minHeight: 46, padding: '0 18px', display: 'inline-flex', alignItems: 'center', gap: 6, borderRadius: 14, border: 0, background: palette.primary, color: C.ink, fontSize: 14.5, fontWeight: 700, cursor: 'pointer' }}>
-          {go.label}{card.to === 'chat' && <span style={{ fontWeight: 600, opacity: 0.75 }}>· {credits(1)} / message</span>}
+          {card.label ?? go.label}{card.to === 'chat' && <span style={{ fontWeight: 600, opacity: 0.75 }}>· {credits(1)} / message</span>}
           <ArrowRight size={16} aria-hidden="true" />
         </button>
       </div>

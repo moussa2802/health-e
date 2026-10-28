@@ -57,6 +57,8 @@ const DrLoConsole = lazy(() => import("./pages/drlo/DrLoConsole"));
 const EquipePage = lazy(() => import("./pages/drlo/EquipePage"));
 const MessagesDrLoPage = lazy(() => import("./pages/drlo/MessagesDrLoPage"));
 const ChainesPage = lazy(() => import("./pages/drlo/ChainesPage"));
+const MonJournalPage = lazy(() => import("./pages/drlo/MonJournalPage"));
+const ResultatPage = lazy(() => import("./pages/drlo/ResultatPage"));
 const PatientDashboard = lazy(() => import("./pages/patient/PatientDashboard"));
 const ProfessionalDashboard = lazy(
   () => import("./pages/professional/ProfessionalDashboard")
@@ -180,7 +182,7 @@ const AppChrome: React.FC = () => {
   const isChromeless = isAdminRoute || isAppRoute || isDefiJouer;
   // Accueil : le premier écran est Dr Lô en plein écran (pas d'en-tête ni de pied de page du site)
   // Écrans « Mon Dr Lô » (thème chaud sombre, plein écran) : pas d'en-tête ni de pied de page du site
-  const isHome = pathname === "/" || pathname === "/espace" || pathname.startsWith("/espace/") || pathname === "/humeur" || pathname === "/question" || pathname === "/drlo" || pathname === "/equipe" || pathname === "/confidentialite" || pathname === "/conditions" || pathname === "/ethique" || pathname === "/messages-dr-lo" || pathname.startsWith("/messages-dr-lo/") || pathname === "/chaines" || pathname.startsWith("/chaines/") || pathname === "/assessment/totem" || pathname.startsWith("/assessment/results/") || pathname === "/defi" || pathname.startsWith("/defi/") || pathname === "/decouvre" || pathname === "/assessment/compatibility" || pathname === "/assessment" || pathname.startsWith("/assessment/") || pathname === "/acheter-koris";
+  const isHome = pathname === "/" || pathname === "/espace" || pathname.startsWith("/espace/") || pathname === "/humeur" || pathname === "/journal" || pathname === "/question" || pathname === "/drlo" || pathname === "/equipe" || pathname === "/confidentialite" || pathname === "/conditions" || pathname === "/ethique" || pathname === "/messages-dr-lo" || pathname.startsWith("/messages-dr-lo/") || pathname === "/chaines" || pathname.startsWith("/chaines/") || pathname === "/assessment/totem" || pathname.startsWith("/assessment/results/") || pathname === "/defi" || pathname.startsWith("/defi/") || pathname === "/decouvre" || pathname === "/assessment/compatibility" || pathname === "/assessment" || pathname.startsWith("/assessment/") || pathname === "/acheter-koris";
   const { currentUser } = useAuth();
   const userId = currentUser?.id ?? null;
 
@@ -192,6 +194,7 @@ const AppChrome: React.FC = () => {
           <Routes>
             <Route path="/" element={<HomePage />} />
             <Route path="/espace" element={<EspacePage />} />
+            <Route path="/espace/resultat/:scaleId" element={<ResultatPage />} />
             <Route path="/espace/:domaine" element={<DomainePage />} />
             <Route path="/humeur" element={<HumeurPage />} />
             <Route path="/question" element={<QuestionPage />} />
@@ -496,9 +499,9 @@ const AppChrome: React.FC = () => {
 
             {/* Journal Routes */}
             {/* Le journal vit désormais dans « Me confier » (une seule entité pour écrire et relire) */}
-            <Route path="/journal" element={<Navigate to="/" replace state={{ tab: 'confier', journal: true }} />} />
-            <Route path="/journal/new" element={<Navigate to="/" replace state={{ tab: 'confier' }} />} />
-            <Route path="/journal/:id" element={<Navigate to="/" replace state={{ tab: 'confier', journal: true }} />} />
+            <Route path="/journal" element={<MonJournalPage />} />
+            <Route path="/journal/new" element={<Navigate to="/journal" replace state={{ write: true }} />} />
+            <Route path="/journal/:id" element={<Navigate to="/journal" replace />} />
 
             {/* Mon Espace */}
             <Route path="/mon-espace" element={<Navigate to="/espace" replace />} />
@@ -531,7 +534,7 @@ const AppChrome: React.FC = () => {
         </Suspense>
       </main>
       {!isChromeless && !isHome && <Footer />}
-      {!isChromeless && <FloatingChat userId={userId} hideLauncher={isHome} />}
+      {!isChromeless && <FloatingChat userId={userId} />}
       {!isChromeless && !isHome && !!currentUser && <FloatingKori />}
       {!isChromeless && <NoKorisModal />}
       {!isChromeless && <KorisWelcome />}

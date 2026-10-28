@@ -101,22 +101,24 @@ function cleanReaction(r) {
   return REACTIONS.includes(r) ? r : null;
 }
 
-const MAX_AUDIO_BYTES = 3 * 1024 * 1024;
-const MAX_AUDIO_SEC = 185; // 3 min + marge
-const AUDIO_TYPES = { 'audio/webm': 'webm', 'audio/ogg': 'ogg', 'audio/mp4': 'm4a', 'audio/aac': 'aac', 'audio/mpeg': 'mp3' };
+// 4 Mo : un envoi Netlify est limité à 6 Mo, et le base64 grossit le fichier d'un tiers.
+const MAX_AUDIO_BYTES = 4 * 1024 * 1024;
+const MAX_AUDIO_SEC = 305; // 5 min + marge
+const AUDIO_TYPES = { 'audio/webm': 'webm', 'audio/ogg': 'ogg', 'audio/mp4': 'm4a', 'audio/x-m4a': 'm4a', 'audio/aac': 'aac', 'audio/mpeg': 'mp3', 'audio/mp3': 'mp3' };
 
 /** Message vocal : { audio:{ data (base64), mime, durationSec } } → { buffer, mime, ext, durationSec } ou { error }. */
 function validateAudio(a) {
   if (!a || typeof a.data !== 'string') return { error: 'Vocal manquant.' };
-  const mime = String(a.mime || '').split(';')[0].trim().toLowerCase();
-  const ext = AUDIO_TYPES[mime];
+  const given = String(a.mime || '').split(';')[0].trim().toLowerCase();
+  const mime = { 'audio/x-m4a': 'audio/mp4', 'audio/mp3': 'audio/mpeg' }[given] || given;
+  const ext = AUDIO_TYPES[given];
   if (!ext) return { error: 'Format audio non accepté.' };
   const dur = Number(a.durationSec);
   if (!(dur > 0)) return { error: 'Durée du vocal invalide.' };
-  if (dur > MAX_AUDIO_SEC) return { error: 'Le vocal dépasse 3 minutes.' };
+  if (dur > MAX_AUDIO_SEC) return { error: 'Le vocal dépasse 5 minutes.' };
   const buffer = Buffer.from(a.data.replace(/^data:[^,]*,/, ''), 'base64');
   if (buffer.length < 1000) return { error: 'Le vocal est vide.' };
-  if (buffer.length > MAX_AUDIO_BYTES) return { error: 'Le vocal est trop lourd.' };
+  if (buffer.length > MAX_AUDIO_BYTES) return { error: 'Le vocal est trop lourd (4 Mo au plus).' };
   return { buffer, mime, ext, durationSec: Math.round(dur) };
 }
 

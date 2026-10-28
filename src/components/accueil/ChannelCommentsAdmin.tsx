@@ -5,6 +5,7 @@
 import React, { useEffect, useState } from 'react';
 import { Loader2 } from 'lucide-react';
 import { DC } from './DrLoShell';
+import TotemAvatar from './TotemAvatar';
 import ReplyComposer from './ReplyComposer';
 import type { MomentPalette } from '../../utils/drloMoment';
 import type { AdminComment } from '../../services/drloBroadcastService';
@@ -30,7 +31,7 @@ const ChannelCommentsAdmin: React.FC<{ postId: string; palette: MomentPalette }>
       {distress > 0 && <p style={{ margin: 0, fontSize: 12.5, color: '#F0C987', lineHeight: 1.5 }}>{distress} commentaire{distress > 1 ? 's' : ''} montrant une détresse : non publié{distress > 1 ? 's' : ''}, la personne a reçu en privé le 1515 et le CHU Fann. Tu ne vois pas qui c'est.</p>}
       {(items ?? []).filter(c => c.status !== 'distress').map(c => (
         <div key={c.id} style={{ borderRadius: 12, border: `1px solid ${c.reports > 0 ? 'rgba(240,154,122,.5)' : DC.line}`, background: 'rgba(255,255,255,.03)', padding: 10, opacity: c.hidden ? 0.55 : 1 }}>
-          <p style={{ margin: 0, fontSize: 12, color: DC.faint }}>{c.name}{c.pinned ? ' · épinglé' : ''}{c.hidden ? ' · masqué' : ''}{c.reports > 0 ? ` · signalé ${c.reports} fois` : ''}</p>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}><TotemAvatar animal={c.totem} size={28} /><p style={{ margin: 0, fontSize: 12, color: DC.faint }}>{c.name}{c.pinned ? ' · épinglé' : ''}{c.hidden ? ' · masqué' : ''}{c.reports > 0 ? ` · signalé ${c.reports} fois` : ''}</p></div>
           <p style={{ margin: '4px 0 0', fontSize: 14, lineHeight: 1.5, color: DC.text, whiteSpace: 'pre-wrap' }}>{c.text}</p>
           {c.thread.map(e => {
             const key = `${c.id}:${e.index}`;

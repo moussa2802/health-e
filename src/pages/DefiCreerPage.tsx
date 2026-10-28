@@ -183,7 +183,7 @@ const DefiCreerPage: React.FC = () => {
       <div className="min-h-screen bg-paper drl-screen drl-page">
         <div className="sticky top-0 z-20 bg-paper/95 backdrop-blur-md border-b border-line">
           <div className="max-w-[600px] mx-auto px-5 py-3.5 flex items-center gap-3">
-            <button onClick={() => navigate('/defi')} className="p-0 border-none bg-transparent cursor-pointer text-ink">
+            <button onClick={() => navigate('/defi', { replace: true })} className="p-0 border-none bg-transparent cursor-pointer text-ink">
               <ArrowLeft size={20} />
             </button>
             <h1 className="font-display text-[18px] font-semibold text-ink m-0">Créer mon défi</h1>
@@ -197,7 +197,7 @@ const DefiCreerPage: React.FC = () => {
             Termine ou attends la fin d'un défi pour en créer un nouveau.
           </p>
           <button
-            onClick={() => navigate('/defi')}
+            onClick={() => navigate('/defi', { replace: true })}
             className="px-6 py-3 rounded-[14px] border border-line bg-card text-ink text-[14px] font-medium cursor-pointer"
           >
             Voir mes défis
@@ -641,7 +641,7 @@ const DefiCreerPage: React.FC = () => {
     <div className="min-h-screen bg-paper drl-screen drl-page">
       <div className="sticky top-0 z-20 bg-paper/95 backdrop-blur-md border-b border-line">
         <div className="max-w-[600px] mx-auto px-5 py-3.5 flex items-center gap-3">
-          <button onClick={() => navigate('/defi')} className="p-0 border-none bg-transparent cursor-pointer text-ink">
+          <button onClick={() => navigate('/defi', { replace: true })} className="p-0 border-none bg-transparent cursor-pointer text-ink">
             <ArrowLeft size={20} />
           </button>
           <h1 className="font-display text-[18px] font-semibold text-ink m-0">Créer mon défi</h1>

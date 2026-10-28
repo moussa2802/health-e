@@ -3,8 +3,10 @@
  * On ne voit jamais de noms : seulement le nombre de personnes visées. Ciblage fin : au moins 5 personnes.
  */
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Eye, EyeOff, Loader2, Mic, Send, Square, Trash2 } from 'lucide-react';
-import { blobToBase64, MAX_VOICE_SEC, useVoiceRecorder } from '../../hooks/useVoiceRecorder';
+import { Eye, EyeOff, Loader2, Mic, Send, Trash2 } from 'lucide-react';
+import { blobToBase64, useVoiceRecorder } from '../../hooks/useVoiceRecorder';
+import VoiceInput from './VoiceInput';
+import TotemAvatar from './TotemAvatar';
 import { DC, card } from './DrLoShell';
 import ReplyComposer from './ReplyComposer';
 import type { MomentPalette } from '../../utils/drloMoment';
@@ -58,9 +60,12 @@ const CommentsAdmin: React.FC<{ row: BroadcastRow; palette: MomentPalette; onCha
           {distress > 0 && <p style={{ margin: 0, fontSize: 12.5, color: '#F0C987', lineHeight: 1.5 }}>{distress} commentaire{distress > 1 ? 's' : ''} montrant une détresse : non publié{distress > 1 ? 's' : ''}, la personne a reçu en privé le 1515 et le CHU Fann. Tu ne vois pas qui c'est.</p>}
           {(items ?? []).map(c => (
             <div key={c.id} style={{ borderRadius: 12, border: `1px solid ${c.status === 'distress' ? 'rgba(240,201,135,.5)' : c.reports > 0 ? 'rgba(240,154,122,.5)' : DC.line}`, background: 'rgba(255,255,255,.03)', padding: 10, opacity: c.hidden ? 0.55 : 1 }}>
-              <p style={{ margin: 0, fontSize: 12, color: DC.faint }}>
-                {c.status === 'distress' ? 'Détresse (non publié)' : c.name}{c.pinned ? ' · épinglé' : ''}{c.hidden && c.status !== 'distress' ? ' · masqué' : ''}{c.reports > 0 ? ` · signalé ${c.reports} fois` : ''}
-              </p>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                {c.status !== 'distress' && <TotemAvatar animal={c.totem} size={28} />}
+                <p style={{ margin: 0, fontSize: 12, color: DC.faint }}>
+                  {c.status === 'distress' ? 'Détresse (non publié)' : c.name}{c.pinned ? ' · épinglé' : ''}{c.hidden && c.status !== 'distress' ? ' · masqué' : ''}{c.reports > 0 ? ` · signalé ${c.reports} fois` : ''}
+                </p>
+              </div>
               <p style={{ margin: '4px 0 0', fontSize: 14, lineHeight: 1.5, color: DC.text, whiteSpace: 'pre-wrap' }}>{c.text}</p>
               {c.thread.map(e => {
                 const key = `${c.id}:${e.index}`;
@@ -275,24 +280,7 @@ const CommunityPanel: React.FC<{ palette: MomentPalette; newByBroadcast?: Record
         <p style={{ margin: '4px 0 0', fontSize: 12, color: DC.faint, textAlign: 'right' }}>{text.length} / {MAX}</p>
 
         <div style={{ marginTop: 10 }}>
-          {voice.state === 'idle' || voice.state === 'denied' ? (
-            <button type="button" onClick={voice.start} className="drl-btn" style={{ minHeight: 44, padding: '0 14px', borderRadius: 999, border: `1px solid ${DC.line}`, background: DC.glass, color: DC.soft, fontWeight: 600, fontSize: 14, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-              <Mic size={16} aria-hidden="true" /> Ajouter un vocal (3 min max)
-            </button>
-          ) : voice.state === 'recording' ? (
-            <button type="button" onClick={voice.stop} className="drl-btn" aria-label="Arrêter l'enregistrement" style={{ minHeight: 44, padding: '0 14px', borderRadius: 999, border: '1px solid rgba(240,154,122,.6)', background: 'rgba(240,154,122,.12)', color: DC.text, fontWeight: 700, fontSize: 14, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 8 }}>
-              <Square size={14} fill="currentColor" aria-hidden="true" /> Enregistrement… {mmss(voice.elapsed)} / {mmss(MAX_VOICE_SEC)}
-            </button>
-          ) : voice.state === 'processing' ? (
-            <p role="status" style={{ margin: 0, fontSize: 14, color: DC.muted }}>Préparation du vocal pour tous les téléphones…</p>
-          ) : voice.state === 'ready' && voice.clip ? (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <audio controls src={voice.clip.url} style={{ flex: 1, minWidth: 0, height: 40 }} />
-              <button type="button" onClick={voice.reset} aria-label="Supprimer le vocal" className="drl-btn" style={{ width: 44, height: 44, borderRadius: 12, border: `1px solid ${DC.line}`, background: DC.glass, color: DC.muted, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Trash2 size={16} aria-hidden="true" /></button>
-            </div>
-          ) : <p style={{ margin: 0, fontSize: 13, color: DC.faint }}>Ce navigateur ne permet pas d'enregistrer un vocal.</p>}
-          {voice.state === 'denied' && <p role="alert" style={{ margin: '6px 0 0', fontSize: 13, color: '#F09A7A' }}>Le micro est bloqué. Autorise-le dans ton navigateur puis réessaie.</p>}
-          {voice.clip && <p style={{ margin: '6px 0 0', fontSize: 12, color: DC.faint }}>Vocal de {mmss(voice.clip.durationSec)}. Le texte ci-dessus devient facultatif.</p>}
+          <VoiceInput voice={voice} recordLabel="Enregistrer un vocal" readyHint="Le texte ci-dessus devient facultatif." />
         </div>
 
         <p style={lab}>Pour qui ?</p>
