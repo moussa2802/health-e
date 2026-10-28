@@ -26,15 +26,19 @@ function hasPhone(t) {
 function hasLink(t) {
   return /https?:\/\//i.test(t) || /\bwww\./i.test(t) || /[a-z0-9-]+\.(com|sn|fr|net|org|io|me|tv|ly)\b/i.test(t) || /\S+@\S+\.\S+/.test(t) || /wa\.me|t\.me|bit\.ly/i.test(t);
 }
-const hasWord = (list, t) => { const f = fold(t); return list.some((w) => f.includes(fold(w))); };
+const esc = (w) => fold(w).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+// Insultes : mot entier seulement (sinon « technique » contient « nique », « dispute » contient « pute »…).
+const hasWholeWord = (list, t) => { const f = fold(t); return list.some((w) => new RegExp('(^|[^a-z0-9])' + esc(w) + '([^a-z0-9]|$)').test(f)); };
+// Détresse : début de mot obligatoire (« bien finir » ne contient pas « en finir »), fin libre pour les radicaux (« suicid »).
+const hasWordStart = (list, t) => { const f = fold(t); return list.some((w) => new RegExp('(^|[^a-z0-9])' + esc(w)).test(f)); };
 
 /** { ok:true } | { ok:false, reason:'crisis'|'phone'|'link'|'insult' } — la détresse passe avant tout. */
 function moderate(text) {
   const t = String(text || '');
-  if (hasWord(CRISIS, t)) return { ok: false, reason: 'crisis' };
+  if (hasWordStart(CRISIS, t)) return { ok: false, reason: 'crisis' };
   if (hasPhone(t)) return { ok: false, reason: 'phone' };
   if (hasLink(t)) return { ok: false, reason: 'link' };
-  if (hasWord(INSULTS, t)) return { ok: false, reason: 'insult' };
+  if (hasWholeWord(INSULTS, t)) return { ok: false, reason: 'insult' };
   return { ok: true };
 }
 

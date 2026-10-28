@@ -90,3 +90,14 @@ test('réponse de Dr Lô : le texte est facultatif avec un vocal', () => {
   assert.strictEqual(C.validateEntry('  Merci  ', true).text, 'Merci');
   assert.ok(C.validateEntry('x'.repeat(601), true).error);
 });
+
+test('modération : mots entiers (technique, unique, dispute, bien finir passent)', () => {
+  const C = require('../_drloComments.js');
+  for (const ok of ['Commentaire de test technique.', 'Une histoire unique', 'une dispute banale', 'ça va bien finir', 'quelle panique']) {
+    assert.equal(C.moderate(ok).ok, true, ok);
+  }
+  assert.equal(C.moderate('espèce de connard').reason, 'insult');
+  assert.equal(C.moderate('ntm').reason, 'insult');
+  assert.equal(C.moderate('je veux en finir').reason, 'crisis');
+  assert.equal(C.moderate('pensées suicidaires').reason, 'crisis');
+});
