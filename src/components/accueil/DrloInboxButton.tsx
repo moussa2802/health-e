@@ -10,6 +10,7 @@ import { DC } from './DrLoShell';
 import type { MomentPalette } from '../../utils/drloMoment';
 import { getInbox } from '../../services/drloBroadcastService';
 import { getMyThreads } from '../../services/drloQuestionService';
+import { getChannelNews } from '../../services/drloChannelService';
 
 const DrloInboxButton: React.FC<{ uid: string; palette: MomentPalette }> = ({ uid, palette }) => {
   const [badge, setBadge] = useState(0);
@@ -17,7 +18,8 @@ const DrloInboxButton: React.FC<{ uid: string; palette: MomentPalette }> = ({ ui
     Promise.all([
       getInbox().then(r => r.badge ?? r.unread).catch(() => 0),
       getMyThreads().then(r => r.news).catch(() => 0),
-    ]).then(([a, b]) => setBadge(a + b));
+      getChannelNews().then(r => r.badge).catch(() => 0),
+    ]).then(([a, b, c]) => setBadge(a + b + c));
   }, []);
   useEffect(() => {
     load();

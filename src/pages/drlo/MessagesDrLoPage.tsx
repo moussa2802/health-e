@@ -10,6 +10,7 @@ import { Bell, BellOff } from 'lucide-react';
 import DrLoShell, { DC, card, usePalette } from '../../components/accueil/DrLoShell';
 import MessageComments, { FollowUp, ThreadView } from '../../components/accueil/MessageComments';
 import RealDrLoBadge, { RealDrLoPhoto } from '../../components/accueil/RealDrLoBadge';
+import ChannelsLinkCard from '../../components/accueil/ChannelsLinkCard';
 import { useAuth } from '../../contexts/AuthContext';
 import { followUpQuestion, getMyThreads, markDrloAnswersSeen, type MyQuestion } from '../../services/drloQuestionService';
 import {
@@ -153,6 +154,7 @@ const MessagesDrLoPage: React.FC = () => {
     <DrLoShell back={{ to: '/', label: 'Accueil' }} palette={palette}>
       <p style={{ margin: '18px 0 0', fontSize: 12, letterSpacing: '.14em', textTransform: 'uppercase', color: palette.accent, fontWeight: 700 }}>Dr Lô</p>
       <h1 style={h1}>Les messages de Dr Lô</h1>
+      <ChannelsLinkCard palette={palette} />
       {error && <p role="alert" style={{ marginTop: 16, color: DC.muted, fontSize: 15 }}>{error}</p>}
       {!items && !error && <p style={{ marginTop: 16, color: DC.faint }}>Un instant…</p>}
       {items && items.length === 0 && !(disc && disc.length > 0) && <p style={{ marginTop: 16, color: DC.muted, fontSize: 15, lineHeight: 1.55 }}>Pas encore de message. Quand Dr Lô t'en laissera un, tu le retrouveras ici.</p>}

@@ -17,6 +17,8 @@ import ReplyComposer from '../../components/accueil/ReplyComposer';
 import { getScaleMeta } from '../../utils/scaleMeta';
 import DrloBench from '../../components/accueil/DrloBench';
 import CommunityPanel from '../../components/accueil/CommunityPanel';
+import ChannelsAdmin from '../../components/accueil/ChannelsAdmin';
+import { useChannelsActivity } from '../../hooks/useChannelsActivity';
 import { getDrloActivity, markCommunitySeen } from '../../services/drloBroadcastService';
 
 const fmt = (t: number) => (t ? new Date(t).toLocaleString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : '');
@@ -175,8 +177,9 @@ const DrLoConsole: React.FC = () => {
   const [week, setWeek] = useState<{ used: number; cap: number; queued: number } | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [tab, setTabRaw] = useState<'pending' | 'done' | 'bench' | 'community'>('pending');
+  const [tab, setTabRaw] = useState<'pending' | 'done' | 'bench' | 'community' | 'channels'>('pending');
   const [activity, setActivity] = useState<{ community: number; distress: number; byBroadcast: Record<string, number> }>({ community: 0, distress: 0, byBroadcast: {} });
+  const chBadge = useChannelsActivity(role === 'drlo', tab);
   const loadActivity = () => { getDrloActivity().then(setActivity).catch(() => {}); };
   const setTab = (t: typeof tab) => {
     if (tab === 'community' && t !== 'community') markCommunitySeen().then(loadActivity).catch(() => {});
@@ -269,9 +272,9 @@ const DrLoConsole: React.FC = () => {
         </p>
       )}
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 14, alignItems: 'center' }}>
-        {(['pending', 'done', 'community', 'bench'] as const).map(t => {
-          const n = t === 'pending' ? pendingCount : t === 'community' && tab !== 'community' ? activity.community : 0;
-          const label = t === 'pending' ? 'À répondre' : t === 'done' ? 'Répondues' : t === 'community' ? 'Ma communauté' : 'Banc d\'essai';
+        {(['pending', 'done', 'community', 'channels', 'bench'] as const).map(t => {
+          const n = t === 'pending' ? pendingCount : t === 'community' && tab !== 'community' ? activity.community : t === 'channels' ? chBadge : 0;
+          const label = t === 'pending' ? 'À répondre' : t === 'done' ? 'Répondues' : t === 'community' ? 'Ma communauté' : t === 'channels' ? 'Chaînes' : 'Banc d\'essai';
           return (
             <button key={t} onClick={() => setTab(t)} className="drl-btn" aria-label={n > 0 ? `${label} : ${n} nouveauté${n > 1 ? 's' : ''}` : label}
               style={{ position: 'relative', minHeight: 38, padding: '0 14px', borderRadius: 999, border: `1px solid ${tab === t ? palette.accent : DC.line}`, background: tab === t ? 'rgba(242,182,109,.15)' : DC.glass, color: tab === t ? palette.accent : DC.muted, fontWeight: 700, fontSize: 13.5, cursor: 'pointer' }}>
@@ -285,7 +288,7 @@ const DrLoConsole: React.FC = () => {
         </button>
       </div>
       {error && <p role="alert" style={{ color: '#F09A7A', fontSize: 13.5 }}>{error}</p>}
-      {tab === 'community' ? <CommunityPanel palette={palette} newByBroadcast={activity.byBroadcast} /> : tab === 'bench' && currentUser ? <DrloBench uid={currentUser.id} palette={palette} /> : loading && items.length === 0 ? <Loader2 className="animate-spin" style={{ marginTop: 20 }} /> : (
+      {tab === 'community' ? <CommunityPanel palette={palette} newByBroadcast={activity.byBroadcast} /> : tab === 'channels' ? <ChannelsAdmin palette={palette} /> : tab === 'bench' && currentUser ? <DrloBench uid={currentUser.id} palette={palette} /> : loading && items.length === 0 ? <Loader2 className="animate-spin" style={{ marginTop: 20 }} /> : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginTop: 14 }}>
           {list.length === 0 && <p style={{ color: DC.faint, fontSize: 14 }}>{tab === 'pending' ? 'Aucune question en attente. 🙏' : 'Pas encore de réponse envoyée.'}</p>}
           {list.map(q => (

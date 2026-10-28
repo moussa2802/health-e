@@ -13,6 +13,7 @@ const KORIS_COSTS = {
   unlock_chat: 3,
   programme: 3,
   programme_bilan: 3,
+  channel: 1, // entrée dans une chaîne de Dr Lô : quantité = prix en étincelles fixé par Dr Lô
 };
 
 /**

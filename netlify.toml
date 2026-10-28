@@ -13,6 +13,10 @@
 [functions."broadcast-scheduled"]
   schedule = "@hourly"
 
+# Chaînes de Dr Lô : chaque heure, notifications des nouveautés
+[functions."channel-push-scheduled"]
+  schedule = "@hourly"
+
 [[headers]]
   for = "/index.html"
   [headers.values]
