@@ -28,7 +28,7 @@ const styles = (palette: MomentPalette) => {
   const box: React.CSSProperties = { marginTop: 10, textAlign: 'left', fontFamily: '"Plus Jakarta Sans", system-ui, sans-serif', borderRadius: 18, border: '1px solid rgba(242,182,109,.3)', background: 'rgba(242,182,109,.07)', padding: 16 };
   const primary: React.CSSProperties = { minHeight: 44, padding: '0 16px', borderRadius: 12, border: 0, background: palette.primary, color: C.ink, fontSize: 14, fontWeight: 700, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6 };
   const ghost: React.CSSProperties = { ...primary, background: 'transparent', border: '1px solid rgba(255,255,255,.18)', color: C.text, fontWeight: 600 };
-  const kicker: React.CSSProperties = { margin: 0, fontSize: 11, letterSpacing: '.08em', textTransform: 'uppercase', fontWeight: 700, color: palette.accent };
+  const kicker: React.CSSProperties = { margin: 0, fontSize: 13, letterSpacing: '.08em', textTransform: 'uppercase', fontWeight: 700, color: palette.accent };
   return { box, primary, ghost, kicker };
 };
 
@@ -39,7 +39,7 @@ export const ProgrammeInviteCard: React.FC<{ axes: ProgAxis[]; env: ProgCardEnv 
   return (
     <div className="drl-in" style={s.box}>
       <p style={s.kicker}>Mon programme Dr Lô</p>
-      <p style={{ margin: '6px 0 12px', fontSize: 13.5, lineHeight: 1.5, color: C.soft }}>
+      <p style={{ margin: '6px 0 12px', fontSize: 14, lineHeight: 1.5, color: C.soft }}>
         28 jours, 3 petits engagements par jour. Je regarde ton profil et je te prépare le tien · {env.proposeCost}
       </p>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -65,15 +65,15 @@ export const ProgrammeOfferCard: React.FC<{ axis: ProgAxis; intro: string; order
     <div className="drl-in" style={s.box}>
       <p style={s.kicker}>Proposition de Dr Lô</p>
       <p style={{ margin: '6px 0 2px', fontFamily: 'Fraunces, serif', fontSize: 20, fontWeight: 600, color: C.title }}>{ax.name}</p>
-      <p style={{ margin: 0, fontSize: 12.5, color: C.faint }}>28 jours · 3 engagements · {lite ? '5' : '10'} min par jour</p>
+      <p style={{ margin: 0, fontSize: 13, color: C.faint }}>28 jours · 3 engagements · {lite ? '5' : '10'} min par jour</p>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8, margin: '14px 0 16px' }}>
         {day1.map(e => (
-          <div key={e.key} style={{ display: 'flex', gap: 10, alignItems: 'flex-start', fontSize: 13.5, lineHeight: 1.45, color: C.soft }}>
+          <div key={e.key} style={{ display: 'flex', gap: 10, alignItems: 'flex-start', fontSize: 14, lineHeight: 1.45, color: C.soft }}>
             <span aria-hidden="true" style={{ width: 8, height: 8, borderRadius: '50%', background: env.palette.accent, marginTop: 6, flexShrink: 0 }} />
             <span><b style={{ color: C.text }}>{e.title}</b>{e.duration ? ` · ${e.duration}` : ''}</span>
           </div>
         ))}
-        <p style={{ margin: 0, fontSize: 12, color: C.faint }}>Les exercices changent chaque jour et chaque semaine.</p>
+        <p style={{ margin: 0, fontSize: 13, color: C.faint }}>Les exercices changent chaque jour et chaque semaine.</p>
       </div>
       {adapt && (
         <div className="drl-in" style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 12, paddingTop: 12, borderTop: '1px solid rgba(255,255,255,.12)' }}>
@@ -81,7 +81,7 @@ export const ProgrammeOfferCard: React.FC<{ axis: ProgAxis; intro: string; order
             <input type="checkbox" checked={lite} disabled={!!fragile} onChange={e => setLite(e.target.checked)} style={{ width: 20, height: 20, accentColor: env.palette.accent }} />
             Version légère : 5 minutes par jour
           </label>
-          <p style={{ margin: 0, fontSize: 12.5, color: C.faint }}>Ou un autre programme :</p>
+          <p style={{ margin: 0, fontSize: 13, color: C.faint }}>Ou un autre programme :</p>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
             {PROG_AXES.filter(a => a !== axis).map(a => (
               <button key={a} onClick={() => env.onAlt(a, lite)} style={{ ...s.ghost, minHeight: 40, fontSize: 13 }}>{AXES[a].short}</button>
@@ -109,7 +109,7 @@ export const ProgrammeOpenCard: React.FC<{ env: ProgCardEnv }> = ({ env }) => {
 
 /** Carte d'une proposition déjà acceptée : une simple mention, pas un deuxième bouton. */
 const ProgrammeDoneLine: React.FC = () => (
-  <p className="drl-in" style={{ margin: '8px 0 0', fontSize: 12.5, color: '#9DBFAF', display: 'flex', alignItems: 'center', gap: 6 }}>
+  <p className="drl-in" style={{ margin: '8px 0 0', fontSize: 13, color: '#9DBFAF', display: 'flex', alignItems: 'center', gap: 6 }}>
     <ClipboardCheck size={14} aria-hidden="true" />Programme lancé
   </p>
 );

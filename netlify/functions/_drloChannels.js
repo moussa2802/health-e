@@ -13,6 +13,9 @@ const PHOTO_TYPES = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'we
 const MAX_PHOTO_BYTES = 1.5 * 1024 * 1024;
 const STATUSES = ['active', 'archived'];
 const SCALE_ID = /^[a-zA-Z0-9_-]{1,60}$/;
+/** Tests réservés à un genre (même règle que le site : getGenderHiddenIds). Une personne de l'autre genre ne peut pas les faire : la chaîne ne lui est pas ouverte. */
+const GENDER_ONLY = { iief: 'homme', fsfi: 'femme' };
+const genreOf = (profile) => { const g = profile && profile.onboardingProfile && profile.onboardingProfile.genre; return g === 'homme' || g === 'femme' ? g : null; };
 
 const clean = (v, max) => String(v ?? '').replace(/\r/g, '').trim().slice(0, max);
 
@@ -96,6 +99,9 @@ function eligibility(profile, balance, ch) {
   const rules = (ch && ch.rules) || {};
   const missing = [];
   for (const t of rules.tests || []) {
+    const only = GENDER_ONLY[t.scaleId];
+    const g = genreOf(p);
+    if (only && g && g !== only) { missing.push({ kind: 'reserved', scaleId: t.scaleId, gender: only }); continue; }
     const r = p.scaleResults && p.scaleResults[t.scaleId];
     if (!r) { missing.push({ kind: 'test', scaleId: t.scaleId, ...(t.levels ? { levels: t.levels } : {}) }); continue; }
     if (t.levels && t.levels.length) {
@@ -141,6 +147,7 @@ function chatSummary(channels, memberIds, profile, balance, labels = {}) {
           const name = labels[m.scaleId] || m.scaleId;
           if (m.kind === 'test') return `faire le test « ${name} » (${m.scaleId})${m.levels ? ` avec un résultat ${m.levels.map((l) => LEVEL_WORDS[l] || l).join(' ou ')}` : ''}`;
           if (m.kind === 'level') return `un résultat ${m.levels.map((l) => LEVEL_WORDS[l] || l).join(' ou ')} au test « ${name} » (ne pas le lui dire comme un reproche)`;
+          if (m.kind === 'reserved') return `réservée aux ${m.gender === 'homme' ? 'hommes' : 'femmes'} : NE PAS la lui proposer`;
           if (m.kind === 'totem') return m.known ? 'réservée à d\'autres totems' : `révéler son totem`;
           if (m.kind === 'age') return `réservée aux ${m.minAge} ans et plus`;
           if (m.kind === 'balance') return `${m.need - m.have} étincelle${m.need - m.have > 1 ? 's' : ''} de plus`;
@@ -154,4 +161,14 @@ function chatSummary(channels, memberIds, profile, balance, labels = {}) {
   return { text: lines.join('\n'), ids };
 }
 
-module.exports = { chatSummary, MAX_NAME, MAX_DESC, MAX_FRAMING, MAX_PRICE, MIN_AGES, AGE_RANGES, PHOTO_TYPES, STATUSES, sanitizeRules, validateChannel, validatePhoto, ageLowerBound, eligibility };
+/** Ce qu'on montre à quelqu'un qui n'est pas encore connecté (lien d'invitation) : rien de plus que la carte de la chaîne. */
+function publicCard(id, c) {
+  if (!c || c.status === 'archived') return null;
+  const rules = c.rules || {};
+  return {
+    id, name: String(c.name || ''), description: String(c.description || ''), price: Number(c.price) || 0, memberCount: Number(c.memberCount) || 0,
+    hasPhoto: !!c.photoPath, minAge: rules.minAge || null, testCount: (rules.tests || []).length, hasTotems: !!(rules.totems && rules.totems.length),
+  };
+}
+
+module.exports = { GENDER_ONLY, publicCard, chatSummary, MAX_NAME, MAX_DESC, MAX_FRAMING, MAX_PRICE, MIN_AGES, AGE_RANGES, PHOTO_TYPES, STATUSES, sanitizeRules, validateChannel, validatePhoto, ageLowerBound, eligibility };

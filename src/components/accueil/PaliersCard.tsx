@@ -12,7 +12,7 @@ const PaliersCard: React.FC<{ status: DrloStatus; palette: MomentPalette; withCt
   return (
     <section aria-label="Ton chemin vers Dr Lô" style={{ ...card, marginTop: 14, borderColor: 'rgba(233,200,143,.35)', background: 'rgba(233,200,143,.07)' }}>
       <h2 style={{ margin: 0, fontFamily: 'Fraunces, serif', fontSize: 19, fontWeight: 600, color: DC.title }}>Ton chemin vers Dr Lô</h2>
-      <p style={{ margin: '6px 0 0', fontSize: 13.5, lineHeight: 1.5, color: DC.muted }}>
+      <p style={{ margin: '6px 0 0', fontSize: 14, lineHeight: 1.5, color: DC.muted }}>
         {unlocked
           ? 'C\'est débloqué : tu peux écrire au vrai Dr Lô. C\'est gratuit, ta récompense.'
           : `Encore ${remaining} étape${remaining > 1 ? 's' : ''} et tu pourras lui écrire directement. C'est gratuit : ta récompense.`}
@@ -26,7 +26,7 @@ const PaliersCard: React.FC<{ status: DrloStatus; palette: MomentPalette; withCt
             </span>
             <span style={{ flex: 1 }}>
               <span style={{ display: 'block', fontSize: 14, fontWeight: 700, color: s.done ? DC.text : DC.soft }}>{s.label}{s.done ? ' · fait' : ''}</span>
-              <span style={{ display: 'block', fontSize: 12.5, color: DC.faint }}>
+              <span style={{ display: 'block', fontSize: 13, color: DC.faint }}>
                 {s.detail}{!s.done && s.goal ? ` · ${s.progress ?? 0}/${s.goal}` : ''}
               </span>
             </span>
@@ -35,7 +35,7 @@ const PaliersCard: React.FC<{ status: DrloStatus; palette: MomentPalette; withCt
       </ol>
       {withCta && (
         <Link to="/question" className="drl-btn"
-          style={{ marginTop: 12, minHeight: 46, borderRadius: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, textDecoration: 'none', fontSize: 14.5, fontWeight: 700,
+          style={{ marginTop: 12, minHeight: 46, borderRadius: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, textDecoration: 'none', fontSize: 15, fontWeight: 700,
             ...(unlocked || unseen ? { background: palette.primary, color: DC.ink } : { border: `1px solid ${DC.line}`, background: DC.glass, color: DC.muted }) }}>
           {!unlocked && !unseen && <Lock size={15} aria-hidden="true" />}
           {unseen ? 'Dr Lô t\'a répondu' : 'Écrire au vrai Dr Lô'}

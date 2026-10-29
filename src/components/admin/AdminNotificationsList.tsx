@@ -153,18 +153,18 @@ const AdminNotificationsList: React.FC = () => {
     switch (type) {
       case "new_professional_registration":
       case "user":
-        return "/admin/professionals";
+        return "/admin/notifications";
       case "withdrawal_request":
       case "withdrawal":
-        return "/admin/withdrawals";
+        return "/admin/notifications";
       case "appointment_cancelled":
       case "appointment":
-        return "/admin/appointments";
+        return "/admin/notifications";
       case "support":
       case "support_message":
-        return "/admin/support";
+        return "/admin/notifications";
       case "message":
-        return "/admin/messages";
+        return "/admin/notifications";
       default:
         return "/admin/dashboard";
     }

@@ -4,6 +4,7 @@
  * Un mot de détresse n'est jamais publié : la personne reçoit un message de soutien (1515, CHU Fann).
  */
 import React, { useEffect, useState } from 'react';
+import AudioPlayer from './AudioPlayer';
 import { SendHorizontal } from 'lucide-react';
 import { DC } from './DrLoShell';
 import TotemAvatar from './TotemAvatar';
@@ -32,16 +33,16 @@ export const ThreadView: React.FC<{ entries: ThreadEntry[]; author: string; pale
       const drlo = e.from === 'drlo';
       return (
         <div key={i} style={{ marginTop: 8, borderLeft: `2px solid ${drlo ? palette.accent : DC.line}`, paddingLeft: 10 }}>
-          <p style={{ margin: 0, fontSize: 12, fontWeight: 700, color: drlo ? palette.accent : DC.faint }}>
+          <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: drlo ? palette.accent : DC.faint }}>
             {drlo ? 'Dr Lô' : author}
             {e.updated && <span style={{ marginLeft: 8, color: '#F0C987' }}>Réponse mise à jour</span>}
             {e.fresh && <span style={{ marginLeft: 8, color: '#F0C987' }}>Nouveau</span>}
             {e.editedAt && !e.updated ? <span style={{ marginLeft: 8, fontWeight: 400, color: DC.faint }}>modifié</span> : null}
           </p>
           {e.audioSec > 0 && (e.audioUrl
-            ? <audio controls preload="metadata" src={e.audioUrl} aria-label="Le vocal de Dr Lô" style={{ width: '100%', height: 40, marginTop: 6 }} />
-            : <p style={{ margin: '6px 0 0', fontSize: 13.5, color: DC.muted }}>Vocal de {mmss(e.audioSec)} : indisponible pour le moment.</p>)}
-          {e.text && <p style={{ margin: '4px 0 0', fontSize: 14.5, lineHeight: 1.5, color: drlo ? DC.soft : DC.text, whiteSpace: 'pre-wrap' }}>{e.text}</p>}
+            ? <AudioPlayer src={e.audioUrl} ariaLabel="Le vocal de Dr Lô" style={{ marginTop: 6 }} />
+            : <p style={{ margin: '6px 0 0', fontSize: 14, color: DC.muted }}>Vocal de {mmss(e.audioSec)} : indisponible pour le moment.</p>)}
+          {e.text && <p style={{ margin: '4px 0 0', fontSize: 15, lineHeight: 1.5, color: drlo ? DC.soft : DC.text, whiteSpace: 'pre-wrap' }}>{e.text}</p>}
         </div>
       );
     })}
@@ -74,7 +75,7 @@ export const FollowUp: React.FC<{ send: (text: string) => Promise<{ support?: bo
           <SendHorizontal size={19} aria-hidden="true" />
         </button>
       </div>
-      {error && <p role="alert" style={{ margin: '8px 4px 0', color: '#F09A7A', fontSize: 13.5, lineHeight: 1.45 }}>{error}</p>}
+      {error && <p role="alert" style={{ margin: '8px 4px 0', color: '#F09A7A', fontSize: 14, lineHeight: 1.45 }}>{error}</p>}
       {support && (
         <div role="status" style={{ marginTop: 10, borderRadius: 14, border: '1px solid rgba(233,200,143,.45)', background: 'rgba(233,200,143,.08)', padding: 12, fontSize: 14, lineHeight: 1.55, color: DC.text }}>
           Ce que tu as écrit compte, et on ne l'a pas publié. Si tu penses à te faire du mal ou si tu es en danger, appelle le <a href="tel:1515" style={{ fontWeight: 700, color: palette.accent }}>1515</a> (SAMU) ou le CHU de Fann au <a href="tel:+221338691820" style={{ fontWeight: 700, color: palette.accent }}>+221 33 869 18 20</a>. Parle à une vraie personne, tout de suite.
@@ -131,9 +132,9 @@ const MessageComments: React.FC<{ messageId: string; palette: MomentPalette }> =
               <SendHorizontal size={19} aria-hidden="true" />
             </button>
           </div>
-          <p style={{ margin: '8px 4px 0', fontSize: 12.5, color: DC.faint, lineHeight: 1.5 }}>
+          <p style={{ margin: '8px 4px 0', fontSize: 13, color: DC.faint, lineHeight: 1.5 }}>
             Tu apparais comme{' '}
-            <button type="button" onClick={() => setIdtOpen(o => !o)} aria-expanded={idtOpen} style={{ background: 'none', border: 0, padding: 0, minHeight: 28, color: palette.accent, fontWeight: 700, fontSize: 12.5, cursor: 'pointer', textDecoration: 'underline' }}>
+            <button type="button" onClick={() => setIdtOpen(o => !o)} aria-expanded={idtOpen} style={{ background: 'none', border: 0, padding: 0, minHeight: 28, color: palette.accent, fontWeight: 700, fontSize: 13, cursor: 'pointer', textDecoration: 'underline' }}>
               {mode === 'anon' ? 'Anonyme' : mode === 'prenom' ? 'ton prénom' : (pseudo.trim() || 'un pseudo')}
             </button>
           </p>
@@ -143,7 +144,7 @@ const MessageComments: React.FC<{ messageId: string; palette: MomentPalette }> =
               {mode === 'pseudo' && <input aria-label="Ton pseudo" value={pseudo} maxLength={20} onChange={e => setIdentity({ mode, pseudo: e.target.value })} placeholder="Ton pseudo" className="drl-input" style={{ ...field, minHeight: 40, padding: '0 14px', flexBasis: '100%' }} />}
             </div>
           )}
-          {error && <p role="alert" style={{ margin: '10px 4px 0', color: '#F09A7A', fontSize: 13.5, lineHeight: 1.45 }}>{error}</p>}
+          {error && <p role="alert" style={{ margin: '10px 4px 0', color: '#F09A7A', fontSize: 14, lineHeight: 1.45 }}>{error}</p>}
           {support && (
             <div role="status" style={{ marginTop: 10, borderRadius: 14, border: '1px solid rgba(233,200,143,.45)', background: 'rgba(233,200,143,.08)', padding: 12, fontSize: 14, lineHeight: 1.55, color: DC.text }}>
               Ce que tu as écrit compte, et on ne l'a pas publié. Si tu penses à te faire du mal ou si tu es en danger, appelle le <a href="tel:1515" style={{ fontWeight: 700, color: palette.accent }}>1515</a> (SAMU) ou le CHU de Fann au <a href="tel:+221338691820" style={{ fontWeight: 700, color: palette.accent }}>+221 33 869 18 20</a>. Parle à une vraie personne, tout de suite.
@@ -158,7 +159,7 @@ const MessageComments: React.FC<{ messageId: string; palette: MomentPalette }> =
           <article key={c.id} style={{ padding: '10px 4px', borderTop: `1px solid ${c.pinned ? palette.accent : DC.line}` }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
               <TotemAvatar animal={c.totem} />
-              <p style={{ margin: 0, fontSize: 12.5, color: DC.faint }}><b style={{ color: DC.soft }}>{c.name}</b>{c.mine ? ' (toi)' : ''}{c.pinned ? ' · épinglé' : ''} · {ago(c.at)}</p>
+              <p style={{ margin: 0, fontSize: 13, color: DC.faint }}><b style={{ color: DC.soft }}>{c.name}</b>{c.mine ? ' (toi)' : ''}{c.pinned ? ' · épinglé' : ''} · {ago(c.at)}</p>
             </div>
             <p style={{ margin: '6px 0 0', fontSize: 15, lineHeight: 1.55, color: DC.text, whiteSpace: 'pre-wrap' }}>{c.text}</p>
             <ThreadView entries={c.thread} author={c.mine ? 'Toi' : c.name} palette={palette} />
@@ -167,11 +168,11 @@ const MessageComments: React.FC<{ messageId: string; palette: MomentPalette }> =
             {c.mine && !c.closed && !c.canReply && c.thread.length > 0 && c.thread[c.thread.length - 1].from === 'user' && <p style={{ margin: '10px 0 0', fontSize: 13, color: DC.muted }}>Dr Lô te répondra ici.</p>}
             <div style={{ marginTop: 8, textAlign: 'right' }}>
               {c.mine ? (
-                <button type="button" onClick={() => deleteComment(c.id).then(load).catch(() => {})} style={{ background: 'none', border: 0, color: DC.faint, fontSize: 12.5, cursor: 'pointer', minHeight: 32 }}>Supprimer</button>
+                <button type="button" onClick={() => deleteComment(c.id).then(load).catch(() => {})} style={{ background: 'none', border: 0, color: DC.faint, fontSize: 13, cursor: 'pointer', minHeight: 32 }}>Supprimer</button>
               ) : reported.includes(c.id) ? (
-                <span style={{ fontSize: 12.5, color: DC.faint }}>Merci, c'est signalé.</span>
+                <span style={{ fontSize: 13, color: DC.faint }}>Merci, c'est signalé.</span>
               ) : (
-                <button type="button" onClick={() => reportComment(c.id).then(() => setReported(r => [...r, c.id])).catch(() => {})} style={{ background: 'none', border: 0, color: DC.faint, fontSize: 12.5, cursor: 'pointer', minHeight: 32 }}>Signaler</button>
+                <button type="button" onClick={() => reportComment(c.id).then(() => setReported(r => [...r, c.id])).catch(() => {})} style={{ background: 'none', border: 0, color: DC.faint, fontSize: 13, cursor: 'pointer', minHeight: 32 }}>Signaler</button>
               )}
             </div>
           </article>

@@ -60,7 +60,7 @@ const HelpButton: React.FC = () => {
               </div>
               <div>
                 <p className="m-0 text-sm font-extrabold text-ink">Aide</p>
-                <p className="m-0 text-[11px] text-muted">Comment puis-je t'aider ?</p>
+                <p className="m-0 text-[13px] text-muted">Comment puis-je t'aider ?</p>
               </div>
             </div>
 
@@ -72,7 +72,7 @@ const HelpButton: React.FC = () => {
                   className="px-3.5 py-2.5 rounded-xl border border-sage/20 bg-sage-soft text-sage text-[13px] font-semibold cursor-pointer text-left flex items-center gap-2 hover:bg-sage-soft/70 transition-colors"
                 >
                   <RefreshCw size={16} className="flex-shrink-0" />
-                  <span>Revoir les explications<br /><span className="text-[11px] font-normal text-muted">de cette page</span></span>
+                  <span>Revoir les explications<br /><span className="text-[13px] font-normal text-muted">de cette page</span></span>
                 </button>
               )}
 
@@ -81,7 +81,7 @@ const HelpButton: React.FC = () => {
                 className="px-3.5 py-2.5 rounded-xl border border-sage/20 bg-sage-soft text-sage text-[13px] font-semibold cursor-pointer text-left flex items-center gap-2 hover:bg-sage-soft/70 transition-colors"
               >
                 <Leaf size={16} className="flex-shrink-0" />
-                <span>Revoir la présentation<br /><span className="text-[11px] font-normal text-muted">de Healt-e</span></span>
+                <span>Revoir la présentation<br /><span className="text-[13px] font-normal text-muted">de Healt-e</span></span>
               </button>
 
               <button
@@ -94,7 +94,7 @@ const HelpButton: React.FC = () => {
             </div>
 
             {/* Footer */}
-            <p className="mt-3 mb-0 text-[10px] text-muted text-center">
+            <p className="mt-3 mb-0 text-[13px] text-muted text-center">
               Healt-e · Assistance IA
             </p>
           </div>

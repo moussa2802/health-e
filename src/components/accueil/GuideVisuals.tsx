@@ -42,7 +42,7 @@ const Icon = {
 
 const Row: React.FC<{ icon?: React.ReactNode; label: string; hot?: boolean; right?: React.ReactNode }> = ({ icon, label, hot, right }) => {
   const inner = (
-    <span style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', boxSizing: 'border-box', padding: '8px 10px', borderRadius: 10, background: hot ? 'rgba(242,182,109,.14)' : 'rgba(255,255,255,.04)', fontSize: 12.5, fontWeight: hot ? 700 : 500, color: hot ? C.text : C.faint }}>
+    <span style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', boxSizing: 'border-box', padding: '8px 10px', borderRadius: 10, background: hot ? 'rgba(242,182,109,.14)' : 'rgba(255,255,255,.04)', fontSize: 13, fontWeight: hot ? 700 : 500, color: hot ? C.text : C.faint }}>
       <span style={{ flex: 1 }}>{label}</span>
       {right}
       {icon}
@@ -59,10 +59,10 @@ export const GuideVisualView: React.FC<{ visual: GuideVisual; os: Os }> = ({ vis
         <div aria-hidden="true" style={frame}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '6px 8px', borderRadius: 10, background: 'rgba(255,255,255,.06)' }}>
             <span style={{ fontSize: 16, color: C.faint }}>✕</span>
-            <span style={{ flex: 1, fontSize: 12.5, color: C.soft, textAlign: 'center' }}>health-e.sn</span>
+            <span style={{ flex: 1, fontSize: 13, color: C.soft, textAlign: 'center' }}>health-e.sn</span>
             <Target round><span style={{ width: 30, height: 30, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, fontWeight: 700, color: C.text }}>{os === 'ios' ? '…' : '⋮'}</span></Target>
           </div>
-          <span style={{ fontSize: 11, color: C.faint, textAlign: 'right', paddingRight: 4 }}>en haut à droite</span>
+          <span style={{ fontSize: 13, color: C.faint, textAlign: 'right', paddingRight: 4 }}>en haut à droite</span>
         </div>
       );
     case 'inapp_open':
@@ -82,7 +82,7 @@ export const GuideVisualView: React.FC<{ visual: GuideVisual; os: Os }> = ({ vis
             <Target><span style={{ width: 34, height: 34, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{Icon.share(C.accent)}</span></Target>
             {Icon.book}{Icon.tabs}
           </div>
-          <span style={{ fontSize: 11, color: C.faint, textAlign: 'center' }}>en bas de l'écran, au milieu</span>
+          <span style={{ fontSize: 13, color: C.faint, textAlign: 'center' }}>en bas de l'écran, au milieu</span>
         </div>
       );
     case 'ios_add_home':
@@ -91,7 +91,7 @@ export const GuideVisualView: React.FC<{ visual: GuideVisual; os: Os }> = ({ vis
           <Row label="Copier" icon={Icon.copy} />
           <Row label="Ajouter aux favoris" icon={Icon.book} />
           <Row label="Sur l'écran d'accueil" hot icon={Icon.plusSquare(C.accent)} />
-          <span style={{ fontSize: 11, color: C.faint, textAlign: 'center' }}>fais défiler si tu ne le vois pas, puis « Ajouter »</span>
+          <span style={{ fontSize: 13, color: C.faint, textAlign: 'center' }}>fais défiler si tu ne le vois pas, puis « Ajouter »</span>
         </div>
       );
     // Écran d'accueil de l'iPhone : l'icône Health-e parmi les autres
@@ -102,7 +102,7 @@ export const GuideVisualView: React.FC<{ visual: GuideVisual; os: Os }> = ({ vis
             {Array.from({ length: 7 }).map((_, i) => <span key={i} style={{ width: 44, height: 44, borderRadius: 11, background: 'rgba(255,255,255,.08)' }} />)}
             <span style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
               <Target><img src="/icons/apple-touch-icon.png" alt="" width={44} height={44} style={{ width: 44, height: 44, borderRadius: 11, display: 'block' }} /></Target>
-              <span style={{ fontSize: 10, color: C.text }}>Health-e</span>
+              <span style={{ fontSize: 13, color: C.text }}>Health-e</span>
             </span>
           </div>
         </div>
@@ -110,7 +110,7 @@ export const GuideVisualView: React.FC<{ visual: GuideVisual; os: Os }> = ({ vis
     case 'ios_settings':
       return (
         <div aria-hidden="true" style={frame}>
-          <span style={{ fontSize: 11, color: C.faint }}>Réglages › Notifications › Health-e</span>
+          <span style={{ fontSize: 13, color: C.faint }}>Réglages › Notifications › Health-e</span>
           <Row label="Autoriser les notifications" hot right={<span style={{ width: 34, height: 20, borderRadius: 999, background: '#5FC07A', position: 'relative', display: 'inline-block' }}><span style={{ position: 'absolute', top: 2, right: 2, width: 16, height: 16, borderRadius: '50%', background: '#fff' }} /></span>} />
         </div>
       );
@@ -120,7 +120,7 @@ export const GuideVisualView: React.FC<{ visual: GuideVisual; os: Os }> = ({ vis
         <div aria-hidden="true" style={frame}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 8px', borderRadius: 999, background: 'rgba(255,255,255,.06)' }}>
             <Target round><span style={{ width: 28, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{Icon.lock(C.accent)}</span></Target>
-            <span style={{ flex: 1, fontSize: 12.5, color: C.soft }}>health-e.sn</span>
+            <span style={{ flex: 1, fontSize: 13, color: C.soft }}>health-e.sn</span>
             <span style={{ fontSize: 16, color: C.faint, fontWeight: 700 }}>⋮</span>
           </div>
           <Row label="Autorisations › Notifications › Autoriser" hot icon={Icon.bell(C.accent)} />
@@ -130,13 +130,13 @@ export const GuideVisualView: React.FC<{ visual: GuideVisual; os: Os }> = ({ vis
     case 'allow_dialog':
       return (
         <div aria-hidden="true" style={{ ...frame, gap: 10 }}>
-          <span style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12.5, color: C.soft, lineHeight: 1.4 }}>
+          <span style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: C.soft, lineHeight: 1.4 }}>
             {Icon.bell(C.faint)}
             {os === 'ios' ? '« Health-e » souhaite vous envoyer des notifications' : 'health-e.sn veut afficher des notifications'}
           </span>
           <span style={{ display: 'flex', gap: 8 }}>
-            <span style={{ flex: 1, textAlign: 'center', padding: '8px 0', borderRadius: 10, background: 'rgba(255,255,255,.05)', fontSize: 12.5, color: C.faint }}>{os === 'ios' ? 'Refuser' : 'Bloquer'}</span>
-            <span className="drl-guide-target" style={{ flex: 1, textAlign: 'center', padding: '8px 0', borderRadius: 10, background: 'rgba(242,182,109,.18)', outline: `2px solid ${C.accent}`, outlineOffset: 2, fontSize: 12.5, fontWeight: 700, color: C.text }}>Autoriser</span>
+            <span style={{ flex: 1, textAlign: 'center', padding: '8px 0', borderRadius: 10, background: 'rgba(255,255,255,.05)', fontSize: 13, color: C.faint }}>{os === 'ios' ? 'Refuser' : 'Bloquer'}</span>
+            <span className="drl-guide-target" style={{ flex: 1, textAlign: 'center', padding: '8px 0', borderRadius: 10, background: 'rgba(242,182,109,.18)', outline: `2px solid ${C.accent}`, outlineOffset: 2, fontSize: 13, fontWeight: 700, color: C.text }}>Autoriser</span>
           </span>
         </div>
       );

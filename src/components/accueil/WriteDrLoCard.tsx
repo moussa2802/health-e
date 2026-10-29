@@ -9,11 +9,19 @@ import { DC, card } from './DrLoShell';
 import PaliersCard from './PaliersCard';
 import { getDrloStatus, type DrloStatus } from '../../services/drloQuestionService';
 import type { MomentPalette } from '../../utils/drloMoment';
+import { useAuth } from '../../contexts/AuthContext';
 
 const WriteDrLoCard: React.FC<{ palette: MomentPalette }> = ({ palette }) => {
   const [status, setStatus] = useState<DrloStatus | null>(null);
   const [open, setOpen] = useState(false);
-  useEffect(() => { getDrloStatus().then(setStatus).catch(() => {}); }, []);
+  const { isAuthenticated, currentUser } = useAuth();
+  // Attendre que la connexion soit prête : appelé trop tôt, le serveur refuse et la carte restait invisible.
+  useEffect(() => {
+    if (!isAuthenticated || !currentUser) return;
+    let off = false;
+    getDrloStatus().then(s => { if (!off) setStatus(s); }).catch(() => {});
+    return () => { off = true; };
+  }, [isAuthenticated, currentUser?.id]); // eslint-disable-line react-hooks/exhaustive-deps
   if (!status) return null;
   const { unlocked, remaining } = status.paliers;
   const unseen = status.questions.some(q => q.answer && !q.seen);
@@ -25,14 +33,14 @@ const WriteDrLoCard: React.FC<{ palette: MomentPalette }> = ({ palette }) => {
           <PenLine size={20} />
         </span>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <p style={{ margin: 0, fontSize: 15.5, fontWeight: 700, color: DC.text }}>Écrire au vrai Dr Lô</p>
+          <p style={{ margin: 0, fontSize: 16, fontWeight: 700, color: DC.text }}>Écrire au vrai Dr Lô</p>
           <p style={{ margin: '2px 0 0', fontSize: 13, color: DC.muted, lineHeight: 1.45 }}>
             {unseen ? 'Il t\'a répondu : va lire sa réponse.' : unlocked ? 'C\'est débloqué : pose-lui ta question, gratuitement.' : `Encore ${remaining} étape${remaining > 1 ? 's' : ''} pour lui écrire. C'est gratuit.`}
           </p>
         </div>
       </div>
       {ready ? (
-        <Link to="/question" state={{ from: '/messages-dr-lo' }} className="drl-btn" style={{ marginTop: 12, minHeight: 46, borderRadius: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, textDecoration: 'none', fontSize: 14.5, fontWeight: 700, background: palette.primary, color: DC.ink }}>
+        <Link to="/question" state={{ from: '/messages-dr-lo' }} className="drl-btn" style={{ marginTop: 12, minHeight: 46, borderRadius: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, textDecoration: 'none', fontSize: 15, fontWeight: 700, background: palette.primary, color: DC.ink }}>
           {unseen ? 'Lire sa réponse' : 'Lui écrire'}
         </Link>
       ) : (

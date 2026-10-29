@@ -11,7 +11,9 @@ export type Missing =
   | { kind: 'level'; scaleId: string; levels: Level[] }
   | { kind: 'totem'; totems: string[]; known: boolean }
   | { kind: 'age'; minAge: number; known: boolean }
-  | { kind: 'balance'; need: number; have: number };
+  | { kind: 'balance'; need: number; have: number }
+  /** Test réservé à l'autre genre (fonction érectile / fonction sexuelle féminine) : la chaîne n'est pas ouverte à ce profil, rien à faire pour entrer. */
+  | { kind: 'reserved'; scaleId: string; gender: 'homme' | 'femme' };
 
 export interface AdminChannel {
   id: string; name: string; description: string; price: number; framingText: string; requireFramingAck: boolean;
@@ -45,6 +47,8 @@ async function call<T>(body: Record<string, unknown>): Promise<T> {
 
 // Espace Dr Lô
 export const listAdminChannels = () => call<{ items: AdminChannel[] }>({ action: 'drlo_list' });
+/** Supprime pour de bon la chaîne, ses publications, commentaires, membres et fichiers. `confirmName` = le nom exact. */
+export const deleteChannel = (id: string, confirmName: string) => call<{ ok: boolean; deleted: { posts: number; comments: number; members: number } }>({ action: 'drlo_delete', id, confirmName });
 export const saveChannel = (c: ChannelInput) => call<{ ok: boolean; channel: AdminChannel }>({ action: 'drlo_save', ...c });
 
 // Personne connectée
@@ -125,3 +129,14 @@ export const adminPostCommentAct = (commentId: string, action: 'hide' | 'pin' | 
 export const replyPostComment = (commentId: string, text: string, audio?: VoiceClip) => callComments<{ ok: boolean }>({ action: 'comment_reply', commentId, text, audio });
 export const editPostReply = (commentId: string, index: number, edit: { text: string; audio?: VoiceClip; removeAudio?: boolean }) =>
   callComments<{ ok: boolean }>({ action: 'comment_edit', commentId, index, ...edit });
+
+// ───────── Lien d'invitation (public, sans connexion) ─────────
+export interface PublicChannel { id: string; name: string; description: string; price: number; memberCount: number; minAge: number | null; testCount: number; hasTotems: boolean; imageUrl: string | null }
+export async function getPublicChannel(id: string): Promise<PublicChannel | null> {
+  const res = await fetch(`/.netlify/functions/channel-share?id=${encodeURIComponent(id)}`);
+  if (res.status === 404) return null;
+  if (!res.ok) throw new Error('Impossible de charger cette chaîne pour le moment.');
+  return res.json();
+}
+/** Adresse à envoyer : elle ouvre la carte de la chaîne (et un bel aperçu dans WhatsApp). */
+export const channelInviteUrl = (id: string) => `${window.location.origin}/c/${id}`;

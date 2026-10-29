@@ -95,7 +95,7 @@ const DecouvreDefiPage: React.FC = () => {
               }`}>
                 <img src={t.img} alt={t.label} className="w-full h-full object-cover" />
               </div>
-              <span className="text-[11px] text-muted font-medium">{t.label}</span>
+              <span className="text-[13px] text-muted font-medium">{t.label}</span>
             </div>
           ))}
         </div>
@@ -124,7 +124,7 @@ const DecouvreDefiPage: React.FC = () => {
           Découvrir mon totem
         </button>
 
-        <p className="text-[12px] text-muted text-center m-0 mt-3">
+        <p className="text-[13px] text-muted text-center m-0 mt-3">
           Gratuit et confidentiel
         </p>
       </div>

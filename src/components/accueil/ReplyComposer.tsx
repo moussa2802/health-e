@@ -8,6 +8,7 @@ import { blobToBase64, useVoiceRecorder } from '../../hooks/useVoiceRecorder';
 import VoiceInput from './VoiceInput';
 import { DC } from './DrLoShell';
 import type { VoiceClip } from '../../services/drloBroadcastService';
+import AudioPlayer from './AudioPlayer';
 
 const MAX = 600;
 const mmss = (sec: number) => `${Math.floor(sec / 60)}:${String(Math.round(sec % 60)).padStart(2, '0')}`;
@@ -49,7 +50,7 @@ const ReplyComposer: React.FC<Props> = ({ initialText = '', existingAudio = null
       <div style={{ marginTop: 8 }}>
         {keepAudio && existingAudio && !voice.clip && (
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-            {existingAudio.url ? <audio controls preload="metadata" src={existingAudio.url} aria-label="Vocal actuel" style={{ flex: 1, minWidth: 0, height: 40 }} /> : <span style={{ fontSize: 13, color: DC.muted }}>Vocal de {mmss(existingAudio.sec)}</span>}
+            {existingAudio.url ? <AudioPlayer src={existingAudio.url} ariaLabel="Vocal actuel" style={{ flex: 1 }} /> : <span style={{ fontSize: 13, color: DC.muted }}>Vocal de {mmss(existingAudio.sec)}</span>}
             <button type="button" onClick={() => setKeepAudio(false)} aria-label="Retirer le vocal" className="drl-btn" style={{ ...btn, width: 44, padding: 0 }}><Trash2 size={16} aria-hidden="true" /></button>
           </div>
         )}

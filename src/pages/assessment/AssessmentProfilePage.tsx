@@ -1,5 +1,8 @@
 import '../../components/accueil/accueil.css';
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import DrLoShell, { usePalette } from '../../components/accueil/DrLoShell';
+import Btn from '../../components/ui/Btn';
+import Fold from '../../components/ui/Fold';
 import { useNavigate, Link } from 'react-router-dom';
 import { toPng } from 'html-to-image';
 import { doc, onSnapshot } from 'firebase/firestore';
@@ -52,6 +55,7 @@ import {
   Lock,
   Upload,
   Eye,
+  Key,
 } from 'lucide-react';
 import { credits } from '../../config/creditName';
 
@@ -162,7 +166,7 @@ const ScaleRow: React.FC<ScaleRowProps> = ({ scale, result, onStart, loading }) 
       <div className="min-w-0 flex-1">
         <div className="mb-0.5 flex items-center gap-1.5">
           <TestCode scaleId={scale.id} />
-          <span className="text-[11px] font-bold text-muted">{scale.shortName}</span>
+          <span className="text-[13px] font-bold text-muted">{scale.shortName}</span>
           {isCompleted && <CheckCircle2 size={13} className={catColor.text} />}
         </div>
         <p className="m-0 truncate text-[13px] font-semibold text-ink">{meta.label}</p>
@@ -171,22 +175,22 @@ const ScaleRow: React.FC<ScaleRowProps> = ({ scale, result, onStart, loading }) 
           <>
             <div className="mt-1 flex flex-wrap items-center gap-2">
               <span
-                className={`inline-block rounded-pill px-2.5 py-0.5 text-[11px] font-bold ${getSeverityClasses(
+                className={`inline-block rounded-pill px-2.5 py-0.5 text-[13px] font-bold ${getSeverityClasses(
                   result.interpretation.severity
                 )}`}
               >
                 {result.interpretation.label}
               </span>
-              <span className="text-[11px] text-muted">Score : {result.totalScore}</span>
+              <span className="text-[13px] text-muted">Score : {result.totalScore}</span>
               {result.completedAt && (
-                <span className="text-[11px] text-muted/70">{formatDate(result.completedAt)}</span>
+                <span className="text-[13px] text-muted/70">{formatDate(result.completedAt)}</span>
               )}
             </div>
             {(description || recommendation) && (
               <>
                 <button
                   onClick={() => setShowAnalysis(v => !v)}
-                  className={`mt-1 flex items-center gap-1 bg-transparent p-0 text-[11px] font-semibold ${catColor.text}`}
+                  className={`mt-1 flex items-center gap-1 bg-transparent p-0 text-[13px] font-semibold ${catColor.text}`}
                 >
                   <MessageCircle size={12} />
                   {showAnalysis ? 'Masquer' : 'Voir mon analyse'}
@@ -195,11 +199,11 @@ const ScaleRow: React.FC<ScaleRowProps> = ({ scale, result, onStart, loading }) 
                 {showAnalysis && (
                   <div className={`mt-1.5 rounded-xl border p-2.5 ${catColor.border} ${catColor.bg}`}>
                     {description && (
-                      <p className="m-0 text-[11px] leading-relaxed text-ink-soft">{description}</p>
+                      <p className="m-0 text-[13px] leading-relaxed text-ink-soft">{description}</p>
                     )}
                     {recommendation && (
                       <p
-                        className={`flex items-start gap-1 text-[11px] italic leading-relaxed text-muted ${
+                        className={`flex items-start gap-1 text-[13px] italic leading-relaxed text-muted ${
                           description ? 'mt-1.5' : ''
                         }`}
                       >
@@ -213,7 +217,7 @@ const ScaleRow: React.FC<ScaleRowProps> = ({ scale, result, onStart, loading }) 
             )}
           </>
         ) : (
-          <span className="mt-0.5 block text-[11px] text-muted">
+          <span className="mt-0.5 block text-[13px] text-muted">
             À faire · {scale.timeEstimateMinutes} min
           </span>
         )}
@@ -225,18 +229,18 @@ const ScaleRow: React.FC<ScaleRowProps> = ({ scale, result, onStart, loading }) 
           <button
             onClick={() => onStart(scale.id)}
             disabled={loading}
-            className={`flex items-center gap-1.5 rounded-pill border bg-transparent px-3 py-1.5 text-[11px] font-semibold disabled:opacity-60 ${catColor.border} ${catColor.text}`}
+            className={`flex items-center gap-1.5 rounded-pill border bg-transparent px-3 py-1.5 text-[13px] font-semibold disabled:opacity-60 ${catColor.border} ${catColor.text}`}
             aria-label={`Refaire ${meta.label}, ${freeRetake ? 'gratuit' : credits(KORIS_COSTS.test)}`}
           >
             {loading ? <Loader2 size={12} className="animate-spin" /> : (
               <>
                 Refaire
                 {freeRetake ? (
-                  <span className="inline-flex items-center rounded-md px-1.5 py-px text-[10px] font-extrabold uppercase" style={{ background: 'rgba(159,188,175,.22)', color: '#7FD1A0' }}>Gratuit</span>
+                  <span className="inline-flex items-center rounded-md px-1.5 py-px text-[13px] font-extrabold uppercase" style={{ background: 'rgba(159,188,175,.22)', color: '#7FD1A0' }}>Gratuit</span>
                 ) : (
                   <span className="inline-flex items-center gap-0.5 rounded-md px-1.5 py-px" style={{ background: 'rgba(23,24,27,.06)' }}>
                     <img src="/etincelle.png" alt="" className="w-3 h-3 rounded-full object-cover" />
-                    <span className="font-display text-[11px] font-semibold text-ink">{KORIS_COSTS.test}</span>
+                    <span className="font-display text-[13px] font-semibold text-ink">{KORIS_COSTS.test}</span>
                   </span>
                 )}
               </>
@@ -246,7 +250,7 @@ const ScaleRow: React.FC<ScaleRowProps> = ({ scale, result, onStart, loading }) 
           <button
             onClick={() => onStart(scale.id)}
             disabled={loading}
-            className={`flex items-center gap-1.5 rounded-pill px-3 py-1.5 text-[11px] font-bold text-white shadow-soft disabled:opacity-60 ${getCategorySolidBg(
+            className={`flex items-center gap-1.5 rounded-pill px-3 py-1.5 text-[13px] font-bold text-white shadow-soft disabled:opacity-60 ${getCategorySolidBg(
               category
             )}`}
             aria-label={`Commencer ${meta.label}, ${credits(KORIS_COSTS.test)}`}
@@ -256,7 +260,7 @@ const ScaleRow: React.FC<ScaleRowProps> = ({ scale, result, onStart, loading }) 
                 Commencer
                 <span className="inline-flex items-center gap-0.5 rounded-md px-1.5 py-px" style={{ background: 'rgba(255,255,255,.18)' }}>
                   <img src="/etincelle.png" alt="" className="w-3 h-3 rounded-full object-cover" />
-                  <span className="font-display text-[11px] font-semibold">{KORIS_COSTS.test}</span>
+                  <span className="font-display text-[13px] font-semibold">{KORIS_COSTS.test}</span>
                 </span>
               </>
             )}
@@ -290,7 +294,7 @@ const DrLoPanel: React.FC<{
         </div>
         <div className="flex-1">
           <p className="m-0 text-[13px] font-extrabold text-ink">{title}</p>
-          <p className="m-0 text-[10px] font-semibold tracking-wide text-muted">
+          <p className="m-0 text-[13px] font-semibold tracking-wide text-muted">
             {open ? "Masquer l'analyse" : 'Afficher mon analyse'}
           </p>
         </div>
@@ -332,7 +336,7 @@ const MentalProfileCard: React.FC<{
         <div className="flex-1 min-w-0">
           <h3 className="font-display m-0 text-[17px] font-bold text-ink">Profil psychologique</h3>
           {archetype.traits.length > 0 && (
-            <p className="m-0 mt-1 text-[12.5px] text-muted truncate">
+            <p className="m-0 mt-1 text-[13px] text-muted truncate">
               {archetype.traits.join(' · ')}
             </p>
           )}
@@ -340,7 +344,7 @@ const MentalProfileCard: React.FC<{
       </div>
 
       <span className="inline-flex items-center gap-1.5 mt-3">
-        <span className="inline-flex items-center text-[10.5px] font-bold text-sage bg-sage-soft rounded-[20px] px-2.5 py-1">
+        <span className="inline-flex items-center text-[13px] font-bold text-sage bg-sage-soft rounded-[20px] px-2.5 py-1">
           {archetype.title} {archetype.subtitle}
         </span>
         <InfoTip text={archetype.description} />
@@ -369,18 +373,18 @@ const MentalProfileCard: React.FC<{
 
       {isOutdated && drLoMentalAnalysis && !updating && (
         <div className="mt-3 flex items-center justify-between flex-wrap gap-2 pt-2.5" style={{ borderTop: '1px solid rgba(0,0,0,0.06)' }}>
-          <p className="m-0 text-[11px] font-semibold flex items-center gap-1" style={{ color: '#8F6A1F' }}>
+          <p className="m-0 text-[13px] font-semibold flex items-center gap-1" style={{ color: '#8F6A1F' }}>
             <span className="w-1.5 h-1.5 rounded-full inline-block" style={{ background: '#8F6A1F' }} />
             Profil modifié depuis cette analyse
           </p>
           <button
             onClick={onUpdate}
-            className="text-white border-0 rounded-lg px-3 py-1.5 text-[11px] font-bold cursor-pointer flex items-center gap-1.5 bg-sage"
+            className="text-white border-0 rounded-lg px-3 py-1.5 text-[13px] font-bold cursor-pointer flex items-center gap-1.5 bg-sage"
           >
             <RefreshCw size={12} /> Actualiser
             <span className="inline-flex items-center gap-1 bg-white/20 rounded-lg px-1.5 py-0.5 ml-0.5">
               <img src="/etincelle.png" alt="" className="w-3.5 h-3.5 rounded-full object-cover" />
-              <span className="font-display text-[11px] font-semibold">{refreshCost}</span>
+              <span className="font-display text-[13px] font-semibold">{refreshCost}</span>
             </span>
           </button>
         </div>
@@ -403,7 +407,7 @@ const MentalProfileCard: React.FC<{
             Générer mon analyse
             <span className="inline-flex items-center gap-1 bg-white/20 rounded-lg px-1.5 py-0.5">
               <img src="/etincelle.png" alt="" className="w-3.5 h-3.5 rounded-full object-cover" />
-              <span className="font-display text-[11px] font-semibold">{generateCost}</span>
+              <span className="font-display text-[13px] font-semibold">{generateCost}</span>
             </span>
           </button>
         )}
@@ -445,14 +449,14 @@ const IntimatePrivateCard: React.FC<{
         <div className="flex-1 min-w-0">
           <h3 className="font-display m-0 text-[17px] font-bold text-ink">Profil intime</h3>
           {intimateTraits.length > 0 && (
-            <p className="m-0 mt-1 text-[12.5px] text-muted truncate">
+            <p className="m-0 mt-1 text-[13px] text-muted truncate">
               {intimateTraits.join(' · ')}
             </p>
           )}
         </div>
       </div>
 
-      <span className="inline-flex items-center gap-1.5 text-[10.5px] font-bold text-sage bg-sage-soft rounded-[20px] px-2.5 py-1 mt-3">
+      <span className="inline-flex items-center gap-1.5 text-[13px] font-bold text-sage bg-sage-soft rounded-[20px] px-2.5 py-1 mt-3">
         <Lock size={11} />
         Jamais partagé publiquement
       </span>
@@ -480,18 +484,18 @@ const IntimatePrivateCard: React.FC<{
 
       {isOutdated && drLoSexualAnalysis && !updating && (
         <div className="mt-3 flex items-center justify-between flex-wrap gap-2 pt-2.5" style={{ borderTop: '1px solid rgba(0,0,0,0.06)' }}>
-          <p className="m-0 text-[11px] font-semibold flex items-center gap-1" style={{ color: '#8F6A1F' }}>
+          <p className="m-0 text-[13px] font-semibold flex items-center gap-1" style={{ color: '#8F6A1F' }}>
             <span className="w-1.5 h-1.5 rounded-full inline-block" style={{ background: '#8F6A1F' }} />
             Profil modifié depuis cette analyse
           </p>
           <button
             onClick={onUpdate}
-            className="text-white border-0 rounded-lg px-3 py-1.5 text-[11px] font-bold cursor-pointer flex items-center gap-1.5 bg-accent"
+            className="text-white border-0 rounded-lg px-3 py-1.5 text-[13px] font-bold cursor-pointer flex items-center gap-1.5 bg-accent"
           >
             <RefreshCw size={12} /> Actualiser
             <span className="inline-flex items-center gap-1 bg-white/20 rounded-lg px-1.5 py-0.5 ml-0.5">
               <img src="/etincelle.png" alt="" className="w-3.5 h-3.5 rounded-full object-cover" />
-              <span className="font-display text-[11px] font-semibold">{refreshCost}</span>
+              <span className="font-display text-[13px] font-semibold">{refreshCost}</span>
             </span>
           </button>
         </div>
@@ -514,7 +518,7 @@ const IntimatePrivateCard: React.FC<{
             Générer mon analyse
             <span className="inline-flex items-center gap-1 bg-white/20 rounded-lg px-1.5 py-0.5">
               <img src="/etincelle.png" alt="" className="w-3.5 h-3.5 rounded-full object-cover" />
-              <span className="font-display text-[11px] font-semibold">{generateCost}</span>
+              <span className="font-display text-[13px] font-semibold">{generateCost}</span>
             </span>
           </button>
         )}
@@ -568,7 +572,7 @@ const CompatibilityCodeCard: React.FC<CodeCardProps> = ({
             <h3 className="m-0 text-sm font-extrabold text-ink">{label}</h3>
             {isComplete && (
               <span
-                className={`rounded-pill border px-2 py-0.5 text-[10px] font-bold tracking-wide ${catColor.bg} ${catColor.border} ${catColor.text}`}
+                className={`rounded-pill border px-2 py-0.5 text-[13px] font-bold tracking-wide ${catColor.bg} ${catColor.border} ${catColor.text}`}
               >
                 COMPLET
               </span>
@@ -582,7 +586,7 @@ const CompatibilityCodeCard: React.FC<CodeCardProps> = ({
               </p>
               <div className="flex flex-wrap items-center gap-2">
                 <code
-                  className={`inline-block rounded-lg border bg-card px-4 py-2 font-mono text-lg font-extrabold tracking-widest ${catColor.border} ${catColor.text}`}
+                  className={`inline-block rounded-lg border bg-card px-4 py-2 font-sans tabular-nums text-lg font-extrabold tracking-widest ${catColor.border} ${catColor.text}`}
                 >
                   {compatibilityId}
                 </code>
@@ -618,7 +622,7 @@ const CompatibilityCodeCard: React.FC<CodeCardProps> = ({
                     style={{ width: `${pct}%` }}
                   />
                 </div>
-                <span className={`min-w-[32px] text-right text-[11px] font-bold ${catColor.text}`}>
+                <span className={`min-w-[32px] text-right text-[13px] font-bold ${catColor.text}`}>
                   {completedCount}/{totalCount}
                 </span>
               </div>
@@ -632,6 +636,7 @@ const CompatibilityCodeCard: React.FC<CodeCardProps> = ({
 
 // ── Page principale ───────────────────────────────────────────────────────────
 const AssessmentProfilePage: React.FC = () => {
+  const palette = usePalette();
   const navigate = useNavigate();
   const { currentUser, isAuthenticated, loading: authLoading } = useAuth();
   const { refreshBalance, openNoKorisModal, balance, getCost } = useKoris();
@@ -875,43 +880,21 @@ const AssessmentProfilePage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-paper drl-screen drl-page pb-[120px]">
-      {/* ── Header ────────────────────────────────────────────────────── */}
-      <div className="mb-7 bg-card pb-[18px] pt-5 shadow-soft">
-        <div className="mx-auto max-w-[720px] px-5">
-          {/* Fil d'Ariane */}
-          <div className="mb-2.5 flex items-center gap-1.5 text-xs text-muted">
-            <Link to="/assessment" className="font-medium text-accent no-underline">
-              Évaluations
-            </Link>
-            <ChevronRight size={12} />
-            <span className="font-semibold text-ink">Mon Profil</span>
+    <DrLoShell back={{ to: '/espace', label: 'Retour à mon espace' }} palette={palette}>
+      {/* ── En-tête ── */}
+      <div style={{ padding: '18px 0 20px' }}>
+        <h1 className="font-display m-0 text-[26px] font-semibold text-ink leading-[1.2]">Mon profil</h1>
+        <p className="m-0 mt-1 mb-3 text-[15px] text-ink-soft">{completedCount}/{totalCount} évaluations faites</p>
+        <div className="flex items-center gap-3">
+          <div className="h-2.5 flex-1 overflow-hidden rounded-pill bg-line">
+            <div className="h-full rounded-pill bg-accent transition-[width] duration-500 ease-out" style={{ width: `${progressPct}%` }} />
           </div>
-
-          <h1 className="font-display m-0 mb-1 text-2xl font-bold text-ink">
-            Mon Profil d'Évaluation
-          </h1>
-          <p className="m-0 mb-3.5 text-sm text-ink-soft">
-            {completedCount}/{totalCount} évaluations complétées
-          </p>
-
-          {/* Grande barre de progression */}
-          <div className="flex items-center gap-3">
-            <div className="h-2.5 flex-1 overflow-hidden rounded-pill bg-line">
-              <div
-                className="h-full rounded-pill bg-accent transition-[width] duration-500 ease-out"
-                style={{ width: `${progressPct}%` }}
-              />
-            </div>
-            <span className="min-w-[36px] text-right text-[13px] font-bold text-accent">
-              {progressPct}%
-            </span>
-          </div>
+          <span className="min-w-[36px] text-right text-[14px] font-bold text-gold">{progressPct}%</span>
         </div>
       </div>
 
-      {/* ── Contenu ───────────────────────────────────────────────────── */}
-      <div className="mx-auto max-w-[720px] px-5">
+      {/* ── Contenu ── */}
+      <div>
 
         {/* ── Erreur ─────────────────────────────────────────────────── */}
         {errorMsg && (
@@ -924,7 +907,7 @@ const AssessmentProfilePage: React.FC = () => {
         {completedCount > 0 && (() => {
           return (
             <>
-              <p className="text-[12px] font-bold tracking-[0.12em] uppercase text-muted m-0 mb-3 ml-1">
+              <p className="text-[13px] font-bold tracking-[0.12em] uppercase text-muted m-0 mb-3 ml-1">
                 Ta carte à partager
               </p>
 
@@ -941,23 +924,16 @@ const AssessmentProfilePage: React.FC = () => {
               </div>
 
               {/* Actions */}
-              <div className="flex gap-2.5 mt-3.5 mb-7 max-w-[432px] mx-auto">
-                <button
-                  onClick={handleShareCard}
-                  disabled={sharing}
-                  className="flex-1 flex items-center justify-center gap-2 rounded-[14px] border-none bg-ink py-[13px] text-[13.5px] font-bold text-[#F4F1E9] cursor-pointer transition-colors hover:bg-ink/90 disabled:opacity-60"
-                  aria-label="Partager ma carte"
-                >
-                  {sharing ? (
-                    <><Loader2 size={16} className="animate-spin" /> Export…</>
-                  ) : (
-                    <><Upload size={16} /> Partager ma carte</>
-                  )}
-                </button>
+              <div className="flex gap-2.5 mt-3.5 mb-6 max-w-[432px] mx-auto">
+                <Btn full onClick={handleShareCard} disabled={sharing} aria-label="Partager ma carte"
+                  icon={sharing ? <Loader2 size={16} className="animate-spin" /> : <Upload size={16} />}>
+                  {sharing ? 'Export…' : 'Partager ma carte'}
+                </Btn>
               </div>
 
               {/* ── Cartes profil psycho + intime ───────────────────── */}
               {mentalCompletedCount > 0 && (
+                <div className="mb-3"><Fold title="Mon analyse psychologique" summary="Ton archétype et l'analyse de Dr Lô" icon={<Brain size={18} color="#9DBFAF" />}>
                 <MentalProfileCard
                   archetype={archetype}
                   drLoMentalAnalysis={drLoMentalAnalysis}
@@ -970,8 +946,10 @@ const AssessmentProfilePage: React.FC = () => {
                   refreshCost={getCost('analysis_refresh')}
                   isOutdated={isMentalOutdated}
                 />
+                </Fold></div>
               )}
               {sexualCompletedCount > 0 && (
+                <div className="mb-3"><Fold title="Mon analyse intime" summary="Confidentielle : elle n'apparaît sur aucune carte partagée" icon={<Heart size={18} color="#E8A0B8" />}>
                 <IntimatePrivateCard
                   intimateTraits={intimateTraits}
                   drLoSexualAnalysis={drLoSexualAnalysis}
@@ -984,24 +962,15 @@ const AssessmentProfilePage: React.FC = () => {
                   refreshCost={getCost('analysis_refresh')}
                   isOutdated={isSexualOutdated}
                 />
+                </Fold></div>
               )}
             </>
           );
         })()}
 
         {/* ── Section Profil psychologique ───────────────────────────── */}
-        <section className="mb-8">
-          <div className="mb-3.5 flex flex-wrap items-center gap-2.5">
-            <Brain size={22} className="text-sage" />
-            <h2 className="font-display m-0 text-[17px] font-bold text-ink">
-              Profil psychologique
-            </h2>
-            <span className="rounded-pill border border-sage/20 bg-sage/10 px-2.5 py-0.5 text-[11px] font-bold text-sage">
-              {MENTAL_HEALTH_SCALES.filter(s => !!scaleResults[s.id]).length}/
-              {MENTAL_HEALTH_SCALES.length} complétées
-            </span>
-          </div>
-
+        <div className="mb-3">
+          <Fold title="Mes tests psychologiques" summary={`${MENTAL_HEALTH_SCALES.filter(s => !!scaleResults[s.id]).length} sur ${MENTAL_HEALTH_SCALES.length} faits`} icon={<Brain size={18} color="#9DBFAF" />}>
           <div className="flex flex-col gap-2">
             {MENTAL_HEALTH_SCALES.map(scale => (
               <ScaleRow
@@ -1019,25 +988,12 @@ const AssessmentProfilePage: React.FC = () => {
             analysis={drLoMentalAnalysis}
             completedCount={mentalCompletedCount}
           />
-        </section>
+          </Fold>
+        </div>
 
         {/* ── Section Vie intime ─────────────────────────────────────── */}
-        <section className="mb-8">
-          <div className="mb-3.5 flex flex-wrap items-center gap-2.5">
-            <Heart size={22} className="text-accent" />
-            <h2 className="font-display m-0 text-[17px] font-bold text-ink">
-              Vie intime
-            </h2>
-            <span className="rounded-pill border border-accent/20 bg-accent/10 px-2.5 py-0.5 text-[11px] font-bold text-accent">
-              {SEXUAL_HEALTH_SCALES.filter(s => !!scaleResults[s.id]).length}/
-              {SEXUAL_HEALTH_SCALES.length} complétées
-            </span>
-            <span className="flex items-center gap-1 rounded-pill border border-ok/20 bg-ok/10 px-2.5 py-0.5 text-[11px] font-semibold text-ok">
-              <Lock size={11} />
-              Confidentiel
-            </span>
-          </div>
-
+        <div className="mb-3">
+          <Fold title="Mes tests de vie intime" summary={`${SEXUAL_HEALTH_SCALES.filter(s => !!scaleResults[s.id]).length} sur ${SEXUAL_HEALTH_SCALES.length} faits · confidentiel`} icon={<Heart size={18} color="#E8A0B8" />}>
           <div className="flex flex-col gap-2">
             {SEXUAL_HEALTH_SCALES.map(scale => (
               <ScaleRow
@@ -1055,10 +1011,13 @@ const AssessmentProfilePage: React.FC = () => {
             analysis={drLoSexualAnalysis}
             completedCount={sexualCompletedCount}
           />
-        </section>
+          </Fold>
+        </div>
 
-        {/* ── Cards Codes de compatibilité ──────────────────────────── */}
-        <div className="mb-7 flex flex-col gap-3.5">
+        {/* ── Codes de compatibilité (repliés : le test de compatibilité a son lien) ── */}
+        <div className="mb-3">
+        <Fold title="Mes codes de compatibilité" summary="Ou envoie un lien depuis le test de compatibilité" icon={<Key size={18} color="#E9C88F" />}>
+        <div className="flex flex-col gap-3.5">
           <CompatibilityCodeCard
             type="mental"
             label="Profil Psychologique"
@@ -1080,35 +1039,26 @@ const AssessmentProfilePage: React.FC = () => {
             onCopy={handleCopySexual}
           />
         </div>
+        </Fold>
+        </div>
 
         {/* ── Disclaimer ────────────────────────────────────────────── */}
-        <div className="flex items-start gap-2.5 rounded-xl border border-gold/25 bg-gold-soft px-4 py-3.5">
+        <div className="mt-6 flex items-start gap-2.5 rounded-xl border border-gold/25 bg-gold-soft px-4 py-3.5">
           <AlertTriangle size={16} className="mt-0.5 flex-shrink-0 text-gold" />
-          <p className="m-0 text-xs leading-relaxed text-ink-soft">
-            <strong>Important :</strong> Ces évaluations sont fournies à titre informatif uniquement et ne
-            remplacent en aucun cas une consultation avec un professionnel de santé qualifié.
-            En cas de détresse psychologique ou d'urgence, contactez immédiatement un médecin
-            ou un service d'urgence.
+          <p className="m-0 text-[14px] leading-relaxed text-ink-soft">
+            <strong>Important :</strong> ces évaluations t'aident à te comprendre, elles ne remplacent pas
+            une consultation. Si c'est dur en ce moment, parles-en à un médecin ou appelle le 1515 (SAMU).
           </p>
         </div>
 
-        {/* ── Zone sensible — Réinitialisation ─────────────────────── */}
-        <div className="mt-8 rounded-block border border-danger/30 bg-danger/10 p-5">
-          <p className="m-0 mb-1 flex items-center gap-1.5 text-sm font-bold text-danger">
-            <AlertTriangle size={15} />
-            Zone sensible
-          </p>
-          <p className="m-0 mb-3.5 text-[13px] leading-relaxed text-danger/80">
-            Supprime tous tes résultats de tests et synthèses Dr Lô.
-            Ton compte et tes préférences sont conservés. Cette action est irréversible.
-          </p>
-          <button
-            onClick={() => setShowResetModal(true)}
-            className="flex items-center gap-2 rounded-xl border border-danger/40 bg-card px-[18px] py-2.5 text-[13px] font-bold text-danger"
-          >
-            <RefreshCw size={14} />
-            Réinitialiser mon profil
-          </button>
+        {/* ── Zone sensible — Réinitialisation (repliée) ── */}
+        <div className="mt-6">
+          <Fold title="Réinitialiser mon profil" summary="Efface tous tes résultats. Irréversible." icon={<AlertTriangle size={18} color="#F08A7A" />}>
+            <p className="m-0 mb-3.5 text-[15px] leading-relaxed text-ink-soft">
+              Supprime tous tes résultats de tests et les analyses de Dr Lô. Ton compte et tes préférences sont conservés. Cette action est irréversible.
+            </p>
+            <Btn variant="danger" onClick={() => setShowResetModal(true)} icon={<RefreshCw size={15} />}>Réinitialiser mon profil</Btn>
+          </Fold>
         </div>
 
         <ConfirmResetModal
@@ -1135,7 +1085,7 @@ const AssessmentProfilePage: React.FC = () => {
           />
         </div>
       </div>
-    </div>
+    </DrLoShell>
   );
 };
 

@@ -75,7 +75,7 @@ const BigFiveDetailBlock: React.FC<{ result: ScaleResult }> = ({ result }) => {
           background: 'radial-gradient(circle at 35% 35%, rgba(183,138,46,.5), rgba(183,138,46,0) 70%)',
         }} />
         <div style={{
-          position: 'relative', fontSize: 10.5, fontWeight: 700,
+          position: 'relative', fontSize: 13, fontWeight: 700,
           letterSpacing: '.13em', textTransform: 'uppercase' as const, color: '#C0B9A6',
         }}>
           Ton profil
@@ -115,7 +115,7 @@ const BigFiveDetailBlock: React.FC<{ result: ScaleResult }> = ({ result }) => {
         }}>
           Tes cinq dimensions
         </h2>
-        <span style={{ fontSize: 11, color: '#8A8C95', fontWeight: 600 }}>BFI-10</span>
+        <span style={{ fontSize: 13, color: '#8A8C95', fontWeight: 600 }}>BFI-10</span>
       </div>
 
       {/* Dimension cards */}
@@ -137,7 +137,7 @@ const BigFiveDetailBlock: React.FC<{ result: ScaleResult }> = ({ result }) => {
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
                 <h3 style={{ margin: 0, fontSize: 14, fontWeight: 700 }}>{dim.label}</h3>
                 <span style={{
-                  fontSize: 10.5, fontWeight: 700, borderRadius: 20,
+                  fontSize: 13, fontWeight: 700, borderRadius: 20,
                   padding: '3px 9px', whiteSpace: 'nowrap' as const,
                   background: colors.bg, color: colors.text,
                 }}>
@@ -164,12 +164,12 @@ const BigFiveDetailBlock: React.FC<{ result: ScaleResult }> = ({ result }) => {
               </div>
               <div style={{
                 display: 'flex', justifyContent: 'space-between',
-                fontSize: 9.5, color: '#B4AE9E', fontWeight: 600, marginTop: -4,
+                fontSize: 13, color: '#B4AE9E', fontWeight: 600, marginTop: -4,
               }}>
                 <span>Basse</span><span>Moyenne</span><span>Élevée</span>
               </div>
               <p style={{
-                margin: '8px 0 0', fontSize: 12.5, lineHeight: 1.55, color: '#4B4D55',
+                margin: '8px 0 0', fontSize: 13, lineHeight: 1.55, color: '#4B4D55',
               }}>
                 {dim.description}
               </p>
@@ -185,7 +185,7 @@ const BigFiveDetailBlock: React.FC<{ result: ScaleResult }> = ({ result }) => {
       }}>
         <Info size={15} style={{ color: '#8A8C95', flexShrink: 0, marginTop: 1 }} />
         <p style={{
-          margin: 0, fontSize: 11.5, lineHeight: 1.55, color: '#4B4D55',
+          margin: 0, fontSize: 13, lineHeight: 1.55, color: '#4B4D55',
         }}>
           Version courte du Big Five : 2 questions par dimension. Elle donne une <b>tendance générale</b> fiable, mais pas une mesure fine — d'où les niveaux plutôt que des scores au dixième.
         </p>
@@ -274,10 +274,10 @@ const TestDetailPage: React.FC = () => {
         <div className="text-center">
           <p className="text-ink font-semibold">Test introuvable</p>
           <button
-            onClick={() => navigate('/assessment')}
+            onClick={() => navigate(category === 'sexual' ? '/espace/intime' : '/espace/mental')}
             className="mt-3 text-accent text-sm font-semibold bg-transparent border-none cursor-pointer"
           >
-            Retour au hub
+            Retour à mon espace
           </button>
         </div>
       </div>
@@ -373,7 +373,7 @@ const TestDetailPage: React.FC = () => {
       <div className="sticky top-0 z-20 bg-paper/95 backdrop-blur-md border-b border-line">
         <div className="max-w-[600px] mx-auto px-5 py-3 flex items-center gap-3">
           <button
-            onClick={() => navigate('/assessment')}
+            onClick={() => navigate(category === 'sexual' ? '/espace/intime' : '/espace/mental')}
             className="w-9 h-9 rounded-xl border border-line bg-card flex items-center justify-center cursor-pointer hover:bg-paper-dark transition-colors flex-shrink-0"
             aria-label="Retour"
           >
@@ -398,10 +398,10 @@ const TestDetailPage: React.FC = () => {
             </h1>
             <div className="flex items-center gap-2 mt-2 flex-wrap">
               <TestCode scaleId={scaleId} size="md" />
-              <span className={`text-[11px] font-semibold px-2.5 py-[3px] rounded-[20px] ${iconBgClass} ${iconColorClass}`}>
+              <span className={`text-[13px] font-semibold px-2.5 py-[3px] rounded-[20px] ${iconBgClass} ${iconColorClass}`}>
                 {CATEGORY_LABELS[category]}
               </span>
-              <span className="text-[11px] text-ink-soft font-semibold bg-[#F1EEE4] px-2.5 py-[3px] rounded-[20px]">
+              <span className="text-[13px] font-semibold bg-white/10 text-[#DCD3C5] px-2.5 py-[3px] rounded-[20px]">
                 {scale.timeEstimateMinutes} min · {scale.items.length} q
               </span>
             </div>
@@ -412,7 +412,7 @@ const TestDetailPage: React.FC = () => {
         {isGuest && needsAccount ? (
           <button
             onClick={() => navigate(`/patient/access?redirect=/assessment/test/${scaleId}`)}
-            className="w-full py-3.5 rounded-[14px] border-none text-sm font-bold cursor-pointer flex items-center justify-center gap-2.5 bg-ink/8 text-ink-soft transition-colors hover:bg-ink/12 mb-6"
+            className="w-full py-3.5 rounded-[14px] border-none text-[17px] font-bold cursor-pointer flex items-center justify-center gap-2.5 bg-gold mb-6" style={{ color: '#1C140D', minHeight: 52 }}
           >
             <Lock size={15} />
             Créer un compte pour faire ce test
@@ -421,7 +421,7 @@ const TestDetailPage: React.FC = () => {
           <button
             onClick={startTest}
             disabled={starting}
-            className="w-full py-[15px] rounded-[16px] border-none text-[15px] font-bold cursor-pointer flex items-center justify-center gap-2.5 bg-ink text-[#F4F1E9] shadow-soft transition-colors hover:bg-ink/90 mb-5 disabled:opacity-60"
+            className="w-full py-[15px] rounded-[14px] border-none text-[17px] font-bold cursor-pointer flex items-center justify-center gap-2.5 bg-gold mb-5 disabled:opacity-60" style={{ color: '#1C140D', minHeight: 52 }}
           >
             {starting ? <><Loader2 size={17} className="animate-spin" /> Chargement…</> : 'Faire le test'}
           </button>
@@ -519,15 +519,15 @@ const TestDetailPage: React.FC = () => {
 
         {/* ── About this test ── */}
         <div className="bg-card border border-line rounded-block p-5 mt-4 shadow-soft">
-          <p className="text-[11px] font-bold text-muted uppercase tracking-[0.1em] mb-3 flex items-center gap-1.5">
+          <p className="text-[13px] font-bold text-muted uppercase tracking-[0.1em] mb-3 flex items-center gap-1.5">
             <Info size={12} /> À propos de ce test
           </p>
-          <p className="text-[13.5px] text-ink-soft leading-relaxed mt-3 m-0">
+          <p className="text-[14px] text-ink-soft leading-relaxed mt-3 m-0">
             <span className="font-bold text-ink">Le test. </span>
             {meta.description}
           </p>
           {TEST_ABOUT[scaleId] && (
-            <p className="text-[13.5px] text-ink-soft leading-relaxed mt-3 m-0">
+            <p className="text-[14px] text-ink-soft leading-relaxed mt-3 m-0">
               <span className="font-bold text-ink">{meta.label}. </span>
               {TEST_ABOUT[scaleId]}
             </p>

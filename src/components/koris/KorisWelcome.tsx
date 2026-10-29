@@ -48,7 +48,7 @@ const KorisWelcome: React.FC = () => {
       />
       <div>
         <div className="text-[13px] font-bold">On t'offre 500 F {CREDIT.ofMany} pour commencer</div>
-        <div className="text-[11px] opacity-85 mt-0.5">+{credits(KORIS_WELCOME_BONUS)} — discute avec Dr Lô, fais tes tests</div>
+        <div className="text-[13px] opacity-85 mt-0.5">+{credits(KORIS_WELCOME_BONUS)} — discute avec Dr Lô, fais tes tests</div>
       </div>
       <button
         onClick={() => { setExiting(true); setTimeout(() => setVisible(false), 300); }}

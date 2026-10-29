@@ -57,11 +57,11 @@ import {
 
 function severityColor(severity: string): string {
   switch (severity) {
-    case 'none': case 'minimal': case 'positive': return '#3C7A5A';
-    case 'mild': return '#8F6A1F';
-    case 'moderate': return '#B5732A';
-    case 'severe': case 'alert': return '#B23A3A';
-    default: return '#6E7078';
+    case 'none': case 'minimal': case 'positive': return '#7FD1A0';
+    case 'mild': return '#E9C88F';
+    case 'moderate': return '#F09A7A';
+    case 'severe': case 'alert': return '#F08A7A';
+    default: return '#CFC6B8';
   }
 }
 
@@ -106,10 +106,10 @@ const KpiCard: React.FC<{
   <div className="bg-card rounded-block px-[18px] py-4 border border-line shadow-soft flex-1 min-w-[150px]">
     <div className="flex items-center gap-2 mb-2">
       <span className={TONE_TEXT[tone]}>{icon}</span>
-      <span className="text-[11px] text-muted font-semibold">{label}</span>
+      <span className="text-[13px] text-muted font-semibold">{label}</span>
     </div>
     <p className={`m-0 font-display text-2xl font-extrabold ${TONE_TEXT[tone]}`}>{value}</p>
-    {sub && <p className="mt-0.5 text-[11px] text-muted">{sub}</p>}
+    {sub && <p className="mt-0.5 text-[13px] text-muted">{sub}</p>}
   </div>
 );
 
@@ -196,10 +196,10 @@ const OverviewTab: React.FC<{
           {weeklySignups.length > 0 ? (
             <ResponsiveContainer width="100%" height={130}>
               <LineChart data={weeklySignups}>
-                <XAxis dataKey="label" tick={{ fontSize: 9, fill: '#6E7078' }} interval="preserveStartEnd" />
+                <XAxis dataKey="label" tick={{ fontSize: 13, fill: '#CFC6B8' }} interval="preserveStartEnd" />
                 <YAxis hide allowDecimals={false} />
-                <Tooltip contentStyle={{ borderRadius: 8, fontSize: 11 }} />
-                <Line type="monotone" dataKey="count" stroke="#B5522F" strokeWidth={2} dot={false} />
+                <Tooltip contentStyle={{ borderRadius: 8, fontSize: 13 }} />
+                <Line type="monotone" dataKey="count" stroke="#F09A7A" strokeWidth={2} dot={false} />
               </LineChart>
             </ResponsiveContainer>
           ) : <p className="text-muted text-xs">Aucune donnee</p>}
@@ -211,10 +211,10 @@ const OverviewTab: React.FC<{
           {dailyTests.length > 0 ? (
             <ResponsiveContainer width="100%" height={130}>
               <LineChart data={dailyTests}>
-                <XAxis dataKey="label" tick={{ fontSize: 9, fill: '#6E7078' }} interval={6} />
+                <XAxis dataKey="label" tick={{ fontSize: 13, fill: '#CFC6B8' }} interval={6} />
                 <YAxis hide allowDecimals={false} />
-                <Tooltip contentStyle={{ borderRadius: 8, fontSize: 11 }} />
-                <Line type="monotone" dataKey="count" stroke="#4A5D57" strokeWidth={2} dot={false} />
+                <Tooltip contentStyle={{ borderRadius: 8, fontSize: 13 }} />
+                <Line type="monotone" dataKey="count" stroke="#9DBFAF" strokeWidth={2} dot={false} />
               </LineChart>
             </ResponsiveContainer>
           ) : <p className="text-muted text-xs">Aucune donnee</p>}
@@ -227,7 +227,7 @@ const OverviewTab: React.FC<{
             <span className="text-[13px] font-bold text-ink flex items-center gap-1.5">
               <Trophy className="h-4 w-4 text-gold" /> Tests les plus faits
             </span>
-            <button onClick={() => onNavigate('tests')} className="text-[11px] text-accent bg-transparent border-none cursor-pointer font-semibold">Voir tout →</button>
+            <button onClick={() => onNavigate('tests')} className="text-[13px] text-accent bg-transparent border-none cursor-pointer font-semibold">Voir tout →</button>
           </div>
           {popularity.slice(0, 3).map((t, i) => (
             <div key={t.scaleId} className={`flex justify-between py-1.5 ${i < 2 ? 'border-b border-line' : ''}`}>
@@ -242,7 +242,7 @@ const OverviewTab: React.FC<{
             <span className="text-[13px] font-bold text-ink flex items-center gap-1.5">
               <AlertTriangle className="h-4 w-4 text-danger" /> Alertes recentes
             </span>
-            <button onClick={() => onNavigate('alerts')} className="text-[11px] text-accent bg-transparent border-none cursor-pointer font-semibold">Voir tout →</button>
+            <button onClick={() => onNavigate('alerts')} className="text-[13px] text-accent bg-transparent border-none cursor-pointer font-semibold">Voir tout →</button>
           </div>
           {alerts.length === 0
             ? <p className="text-muted text-xs">Aucune alerte</p>
@@ -250,8 +250,8 @@ const OverviewTab: React.FC<{
               <div key={i} className={`flex justify-between items-center py-1.5 ${i < 2 ? 'border-b border-line' : ''}`}>
                 <span className="text-xs text-ink-soft"><span className="mr-1.5">{a.icon}</span>{a.scaleName}</span>
                 <div className="flex gap-1.5 items-center">
-                  <span className="text-[10px] text-muted">{a.date}</span>
-                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-card ${
+                  <span className="text-[13px] text-muted">{a.date}</span>
+                  <span className={`text-[13px] font-bold px-2 py-0.5 rounded-card ${
                     a.alertLevel >= 3 ? 'bg-danger/15 text-danger' : 'bg-gold-soft text-gold'
                   }`}>Niv. {a.alertLevel}</span>
                 </div>
@@ -266,23 +266,23 @@ const OverviewTab: React.FC<{
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
             <div className="text-center">
               <p className="m-0 font-display text-2xl font-extrabold text-ink">{defiStats.totalDefis}</p>
-              <p className="m-0 text-[11px] text-muted">Défis créés</p>
+              <p className="m-0 text-[13px] text-muted">Défis créés</p>
             </div>
             <div className="text-center">
               <p className="m-0 font-display text-2xl font-extrabold text-sage">{defiStats.totalReponses}</p>
-              <p className="m-0 text-[11px] text-muted">Réponses totales</p>
+              <p className="m-0 text-[13px] text-muted">Réponses totales</p>
             </div>
             <div className="text-center">
               <p className="m-0 font-display text-2xl font-extrabold text-gold">{defiStats.moyenneReponses}</p>
-              <p className="m-0 text-[11px] text-muted">Moy. réponses / défi</p>
+              <p className="m-0 text-[13px] text-muted">Moy. réponses / défi</p>
             </div>
             <div className="text-center">
               <p className="m-0 font-display text-2xl font-extrabold text-accent">{defiStats.activeDefis}</p>
-              <p className="m-0 text-[11px] text-muted">Défis en cours</p>
+              <p className="m-0 text-[13px] text-muted">Défis en cours</p>
             </div>
             <div className="text-center">
               <p className="m-0 font-display text-2xl font-extrabold text-ink">{defiStats.inscriptionsViaDefi}</p>
-              <p className="m-0 text-[11px] text-muted">Inscriptions via défi</p>
+              <p className="m-0 text-[13px] text-muted">Inscriptions via défi</p>
             </div>
             <div className="text-center">
               <p className="m-0 font-display text-2xl font-extrabold text-ink">
@@ -290,28 +290,28 @@ const OverviewTab: React.FC<{
                   ? Math.round((defiStats.inscriptionsViaDefi / defiStats.totalReponses) * 100) + ' %'
                   : '—'}
               </p>
-              <p className="m-0 text-[11px] text-muted">Ratio inscriptions / réponses</p>
+              <p className="m-0 text-[13px] text-muted">Ratio inscriptions / réponses</p>
             </div>
             <div className="text-center">
               <p className="m-0 font-display text-2xl font-extrabold text-ink">{defiStats.totalMessages ?? 0}</p>
-              <p className="m-0 text-[11px] text-muted">Messages 💌</p>
+              <p className="m-0 text-[13px] text-muted">Messages 💌</p>
             </div>
             <div className="text-center">
               <p className={`m-0 font-display text-2xl font-extrabold ${(defiStats.reportedMessages?.length ?? 0) > 0 ? 'text-red-500' : 'text-ink'}`}>
                 {defiStats.reportedMessages?.length ?? 0}
               </p>
-              <p className="m-0 text-[11px] text-muted">Signalés 🚩</p>
+              <p className="m-0 text-[13px] text-muted">Signalés 🚩</p>
             </div>
           </div>
           {defiStats.reportedMessages && defiStats.reportedMessages.length > 0 && (
             <div className="mt-4">
-              <p className="text-[12px] font-bold text-red-500 mb-2">Messages signalés</p>
+              <p className="text-[13px] font-bold text-red-500 mb-2">Messages signalés</p>
               <div className="flex flex-col gap-2">
                 {defiStats.reportedMessages.map((m, i) => (
                   <div key={i} className="bg-red-50 border border-red-200 rounded-xl p-3 text-sm">
                     <div className="flex justify-between mb-1">
                       <span className="font-medium text-ink">{m.pseudo}</span>
-                      <span className="text-[11px] text-muted">{m.slug}</span>
+                      <span className="text-[13px] text-muted">{m.slug}</span>
                     </div>
                     <p className="m-0 text-ink truncate">{m.texte}</p>
                   </div>
@@ -367,12 +367,12 @@ const TestsTab: React.FC<{
         ) : (
           <ResponsiveContainer width="100%" height={Math.max(300, popularity.length * 30)}>
             <BarChart data={popularity} layout="vertical" margin={{ left: 10 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#E7E4DA" />
-              <XAxis type="number" tick={{ fontSize: 11, fill: '#6E7078' }} />
-              <YAxis type="category" dataKey="name" width={180} tick={{ fontSize: 11, fill: '#4B4D55' }} />
-              <Tooltip contentStyle={{ borderRadius: 10, fontSize: 12 }} formatter={(v: number) => [`${v} completions`, 'Total']} />
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,.12)" />
+              <XAxis type="number" tick={{ fontSize: 13, fill: '#CFC6B8' }} />
+              <YAxis type="category" dataKey="name" width={180} tick={{ fontSize: 13, fill: '#CFC6B8' }} />
+              <Tooltip contentStyle={{ borderRadius: 10, fontSize: 13 }} formatter={(v: number) => [`${v} completions`, 'Total']} />
               <Bar dataKey="count" radius={[0, 6, 6, 0]} maxBarSize={20}>
-                {popularity.map((_, i) => <Cell key={i} fill={i % 2 === 0 ? '#4A5D57' : '#B5522F'} />)}
+                {popularity.map((_, i) => <Cell key={i} fill={i % 2 === 0 ? '#9DBFAF' : '#F09A7A'} />)}
               </Bar>
             </BarChart>
           </ResponsiveContainer>
@@ -405,7 +405,7 @@ const TestsTab: React.FC<{
                     </td>
                     <td className="text-center py-1.5 px-1.5">
                       <span
-                        className="inline-block px-2 py-0.5 rounded-card text-[10px] font-bold"
+                        className="inline-block px-2 py-0.5 rounded-card text-[13px] font-bold"
                         style={{
                           color: severityColor(test.mostCommonSeverity),
                           background: `${severityColor(test.mostCommonSeverity)}15`,
@@ -426,11 +426,11 @@ const TestsTab: React.FC<{
         ) : (
           <ResponsiveContainer width="100%" height={260}>
             <LineChart data={dailyTests}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#E7E4DA" />
-              <XAxis dataKey="label" tick={{ fontSize: 10, fill: '#6E7078' }} interval="preserveStartEnd" />
-              <YAxis allowDecimals={false} tick={{ fontSize: 11, fill: '#6E7078' }} />
-              <Tooltip contentStyle={{ borderRadius: 10, fontSize: 12 }} />
-              <Line type="monotone" dataKey="count" stroke="#4A5D57" strokeWidth={2} dot={false} name="Tests" />
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,.12)" />
+              <XAxis dataKey="label" tick={{ fontSize: 13, fill: '#CFC6B8' }} interval="preserveStartEnd" />
+              <YAxis allowDecimals={false} tick={{ fontSize: 13, fill: '#CFC6B8' }} />
+              <Tooltip contentStyle={{ borderRadius: 10, fontSize: 13 }} />
+              <Line type="monotone" dataKey="count" stroke="#9DBFAF" strokeWidth={2} dot={false} name="Tests" />
             </LineChart>
           </ResponsiveContainer>
         )}
@@ -440,7 +440,7 @@ const TestsTab: React.FC<{
 };
 
 const THEAD_TH =
-  'text-left py-2 px-1.5 text-muted font-semibold cursor-pointer select-none text-[11px] whitespace-nowrap';
+  'text-left py-2 px-1.5 text-muted font-semibold cursor-pointer select-none text-[13px] whitespace-nowrap';
 
 // ══════════════════════════════════════════════════════════════════════════════
 // TAB 3 — ALERTES
@@ -488,7 +488,7 @@ const AlertsTab: React.FC<{
           <button
             key={lvl}
             onClick={() => { setFilterLevel(lvl); setPage(0); }}
-            className={`px-3.5 py-1.5 rounded-pill border text-[11px] font-semibold cursor-pointer ${
+            className={`px-3.5 py-1.5 rounded-pill border text-[13px] font-semibold cursor-pointer ${
               filterLevel === lvl
                 ? lvl === 3
                   ? 'bg-danger/15 text-danger border-danger/30'
@@ -519,9 +519,9 @@ const AlertsTab: React.FC<{
                   <div className="flex items-center gap-2">
                     <span className="text-sm">{alert.icon}</span>
                     <span className="text-xs font-semibold text-ink">{alert.scaleName}</span>
-                    <span className="text-[10px] text-muted">{alert.date}</span>
+                    <span className="text-[13px] text-muted">{alert.date}</span>
                   </div>
-                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-card ${
+                  <span className={`text-[13px] font-bold px-2 py-0.5 rounded-card ${
                     alert.alertLevel >= 3 ? 'bg-danger/15 text-danger' : 'bg-gold-soft text-gold'
                   }`}>Niveau {alert.alertLevel}</span>
                 </div>
@@ -545,11 +545,11 @@ const AlertsTab: React.FC<{
         <Section title="Repartition des alertes par test">
           <ResponsiveContainer width="100%" height={Math.max(200, alertsByTest.length * 30)}>
             <BarChart data={alertsByTest} layout="vertical" margin={{ left: 10 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#E7E4DA" />
-              <XAxis type="number" tick={{ fontSize: 11, fill: '#6E7078' }} />
-              <YAxis type="category" dataKey="name" width={160} tick={{ fontSize: 11, fill: '#4B4D55' }} />
-              <Tooltip contentStyle={{ borderRadius: 8, fontSize: 12 }} formatter={(v: number) => [`${v} alertes`, 'Total']} />
-              <Bar dataKey="count" radius={[0, 6, 6, 0]} maxBarSize={18} fill="#B23A3A" />
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,.12)" />
+              <XAxis type="number" tick={{ fontSize: 13, fill: '#CFC6B8' }} />
+              <YAxis type="category" dataKey="name" width={160} tick={{ fontSize: 13, fill: '#CFC6B8' }} />
+              <Tooltip contentStyle={{ borderRadius: 8, fontSize: 13 }} formatter={(v: number) => [`${v} alertes`, 'Total']} />
+              <Bar dataKey="count" radius={[0, 6, 6, 0]} maxBarSize={18} fill="#F08A7A" />
             </BarChart>
           </ResponsiveContainer>
         </Section>
@@ -559,7 +559,7 @@ const AlertsTab: React.FC<{
 };
 
 const PAGINATION_BTN =
-  'px-3.5 py-1.5 rounded-card border border-line text-[11px] font-semibold cursor-pointer bg-card text-ink-soft hover:bg-paper transition-colors';
+  'px-3.5 py-1.5 rounded-card border border-line text-[13px] font-semibold cursor-pointer bg-card text-ink-soft hover:bg-paper transition-colors';
 
 // ══════════════════════════════════════════════════════════════════════════════
 // TAB 4 — TOP USERS
@@ -568,9 +568,9 @@ const PAGINATION_BTN =
 const thStyle: React.CSSProperties = {
   textAlign: 'left',
   padding: '8px 6px',
-  fontSize: 11,
+  fontSize: 13,
   fontWeight: 600,
-  color: '#94A3B8',
+  color: '#A79E90',
   cursor: 'pointer',
   userSelect: 'none',
   whiteSpace: 'nowrap',
@@ -579,12 +579,12 @@ const thStyle: React.CSSProperties = {
 const paginationBtn: React.CSSProperties = {
   padding: '6px 14px',
   borderRadius: 8,
-  border: '1px solid #E2E8F0',
-  fontSize: 11,
+  border: '1px solid rgba(255,255,255,.12)',
+  fontSize: 13,
   fontWeight: 600,
   cursor: 'pointer',
   background: 'white',
-  color: '#64748B',
+  color: '#CFC6B8',
 };
 
 const UsersTab: React.FC<{
@@ -648,7 +648,7 @@ const UsersTab: React.FC<{
             width: '100%',
             padding: '10px 14px 10px 36px',
             borderRadius: 10,
-            border: '1px solid #E2E8F0',
+            border: '1px solid rgba(255,255,255,.12)',
             fontSize: 13,
             outline: 'none',
             boxSizing: 'border-box',
@@ -659,9 +659,9 @@ const UsersTab: React.FC<{
 
       <div style={{ background: 'white', borderRadius: 14, border: '1px solid rgba(0,0,0,0.06)', overflow: 'hidden' }}>
         <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
             <thead>
-              <tr style={{ borderBottom: '2px solid #F1F5F9', background: '#FAFBFC' }}>
+              <tr style={{ borderBottom: '2px solid rgba(255,255,255,.05)', background: 'rgba(255,255,255,.05)' }}>
                 <th style={{ ...thStyle, width: 36, textAlign: 'center' }}>#</th>
                 <th onClick={() => toggleSort('name')} style={thStyle}>Nom{arrow('name')}</th>
                 <th style={{ ...thStyle, textAlign: 'center' }}>Inscrit le</th>
@@ -672,30 +672,30 @@ const UsersTab: React.FC<{
             </thead>
             <tbody>
               {paged.length === 0 ? (
-                <tr><td colSpan={6} style={{ textAlign: 'center', padding: 24, color: '#94A3B8' }}>Aucun utilisateur trouve</td></tr>
+                <tr><td colSpan={6} style={{ textAlign: 'center', padding: 24, color: '#A79E90' }}>Aucun utilisateur trouve</td></tr>
               ) : paged.map((user, i) => (
                 <tr
                   key={user.id}
                   onClick={() => setSelectedUserId(user.id)}
                   style={{
-                    borderBottom: '1px solid #F8FAFC',
+                    borderBottom: '1px solid rgba(255,255,255,.05)',
                     cursor: 'pointer',
                     transition: 'background 0.15s',
                   }}
-                  onMouseEnter={e => (e.currentTarget.style.background = '#F8FAFC')}
+                  onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,.05)')}
                   onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
                 >
-                  <td style={{ textAlign: 'center', padding: '8px 6px', color: '#94A3B8', fontWeight: 700, fontSize: 11 }}>
+                  <td style={{ textAlign: 'center', padding: '8px 6px', color: '#A79E90', fontWeight: 700, fontSize: 13 }}>
                     {page * PAGE_SIZE + i + 1}
                   </td>
-                  <td style={{ padding: '8px 6px', fontWeight: 600, color: '#0A2342' }}>
+                  <td style={{ padding: '8px 6px', fontWeight: 600, color: '#FBF5EA' }}>
                     {user.name}
-                    <span style={{ marginLeft: 6, fontSize: 10, color: '#94A3B8' }}>{user.authProvider}</span>
+                    <span style={{ marginLeft: 6, fontSize: 13, color: '#A79E90' }}>{user.authProvider}</span>
                   </td>
-                  <td style={{ textAlign: 'center', padding: '8px 6px', color: '#64748B' }}>{user.registeredAt}</td>
-                  <td style={{ textAlign: 'center', padding: '8px 6px', fontWeight: 700, color: '#0D9488' }}>{user.completedTests}</td>
-                  <td style={{ textAlign: 'center', padding: '8px 6px', color: '#D97706', fontWeight: 600 }}>◉ {user.korisSpent}</td>
-                  <td style={{ textAlign: 'center', padding: '8px 6px', color: '#64748B', fontSize: 11 }}>{user.lastActivity}</td>
+                  <td style={{ textAlign: 'center', padding: '8px 6px', color: '#CFC6B8' }}>{user.registeredAt}</td>
+                  <td style={{ textAlign: 'center', padding: '8px 6px', fontWeight: 700, color: '#7FD1A0' }}>{user.completedTests}</td>
+                  <td style={{ textAlign: 'center', padding: '8px 6px', color: '#E9C88F', fontWeight: 600 }}>◉ {user.korisSpent}</td>
+                  <td style={{ textAlign: 'center', padding: '8px 6px', color: '#CFC6B8', fontSize: 13 }}>{user.lastActivity}</td>
                 </tr>
               ))}
             </tbody>
@@ -703,8 +703,8 @@ const UsersTab: React.FC<{
         </div>
 
         {totalPages > 1 && (
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 16px', borderTop: '1px solid #F1F5F9' }}>
-            <span style={{ fontSize: 11, color: '#94A3B8' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 16px', borderTop: '1px solid rgba(255,255,255,.05)' }}>
+            <span style={{ fontSize: 13, color: '#A79E90' }}>
               Affichage {page * PAGE_SIZE + 1}–{Math.min((page + 1) * PAGE_SIZE, filtered.length)} sur {filtered.length}
             </span>
             <div style={{ display: 'flex', gap: 6 }}>
@@ -761,33 +761,33 @@ const UserDetailPanel: React.FC<{ userId: string; onClose: () => void }> = ({ us
       }}>
         <div style={{
           position: 'sticky', top: 0, background: 'white', zIndex: 1,
-          padding: '16px 20px', borderBottom: '1px solid #F1F5F9',
+          padding: '16px 20px', borderBottom: '1px solid rgba(255,255,255,.05)',
           display: 'flex', alignItems: 'center', gap: 10,
         }}>
           <button
             onClick={onClose}
-            style={{ background: 'none', border: 'none', fontSize: 18, cursor: 'pointer', padding: 4, color: '#64748B' }}
+            style={{ background: 'none', border: 'none', fontSize: 18, cursor: 'pointer', padding: 4, color: '#CFC6B8' }}
           >←</button>
-          <span style={{ fontSize: 14, fontWeight: 700, color: '#0A2342' }}>Detail utilisateur</span>
+          <span style={{ fontSize: 14, fontWeight: 700, color: '#FBF5EA' }}>Detail utilisateur</span>
         </div>
 
         {loading ? (
           <div style={{ display: 'flex', justifyContent: 'center', padding: 60 }}>
             <div style={{
-              width: 32, height: 32, border: '3px solid #E2E8F0',
-              borderTop: '3px solid #3B82F6', borderRadius: '50%',
+              width: 32, height: 32, border: '3px solid rgba(255,255,255,.12)',
+              borderTop: '3px solid #9DBFAF', borderRadius: '50%',
               animation: 'spin 0.8s linear infinite',
             }} />
           </div>
         ) : !detail ? (
-          <div style={{ padding: 40, textAlign: 'center', color: '#94A3B8' }}>Utilisateur non trouve</div>
+          <div style={{ padding: 40, textAlign: 'center', color: '#A79E90' }}>Utilisateur non trouve</div>
         ) : (
           <div style={{ padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 20 }}>
             <div>
-              <h3 style={{ margin: '0 0 8px', fontSize: 18, fontWeight: 800, color: '#0A2342', display: 'flex', alignItems: 'center', gap: 6 }}>
+              <h3 style={{ margin: '0 0 8px', fontSize: 18, fontWeight: 800, color: '#FBF5EA', display: 'flex', alignItems: 'center', gap: 6 }}>
                 <User className="h-4 w-4" /> {detail.name}
               </h3>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 12, color: '#64748B' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 13, color: '#CFC6B8' }}>
                 {detail.phone !== '—' && <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Phone className="h-3 w-3" /> {detail.phone}</div>}
                 {detail.email !== '—' && <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Mail className="h-3 w-3" /> {detail.email}</div>}
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Calendar className="h-3 w-3" /> Inscrit le {detail.registeredAt}</div>
@@ -795,71 +795,71 @@ const UserDetailPanel: React.FC<{ userId: string; onClose: () => void }> = ({ us
               </div>
             </div>
 
-            <hr style={{ border: 'none', borderTop: '1px solid #F1F5F9', margin: 0 }} />
+            <hr style={{ border: 'none', borderTop: '1px solid rgba(255,255,255,.05)', margin: 0 }} />
 
             <div>
-              <div style={{ fontSize: 13, fontWeight: 700, color: '#0A2342', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: '#FBF5EA', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
                 <BarChart3 className="h-3.5 w-3.5" /> Progression : {detail.completedTests}/{detail.totalScales} tests
               </div>
               <div style={{
-                height: 8, borderRadius: 4, background: '#F1F5F9', overflow: 'hidden',
+                height: 8, borderRadius: 4, background: 'rgba(255,255,255,.05)', overflow: 'hidden',
               }}>
                 <div style={{
                   height: '100%',
                   width: `${Math.min(100, (detail.completedTests / detail.totalScales) * 100)}%`,
-                  background: '#4A5D57',
+                  background: '#9DBFAF',
                   borderRadius: 4,
                   transition: 'width 0.5s',
                 }} />
               </div>
-              <div style={{ fontSize: 11, color: '#94A3B8', marginTop: 4 }}>
+              <div style={{ fontSize: 13, color: '#A79E90', marginTop: 4 }}>
                 {Math.round((detail.completedTests / detail.totalScales) * 100)}%
               </div>
             </div>
 
-            <hr style={{ border: 'none', borderTop: '1px solid #F1F5F9', margin: 0 }} />
+            <hr style={{ border: 'none', borderTop: '1px solid rgba(255,255,255,.05)', margin: 0 }} />
 
             <div>
-              <div style={{ fontSize: 13, fontWeight: 700, color: '#0A2342', marginBottom: 8 }}>◉ Koris</div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6, fontSize: 12 }}>
-                <div style={{ color: '#64748B' }}>Solde actuel</div>
-                <div style={{ fontWeight: 700, color: '#D97706' }}>◉ {detail.korisBalance}</div>
-                <div style={{ color: '#64748B' }}>Total depense</div>
-                <div style={{ fontWeight: 700, color: '#DC2626' }}>◉ {detail.korisSpent}</div>
-                <div style={{ color: '#64748B' }}>Total gagne</div>
-                <div style={{ fontWeight: 700, color: '#059669' }}>◉ {detail.korisEarned}</div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: '#FBF5EA', marginBottom: 8 }}>◉ Koris</div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6, fontSize: 13 }}>
+                <div style={{ color: '#CFC6B8' }}>Solde actuel</div>
+                <div style={{ fontWeight: 700, color: '#E9C88F' }}>◉ {detail.korisBalance}</div>
+                <div style={{ color: '#CFC6B8' }}>Total depense</div>
+                <div style={{ fontWeight: 700, color: '#F08A7A' }}>◉ {detail.korisSpent}</div>
+                <div style={{ color: '#CFC6B8' }}>Total gagne</div>
+                <div style={{ fontWeight: 700, color: '#7FD1A0' }}>◉ {detail.korisEarned}</div>
               </div>
             </div>
 
-            <hr style={{ border: 'none', borderTop: '1px solid #F1F5F9', margin: 0 }} />
+            <hr style={{ border: 'none', borderTop: '1px solid rgba(255,255,255,.05)', margin: 0 }} />
 
             <div>
-              <div style={{ fontSize: 13, fontWeight: 700, color: '#0A2342', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: '#FBF5EA', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
                 <ClipboardList className="h-3.5 w-3.5" /> Tests completes ({detail.tests.length})
               </div>
               {detail.tests.length === 0 ? (
-                <p style={{ fontSize: 12, color: '#94A3B8' }}>Aucun test complete</p>
+                <p style={{ fontSize: 13, color: '#A79E90' }}>Aucun test complete</p>
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                   {detail.tests.map(t => (
                     <div key={t.scaleId} style={{
                       display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                      padding: '6px 8px', borderRadius: 8, background: '#F8FAFC', fontSize: 11,
+                      padding: '6px 8px', borderRadius: 8, background: 'rgba(255,255,255,.05)', fontSize: 13,
                     }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                         <span>{t.icon}</span>
-                        <span style={{ fontWeight: 600, color: '#334155' }}>{t.scaleName}</span>
+                        <span style={{ fontWeight: 600, color: '#DCD3C5' }}>{t.scaleName}</span>
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                        <span style={{ color: '#475569' }}>
+                        <span style={{ color: '#CFC6B8' }}>
                           {t.score}{t.maxScore > 0 ? `/${t.maxScore}` : ''}
                         </span>
                         <span style={{
-                          padding: '1px 6px', borderRadius: 6, fontWeight: 700, fontSize: 9,
+                          padding: '1px 6px', borderRadius: 6, fontWeight: 700, fontSize: 13,
                           color: severityColor(t.severity),
                           background: `${severityColor(t.severity)}15`,
                         }}>{t.label}</span>
-                        <span style={{ color: '#94A3B8', fontSize: 10 }}>{t.completedAt}</span>
+                        <span style={{ color: '#A79E90', fontSize: 13 }}>{t.completedAt}</span>
                       </div>
                     </div>
                   ))}
@@ -867,26 +867,26 @@ const UserDetailPanel: React.FC<{ userId: string; onClose: () => void }> = ({ us
               )}
             </div>
 
-            <hr style={{ border: 'none', borderTop: '1px solid #F1F5F9', margin: 0 }} />
+            <hr style={{ border: 'none', borderTop: '1px solid rgba(255,255,255,.05)', margin: 0 }} />
 
             <div>
-              <div style={{ fontSize: 13, fontWeight: 700, color: '#0A2342', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: '#FBF5EA', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
                 <Clock className="h-3.5 w-3.5" /> Activite recente
               </div>
               {detail.recentActivity.length === 0 ? (
-                <p style={{ fontSize: 12, color: '#94A3B8' }}>Aucune activite recente</p>
+                <p style={{ fontSize: 13, color: '#A79E90' }}>Aucune activite recente</p>
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                   {detail.recentActivity.map((a, i) => (
                     <div key={i} style={{
                       display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                      padding: '5px 8px', borderRadius: 8, fontSize: 11,
-                      background: a.type === 'spend' ? '#FEF2F2' : a.type === 'refill' ? '#F0FDF4' : '#F8FAFC',
+                      padding: '5px 8px', borderRadius: 8, fontSize: 13,
+                      background: a.type === 'spend' ? 'rgba(240,138,122,.14)' : a.type === 'refill' ? 'rgba(127,209,160,.14)' : 'rgba(255,255,255,.05)',
                     }}>
-                      <span style={{ color: '#334155' }}>{a.details || a.feature}</span>
+                      <span style={{ color: '#DCD3C5' }}>{a.details || a.feature}</span>
                       <span style={{
-                        fontWeight: 700, fontSize: 10,
-                        color: a.type === 'spend' ? '#DC2626' : '#059669',
+                        fontWeight: 700, fontSize: 13,
+                        color: a.type === 'spend' ? '#F08A7A' : '#7FD1A0',
                       }}>
                         {a.type === 'spend' ? '−' : '+'}{a.amount}
                       </span>
@@ -1000,11 +1000,11 @@ const EvaluationsDashboardContent: React.FC = () => {
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 400 }}>
         <div style={{ textAlign: 'center' }}>
           <div style={{
-            width: 40, height: 40, border: '3px solid #E2E8F0',
-            borderTop: '3px solid #3B82F6', borderRadius: '50%',
+            width: 40, height: 40, border: '3px solid rgba(255,255,255,.12)',
+            borderTop: '3px solid #9DBFAF', borderRadius: '50%',
             animation: 'spin 0.8s linear infinite', margin: '0 auto 12px',
           }} />
-          <p style={{ color: '#64748B', fontSize: 14 }}>
+          <p style={{ color: '#CFC6B8', fontSize: 14 }}>
             {initializing ? 'Initialisation des statistiques...' : 'Chargement...'}
           </p>
         </div>
@@ -1016,10 +1016,10 @@ const EvaluationsDashboardContent: React.FC = () => {
   if (error) {
     return (
       <div style={{ textAlign: 'center', padding: 40 }}>
-        <p style={{ color: '#DC2626', marginBottom: 12 }}>{error}</p>
+        <p style={{ color: '#F08A7A', marginBottom: 12 }}>{error}</p>
         <button onClick={loadDashboard} style={{
           padding: '8px 20px', borderRadius: 10, border: 'none',
-          background: '#3B82F6', color: 'white', fontWeight: 600, cursor: 'pointer',
+          background: 'var(--he-action)', color: '#1C140D', fontWeight: 600, cursor: 'pointer',
         }}>Reessayer</button>
       </div>
     );
@@ -1029,10 +1029,10 @@ const EvaluationsDashboardContent: React.FC = () => {
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
         <div>
-          <h2 style={{ margin: 0, fontSize: 20, fontWeight: 800, color: '#0A2342' }}>
+          <h2 style={{ margin: 0, fontSize: 20, fontWeight: 800, color: '#FBF5EA' }}>
             Tableau de bord Evaluations
           </h2>
-          <p style={{ margin: '2px 0 0', fontSize: 12, color: '#64748B' }}>
+          <p style={{ margin: '2px 0 0', fontSize: 13, color: '#CFC6B8' }}>
             Statistiques anonymes Health-e 2.0
           </p>
         </div>
@@ -1040,9 +1040,9 @@ const EvaluationsDashboardContent: React.FC = () => {
           onClick={handleRefreshStats}
           disabled={initializing}
           style={{
-            padding: '6px 14px', borderRadius: 8, border: '1px solid rgba(59,130,246,0.2)',
-            background: 'rgba(59,130,246,0.05)', color: '#3B82F6', fontWeight: 600,
-            fontSize: 12, cursor: initializing ? 'not-allowed' : 'pointer',
+            padding: '6px 14px', borderRadius: 8, border: '1px solid rgba(157,191,175,0.3)',
+            background: 'rgba(157,191,175,0.12)', color: '#9DBFAF', fontWeight: 600,
+            fontSize: 13, cursor: initializing ? 'not-allowed' : 'pointer',
             opacity: initializing ? 0.5 : 1,
           }}
         >
@@ -1084,7 +1084,7 @@ const EvaluationsDashboardContent: React.FC = () => {
         <AdminKorisSection />
       </div>
 
-      <p style={{ fontSize: 10, color: '#94A3B8', textAlign: 'center', margin: '4px 0 0' }}>
+      <p style={{ fontSize: 13, color: '#A79E90', textAlign: 'center', margin: '4px 0 0' }}>
         Donnees anonymes.
         {stats?.lastUpdated && (
           <> · Maj : {new Date(stats.lastUpdated).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</>

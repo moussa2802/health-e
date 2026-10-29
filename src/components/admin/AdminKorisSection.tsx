@@ -10,7 +10,7 @@ import {
   ResponsiveContainer, Cell,
 } from 'recharts';
 
-const COLORS = ['#8F6A1F', '#4A5D57', '#3C7A5A', '#B5522F', '#B23A3A', '#B5732A', '#6E7078'];
+const COLORS = ['#8F6A1F', '#9DBFAF', '#3C7A5A', '#F09A7A', '#F08A7A', '#B5732A', '#CFC6B8'];
 
 const AdminKorisSection: React.FC = () => {
   const [stats, setStats] = useState<{
@@ -114,12 +114,12 @@ const AdminKorisSection: React.FC = () => {
           </h3>
           <ResponsiveContainer width="100%" height={250}>
             <BarChart data={spendingData} layout="vertical" margin={{ left: 120 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#E7E4DA" />
-              <XAxis type="number" tick={{ fontSize: 11, fill: '#6E7078' }} />
-              <YAxis type="category" dataKey="name" tick={{ fontSize: 11, fill: '#4B4D55' }} width={110} />
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,.12)" />
+              <XAxis type="number" tick={{ fontSize: 13, fill: '#CFC6B8' }} />
+              <YAxis type="category" dataKey="name" tick={{ fontSize: 13, fill: '#CFC6B8' }} width={110} />
               <Tooltip
                 formatter={(value: number) => [`${value} Koris`, 'Dépensés']}
-                contentStyle={{ borderRadius: 12, fontSize: 12 }}
+                contentStyle={{ borderRadius: 12, fontSize: 13 }}
               />
               <Bar dataKey="value" radius={[0, 6, 6, 0]}>
                 {spendingData.map((_, index) => (

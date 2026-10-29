@@ -35,15 +35,15 @@ const DrloMemoryCard: React.FC<{ uid: string; palette: MomentPalette }> = ({ uid
       <p style={{ margin: 0, display: 'flex', alignItems: 'center', gap: 8, fontSize: 15, fontWeight: 700, color: DC.title }}>
         <Brain size={17} color={palette.accent} aria-hidden="true" />Ce que Dr Lô retient de toi
       </p>
-      <p style={{ margin: '4px 0 10px', fontSize: 12.5, lineHeight: 1.5, color: DC.faint }}>
+      <p style={{ margin: '4px 0 10px', fontSize: 13, lineHeight: 1.5, color: DC.faint }}>
         Pour se souvenir de toi d'une discussion à l'autre. Visible par toi seul, jamais partagé. Tu peux effacer ce que tu veux.
       </p>
       {notes.length === 0 ? (
-        <p style={{ margin: 0, fontSize: 13.5, color: DC.muted }}>Rien pour l'instant : ça viendra au fil de vos discussions.</p>
+        <p style={{ margin: 0, fontSize: 14, color: DC.muted }}>Rien pour l'instant : ça viendra au fil de vos discussions.</p>
       ) : (
         <ul style={{ margin: 0, padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 6 }}>
           {notes.map((n, i) => (
-            <li key={`${i}-${n.text}`} style={{ display: 'flex', alignItems: 'flex-start', gap: 8, fontSize: 13.5, lineHeight: 1.45, color: DC.soft }}>
+            <li key={`${i}-${n.text}`} style={{ display: 'flex', alignItems: 'flex-start', gap: 8, fontSize: 14, lineHeight: 1.45, color: DC.soft }}>
               <span style={{ flex: 1 }}>{n.text}</span>
               <button onClick={() => save(notes.filter((_, j) => j !== i))} aria-label={`Effacer : ${n.text}`} className="drl-btn"
                 style={{ flexShrink: 0, width: 32, height: 32, borderRadius: 10, border: 0, background: 'transparent', color: DC.faint, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>

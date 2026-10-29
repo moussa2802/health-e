@@ -1,8 +1,9 @@
 import '../components/accueil/accueil.css';
+import PageHeader from '../components/ui/PageHeader';
 import { useState, useEffect } from 'react';
 import { useNavigate, Navigate } from 'react-router-dom';
 import { collection, getDocs, orderBy, query } from 'firebase/firestore';
-import { ArrowLeft, ChevronRight, Users } from 'lucide-react';
+import { ChevronRight, Users } from 'lucide-react';
 import { db } from '../utils/firebase';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -54,14 +55,7 @@ const DefiMesDefisPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-paper drl-screen drl-page">
-      <div className="sticky top-0 z-20 bg-paper/95 backdrop-blur-md border-b border-line">
-        <div className="max-w-[600px] mx-auto px-5 py-3.5 flex items-center gap-3">
-          <button onClick={() => navigate('/defi', { replace: true })} className="p-0 border-none bg-transparent cursor-pointer text-ink">
-            <ArrowLeft size={20} />
-          </button>
-          <h1 className="font-display text-[18px] font-semibold text-ink m-0">Mes défis</h1>
-        </div>
-      </div>
+      <PageHeader onBack={() => navigate('/defi', { replace: true })} title={"Mes défis"} />
 
       <div className="max-w-[600px] mx-auto px-5 py-6">
         {loading ? (

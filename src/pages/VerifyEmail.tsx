@@ -160,7 +160,7 @@ const VerifyEmail: React.FC = () => {
             dashboardPath = "/assessment";
             console.log("[VERIFY DEBUG] Patient → Healt-e 2.0 assessment");
           } else if (finalUserType === "professional") {
-            dashboardPath = "/professional/dashboard";
+            dashboardPath = "/";
             console.log("[VERIFY DEBUG] Professional dashboard selected");
           } else if (finalUserType === "admin") {
             dashboardPath = "/admin/dashboard";

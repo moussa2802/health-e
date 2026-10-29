@@ -109,10 +109,10 @@ const DomainePage: React.FC = () => {
           </span>
           <span style={{ flex: 1, minWidth: 0 }}>
             <span style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 15, fontWeight: 700 }}>
-              {s.code && <span style={{ fontSize: 11.5, fontWeight: 700, color: meta.color, border: `1px solid ${meta.color}66`, borderRadius: 6, padding: '1px 6px', letterSpacing: '.03em' }}>{s.code}</span>}
+              {s.code && <span style={{ fontSize: 13, fontWeight: 700, color: meta.color, border: `1px solid ${meta.color}66`, borderRadius: 6, padding: '1px 6px', letterSpacing: '.03em' }}>{s.code}</span>}
               {m.label}
             </span>
-            <span style={{ display: 'block', fontSize: 12.5, marginTop: 2, color: r ? tone(r.interpretation?.severity) : DC.faint }}>
+            <span style={{ display: 'block', fontSize: 13, marginTop: 2, color: r ? tone(r.interpretation?.severity) : DC.faint }}>
               {r ? `${r.interpretation?.label ?? 'Fait'}${at ? ` · ${since(at)}` : ''}` : g ? 'Ne te concerne pas pour l\'instant' : 'À découvrir'}
             </span>
           </span>
@@ -124,11 +124,11 @@ const DomainePage: React.FC = () => {
         </div>
         {isOpen && (
           <div className="drl-in" style={{ padding: '0 14px 14px', display: 'flex', flexDirection: 'column', gap: 10 }}>
-            <p style={{ margin: 0, fontSize: 13.5, lineHeight: 1.5, color: DC.soft }}>{m.description}</p>
+            <p style={{ margin: 0, fontSize: 14, lineHeight: 1.5, color: DC.soft }}>{m.description}</p>
             {r?.interpretation?.description && (
-              <p style={{ margin: 0, fontSize: 13.5, lineHeight: 1.5, color: DC.muted }}>{r.interpretation.description}</p>
+              <p style={{ margin: 0, fontSize: 14, lineHeight: 1.5, color: DC.muted }}>{r.interpretation.description}</p>
             )}
-            {g && !r && <p style={{ margin: 0, fontSize: 12.5, color: DC.faint }}>{g.reason}.</p>}
+            {g && !r && <p style={{ margin: 0, fontSize: 13, color: DC.faint }}>{g.reason}.</p>}
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
               <button onClick={() => (intime ? startIntime(s.id) : startWithDrLo(s.id))} className="drl-btn"
                 style={{ minHeight: 44, padding: '0 16px', borderRadius: 999, border: 0, background: palette.primary, color: DC.ink, fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>
@@ -161,7 +161,7 @@ const DomainePage: React.FC = () => {
       <div style={{ marginTop: 18 }}>
         <p style={{ margin: 0, fontSize: 13, color: DC.faint }}>Mon espace bien-être</p>
         <h1 style={{ margin: '4px 0 0', fontFamily: 'Fraunces, serif', fontSize: 28, lineHeight: 1.2, fontWeight: 600, color: DC.title }}>{meta.title}</h1>
-        <p style={{ margin: '8px 0 0', fontSize: 14.5, lineHeight: 1.55, color: DC.soft }}>{meta.intro}</p>
+        <p style={{ margin: '8px 0 0', fontSize: 15, lineHeight: 1.55, color: DC.soft }}>{meta.intro}</p>
       </div>
 
       {!loaded && <p style={{ marginTop: 20, color: DC.faint }}>…</p>}
@@ -171,14 +171,14 @@ const DomainePage: React.FC = () => {
           <section style={{ marginTop: 18 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
               <h2 style={h2}>Ton portrait psychologique</h2>
-              <span style={{ fontSize: 12.5, color: DC.faint }}>{doneOf(MENTAL_HEALTH_SCALES)} / {totalOf(MENTAL_HEALTH_SCALES)}</span>
+              <span style={{ fontSize: 13, color: DC.faint }}>{doneOf(MENTAL_HEALTH_SCALES)} / {totalOf(MENTAL_HEALTH_SCALES)}</span>
             </div>
             {list(MENTAL_HEALTH_SCALES)}
           </section>
           <section style={{ marginTop: 20 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
               <h2 style={h2}>Pour aller plus loin</h2>
-              <span style={{ fontSize: 12.5, color: DC.faint }}>{doneOf(BONUS_SCALES)} / {totalOf(BONUS_SCALES)}</span>
+              <span style={{ fontSize: 13, color: DC.faint }}>{doneOf(BONUS_SCALES)} / {totalOf(BONUS_SCALES)}</span>
             </div>
             {list(BONUS_SCALES)}
           </section>
@@ -186,7 +186,7 @@ const DomainePage: React.FC = () => {
             <Sparkles size={22} color={DC.gold} aria-hidden="true" />
             <span style={{ flex: 1 }}>
               <span style={{ display: 'block', fontSize: 15, fontWeight: 700 }}>Mon totem et l'analyse de Dr Lô</span>
-              <span style={{ display: 'block', fontSize: 12.5, color: DC.muted }}>La synthèse de tout ton portrait</span>
+              <span style={{ display: 'block', fontSize: 13, color: DC.muted }}>La synthèse de tout ton portrait</span>
             </span>
             <ArrowRight size={18} color={DC.muted} aria-hidden="true" />
           </Link>
@@ -201,9 +201,9 @@ const DomainePage: React.FC = () => {
             <div key={c.title} style={{ ...card, borderColor: `${DC.social}55`, background: `${DC.social}10` }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                 <c.icon size={20} color={DC.social} aria-hidden="true" />
-                <span style={{ fontSize: 15.5, fontWeight: 700 }}>{c.title}</span>
+                <span style={{ fontSize: 16, fontWeight: 700 }}>{c.title}</span>
               </div>
-              <p style={{ margin: '8px 0 12px', fontSize: 13.5, lineHeight: 1.5, color: DC.soft }}>{c.text}</p>
+              <p style={{ margin: '8px 0 12px', fontSize: 14, lineHeight: 1.5, color: DC.soft }}>{c.text}</p>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
                 <button onClick={() => (uid ? navigate(c.to) : navigate('/', { state: { signup: true } }))} className="drl-btn"
                   style={{ minHeight: 44, padding: '0 16px', borderRadius: 999, border: 0, background: palette.primary, color: DC.ink, fontSize: 14, fontWeight: 700, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
@@ -226,7 +226,7 @@ const DomainePage: React.FC = () => {
           <section style={{ marginTop: 18 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
               <h2 style={h2}>Ta vie intime</h2>
-              <span style={{ fontSize: 12.5, color: DC.faint }}>{doneOf(SEXUAL_HEALTH_SCALES)} / {totalOf(SEXUAL_HEALTH_SCALES)}</span>
+              <span style={{ fontSize: 13, color: DC.faint }}>{doneOf(SEXUAL_HEALTH_SCALES)} / {totalOf(SEXUAL_HEALTH_SCALES)}</span>
             </div>
             {list(SEXUAL_HEALTH_SCALES, true)}
           </section>
@@ -236,7 +236,7 @@ const DomainePage: React.FC = () => {
               <Lock size={18} color={DC.intime} aria-hidden="true" />
               <span style={{ fontSize: 15, fontWeight: 700 }}>Avec ton espace personnel</span>
             </div>
-            <p style={{ margin: '8px 0 12px', fontSize: 13.5, lineHeight: 1.5, color: DC.soft }}>
+            <p style={{ margin: '8px 0 12px', fontSize: 14, lineHeight: 1.5, color: DC.soft }}>
               Pour protéger ce qui est intime, ces tests se font dans ton espace. C'est gratuit et ça prend 10 secondes.
             </p>
             <button onClick={() => navigate('/', { state: { signup: true } })} className="drl-btn"
@@ -247,7 +247,7 @@ const DomainePage: React.FC = () => {
         )
       )}
 
-      <p style={{ margin: '20px 0 0', textAlign: 'center', fontSize: 11.5, lineHeight: 1.5, color: DC.faint }}>
+      <p style={{ margin: '20px 0 0', textAlign: 'center', fontSize: 13, lineHeight: 1.5, color: DC.faint }}>
         Des repères, jamais des notes. Pas de diagnostic · Urgence : <a href="tel:1515" style={{ fontWeight: 700 }}>1515</a>
       </p>
     </DrLoShell>

@@ -3,16 +3,9 @@ import { Link, useLocation } from "react-router-dom";
 import {
   LayoutDashboard,
   Users,
-  UserCheck,
-  Calendar,
-  BarChart2,
   FileText,
-  MessageSquare,
   Users2,
-  ShieldCheck,
-  DollarSign,
   Bell,
-  UsersRound,
   ClipboardCheck,
   Coins,
 } from "lucide-react";
@@ -37,7 +30,7 @@ const AdminSidebar = () => {
 
   const sections: MenuSection[] = [
     {
-      title: language === "fr" ? "ÉVALUATIONS" : "EVALUATIONS",
+      title: language === "fr" ? "GESTION" : "MANAGEMENT",
       items: [
         {
           path: "/admin/dashboard",
@@ -71,51 +64,6 @@ const AdminSidebar = () => {
         },
       ],
     },
-    {
-      title: language === "fr" ? "TÉLÉCONSULTATION" : "TELECONSULTATION",
-      items: [
-        {
-          path: "/admin/professionals",
-          icon: ShieldCheck,
-          label: language === "fr" ? "Professionnels" : "Professionals",
-        },
-        {
-          path: "/admin/patients",
-          icon: UserCheck,
-          label: language === "fr" ? "Patients" : "Patients",
-        },
-        {
-          path: "/admin/appointments",
-          icon: Calendar,
-          label: language === "fr" ? "Consultations" : "Appointments",
-        },
-        {
-          path: "/admin/statistics",
-          icon: BarChart2,
-          label: language === "fr" ? "Statistiques" : "Statistics",
-        },
-        {
-          path: "/admin/messages",
-          icon: MessageSquare,
-          label: language === "fr" ? "Messagerie" : "Messages",
-        },
-        {
-          path: "/admin/support",
-          icon: MessageSquare,
-          label: language === "fr" ? "Support" : "Support",
-        },
-        {
-          path: "/admin/withdrawals",
-          icon: DollarSign,
-          label: language === "fr" ? "Retraits" : "Withdrawals",
-        },
-        {
-          path: "/admin/group-therapy",
-          icon: UsersRound,
-          label: language === "fr" ? "Thérapie de groupe" : "Group Therapy",
-        },
-      ],
-    },
   ];
 
   const externalItem: MenuItem = {
@@ -132,7 +80,7 @@ const AdminSidebar = () => {
         <div className="px-4 pb-4">
           {sections.map((section, si) => (
             <div key={section.title} className={si > 0 ? "mt-5" : ""}>
-              <p className="text-[10px] font-bold tracking-[0.12em] text-muted uppercase px-4 mb-2">
+              <p className="text-[13px] font-bold tracking-[0.12em] text-muted uppercase px-4 mb-2">
                 {section.title}
               </p>
               <ul className="space-y-1">
@@ -161,12 +109,12 @@ const AdminSidebar = () => {
               href={externalItem.path}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center space-x-3 px-4 py-2.5 rounded-card bg-accent text-white hover:bg-accent/90 shadow-soft transition-colors"
+              className="flex items-center space-x-3 px-4 py-2.5 rounded-card bg-gold font-bold transition-colors"
             >
-              <externalItem.icon className="h-4.5 w-4.5 text-white" />
-              <span className="text-sm font-medium">{externalItem.label}</span>
+              <externalItem.icon className="h-4.5 w-4.5" />
+              <span className="text-sm font-bold">{externalItem.label}</span>
               <svg
-                className="h-3.5 w-3.5 ml-auto text-white/60"
+                className="h-3.5 w-3.5 ml-auto opacity-60"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"

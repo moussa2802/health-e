@@ -28,8 +28,8 @@ import type { ScaleResult } from '../../types/assessment';
 
 const MONTHS = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
 const SEC: React.CSSProperties = { marginTop: 14, background: DC.glass, border: `1px solid ${DC.line}`, borderRadius: 20, padding: 17 };
-const LAB: React.CSSProperties = { fontSize: 11, fontWeight: 700, letterSpacing: '.1em', textTransform: 'uppercase', color: DC.faint, margin: 0 };
-const BTN: React.CSSProperties = { flex: 1, minHeight: 48, borderRadius: 14, padding: '0 12px', fontFamily: 'inherit', fontWeight: 700, fontSize: 13.5, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7 };
+const LAB: React.CSSProperties = { fontSize: 13, fontWeight: 700, letterSpacing: '.1em', textTransform: 'uppercase', color: DC.faint, margin: 0 };
+const BTN: React.CSSProperties = { flex: 1, minHeight: 48, borderRadius: 14, padding: '0 12px', fontFamily: 'inherit', fontWeight: 700, fontSize: 14, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7 };
 
 const ResultatPage: React.FC = () => {
   const { scaleId = '' } = useParams<{ scaleId: string }>();
@@ -79,7 +79,7 @@ const ResultatPage: React.FC = () => {
 
   return (
     <DrLoShell back={backTo} genre={ob?.genre} palette={palette}>
-      <p style={{ margin: '18px 0 10px', fontSize: 11.5, color: DC.faint, fontWeight: 600 }}>
+      <p style={{ margin: '18px 0 10px', fontSize: 13, color: DC.faint, fontWeight: 600 }}>
         {intime ? 'Vie intime' : scale.category === 'bonus' ? 'Test bonus' : 'Profil psychologique'} · {scale.name}
         {at ? ` · ${at.getDate()} ${MONTHS[at.getMonth()]} ${at.getFullYear()}` : ''}
       </p>
@@ -99,7 +99,7 @@ const ResultatPage: React.FC = () => {
 
       {alertLevel >= 2 && (
         <div role="note" style={{ ...SEC, background: 'rgba(240,154,122,.10)', borderColor: 'rgba(240,154,122,.45)' }}>
-          <p style={{ margin: 0, fontSize: 13.5, lineHeight: 1.55, color: DC.soft }}>
+          <p style={{ margin: 0, fontSize: 14, lineHeight: 1.55, color: DC.soft }}>
             Ce résultat mérite qu'on en parle avec quelqu'un. Si c'est dur maintenant, appelle le {crisisTel}, à toute heure.
           </p>
           <a href={`tel:${crisisTel.replace(/\s/g, '')}`} className="drl-btn" style={{ marginTop: 10, minHeight: 40, display: 'inline-flex', alignItems: 'center', gap: 6, color: '#F6C2AE', fontWeight: 700, textDecoration: 'none', fontSize: 14 }}>
@@ -144,8 +144,8 @@ const ResultatPage: React.FC = () => {
       <button onClick={talk} className="drl-btn" style={{ ...SEC, width: '100%', cursor: 'pointer', textAlign: 'left', display: 'flex', alignItems: 'center', gap: 12, color: DC.text, fontFamily: 'inherit' }}>
         <MessageCircle size={20} color={palette.accent} aria-hidden="true" />
         <span style={{ flex: 1 }}>
-          <span style={{ display: 'block', fontSize: 14.5, fontWeight: 700 }}>En parler à Dr Lô</span>
-          <span style={{ display: 'block', fontSize: 12.5, color: DC.faint, marginTop: 2 }}>Il connaît ce résultat et peut t'aider à aller plus loin.</span>
+          <span style={{ display: 'block', fontSize: 15, fontWeight: 700 }}>En parler à Dr Lô</span>
+          <span style={{ display: 'block', fontSize: 13, color: DC.faint, marginTop: 2 }}>Il connaît ce résultat et peut t'aider à aller plus loin.</span>
         </span>
         <ChevronRight size={18} color={DC.faint} aria-hidden="true" />
       </button>

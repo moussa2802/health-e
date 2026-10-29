@@ -238,10 +238,10 @@ const ResultCard = React.forwardRef<HTMLDivElement, ResultCardProps>(({ scale, r
           const active = i === activeBand;
           return (
             <span key={i} style={{
-              flex: 1, fontSize: isFull ? 10 : 9.5, fontWeight: active ? 800 : 600,
+              flex: 1, fontSize: 13, fontWeight: active ? 800 : 600,
               color: active ? '#F1ECE1' : '#A79F8F',
               textAlign: i === 0 ? 'left' : i === bands.length - 1 ? 'right' : 'center',
-              overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+              lineHeight: 1.25, overflowWrap: 'anywhere', padding: '0 2px',
             }}>
               {shortBandLabel(b.label)}
             </span>
@@ -258,14 +258,14 @@ const ResultCard = React.forwardRef<HTMLDivElement, ResultCardProps>(({ scale, r
           display: 'grid', gridTemplateColumns: `${isFull ? 96 : 88}px 1fr auto`,
           alignItems: 'center', gap: 10,
         }}>
-          <span style={{ fontSize: isFull ? 11.5 : 11, color: '#D5CDBD', fontWeight: 600 }}>{d.label}</span>
+          <span style={{ fontSize: isFull ? 14 : 13, color: '#D5CDBD', fontWeight: 600 }}>{d.label}</span>
           <div style={{ height: 6, borderRadius: 20, background: 'rgba(241,236,225,.13)', overflow: 'hidden' }}>
             <div style={{
               height: '100%', borderRadius: 20, background: d.color,
               width: `${d.pct}%`, transition: 'width .9s cubic-bezier(.2,.8,.2,1)',
             }} />
           </div>
-          <span style={{ fontSize: isFull ? 10 : 9.5, fontWeight: 700, color: '#EDE7DB', minWidth: isFull ? 52 : 48, textAlign: 'right' }}>
+          <span style={{ fontSize: 13, fontWeight: 700, color: '#EDE7DB', minWidth: isFull ? 52 : 48, textAlign: 'right' }}>
             {d.valueLabel}
           </span>
         </div>
@@ -299,8 +299,8 @@ const ResultCard = React.forwardRef<HTMLDivElement, ResultCardProps>(({ scale, r
         <b style={{ fontSize: 13, fontWeight: 700, letterSpacing: '-0.01em' }}>Health-e</b>
       </div>
       <span style={{
-        fontFamily: "'JetBrains Mono', ui-monospace, monospace",
-        fontSize: 11.5, fontWeight: 700, letterSpacing: '0.04em',
+        fontFamily: "'Plus Jakarta Sans', sans-serif",
+        fontSize: 13, fontWeight: 700, letterSpacing: '0.04em',
         color: '#EDE7DB', background: 'rgba(241,236,225,.14)',
         border: '1px solid rgba(241,236,225,.2)', borderRadius: 7, padding: '4px 7px',
         lineHeight: 1,
@@ -319,7 +319,7 @@ const ResultCard = React.forwardRef<HTMLDivElement, ResultCardProps>(({ scale, r
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9FB0AA" strokeWidth="2" style={{ flex: '0 0 auto', marginTop: 1 }}>
         <path d="M12 20s-7-4.5-9.5-9A5 5 0 0 1 12 6a5 5 0 0 1 9.5 5C19 15.5 12 20 12 20z"/>
       </svg>
-      <p style={{ margin: 0, fontSize: 12, lineHeight: 1.55, color: '#CFC9B7' }}>
+      <p style={{ margin: 0, fontSize: 13, lineHeight: 1.55, color: '#CFC9B7' }}>
         Si quelque chose remonte, tu n'as pas à le porter seul.
       </p>
     </div>
@@ -416,7 +416,7 @@ const ResultCard = React.forwardRef<HTMLDivElement, ResultCardProps>(({ scale, r
               </div>
               {bands.length > 0 && renderGauge()}
               {card.variant === 'statement' && (
-                <p style={{ ...z2, margin: '14px 0 0', fontSize: 10.5, color: '#8A8478', fontStyle: 'italic', textAlign: 'center' }}>
+                <p style={{ ...z2, margin: '14px 0 0', fontSize: 13, color: '#8A8478', fontStyle: 'italic', textAlign: 'center' }}>
                   Ce test n'est pas un diagnostic.
                 </p>
               )}
@@ -433,8 +433,8 @@ const ResultCard = React.forwardRef<HTMLDivElement, ResultCardProps>(({ scale, r
       {isCompact && !isEmpty && (
         <span style={{
           position: 'absolute', top: 18, right: 18, zIndex: 3,
-          fontFamily: "'JetBrains Mono', ui-monospace, monospace",
-          fontSize: 10.5, fontWeight: 700, letterSpacing: '0.04em',
+          fontFamily: "'Plus Jakarta Sans', sans-serif",
+          fontSize: 13, fontWeight: 700, letterSpacing: '0.04em',
           color: '#EDE7DB', background: 'rgba(241,236,225,.14)',
           border: '1px solid rgba(241,236,225,.2)', borderRadius: 7, padding: '3px 7px',
           lineHeight: 1,
@@ -464,7 +464,7 @@ const ResultCard = React.forwardRef<HTMLDivElement, ResultCardProps>(({ scale, r
               accentColor="#7E8A85"
               size={sigSize}
             />
-            <p style={{ margin: 0, fontSize: 12.5, lineHeight: 1.6, color: '#9A9384' }}>
+            <p style={{ margin: 0, fontSize: 13, lineHeight: 1.6, color: '#9A9384' }}>
               Ta signature se dessinera ici, réponse après réponse.
             </p>
           </div>
@@ -505,7 +505,7 @@ const ResultCard = React.forwardRef<HTMLDivElement, ResultCardProps>(({ scale, r
                 <small style={{ fontSize: 15, color: '#A79F8F', fontWeight: 400 }}>/{scale.scoreRange.max}</small>
               </div>
               <p style={{
-                margin: '4px 0 0', fontSize: 12.5, lineHeight: 1.6, color: '#CFC9B7',
+                margin: '4px 0 0', fontSize: 13, lineHeight: 1.6, color: '#CFC9B7',
                 display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as const, overflow: 'hidden',
               }}>
                 {interp?.description ?? ''}
@@ -561,7 +561,7 @@ const ResultCard = React.forwardRef<HTMLDivElement, ResultCardProps>(({ scale, r
           <div style={{ ...z2, display: 'flex', alignItems: 'center', gap: 15, marginTop: 16 }}>
             {renderSignature()}
             <div>
-              <p style={{ margin: 0, fontSize: 12.5, lineHeight: 1.6, color: '#CFC9B7' }}>
+              <p style={{ margin: 0, fontSize: 13, lineHeight: 1.6, color: '#CFC9B7' }}>
                 {interp?.description ?? ''}
               </p>
             </div>
@@ -569,7 +569,7 @@ const ResultCard = React.forwardRef<HTMLDivElement, ResultCardProps>(({ scale, r
 
           {bands.length > 0 && renderGauge()}
 
-          <p style={{ ...z2, margin: '12px 0 0', fontSize: 10, color: '#8A8478', fontStyle: 'italic' }}>
+          <p style={{ ...z2, margin: '12px 0 0', fontSize: 13, color: '#8A8478', fontStyle: 'italic' }}>
             Ce test n'est pas un diagnostic.
           </p>
 
@@ -590,7 +590,7 @@ const ResultCard = React.forwardRef<HTMLDivElement, ResultCardProps>(({ scale, r
 /* ── Style constants ── */
 
 const ST: React.CSSProperties = {
-  fontSize: 10, fontWeight: 700, letterSpacing: '0.13em',
+  fontSize: 13, fontWeight: 700, letterSpacing: '0.13em',
   textTransform: 'uppercase', color: '#BFB7A6', margin: 0,
 };
 
@@ -603,31 +603,31 @@ function TT(compact: boolean): React.CSSProperties {
 }
 
 const DESC: React.CSSProperties = {
-  margin: '11px 0 0', fontSize: 12.5, lineHeight: 1.6, color: '#CFC9B7',
+  margin: '11px 0 0', fontSize: 13, lineHeight: 1.6, color: '#CFC9B7',
 };
 
 const FT: React.CSSProperties = {
   position: 'relative', zIndex: 2, marginTop: 16, paddingTop: 13,
   borderTop: '1px solid rgba(241,236,225,.12)',
   display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-  fontSize: 10.5, color: '#A79F8F',
+  fontSize: 13, color: '#A79F8F',
 };
 
 const FOOT_FULL: React.CSSProperties = {
   position: 'relative', zIndex: 2, paddingTop: 20,
   display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-  fontSize: 10.5, color: '#A79F8F',
+  fontSize: 13, color: '#A79F8F',
 };
 
 const SHARE_BTN: React.CSSProperties = {
   background: 'rgba(241,236,225,.1)', border: '1px solid rgba(241,236,225,.18)',
   color: '#EDE7DB', borderRadius: 20, padding: '6px 12px',
-  fontFamily: 'inherit', fontSize: 10.5, fontWeight: 700, cursor: 'pointer',
+  fontFamily: 'inherit', fontSize: 13, fontWeight: 700, cursor: 'pointer',
   display: 'inline-flex', alignItems: 'center', gap: 5,
 };
 
 const RES_LAB: React.CSSProperties = {
-  fontSize: 10.5, fontWeight: 700, letterSpacing: '0.13em',
+  fontSize: 13, fontWeight: 700, letterSpacing: '0.13em',
   textTransform: 'uppercase', color: '#BFB7A6', margin: 0,
 };
 

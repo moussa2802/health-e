@@ -188,7 +188,7 @@ const ConfierPanel: React.FC<{
     <div role="tablist" aria-label="Me confier" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 4, padding: 4, borderRadius: 12, background: 'rgba(201,184,228,.08)', border: `1px solid ${CONFIER.line}` }}>
       {(['write', 'journal'] as const).map(v => (
         <button key={v} role="tab" aria-selected={view === v} onClick={() => onView?.(v)} className="drl-btn"
-          style={{ minHeight: 36, borderRadius: 9, border: 0, cursor: 'pointer', fontSize: 13.5, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+          style={{ minHeight: 36, borderRadius: 9, border: 0, cursor: 'pointer', fontSize: 14, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
             background: view === v ? 'rgba(201,184,228,.25)' : 'transparent', color: view === v ? CONFIER.text : CONFIER.muted }}>
           {v === 'write' ? <><Feather size={14} aria-hidden="true" /> Me confier</> : <><BookOpen size={14} aria-hidden="true" /> Mon journal</>}
         </button>
@@ -207,29 +207,29 @@ const ConfierPanel: React.FC<{
         </Link>
         <div style={{ display: 'flex', gap: 8 }}>
           <Link to="/journal" state={{ view: 'calendrier' }} onClick={() => { try { localStorage.setItem('he_journal_view', 'calendrier'); } catch { /* ignore */ } }} className="drl-btn"
-            style={{ flex: 1, minHeight: 42, borderRadius: 12, border: `1px solid ${CONFIER.line}`, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, textDecoration: 'none', color: CONFIER.text, fontSize: 13.5, fontWeight: 600 }}>
+            style={{ flex: 1, minHeight: 42, borderRadius: 12, border: `1px solid ${CONFIER.line}`, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, textDecoration: 'none', color: CONFIER.text, fontSize: 14, fontWeight: 600 }}>
             <CalendarDays size={15} aria-hidden="true" /> Calendrier
           </Link>
           <Link to="/journal/ecrire" className="drl-btn"
-            style={{ flex: 1, minHeight: 42, borderRadius: 12, border: `1px solid ${CONFIER.line}`, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, textDecoration: 'none', color: CONFIER.text, fontSize: 13.5, fontWeight: 600 }}>
+            style={{ flex: 1, minHeight: 42, borderRadius: 12, border: `1px solid ${CONFIER.line}`, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, textDecoration: 'none', color: CONFIER.text, fontSize: 14, fontWeight: 600 }}>
             <Feather size={15} aria-hidden="true" /> Page complète
           </Link>
         </div>
-        {recent === null ? <p style={{ margin: '6px 0', textAlign: 'center', fontSize: 13.5, color: CONFIER.faint }}>J'ouvre ton journal…</p>
+        {recent === null ? <p style={{ margin: '6px 0', textAlign: 'center', fontSize: 14, color: CONFIER.faint }}>J'ouvre ton journal…</p>
           : pages.length === 0 ? (
             <p style={{ margin: '6px 0', textAlign: 'center', fontSize: 14, color: CONFIER.muted, lineHeight: 1.5 }}>Ton journal est encore vide. Ce que tu confies ici devient ta page du jour.</p>
           ) : (
             <>
-              <p style={{ margin: '4px 0 0', fontSize: 12, letterSpacing: '.08em', textTransform: 'uppercase', fontWeight: 700, color: CONFIER.accent }}>Mes dernières pages</p>
+              <p style={{ margin: '4px 0 0', fontSize: 13, letterSpacing: '.08em', textTransform: 'uppercase', fontWeight: 700, color: CONFIER.accent }}>Mes dernières pages</p>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8, textAlign: 'left' }}>{pages.map(it => <EntryCard key={it.id} it={it} />)}</div>
               {(recent?.length ?? 0) > pages.length && (
-                <Link to="/journal" style={{ alignSelf: 'center', minHeight: 40, display: 'inline-flex', alignItems: 'center', gap: 4, color: CONFIER.accent, fontSize: 13.5, fontWeight: 700, textDecoration: 'none' }}>
+                <Link to="/journal" style={{ alignSelf: 'center', minHeight: 40, display: 'inline-flex', alignItems: 'center', gap: 4, color: CONFIER.accent, fontSize: 14, fontWeight: 700, textDecoration: 'none' }}>
                   Voir les {recent!.length} pages <ChevronRight size={15} aria-hidden="true" />
                 </Link>
               )}
             </>
           )}
-        <p style={{ margin: 0, textAlign: 'center', fontSize: 12, color: CONFIER.faint }}>
+        <p style={{ margin: 0, textAlign: 'center', fontSize: 13, color: CONFIER.faint }}>
           Visible par toi {seul}{!userId && ' · Sans compte, ton journal reste sur ce téléphone'}
         </p>
       </div>
@@ -242,7 +242,7 @@ const ConfierPanel: React.FC<{
       <div ref={listRef} aria-live="polite" style={{ display: 'flex', flexDirection: 'column', gap: 10, maxHeight: '46vh', overflowY: 'auto', paddingRight: 2 }}>
         {/* La page du jour : tout ce qu'on confie aujourd'hui dans ce carnet va sur une même page du journal */}
         <div style={{ borderRadius: 18, border: `1px solid ${CONFIER.line}`, background: CONFIER.tint, padding: 14, textAlign: 'left' }}>
-          <p style={{ margin: 0, fontSize: 11.5, letterSpacing: '.1em', textTransform: 'uppercase', fontWeight: 800, color: CONFIER.accent, display: 'flex', alignItems: 'center', gap: 6 }}>
+          <p style={{ margin: 0, fontSize: 13, letterSpacing: '.1em', textTransform: 'uppercase', fontWeight: 800, color: CONFIER.accent, display: 'flex', alignItems: 'center', gap: 6 }}>
             <Feather size={13} aria-hidden="true" /> Ma page du jour · {carnet}
           </p>
           <p style={{ margin: '4px 0 0', fontFamily: 'Fraunces, serif', fontSize: 19, fontWeight: 600, color: CONFIER.text }}>{fullDate(new Date())}</p>
@@ -251,7 +251,7 @@ const ConfierPanel: React.FC<{
               « Écris ce que tu veux, comme ça vient. Je lis, je ne juge pas, et je ne t'interromps pas. »
             </p>
           ) : null}
-          <p style={{ margin: '8px 0 0', fontSize: 12, color: CONFIER.faint, lineHeight: 1.45 }}>
+          <p style={{ margin: '8px 0 0', fontSize: 13, color: CONFIER.faint, lineHeight: 1.45 }}>
             Tout ce que tu confies aujourd'hui s'ajoute à cette page de ton journal. Écrire est gratuit.
             {!userId && ' Sans compte, ton journal reste sur ce téléphone.'}
           </p>
@@ -268,15 +268,15 @@ const ConfierPanel: React.FC<{
             return (
               <div key={it.id} className="drl-in" style={{ alignSelf: 'flex-end', maxWidth: '88%', textAlign: 'left' }}>
                 <div style={{ borderRadius: '16px 16px 4px 16px', background: 'rgba(201,184,228,.16)', border: `1px solid ${CONFIER.line}`, padding: '10px 13px' }}>
-                  <p style={{ margin: 0, fontSize: 11, color: CONFIER.faint }}>{time}</p>
-                  <p style={{ margin: '3px 0 0', fontSize: 14.5, lineHeight: 1.5, color: it.status === 'cancelled' ? CONFIER.faint : CONFIER.text, textDecoration: it.status === 'cancelled' ? 'line-through' : 'none', whiteSpace: 'pre-wrap' }}>{it.text}</p>
+                  <p style={{ margin: 0, fontSize: 13, color: CONFIER.faint }}>{time}</p>
+                  <p style={{ margin: '3px 0 0', fontSize: 15, lineHeight: 1.5, color: it.status === 'cancelled' ? CONFIER.faint : CONFIER.text, textDecoration: it.status === 'cancelled' ? 'line-through' : 'none', whiteSpace: 'pre-wrap' }}>{it.text}</p>
                 </div>
-                <div style={{ marginTop: 4, display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 8, fontSize: 12, fontWeight: 600 }}>
+                <div style={{ marginTop: 4, display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 8, fontSize: 13, fontWeight: 600 }}>
                   {it.status === 'saving' && <span style={{ color: CONFIER.faint }}>Enregistrement…</span>}
                   {it.status === 'saved' && (
                     <>
                       <span style={{ color: '#9DBFAF', display: 'inline-flex', alignItems: 'center', gap: 5 }}><Check size={13} strokeWidth={2.6} aria-hidden="true" /> Ajouté à ta page du jour</span>
-                      <button onClick={() => onCancel(it.id, it.journalId)} style={{ minHeight: 32, padding: '0 4px', border: 0, background: 'transparent', color: CONFIER.muted, fontSize: 12, fontWeight: 700, textDecoration: 'underline', textUnderlineOffset: 3, cursor: 'pointer' }}>Annuler</button>
+                      <button onClick={() => onCancel(it.id, it.journalId)} style={{ minHeight: 32, padding: '0 4px', border: 0, background: 'transparent', color: CONFIER.muted, fontSize: 13, fontWeight: 700, textDecoration: 'underline', textUnderlineOffset: 3, cursor: 'pointer' }}>Annuler</button>
                     </>
                   )}
                   {it.status === 'cancelled' && <span style={{ color: CONFIER.faint }}>Retiré de ta page</span>}
@@ -297,7 +297,7 @@ const ConfierPanel: React.FC<{
             return (
               <div key={it.id} className="drl-in" style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
                 <img src="/dr-lo.png" alt="" width={28} height={28} style={{ width: 28, height: 28, borderRadius: '50%', objectFit: 'cover', objectPosition: 'top', border: `1.5px solid ${CONFIER.accent}`, flexShrink: 0 }} />
-                <div style={{ borderRadius: '4px 16px 16px 16px', background: 'rgba(255,255,255,.06)', border: '1px solid rgba(255,255,255,.12)', padding: '10px 13px', fontSize: 14.5, lineHeight: 1.55, color: CONFIER.text, textAlign: 'left', whiteSpace: 'pre-wrap' }}>{it.text}</div>
+                <div style={{ borderRadius: '4px 16px 16px 16px', background: 'rgba(255,255,255,.06)', border: '1px solid rgba(255,255,255,.12)', padding: '10px 13px', fontSize: 15, lineHeight: 1.55, color: CONFIER.text, textAlign: 'left', whiteSpace: 'pre-wrap' }}>{it.text}</div>
               </div>
             );
           }
@@ -310,13 +310,13 @@ const ConfierPanel: React.FC<{
               <ul style={{ margin: 0, padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 6 }}>
                 {resources.filter(r => r.phone).map(r => (
                   <li key={r.label}>
-                    <a href={`tel:${r.phone!.replace(/\s/g, '')}`} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, minHeight: 32, fontWeight: 700, color: '#DCE5F2', textDecoration: 'none', fontSize: 13.5 }}>
+                    <a href={`tel:${r.phone!.replace(/\s/g, '')}`} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, minHeight: 32, fontWeight: 700, color: '#DCE5F2', textDecoration: 'none', fontSize: 14 }}>
                       <Phone size={14} aria-hidden="true" /> {r.label} · {r.phone}
                     </a>
                   </li>
                 ))}
               </ul>
-              <p style={{ margin: '6px 0 0', fontSize: 12, color: CONFIER.muted }}>Ou va voir quelqu'un de confiance autour de toi, tout de suite.</p>
+              <p style={{ margin: '6px 0 0', fontSize: 13, color: CONFIER.muted }}>Ou va voir quelqu'un de confiance autour de toi, tout de suite.</p>
             </div>
           );
         })}
@@ -325,7 +325,7 @@ const ConfierPanel: React.FC<{
       {pending.count > 0 && (
         userId ? (
           <button onClick={onAsk} disabled={asking} className="drl-btn"
-            style={{ alignSelf: 'center', minHeight: 42, padding: '0 16px', borderRadius: 999, border: `1px solid ${CONFIER.line}`, background: CONFIER.tint, color: CONFIER.text, fontSize: 13.5, fontWeight: 700, cursor: asking ? 'default' : 'pointer', opacity: asking ? 0.6 : 1 }}>
+            style={{ alignSelf: 'center', minHeight: 42, padding: '0 16px', borderRadius: 999, border: `1px solid ${CONFIER.line}`, background: CONFIER.tint, color: CONFIER.text, fontSize: 14, fontWeight: 700, cursor: asking ? 'default' : 'pointer', opacity: asking ? 0.6 : 1 }}>
             {asking ? 'Dr Lô relit…' : `Demander l'avis de Dr Lô · ${credits(KORIS_COSTS.journal)}`}
           </button>
         ) : (
@@ -394,11 +394,11 @@ const ConfierPanel: React.FC<{
           </button>
         </div>
       </form>
-      {dictation.error && <p role="alert" style={{ margin: 0, fontSize: 12.5, color: CONFIER.muted, textAlign: 'center' }}>{dictation.error}</p>}
+      {dictation.error && <p role="alert" style={{ margin: 0, fontSize: 13, color: CONFIER.muted, textAlign: 'center' }}>{dictation.error}</p>}
 
-      <p style={{ margin: 0, textAlign: 'center', fontSize: 12, color: CONFIER.faint }}>
+      <p style={{ margin: 0, textAlign: 'center', fontSize: 13, color: CONFIER.faint }}>
         Visible par toi {seul}
-        {hasLiveEntries(state) && <> · <Link to="/journal" style={{ color: CONFIER.accent, fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 12, textDecoration: 'none' }}><BookOpen size={12} aria-hidden="true" /> Ouvrir mon journal</Link></>}
+        {hasLiveEntries(state) && <> · <Link to="/journal" style={{ color: CONFIER.accent, fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 13, textDecoration: 'none' }}><BookOpen size={12} aria-hidden="true" /> Ouvrir mon journal</Link></>}
       </p>
     </div>
   );

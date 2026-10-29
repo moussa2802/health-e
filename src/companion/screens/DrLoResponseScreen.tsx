@@ -56,7 +56,7 @@ const DrLoResponseScreen: React.FC<DrLoResponseScreenProps> = ({
 
       {vigilance && (
         <Link
-          to="/assessment"
+          to="/espace"
           className="block mb-6 text-sm font-medium text-sage bg-sage-soft rounded-card px-4 py-3 text-center hover:bg-sage-soft/70 transition-colors"
         >
           Faire le point avec une évaluation →

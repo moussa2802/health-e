@@ -42,17 +42,17 @@ export const EntryCard: React.FC<{ it: JournalItem }> = ({ it }) => {
   return (
     <Link to={`/journal/${it.id}`} className="drl-btn" style={{ ...card, padding: 0, display: 'flex', textDecoration: 'none', color: DC.text, overflow: 'hidden', opacity: programme ? 0.8 : 1 }}>
       <span aria-hidden="true" style={{ width: 62, flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-start', paddingTop: 14, background: 'rgba(201,184,228,.08)', borderRight: '1px solid rgba(201,184,228,.18)' }}>
-        <span style={{ fontSize: 10.5, fontWeight: 800, letterSpacing: '.08em', color: INK }}>{Number.isNaN(d.getTime()) ? '' : DAYS_SHORT[d.getDay()]}</span>
+        <span style={{ fontSize: 13, fontWeight: 800, letterSpacing: '.08em', color: INK }}>{Number.isNaN(d.getTime()) ? '' : DAYS_SHORT[d.getDay()]}</span>
         <span style={{ fontFamily: 'Fraunces, serif', fontSize: 26, lineHeight: 1.1, fontWeight: 600, color: DC.title }}>{Number.isNaN(d.getTime()) ? '·' : d.getDate()}</span>
         {mood && <span style={{ marginTop: 6 }}><MoodIcon id={mood.id} color={mood.color} /></span>}
       </span>
       <span style={{ flex: 1, minWidth: 0, padding: '12px 14px' }}>
-        <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11.5, color: DC.faint }}>
+        <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: DC.faint }}>
           {!Number.isNaN(d.getTime()) && hhmm(d)}
           {it.carnet !== DEFAULT_CARNET && <span style={{ padding: '1px 8px', borderRadius: 999, border: '1px solid rgba(201,184,228,.35)', color: INK, fontWeight: 700 }}>{it.carnet}</span>}
           {it.drLo && <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, color: '#E9C88F', fontWeight: 700 }}><Sparkles size={11} aria-hidden="true" /> avis de Dr Lô</span>}
         </span>
-        <span style={{ display: 'block', marginTop: 4, fontFamily: 'Fraunces, serif', fontSize: 16.5, fontWeight: 600, lineHeight: 1.3, color: DC.title }}>{title || 'Page sans texte'}</span>
+        <span style={{ display: 'block', marginTop: 4, fontFamily: 'Fraunces, serif', fontSize: 17, fontWeight: 600, lineHeight: 1.3, color: DC.title }}>{title || 'Page sans texte'}</span>
         {rest && <span style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', marginTop: 4, fontSize: 14, lineHeight: 1.5, color: DC.muted }}>{rest}</span>}
       </span>
     </Link>

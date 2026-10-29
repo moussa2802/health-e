@@ -7,15 +7,18 @@ import { Link } from 'react-router-dom';
 import { ArrowLeft, EyeOff, Lock } from 'lucide-react';
 import './accueil.css';
 import { getMoment, PALETTES, type MomentPalette } from '../../utils/drloMoment';
+import { COLOR, RADIUS } from '../../design/charte';
 
+/** Couleurs du thème sombre — tirées de la charte (src/design/charte.ts), source unique. */
 export const DC = {
-  text: '#F4EEE4', soft: '#DCD3C5', muted: '#CFC6B8', faint: '#A79E90', title: '#FBF5EA',
-  sage: '#9DBFAF', ok: '#7FD1A0', gold: '#E9C88F', social: '#F09A7A', intime: '#E8A0B8', confier: '#C9B8E4',
-  line: 'rgba(255,255,255,.12)', glass: 'rgba(255,255,255,.05)', ink: '#1C140D',
+  text: COLOR.text, soft: COLOR.soft, muted: COLOR.muted, faint: COLOR.faint, title: COLOR.title,
+  sage: COLOR.univers.mental, ok: COLOR.ok, gold: COLOR.action, social: COLOR.univers.social, intime: COLOR.univers.intime, confier: COLOR.univers.journal,
+  line: COLOR.line, glass: COLOR.glass, ink: COLOR.onAction,
+  action: COLOR.action, attention: COLOR.attention,
 };
 
 export const card: React.CSSProperties = {
-  borderRadius: 20, border: `1px solid ${DC.line}`, background: DC.glass, padding: 16, textAlign: 'left',
+  borderRadius: RADIUS.card, border: `1px solid ${DC.line}`, background: DC.glass, padding: 16, textAlign: 'left',
 };
 
 export function usePalette(): MomentPalette {
@@ -32,14 +35,14 @@ const DrLoShell: React.FC<{
   const [veiled, setVeiled] = useState(false);
   const seul = genre === 'femme' ? 'seule' : genre === 'homme' ? 'seul' : 'uniquement';
   return (
-    <div className="drl-screen font-sans" style={{ minHeight: '100svh', background: palette.bg, color: DC.text, position: 'relative' }}>
-      <div style={{ maxWidth: 520, margin: '0 auto', padding: '16px 18px 28px', boxSizing: 'border-box' }}>
+    <div className="drl-screen font-sans" style={{ minHeight: '100svh', background: palette.bg, color: DC.text, position: 'relative', ['--he-action' as string]: palette.primary } as React.CSSProperties}>
+      <div style={{ maxWidth: 520, margin: '0 auto', padding: '16px 18px calc(92px + env(safe-area-inset-bottom, 0px))', boxSizing: 'border-box' }}>
         <header style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
           <Link to={back.to} aria-label={back.label} className="drl-btn"
             style={{ width: 44, height: 44, borderRadius: 13, border: `1px solid ${DC.line}`, background: DC.glass, display: 'flex', alignItems: 'center', justifyContent: 'center', color: DC.muted }}>
             <ArrowLeft size={20} aria-hidden="true" />
           </Link>
-          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 7, fontSize: 12.5, fontWeight: 600, color: DC.muted }}>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 7, fontSize: 13, fontWeight: 600, color: DC.muted }}>
             <Lock size={14} aria-hidden="true" /> Visible par toi {seul}
           </span>
           <button onClick={() => setVeiled(true)} aria-label="Masquer l'écran" className="drl-btn"

@@ -14,7 +14,7 @@ const TotemTeaserCard: React.FC<{ remaining: number; total: number }> = ({ remai
       </div>
       <div style={{ minWidth: 0, flex: 1 }}>
         <p style={{ margin: 0, fontSize: 14, fontWeight: 700, color: DC.title }}>Ton animal-totem t'attend</p>
-        <p style={{ margin: '3px 0 8px', fontSize: 12.5, color: DC.muted }}>
+        <p style={{ margin: '3px 0 8px', fontSize: 13, color: DC.muted }}>
           {done} test{done > 1 ? 's' : ''} sur {total} · il se révèle au {total}e
         </p>
         <div style={{ display: 'flex', gap: 5 }} role="img" aria-label={`${done} tests faits sur ${total}`}>

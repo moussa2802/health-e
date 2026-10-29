@@ -82,7 +82,7 @@ const CriticalAlertModal: React.FC<CriticalAlertModalProps> = ({ alerts, onAckno
             Tu n'as pas à traverser ça sans soutien. Des professionnels formés sont disponibles pour t'écouter et t'accompagner, sans jugement.
           </p>
 
-          <p style={{ fontSize: 12, fontWeight: 700, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>
+          <p style={{ fontSize: 13, fontWeight: 700, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>
             Contacts disponibles maintenant
           </p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 20 }}>
@@ -94,7 +94,7 @@ const CriticalAlertModal: React.FC<CriticalAlertModalProps> = ({ alerts, onAckno
               }}>
                 <div>
                   <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: '#111827' }}>{contact.label}</p>
-                  <p style={{ margin: 0, fontSize: 11, color: '#6B7280' }}>{contact.description}</p>
+                  <p style={{ margin: 0, fontSize: 13, color: '#6B7280' }}>{contact.description}</p>
                 </div>
                 <a
                   href={`tel:${contact.number}`}
@@ -121,7 +121,7 @@ const CriticalAlertModal: React.FC<CriticalAlertModalProps> = ({ alerts, onAckno
             >
               <div>
                 <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: '#4A5D57' }}>Health-e — Professionnels</p>
-                <p style={{ margin: 0, fontSize: 11, color: '#6B7280' }}>Consulter un professionnel sur la plateforme</p>
+                <p style={{ margin: 0, fontSize: 13, color: '#6B7280' }}>Consulter un professionnel sur la plateforme</p>
               </div>
               <ChevronRight size={16} color="#4A5D57" />
             </Link>
@@ -318,7 +318,7 @@ const AssessmentResultsPage: React.FC = () => {
     try {
       const sid = session.selectedScaleIds[0];
       await deleteTestResult(currentUser.id, sid);
-      navigate('/assessment');
+      navigate('/espace');
     } catch { setDeleting(false); }
   };
 
@@ -337,7 +337,7 @@ const AssessmentResultsPage: React.FC = () => {
         <AlertTriangle size={34} color={DC.social} style={{ margin: '0 auto 12px' }} />
         <h2 style={{ margin: '0 0 8px', fontSize: 18, fontWeight: 700, color: DC.title }}>{title}</h2>
         <p style={{ margin: '0 0 20px', fontSize: 14, color: DC.muted, lineHeight: 1.5 }}>{msg}</p>
-        <button onClick={() => navigate('/assessment')} className="drl-btn"
+        <button onClick={() => navigate('/espace')} className="drl-btn"
           style={{ background: DC.gold, color: DC.ink, border: 0, borderRadius: 14, padding: '12px 22px', minHeight: 44, fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>
           Voir les tests
         </button>
@@ -392,7 +392,7 @@ const AssessmentResultsPage: React.FC = () => {
     borderRadius: 20, padding: 17,
   };
   const LAB: React.CSSProperties = {
-    fontSize: 11, fontWeight: 700, letterSpacing: '.1em',
+    fontSize: 13, fontWeight: 700, letterSpacing: '.1em',
     textTransform: 'uppercase', color: DC.faint, margin: 0,
   };
   const AROW: React.CSSProperties = {
@@ -423,7 +423,7 @@ const AssessmentResultsPage: React.FC = () => {
         <div style={{ paddingTop: 14 }}>
 
           {/* Breadcrumb */}
-          <p style={{ fontSize: 11, color: DC.faint, fontWeight: 600, margin: '0 0 10px' }}>
+          <p style={{ fontSize: 13, color: DC.faint, fontWeight: 600, margin: '0 0 10px' }}>
             {crumbLabel} · {scale.name}{scale.shortName ? ` (${scale.shortName})` : ''}
           </p>
 
@@ -445,7 +445,7 @@ const AssessmentResultsPage: React.FC = () => {
                 }}
                 style={{
                   flex: 1, border: 0, cursor: 'pointer', fontFamily: 'inherit', fontWeight: 700,
-                  fontSize: 13.5, borderRadius: 14, padding: 13, display: 'flex',
+                  fontSize: 14, borderRadius: 14, padding: 13, display: 'flex',
                   alignItems: 'center', justifyContent: 'center', gap: 7,
                   background: DC.gold, color: DC.ink,
                 }}
@@ -459,7 +459,7 @@ const AssessmentResultsPage: React.FC = () => {
                 disabled={retaking}
                 style={{
                   flex: 1, cursor: retaking ? 'not-allowed' : 'pointer', fontFamily: 'inherit',
-                  fontWeight: 700, fontSize: 13.5, borderRadius: 14, padding: 13,
+                  fontWeight: 700, fontSize: 14, borderRadius: 14, padding: 13,
                   display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7,
                   background: DC.glass, color: DC.text, border: `1px solid ${DC.line}`,
                   opacity: retaking ? 0.6 : 1,
@@ -467,7 +467,7 @@ const AssessmentResultsPage: React.FC = () => {
               >
                 <RefreshCw size={15} />{retaking ? 'Préparation...' : 'Refaire'}
                 {!retaking && (
-                  <span style={{ background: retakeFree ? 'rgba(159,188,175,.22)' : 'rgba(23,24,27,.08)', padding: '2px 7px', borderRadius: 8, fontSize: 11, fontWeight: 800 }}>
+                  <span style={{ background: retakeFree ? 'rgba(159,188,175,.22)' : 'rgba(23,24,27,.08)', padding: '2px 7px', borderRadius: 8, fontSize: 13, fontWeight: 800 }}>
                     {retakeFree ? 'GRATUIT' : `${KORIS_COSTS.test}K`}
                   </span>
                 )}
@@ -525,7 +525,7 @@ const AssessmentResultsPage: React.FC = () => {
           {/* Ce que ça veut dire */}
           <div style={SEC}>
             <span style={LAB}>Ce que ça veut dire</span>
-            <p style={{ margin: '10px 0 0', fontSize: 13.5, lineHeight: 1.65, color: DC.soft, textAlign: 'left' }}>
+            <p style={{ margin: '10px 0 0', fontSize: 14, lineHeight: 1.65, color: DC.soft, textAlign: 'left' }}>
               {resolvedInterp.description}
             </p>
             {resolvedInterp.recommendation && (
@@ -534,7 +534,7 @@ const AssessmentResultsPage: React.FC = () => {
                 padding: '12px 13px', display: 'flex', gap: 10,
               }}>
                 <Sparkles size={15} style={{ color: DC.sage, flexShrink: 0, marginTop: 2 }} />
-                <p style={{ margin: 0, fontSize: 12.5, lineHeight: 1.55, color: DC.soft, textAlign: 'left' }}>
+                <p style={{ margin: 0, fontSize: 13, lineHeight: 1.55, color: DC.soft, textAlign: 'left' }}>
                   <b style={{ color: DC.sage }}>À retenir :</b> {resolvedInterp.recommendation}
                 </p>
               </div>
@@ -572,7 +572,7 @@ const AssessmentResultsPage: React.FC = () => {
                 <div style={IC}><FileText size={19} /></div>
                 <div style={{ flex: 1 }}>
                   <h3 style={{ margin: 0, fontSize: 14, fontWeight: 700, color: DC.title }}>Voir l'analyse complète</h3>
-                  <p style={{ margin: '2px 0 0', fontSize: 12, color: DC.faint, lineHeight: 1.4 }}>
+                  <p style={{ margin: '2px 0 0', fontSize: 13, color: DC.faint, lineHeight: 1.4 }}>
                     Synthèse globale de ton profil
                   </p>
                 </div>
@@ -590,7 +590,7 @@ const AssessmentResultsPage: React.FC = () => {
               overflow: 'hidden', padding: 0,
             }}>
               {isLastFreeTest && (
-                <div style={{ background: DC.social, padding: '8px 16px', fontSize: 12, fontWeight: 700, color: DC.ink, textAlign: 'center' }}>
+                <div style={{ background: DC.social, padding: '8px 16px', fontSize: 13, fontWeight: 700, color: DC.ink, textAlign: 'center' }}>
                   Tu as fait tes tests gratuits !
                 </div>
               )}
@@ -598,21 +598,21 @@ const AssessmentResultsPage: React.FC = () => {
                 <p style={{ margin: '0 0 4px', fontSize: 14, fontWeight: 700, color: DC.title }}>
                   {isLastFreeTest ? 'Crée un compte pour continuer' : (GUEST_MAX_TESTS - guestCount > 1 ? `Encore ${GUEST_MAX_TESTS - guestCount} tests gratuits` : 'Encore 1 test gratuit')}
                 </p>
-                <p style={{ margin: '0 0 12px', fontSize: 12.5, color: DC.muted, textAlign: 'left' }}>
+                <p style={{ margin: '0 0 12px', fontSize: 13, color: DC.muted, textAlign: 'left' }}>
                   {isLastFreeTest ? 'Sauvegarde tes résultats et accède à toutes les évaluations.' : 'Connecte-toi pour sauvegarder tes résultats.'}
                 </p>
                 <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                   <Link to="/patient/access" style={{
                     display: 'inline-flex', alignItems: 'center', gap: 6,
-                    background: DC.gold, color: DC.ink, fontWeight: 700, fontSize: 13.5,
+                    background: DC.gold, color: DC.ink, fontWeight: 700, fontSize: 14,
                     padding: '12px 20px', minHeight: 44, borderRadius: 12, textDecoration: 'none',
                   }}>
                     {isLastFreeTest ? 'Créer mon compte gratuit' : 'Se connecter'}
                   </Link>
                   {!isLastFreeTest && (
-                    <button onClick={() => navigate('/assessment')} style={{
+                    <button onClick={() => navigate('/espace')} style={{
                       background: DC.glass, border: `1px solid ${DC.line}`,
-                      color: DC.text, fontWeight: 600, fontSize: 13.5,
+                      color: DC.text, fontWeight: 600, fontSize: 14,
                       padding: '12px 16px', minHeight: 44, borderRadius: 12, cursor: 'pointer',
                     }}>
                       Continuer sans compte
@@ -628,7 +628,7 @@ const AssessmentResultsPage: React.FC = () => {
             <div style={{ marginTop: 14, textAlign: 'center' }}>
               <button onClick={() => setShowDeleteConfirm(true)} disabled={deleting} style={{
                 background: 'none', border: 'none', padding: '6px 12px',
-                fontSize: 12.5, fontWeight: 600, color: DC.social, minHeight: 44, cursor: deleting ? 'not-allowed' : 'pointer',
+                fontSize: 13, fontWeight: 600, color: DC.social, minHeight: 44, cursor: deleting ? 'not-allowed' : 'pointer',
                 display: 'inline-flex', alignItems: 'center', gap: 5, opacity: deleting ? 0.6 : 1,
               }}>
                 <Trash2 size={13} /> Supprimer ce résultat
@@ -702,7 +702,7 @@ const AssessmentResultsPage: React.FC = () => {
                 Voir mon profil <ArrowRight size={16} />
               </button>
             )}
-            <button onClick={() => navigate('/assessment')} className="drl-btn" style={BTN2}>
+            <button onClick={() => navigate('/espace')} className="drl-btn" style={BTN2}>
               {isGuestMode ? 'Faire un autre test' : 'Autre test'}
             </button>
           </div>
@@ -714,8 +714,8 @@ const AssessmentResultsPage: React.FC = () => {
             }}>
               <BookOpen size={20} color={DC.confier} />
               <div style={{ flex: 1 }}>
-                <p style={{ margin: 0, fontSize: 13.5, fontWeight: 700, color: DC.title }}>En parler dans Mon espace</p>
-                <p style={{ margin: '2px 0 0', fontSize: 12, color: DC.muted }}>
+                <p style={{ margin: 0, fontSize: 14, fontWeight: 700, color: DC.title }}>En parler dans Mon espace</p>
+                <p style={{ margin: '2px 0 0', fontSize: 13, color: DC.muted }}>
                   Dr Lô t'a préparé une invitation dans ton journal
                 </p>
               </div>
@@ -733,7 +733,7 @@ const AssessmentResultsPage: React.FC = () => {
               <Sparkles size={20} color="#D4AD5A" />
               <div style={{ flex: 1 }}>
                 <p style={{ margin: 0, fontSize: 13, fontWeight: 700 }}>Tes proches auraient-ils deviné ça ?</p>
-                <p style={{ margin: '2px 0 0', fontSize: 11, color: 'DC.gold' }}>
+                <p style={{ margin: '2px 0 0', fontSize: 13, color: 'DC.gold' }}>
                   Teste-les 👀
                 </p>
               </div>
@@ -743,7 +743,7 @@ const AssessmentResultsPage: React.FC = () => {
 
           {/* Disclaimer */}
           <p style={{
-            fontSize: 11.5, color: DC.faint, textAlign: 'center',
+            fontSize: 13, color: DC.faint, textAlign: 'center',
             lineHeight: 1.7, margin: '20px 0 0', padding: '0 10px',
           }}>
             Ces résultats sont fournis à titre informatif uniquement et ne constituent pas un diagnostic médical.

@@ -37,7 +37,7 @@ const WeeklyMoodChart: React.FC<WeeklyMoodChartProps> = ({ checkins }) => {
               />
             </div>
             <span
-              className={`text-[10px] ${
+              className={`text-[13px] ${
                 isToday ? "text-accent font-semibold" : "text-muted"
               }`}
             >

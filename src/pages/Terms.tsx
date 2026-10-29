@@ -1,557 +1,75 @@
-import React from "react";
-import { Link } from "react-router-dom";
-import { FileText, Check, Mail } from "lucide-react";
-import { useLanguage } from "../contexts/LanguageContext";
+/**
+ * Conditions d'utilisation — réécrites le 29 oct. 2026 pour le site tel qu'il est
+ * (les anciennes décrivaient une plateforme de téléconsultation).
+ * À faire relire par un juriste avant de les considérer comme définitives.
+ */
+import React from 'react';
+import { Link } from 'react-router-dom';
+import InfoShell, { CONTACT_EMAIL, InfoList, InfoSection, P } from '../components/ui/InfoShell';
+import { COLOR } from '../design/charte';
 
-const Terms: React.FC = () => {
-  const { language } = useLanguage();
+const B: React.FC<{ children: React.ReactNode }> = ({ children }) => <b style={{ color: COLOR.title }}>{children}</b>;
 
-  return (
-    <div className="min-h-screen bg-[#130F0C] px-4 py-12">
-      <div className="mx-auto max-w-3xl">
-        <Link to="/" className="mb-6 inline-flex min-h-[44px] items-center gap-2 text-sm font-semibold text-[#A79E90] no-underline hover:text-[#F2B66D]">
-          ← Accueil
-        </Link>
-        <div className="mb-8 text-center">
-          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-white/[0.08]">
-            <FileText className="h-8 w-8 text-[#9DBFAF]" />
-          </div>
-          <h1 className="font-display text-3xl font-bold text-[#F4EEE4]">
-            {language === "fr" ? "Conditions d'utilisation" : "Terms of Use"}
-          </h1>
-        </div>
+const Terms: React.FC = () => (
+  <InfoShell eyebrow="Conditions" title="Conditions d'utilisation" updated="29 octobre 2026"
+    intro="Les règles du jeu, en clair. En utilisant Health-e, tu les acceptes.">
 
-        <div className="rounded-block border border-white/[0.12] bg-white/[0.05] p-6 shadow-none sm:p-8">
-          <div className="text-[#CFC6B8]">
-            {language === "fr" ? (
-              <>
-                <section className="mb-8">
-                  <h2 className="font-display mb-3 text-2xl font-semibold text-[#F4EEE4]">
-                    1. Bienvenue sur Health-e
-                  </h2>
-                  <p className="leading-relaxed">
-                    En accédant à notre plateforme et en l'utilisant, vous
-                    acceptez d'être lié par les présentes Conditions Générales
-                    d'Utilisation. Veuillez les lire attentivement avant
-                    d'utiliser notre service.
-                  </p>
-                </section>
+    <InfoSection title="Ce qu'est Health-e">
+      <P>Health-e (health-e.sn) t'aide à mieux te comprendre : tests de psychologie et de vie intime, totem, journal, suivi de l'humeur, test de compatibilité, défis entre proches, et Dr Lô pour t'accompagner. Il y a deux Dr Lô : <B>Dr Lô IA</B>, une intelligence artificielle, et <B>le vrai Dr Lô</B>, médecin, qui publie dans les chaînes et répond lui-même aux questions qu'on lui écrit.</P>
+    </InfoSection>
 
-                <section className="mb-8">
-                  <h3 className="font-display mb-3 text-xl font-semibold text-[#F4EEE4]">
-                    2. Acceptation des conditions
-                  </h3>
-                  <p className="leading-relaxed">
-                    En utilisant Health-e, vous acceptez ces conditions dans leur
-                    intégralité. Si vous n'acceptez pas l'une quelconque de ces
-                    clauses, veuillez ne pas utiliser notre plateforme.
-                  </p>
-                </section>
+    <InfoSection title="Ce que Health-e n'est pas">
+      <InfoList items={[
+        <><B>Pas une consultation médicale.</B> Les tests et les réponses de Dr Lô (IA ou humain) donnent des repères et des conseils de bien-être. Ils ne posent pas de diagnostic et ne prescrivent pas de traitement.</>,
+        <><B>Pas un service d'urgence.</B> Personne ne surveille les messages en direct. En cas de danger, appelle le 1515 (SAMU).</>,
+        <><B>Pas infaillible.</B> Dr Lô IA peut se tromper. Pour une décision de santé, parle à un professionnel.</>,
+      ]} />
+    </InfoSection>
 
-                <section className="mb-8">
-                  <h3 className="font-display mb-3 text-xl font-semibold text-[#F4EEE4]">
-                    3. Description du service
-                  </h3>
-                  <p className="mb-3 leading-relaxed">
-                    Health-e est une plateforme de mise en relation qui permet aux
-                    patients de consulter à distance des professionnels de santé
-                    qualifiés dans les domaines du profil psychologique et de la vie
-                    intime (psychologues, psychiatres, sexologues, gynécologues,
-                    urologues).
-                  </p>
-                  <p className="leading-relaxed">
-                    Health-e n'est pas un établissement de santé et n'intervient
-                    pas dans le contenu des consultations, ni dans la gestion des
-                    dossiers médicaux. Le rôle de la plateforme se limite à
-                    fournir un cadre sécurisé, confidentiel et fonctionnel pour la
-                    téléconsultation.
-                  </p>
-                </section>
+    <InfoSection title="Ton compte">
+      <InfoList items={[
+        'Health-e est réservé aux personnes de 18 ans et plus.',
+        'Tu donnes des informations sincères : c\'est ce qui rend tes résultats utiles.',
+        'Ton compte est personnel. Garde ton mot de passe pour toi.',
+        'Tu peux arrêter quand tu veux et demander la suppression de ton compte.',
+      ]} />
+    </InfoSection>
 
-                <section className="mb-8">
-                  <h3 className="font-display mb-3 text-xl font-semibold text-[#F4EEE4]">
-                    4. Éligibilité
-                  </h3>
-                  <p className="leading-relaxed">
-                    Pour utiliser Health-e, vous devez avoir au moins 18 ans et
-                    être capable de contracter légalement. Si vous agissez au nom
-                    d'une organisation, vous garantissez en avoir l'autorité.
-                  </p>
-                </section>
+    <InfoSection title="Les étincelles">
+      <P>Certaines fonctions de Dr Lô IA utilisent des étincelles (conversation, analyses, compatibilité, programme…). Le coût est affiché avant chaque utilisation. Tu en reçois à l'inscription et tu peux en acheter par Wave ou Orange Money, via notre prestataire de paiement PayTech.</P>
+      <P>Les étincelles servent uniquement sur Health-e : elles ne s'échangent pas contre de l'argent et ne sont pas remboursables, sauf erreur de paiement ou problème technique de notre fait. Dans ce cas, écris à <B>{CONTACT_EMAIL}</B> avec la référence du paiement.</P>
+    </InfoSection>
 
-                <section className="mb-8">
-                  <h3 className="font-display mb-3 text-xl font-semibold text-[#F4EEE4]">
-                    5. Comptes utilisateurs
-                  </h3>
-                  <p className="leading-relaxed">
-                    Vous êtes responsable de votre compte Health-e, de la
-                    confidentialité de vos identifiants, et de toute activité s'y
-                    rattachant. En cas d'utilisation frauduleuse ou non autorisée,
-                    vous devez nous en informer immédiatement.
-                  </p>
-                </section>
+    <InfoSection title="Les chaînes, les commentaires et les défis">
+      <P>Ce que tu publies (commentaires, vocaux, questions de défi) est lu par d'autres personnes. On y reste bienveillant :</P>
+      <InfoList items={[
+        'pas d\'insultes, de moqueries, de menaces ni de contenu sexuel explicite ;',
+        'pas d\'informations qui permettent de reconnaître quelqu\'un sans son accord ;',
+        'pas de publicité ni de liens vers d\'autres services.',
+      ]} />
+      <P>Nous pouvons masquer un contenu ou retirer l'accès à une chaîne ou au site en cas de non-respect de ces règles.</P>
+    </InfoSection>
 
-                <section className="mb-8">
-                  <h3 className="font-display mb-3 text-xl font-semibold text-[#F4EEE4]">
-                    6. Responsabilités des utilisateurs
-                  </h3>
-                  <h4 className="mb-2 font-display text-base font-semibold text-[#F4EEE4]">
-                    Pour les patients :
-                  </h4>
-                  <ul className="mb-4 space-y-2">
-                    <li className="flex gap-2">
-                      <Check className="mt-1 h-4 w-4 flex-shrink-0 text-[#9DBFAF]" />
-                      <span>Fournir des informations exactes et sincères ;</span>
-                    </li>
-                    <li className="flex gap-2">
-                      <Check className="mt-1 h-4 w-4 flex-shrink-0 text-[#9DBFAF]" />
-                      <span>
-                        Utiliser le service uniquement dans un cadre de santé
-                        légitime et respectueux ;
-                      </span>
-                    </li>
-                    <li className="flex gap-2">
-                      <Check className="mt-1 h-4 w-4 flex-shrink-0 text-[#9DBFAF]" />
-                      <span>
-                        Respecter les rendez-vous fixés ou les annuler dans un délai
-                        raisonnable ;
-                      </span>
-                    </li>
-                    <li className="flex gap-2">
-                      <Check className="mt-1 h-4 w-4 flex-shrink-0 text-[#9DBFAF]" />
-                      <span>
-                        Ne pas enregistrer, partager ou diffuser une consultation
-                        sans consentement explicite.
-                      </span>
-                    </li>
-                  </ul>
+    <InfoSection title="Écrire au vrai Dr Lô">
+      <P>C'est gratuit, une fois la récompense débloquée. Il répond lui-même, sous 7 jours. Sa réponse reste un conseil de bien-être : si ta situation le demande, il t'oriente vers un confrère. Il ne reprend ta question dans une vidéo que si tu l'as accepté, toujours anonymement.</P>
+    </InfoSection>
 
-                  <h4 className="mb-2 font-display text-base font-semibold text-[#F4EEE4]">
-                    Pour les professionnels :
-                  </h4>
-                  <ul className="space-y-2">
-                    <li className="flex gap-2">
-                      <Check className="mt-1 h-4 w-4 flex-shrink-0 text-[#9DBFAF]" />
-                      <span>
-                        Maintenir à jour leurs qualifications, diplômes et
-                        autorisations légales d'exercice ;
-                      </span>
-                    </li>
-                    <li className="flex gap-2">
-                      <Check className="mt-1 h-4 w-4 flex-shrink-0 text-[#9DBFAF]" />
-                      <span>
-                        Respecter la confidentialité des patients et le secret
-                        professionnel ;
-                      </span>
-                    </li>
-                    <li className="flex gap-2">
-                      <Check className="mt-1 h-4 w-4 flex-shrink-0 text-[#9DBFAF]" />
-                      <span>
-                        Assurer eux-mêmes la tenue et la conservation des dossiers
-                        médicaux conformément à la législation de leur pays
-                        d'exercice ;
-                      </span>
-                    </li>
-                    <li className="flex gap-2">
-                      <Check className="mt-1 h-4 w-4 flex-shrink-0 text-[#9DBFAF]" />
-                      <span>
-                        Être ponctuels et disponibles selon les créneaux proposés.
-                      </span>
-                    </li>
-                  </ul>
-                </section>
+    <InfoSection title="Tes données">
+      <P>Ce que nous gardons, pourquoi et comment l'effacer est expliqué dans la <Link to="/confidentialite" style={{ color: COLOR.action, fontWeight: 700 }}>politique de confidentialité</Link>.</P>
+    </InfoSection>
 
-                <section className="mb-8">
-                  <h3 className="font-display mb-3 text-xl font-semibold text-[#F4EEE4]">
-                    7. Limitations du service
-                  </h3>
-                  <p className="leading-relaxed">
-                    Health-e ne convient pas pour les situations d'urgence
-                    médicale. En cas d'urgence, veuillez contacter immédiatement
-                    les services médicaux d'urgence de votre localité. La
-                    plateforme ne remplace pas une consultation médicale en
-                    personne lorsque celle-ci est requise.
-                  </p>
-                </section>
+    <InfoSection title="Propriété">
+      <P>Les textes, tests adaptés, illustrations (totems, Dr Lô), vocaux et le code du site appartiennent à Health-e. Tu peux partager tes cartes de résultat et de totem ; le reste ne se copie pas sans notre accord. Ce que tu écris reste à toi : tu nous autorises seulement à l'utiliser pour faire fonctionner le service.</P>
+    </InfoSection>
 
-                <section className="mb-8">
-                  <h3 className="font-display mb-3 text-xl font-semibold text-[#F4EEE4]">
-                    8. Paiements et remboursements
-                  </h3>
-                  <p className="leading-relaxed">
-                    Le tarif des consultations est clairement indiqué avant
-                    validation. Les paiements sont traités via des services
-                    sécurisés (Mobile Money, carte bancaire...). Les politiques de
-                    remboursement sont disponibles dans la section dédiée et
-                    peuvent varier selon les cas.
-                  </p>
-                </section>
+    <InfoSection title="Responsabilité">
+      <P>Nous faisons de notre mieux pour que le site fonctionne et que ses contenus soient justes, sans pouvoir garantir qu'il n'y aura jamais de panne ou d'erreur. Health-e ne peut pas être tenu responsable des décisions prises uniquement sur la base d'un test ou d'une réponse de Dr Lô.</P>
+    </InfoSection>
 
-                <section className="mb-8">
-                  <h3 className="font-display mb-3 text-xl font-semibold text-[#F4EEE4]">
-                    9. Propriété intellectuelle
-                  </h3>
-                  <p className="leading-relaxed">
-                    Tous les contenus, logos, interfaces et codes de la plateforme
-                    Health-e sont protégés par les lois relatives à la propriété
-                    intellectuelle. Aucune reproduction ou redistribution n'est
-                    autorisée sans notre accord écrit.
-                  </p>
-                </section>
-
-                <section className="mb-8">
-                  <h3 className="font-display mb-3 text-xl font-semibold text-[#F4EEE4]">
-                    10. Confidentialité
-                  </h3>
-                  <p className="leading-relaxed">
-                    Nous ne stockons pas de données médicales. Seules les données
-                    nécessaires au bon fonctionnement du service (identifiants,
-                    réservations, échanges techniques) sont collectées et
-                    sécurisées. Votre utilisation du service est régie par notre
-                    Politique de confidentialité.
-                  </p>
-                </section>
-
-                <section className="mb-8">
-                  <h3 className="font-display mb-3 text-xl font-semibold text-[#F4EEE4]">
-                    11. Limitation de responsabilité
-                  </h3>
-                  <p className="leading-relaxed">
-                    Health-e agit uniquement en tant qu'intermédiaire technique.
-                    Nous ne sommes pas responsables des actes médicaux posés, ni
-                    des conséquences liées à une consultation, à l'exception des
-                    dysfonctionnements techniques avérés de la plateforme. Notre
-                    responsabilité ne pourra être engagée pour des dommages
-                    indirects ou imprévus.
-                  </p>
-                </section>
-
-                <section className="mb-8">
-                  <h3 className="font-display mb-3 text-xl font-semibold text-[#F4EEE4]">
-                    12. Indemnisation
-                  </h3>
-                  <p className="leading-relaxed">
-                    En utilisant notre service, vous acceptez d'indemniser
-                    Health-e en cas de préjudice, plainte ou litige résultant
-                    d'une violation de ces conditions de votre part.
-                  </p>
-                </section>
-
-                <section className="mb-8">
-                  <h3 className="font-display mb-3 text-xl font-semibold text-[#F4EEE4]">
-                    13. Modifications des conditions
-                  </h3>
-                  <p className="leading-relaxed">
-                    Nous pouvons réviser ces conditions à tout moment. Les
-                    modifications seront publiées sur la plateforme. En continuant
-                    à utiliser Health-e, vous acceptez les nouvelles conditions en
-                    vigueur.
-                  </p>
-                </section>
-
-                <section className="mb-8">
-                  <h3 className="font-display mb-3 text-xl font-semibold text-[#F4EEE4]">
-                    14. Résiliation
-                  </h3>
-                  <p className="leading-relaxed">
-                    Nous nous réservons le droit de suspendre ou de supprimer un
-                    compte utilisateur sans préavis, notamment en cas de
-                    comportement abusif, frauduleux ou contraire à ces conditions.
-                  </p>
-                </section>
-
-                <section className="mb-8">
-                  <h3 className="font-display mb-3 text-xl font-semibold text-[#F4EEE4]">
-                    15. Loi applicable
-                  </h3>
-                  <p className="leading-relaxed">
-                    Ces conditions sont régies par les lois en vigueur au Sénégal.
-                    En cas de litige, une tentative de résolution à l'amiable sera
-                    privilégiée avant toute procédure judiciaire.
-                  </p>
-                </section>
-
-                <section className="mb-0">
-                  <h3 className="font-display mb-3 text-xl font-semibold text-[#F4EEE4]">
-                    16. Contact
-                  </h3>
-                  <p className="flex flex-wrap items-center gap-1 leading-relaxed">
-                    <Mail className="h-4 w-4 flex-shrink-0 text-[#F2B66D]" />
-                    Pour toute question ou clarification :{" "}
-                    <a
-                      href="mailto:healthe.service@gmail.com"
-                      className="font-medium text-[#F2B66D] hover:text-[#F2B66D]/80"
-                    >
-                      healthe.service@gmail.com
-                    </a>
-                  </p>
-                </section>
-              </>
-            ) : (
-              <>
-                <section className="mb-8">
-                  <h2 className="font-display mb-3 text-2xl font-semibold text-[#F4EEE4]">
-                    1. Welcome to Health-e
-                  </h2>
-                  <p className="leading-relaxed">
-                    By accessing and using our platform, you agree to be bound by
-                    these Terms and Conditions of Use. Please read them carefully
-                    before using our service.
-                  </p>
-                </section>
-
-                <section className="mb-8">
-                  <h3 className="font-display mb-3 text-xl font-semibold text-[#F4EEE4]">
-                    2. Acceptance of Terms
-                  </h3>
-                  <p className="leading-relaxed">
-                    By using Health-e, you accept these terms in their entirety.
-                    If you do not accept any of these clauses, please do not use
-                    our platform.
-                  </p>
-                </section>
-
-                <section className="mb-8">
-                  <h3 className="font-display mb-3 text-xl font-semibold text-[#F4EEE4]">
-                    3. Service Description
-                  </h3>
-                  <p className="mb-3 leading-relaxed">
-                    Health-e is a matching platform that allows patients to
-                    consult remotely with qualified healthcare professionals in
-                    the fields of mental health and intimate health
-                    (psychologists, psychiatrists, sexologists, gynecologists,
-                    urologists).
-                  </p>
-                  <p className="leading-relaxed">
-                    Health-e is not a healthcare facility and does not intervene
-                    in the content of consultations or in the management of
-                    medical records. The platform's role is limited to providing a
-                    secure, confidential, and functional framework for
-                    teleconsultation.
-                  </p>
-                </section>
-
-                <section className="mb-8">
-                  <h3 className="font-display mb-3 text-xl font-semibold text-[#F4EEE4]">
-                    4. Eligibility
-                  </h3>
-                  <p className="leading-relaxed">
-                    To use Health-e, you must be at least 18 years old and capable
-                    of legally contracting. If you are acting on behalf of an
-                    organization, you guarantee that you have the authority to do
-                    so.
-                  </p>
-                </section>
-
-                <section className="mb-8">
-                  <h3 className="font-display mb-3 text-xl font-semibold text-[#F4EEE4]">
-                    5. User Accounts
-                  </h3>
-                  <p className="leading-relaxed">
-                    You are responsible for your Health-e account, the
-                    confidentiality of your credentials, and any activity related
-                    to it. In case of fraudulent or unauthorized use, you must
-                    inform us immediately.
-                  </p>
-                </section>
-
-                <section className="mb-8">
-                  <h3 className="font-display mb-3 text-xl font-semibold text-[#F4EEE4]">
-                    6. User Responsibilities
-                  </h3>
-                  <h4 className="mb-2 font-display text-base font-semibold text-[#F4EEE4]">
-                    For Patients:
-                  </h4>
-                  <ul className="mb-4 space-y-2">
-                    <li className="flex gap-2">
-                      <Check className="mt-1 h-4 w-4 flex-shrink-0 text-[#9DBFAF]" />
-                      <span>Provide accurate and sincere information;</span>
-                    </li>
-                    <li className="flex gap-2">
-                      <Check className="mt-1 h-4 w-4 flex-shrink-0 text-[#9DBFAF]" />
-                      <span>
-                        Use the service only in a legitimate and respectful health
-                        context;
-                      </span>
-                    </li>
-                    <li className="flex gap-2">
-                      <Check className="mt-1 h-4 w-4 flex-shrink-0 text-[#9DBFAF]" />
-                      <span>
-                        Respect scheduled appointments or cancel them within a
-                        reasonable timeframe;
-                      </span>
-                    </li>
-                    <li className="flex gap-2">
-                      <Check className="mt-1 h-4 w-4 flex-shrink-0 text-[#9DBFAF]" />
-                      <span>
-                        Do not record, share, or broadcast a consultation without
-                        explicit consent.
-                      </span>
-                    </li>
-                  </ul>
-
-                  <h4 className="mb-2 font-display text-base font-semibold text-[#F4EEE4]">
-                    For Professionals:
-                  </h4>
-                  <ul className="space-y-2">
-                    <li className="flex gap-2">
-                      <Check className="mt-1 h-4 w-4 flex-shrink-0 text-[#9DBFAF]" />
-                      <span>
-                        Keep their qualifications, diplomas, and legal practice
-                        authorizations up to date;
-                      </span>
-                    </li>
-                    <li className="flex gap-2">
-                      <Check className="mt-1 h-4 w-4 flex-shrink-0 text-[#9DBFAF]" />
-                      <span>
-                        Respect patient confidentiality and professional secrecy;
-                      </span>
-                    </li>
-                    <li className="flex gap-2">
-                      <Check className="mt-1 h-4 w-4 flex-shrink-0 text-[#9DBFAF]" />
-                      <span>
-                        Ensure themselves the maintenance and preservation of
-                        medical records in accordance with the legislation of their
-                        country of practice;
-                      </span>
-                    </li>
-                    <li className="flex gap-2">
-                      <Check className="mt-1 h-4 w-4 flex-shrink-0 text-[#9DBFAF]" />
-                      <span>
-                        Be punctual and available according to the proposed time
-                        slots.
-                      </span>
-                    </li>
-                  </ul>
-                </section>
-
-                <section className="mb-8">
-                  <h3 className="font-display mb-3 text-xl font-semibold text-[#F4EEE4]">
-                    7. Service Limitations
-                  </h3>
-                  <p className="leading-relaxed">
-                    Health-e is not suitable for medical emergency situations. In
-                    case of emergency, please contact the emergency medical
-                    services in your locality immediately. The platform does not
-                    replace an in-person medical consultation when required.
-                  </p>
-                </section>
-
-                <section className="mb-8">
-                  <h3 className="font-display mb-3 text-xl font-semibold text-[#F4EEE4]">
-                    8. Payments and Refunds
-                  </h3>
-                  <p className="leading-relaxed">
-                    Consultation fees are clearly indicated before validation.
-                    Payments are processed through secure services (Mobile Money,
-                    bank card...). Refund policies are available in the dedicated
-                    section and may vary depending on the case.
-                  </p>
-                </section>
-
-                <section className="mb-8">
-                  <h3 className="font-display mb-3 text-xl font-semibold text-[#F4EEE4]">
-                    9. Intellectual Property
-                  </h3>
-                  <p className="leading-relaxed">
-                    All content, logos, interfaces, and codes of the Health-e
-                    platform are protected by intellectual property laws. No
-                    reproduction or redistribution is authorized without our
-                    written agreement.
-                  </p>
-                </section>
-
-                <section className="mb-8">
-                  <h3 className="font-display mb-3 text-xl font-semibold text-[#F4EEE4]">
-                    10. Confidentiality
-                  </h3>
-                  <p className="leading-relaxed">
-                    We do not store medical data. Only data necessary for the
-                    proper functioning of the service (identifiers, reservations,
-                    technical exchanges) are collected and secured. Your use of
-                    the service is governed by our Privacy Policy.
-                  </p>
-                </section>
-
-                <section className="mb-8">
-                  <h3 className="font-display mb-3 text-xl font-semibold text-[#F4EEE4]">
-                    11. Limitation of Liability
-                  </h3>
-                  <p className="leading-relaxed">
-                    Health-e acts solely as a technical intermediary. We are not
-                    responsible for medical acts performed, nor for consequences
-                    related to a consultation, except for proven technical
-                    malfunctions of the platform. Our liability cannot be engaged
-                    for indirect or unforeseen damages.
-                  </p>
-                </section>
-
-                <section className="mb-8">
-                  <h3 className="font-display mb-3 text-xl font-semibold text-[#F4EEE4]">
-                    12. Indemnification
-                  </h3>
-                  <p className="leading-relaxed">
-                    By using our service, you agree to indemnify Health-e in case
-                    of prejudice, complaint, or dispute resulting from a violation
-                    of these terms on your part.
-                  </p>
-                </section>
-
-                <section className="mb-8">
-                  <h3 className="font-display mb-3 text-xl font-semibold text-[#F4EEE4]">
-                    13. Modifications to Terms
-                  </h3>
-                  <p className="leading-relaxed">
-                    We may revise these terms at any time. Modifications will be
-                    published on the platform. By continuing to use Health-e, you
-                    accept the new terms in effect.
-                  </p>
-                </section>
-
-                <section className="mb-8">
-                  <h3 className="font-display mb-3 text-xl font-semibold text-[#F4EEE4]">
-                    14. Termination
-                  </h3>
-                  <p className="leading-relaxed">
-                    We reserve the right to suspend or delete a user account
-                    without notice, particularly in case of abusive, fraudulent,
-                    or contrary behavior to these terms.
-                  </p>
-                </section>
-
-                <section className="mb-8">
-                  <h3 className="font-display mb-3 text-xl font-semibold text-[#F4EEE4]">
-                    15. Applicable Law
-                  </h3>
-                  <p className="leading-relaxed">
-                    These terms are governed by the laws in force in Senegal. In
-                    case of dispute, an amicable resolution attempt will be
-                    preferred before any judicial procedure.
-                  </p>
-                </section>
-
-                <section className="mb-0">
-                  <h3 className="font-display mb-3 text-xl font-semibold text-[#F4EEE4]">
-                    16. Contact
-                  </h3>
-                  <p className="flex flex-wrap items-center gap-1 leading-relaxed">
-                    <Mail className="h-4 w-4 flex-shrink-0 text-[#F2B66D]" />
-                    For any questions or clarifications:{" "}
-                    <a
-                      href="mailto:healthe.service@gmail.com"
-                      className="font-medium text-[#F2B66D] hover:text-[#F2B66D]/80"
-                    >
-                      healthe.service@gmail.com
-                    </a>
-                  </p>
-                </section>
-              </>
-            )}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
+    <InfoSection title="Changements et droit applicable">
+      <P>Si ces conditions changent de façon importante, nous te le dirons sur le site. Elles sont soumises au droit sénégalais. Pour toute question : <B>{CONTACT_EMAIL}</B>.</P>
+    </InfoSection>
+  </InfoShell>
+);
 
 export default Terms;

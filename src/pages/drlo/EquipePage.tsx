@@ -15,7 +15,7 @@ const EquipePage: React.FC = () => {
   ];
   return (
     <DrLoShell back={{ to: "/", label: "Accueil" }} palette={palette}>
-      <p style={{ margin: "18px 0 0", fontSize: 12, letterSpacing: ".14em", textTransform: "uppercase", color: palette.accent, fontWeight: 700 }}>Accès équipe</p>
+      <p style={{ margin: "18px 0 0", fontSize: 13, letterSpacing: ".14em", textTransform: "uppercase", color: palette.accent, fontWeight: 700 }}>Accès équipe</p>
       <h1 style={{ margin: "6px 0 0", fontFamily: "Fraunces, serif", fontSize: 28, lineHeight: 1.2, fontWeight: 600, color: DC.title }}>Où veux-tu aller ?</h1>
       <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 18 }}>
         {items.map(it => (
@@ -29,7 +29,7 @@ const EquipePage: React.FC = () => {
           </Link>
         ))}
       </div>
-      <p style={{ margin: "18px 0 0", fontSize: 12.5, color: DC.faint, lineHeight: 1.5 }}>Chaque espace demande sa propre connexion.</p>
+      <p style={{ margin: "18px 0 0", fontSize: 13, color: DC.faint, lineHeight: 1.5 }}>Chaque espace demande sa propre connexion.</p>
     </DrLoShell>
   );
 };

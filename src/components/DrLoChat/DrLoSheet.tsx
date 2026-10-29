@@ -169,8 +169,8 @@ const DrLoSheet: React.FC<Props> = ({ open, greeting, draft, onClose }) => {
         <header style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 12px 10px 16px', borderBottom: `1px solid ${C.line}` }}>
           <img src="/dr-lo.png" alt="" width={36} height={36} style={{ width: 36, height: 36, borderRadius: '50%', objectFit: 'cover', objectPosition: 'top', border: `2px solid ${C.accent}` }} />
           <div style={{ flex: 1, minWidth: 0 }}>
-            <p style={{ margin: 0, fontSize: 15.5, fontWeight: 700 }}>Dr Lô</p>
-            <p style={{ margin: 0, fontSize: 12, color: C.faint }}>Ton compagnon IA · la même discussion que sur l'accueil</p>
+            <p style={{ margin: 0, fontSize: 16, fontWeight: 700 }}>Dr Lô</p>
+            <p style={{ margin: 0, fontSize: 13, color: C.faint }}>Ton compagnon IA · la même discussion que sur l'accueil</p>
           </div>
           <button onClick={() => go('/', { talk: { greeting: null, draft: input || null } })} aria-label="Ouvrir en plein écran" style={{ width: 40, height: 40, borderRadius: 12, border: `1px solid ${C.line}`, background: C.glass, color: C.muted, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Maximize2 size={17} /></button>
           <button onClick={onClose} aria-label="Fermer" style={{ width: 40, height: 40, borderRadius: 12, border: `1px solid ${C.line}`, background: C.glass, color: C.muted, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><X size={18} /></button>
@@ -178,7 +178,7 @@ const DrLoSheet: React.FC<Props> = ({ open, greeting, draft, onClose }) => {
 
         <div ref={listRef} aria-live="polite" style={{ flex: 1, overflowY: 'auto', padding: '14px 14px 8px', display: 'flex', flexDirection: 'column', gap: 10 }}>
           {missing && (
-            <div style={{ margin: 'auto 0', textAlign: 'center', color: C.muted, fontSize: 14.5, lineHeight: 1.55 }}>
+            <div style={{ margin: 'auto 0', textAlign: 'center', color: C.muted, fontSize: 15, lineHeight: 1.55 }}>
               <p style={{ margin: 0 }}>Ta discussion avec Dr Lô commence sur l'accueil.</p>
               <button onClick={() => go('/', { talk: { greeting: greeting ?? null, draft: draft ?? null } })} style={{ marginTop: 12, minHeight: 44, padding: '0 18px', borderRadius: 14, border: 0, background: C.accent, color: C.ink, fontWeight: 700, cursor: 'pointer' }}>Ouvrir Dr Lô</button>
             </div>

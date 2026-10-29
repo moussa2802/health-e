@@ -42,7 +42,7 @@ export const PushGuideCard: React.FC<{
         <span style={{ display: 'flex', gap: 10, alignItems: 'center', fontSize: 15, fontWeight: 700 }}>
           <Smartphone size={18} color={palette.accent} aria-hidden="true" />{guide.title}
         </span>
-        <span style={{ display: 'block', marginTop: 4, fontSize: 12, color: C.faint }}>
+        <span style={{ display: 'block', marginTop: 4, fontSize: 13, color: C.faint }}>
           Détecté : {OS_LABEL[dev.os]} · {dev.inApp ? `dans ${APP_LABEL[dev.inApp]}` : BROWSER_LABEL[dev.browser]}{dev.standalone ? ' · icône sur l\'écran d\'accueil' : ''}
         </span>
       </div>
@@ -52,7 +52,7 @@ export const PushGuideCard: React.FC<{
             <span aria-hidden="true" style={{ width: 26, height: 26, borderRadius: '50%', background: 'rgba(242,182,109,.18)', color: palette.accent, fontSize: 13, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>{i + 1}</span>
             <span style={{ flex: 1, minWidth: 0 }}>
               <span style={{ display: 'block', fontSize: 14, fontWeight: 700, color: C.title }}>{st.title}</span>
-              <span style={{ display: 'block', marginTop: 2, fontSize: 13.5, lineHeight: 1.5, color: C.soft }}>{st.text}</span>
+              <span style={{ display: 'block', marginTop: 2, fontSize: 14, lineHeight: 1.5, color: C.soft }}>{st.text}</span>
               {st.visual && <GuideVisualView visual={st.visual} os={dev.os} />}
             </span>
           </li>
@@ -60,7 +60,7 @@ export const PushGuideCard: React.FC<{
       </ol>
       {guide.action === 'copy_link' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-          <code style={{ fontSize: 12.5, color: C.soft, background: 'rgba(0,0,0,.25)', padding: '8px 10px', borderRadius: 10, wordBreak: 'break-all' }}>{LINK}</code>
+          <code style={{ fontSize: 13, color: C.soft, background: 'rgba(0,0,0,.25)', padding: '8px 10px', borderRadius: 10, wordBreak: 'break-all' }}>{LINK}</code>
           <button onClick={copy} style={ghost}>{copied ? <><Check size={16} aria-hidden="true" />Lien copié</> : <><Copy size={16} aria-hidden="true" />Copier le lien</>}</button>
         </div>
       )}
@@ -91,9 +91,9 @@ export const PushTestButton: React.FC<{ palette: MomentPalette }> = ({ palette }
         style={{ minHeight: 44, borderRadius: 14, border: '1px solid rgba(255,255,255,.18)', background: 'transparent', color: C.text, fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
         <Send size={15} color={palette.accent} aria-hidden="true" />{label}
       </button>
-      {state === 'no_device' && <p style={{ margin: 0, fontSize: 12.5, lineHeight: 1.5, color: '#E9C88F' }}>Ce téléphone n'est pas encore enregistré. Désactive puis réactive les rappels ici.</p>}
-      {state === 'error' && <p style={{ margin: 0, fontSize: 12.5, color: '#E9C88F' }}>L'essai n'est pas parti (connexion ?). Réessaie dans un instant.</p>}
-      {state === 'ok' && <p style={{ margin: 0, fontSize: 12.5, lineHeight: 1.5, color: C.faint }}>Rien reçu après une minute ? Vérifie que le mode « Ne pas déranger » est coupé et que Chrome (ou Health-e) a le droit d'afficher des notifications dans les réglages du téléphone.</p>}
+      {state === 'no_device' && <p style={{ margin: 0, fontSize: 13, lineHeight: 1.5, color: '#E9C88F' }}>Ce téléphone n'est pas encore enregistré. Désactive puis réactive les rappels ici.</p>}
+      {state === 'error' && <p style={{ margin: 0, fontSize: 13, color: '#E9C88F' }}>L'essai n'est pas parti (connexion ?). Réessaie dans un instant.</p>}
+      {state === 'ok' && <p style={{ margin: 0, fontSize: 13, lineHeight: 1.5, color: C.faint }}>Rien reçu après une minute ? Vérifie que le mode « Ne pas déranger » est coupé et que Chrome (ou Health-e) a le droit d'afficher des notifications dans les réglages du téléphone.</p>}
     </div>
   );
 };

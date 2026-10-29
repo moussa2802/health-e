@@ -66,20 +66,20 @@ const DrloBench: React.FC<{ uid: string; palette: MomentPalette }> = ({ uid, pal
     setCustomRun({ loading: false, ...out });
   };
 
-  const btn: React.CSSProperties = { minHeight: 40, padding: '0 14px', borderRadius: 12, border: 0, background: palette.primary, color: DC.ink, fontWeight: 700, fontSize: 13.5, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 6 };
+  const btn: React.CSSProperties = { minHeight: 40, padding: '0 14px', borderRadius: 12, border: 0, background: palette.primary, color: DC.ink, fontWeight: 700, fontSize: 14, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 6 };
   const Result: React.FC<{ r: Run }> = ({ r }) => r.loading ? <Loader2 className="animate-spin" size={18} style={{ marginTop: 8 }} /> : (
-    <div style={{ marginTop: 8, padding: 12, borderRadius: 14, background: 'rgba(255,255,255,.06)', border: `1px solid ${DC.line}`, fontSize: 14.5, lineHeight: 1.55, color: r.ok ? DC.text : '#F09A7A' }}>
+    <div style={{ marginTop: 8, padding: 12, borderRadius: 14, background: 'rgba(255,255,255,.06)', border: `1px solid ${DC.line}`, fontSize: 15, lineHeight: 1.55, color: r.ok ? DC.text : '#F09A7A' }}>
       <RichText text={r.text ?? ''} />
       {!!r.actions?.length && (
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 10 }}>
           {r.actions.map((a, k) => (
-            <span key={k} style={{ padding: '6px 10px', borderRadius: 10, fontSize: 12.5, fontWeight: 700, background: a.kind === 'crise' ? 'rgba(240,154,122,.2)' : 'rgba(242,182,109,.18)', color: a.kind === 'crise' ? '#F09A7A' : palette.accent }}>
+            <span key={k} style={{ padding: '6px 10px', borderRadius: 10, fontSize: 13, fontWeight: 700, background: a.kind === 'crise' ? 'rgba(240,154,122,.2)' : 'rgba(242,182,109,.18)', color: a.kind === 'crise' ? '#F09A7A' : palette.accent }}>
               Bouton · {ACTION_LABEL(a)}
             </span>
           ))}
         </div>
       )}
-      {r.ms !== undefined && <p style={{ margin: '8px 0 0', fontSize: 11.5, color: DC.faint }}>{(r.ms / 1000).toFixed(1)} s</p>}
+      {r.ms !== undefined && <p style={{ margin: '8px 0 0', fontSize: 13, color: DC.faint }}>{(r.ms / 1000).toFixed(1)} s</p>}
     </div>
   );
 
@@ -89,7 +89,7 @@ const DrloBench: React.FC<{ uid: string; palette: MomentPalette }> = ({ uid, pal
         <p style={{ margin: 0, fontSize: 14, lineHeight: 1.55, color: DC.soft }}>
           Dr Lô répond à des situations types <b>sur ton propre profil</b> (tes tests, ton totem, ton journal). Rien n'est compté ni retenu, et aucun utilisateur ne voit ces réponses.
         </p>
-        <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 10, fontSize: 13.5, color: DC.muted, cursor: 'pointer' }}>
+        <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 10, fontSize: 14, color: DC.muted, cursor: 'pointer' }}>
           <input type="checkbox" checked={withMemory} onChange={e => setWithMemory(e.target.checked)} style={{ width: 18, height: 18, accentColor: palette.accent }} />
           Avec ce que Dr Lô retient de moi
         </label>
@@ -108,7 +108,7 @@ const DrloBench: React.FC<{ uid: string; palette: MomentPalette }> = ({ uid, pal
           <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
             <div style={{ flex: 1 }}>
               <p style={{ margin: 0, fontSize: 15, fontWeight: 700, color: DC.title }}>« {c.text} »</p>
-              <p style={{ margin: '3px 0 0', fontSize: 12.5, color: DC.faint }}>Attendu : {c.expect}</p>
+              <p style={{ margin: '3px 0 0', fontSize: 13, color: DC.faint }}>Attendu : {c.expect}</p>
             </div>
             <button onClick={() => runOne(i)} disabled={!!runs[i]?.loading} aria-label={`Tester : ${c.text}`} className="drl-btn"
               style={{ width: 38, height: 38, borderRadius: 12, border: `1px solid ${DC.line}`, background: DC.glass, color: palette.accent, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>

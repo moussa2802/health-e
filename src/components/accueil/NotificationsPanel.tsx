@@ -109,14 +109,14 @@ const NotificationsPanel: React.FC<{
         {view === 'list' ? (<>
           {live.length > 0 && (
             <section>
-              <p style={{ margin: '0 4px 8px', fontSize: 11.5, letterSpacing: '.12em', textTransform: 'uppercase', fontWeight: 700, color: C.faint }}>Maintenant</p>
+              <p style={{ margin: '0 4px 8px', fontSize: 13, letterSpacing: '.12em', textTransform: 'uppercase', fontWeight: 700, color: C.faint }}>Maintenant</p>
               <div style={card}>
                 {live.map((l, i) => (
                   <button key={l.key} onClick={() => { onClose(); l.onOpen(); }} style={{ ...row, borderTop: i ? `1px solid ${C.line}` : 0 }}>
                     {dot}
                     <span style={{ flex: 1, minWidth: 0 }}>
-                      <span style={{ display: 'block', fontSize: 14.5, fontWeight: 700 }}>{l.title}</span>
-                      <span style={{ display: 'block', fontSize: 12.5, color: C.faint, marginTop: 2 }}>{l.body}</span>
+                      <span style={{ display: 'block', fontSize: 15, fontWeight: 700 }}>{l.title}</span>
+                      <span style={{ display: 'block', fontSize: 13, color: C.faint, marginTop: 2 }}>{l.body}</span>
                     </span>
                   </button>
                 ))}
@@ -124,11 +124,11 @@ const NotificationsPanel: React.FC<{
             </section>
           )}
           <section>
-            <p style={{ margin: '0 4px 8px', fontSize: 11.5, letterSpacing: '.12em', textTransform: 'uppercase', fontWeight: 700, color: C.faint }}>Récemment</p>
+            <p style={{ margin: '0 4px 8px', fontSize: 13, letterSpacing: '.12em', textTransform: 'uppercase', fontWeight: 700, color: C.faint }}>Récemment</p>
             {items === null ? (
-              <p style={{ margin: 0, fontSize: 13.5, color: C.faint, padding: '0 4px' }}>Je regarde…</p>
+              <p style={{ margin: 0, fontSize: 14, color: C.faint, padding: '0 4px' }}>Je regarde…</p>
             ) : items.length === 0 ? (
-              <p style={{ margin: 0, fontSize: 13.5, color: C.faint, padding: '0 4px' }}>Rien pour l'instant. Quand le vrai Dr Lô te répond ou qu'un proche joue à ton défi, c'est ici.</p>
+              <p style={{ margin: 0, fontSize: 14, color: C.faint, padding: '0 4px' }}>Rien pour l'instant. Quand le vrai Dr Lô te répond ou qu'un proche joue à ton défi, c'est ici.</p>
             ) : (
               <div style={card}>
                 {items.map((it, i) => (
@@ -136,15 +136,15 @@ const NotificationsPanel: React.FC<{
                     {it.read ? <span style={{ width: 8, flexShrink: 0 }} /> : dot}
                     <span style={{ flex: 1, minWidth: 0 }}>
                       <span style={{ display: 'block', fontSize: 14, fontWeight: 700 }}>{it.title}</span>
-                      <span style={{ display: 'block', fontSize: 12.5, color: C.faint, marginTop: 2 }}>{it.body}</span>
+                      <span style={{ display: 'block', fontSize: 13, color: C.faint, marginTop: 2 }}>{it.body}</span>
                     </span>
-                    <span style={{ fontSize: 11.5, color: C.faint, flexShrink: 0 }}>{when(it.at)}</span>
+                    <span style={{ fontSize: 13, color: C.faint, flexShrink: 0 }}>{when(it.at)}</span>
                   </button>
                 ))}
               </div>
             )}
           </section>
-          <button onClick={() => setView('settings')} style={{ alignSelf: 'center', border: 0, background: 'transparent', color: C.muted, fontSize: 13.5, fontWeight: 600, cursor: 'pointer', textDecoration: 'underline', textUnderlineOffset: 3, minHeight: 40, display: 'inline-flex', alignItems: 'center', gap: 6, fontFamily: 'inherit' }}>
+          <button onClick={() => setView('settings')} style={{ alignSelf: 'center', border: 0, background: 'transparent', color: C.muted, fontSize: 14, fontWeight: 600, cursor: 'pointer', textDecoration: 'underline', textUnderlineOffset: 3, minHeight: 40, display: 'inline-flex', alignItems: 'center', gap: 6, fontFamily: 'inherit' }}>
             <Bell size={15} aria-hidden="true" />Régler mes rappels
           </button>
         </>) : (<>
@@ -160,7 +160,7 @@ const NotificationsPanel: React.FC<{
               <PushTestButton palette={palette} />
             </div>
           )}
-          {msg && <p role="status" style={{ margin: 0, fontSize: 13.5, lineHeight: 1.5, color: C.soft }}>{msg}</p>}
+          {msg && <p role="status" style={{ margin: 0, fontSize: 14, lineHeight: 1.5, color: C.soft }}>{msg}</p>}
 
           <div style={{ ...card, padding: 14 }}>
             <p style={{ margin: 0, fontSize: 14, fontWeight: 700 }}>Heure de mon rappel</p>
@@ -178,7 +178,7 @@ const NotificationsPanel: React.FC<{
               <div key={t.key} style={{ ...row, cursor: 'default', borderTop: i ? `1px solid ${C.line}` : 0 }}>
                 <span style={{ flex: 1, minWidth: 0 }}>
                   <span style={{ display: 'block', fontSize: 14, fontWeight: 700 }}>{t.title}</span>
-                  <span style={{ display: 'block', fontSize: 12.5, color: C.faint, marginTop: 2 }}>{t.sub}</span>
+                  <span style={{ display: 'block', fontSize: 13, color: C.faint, marginTop: 2 }}>{t.sub}</span>
                 </span>
                 {sw(!!prefs[t.key], () => update({ [t.key]: !prefs[t.key] } as Partial<NotifPrefs>), t.title)}
               </div>
@@ -188,11 +188,11 @@ const NotificationsPanel: React.FC<{
             <Moon size={18} color={C.muted} aria-hidden="true" />
             <span style={{ flex: 1 }}>
               <span style={{ display: 'block', fontSize: 14, fontWeight: 700 }}>Silence la nuit</span>
-              <span style={{ display: 'block', fontSize: 12.5, color: C.faint, marginTop: 2 }}>Rien entre 22 h et 7 h</span>
+              <span style={{ display: 'block', fontSize: 13, color: C.faint, marginTop: 2 }}>Rien entre 22 h et 7 h</span>
             </span>
             {sw(prefs.quiet, () => update({ quiet: !prefs.quiet }), 'Silence la nuit')}
           </div>
-          <p style={{ margin: 0, textAlign: 'center', fontSize: 12, color: C.faint, lineHeight: 1.5 }}>Rien n'est envoyé quand ton programme est en pause. Tout reste aussi visible ici, dans la cloche.</p>
+          <p style={{ margin: 0, textAlign: 'center', fontSize: 13, color: C.faint, lineHeight: 1.5 }}>Rien n'est envoyé quand ton programme est en pause. Tout reste aussi visible ici, dans la cloche.</p>
         </>)}
       </div>
     </div>
@@ -230,7 +230,7 @@ export const NotifOptinCard: React.FC<{ uid: string; palette: MomentPalette; onD
   // Le guide s'affiche ici : on s'en souvient sur le compte, pour reprendre dans l'autre navigateur
   useEffect(() => { if (support !== 'ok' && support !== 'unsupported') markSetupPending(uid, support); }, [uid, support]);
   const primary: React.CSSProperties = { minHeight: 46, width: '100%', padding: '0 16px', borderRadius: 14, border: 0, background: palette.primary, color: C.ink, fontSize: 15, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' };
-  if (done) return <p className="drl-in" style={{ margin: '8px 0 0', fontSize: 12.5, color: C.sage }}>{done}</p>;
+  if (done) return <p className="drl-in" style={{ margin: '8px 0 0', fontSize: 13, color: C.sage }}>{done}</p>;
   const finish = (line: string, text: string) => { setDone(line); onDone(text); };
   const yes = async (): Promise<boolean> => {
     setBusy(true);
@@ -248,11 +248,11 @@ export const NotifOptinCard: React.FC<{ uid: string; palette: MomentPalette; onD
   };
   return (
     <div className="drl-in" style={{ marginTop: 10, textAlign: 'left', borderRadius: 18, border: '1px solid rgba(242,182,109,.3)', background: 'rgba(242,182,109,.07)', padding: 16, fontFamily: '"Plus Jakarta Sans", system-ui, sans-serif' }}>
-      <p style={{ margin: 0, fontSize: 11, letterSpacing: '.08em', textTransform: 'uppercase', fontWeight: 700, color: palette.accent }}>{T.kicker}</p>
+      <p style={{ margin: 0, fontSize: 13, letterSpacing: '.08em', textTransform: 'uppercase', fontWeight: 700, color: palette.accent }}>{T.kicker}</p>
       <p style={{ margin: '6px 0 2px', fontFamily: 'Fraunces, serif', fontSize: 19, fontWeight: 600, color: C.title }}>{support === 'ok' ? T.title : 'Je te montre comment faire'}</p>
-      <p style={{ margin: 0, fontSize: 12.5, color: C.faint }}>{T.sub}</p>
+      <p style={{ margin: 0, fontSize: 13, color: C.faint }}>{T.sub}</p>
       {support === 'unsupported' ? (
-        <p style={{ margin: '12px 0 4px', fontSize: 13.5, lineHeight: 1.5, color: '#E9C88F' }}>{currentGuide().title}. Tout ce qui t'attend reste visible dans la cloche, en haut de l'accueil.</p>
+        <p style={{ margin: '12px 0 4px', fontSize: 14, lineHeight: 1.5, color: '#E9C88F' }}>{currentGuide().title}. Tout ce qui t'attend reste visible dans la cloche, en haut de l'accueil.</p>
       ) : support !== 'ok' ? (
         // Guide pas à pas, en images, ici même dans la conversation
         <div style={{ margin: '12px 0 4px' }}><PushGuideCard palette={palette} hour={hour} onActivate={yes} embedded /></div>
@@ -273,7 +273,7 @@ export const NotifOptinCard: React.FC<{ uid: string; palette: MomentPalette; onD
         style={{ width: '100%', minHeight: 40, marginTop: 8, border: 0, background: 'transparent', color: C.faint, fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>
         Non merci, je passerai moi-même
       </button>
-      {support === 'ok' && <p style={{ margin: '4px 0 0', fontSize: 11.5, color: C.faint, textAlign: 'center' }}>Ton téléphone va te demander d'autoriser les notifications.</p>}
+      {support === 'ok' && <p style={{ margin: '4px 0 0', fontSize: 13, color: C.faint, textAlign: 'center' }}>Ton téléphone va te demander d'autoriser les notifications.</p>}
     </div>
   );
 };

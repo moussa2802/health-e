@@ -4,10 +4,12 @@ import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { clearInvite, inviteFromUrl, inviteLink, inviteMessage, loadInvite, saveInvite, type CompatInvite } from '../../utils/compatInvite';
 import {
   Heart, Home, Users, Briefcase, Key, Brain, Flame, Copy, Check, Lock,
-  ChevronRight, ChevronDown, ChevronLeft, Sparkles, Loader2, AlertCircle, AlertTriangle,
+  ChevronRight, ChevronDown, Sparkles, Loader2, AlertCircle, AlertTriangle,
   ThumbsUp, Stethoscope, Zap, RefreshCw, Trash2, TrendingUp, TrendingDown,
   Clock as ClockIcon, CheckCircle2, XCircle, BarChart3, Share2,
 } from 'lucide-react';
+import DrLoShell, { usePalette } from '../../components/accueil/DrLoShell';
+import Fold from '../../components/ui/Fold';
 import ShareableCompatibilityCard from '../../components/assessment/ShareableCompatibilityCard';
 import { shareResultCard } from '../../utils/shareCard';
 import { useAuth } from '../../contexts/AuthContext';
@@ -64,6 +66,7 @@ const CompatibilityPage: React.FC = () => {
   const [inviteSelf, setInviteSelf] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
   const { canAfford, refreshBalance, balance, getCost } = useKoris();
+  const palette = usePalette();
 
   const [myIdMental, setMyIdMental] = useState<string | null>(null);
   const [myIdSexual, setMyIdSexual] = useState<string | null>(null);
@@ -373,12 +376,12 @@ const CompatibilityPage: React.FC = () => {
             <div className="grid grid-cols-2 gap-3 max-w-[320px] mx-auto">
               <div className="bg-sage-soft border border-sage/20 rounded-2xl px-3 py-3.5 text-center">
                 <Brain size={18} className="text-sage mx-auto mb-1" />
-                <p className="m-0 mb-0.5 text-[11px] font-bold text-sage uppercase tracking-wide">Mental</p>
+                <p className="m-0 mb-0.5 text-[13px] font-bold text-sage uppercase tracking-wide">Mental</p>
                 <p className="m-0 text-[22px] font-extrabold" style={{ color: scoreStyle(result.mentalScore!).hex }}>{result.mentalScore}<span className="text-xs font-semibold text-muted">/100</span></p>
               </div>
               <div className="bg-accent-soft border border-accent/20 rounded-2xl px-3 py-3.5 text-center">
                 <Flame size={18} className="text-accent mx-auto mb-1" />
-                <p className="m-0 mb-0.5 text-[11px] font-bold text-accent uppercase tracking-wide">Intime</p>
+                <p className="m-0 mb-0.5 text-[13px] font-bold text-accent uppercase tracking-wide">Intime</p>
                 <p className="m-0 text-[22px] font-extrabold" style={{ color: scoreStyle(result.intimateScore!).hex }}>{result.intimateScore}<span className="text-xs font-semibold text-muted">/100</span></p>
               </div>
             </div>
@@ -396,7 +399,7 @@ const CompatibilityPage: React.FC = () => {
             {result.mentalDimensionScores && Object.keys(result.mentalDimensionScores).length > 0 && (
               <>
                 {isMerged && (
-                  <p className="m-0 mb-2.5 text-[11px] font-bold text-sage uppercase tracking-wide flex items-center gap-1.5">
+                  <p className="m-0 mb-2.5 text-[13px] font-bold text-sage uppercase tracking-wide flex items-center gap-1.5">
                     <Brain size={12} /> Psychologique
                   </p>
                 )}
@@ -423,7 +426,7 @@ const CompatibilityPage: React.FC = () => {
             {result.intimateDimensionScores && Object.keys(result.intimateDimensionScores).length > 0 && (
               <>
                 {isMerged && (
-                  <p className="m-0 mb-2.5 text-[11px] font-bold text-accent uppercase tracking-wide flex items-center gap-1.5">
+                  <p className="m-0 mb-2.5 text-[13px] font-bold text-accent uppercase tracking-wide flex items-center gap-1.5">
                     <Flame size={12} /> Vie intime
                   </p>
                 )}
@@ -516,23 +519,14 @@ const CompatibilityPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-paper drl-screen drl-page">
-      <div className="max-w-[680px] mx-auto px-5 pt-5 pb-20 relative z-[1]">
-        <Link to="/espace" aria-label="Retour à mon espace" className="drl-btn no-underline"
-          style={{ width: 44, height: 44, borderRadius: 13, border: '1px solid rgba(255,255,255,.14)', background: 'rgba(255,255,255,.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#CFC6B8', marginBottom: 24 }}>
-          <ChevronLeft size={20} />
-        </Link>
-
-        {/* ── Hero ── */}
-        <div className="text-center mb-12">
-          <div className="w-16 h-16 mx-auto mb-5 rounded-full bg-accent-soft flex items-center justify-center">
-            <Heart size={28} className="text-accent" />
-          </div>
-          <h1 className="font-display m-0 mb-3.5 text-[34px] font-semibold text-ink tracking-tight leading-[1.15]">
-            Test de <span className="text-accent">compatibilité</span>
-          </h1>
-          <p className="m-0 mx-auto text-[15px] text-ink-soft leading-relaxed max-w-[460px]">
-            Couple, crush, amitié, famille, collègue… Découvre ce qui vous rapproche et ce qui peut coincer.
+    <DrLoShell back={{ to: '/espace', label: 'Retour à mon espace' }} palette={palette}>
+      <div className="relative z-[1]" style={{ paddingTop: 18 }}>
+        {/* ── Titre ── */}
+        <div className="mb-6">
+          <p className="m-0 text-[13px] font-bold uppercase tracking-[0.12em]" style={{ color: '#F09A7A' }}>Social</p>
+          <h1 className="font-display m-0 mt-1 text-[26px] font-semibold text-ink leading-[1.2]">Test de compatibilité</h1>
+          <p className="m-0 mt-2 text-[15px] text-ink-soft leading-relaxed">
+            Couple, crush, amitié, famille, collègue : découvre ce qui vous rapproche et ce qui peut coincer.
           </p>
         </div>
 
@@ -541,8 +535,8 @@ const CompatibilityPage: React.FC = () => {
           const prenom = mentalValidation?.valid ? mentalValidation.prenom : sexualValidation?.valid ? sexualValidation.prenom : null;
           return (
             <div className="rounded-block px-5 py-5 mb-5" style={{ border: '1px solid rgba(233,167,184,.5)', background: 'linear-gradient(135deg, rgba(233,167,184,.18), rgba(242,182,109,.08))' }}>
-              <p className="m-0 text-[12px] font-extrabold uppercase tracking-[0.12em]" style={{ color: '#E9A7B8' }}>Invitation</p>
-              <p className="m-0 mt-1 font-display text-[21px] font-semibold text-ink leading-snug">{prenom ? `${prenom} t'invite` : 'On t\'invite'} à comparer vos profils 💞</p>
+              <p className="m-0 text-[13px] font-extrabold uppercase tracking-[0.12em]" style={{ color: '#E9A7B8' }}>Invitation</p>
+              <p className="m-0 mt-1 font-display text-[21px] font-semibold text-ink leading-snug">{prenom ? `${prenom} t'invite` : 'On t\'invite'} à comparer vos profils</p>
               {!isAuthenticated ? (
                 <>
                   <p className="m-0 mt-2 text-[14px] text-ink-soft leading-relaxed">Crée ton espace (gratuit), fais tes évaluations avec Dr Lô, puis reviens sur ce lien : tout sera prêt, rien à recopier.</p>
@@ -564,89 +558,6 @@ const CompatibilityPage: React.FC = () => {
             <p className="m-0 text-sm text-ink-soft">C'est ton propre lien d'invitation : envoie-le à la personne avec qui tu veux faire le test.</p>
           </div>
         )}
-
-        {/* ── Mes codes ── */}
-        <div className="bg-card border border-line rounded-block shadow-soft px-6 py-6 mb-5">
-          <div className="flex items-center gap-2.5 mb-5">
-            <div className="w-[34px] h-[34px] rounded-[10px] bg-ink flex items-center justify-center flex-shrink-0">
-              <Key size={16} className="text-white" />
-            </div>
-            <h2 className="m-0 text-[15px] font-bold text-ink">Mes codes de compatibilité</h2>
-          </div>
-
-          {!isAuthenticated ? (
-            <div className="flex items-center justify-between gap-4 bg-paper rounded-2xl px-4 py-3.5">
-              <p className="m-0 text-sm text-ink-soft">Connecte-toi pour voir et partager tes codes.</p>
-              <Link to="/patient/access" className="flex-shrink-0 bg-ink text-white text-[13px] font-bold px-5 py-2.5 rounded-pill no-underline whitespace-nowrap">
-                Se connecter
-              </Link>
-            </div>
-          ) : loadingProfile ? (
-            <div className="flex items-center gap-2.5 text-muted text-sm">
-              <Loader2 size={18} className="animate-spin" />
-              Chargement…
-            </div>
-          ) : (
-            <div className="flex flex-col gap-2.5">
-              {/* Mental */}
-              <div className="rounded-2xl bg-sage-soft border border-sage/20 overflow-hidden">
-                <div className="flex items-center gap-3 px-4 py-3.5">
-                  <div className="w-9 h-9 rounded-xl bg-card flex items-center justify-center flex-shrink-0">
-                    <Brain size={18} className="text-sage" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="m-0 mb-0.5 text-[11px] font-bold text-sage uppercase tracking-wide">Profil Psychologique</p>
-                    {myIdMental
-                      ? <code className="text-[15px] font-mono font-extrabold text-ink tracking-wide">{myIdMental}</code>
-                      : <span className="text-xs text-muted">Complète 8 évaluations pour obtenir ce code</span>
-                    }
-                  </div>
-                  {myIdMental && (
-                    <button
-                      onClick={() => copy(myIdMental, setCopiedMental)}
-                      className={`flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-semibold transition-colors ${copiedMental ? 'border-sage/50 bg-card text-sage' : 'border-sage/30 bg-card text-sage'}`}
-                    >
-                      {copiedMental ? <><Check size={13} /> Copié</> : <><Copy size={13} /> Copier</>}
-                    </button>
-                  )}
-                </div>
-                {myIdMental && (
-                  <p className="m-0 px-4 pb-2.5 text-[10px] text-muted italic flex items-center gap-1">
-                    <Lock size={10} /> Partage ce code uniquement avec la personne concernée
-                  </p>
-                )}
-              </div>
-              {/* Intime */}
-              <div className="rounded-2xl bg-accent-soft border border-accent/20 overflow-hidden">
-                <div className="flex items-center gap-3 px-4 py-3.5">
-                  <div className="w-9 h-9 rounded-xl bg-card flex items-center justify-center flex-shrink-0">
-                    <Flame size={18} className="text-accent" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="m-0 mb-0.5 text-[11px] font-bold text-accent uppercase tracking-wide">Vie intime</p>
-                    {myIdSexual
-                      ? <code className="text-[15px] font-mono font-extrabold text-ink tracking-wide">{myIdSexual}</code>
-                      : <span className="text-xs text-muted">Complète 5 évaluations pour obtenir ce code</span>
-                    }
-                  </div>
-                  {myIdSexual && (
-                    <button
-                      onClick={() => copy(myIdSexual, setCopiedSexual)}
-                      className={`flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-semibold transition-colors ${copiedSexual ? 'border-sage/50 bg-card text-sage' : 'border-accent/30 bg-card text-accent'}`}
-                    >
-                      {copiedSexual ? <><Check size={13} /> Copié</> : <><Copy size={13} /> Copier</>}
-                    </button>
-                  )}
-                </div>
-                {myIdSexual && (
-                  <p className="m-0 px-4 pb-2.5 text-[10px] text-muted italic flex items-center gap-1">
-                    <Lock size={10} /> Partage ce code uniquement avec la personne concernée
-                  </p>
-                )}
-              </div>
-            </div>
-          )}
-        </div>
 
         {/* ── Inviter par un lien (plus simple que de recopier un code) ── */}
         {isAuthenticated && !loadingProfile && (myIdMental || myIdSexual) && !(invite && !inviteSelf && !currentResult) && (() => {
@@ -670,6 +581,87 @@ const CompatibilityPage: React.FC = () => {
             </div>
           );
         })()}
+
+        {/* ── Mes codes : repliés (le lien suffit à la plupart des gens) ── */}
+        <div className="mb-5">
+          <Fold title="Mes codes" summary={isAuthenticated ? (myIdMental || myIdSexual ? 'Pour qui préfère recopier un code' : 'Ils apparaissent après tes évaluations') : 'Connecte-toi pour les voir'} icon={<Key size={18} color="#E9C88F" />}>
+        <div>
+
+          {!isAuthenticated ? (
+            <div className="flex items-center justify-between gap-4 bg-paper rounded-2xl px-4 py-3.5">
+              <p className="m-0 text-sm text-ink-soft">Connecte-toi pour voir et partager tes codes.</p>
+              <Link to="/patient/access" className="flex-shrink-0 bg-ink text-white text-[13px] font-bold px-5 py-2.5 rounded-pill no-underline whitespace-nowrap">
+                Se connecter
+              </Link>
+            </div>
+          ) : loadingProfile ? (
+            <div className="flex items-center gap-2.5 text-muted text-sm">
+              <Loader2 size={18} className="animate-spin" />
+              Chargement…
+            </div>
+          ) : (
+            <div className="flex flex-col gap-2.5">
+              {/* Mental */}
+              <div className="rounded-2xl bg-sage-soft border border-sage/20 overflow-hidden">
+                <div className="flex items-center gap-3 px-4 py-3.5">
+                  <div className="w-9 h-9 rounded-xl bg-card flex items-center justify-center flex-shrink-0">
+                    <Brain size={18} className="text-sage" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="m-0 mb-0.5 text-[13px] font-bold text-sage uppercase tracking-wide">Profil Psychologique</p>
+                    {myIdMental
+                      ? <code className="text-[15px] font-sans tabular-nums font-extrabold text-ink tracking-wide whitespace-nowrap">{myIdMental}</code>
+                      : <span className="text-xs text-muted">Complète 8 évaluations pour obtenir ce code</span>
+                    }
+                  </div>
+                  {myIdMental && (
+                    <button
+                      onClick={() => copy(myIdMental, setCopiedMental)}
+                      className={`flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-semibold transition-colors ${copiedMental ? 'border-sage/50 bg-card text-sage' : 'border-sage/30 bg-card text-sage'}`}
+                    >
+                      {copiedMental ? <><Check size={13} /> Copié</> : <><Copy size={13} /> Copier</>}
+                    </button>
+                  )}
+                </div>
+                {myIdMental && (
+                  <p className="m-0 px-4 pb-2.5 text-[13px] text-muted italic flex items-center gap-1">
+                    <Lock size={10} /> Partage ce code uniquement avec la personne concernée
+                  </p>
+                )}
+              </div>
+              {/* Intime */}
+              <div className="rounded-2xl bg-accent-soft border border-accent/20 overflow-hidden">
+                <div className="flex items-center gap-3 px-4 py-3.5">
+                  <div className="w-9 h-9 rounded-xl bg-card flex items-center justify-center flex-shrink-0">
+                    <Flame size={18} className="text-accent" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="m-0 mb-0.5 text-[13px] font-bold text-accent uppercase tracking-wide">Vie intime</p>
+                    {myIdSexual
+                      ? <code className="text-[15px] font-sans tabular-nums font-extrabold text-ink tracking-wide whitespace-nowrap">{myIdSexual}</code>
+                      : <span className="text-xs text-muted">Complète 5 évaluations pour obtenir ce code</span>
+                    }
+                  </div>
+                  {myIdSexual && (
+                    <button
+                      onClick={() => copy(myIdSexual, setCopiedSexual)}
+                      className={`flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-semibold transition-colors ${copiedSexual ? 'border-sage/50 bg-card text-sage' : 'border-accent/30 bg-card text-accent'}`}
+                    >
+                      {copiedSexual ? <><Check size={13} /> Copié</> : <><Copy size={13} /> Copier</>}
+                    </button>
+                  )}
+                </div>
+                {myIdSexual && (
+                  <p className="m-0 px-4 pb-2.5 text-[13px] text-muted italic flex items-center gap-1">
+                    <Lock size={10} /> Partage ce code uniquement avec la personne concernée
+                  </p>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+          </Fold>
+        </div>
 
         {/* ── Bannière si aucun code ── */}
         {isAuthenticated && !loadingProfile && !myIdMental && !myIdSexual && (
@@ -742,7 +734,7 @@ const CompatibilityPage: React.FC = () => {
                             isActive ? 'border-ink bg-ink shadow-soft' : 'border-line bg-paper hover:border-ink/25'
                           }`}
                         >
-                          <span className={`text-[11px] font-bold text-center leading-tight ${isActive ? 'text-white' : 'text-ink'}`}>{sub.label}</span>
+                          <span className={`text-[13px] font-bold text-center leading-tight ${isActive ? 'text-white' : 'text-ink'}`}>{sub.label}</span>
                         </button>
                       );
                     })}
@@ -802,7 +794,7 @@ const CompatibilityPage: React.FC = () => {
                       }}
                       placeholder="HE-MNT-2026-XXXX"
                       maxLength={16}
-                      className={`w-full px-4 py-3.5 rounded-2xl text-sm font-mono font-bold text-ink tracking-wide bg-paper outline-none border transition-colors focus:ring-2 ${
+                      className={`w-full px-4 py-3.5 rounded-2xl text-sm font-sans tabular-nums font-bold text-ink tracking-wide bg-paper outline-none border transition-colors focus:ring-2 ${
                         mentalValidation
                           ? (mentalValidation.valid ? 'border-sage focus:ring-sage/15' : 'border-accent focus:ring-accent/15')
                           : 'border-line focus:ring-ink/10'
@@ -849,7 +841,7 @@ const CompatibilityPage: React.FC = () => {
                         }}
                         placeholder="HE-SEX-2026-XXXX"
                         maxLength={16}
-                        className={`w-full px-4 py-3.5 rounded-2xl text-sm font-mono font-bold text-ink tracking-wide bg-paper outline-none border transition-colors focus:ring-2 ${
+                        className={`w-full px-4 py-3.5 rounded-2xl text-sm font-sans tabular-nums font-bold text-ink tracking-wide bg-paper outline-none border transition-colors focus:ring-2 ${
                           sexualValidation
                             ? (sexualValidation.valid ? 'border-sage focus:ring-sage/15' : 'border-accent focus:ring-accent/15')
                             : 'border-line focus:ring-ink/10'
@@ -875,7 +867,7 @@ const CompatibilityPage: React.FC = () => {
                         )}
                       </div>
                     )}
-                    <p className="mt-1.5 mb-0 text-[11px] text-muted flex items-center gap-1">
+                    <p className="mt-1.5 mb-0 text-[13px] text-muted flex items-center gap-1">
                       <Lock size={10} /> Ce code est partagé uniquement avec consentement mutuel
                     </p>
                   </div>
@@ -910,7 +902,7 @@ const CompatibilityPage: React.FC = () => {
               onClick={handleCalculate}
             />
             {canSubmit && !calculating && (
-              <p className="mt-2 mb-0 text-center text-[11px] text-muted flex items-center justify-center gap-1">
+              <p className="mt-2 mb-0 text-center text-[13px] text-muted flex items-center justify-center gap-1">
                 <Lock size={11} /> Résultat instantané et confidentiel
               </p>
             )}
@@ -946,13 +938,8 @@ const CompatibilityPage: React.FC = () => {
 
         {/* ── Historique ── */}
         {isAuthenticated && history.length > 0 && (
-          <div className="mt-8 bg-card border border-line rounded-block shadow-soft px-6 py-6">
-            <div className="flex items-center gap-2.5 mb-5">
-              <div className="w-[34px] h-[34px] rounded-[10px] bg-ink flex items-center justify-center flex-shrink-0">
-                <ClockIcon size={16} className="text-white" />
-              </div>
-              <h2 className="m-0 text-[15px] font-bold text-ink">Historique des tests</h2>
-            </div>
+          <div className="mt-6">
+          <Fold title="Mes tests passés" summary={`${history.length} test${history.length > 1 ? 's' : ''} · le plus récent en premier`} icon={<ClockIcon size={18} color="#CFC6B8" />}>
 
             {historyLoading ? (
               <div className="flex items-center gap-2.5 text-muted text-sm">
@@ -990,11 +977,11 @@ const CompatibilityPage: React.FC = () => {
                             {entry.partnerPrenom && <span className="text-ink">{entry.partnerPrenom}</span>}
                             {entry.partnerPrenom ? ' · ' : ''}
                             {getRelationshipLabel(entry.relationshipType)}
-                            <span className="ml-2 text-[11px] font-medium text-muted">
+                            <span className="ml-2 text-[13px] font-medium text-muted">
                               {isMergedEntry ? '· Fusionné' : entry.codeType === 'mental' ? '· Mental' : '· Intime'}
                             </span>
                           </p>
-                          <p className="m-0 text-[11px] text-muted">
+                          <p className="m-0 text-[13px] text-muted">
                             {entry.createdAt.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}
                           </p>
                         </div>
@@ -1002,10 +989,10 @@ const CompatibilityPage: React.FC = () => {
                           <div className="text-right">
                             <div className="flex items-center gap-1">
                               <span className="text-[15px] font-extrabold" style={{ color: hs.hex }}>{entry.result.globalScore}</span>
-                              <span className="text-[11px] text-muted font-semibold">/100</span>
+                              <span className="text-[13px] text-muted font-semibold">/100</span>
                             </div>
                             {evolution !== null && evolution !== 0 && (
-                              <span className={`text-[10px] font-bold flex items-center justify-end gap-0.5 ${evolution > 0 ? 'text-sage' : 'text-accent'}`}>
+                              <span className={`text-[13px] font-bold flex items-center justify-end gap-0.5 ${evolution > 0 ? 'text-sage' : 'text-accent'}`}>
                                 {evolution > 0 ? <TrendingUp size={11} /> : <TrendingDown size={11} />}
                                 {evolution > 0 ? `+${evolution}` : evolution}
                               </span>
@@ -1020,7 +1007,7 @@ const CompatibilityPage: React.FC = () => {
                         <button
                           onClick={(e) => { e.stopPropagation(); handleRecalculate(entry); }}
                           disabled={recalculatingId === entry.id}
-                          className={`bg-paper border border-line rounded-lg px-2.5 py-1 flex items-center gap-1.5 text-[11px] font-semibold text-ink-soft ${recalculatingId === entry.id ? 'cursor-wait opacity-70' : 'cursor-pointer'}`}
+                          className={`bg-paper border border-line rounded-lg px-2.5 py-1 flex items-center gap-1.5 text-[13px] font-semibold text-ink-soft ${recalculatingId === entry.id ? 'cursor-wait opacity-70' : 'cursor-pointer'}`}
                         >
                           {recalculatingId === entry.id ? (
                             <>
@@ -1049,7 +1036,7 @@ const CompatibilityPage: React.FC = () => {
                             }
                           }}
                           disabled={deletingId === entry.id}
-                          className={`bg-transparent border border-accent/25 rounded-lg px-2.5 py-1 cursor-pointer flex items-center gap-1.5 text-[11px] font-semibold text-accent ${deletingId === entry.id ? 'opacity-50' : ''}`}
+                          className={`bg-transparent border border-accent/25 rounded-lg px-2.5 py-1 cursor-pointer flex items-center gap-1.5 text-[13px] font-semibold text-accent ${deletingId === entry.id ? 'opacity-50' : ''}`}
                         >
                           {deletingId === entry.id ? (
                             <Loader2 size={11} className="animate-spin" />
@@ -1070,11 +1057,11 @@ const CompatibilityPage: React.FC = () => {
                             <div className="grid grid-cols-2 gap-2.5 mb-3.5">
                               <div className="bg-sage-soft rounded-xl px-3 py-2.5 text-center">
                                 <Brain size={14} className="text-sage mx-auto mb-0.5" />
-                                <p className="m-0 text-base font-extrabold" style={{ color: scoreStyle(entry.result.mentalScore!).hex }}>{entry.result.mentalScore}<span className="text-[10px] text-muted">/100</span></p>
+                                <p className="m-0 text-base font-extrabold" style={{ color: scoreStyle(entry.result.mentalScore!).hex }}>{entry.result.mentalScore}<span className="text-[13px] text-muted">/100</span></p>
                               </div>
                               <div className="bg-accent-soft rounded-xl px-3 py-2.5 text-center">
                                 <Flame size={14} className="text-accent mx-auto mb-0.5" />
-                                <p className="m-0 text-base font-extrabold" style={{ color: scoreStyle(entry.result.intimateScore!).hex }}>{entry.result.intimateScore}<span className="text-[10px] text-muted">/100</span></p>
+                                <p className="m-0 text-base font-extrabold" style={{ color: scoreStyle(entry.result.intimateScore!).hex }}>{entry.result.intimateScore}<span className="text-[13px] text-muted">/100</span></p>
                               </div>
                             </div>
                           )}
@@ -1149,6 +1136,7 @@ const CompatibilityPage: React.FC = () => {
                 })}
               </div>
             )}
+          </Fold>
           </div>
         )}
 
@@ -1181,7 +1169,7 @@ const CompatibilityPage: React.FC = () => {
           </div>
         </div>
       )}
-    </div>
+    </DrLoShell>
   );
 };
 

@@ -1,7 +1,8 @@
 import '../components/accueil/accueil.css';
 import React, { useState, useEffect } from 'react';
+import DrLoShell, { usePalette } from '../components/accueil/DrLoShell';
 import { useNavigate, Navigate } from 'react-router-dom';
-import { ArrowLeft, Sparkles, Users, Crown, Eye, Plus, Clock, CheckCircle, ChevronDown, Loader2 } from 'lucide-react';
+import { Sparkles, Users, Crown, Eye, Plus, Clock, CheckCircle, ChevronDown, Loader2 } from 'lucide-react';
 import { doc, onSnapshot, collection, query as fsQuery, orderBy, limit, getDocs, getDoc, startAfter as fsStartAfter, type DocumentSnapshot } from 'firebase/firestore';
 import { db } from '../utils/firebase';
 import { useAuth } from '../contexts/AuthContext';
@@ -35,7 +36,10 @@ const STEPS = [
   { icon: <Crown size={20} className="text-gold" />, text: 'Tu découvres qui te connaît le mieux 👑' },
 ];
 
+const BACK = { to: '/espace', label: 'Retour à mon espace' };
+
 const DefiPage: React.FC = () => {
+  const palette = usePalette();
   const navigate = useNavigate();
   const { currentUser, isAuthenticated, authReady, loadingUserData } = useAuth();
   const { defiEnabled, loading: flagLoading } = useDefiFlag();
@@ -178,9 +182,9 @@ const DefiPage: React.FC = () => {
 
   if (!authReady || loadingUserData || flagLoading || profileLoading) {
     return (
-      <div className="min-h-screen bg-paper drl-screen drl-page flex items-center justify-center">
-        <div className="w-10 h-10 rounded-full border-[3px] border-line border-t-gold animate-spin" />
-      </div>
+      <DrLoShell back={BACK} palette={palette}>
+        <div className="flex justify-center" style={{ marginTop: 80 }}><div className="w-10 h-10 rounded-full border-[3px] border-line border-t-gold animate-spin" /></div>
+      </DrLoShell>
     );
   }
 
@@ -189,7 +193,7 @@ const DefiPage: React.FC = () => {
   }
 
   if (!defiEnabled) {
-    return <Navigate to="/assessment" replace />;
+    return <Navigate to="/espace" replace />;
   }
 
   const totemProgress = getTotemProgress(profileResults);
@@ -198,16 +202,8 @@ const DefiPage: React.FC = () => {
 
   if (!totemRevealed) {
     return (
-      <div className="min-h-screen bg-paper drl-screen drl-page">
-        <div className="sticky top-0 z-20 bg-paper/95 backdrop-blur-md border-b border-line">
-          <div className="max-w-[600px] mx-auto px-5 py-3.5 flex items-center gap-3">
-            <button onClick={() => navigate('/espace')} aria-label="Retour à mon espace" className="p-0 border-none bg-transparent cursor-pointer text-ink">
-              <ArrowLeft size={20} />
-            </button>
-            <h1 className="font-display text-[18px] font-semibold text-ink m-0">Le Défi</h1>
-          </div>
-        </div>
-        <div className="max-w-[600px] mx-auto px-5 py-10 text-center">
+      <DrLoShell back={BACK} palette={palette}>
+        <div className="py-10 text-center">
           <div className="w-16 h-16 rounded-2xl bg-gold-soft flex items-center justify-center mx-auto mb-5">
             <Sparkles size={28} className="text-gold" />
           </div>
@@ -220,13 +216,13 @@ const DefiPage: React.FC = () => {
             Ton totem est la clé pour lancer ton défi. Complète tes évaluations pour le découvrir.
           </p>
           <button
-            onClick={() => navigate('/assessment')}
-            className="px-6 py-3 rounded-[14px] border-none bg-gold text-white text-[15px] font-bold cursor-pointer shadow-soft"
+            onClick={() => navigate('/espace/mental')}
+            className="px-6 py-3 rounded-[14px] border-none bg-gold text-ink text-[15px] font-bold cursor-pointer shadow-soft"
           >
             Compléter mes tests →
           </button>
         </div>
-      </div>
+      </DrLoShell>
     );
   }
 
@@ -247,24 +243,11 @@ const DefiPage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-paper drl-screen drl-page">
-      <div className="sticky top-0 z-20 bg-paper/95 backdrop-blur-md border-b border-line">
-        <div className="max-w-[600px] mx-auto px-5 py-3.5 flex items-center gap-3">
-          <button onClick={() => navigate('/espace')} aria-label="Retour à mon espace" className="p-0 border-none bg-transparent cursor-pointer text-ink">
-            <ArrowLeft size={20} />
-          </button>
-          <h1 className="font-display text-[18px] font-semibold text-ink m-0">Le Défi</h1>
-        </div>
-      </div>
-
-      <div className="max-w-[600px] mx-auto px-5 py-6">
-        <div className="text-center mb-6">
-          <h2 className="font-display text-xl font-semibold text-ink m-0 mb-1">
-            Kan moo ma gën a xam ?
-          </h2>
-          <p className="text-[13px] text-muted m-0">Qui te connaît le mieux ?</p>
-        </div>
-
+    <DrLoShell back={BACK} palette={palette}>
+      <div style={{ paddingTop: 18 }}>
+        <p className="m-0 text-[13px] font-bold uppercase tracking-[0.12em]" style={{ color: '#F09A7A' }}>Le Défi</p>
+        <h1 className="font-display m-0 mt-1 text-[26px] font-semibold text-ink leading-[1.2]">Kan moo ma gën a xam ?</h1>
+        <p className="text-[15px] text-ink-soft m-0 mt-1 mb-5">Qui te connaît le mieux ?</p>
         <div
           className="rounded-[18px] overflow-hidden mb-6 shadow-soft"
           style={{ background: 'linear-gradient(160deg, #2A2520 0%, #3D352C 100%)' }}
@@ -274,7 +257,7 @@ const DefiPage: React.FC = () => {
               <img src={img} alt={sig.label} className="w-full h-full object-cover" />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-[10px] font-bold tracking-[0.15em] uppercase text-gold/60 m-0">
+              <p className="text-[13px] font-bold tracking-[0.15em] uppercase text-gold/60 m-0">
                 Ton Totem
               </p>
               <h3 className="font-display text-lg font-semibold text-[#F4F1E9] m-0 mt-0.5">
@@ -286,7 +269,7 @@ const DefiPage: React.FC = () => {
 
         {hasActiveDefis && (
           <div className="mb-6">
-            <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-muted m-0 mb-3">
+            <p className="text-[13px] font-bold uppercase tracking-[0.12em] text-muted m-0 mb-3">
               Tes défis en cours
             </p>
             <div className="flex flex-col gap-3">
@@ -300,7 +283,7 @@ const DefiPage: React.FC = () => {
                     <h4 className="font-display text-[15px] font-semibold text-ink m-0 truncate">
                       {ad.titre || 'Mon défi'}
                     </h4>
-                    <span className="text-[11px] text-muted flex items-center gap-1 flex-shrink-0 ml-2">
+                    <span className="text-[13px] text-muted flex items-center gap-1 flex-shrink-0 ml-2">
                       <Clock size={12} />
                       {formatTimeLeft(ad.expiresAt)}
                     </span>
@@ -321,7 +304,7 @@ const DefiPage: React.FC = () => {
 
         {!hasActiveDefis && (
           <div className="mb-8">
-            <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-muted m-0 mb-4">
+            <p className="text-[13px] font-bold uppercase tracking-[0.12em] text-muted m-0 mb-4">
               Comment ça marche
             </p>
             <div className="flex flex-col gap-4">
@@ -346,7 +329,7 @@ const DefiPage: React.FC = () => {
             disabled={!canCreate}
             className={`w-full py-3.5 rounded-[14px] border-none text-[15px] font-bold cursor-pointer shadow-soft flex items-center justify-center gap-2 ${
               canCreate
-                ? 'bg-gold text-white'
+                ? 'bg-gold text-ink'
                 : 'bg-line text-muted cursor-not-allowed'
             }`}
           >
@@ -354,7 +337,7 @@ const DefiPage: React.FC = () => {
             {hasActiveDefis || terminatedDefis.length > 0 ? 'Créer un nouveau défi' : 'Créer mon défi'}
           </button>
           {!canCreate && (
-            <p className="text-[12px] text-muted text-center m-0 mt-2">
+            <p className="text-[13px] text-muted text-center m-0 mt-2">
               Maximum 3 défis actifs simultanément
             </p>
           )}
@@ -362,7 +345,7 @@ const DefiPage: React.FC = () => {
 
         {terminatedDefis.length > 0 && (
           <div className="mb-6">
-            <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-muted m-0 mb-3">
+            <p className="text-[13px] font-bold uppercase tracking-[0.12em] text-muted m-0 mb-3">
               Terminés
             </p>
             <div className="flex flex-col gap-3">
@@ -376,7 +359,7 @@ const DefiPage: React.FC = () => {
                     <h4 className="font-display text-[15px] font-semibold text-ink m-0 truncate">
                       {td.titre ? td.titre : td.displayName ? `Défi de ${td.displayName}` : 'Mon défi'}
                     </h4>
-                    <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-line text-muted flex-shrink-0 ml-2 flex items-center gap-1">
+                    <span className="text-[13px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-line text-muted flex-shrink-0 ml-2 flex items-center gap-1">
                       <CheckCircle size={10} />
                       Terminé
                     </span>
@@ -389,7 +372,7 @@ const DefiPage: React.FC = () => {
                           : `${td.nbReponses} réponse${td.nbReponses > 1 ? 's' : ''} · ${td.scoreMoyen || 0} %`
                         : '…'}
                     </span>
-                    <span className="text-[11px] text-muted">
+                    <span className="text-[13px] text-muted">
                       {td.endedAt
                         ? td.endedAt.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })
                         : td.expiresAt && td.expiresAt.getTime() < Date.now()
@@ -418,7 +401,7 @@ const DefiPage: React.FC = () => {
         )}
 
       </div>
-    </div>
+    </DrLoShell>
   );
 };
 

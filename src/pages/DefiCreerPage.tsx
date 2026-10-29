@@ -1,7 +1,8 @@
 import '../components/accueil/accueil.css';
 import React, { useState, useEffect, useRef } from 'react';
+import PageHeader from '../components/ui/PageHeader';
 import { useNavigate, Navigate } from 'react-router-dom';
-import { ArrowLeft, Sparkles, Info, Loader2, RefreshCw, X, Lock, ChevronDown, ChevronUp, Check } from 'lucide-react';
+import { Sparkles, Info, Loader2, RefreshCw, X, Lock, ChevronDown, ChevronUp, Check } from 'lucide-react';
 import { doc, updateDoc } from 'firebase/firestore';
 import { db } from '../utils/firebase';
 import { useAuth } from '../contexts/AuthContext';
@@ -175,20 +176,13 @@ const DefiCreerPage: React.FC = () => {
   }
 
   if (!isAuthenticated) return <Navigate to="/patient/access" replace />;
-  if (!defiEnabled) return <Navigate to="/assessment" replace />;
+  if (!defiEnabled) return <Navigate to="/espace" replace />;
   if (!totemRevealed) return <Navigate to="/defi" replace />;
 
   if (tooManyDefis) {
     return (
       <div className="min-h-screen bg-paper drl-screen drl-page">
-        <div className="sticky top-0 z-20 bg-paper/95 backdrop-blur-md border-b border-line">
-          <div className="max-w-[600px] mx-auto px-5 py-3.5 flex items-center gap-3">
-            <button onClick={() => navigate('/defi', { replace: true })} className="p-0 border-none bg-transparent cursor-pointer text-ink">
-              <ArrowLeft size={20} />
-            </button>
-            <h1 className="font-display text-[18px] font-semibold text-ink m-0">Créer mon défi</h1>
-          </div>
-        </div>
+        <PageHeader onBack={() => navigate('/defi', { replace: true })} title={"Créer mon défi"} />
         <div className="max-w-[600px] mx-auto px-5 py-10 text-center">
           <p className="text-[15px] text-ink m-0 mb-4">
             Tu as déjà 3 défis en cours — c'est le maximum.
@@ -375,14 +369,7 @@ const DefiCreerPage: React.FC = () => {
 
     return (
       <div className="min-h-screen bg-paper drl-screen drl-page">
-        <div className="sticky top-0 z-20 bg-paper/95 backdrop-blur-md border-b border-line">
-          <div className="max-w-[600px] mx-auto px-5 py-3.5 flex items-center gap-3">
-            <button onClick={() => { setStep('form'); setReplacingIndex(null); }} className="p-0 border-none bg-transparent cursor-pointer text-ink">
-              <ArrowLeft size={20} />
-            </button>
-            <h1 className="font-display text-[18px] font-semibold text-ink m-0">Aperçu des questions</h1>
-          </div>
-        </div>
+        <PageHeader onBack={() => { setStep('form'); setReplacingIndex(null); }} title={"Aperçu des questions"} />
 
         <div className="max-w-[600px] mx-auto px-5 py-6">
           <p className="text-[13px] text-muted m-0 mb-1">
@@ -412,19 +399,19 @@ const DefiCreerPage: React.FC = () => {
               </button>
               {lockedExpanded && (
                 <div className="mt-3 pt-3 border-t border-amber-200">
-                  <p className="text-[12px] text-amber-700 m-0 mb-2">
+                  <p className="text-[13px] text-amber-700 m-0 mb-2">
                     Complete ces tests pour débloquer plus de questions :
                   </p>
                   <div className="flex flex-wrap gap-1.5">
                     {lockedDims.map(d => (
-                      <span key={d.key} className="px-2 py-1 rounded-md bg-amber-100 text-[11px] text-amber-800 font-medium">
+                      <span key={d.key} className="px-2 py-1 rounded-md bg-amber-100 text-[13px] text-amber-800 font-medium">
                         {d.theme}
                       </span>
                     ))}
                   </div>
                   <button
-                    onClick={() => navigate('/assessment')}
-                    className="mt-3 text-[12px] text-amber-700 font-semibold bg-transparent border-none cursor-pointer p-0 underline"
+                    onClick={() => navigate('/espace')}
+                    className="mt-3 text-[13px] text-amber-700 font-semibold bg-transparent border-none cursor-pointer p-0 underline"
                   >
                     Passer un test
                   </button>
@@ -439,14 +426,14 @@ const DefiCreerPage: React.FC = () => {
               <div key={q.key} className="rounded-[14px] border border-line bg-card p-4">
                 <p className="text-[14px] text-ink m-0 leading-snug">{q.text}</p>
                 {q.theme && (
-                  <span className="inline-block mt-1.5 px-2 py-0.5 rounded-md bg-gold-soft text-[11px] font-medium text-gold">
+                  <span className="inline-block mt-1.5 px-2 py-0.5 rounded-md bg-gold-soft text-[13px] font-medium text-gold">
                     {q.theme}
                   </span>
                 )}
                 {replacements < MAX_REPLACEMENTS && available.length > 0 && (
                   <button
                     onClick={() => setReplacingIndex(replacingIndex === i ? null : i)}
-                    className="mt-2 text-[12px] text-gold font-medium flex items-center gap-1 bg-transparent border-none cursor-pointer p-0"
+                    className="mt-2 text-[13px] text-gold font-medium flex items-center gap-1 bg-transparent border-none cursor-pointer p-0"
                   >
                     <RefreshCw size={12} />
                     Remplacer
@@ -456,7 +443,7 @@ const DefiCreerPage: React.FC = () => {
                 {replacingIndex === i && (
                   <div className="mt-3 pt-3 border-t border-line">
                     <div className="flex items-center justify-between mb-2">
-                      <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-muted m-0">
+                      <p className="text-[13px] font-bold uppercase tracking-[0.12em] text-muted m-0">
                         Choisir une autre question
                       </p>
                       <button
@@ -475,7 +462,7 @@ const DefiCreerPage: React.FC = () => {
                         >
                           {aq.text}
                           {aq.theme && (
-                            <span className="inline-block ml-1.5 px-1.5 py-0.5 rounded bg-gold-soft text-[10px] font-medium text-gold align-middle">
+                            <span className="inline-block ml-1.5 px-1.5 py-0.5 rounded bg-gold-soft text-[13px] font-medium text-gold align-middle">
                               {aq.theme}
                             </span>
                           )}
@@ -496,10 +483,10 @@ const DefiCreerPage: React.FC = () => {
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex-1">
                       <div className="flex items-center gap-1.5 mb-1">
-                        <span className="text-[11px] font-bold uppercase tracking-[0.12em] text-sage">Perso</span>
+                        <span className="text-[13px] font-bold uppercase tracking-[0.12em] text-sage">Perso</span>
                       </div>
                       <p className="text-[14px] text-ink m-0 leading-snug">{perso.stem}</p>
-                      <p className="text-[12px] text-muted m-0 mt-1">
+                      <p className="text-[13px] text-muted m-0 mt-1">
                         Ta réponse : <span className="font-medium text-ink">{sp.displayLabel}</span>
                       </p>
                     </div>
@@ -517,8 +504,8 @@ const DefiCreerPage: React.FC = () => {
             {totemPreview && (
               <div className="rounded-[14px] border border-gold/30 bg-gold-soft p-4">
                 <div className="flex items-center gap-2 mb-1">
-                  <span className="text-[12px]">🐾</span>
-                  <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-gold m-0">Question totem</p>
+                  <span className="text-[13px]">🐾</span>
+                  <p className="text-[13px] font-bold uppercase tracking-[0.12em] text-gold m-0">Question totem</p>
                 </div>
                 <p className="text-[14px] text-ink m-0 leading-snug">{totemPreview.text}</p>
               </div>
@@ -531,7 +518,7 @@ const DefiCreerPage: React.FC = () => {
               <label className="block text-[13px] font-semibold text-ink mb-2">
                 Questions perso (0 à {MAX_PERSO})
               </label>
-              <p className="text-[12px] text-muted m-0 mb-3">
+              <p className="text-[13px] text-muted m-0 mb-3">
                 Choisis des questions fun et réponds toi-même. Tes proches devront deviner ta réponse.
               </p>
               <div className="flex flex-col gap-2">
@@ -559,7 +546,7 @@ const DefiCreerPage: React.FC = () => {
 
                       {isAnswering && (
                         <div className="px-4 pb-3 pt-1 border-t border-line">
-                          <p className="text-[12px] text-muted m-0 mb-2">Quelle est ta vraie réponse ?</p>
+                          <p className="text-[13px] text-muted m-0 mb-2">Quelle est ta vraie réponse ?</p>
                           <div className="flex flex-col gap-1.5">
                             {perso.options.map(opt => (
                               <button
@@ -588,13 +575,13 @@ const DefiCreerPage: React.FC = () => {
                                     OK
                                   </button>
                                 </div>
-                                <span className="text-[11px] text-muted">{customAnswerText.trim().length}/30</span>
+                                <span className="text-[13px] text-muted">{customAnswerText.trim().length}/30</span>
                               </div>
                             )}
                           </div>
                           <button
                             onClick={() => { setAnsweringPersoId(null); setCustomAnswerText(''); }}
-                            className="mt-2 text-[12px] text-muted bg-transparent border-none cursor-pointer p-0"
+                            className="mt-2 text-[13px] text-muted bg-transparent border-none cursor-pointer p-0"
                           >
                             Annuler
                           </button>
@@ -639,14 +626,7 @@ const DefiCreerPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-paper drl-screen drl-page">
-      <div className="sticky top-0 z-20 bg-paper/95 backdrop-blur-md border-b border-line">
-        <div className="max-w-[600px] mx-auto px-5 py-3.5 flex items-center gap-3">
-          <button onClick={() => navigate('/defi', { replace: true })} className="p-0 border-none bg-transparent cursor-pointer text-ink">
-            <ArrowLeft size={20} />
-          </button>
-          <h1 className="font-display text-[18px] font-semibold text-ink m-0">Créer mon défi</h1>
-        </div>
-      </div>
+      <PageHeader onBack={() => navigate('/defi', { replace: true })} title={"Créer mon défi"} />
 
       <div className="max-w-[600px] mx-auto px-5 py-6 flex flex-col gap-7">
         {/* Audience */}
@@ -681,7 +661,7 @@ const DefiCreerPage: React.FC = () => {
             maxLength={30}
             className="w-full px-4 py-3 rounded-[12px] border border-line bg-white text-ink text-[15px] outline-none focus:border-gold transition-colors"
           />
-          <p className="text-[12px] text-muted mt-1.5 m-0">
+          <p className="text-[13px] text-muted mt-1.5 m-0">
             {titreClean.length}/30 caractères
             {titreClean.length > 0 && !titreValid && ' — titre invalide'}
           </p>
@@ -698,7 +678,7 @@ const DefiCreerPage: React.FC = () => {
             maxLength={20}
             className="w-full px-4 py-3 rounded-[12px] border border-line bg-white text-ink text-[15px] outline-none focus:border-gold transition-colors"
           />
-          <p className="text-[12px] text-muted mt-1.5 m-0">
+          <p className="text-[13px] text-muted mt-1.5 m-0">
             {nameClean.length}/20 caractères
             {nameClean.length > 0 && !nameValid && ' — pseudo invalide'}
           </p>
@@ -747,7 +727,7 @@ const DefiCreerPage: React.FC = () => {
               <label className="text-[13px] font-semibold text-ink">Tests sensibles (optionnels)</label>
               <div className="group relative">
                 <Info size={14} className="text-muted cursor-help" />
-                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-3 py-2 rounded-lg bg-ink text-white text-[12px] leading-snug w-[200px] opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
+                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-3 py-2 rounded-lg bg-ink text-white text-[13px] leading-snug w-[200px] opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
                   Ces tests sont plus personnels. Tu choisis lesquels inclure dans ton défi.
                 </div>
               </div>
@@ -818,7 +798,7 @@ const DefiCreerPage: React.FC = () => {
                 </div>
                 <div>
                   <p className="text-[14px] font-medium text-ink m-0">{opt.label}</p>
-                  <p className="text-[12px] text-muted m-0 mt-0.5">{opt.desc}</p>
+                  <p className="text-[13px] text-muted m-0 mt-0.5">{opt.desc}</p>
                 </div>
               </button>
             ))}
@@ -829,7 +809,7 @@ const DefiCreerPage: React.FC = () => {
         <div className="flex items-center justify-between">
           <div>
             <label className="text-[13px] font-semibold text-ink">Autoriser les petits mots 💌</label>
-            <p className="text-[12px] text-muted m-0 mt-0.5">Tes proches pourront t'écrire un message</p>
+            <p className="text-[13px] text-muted m-0 mt-0.5">Tes proches pourront t'écrire un message</p>
           </div>
           <button
             onClick={() => setPetitsMots(!petitsMots)}

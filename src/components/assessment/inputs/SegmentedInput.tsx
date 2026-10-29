@@ -77,7 +77,7 @@ const SegmentedInput: React.FC<SegmentedInputProps> = ({
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              fontSize: 12,
+              fontSize: 13,
               fontWeight: 800,
               color: isSelected ? '#fff' : accentColor,
               marginTop: hint ? 1 : 0,
@@ -100,7 +100,7 @@ const SegmentedInput: React.FC<SegmentedInputProps> = ({
                 <span style={{
                   display: 'block',
                   marginTop: 4,
-                  fontSize: 12,
+                  fontSize: 13,
                   fontWeight: 400,
                   color: '#A79E90',
                   lineHeight: 1.45,

@@ -99,6 +99,10 @@
   path = "/api/d/*"
   function = "og-defi"
 
+[[edge_functions]]
+  path = "/c/*"
+  function = "og-chaine"
+
 # Functions configuration
 [functions]
   directory = "netlify/functions"

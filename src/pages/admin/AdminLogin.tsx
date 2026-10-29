@@ -1,3 +1,4 @@
+import "../../components/accueil/accueil.css";
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { ShieldAlert, ArrowLeft, AlertCircle } from "lucide-react";
@@ -55,9 +56,9 @@ const AdminLogin: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-paper">
+    <div className="min-h-screen drl-screen drl-page">
       {/* Header */}
-      <div className="bg-ink py-6">
+      <div className="py-6 border-b border-line">
         <div className="container mx-auto px-4">
           <div className="flex justify-between items-center">
             <Link to="/" className="text-white flex items-center">
@@ -170,7 +171,7 @@ const AdminLogin: React.FC = () => {
                   <button
                     type="submit"
                     disabled={isLoading}
-                    className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-card text-white bg-ink hover:bg-ink/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-accent disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="group relative w-full flex justify-center py-3 px-4 border border-transparent text-[17px] font-bold rounded-card bg-gold disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {isLoading ? "Connexion en cours..." : "Se connecter"}
                   </button>

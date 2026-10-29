@@ -4,6 +4,7 @@
  * Espace Dr Lô (rôle staff/{uid}.drlo === true) :
  *   drlo_save { id?, name, description, price, framingText?, requireFramingAck?, rules, photo?, status? }
  *             → crée (sans id) ou modifie (avec id) une chaîne. photo = { data (base64), mime }.
+ *   drlo_delete { id, confirmName } → supprime définitivement la chaîne, ses publications, commentaires, membres et fichiers
  *   drlo_list → toutes les chaînes (même archivées) avec le nombre de membres
  *   drlo_activity → nouveautés depuis ta dernière visite (nouveaux membres, nouveaux commentaires, réponses des personnes)
  *   drlo_seen     → remet ces compteurs à zéro
@@ -19,6 +20,7 @@
 const { admin, db, verifyAuth } = require('./_firebase');
 const { reserveKoris, commitKoris, releaseKoris } = require('./_koris');
 const CH = require('./_drloChannels');
+const { deleteChannel } = require('./_channelDelete');
 const C = require('./_drloComments');
 const BUCKET = process.env.FIREBASE_STORAGE_BUCKET || 'health-e-af2bf.firebasestorage.app';
 
@@ -109,7 +111,7 @@ exports.handler = async (event) => {
 
   try {
     // ───────── Dr Lô ─────────
-    if (action === 'drlo_save' || action === 'drlo_list' || action === 'drlo_activity' || action === 'drlo_seen') {
+    if (action === 'drlo_save' || action === 'drlo_delete' || action === 'drlo_list' || action === 'drlo_activity' || action === 'drlo_seen') {
       if (!(await isDrLo(uid))) return reply(403, { error: 'Réservé à Dr Lô' });
 
       if (action === 'drlo_seen') {
@@ -140,6 +142,16 @@ exports.handler = async (event) => {
         if (fu) fu.docs.forEach((d) => { const c = d.data(); if (!counted.has(d.id) && !c.hidden && c.status === 'public') bump(c.channelId, 'replies'); });
         const badge = Object.values(byChannel).reduce((n, x) => n + x.members + x.comments + x.replies, 0);
         return reply(200, { badge, distress, byChannel });
+      }
+
+      if (action === 'drlo_delete') {
+        const id = String(body.id || '');
+        const ref = id ? db.collection('channels').doc(id) : null;
+        const cs = ref ? await ref.get() : null;
+        if (!cs || !cs.exists) return reply(404, { error: 'Chaîne introuvable' });
+        if (body.confirmName !== cs.data().name) return reply(400, { error: 'Écris le nom exact de la chaîne pour confirmer.' });
+        const counts = await deleteChannel(db, admin.storage().bucket(BUCKET), id);
+        return reply(200, { ok: true, deleted: counts });
       }
 
       if (action === 'drlo_list') {

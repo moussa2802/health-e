@@ -110,7 +110,7 @@ const TestHistoryPanel: React.FC<TestHistoryPanelProps> = ({
 
       {sortedHistory.length > 0 && (
         <div className="border-t border-line pt-3">
-          <p className="text-[11px] text-muted font-semibold uppercase tracking-wide mb-2 flex items-center gap-1.5">
+          <p className="text-[13px] text-muted font-semibold uppercase tracking-wide mb-2 flex items-center gap-1.5">
             <Clock size={11} /> Historique
           </p>
           {[...sortedHistory].reverse().map((entry, idx) => {

@@ -3,7 +3,15 @@ export default {
   content: ['./index.html', './src/**/*.{js,ts,jsx,tsx}'],
   theme: {
     extend: {
+      // Charte Health-e (voir CHARTE.md) : texte jamais sous 13 px. text-xs passe de 12 à 13 px.
+      fontSize: {
+        xs: ['13px', { lineHeight: '1.125rem' }],
+      },
       colors: {
+        he: {
+          action: '#E9C88F', ink: '#1C140D', title: '#FBF5EA', text: '#F4EEE4', soft: '#DCD3C5', muted: '#CFC6B8', faint: '#A79E90',
+          mental: '#9DBFAF', intime: '#E8A0B8', social: '#F09A7A', journal: '#C9B8E4', ok: '#7FD1A0', attention: '#F08A7A',
+        },
         paper:  { DEFAULT: '#F3F1EA', dark: '#E8E5DC' },
         card:   '#FFFFFF',
         ink:    { DEFAULT: '#17181B', soft: '#4B4D55', light: '#6B7280' },

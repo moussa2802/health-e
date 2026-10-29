@@ -104,7 +104,7 @@ const ConseilsCard: React.FC<ConseilsCardProps> = ({
             Générer
           </span>
           {conseilsCost > 0 && (
-            <span className={`text-[10px] font-bold ${affordable ? 'text-sage' : 'text-muted'}`}>
+            <span className={`text-[13px] font-bold ${affordable ? 'text-sage' : 'text-muted'}`}>
               {credits(conseilsCost)} · reste {balance - conseilsCost}
             </span>
           )}
@@ -165,21 +165,21 @@ const ConseilsCard: React.FC<ConseilsCardProps> = ({
             <p className="text-xs text-muted">Analyse Dr Lô · {niveau}</p>
           </div>
           {data.fromCache && (
-            <span className="bg-sage-soft text-ok text-[10px] font-bold px-2 py-1 rounded-lg flex-shrink-0 flex items-center gap-1">
+            <span className="bg-sage-soft text-ok text-[13px] font-bold px-2 py-1 rounded-lg flex-shrink-0 flex items-center gap-1">
               <Check size={10} /> Sauvegardé
             </span>
           )}
         </div>
 
         <div className="bg-sage-soft rounded-xl p-4 mb-4 border border-sage/10">
-          <p className="text-[11px] font-bold text-sage uppercase tracking-wide mb-1.5 flex items-center gap-1.5">
+          <p className="text-[13px] font-bold text-sage uppercase tracking-wide mb-1.5 flex items-center gap-1.5">
             <Pin size={12} /> Ce que ça veut dire
           </p>
           <p className="text-[13px] text-ink-soft leading-relaxed">{data.signification}</p>
         </div>
 
         <div className="mb-4">
-          <p className="text-[11px] font-bold text-accent uppercase tracking-wide mb-2.5 flex items-center gap-1.5">
+          <p className="text-[13px] font-bold text-accent uppercase tracking-wide mb-2.5 flex items-center gap-1.5">
             <Check size={12} /> Mes 3 conseils
           </p>
           <div className="flex flex-col gap-2.5">
@@ -193,7 +193,7 @@ const ConseilsCard: React.FC<ConseilsCardProps> = ({
         </div>
 
         <div className="bg-gold-soft rounded-xl p-4 border border-gold/10 mb-4">
-          <p className="text-[11px] font-bold text-gold uppercase tracking-wide mb-1.5 flex items-center gap-1.5">
+          <p className="text-[13px] font-bold text-gold uppercase tracking-wide mb-1.5 flex items-center gap-1.5">
             <Dumbbell size={12} /> Exercice de la semaine
           </p>
           <p className="text-[13px] font-bold text-ink mb-1">{data.exercice.titre}</p>
@@ -202,7 +202,7 @@ const ConseilsCard: React.FC<ConseilsCardProps> = ({
 
         {data.avis_pro && (
           <div className="bg-accent-soft rounded-xl p-3.5 border border-accent/15 mb-4">
-            <p className="text-[11px] font-bold text-accent uppercase tracking-wide mb-1 flex items-center gap-1.5">
+            <p className="text-[13px] font-bold text-accent uppercase tracking-wide mb-1 flex items-center gap-1.5">
               <Stethoscope size={12} /> Avis du Dr Lô
             </p>
             <p className="text-[13px] text-accent leading-relaxed">{data.avis_pro}</p>
@@ -210,13 +210,13 @@ const ConseilsCard: React.FC<ConseilsCardProps> = ({
         )}
 
         <div className="flex items-center justify-between flex-wrap gap-2 border-t border-line pt-3">
-          <p className="text-[11px] text-muted">
+          <p className="text-[13px] text-muted">
             {data.fromCache ? `Analyse sauvegardée · ${formatRelativeDate(data.generatedAt)}` : 'Analyse générée et sauvegardée'}
           </p>
           <button
             onClick={() => load(true)}
             disabled={!canAfford('conseils') || !isAiAvailable()}
-            className={`flex items-center gap-1.5 bg-transparent border text-[11px] font-semibold px-3 py-1.5 rounded-lg transition-colors ${
+            className={`flex items-center gap-1.5 bg-transparent border text-[13px] font-semibold px-3 py-1.5 rounded-lg transition-colors ${
               canAfford('conseils') && isAiAvailable()
                 ? 'border-sage/20 text-sage cursor-pointer hover:bg-sage-soft'
                 : 'border-line text-muted cursor-not-allowed'

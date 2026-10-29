@@ -91,7 +91,7 @@ const FloatingKori: React.FC = () => {
 
           {/* Balance badge */}
           <div
-            className="absolute -top-1 -right-1 min-w-[22px] h-[22px] rounded-full text-white text-[11px] font-extrabold flex items-center justify-center px-1.5 border-2 border-white font-sans"
+            className="absolute -top-1 -right-1 min-w-[22px] h-[22px] rounded-full text-white text-[13px] font-extrabold flex items-center justify-center px-1.5 border-2 border-white font-sans"
             style={{ background: badgeColor, boxShadow: '0 2px 6px rgba(0,0,0,0.2)' }}
           >
             {balance}

@@ -169,7 +169,7 @@ const WelcomeFlow: React.FC = () => {
       </div>
 
       {/* Numéro slide */}
-      <p className="mt-3 text-[11px] text-muted">
+      <p className="mt-3 text-[13px] text-muted">
         {slideIndex + 1} / {WELCOME_SLIDES.length}
       </p>
     </div>

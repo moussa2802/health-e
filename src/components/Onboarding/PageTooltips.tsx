@@ -155,12 +155,12 @@ const TooltipBubble: React.FC<{
 
       {/* Badge + skip */}
       <div className="flex items-center justify-between mb-2">
-        <span className="bg-sage text-white text-[10px] font-bold px-2 py-0.5 rounded-pill">
+        <span className="bg-sage text-white text-[13px] font-bold px-2 py-0.5 rounded-pill">
           {current} / {total}
         </span>
         <button
           onClick={onSkip}
-          className="bg-transparent border-0 text-muted text-[11px] cursor-pointer font-semibold hover:text-ink-soft transition-colors p-0"
+          className="bg-transparent border-0 text-muted text-[13px] cursor-pointer font-semibold hover:text-ink-soft transition-colors p-0"
         >
           Passer tout
         </button>

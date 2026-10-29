@@ -101,7 +101,7 @@ const AcheterKorisPage: React.FC = () => {
         <div className="flex items-center gap-3 mb-6">
           <img src={KORI_IMG} alt="" className="w-12 h-12 rounded-full object-cover border-2 border-gold/20" />
           <div>
-            <div className="text-[11px] text-muted">Mon solde actuel</div>
+            <div className="text-[13px] text-muted">Mon solde actuel</div>
             <div className="text-2xl font-extrabold text-gold">{balance} <span className="text-sm font-medium">{CREDIT.many}</span></div>
           </div>
         </div>
@@ -132,11 +132,11 @@ const AcheterKorisPage: React.FC = () => {
                 </span>
               <div>
                 {pack.popular ? (
-                  <span className="text-[10px] font-bold text-gold bg-gold/10 px-2 py-0.5 rounded-pill mb-1.5 inline-block">
+                  <span className="text-[13px] font-bold text-gold bg-gold/10 px-2 py-0.5 rounded-pill mb-1.5 inline-block">
                     POPULAIRE
                   </span>
                 ) : (
-                  <span className="text-[10px] font-semibold text-muted mb-1.5 inline-block">
+                  <span className="text-[13px] font-semibold text-muted mb-1.5 inline-block">
                     {pack.label}
                   </span>
                 )}
@@ -165,7 +165,7 @@ const AcheterKorisPage: React.FC = () => {
               >
                 {loading ? <><Loader2 size={18} className="animate-spin" /> Ouverture du paiement…</> : <>Payer {formatNumber(pack.price)} F · {credits(pack.koris)}</>}
               </button>
-              <p className="m-0 mt-2 text-center text-[11.5px] text-muted">Tu seras redirigé vers PayTech (Orange Money, Wave ou carte).</p>
+              <p className="m-0 mt-2 text-center text-[13px] text-muted">Tu seras redirigé vers PayTech (Orange Money, Wave ou carte).</p>
             </div>
           );
         })()}

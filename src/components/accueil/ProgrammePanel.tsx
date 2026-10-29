@@ -185,7 +185,7 @@ const ProgrammePanel: React.FC<ProgrammePanelProps> = props => {
             style={{ flex: 1, minWidth: 0, border: 0, background: 'transparent', color: C.text, textAlign: 'left', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', gap: 8, fontFamily: 'inherit' }}>
             <span style={{ flex: 1, minWidth: 0 }}>
               <span style={{ display: 'block', fontSize: 15, fontWeight: 700, color: done ? C.muted : C.text }}>{e.title}</span>
-              <span style={{ display: 'block', fontSize: 12.5, color: done ? C.sage : C.faint, marginTop: 2 }}>{done ? `Fait · ${tag}` : tag}</span>
+              <span style={{ display: 'block', fontSize: 13, color: done ? C.sage : C.faint, marginTop: 2 }}>{done ? `Fait · ${tag}` : tag}</span>
             </span>
             <ChevronDown size={18} color={C.faint} aria-hidden="true" style={{ transform: expanded ? 'rotate(180deg)' : 'none', transition: 'transform .2s' }} />
           </button>
@@ -207,7 +207,7 @@ const ProgrammePanel: React.FC<ProgrammePanelProps> = props => {
               <div role="group" aria-label="Mon humeur maintenant" style={{ display: 'grid', gridTemplateColumns: 'repeat(5, minmax(0, 1fr))', gap: 6 }}>
                 {MOODS.map(md => (
                   <button key={md.id} onClick={() => pickMood(md.id)} className="drl-mood" aria-label={md.label}
-                    style={{ minHeight: 68, borderRadius: 14, border: `1px solid ${C.line}`, background: C.glass, color: C.text, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 5, fontSize: 10.5, fontWeight: 600, cursor: 'pointer', padding: '6px 2px', fontFamily: 'inherit' }}>
+                    style={{ minHeight: 68, borderRadius: 14, border: `1px solid ${C.line}`, background: C.glass, color: C.text, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 5, fontSize: 13, fontWeight: 600, cursor: 'pointer', padding: '6px 2px', fontFamily: 'inherit' }}>
                     <MoodIcon id={md.id} color={md.color} />
                     {md.label}
                   </button>
@@ -257,8 +257,8 @@ const ProgrammePanel: React.FC<ProgrammePanelProps> = props => {
   const routinesBlock = (myRoutines.length > 0 || suggest.length > 0) ? (
     <div style={{ ...card, padding: 14, display: 'flex', flexDirection: 'column', gap: 10 }}>
       <div>
-        <p style={{ margin: 0, fontSize: 14.5, fontWeight: 700 }}>{props.totem ? `Mes routines ${props.totem.words.du}` : 'Mes routines'}</p>
-        <p style={{ margin: '2px 0 0', fontSize: 12.5, color: C.faint }}>En plus de tes 3 engagements. Tu peux en retirer quand tu veux.</p>
+        <p style={{ margin: 0, fontSize: 15, fontWeight: 700 }}>{props.totem ? `Mes routines ${props.totem.words.du}` : 'Mes routines'}</p>
+        <p style={{ margin: '2px 0 0', fontSize: 13, color: C.faint }}>En plus de tes 3 engagements. Tu peux en retirer quand tu veux.</p>
       </div>
       {myRoutines.map(r => {
         const done = routineDone(p, today, r.id);
@@ -270,7 +270,7 @@ const ProgrammePanel: React.FC<ProgrammePanelProps> = props => {
             </button>
             <span style={{ flex: 1, minWidth: 0 }}>
               <span style={{ display: 'block', fontSize: 14, fontWeight: 700, color: done ? C.muted : C.text }}>{r.title}</span>
-              <span style={{ display: 'block', fontSize: 12.5, color: C.faint, marginTop: 2 }}>{WHEN[r.when]} · {gtxt(r.text)}</span>
+              <span style={{ display: 'block', fontSize: 13, color: C.faint, marginTop: 2 }}>{WHEN[r.when]} · {gtxt(r.text)}</span>
             </span>
             <button onClick={() => props.onRoutineSet(r.id, false)} aria-label={`Retirer « ${r.title} » de mon programme`}
               style={{ flexShrink: 0, width: 36, height: 36, border: 0, background: 'transparent', color: C.faint, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -281,14 +281,14 @@ const ProgrammePanel: React.FC<ProgrammePanelProps> = props => {
       })}
       {suggest.length > 0 && (
         <div style={{ borderTop: myRoutines.length ? `1px solid ${C.line}` : 0, paddingTop: myRoutines.length ? 10 : 0, display: 'flex', flexDirection: 'column', gap: 8 }}>
-          {myRoutines.length > 0 && <p style={{ margin: 0, fontSize: 12.5, color: C.faint }}>{props.totem!.words.ton.charAt(0).toUpperCase() + props.totem!.words.ton.slice(1)} te propose aussi :</p>}
+          {myRoutines.length > 0 && <p style={{ margin: 0, fontSize: 13, color: C.faint }}>{props.totem!.words.ton.charAt(0).toUpperCase() + props.totem!.words.ton.slice(1)} te propose aussi :</p>}
           {suggest.map(r => (
             <button key={r.id} onClick={() => { props.onRoutineSet(r.id, true); say('Ajouté à ton programme. Tu pourras le retirer à tout moment.'); }}
               style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderRadius: 12, border: '1px dashed rgba(255,255,255,.22)', background: 'transparent', color: C.text, cursor: 'pointer', textAlign: 'left', fontFamily: 'inherit' }}>
               <Plus size={16} color={palette.accent} aria-hidden="true" />
               <span style={{ flex: 1, minWidth: 0 }}>
-                <span style={{ display: 'block', fontSize: 13.5, fontWeight: 700 }}>{r.title}</span>
-                <span style={{ display: 'block', fontSize: 12, color: C.faint }}>{WHEN[r.when]} · {gtxt(r.text)}</span>
+                <span style={{ display: 'block', fontSize: 14, fontWeight: 700 }}>{r.title}</span>
+                <span style={{ display: 'block', fontSize: 13, color: C.faint }}>{WHEN[r.when]} · {gtxt(r.text)}</span>
               </span>
             </button>
           ))}
@@ -320,7 +320,7 @@ const ProgrammePanel: React.FC<ProgrammePanelProps> = props => {
           <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
             <img src="/dr-lo.png" alt="" width={44} height={44} className={cheer ? 'drl-joy-glow' : undefined}
               style={{ width: 44, height: 44, borderRadius: '50%', objectFit: 'cover', objectPosition: 'top', flexShrink: 0, border: `2px solid ${cheer ? '#E9C88F' : 'rgba(242,182,109,.45)'}` }} />
-            <p className="drl-in" key={complete ? 'c' : 'n'} style={{ margin: 0, padding: '12px 14px', borderRadius: '6px 18px 18px 18px', background: 'rgba(255,255,255,.07)', fontSize: 14.5, lineHeight: 1.55, color: C.soft }}>
+            <p className="drl-in" key={complete ? 'c' : 'n'} style={{ margin: 0, padding: '12px 14px', borderRadius: '6px 18px 18px 18px', background: 'rgba(255,255,255,.07)', fontSize: 15, lineHeight: 1.55, color: C.soft }}>
               {complete
                 ? `Journée validée${props.prenom ? `, ${props.prenom}` : ''} ! ${tomorrow ? `Demain : ${tomorrow.title.toLowerCase()}${tomorrow.duration ? ` (${tomorrow.duration})` : ''}. ` : ''}Repose-toi bien.`
                 : dailyLine(p, today, moods, props.prenom)}
@@ -355,17 +355,17 @@ const ProgrammePanel: React.FC<ProgrammePanelProps> = props => {
 
         {result && verdict ? (
           <div style={{ ...card, padding: 16 }}>
-            <p style={{ margin: 0, fontSize: 11, letterSpacing: '.08em', textTransform: 'uppercase', fontWeight: 700, color: palette.accent }}>Le chemin parcouru · {props.testLabel(result.scaleId)}</p>
+            <p style={{ margin: 0, fontSize: 13, letterSpacing: '.08em', textTransform: 'uppercase', fontWeight: 700, color: palette.accent }}>Le chemin parcouru · {props.testLabel(result.scaleId)}</p>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginTop: 10 }}>
               {[['Au départ', result.before, result.beforeLabel], ['Aujourd\'hui', result.after, result.afterLabel]].map(([t, v, l]) => (
                 <div key={String(t)} style={{ borderRadius: 14, background: 'rgba(255,255,255,.05)', padding: 12 }}>
-                  <span style={{ display: 'block', fontSize: 12, color: C.faint }}>{t}</span>
+                  <span style={{ display: 'block', fontSize: 13, color: C.faint }}>{t}</span>
                   <span style={{ display: 'block', fontFamily: 'Fraunces, serif', fontSize: 26, fontWeight: 600, color: C.title }}>{v}</span>
-                  <span style={{ display: 'block', fontSize: 12.5, color: C.soft }}>{l}</span>
+                  <span style={{ display: 'block', fontSize: 13, color: C.soft }}>{l}</span>
                 </div>
               ))}
             </div>
-            <p style={{ margin: '12px 0 0', fontSize: 14.5, lineHeight: 1.55, color: C.soft }}>
+            <p style={{ margin: '12px 0 0', fontSize: 15, lineHeight: 1.55, color: C.soft }}>
               {verdict === 'mieux' ? 'Ça a bougé dans le bon sens. Ce que tu as fait ces semaines compte vraiment.'
                 : verdict === 'pareil' ? 'Ton résultat est stable. Parfois les effets arrivent plus tard : tu peux continuer, ou essayer un autre programme.'
                 : 'C\'est plus lourd qu\'au départ. Ce n\'est pas un échec : c\'est le bon moment pour en parler à un professionnel, en plus du programme.'}
@@ -384,10 +384,10 @@ const ProgrammePanel: React.FC<ProgrammePanelProps> = props => {
                 <span key={c.name} style={{ flex: 1, height: 6, borderRadius: 3, background: i + 1 < week ? palette.accent : i + 1 === week ? `linear-gradient(90deg, ${palette.accent} ${Math.round((((shownDay - 1) % 7) + 1) / 7 * 100)}%, rgba(255,255,255,.12) 0)` : 'rgba(255,255,255,.12)' }} />
               ))}
             </div>
-            <p style={{ margin: '10px 0 0', fontSize: 13.5, color: C.text, fontWeight: 700 }}>
+            <p style={{ margin: '10px 0 0', fontSize: 14, color: C.text, fontWeight: 700 }}>
               Étape {week} sur 4 · {chapters[week - 1].name}
             </p>
-            <p style={{ margin: '2px 0 0', fontSize: 12.5, color: C.faint }}>
+            <p style={{ margin: '2px 0 0', fontSize: 13, color: C.faint }}>
               {week < 4 ? `Ensuite : ${chapters[week].name}` : 'Dernière étape, puis le nouveau test'}
             </p>
           </div>
@@ -402,7 +402,7 @@ const ProgrammePanel: React.FC<ProgrammePanelProps> = props => {
                 }} />
               ))}
             </div>
-            <span style={{ fontSize: 12.5, color: C.faint, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+            <span style={{ fontSize: 13, color: C.faint, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
               {run >= 2 ? <><Flame size={15} color="#F2B66D" aria-hidden="true" /><b style={{ color: C.text }}>{run} jours</b> d'affilée</> : <>jours actifs <b style={{ color: C.text }}>{active}/7</b></>}
             </span>
           </div>
@@ -417,11 +417,11 @@ const ProgrammePanel: React.FC<ProgrammePanelProps> = props => {
                 <Check size={26} strokeWidth={3} color={C.ink} />
               </span>
               <p style={{ margin: '10px 0 2px', fontFamily: 'Fraunces, serif', fontSize: 22, fontWeight: 600, color: C.title }}>Journée validée</p>
-              <p style={{ margin: 0, fontSize: 13.5, color: C.soft, display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+              <p style={{ margin: 0, fontSize: 14, color: C.soft, display: 'inline-flex', alignItems: 'center', gap: 5 }}>
                 {run >= 2 ? <><Flame size={15} color="#F2B66D" aria-hidden="true" />{run} jours d'affilée</> : 'Premier jour tenu, bravo.'}
               </p>
               {tomorrow && (
-                <p style={{ margin: '12px 0 0', fontSize: 13.5, lineHeight: 1.5, color: C.faint }}>
+                <p style={{ margin: '12px 0 0', fontSize: 14, lineHeight: 1.5, color: C.faint }}>
                   Demain : <b style={{ color: C.text }}>{tomorrow.title}</b>{tomorrow.duration ? ` · ${tomorrow.duration}` : ''}
                 </p>
               )}
@@ -432,7 +432,7 @@ const ProgrammePanel: React.FC<ProgrammePanelProps> = props => {
             <div style={{ ...card, padding: 14 }}>
               <p style={{ margin: '0 0 6px', fontSize: 13, fontWeight: 700 }}>Ton humeur depuis le début</p>
               {spark}
-              <p style={{ margin: '4px 0 0', fontSize: 12, color: C.faint }}>{noted} jour{noted > 1 ? 's' : ''} noté{noted > 1 ? 's' : ''} · plus c'est haut, mieux ça va</p>
+              <p style={{ margin: '4px 0 0', fontSize: 13, color: C.faint }}>{noted} jour{noted > 1 ? 's' : ''} noté{noted > 1 ? 's' : ''} · plus c'est haut, mieux ça va</p>
             </div>
           )}
         </>)}
@@ -457,7 +457,7 @@ const ProgrammePanel: React.FC<ProgrammePanelProps> = props => {
               <LineChart size={22} color={due ? palette.accent : C.muted} aria-hidden="true" />
               <div style={{ flex: 1, minWidth: 0 }}>
                 <span style={{ display: 'block', fontSize: 14, fontWeight: 700 }}>Bilan de la semaine avec Dr Lô</span>
-                <span style={{ display: 'block', fontSize: 12.5, color: C.faint }}>
+                <span style={{ display: 'block', fontSize: 13, color: C.faint }}>
                   {due ? `Semaine ${due} · ${props.bilanCost}` : `Disponible au jour ${nextBilanDay} · ${props.bilanCost}`}
                 </span>
               </div>
@@ -472,7 +472,7 @@ const ProgrammePanel: React.FC<ProgrammePanelProps> = props => {
                 <ClipboardCheck size={22} color={retest.available ? palette.accent : C.muted} aria-hidden="true" />
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <span style={{ display: 'block', fontSize: 14, fontWeight: 700 }}>Refaire mon test « {props.testLabel(retest.scaleId)} »</span>
-                  <span style={{ display: 'block', fontSize: 12.5, color: C.faint }}>
+                  <span style={{ display: 'block', fontSize: 13, color: C.faint }}>
                     {retest.available ? `Pour voir le chemin parcouru · ${props.testCost}` : `Prévu au jour ${retest.fromDay} · pour voir le chemin parcouru`}
                   </span>
                 </div>
@@ -498,7 +498,7 @@ const ProgrammePanel: React.FC<ProgrammePanelProps> = props => {
               : <button onClick={() => setConfirmStop(true)} style={link}>Arrêter le programme</button>}
           </div>
         )}
-        <p style={{ margin: 0, textAlign: 'center', fontSize: 11.5, color: C.faint, lineHeight: 1.5 }}>
+        <p style={{ margin: 0, textAlign: 'center', fontSize: 13, color: C.faint, lineHeight: 1.5 }}>
           Cocher est gratuit. Un jour manqué n'est pas grave : reprends simplement le lendemain.
         </p>
       </div>
@@ -531,7 +531,7 @@ export const ProgrammeHomeCard: React.FC<{ p: Programme; today: string; remainin
         <span style={{ position: 'relative', width: 44, height: 44, borderRadius: 14, background: 'rgba(242,182,109,.14)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
           <ClipboardCheck size={22} color={palette.accent} aria-hidden="true" />
           {badge > 0 && (
-            <span aria-hidden="true" style={{ position: 'absolute', top: -6, right: -6, minWidth: 20, height: 20, padding: '0 5px', boxSizing: 'border-box', borderRadius: 10, background: '#E8664F', color: '#fff', fontSize: 11.5, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid #1C1612' }}>{badge}</span>
+            <span aria-hidden="true" style={{ position: 'absolute', top: -6, right: -6, minWidth: 20, height: 20, padding: '0 5px', boxSizing: 'border-box', borderRadius: 10, background: '#E8664F', color: '#fff', fontSize: 13, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid #1C1612' }}>{badge}</span>
           )}
           {badge === 0 && p.status === 'active' && !p.result && (
             <span aria-hidden="true" style={{ position: 'absolute', top: -6, right: -6, width: 20, height: 20, borderRadius: 10, background: C.sage, display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid #1C1612' }}>
@@ -541,7 +541,7 @@ export const ProgrammeHomeCard: React.FC<{ p: Programme; today: string; remainin
         </span>
         <span style={{ flex: 1, minWidth: 0 }}>
           <span style={{ display: 'block', fontSize: 15, fontWeight: 700 }}>Mon programme Dr Lô</span>
-          <span style={{ display: 'block', fontSize: 12.5, color: C.faint, marginTop: 2 }}>{sub}</span>
+          <span style={{ display: 'block', fontSize: 13, color: C.faint, marginTop: 2 }}>{sub}</span>
         </span>
         {totemImg && <img src={totemImg} alt="" width={36} height={36} style={{ width: 36, height: 36, borderRadius: 12, objectFit: 'cover', flexShrink: 0, border: '1px solid rgba(233,200,143,.35)' }} />}
       </span>

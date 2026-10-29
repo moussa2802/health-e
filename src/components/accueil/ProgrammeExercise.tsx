@@ -70,7 +70,7 @@ const BreathGuide: React.FC<{ g: Extract<Guide, { kind: 'breath' }>; palette: Mo
         </div>
       </div>
       <p style={{ margin: 0, fontFamily: 'Fraunces, serif', fontSize: 24, fontWeight: 600, color: palette.accent }}>{ph.label} · {left}</p>
-      <p style={{ margin: 0, fontSize: 12.5, color: C.faint }}>Cycle {Math.min(cycle, g.cycles)} sur {g.cycles}</p>
+      <p style={{ margin: 0, fontSize: 13, color: C.faint }}>Cycle {Math.min(cycle, g.cycles)} sur {g.cycles}</p>
     </div>
   );
 };
@@ -127,7 +127,7 @@ const StepsGuide: React.FC<{ g: Extract<Guide, { kind: 'steps' }>; palette: Mome
       <div style={{ display: 'flex', gap: 5 }} aria-hidden="true">
         {g.steps.map((_, k) => <span key={k} style={{ flex: 1, height: 4, borderRadius: 2, background: k <= i ? palette.accent : 'rgba(255,255,255,.12)' }} />)}
       </div>
-      <p key={i} className="drl-in" style={{ margin: 0, fontSize: 15.5, lineHeight: 1.5, color: C.title, fontWeight: 600 }}>{st.prompt}</p>
+      <p key={i} className="drl-in" style={{ margin: 0, fontSize: 16, lineHeight: 1.5, color: C.title, fontWeight: 600 }}>{st.prompt}</p>
       {st.input && (
         <textarea value={cur} onChange={e => setCur(e.target.value)} rows={2} maxLength={400} aria-label={st.input} placeholder={st.input} style={field} />
       )}
@@ -141,7 +141,7 @@ const ChipsGuide: React.FC<{ g: Extract<Guide, { kind: 'chips' }>; palette: Mome
   const toggle = (o: string) => setSel(s => (g.multi ? (s.includes(o) ? s.filter(x => x !== o) : [...s, o]) : [o]));
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-      <p style={{ margin: 0, fontSize: 15.5, color: C.title, fontWeight: 600 }}>{g.prompt}</p>
+      <p style={{ margin: 0, fontSize: 16, color: C.title, fontWeight: 600 }}>{g.prompt}</p>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
         {g.options.map(o => (
           <button key={o} onClick={() => toggle(o)} aria-pressed={sel.includes(o)}
@@ -160,11 +160,11 @@ const WriteGuide: React.FC<{ g: Extract<Guide, { kind: 'write' }>; palette: Mome
   const [t, setT] = useState('');
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-      <p style={{ margin: 0, fontSize: 15.5, color: C.title, fontWeight: 600 }}>{g.prompt}</p>
+      <p style={{ margin: 0, fontSize: 16, color: C.title, fontWeight: 600 }}>{g.prompt}</p>
       <textarea value={t} onChange={e => setT(e.target.value)} rows={Math.max(2, g.lines)} maxLength={800} aria-label={g.save} style={field} />
       <button disabled={!t.trim()} onClick={() => (detectCrisis(t) ? onCrisis(t) : onDone(`${g.save}\n${t.trim()}`))}
         style={{ ...btn(palette), alignSelf: 'flex-start', opacity: t.trim() ? 1 : 0.5 }}>Garder dans mon journal</button>
-      <p style={{ margin: 0, fontSize: 12, color: C.faint }}>Privé : carnet « Programme » de ton journal.</p>
+      <p style={{ margin: 0, fontSize: 13, color: C.faint }}>Privé : carnet « Programme » de ton journal.</p>
     </div>
   );
 };
@@ -177,8 +177,8 @@ const HabitGuide: React.FC<{ g: Extract<Guide, { kind: 'habit' }>; committed: bo
   }
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-      <p style={{ margin: 0, fontSize: 12.5, color: C.sage, display: 'flex', alignItems: 'center', gap: 6 }}><Check size={14} aria-hidden="true" />Engagement pris. Je te le redemande plus tard.</p>
-      <p style={{ margin: 0, fontSize: 15.5, color: C.title, fontWeight: 600 }}>{g.evening}</p>
+      <p style={{ margin: 0, fontSize: 13, color: C.sage, display: 'flex', alignItems: 'center', gap: 6 }}><Check size={14} aria-hidden="true" />Engagement pris. Je te le redemande plus tard.</p>
+      <p style={{ margin: 0, fontSize: 16, color: C.title, fontWeight: 600 }}>{g.evening}</p>
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
         <button onClick={() => onDone(true)} style={btn(palette)}>Oui, j'ai tenu</button>
         <button onClick={() => onDone(false)} style={btn(palette, true)}>Pas cette fois</button>
@@ -212,7 +212,7 @@ export const LearnQuiz: React.FC<{ learning: ProgLearning; quiz?: { q: string; a
   if (!quiz) {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-        <p style={{ margin: 0, fontSize: 14.5, lineHeight: 1.6, color: C.soft }}>{learning.text}</p>
+        <p style={{ margin: 0, fontSize: 15, lineHeight: 1.6, color: C.soft }}>{learning.text}</p>
         <button onClick={() => onDone(null)} style={{ ...btn(palette, true), alignSelf: 'flex-start' }}>Lu</button>
       </div>
     );
@@ -220,8 +220,8 @@ export const LearnQuiz: React.FC<{ learning: ProgLearning; quiz?: { q: string; a
   const right = picked === quiz.answer;
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-      <p style={{ margin: 0, fontSize: 12, letterSpacing: '.06em', textTransform: 'uppercase', fontWeight: 700, color: palette.accent }}>Vrai ou faux ?</p>
-      <p style={{ margin: 0, fontSize: 15.5, color: C.title, fontWeight: 600, lineHeight: 1.45 }}>« {quiz.q} »</p>
+      <p style={{ margin: 0, fontSize: 13, letterSpacing: '.06em', textTransform: 'uppercase', fontWeight: 700, color: palette.accent }}>Vrai ou faux ?</p>
+      <p style={{ margin: 0, fontSize: 16, color: C.title, fontWeight: 600, lineHeight: 1.45 }}>« {quiz.q} »</p>
       {picked === null ? (
         <div style={{ display: 'flex', gap: 8 }}>
           <button onClick={() => setPicked(true)} style={{ ...btn(palette, true), flex: 1 }}>Vrai</button>
@@ -229,10 +229,10 @@ export const LearnQuiz: React.FC<{ learning: ProgLearning; quiz?: { q: string; a
         </div>
       ) : (
         <div className="drl-in" style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-          <p style={{ margin: 0, fontSize: 14.5, fontWeight: 700, color: right ? C.sage : palette.accent }}>
+          <p style={{ margin: 0, fontSize: 15, fontWeight: 700, color: right ? C.sage : palette.accent }}>
             {right ? 'Bien vu !' : 'Pas tout à fait…'} C'est {quiz.answer ? 'vrai' : 'faux'}.
           </p>
-          <p style={{ margin: 0, fontSize: 14.5, lineHeight: 1.6, color: C.soft }}>{learning.text}</p>
+          <p style={{ margin: 0, fontSize: 15, lineHeight: 1.6, color: C.soft }}>{learning.text}</p>
           <button onClick={() => { if (!doneRef.current) { doneRef.current = true; onDone(right); } }} style={{ ...btn(palette), alignSelf: 'flex-start' }}>J'ai compris</button>
         </div>
       )}

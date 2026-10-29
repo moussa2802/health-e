@@ -87,7 +87,7 @@ const AdminKorisCredit: React.FC = () => {
         {/* Search */}
         <div style={{ position: 'relative', marginBottom: 16 }}>
           <div style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)' }}>
-            <Search size={16} style={{ color: '#999' }} />
+            <Search size={16} style={{ color: '#A79E90' }} />
           </div>
           <input
             type="text"
@@ -97,7 +97,7 @@ const AdminKorisCredit: React.FC = () => {
             style={{
               width: '100%',
               padding: '10px 12px 10px 36px',
-              border: '1px solid #E5E7EB',
+              border: '1px solid rgba(255,255,255,.12)',
               borderRadius: 12,
               fontSize: 14,
               outline: 'none',
@@ -107,14 +107,14 @@ const AdminKorisCredit: React.FC = () => {
           {search.trim() && !selectedUser && (
             <div style={{
               position: 'absolute', top: '100%', left: 0, right: 0,
-              background: '#fff', border: '1px solid #E5E7EB', borderRadius: 12,
+              background: 'rgba(255,255,255,.06)', border: '1px solid rgba(255,255,255,.12)', borderRadius: 12,
               maxHeight: 280, overflowY: 'auto', zIndex: 10, marginTop: 4,
               boxShadow: '0 4px 12px rgba(0,0,0,.1)',
             }}>
               {loading ? (
-                <div style={{ padding: 16, textAlign: 'center', color: '#999' }}>Chargement...</div>
+                <div style={{ padding: 16, textAlign: 'center', color: '#A79E90' }}>Chargement...</div>
               ) : filtered.length === 0 ? (
-                <div style={{ padding: 16, textAlign: 'center', color: '#999' }}>Aucun résultat</div>
+                <div style={{ padding: 16, textAlign: 'center', color: '#A79E90' }}>Aucun résultat</div>
               ) : (
                 filtered.map(u => (
                   <button
@@ -129,10 +129,10 @@ const AdminKorisCredit: React.FC = () => {
                     onMouseEnter={e => (e.currentTarget.style.background = '#F9FAFB')}
                     onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
                   >
-                    <User size={16} style={{ color: '#6B7280', flexShrink: 0 }} />
+                    <User size={16} style={{ color: '#CFC6B8', flexShrink: 0 }} />
                     <div>
                       <div style={{ fontWeight: 600 }}>{u.name}</div>
-                      <div style={{ fontSize: 12, color: '#9CA3AF' }}>{u.id.substring(0, 12)}... · {u.completedTests} tests</div>
+                      <div style={{ fontSize: 13, color: '#A79E90' }}>{u.id.substring(0, 12)}... · {u.completedTests} tests</div>
                     </div>
                   </button>
                 ))
@@ -144,19 +144,19 @@ const AdminKorisCredit: React.FC = () => {
         {/* Selected user card */}
         {selectedUser && (
           <div style={{
-            padding: 16, borderRadius: 12, border: '1px solid #E5E7EB',
-            background: '#FAFAF8', marginBottom: 20,
+            padding: 16, borderRadius: 12, border: '1px solid rgba(255,255,255,.12)',
+            background: 'rgba(255,255,255,.05)', marginBottom: 20,
           }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <div>
                 <div style={{ fontWeight: 700, fontSize: 15 }}>{selectedUser.name}</div>
-                <div style={{ fontSize: 12, color: '#6B7280', marginTop: 2 }}>
+                <div style={{ fontSize: 13, color: '#CFC6B8', marginTop: 2 }}>
                   ID: {selectedUser.id.substring(0, 16)}... · {selectedUser.completedTests} tests · Inscrit {selectedUser.registeredAt}
                 </div>
               </div>
               <div style={{ textAlign: 'right' }}>
-                <div style={{ fontSize: 12, color: '#6B7280' }}>Solde actuel</div>
-                <div style={{ fontWeight: 700, fontSize: 18, color: '#D97706' }}>
+                <div style={{ fontSize: 13, color: '#CFC6B8' }}>Solde actuel</div>
+                <div style={{ fontWeight: 700, fontSize: 18, color: '#E9C88F' }}>
                   {walletBalance !== null ? `${walletBalance} ◉` : '...'}
                 </div>
               </div>
@@ -168,7 +168,7 @@ const AdminKorisCredit: React.FC = () => {
         {selectedUser && (
           <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
             <div>
-              <label style={{ display: 'block', fontSize: 13, fontWeight: 600, marginBottom: 6, color: '#374151' }}>
+              <label style={{ display: 'block', fontSize: 13, fontWeight: 600, marginBottom: 6, color: '#DCD3C5' }}>
                 Montant (Koris)
               </label>
               <input
@@ -179,13 +179,13 @@ const AdminKorisCredit: React.FC = () => {
                 onChange={e => setAmount(e.target.value)}
                 placeholder="Ex : 10"
                 style={{
-                  width: '100%', padding: '10px 12px', border: '1px solid #E5E7EB',
+                  width: '100%', padding: '10px 12px', border: '1px solid rgba(255,255,255,.12)',
                   borderRadius: 10, fontSize: 14, outline: 'none', boxSizing: 'border-box',
                 }}
               />
             </div>
             <div>
-              <label style={{ display: 'block', fontSize: 13, fontWeight: 600, marginBottom: 6, color: '#374151' }}>
+              <label style={{ display: 'block', fontSize: 13, fontWeight: 600, marginBottom: 6, color: '#DCD3C5' }}>
                 Motif
               </label>
               <input
@@ -194,7 +194,7 @@ const AdminKorisCredit: React.FC = () => {
                 onChange={e => setReason(e.target.value)}
                 placeholder="Ex : Compensation bug, cadeau fidélité..."
                 style={{
-                  width: '100%', padding: '10px 12px', border: '1px solid #E5E7EB',
+                  width: '100%', padding: '10px 12px', border: '1px solid rgba(255,255,255,.12)',
                   borderRadius: 10, fontSize: 14, outline: 'none', boxSizing: 'border-box',
                 }}
               />
@@ -204,8 +204,8 @@ const AdminKorisCredit: React.FC = () => {
               <div style={{
                 display: 'flex', alignItems: 'center', gap: 8, padding: '10px 14px',
                 borderRadius: 10, fontSize: 13, fontWeight: 500,
-                background: result.success ? '#ECFDF5' : '#FEF2F2',
-                color: result.success ? '#059669' : '#DC2626',
+                background: result.success ? '#ECFDF5' : 'rgba(240,138,122,.14)',
+                color: result.success ? '#7FD1A0' : '#F08A7A',
                 border: `1px solid ${result.success ? '#A7F3D0' : '#FECACA'}`,
               }}>
                 {result.success ? <CheckCircle2 size={16} /> : <AlertCircle size={16} />}
@@ -218,8 +218,8 @@ const AdminKorisCredit: React.FC = () => {
               disabled={submitting || !amount || !reason.trim()}
               style={{
                 padding: '12px 20px', border: 'none', borderRadius: 12,
-                background: submitting || !amount || !reason.trim() ? '#D1D5DB' : '#D97706',
-                color: '#fff', fontWeight: 700, fontSize: 14, cursor: submitting ? 'wait' : 'pointer',
+                background: submitting || !amount || !reason.trim() ? 'rgba(255,255,255,.14)' : 'var(--he-action)',
+                color: submitting || !amount || !reason.trim() ? '#A79E90' : '#1C140D', fontWeight: 700, fontSize: 14, cursor: submitting ? 'wait' : 'pointer',
                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
               }}
             >

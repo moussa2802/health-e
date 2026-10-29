@@ -703,9 +703,9 @@ export default function DefiJouerPage() {
                 rows={3}
                 className="w-full px-3 py-2.5 rounded-xl border border-line bg-white text-ink text-sm resize-none focus:outline-none focus:border-gold"
               />
-              <p className="text-[11px] text-muted mt-1 mb-2 text-right">{petitMot.length}/200</p>
+              <p className="text-[13px] text-muted mt-1 mb-2 text-right">{petitMot.length}/200</p>
               {petitMotError && (
-                <p className="text-[12px] text-red-500 mb-2">{petitMotError}</p>
+                <p className="text-[13px] text-red-500 mb-2">{petitMotError}</p>
               )}
               <div className="flex gap-2">
                 <button

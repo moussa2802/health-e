@@ -111,7 +111,7 @@ const AgreementScaleInput: React.FC<AgreementScaleInputProps> = ({
                   borderRadius: 8,
                   background: selected ? 'rgba(244,241,233,0.22)' : 'rgba(255,255,255,.1)',
                   color: selected ? '#F4F1E9' : '#CFC6B8',
-                  fontSize: 11,
+                  fontSize: 13,
                   fontWeight: 800,
                   display: 'flex',
                   alignItems: 'center',
@@ -123,7 +123,7 @@ const AgreementScaleInput: React.FC<AgreementScaleInputProps> = ({
                 <span style={{
                   position: 'relative',
                   flex: 1,
-                  fontSize: 13.5,
+                  fontSize: 14,
                   fontWeight: 650,
                   color: selected ? '#F4F1E9' : '#FBF5EA',
                 }}>
@@ -160,7 +160,7 @@ const AgreementScaleInput: React.FC<AgreementScaleInputProps> = ({
             animation: 'fadeInUp 0.28s ease',
           }}>
             <Check size={16} color={accentColor} strokeWidth={2.4} style={{ flexShrink: 0 }} />
-            <p style={{ margin: 0, fontSize: 12.5, color: '#DCD3C5' }}>
+            <p style={{ margin: 0, fontSize: 13, color: '#DCD3C5' }}>
               Ta réponse : <b style={{ color: accentColor }}>{selectedOpt.value} — {selectedOpt.label}</b>
             </p>
           </div>
@@ -183,8 +183,8 @@ const AgreementScaleInput: React.FC<AgreementScaleInputProps> = ({
           padding: '0 4px',
           marginBottom: 10,
         }}>
-          <span style={{ fontSize: 11, color: '#A79E90', fontWeight: 700 }}>{sorted[0].label}</span>
-          <span style={{ fontSize: 11, color: '#A79E90', fontWeight: 700 }}>{sorted[sorted.length - 1].label}</span>
+          <span style={{ fontSize: 13, color: '#A79E90', fontWeight: 700 }}>{sorted[0].label}</span>
+          <span style={{ fontSize: 13, color: '#A79E90', fontWeight: 700 }}>{sorted[sorted.length - 1].label}</span>
         </div>
 
         <div style={{
@@ -239,7 +239,7 @@ const AgreementScaleInput: React.FC<AgreementScaleInputProps> = ({
                   {i + 1}
                 </span>
                 <span style={{
-                  fontSize: 9.5,
+                  fontSize: 13,
                   lineHeight: 1.2,
                   fontWeight: selected ? 700 : 600,
                   color: selected ? accentColor : '#A79E90',
@@ -267,7 +267,7 @@ const AgreementScaleInput: React.FC<AgreementScaleInputProps> = ({
           animation: 'fadeInUp 0.28s ease',
         }}>
           <Check size={16} color={accentColor} strokeWidth={2.4} style={{ flexShrink: 0 }} />
-          <p style={{ margin: 0, fontSize: 12.5, color: '#DCD3C5' }}>
+          <p style={{ margin: 0, fontSize: 13, color: '#DCD3C5' }}>
             Ta réponse : <b style={{ color: accentColor }}>{selectedOpt.value} — {selectedOpt.label}</b>
           </p>
         </div>

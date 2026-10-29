@@ -58,75 +58,20 @@ const DrLoConsole = lazy(() => import("./pages/drlo/DrLoConsole"));
 const EquipePage = lazy(() => import("./pages/drlo/EquipePage"));
 const MessagesDrLoPage = lazy(() => import("./pages/drlo/MessagesDrLoPage"));
 const ChainesPage = lazy(() => import("./pages/drlo/ChainesPage"));
+const ChannelInvitePage = lazy(() => import("./pages/drlo/ChannelInvitePage"));
 const MonJournalPage = lazy(() => import("./pages/drlo/MonJournalPage"));
 const ResultatPage = lazy(() => import("./pages/drlo/ResultatPage"));
-const PatientDashboard = lazy(() => import("./pages/patient/PatientDashboard"));
-const ProfessionalDashboard = lazy(
-  () => import("./pages/professional/ProfessionalDashboard")
-);
 const PatientAccess = lazy(() => import("./pages/patient/PatientAccess"));
 const ForgotPassword = lazy(() => import("./components/auth/ForgotPassword"));
-const ForgotPasswordProfessional = lazy(
-  () => import("./components/auth/ForgotPasswordProfessional")
-);
-const ProfessionalAccess = lazy(
-  () => import("./pages/professional/ProfessionalAccess")
-);
 const AdminLogin = lazy(() => import("./pages/admin/AdminLogin"));
-const ProfessionalsList = lazy(
-  () => import("./pages/patient/ProfessionalsList")
-);
-const ProfessionalProfile = lazy(
-  () => import("./pages/patient/ProfessionalProfile")
-);
-const GroupTherapyDetails = lazy(
-  () => import("./pages/patient/GroupTherapyDetails")
-);
-const GroupTherapyMeeting = lazy(
-  () => import("./pages/patient/GroupTherapyMeeting")
-);
-const BookAppointment = lazy(() => import("./pages/patient/BookAppointment"));
-const AppointmentSuccess = lazy(
-  () => import("./pages/patient/AppointmentSuccess")
-);
 
-const ConsultationRoom = lazy(
-  () => import("./pages/consultation/ConsultationRoom")
-);
-const PatientProfile = lazy(() => import("./pages/patient/PatientProfile"));
-const ProfessionalSettings = lazy(
-  () => import("./pages/professional/StableProfessionalSettings")
-);
-const AvailabilityManagement = lazy(
-  () => import("./pages/professional/AvailabilityManagement")
-);
-const PatientsList = lazy(() => import("./pages/professional/PatientsList"));
-const PatientMessages = lazy(() => import("./pages/patient/Messages"));
-const ProfessionalMessages = lazy(
-  () => import("./pages/professional/Messages")
-);
-const FinancialDetails = lazy(
-  () => import("./pages/professional/FinancialDetails")
-);
 const ProtectedRoute = lazy(() => import("./components/auth/ProtectedRoute"));
 const CompanionApp = lazy(() => import("./companion/CompanionApp"));
 const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard"));
 const AdminUsers = lazy(() => import("./pages/admin/AdminUsers"));
-const AdminProfessionals = lazy(
-  () => import("./pages/admin/AdminProfessionals")
-);
-const AdminPatients = lazy(() => import("./pages/admin/AdminPatients"));
-const AdminAppointments = lazy(() => import("./pages/admin/AdminAppointments"));
-const AdminStatistics = lazy(() => import("./pages/admin/AdminStatistics"));
 const AdminContent = lazy(() => import("./pages/admin/AdminContent"));
-const AdminSupport = lazy(() => import("./pages/admin/AdminSupport"));
-const AdminMessages = lazy(() => import("./pages/admin/AdminMessages"));
-const AdminWithdrawals = lazy(() => import("./pages/admin/WithdrawalsPage"));
 const AdminNotifications = lazy(
   () => import("./pages/admin/AdminNotificationsPage")
-);
-const AdminGroupTherapy = lazy(
-  () => import("./pages/admin/AdminGroupTherapy")
 );
 const AdminEvaluations = lazy(
   () => import("./pages/admin/AdminEvaluations")
@@ -140,15 +85,12 @@ const Privacy = lazy(() => import("./pages/Privacy"));
 const Terms = lazy(() => import("./pages/Terms"));
 const Ethics = lazy(() => import("./pages/Ethics"));
 const VerifyEmail = lazy(() => import("./pages/VerifyEmail"));
-const Join = lazy(() => import("./pages/Join"));
 
 // Journal pages
 const AcheterKorisPage = lazy(() => import("./pages/AcheterKorisPage"));
 
 // Assessment pages
-const AssessmentHomePage = lazy(() => import("./pages/assessment/AssessmentHomePage"));
-const AssessmentCategoryPage = lazy(() => import("./pages/assessment/AssessmentCategoryPage"));
-const AssessmentSelectPage = lazy(() => import("./pages/assessment/AssessmentSelectPage"));
+const CategoryGate = lazy(() => import("./pages/assessment/CategoryGate"));
 const AssessmentQuizPage = lazy(() => import("./pages/assessment/AssessmentQuizPage"));
 const AssessmentResultsPage = lazy(() => import("./pages/assessment/AssessmentResultsPage"));
 const CompatibilityPage = lazy(() => import("./pages/assessment/CompatibilityPage"));
@@ -183,7 +125,7 @@ const AppChrome: React.FC = () => {
   const isChromeless = isAdminRoute || isAppRoute || isDefiJouer;
   // Accueil : le premier écran est Dr Lô en plein écran (pas d'en-tête ni de pied de page du site)
   // Écrans « Mon Dr Lô » (thème chaud sombre, plein écran) : pas d'en-tête ni de pied de page du site
-  const isHome = pathname === "/" || pathname === "/espace" || pathname.startsWith("/espace/") || pathname === "/humeur" || pathname === "/journal" || pathname.startsWith("/journal/") || pathname === "/question" || pathname === "/drlo" || pathname === "/equipe" || pathname === "/confidentialite" || pathname === "/conditions" || pathname === "/ethique" || pathname === "/messages-dr-lo" || pathname.startsWith("/messages-dr-lo/") || pathname === "/chaines" || pathname.startsWith("/chaines/") || pathname === "/assessment/totem" || pathname.startsWith("/assessment/results/") || pathname === "/defi" || pathname.startsWith("/defi/") || pathname === "/decouvre" || pathname === "/assessment/compatibility" || pathname.startsWith("/compat/") || pathname === "/assessment" || pathname.startsWith("/assessment/") || pathname === "/acheter-koris";
+  const isHome = pathname === "/" || pathname === "/espace" || pathname.startsWith("/espace/") || pathname === "/humeur" || pathname === "/journal" || pathname.startsWith("/journal/") || pathname === "/question" || pathname === "/drlo" || pathname === "/equipe" || pathname === "/confidentialite" || pathname === "/conditions" || pathname === "/cgu" || pathname === "/ethique" || pathname === "/faq" || pathname === "/contact" || pathname === "/patient/access" || pathname === "/patient" || pathname === "/messages-dr-lo" || pathname.startsWith("/messages-dr-lo/") || pathname === "/chaines" || pathname.startsWith("/chaines/") || pathname.startsWith("/c/") || pathname === "/assessment/totem" || pathname.startsWith("/assessment/results/") || pathname === "/defi" || pathname.startsWith("/defi/") || pathname === "/decouvre" || pathname === "/assessment/compatibility" || pathname.startsWith("/compat/") || pathname === "/assessment" || pathname.startsWith("/assessment/") || pathname === "/acheter-koris";
   const { currentUser } = useAuth();
   const userId = currentUser?.id ?? null;
 
@@ -207,6 +149,7 @@ const AppChrome: React.FC = () => {
             <Route path="/messages-dr-lo/:id" element={<MessagesDrLoPage />} />
             <Route path="/chaines" element={<ChainesPage />} />
             <Route path="/chaines/:id" element={<ChainesPage />} />
+            <Route path="/c/:id" element={<ChannelInvitePage />} />
 
             {/* Companion app — layout mobile plein écran, distinct du site */}
             <Route
@@ -225,14 +168,6 @@ const AppChrome: React.FC = () => {
               element={<ForgotPassword />}
             />
             <Route
-              path="/professional/access"
-              element={<ProfessionalAccess />}
-            />
-            <Route
-              path="/professional/forgot-password"
-              element={<ForgotPasswordProfessional />}
-            />
-            <Route
               path="/admin"
               element={<Navigate to="/admin/login" replace />}
             />
@@ -245,133 +180,11 @@ const AppChrome: React.FC = () => {
             <Route path="/cgu" element={<Terms />} />
             <Route path="/ethique" element={<Ethics />} />
             <Route path="/verify-email" element={<VerifyEmail />} />
-            <Route path="/join" element={<Join />} />
 
             {/* Patient Routes */}
-            <Route
-              path="/professionals/:specialty"
-              element={<ProfessionalsList />}
-            />
 
             {/* Legacy redirects for old specialty URLs */}
-            <Route
-              path="/professionals/psychologie"
-              element={
-                <Navigate to="/professionals/psychologue-clinicien" replace />
-              }
-            />
-            <Route
-              path="/professionals/psychiatrie"
-              element={<Navigate to="/professionals/psychiatre" replace />}
-            />
-            <Route
-              path="/professionals/psychologue"
-              element={
-                <Navigate to="/professionals/psychologue-clinicien" replace />
-              }
-            />
-            <Route
-              path="/professionals/sexologue"
-              element={
-                <Navigate to="/professionals/sexologue-clinicien" replace />
-              }
-            />
-            <Route
-              path="/professionals/gynecologie"
-              element={<Navigate to="/professionals/gynecologue" replace />}
-            />
-            <Route
-              path="/professionals/urologie"
-              element={<Navigate to="/professionals/urologue" replace />}
-            />
-            <Route path="/professional/:id" element={<ProfessionalProfile />} />
-            <Route
-              path="/group-therapy/:id"
-              element={<GroupTherapyDetails />}
-            />
-            <Route
-              path="/group-therapy/:id/meeting"
-              element={<GroupTherapyMeeting />}
-            />
-            <Route path="/book/:professionalId" element={<BookAppointment />} />
-            <Route
-              path="/appointment-success/:bookingId"
-              element={<AppointmentSuccess />}
-            />
-            <Route
-              path="/patient/dashboard"
-              element={
-                <ProtectedRoute userType="patient">
-                  <PatientDashboard />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/patient/profile"
-              element={
-                <ProtectedRoute userType="patient">
-                  <PatientProfile />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/patient/messages"
-              element={
-                <ProtectedRoute userType="patient">
-                  <PatientMessages />
-                </ProtectedRoute>
-              }
-            />
 
-            {/* Professional Routes */}
-            <Route
-              path="/professional/dashboard"
-              element={
-                <ProtectedRoute userType="professional">
-                  <ProfessionalDashboard />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/professional/settings"
-              element={
-                <ProtectedRoute userType="professional">
-                  <ProfessionalSettings />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/professional/availability"
-              element={
-                <ProtectedRoute userType="professional">
-                  <AvailabilityManagement />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/professional/patients"
-              element={
-                <ProtectedRoute userType="professional">
-                  <PatientsList />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/professional/messages"
-              element={
-                <ProtectedRoute userType="professional">
-                  <ProfessionalMessages />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/professional/financial-details"
-              element={
-                <ProtectedRoute userType="professional">
-                  <FinancialDetails />
-                </ProtectedRoute>
-              }
-            />
 
             {/* Admin Routes */}
             <Route
@@ -391,38 +204,6 @@ const AppChrome: React.FC = () => {
               }
             />
             <Route
-              path="/admin/professionals"
-              element={
-                <ProtectedRoute userType="admin">
-                  <AdminProfessionals />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/admin/patients"
-              element={
-                <ProtectedRoute userType="admin">
-                  <AdminPatients />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/admin/appointments"
-              element={
-                <ProtectedRoute userType="admin">
-                  <AdminAppointments />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/admin/statistics"
-              element={
-                <ProtectedRoute userType="admin">
-                  <AdminStatistics />
-                </ProtectedRoute>
-              }
-            />
-            <Route
               path="/admin/content"
               element={
                 <ProtectedRoute userType="admin">
@@ -430,44 +211,12 @@ const AppChrome: React.FC = () => {
                 </ProtectedRoute>
               }
             />
-            <Route
-              path="/admin/messages"
-              element={
-                <ProtectedRoute userType="admin">
-                  <AdminMessages />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/admin/support"
-              element={
-                <ProtectedRoute userType="admin">
-                  <AdminSupport />
-                </ProtectedRoute>
-              }
-            />
 
-            <Route
-              path="/admin/withdrawals"
-              element={
-                <ProtectedRoute userType="admin">
-                  <AdminWithdrawals />
-                </ProtectedRoute>
-              }
-            />
             <Route
               path="/admin/notifications"
               element={
                 <ProtectedRoute userType="admin">
                   <AdminNotifications />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/admin/group-therapy"
-              element={
-                <ProtectedRoute userType="admin">
-                  <AdminGroupTherapy />
                 </ProtectedRoute>
               }
             />
@@ -488,15 +237,6 @@ const AppChrome: React.FC = () => {
               }
             />
 
-            {/* Consultation Room */}
-            <Route
-              path="/consultation/:id"
-              element={
-                <ProtectedRoute>
-                  <ConsultationRoom />
-                </ProtectedRoute>
-              }
-            />
 
             {/* Journal Routes */}
             {/* Le journal vit désormais dans « Me confier » (une seule entité pour écrire et relire) */}
@@ -520,8 +260,8 @@ const AppChrome: React.FC = () => {
             <Route path="/api/d/:slug" element={<DefiJouerPage />} />
 
             {/* Assessment Routes */}
-            <Route path="/assessment" element={<AssessmentHomePage />} />
-            <Route path="/assessment/select" element={<AssessmentSelectPage />} />
+            <Route path="/assessment" element={<Navigate to="/espace" replace />} />
+            <Route path="/assessment/select" element={<Navigate to="/espace" replace />} />
             <Route path="/assessment/quiz/:sessionId" element={<AssessmentQuizPage />} />
             <Route path="/assessment/results/:sessionId" element={<AssessmentResultsPage />} />
             <Route path="/assessment/compatibility" element={<CompatibilityPage />} />
@@ -529,7 +269,7 @@ const AppChrome: React.FC = () => {
             <Route path="/assessment/test/:scaleId" element={<TestCodeRedirect />} />
             <Route path="/assessment/profile" element={<AssessmentProfilePage />} />
             <Route path="/assessment/totem" element={<TotemProfilePage />} />
-            <Route path="/assessment/:category" element={<AssessmentCategoryPage />} />
+            <Route path="/assessment/:category" element={<CategoryGate />} />
 
             {/* Fallback route - évite les 404 "profonds" */}
             <Route path="*" element={<Navigate to="/" replace />} />

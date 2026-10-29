@@ -38,7 +38,7 @@ const Footer: React.FC = () => {
                   {link.label}
                 </Link>
                 {i < links.length - 1 && (
-                  <span className="text-line text-[10px]">·</span>
+                  <span className="text-line text-[13px]">·</span>
                 )}
               </React.Fragment>
             ))}

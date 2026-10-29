@@ -74,7 +74,7 @@ const InfoTip: React.FC<InfoTipProps> = ({ text, variant = 'light' }) => {
           onClick={e => e.stopPropagation()}
         >
           <div className="flex items-start justify-between gap-2">
-            <p className="m-0 text-[12px] leading-relaxed text-ink-soft">
+            <p className="m-0 text-[13px] leading-relaxed text-ink-soft">
               {text}
             </p>
             <button

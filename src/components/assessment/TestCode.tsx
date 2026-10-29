@@ -48,7 +48,7 @@ const TestCode: React.FC<Props> = ({ scaleId, size = 'sm', className = '' }) => 
     <span
       className={className}
       style={{
-        fontFamily: "'JetBrains Mono', ui-monospace, monospace",
+        fontFamily: "'Plus Jakarta Sans', sans-serif",
         fontWeight: 700,
         fontSize,
         letterSpacing: '0.04em',

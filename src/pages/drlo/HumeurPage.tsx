@@ -24,10 +24,10 @@ const CYCLE_SHOW_KEY = 'he_humeur_show_cycle';
 const SCORE_COLOR = ['', '#B9A6D6', '#9FB4C8', '#CFC6B8', '#E9C88F', '#F2B66D'];
 
 const h2: React.CSSProperties = { margin: 0, fontFamily: 'Fraunces, serif', fontSize: 19, fontWeight: 600, color: DC.title };
-const small: React.CSSProperties = { fontSize: 12, color: DC.faint };
+const small: React.CSSProperties = { fontSize: 13, color: DC.faint };
 const chip: React.CSSProperties = {
   minHeight: 40, padding: '0 14px', borderRadius: 999, border: `1px solid ${DC.line}`, background: DC.glass, color: DC.text,
-  fontSize: 13.5, fontWeight: 600, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 6,
+  fontSize: 14, fontWeight: 600, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 6,
 };
 
 const HumeurPage: React.FC = () => {
@@ -129,7 +129,7 @@ const HumeurPage: React.FC = () => {
   return (
     <DrLoShell back={{ to: '/espace', label: 'Retour à mon espace' }} genre={genre} palette={palette}>
       <div style={{ marginTop: 18 }}>
-        <p style={{ margin: 0, fontSize: 12, letterSpacing: '.14em', textTransform: 'uppercase', color: palette.accent, fontWeight: 700 }}>Ta météo intérieure</p>
+        <p style={{ margin: 0, fontSize: 13, letterSpacing: '.14em', textTransform: 'uppercase', color: palette.accent, fontWeight: 700 }}>Ta météo intérieure</p>
         <h1 style={{ margin: '6px 0 0', fontFamily: 'Fraunces, serif', fontSize: 28, lineHeight: 1.2, fontWeight: 600, color: DC.title }}>
           Ton humeur en {MONTHS[cursor.m]}
         </h1>
@@ -184,7 +184,7 @@ const HumeurPage: React.FC = () => {
                   background: def ? 'rgba(255,255,255,.06)' : 'rgba(255,255,255,.02)', opacity: c.isFuture ? 0.4 : 1,
                   display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 1, color: DC.muted }}>
                 {def ? <MoodIcon id={def.id} color={def.color} size={18} /> : <span style={{ height: 18 }} />}
-                <span style={{ fontSize: 10.5, fontWeight: 600 }}>{c.n}</span>
+                <span style={{ fontSize: 13, fontWeight: 600 }}>{c.n}</span>
                 {mark && (
                   <span aria-hidden="true" style={{ position: 'absolute', left: 6, right: 6, bottom: 3, height: 3, borderRadius: 2,
                     background: mark === 'period' ? 'rgba(232,160,184,.9)' : mark === 'period_predicted' ? 'transparent' : 'rgba(233,200,143,.7)',
@@ -197,17 +197,17 @@ const HumeurPage: React.FC = () => {
 
         {picked && (
           <div className="drl-in" style={{ marginTop: 12 }}>
-            <p style={{ margin: '0 0 8px', fontSize: 13.5, fontWeight: 700 }}>{picked === today ? 'Aujourd\'hui' : `Le ${fmtDay(picked)}`}, tu te sentais… </p>
+            <p style={{ margin: '0 0 8px', fontSize: 14, fontWeight: 700 }}>{picked === today ? 'Aujourd\'hui' : `Le ${fmtDay(picked)}`}, tu te sentais… </p>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, minmax(0, 1fr))', gap: 6 }}>
               {MOODS.map(md => (
                 <button key={md.id} onClick={() => setDayMood(picked, md.id)} className="drl-mood"
-                  style={{ minHeight: 64, borderRadius: 14, border: `1px solid ${moods[picked]?.mood === md.id ? palette.accent : DC.line}`, background: DC.glass, color: DC.text, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 5, fontSize: 10.5, fontWeight: 600, cursor: 'pointer', padding: 0 }}>
+                  style={{ minHeight: 64, borderRadius: 14, border: `1px solid ${moods[picked]?.mood === md.id ? palette.accent : DC.line}`, background: DC.glass, color: DC.text, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 5, fontSize: 13, fontWeight: 600, cursor: 'pointer', padding: 0 }}>
                   <MoodIcon id={md.id} color={md.color} size={20} /> {md.label}
                 </button>
               ))}
             </div>
             {moods[picked] && (
-              <button onClick={() => setDayMood(picked, null)} style={{ marginTop: 6, minHeight: 36, border: 0, background: 'transparent', color: DC.muted, fontSize: 12.5, fontWeight: 600, textDecoration: 'underline', textUnderlineOffset: 3, cursor: 'pointer' }}>
+              <button onClick={() => setDayMood(picked, null)} style={{ marginTop: 6, minHeight: 36, border: 0, background: 'transparent', color: DC.muted, fontSize: 13, fontWeight: 600, textDecoration: 'underline', textUnderlineOffset: 3, cursor: 'pointer' }}>
                 Effacer ce jour
               </button>
             )}
@@ -229,7 +229,7 @@ const HumeurPage: React.FC = () => {
           </div>
         )}
         {cycle && (
-          <button onClick={toggleCycle} style={{ marginTop: 8, minHeight: 36, border: 0, background: 'transparent', color: DC.muted, fontSize: 12.5, fontWeight: 600, textDecoration: 'underline', textUnderlineOffset: 3, cursor: 'pointer', padding: 0 }}>
+          <button onClick={toggleCycle} style={{ marginTop: 8, minHeight: 36, border: 0, background: 'transparent', color: DC.muted, fontSize: 13, fontWeight: 600, textDecoration: 'underline', textUnderlineOffset: 3, cursor: 'pointer', padding: 0 }}>
             {showCycle ? 'Masquer mon cycle' : 'Afficher mon cycle'}
           </button>
         )}
@@ -243,10 +243,10 @@ const HumeurPage: React.FC = () => {
             <>
               {showCycle && cyc && (
                 <>
-                  <p style={{ margin: '10px 0 0', fontSize: 14.5, lineHeight: 1.55, color: DC.soft }}>
+                  <p style={{ margin: '10px 0 0', fontSize: 15, lineHeight: 1.55, color: DC.soft }}>
                     {cyc.link ?? 'Il faut 2 à 3 cycles notés pour voir si ton humeur suit ton cycle. Continue de noter, je te dirai.'}
                   </p>
-                  <p style={{ margin: '8px 0 0', fontSize: 14.5, lineHeight: 1.55, color: DC.soft }}>
+                  <p style={{ margin: '8px 0 0', fontSize: 15, lineHeight: 1.55, color: DC.soft }}>
                     Tes prochaines règles devraient arriver vers le <b style={{ color: DC.intime }}>{fmtDay(cyc.next)}</b>.
                     {' '}À partir du <b style={{ color: DC.gold }}>{fmtDay(cyc.sensitiveFrom)}</b>, prévois-toi des soirées plus douces.
                   </p>
@@ -259,7 +259,7 @@ const HumeurPage: React.FC = () => {
             </>
           ) : cycleForm || cycleState.situation === null ? (
             <div className="drl-in">
-              <p style={{ margin: '10px 0 0', fontSize: 14.5, lineHeight: 1.55, color: DC.soft }}>
+              <p style={{ margin: '10px 0 0', fontSize: 15, lineHeight: 1.55, color: DC.soft }}>
                 Tu veux voir ton humeur à côté de ton cycle ? C'est facultatif, privé, et tu peux l'arrêter quand tu veux. Tes dernières règles ont commencé…
               </p>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 10 }}>
@@ -276,16 +276,16 @@ const HumeurPage: React.FC = () => {
             </div>
           ) : (
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginTop: 8 }}>
-              <p style={{ margin: 0, fontSize: 13.5, color: DC.muted }}>Ton cycle n'est pas suivi.</p>
+              <p style={{ margin: 0, fontSize: 14, color: DC.muted }}>Ton cycle n'est pas suivi.</p>
               <button onClick={() => setCycleForm(true)} className="drl-btn" style={chip}>Suivre mon cycle</button>
             </div>
           )}
           {cycle && !cycleForm && (
-            <button onClick={() => chooseCycle('no_tracking', null)} style={{ marginTop: 8, minHeight: 36, border: 0, background: 'transparent', color: DC.faint, fontSize: 12.5, textDecoration: 'underline', textUnderlineOffset: 3, cursor: 'pointer', padding: 0 }}>
+            <button onClick={() => chooseCycle('no_tracking', null)} style={{ marginTop: 8, minHeight: 36, border: 0, background: 'transparent', color: DC.faint, fontSize: 13, textDecoration: 'underline', textUnderlineOffset: 3, cursor: 'pointer', padding: 0 }}>
               Ne plus suivre mon cycle
             </button>
           )}
-          <p style={{ margin: '10px 0 0', fontSize: 12, lineHeight: 1.5, color: DC.faint }}>
+          <p style={{ margin: '10px 0 0', fontSize: 13, lineHeight: 1.5, color: DC.faint }}>
             Une estimation pour ton bien-être, pas un outil de contraception ni de fertilité. Si l'humeur chute très fort avant les règles, parles-en à un médecin : ça se soigne.
           </p>
         </section>
@@ -295,7 +295,7 @@ const HumeurPage: React.FC = () => {
       <section aria-label="La tendance" style={{ ...card, marginTop: 14 }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
           <h2 style={h2}>La tendance <span style={{ ...small, fontFamily: 'Plus Jakarta Sans, sans-serif' }}>· 30 jours</span></h2>
-          {trendLabel && <span style={{ fontSize: 12.5, fontWeight: 700, color: tr === 'up' ? DC.ok : tr === 'down' ? DC.gold : DC.muted }}>{trendLabel}</span>}
+          {trendLabel && <span style={{ fontSize: 13, fontWeight: 700, color: tr === 'up' ? DC.ok : tr === 'down' ? DC.gold : DC.muted }}>{trendLabel}</span>}
         </div>
         {noted30 >= 2 ? (
           <svg viewBox={`0 0 ${W} ${H + 18}`} width="100%" role="img" aria-label={`Humeur des 30 derniers jours${trendLabel ? ` : ${trendLabel.toLowerCase()}` : ''}`} style={{ marginTop: 10, display: 'block' }}>
@@ -306,7 +306,7 @@ const HumeurPage: React.FC = () => {
             <text x={W} y={H + 14} fill={DC.faint} fontSize={11} textAnchor="end">aujourd'hui</text>
           </svg>
         ) : (
-          <p style={{ margin: '10px 0 0', fontSize: 13.5, color: DC.muted }}>La courbe apparaît dès quelques jours notés.</p>
+          <p style={{ margin: '10px 0 0', fontSize: 14, color: DC.muted }}>La courbe apparaît dès quelques jours notés.</p>
         )}
       </section>
 
@@ -328,14 +328,14 @@ const HumeurPage: React.FC = () => {
       <div style={{ marginTop: 16, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
         {!moods[today] && (
           <button onClick={() => setPicked(today)} className="drl-btn"
-            style={{ minHeight: 48, padding: '0 20px', borderRadius: 999, border: 0, background: palette.primary, color: DC.ink, fontSize: 14.5, fontWeight: 700, cursor: 'pointer' }}>
+            style={{ minHeight: 48, padding: '0 20px', borderRadius: 999, border: 0, background: palette.primary, color: DC.ink, fontSize: 15, fontWeight: 700, cursor: 'pointer' }}>
             Noter mon humeur d'aujourd'hui
           </button>
         )}
-        <button onClick={eraseAll} style={{ minHeight: 40, border: 0, background: 'transparent', color: confirmErase ? '#F09A7A' : DC.faint, fontSize: 12.5, fontWeight: 600, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+        <button onClick={eraseAll} style={{ minHeight: 40, border: 0, background: 'transparent', color: confirmErase ? '#F09A7A' : DC.faint, fontSize: 13, fontWeight: 600, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
           <Trash2 size={13} aria-hidden="true" /> {confirmErase ? 'Touche encore pour tout effacer (définitif)' : 'Effacer toutes mes données d\'humeur'}
         </button>
-        <p style={{ margin: 0, textAlign: 'center', fontSize: 11.5, lineHeight: 1.5, color: DC.faint }}>
+        <p style={{ margin: 0, textAlign: 'center', fontSize: 13, lineHeight: 1.5, color: DC.faint }}>
           Ces tendances t'aident à te comprendre. Ce n'est pas un diagnostic. Urgence : <a href="tel:1515" style={{ fontWeight: 700 }}>1515</a>
           {!uid && <><br />Sans compte, ton humeur reste sur ce téléphone.</>}
         </p>

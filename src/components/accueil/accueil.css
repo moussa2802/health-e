@@ -64,7 +64,9 @@
 .drl-page{background:radial-gradient(110% 52% at 50% 0%,rgba(234,150,88,.28),rgba(234,150,88,0) 60%),linear-gradient(180deg,#1F1712 0%,#140F0C 100%)!important;color:#F4EEE4}
 .drl-screen .bg-paper\/95{background:rgba(24,18,13,.92)!important}
 .drl-screen .bg-white\/60,.drl-screen .bg-white\/80{background:rgba(255,255,255,.07)!important}
-.drl-screen .bg-gold{background:#E9C88F!important;color:#1C140D!important}
+.drl-screen,.drl-page{--he-action:linear-gradient(180deg,#F7C27F 0%,#EBA45E 100%)}
+/* Charte : le bouton principal = le dégradé ambre du moment (DrLoShell pose --he-action selon l'heure). */
+.drl-screen .bg-gold{background:var(--he-action)!important;color:#1C140D!important}
 .drl-screen .bg-gold.text-white,.drl-screen .bg-gold .text-white{color:#1C140D!important}
 .drl-screen .bg-gold\/30{background:rgba(233,200,143,.3)!important}
 .drl-screen .border-gold{border-color:#E9C88F!important}
@@ -76,5 +78,24 @@
 .drl-screen .text-white{color:#FBF5EA}
 .drl-screen .bg-line{background:rgba(255,255,255,.14)!important}
 .drl-screen .border-card{border-color:#1C140D!important}
-.drl-screen .bg-accent{background:#C9603F!important}
+.drl-screen .bg-accent{background:var(--he-action)!important;color:#1C140D!important}
+.drl-screen .bg-accent .text-white,.drl-screen .bg-accent.text-white{color:#1C140D!important}
 @keyframes drlShimmer{0%{background-position:-280px 0}100%{background-position:280px 0}}
+
+/* ── Anciennes classes de couleur brutes (administration, pages héritées) : habillage sombre ── */
+.drl-screen .bg-gray-50,.drl-screen .bg-gray-100,.drl-screen .bg-slate-50{background:rgba(255,255,255,.05)!important}
+.drl-screen .bg-blue-50,.drl-screen .bg-blue-100{background:rgba(157,191,175,.15)!important}
+.drl-screen .bg-red-50,.drl-screen .bg-red-100{background:rgba(240,138,122,.14)!important}
+.drl-screen .bg-green-50,.drl-screen .bg-green-100{background:rgba(127,209,160,.14)!important}
+.drl-screen .bg-yellow-50,.drl-screen .bg-yellow-100{background:rgba(233,200,143,.13)!important}
+.drl-screen .text-gray-900,.drl-screen .text-gray-800{color:#FBF5EA!important}
+.drl-screen .text-gray-700,.drl-screen .text-gray-600{color:#DCD3C5!important}
+.drl-screen .text-gray-500,.drl-screen .text-gray-400,.drl-screen .text-gray-300{color:#CFC6B8!important}
+.drl-screen .text-blue-500,.drl-screen .text-blue-600,.drl-screen .text-blue-700,.drl-screen .text-blue-800{color:#9DBFAF!important}
+.drl-screen .text-red-500,.drl-screen .text-red-600,.drl-screen .text-red-700,.drl-screen .text-red-800{color:#F08A7A!important}
+.drl-screen .text-green-600,.drl-screen .text-green-700,.drl-screen .text-green-800{color:#7FD1A0!important}
+.drl-screen .text-yellow-600,.drl-screen .text-yellow-700,.drl-screen .text-yellow-800{color:#E9C88F!important}
+.drl-screen .border-gray-100,.drl-screen .border-gray-200,.drl-screen .border-gray-300{border-color:rgba(255,255,255,.12)!important}
+.drl-screen .border-red-200,.drl-screen .border-red-300{border-color:rgba(240,138,122,.4)!important}
+.drl-screen .bg-blue-500,.drl-screen .bg-blue-600,.drl-screen .hover\:bg-blue-600:hover,.drl-screen .hover\:bg-blue-700:hover{background:var(--he-action)!important;color:#1C140D!important}
+.drl-screen .bg-red-500,.drl-screen .bg-red-600{background:rgba(240,138,122,.25)!important;color:#F08A7A!important}

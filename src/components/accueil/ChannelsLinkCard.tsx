@@ -25,14 +25,14 @@ const ChannelsLinkCard: React.FC<{ palette: MomentPalette }> = ({ palette }) => 
       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
         <RealDrLoPhoto size={48} palette={palette} />
         <div style={{ flex: 1, minWidth: 0 }}>
-          <p style={{ margin: 0, fontSize: 11.5, letterSpacing: '.14em', textTransform: 'uppercase', color: palette.accent, fontWeight: 700 }}>Nouveau</p>
+          <p style={{ margin: 0, fontSize: 13, letterSpacing: '.14em', textTransform: 'uppercase', color: palette.accent, fontWeight: 700 }}>Nouveau</p>
           <p style={{ margin: '2px 0 0', fontFamily: 'Fraunces, serif', fontSize: 22, lineHeight: 1.2, fontWeight: 600, color: DC.title }}>Les chaînes de Dr Lô</p>
         </div>
         {badge > 0 && (
           <span aria-hidden="true" style={{ minWidth: 26, height: 26, padding: '0 8px', boxSizing: 'border-box', borderRadius: 13, background: '#E8664F', color: '#fff', fontSize: 13, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{badge > 9 ? '9+' : badge}</span>
         )}
       </div>
-      <p style={{ position: 'relative', margin: '12px 0 0', fontSize: 14.5, lineHeight: 1.5, color: DC.soft }}>
+      <p style={{ position: 'relative', margin: '12px 0 0', fontSize: 15, lineHeight: 1.5, color: DC.soft }}>
         Ses vocaux et ses textes, thème par thème. Tu entres une fois, tu restes aussi longtemps que tu veux.
       </p>
       <span style={{ position: 'relative', marginTop: 12, display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 14, fontWeight: 700, color: palette.accent }}>

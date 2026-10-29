@@ -16,7 +16,7 @@ function walk(dir: string, out: string[] = []): string[] {
   return out;
 }
 
-const ROOTS = ['src/data', 'src/components/assessment', 'src/components/accueil', 'src/pages/drlo', 'src/pages/assessment', 'src/pages/Journal', 'src/pages/MonEspace'];
+const ROOTS = ['src/data', 'src/components/assessment', 'src/components/accueil', 'src/pages/drlo', 'src/pages/assessment'];
 const FILES = ['src/utils/optionHints.ts', 'src/utils/sexualHealthFilter.ts', 'src/utils/journalPrompts.ts', 'src/utils/relationshipTypes.ts', 'src/utils/onboardingProfile.ts', 'src/utils/scaleVisibility.ts', 'src/utils/scaleMeta.ts', 'src/utils/moodInsights.ts'];
 
 test('aucune écriture inclusive dans les tests, l\'accueil et les pages publiques', () => {

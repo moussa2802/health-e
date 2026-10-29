@@ -83,7 +83,7 @@ const ForcedChoiceInput: React.FC<ForcedChoiceInputProps> = ({
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              fontSize: 12,
+              fontSize: 13,
               fontWeight: 800,
               color: selected ? '#fff' : accentColor,
               marginTop: 1,

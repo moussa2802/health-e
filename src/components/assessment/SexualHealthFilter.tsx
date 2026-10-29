@@ -113,7 +113,7 @@ const SexualHealthFilterWizard: React.FC<Props> = ({ onComplete }) => {
                 <Heart size={18} color="white" />
               </div>
               <div>
-                <p className="text-[11px] font-bold text-accent uppercase tracking-wide mb-0.5">
+                <p className="text-[13px] font-bold text-accent uppercase tracking-wide mb-0.5">
                   Vie intime — Étape {currentVisible + 1}/{totalVisibleSteps}
                 </p>
                 <h2 className="font-display text-[17px] font-bold text-ink whitespace-pre-line">{getTitle()}</h2>
@@ -167,7 +167,7 @@ const SexualHealthFilterWizard: React.FC<Props> = ({ onComplete }) => {
         )}
       </div>
 
-      <p className="mt-5 text-[11px] text-muted text-center max-w-[340px]">
+      <p className="mt-5 text-[13px] text-muted text-center max-w-[340px]">
         Tes réponses restent privées et ne sont jamais partagées.
         Elles servent uniquement à adapter les questions à ta réalité.
       </p>

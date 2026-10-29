@@ -103,7 +103,7 @@ const BinaryInput: React.FC<BinaryInputProps> = ({
               </span>
               {opt.subtitle && (
                 <span style={{
-                  fontSize: 11,
+                  fontSize: 13,
                   fontWeight: 500,
                   color: selected ? selectedColor : '#A79E90',
                   opacity: selected ? 0.8 : 1,
@@ -146,7 +146,7 @@ const BinaryInput: React.FC<BinaryInputProps> = ({
             background: 'none',
             border: 'none',
             cursor: 'pointer',
-            fontSize: 12,
+            fontSize: 13,
             fontWeight: 600,
             color: '#A79E90',
             fontFamily: 'inherit',

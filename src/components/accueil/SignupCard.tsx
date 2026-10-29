@@ -146,14 +146,14 @@ const SignupCard: React.FC<{
   };
   const btnGhost: React.CSSProperties = {
     width: '100%', minHeight: 48, borderRadius: 14, border: `1px solid ${T.line}`, background: 'rgba(255,255,255,.05)', color: T.text,
-    fontSize: 14.5, fontWeight: 700, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8, cursor: 'pointer',
+    fontSize: 15, fontWeight: 700, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8, cursor: 'pointer',
   };
   const linkStyle: React.CSSProperties = { border: 0, background: 'transparent', color: T.muted, fontSize: 13, fontWeight: 600, textDecoration: 'underline', textUnderlineOffset: 3, cursor: 'pointer', minHeight: 36, padding: '0 4px' };
 
   return (
     <div className="drl-in" style={{ marginTop: 10, textAlign: 'left', borderRadius: 18, border: '1px solid rgba(242,182,109,.35)', background: 'rgba(255,255,255,.06)', padding: 14, display: 'flex', flexDirection: 'column', gap: 10 }}>
       {mode === 'signup' && (prenom || genre) && (
-        <p style={{ margin: 0, fontSize: 12, color: T.faint }}>Ton prénom{genre ? ', ton genre' : ''} et ce qu'on a fait ensemble sont déjà gardés.</p>
+        <p style={{ margin: 0, fontSize: 13, color: T.faint }}>Ton prénom{genre ? ', ton genre' : ''} et ce qu'on a fait ensemble sont déjà gardés.</p>
       )}
       <button onClick={onGoogle} disabled={!!busy} className="drl-btn" style={btnPrimary}>
         <GoogleG /> {busy === 'google' ? 'Connexion…' : 'Continuer avec Google'}
@@ -195,7 +195,7 @@ const SignupCard: React.FC<{
       )}
 
       {needsConsent && (
-        <label style={{ display: 'flex', alignItems: 'flex-start', gap: 10, fontSize: 12.5, color: T.muted, lineHeight: 1.45, cursor: 'pointer' }}>
+        <label style={{ display: 'flex', alignItems: 'flex-start', gap: 10, fontSize: 13, color: T.muted, lineHeight: 1.45, cursor: 'pointer' }}>
           <input type="checkbox" checked={hasAgreedToTerms} onChange={e => setHasAgreedToTerms(e.target.checked)}
             style={{ width: 20, height: 20, marginTop: 1, accentColor: palette.accent, flexShrink: 0 }} />
           <span>
@@ -208,7 +208,7 @@ const SignupCard: React.FC<{
       {info && <p role="status" style={{ margin: 0, fontSize: 13, color: '#9DBFAF', lineHeight: 1.45 }}>{info}</p>}
       {err && <p role="alert" style={{ margin: 0, fontSize: 13, color: T.err, lineHeight: 1.45 }}>{err}</p>}
 
-      <button onClick={onPhone} style={{ ...linkStyle, alignSelf: 'center', fontSize: 12.5 }}>Avant, je me connectais avec mon numéro</button>
+      <button onClick={onPhone} style={{ ...linkStyle, alignSelf: 'center', fontSize: 13 }}>Avant, je me connectais avec mon numéro</button>
     </div>
   );
 };
@@ -258,7 +258,7 @@ export const LinkAccountCard: React.FC<{ palette: MomentPalette; onLinked: () =>
       </button>
       {!emailOpen ? (
         <button onClick={() => setEmailOpen(true)} className="drl-btn"
-          style={{ width: '100%', minHeight: 48, borderRadius: 14, border: `1px solid ${T.line}`, background: 'rgba(255,255,255,.05)', color: T.text, fontSize: 14.5, fontWeight: 700, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8, cursor: 'pointer' }}>
+          style={{ width: '100%', minHeight: 48, borderRadius: 14, border: `1px solid ${T.line}`, background: 'rgba(255,255,255,.05)', color: T.text, fontSize: 15, fontWeight: 700, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8, cursor: 'pointer' }}>
           <Mail size={17} aria-hidden="true" /> Relier un e-mail
         </button>
       ) : (
@@ -266,7 +266,7 @@ export const LinkAccountCard: React.FC<{ palette: MomentPalette; onLinked: () =>
           <input value={email} onChange={e => setEmail(e.target.value)} type="email" autoComplete="email" placeholder="Ton adresse e-mail" aria-label="Adresse e-mail" style={field} className="drl-input" />
           <input value={password} onChange={e => setPassword(e.target.value)} type="password" autoComplete="new-password" placeholder="Choisis un mot de passe (6 caractères min.)" aria-label="Mot de passe" style={field} className="drl-input" />
           <button type="submit" disabled={busy} className="drl-btn"
-            style={{ width: '100%', minHeight: 48, borderRadius: 14, border: 0, background: palette.primary, color: T.ink, fontSize: 14.5, fontWeight: 700, cursor: 'pointer', opacity: busy ? 0.6 : 1 }}>
+            style={{ width: '100%', minHeight: 48, borderRadius: 14, border: 0, background: palette.primary, color: T.ink, fontSize: 15, fontWeight: 700, cursor: 'pointer', opacity: busy ? 0.6 : 1 }}>
             Relier cet e-mail
           </button>
         </form>

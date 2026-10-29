@@ -49,7 +49,7 @@ const ChannelComments: React.FC<{ postId: string; palette: MomentPalette; onCoun
   if (items === null) return <LoadingCards label="Chargement des commentaires…" count={1} />;
   const chip = (on: boolean): React.CSSProperties => ({ minHeight: 36, padding: '0 12px', borderRadius: 999, cursor: 'pointer', fontSize: 13, fontWeight: 600, border: `1px solid ${on ? palette.accent : DC.line}`, background: on ? 'rgba(242,182,109,.15)' : DC.glass, color: on ? palette.accent : DC.muted });
   const MODES: { id: IdentityMode; label: string }[] = [{ id: 'prenom', label: 'Mon prénom' }, { id: 'anon', label: 'Anonyme' }, { id: 'pseudo', label: 'Un pseudo' }];
-  const link: React.CSSProperties = { background: 'none', border: 0, color: DC.faint, fontSize: 12.5, cursor: 'pointer', minHeight: 32 };
+  const link: React.CSSProperties = { background: 'none', border: 0, color: DC.faint, fontSize: 13, cursor: 'pointer', minHeight: 32 };
   return (
     <section aria-label="Commentaires" style={{ marginTop: 12, borderTop: `1px solid ${DC.line}`, paddingTop: 12 }}>
       {open ? (
@@ -64,9 +64,9 @@ const ChannelComments: React.FC<{ postId: string; palette: MomentPalette; onCoun
               <SendHorizontal size={19} aria-hidden="true" />
             </button>
           </div>
-          <p style={{ margin: '8px 4px 0', fontSize: 12.5, color: DC.faint, lineHeight: 1.5 }}>
+          <p style={{ margin: '8px 4px 0', fontSize: 13, color: DC.faint, lineHeight: 1.5 }}>
             Tu apparais comme{' '}
-            <button type="button" onClick={() => setIdtOpen(o => !o)} aria-expanded={idtOpen} style={{ background: 'none', border: 0, padding: 0, minHeight: 28, color: palette.accent, fontWeight: 700, fontSize: 12.5, cursor: 'pointer', textDecoration: 'underline' }}>
+            <button type="button" onClick={() => setIdtOpen(o => !o)} aria-expanded={idtOpen} style={{ background: 'none', border: 0, padding: 0, minHeight: 28, color: palette.accent, fontWeight: 700, fontSize: 13, cursor: 'pointer', textDecoration: 'underline' }}>
               {mode === 'anon' ? 'Anonyme' : mode === 'prenom' ? 'ton prénom' : (pseudo.trim() || 'un pseudo')}
             </button>
             . Les autres membres voient ce commentaire.
@@ -77,7 +77,7 @@ const ChannelComments: React.FC<{ postId: string; palette: MomentPalette; onCoun
               {mode === 'pseudo' && <input aria-label="Ton pseudo" value={pseudo} maxLength={20} onChange={e => setIdentity({ mode, pseudo: e.target.value })} placeholder="Ton pseudo" className="drl-input" style={{ ...field, minHeight: 40, padding: '0 14px', flexBasis: '100%' }} />}
             </div>
           )}
-          {error && <p role="alert" style={{ margin: '10px 4px 0', color: '#F09A7A', fontSize: 13.5, lineHeight: 1.45 }}>{error}</p>}
+          {error && <p role="alert" style={{ margin: '10px 4px 0', color: '#F09A7A', fontSize: 14, lineHeight: 1.45 }}>{error}</p>}
           {support && (
             <div role="status" style={{ marginTop: 10, borderRadius: 14, border: '1px solid rgba(233,200,143,.45)', background: 'rgba(233,200,143,.08)', padding: 12, fontSize: 14, lineHeight: 1.55, color: DC.text }}>
               Ce que tu as écrit compte, et on ne l'a pas publié. Si tu penses à te faire du mal ou si tu es en danger, appelle le <a href="tel:1515" style={{ fontWeight: 700, color: palette.accent }}>1515</a> (SAMU) ou le CHU de Fann au <a href="tel:+221338691820" style={{ fontWeight: 700, color: palette.accent }}>+221 33 869 18 20</a>. Parle à une vraie personne, tout de suite.
@@ -91,7 +91,7 @@ const ChannelComments: React.FC<{ postId: string; palette: MomentPalette; onCoun
           <article key={c.id} style={{ padding: '10px 4px', borderTop: `1px solid ${c.pinned ? palette.accent : DC.line}` }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
               <TotemAvatar animal={c.totem} />
-              <p style={{ margin: 0, fontSize: 12.5, color: DC.faint }}><b style={{ color: DC.soft }}>{c.name}</b>{c.mine ? ' (toi)' : ''}{c.pinned ? ' · épinglé' : ''} · {ago(c.at)}</p>
+              <p style={{ margin: 0, fontSize: 13, color: DC.faint }}><b style={{ color: DC.soft }}>{c.name}</b>{c.mine ? ' (toi)' : ''}{c.pinned ? ' · épinglé' : ''} · {ago(c.at)}</p>
             </div>
             <p style={{ margin: '6px 0 0', fontSize: 15, lineHeight: 1.55, color: DC.text, whiteSpace: 'pre-wrap' }}>{c.text}</p>
             <ThreadView entries={c.thread} author={c.mine ? 'Toi' : c.name} palette={palette} />
@@ -100,7 +100,7 @@ const ChannelComments: React.FC<{ postId: string; palette: MomentPalette; onCoun
             {c.mine && !c.closed && !c.canReply && c.thread.length > 0 && c.thread[c.thread.length - 1].from === 'user' && <p style={{ margin: '10px 0 0', fontSize: 13, color: DC.muted }}>Dr Lô te répondra ici.</p>}
             <div style={{ marginTop: 6, textAlign: 'right' }}>
               {c.mine ? <button type="button" onClick={() => deletePostComment(c.id).then(load).catch(() => {})} style={link}>Supprimer</button>
-                : reported.includes(c.id) ? <span style={{ fontSize: 12.5, color: DC.faint }}>Merci, c'est signalé.</span>
+                : reported.includes(c.id) ? <span style={{ fontSize: 13, color: DC.faint }}>Merci, c'est signalé.</span>
                 : <button type="button" onClick={() => reportPostComment(c.id).then(() => setReported(r => [...r, c.id])).catch(() => {})} style={link}>Signaler</button>}
             </div>
           </article>

@@ -43,14 +43,14 @@ const VraiDrLoBand: React.FC<{ uid: string; palette: MomentPalette }> = ({ uid, 
       <span style={{ position: 'relative', flexShrink: 0 }}>
         <RealDrLoPhoto size={46} palette={palette} />
         {total > 0 && (
-          <span aria-hidden="true" style={{ position: 'absolute', top: -4, right: -5, minWidth: 20, height: 20, padding: '0 5px', boxSizing: 'border-box', borderRadius: 10, background: '#E8664F', color: '#fff', fontSize: 11.5, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid #1C1612' }}>{total > 9 ? '9+' : total}</span>
+          <span aria-hidden="true" style={{ position: 'absolute', top: -4, right: -5, minWidth: 20, height: 20, padding: '0 5px', boxSizing: 'border-box', borderRadius: 10, background: '#E8664F', color: '#fff', fontSize: 13, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid #1C1612' }}>{total > 9 ? '9+' : total}</span>
         )}
       </span>
       <span style={{ flex: 1, minWidth: 0 }}>
-        <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 15.5, fontWeight: 700 }}>
+        <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 16, fontWeight: 700 }}>
           Le vrai Dr Lô <BadgeCheck size={16} color={palette.accent} aria-label="médecin" />
         </span>
-        <span style={{ display: 'block', marginTop: 1, fontSize: 12.5, color: total > 0 ? palette.accent : DC.muted, fontWeight: total > 0 ? 700 : 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{line}</span>
+        <span style={{ display: 'block', marginTop: 1, fontSize: 13, color: total > 0 ? palette.accent : DC.muted, fontWeight: total > 0 ? 700 : 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{line}</span>
       </span>
       <ChevronRight size={18} color={palette.accent} aria-hidden="true" />
     </Link>

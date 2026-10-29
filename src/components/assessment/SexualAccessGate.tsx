@@ -174,7 +174,7 @@ const SexualAccessGate: React.FC<Props> = ({ userId, onGranted }) => {
       >
         {content}
       </div>
-      <p className="mt-5 text-[11px] text-muted text-center max-w-[340px]">
+      <p className="mt-5 text-[13px] text-muted text-center max-w-[340px]">
         Tes réponses restent privées et ne sont jamais partagées.
       </p>
     </div>
@@ -187,7 +187,7 @@ const SexualAccessGate: React.FC<Props> = ({ userId, onGranted }) => {
       className="flex items-start gap-3 p-3.5 rounded-xl border border-line bg-card text-left text-[13px] font-medium text-ink transition-all duration-150 hover:border-accent/40 hover:bg-accent-soft cursor-pointer disabled:cursor-wait w-full"
     >
       <span className="whitespace-pre-line leading-snug">{label}</span>
-      {sub && <span className="text-[11px] text-muted font-normal">{sub}</span>}
+      {sub && <span className="text-[13px] text-muted font-normal">{sub}</span>}
     </button>
   );
 
@@ -204,7 +204,7 @@ const SexualAccessGate: React.FC<Props> = ({ userId, onGranted }) => {
           <Lock size={22} color="white" />
         </div>
         <div>
-          <p className="text-[11px] font-bold text-accent uppercase tracking-wide mb-0.5">Section réservée aux adultes</p>
+          <p className="text-[13px] font-bold text-accent uppercase tracking-wide mb-0.5">Section réservée aux adultes</p>
           <h2 className="font-display text-lg font-bold text-ink">Vérifions ton âge</h2>
         </div>
       </div>
@@ -261,7 +261,7 @@ const SexualAccessGate: React.FC<Props> = ({ userId, onGranted }) => {
             <Heart size={18} color="white" />
           </div>
           <div>
-            <p className="text-[11px] font-bold text-accent uppercase tracking-wide mb-0.5">
+            <p className="text-[13px] font-bold text-accent uppercase tracking-wide mb-0.5">
               Vie intime — Question {step}/{total}
             </p>
             <h2 className="font-display text-base font-bold text-ink">Quelques questions rapides</h2>

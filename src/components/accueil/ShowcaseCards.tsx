@@ -14,8 +14,8 @@ const Arrow = () => <ArrowRight size={16} color={DC.muted} aria-hidden="true" st
 
 const Text: React.FC<{ title: string; sub: string }> = ({ title, sub }) => (
   <span style={{ flex: 1, minWidth: 0 }}>
-    <span style={{ display: 'block', fontSize: 14.5, fontWeight: 700, color: DC.title }}>{title}</span>
-    <span style={{ display: 'block', fontSize: 12.5, lineHeight: 1.45, color: DC.muted, marginTop: 2 }}>{sub}</span>
+    <span style={{ display: 'block', fontSize: 15, fontWeight: 700, color: DC.title }}>{title}</span>
+    <span style={{ display: 'block', fontSize: 13, lineHeight: 1.45, color: DC.muted, marginTop: 2 }}>{sub}</span>
   </span>
 );
 
@@ -53,7 +53,7 @@ export const DiscoveryRow: React.FC<{ ids: string[]; onStart: (id: string) => vo
   if (ids.length === 0) return null;
   return (
     <section aria-label="Tes prochaines découvertes" style={{ marginTop: 22 }}>
-      <p style={{ margin: '0 4px 8px', fontSize: 11.5, letterSpacing: '.12em', textTransform: 'uppercase', fontWeight: 700, color: DC.faint }}>Tes prochaines découvertes</p>
+      <p style={{ margin: '0 4px 8px', fontSize: 13, letterSpacing: '.12em', textTransform: 'uppercase', fontWeight: 700, color: DC.faint }}>Tes prochaines découvertes</p>
       <div style={{ display: 'grid', gridTemplateColumns: ids.length > 1 ? '1fr 1fr' : '1fr', gap: 10 }}>
         {ids.map(id => {
           const m = getScaleMeta(id);
@@ -61,8 +61,8 @@ export const DiscoveryRow: React.FC<{ ids: string[]; onStart: (id: string) => vo
             <button key={id} type="button" onClick={() => onStart(id)} className="drl-btn"
               style={{ ...cardStyle, flexDirection: 'column', alignItems: 'flex-start', gap: 8, minHeight: 112 }}>
               <Sparkles size={18} color={DC.gold} aria-hidden="true" />
-              <span style={{ fontSize: 14.5, fontWeight: 700, color: DC.title, lineHeight: 1.25 }}>{m.label}</span>
-              <span style={{ fontSize: 12, lineHeight: 1.4, color: DC.muted, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{m.description}</span>
+              <span style={{ fontSize: 15, fontWeight: 700, color: DC.title, lineHeight: 1.25 }}>{m.label}</span>
+              <span style={{ fontSize: 13, lineHeight: 1.4, color: DC.muted, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{m.description}</span>
             </button>
           );
         })}

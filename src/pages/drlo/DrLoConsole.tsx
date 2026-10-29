@@ -20,6 +20,7 @@ import CommunityPanel from '../../components/accueil/CommunityPanel';
 import ChannelsAdmin from '../../components/accueil/ChannelsAdmin';
 import { useChannelsActivity } from '../../hooks/useChannelsActivity';
 import { getDrloActivity, markCommunitySeen } from '../../services/drloBroadcastService';
+import AudioPlayer from '../../components/accueil/AudioPlayer';
 
 const fmt = (t: number) => (t ? new Date(t).toLocaleString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : '');
 const SHARE_LABEL: Record<string, string> = { none: 'Question seule', totem: 'Totem et tendances', results: 'Résultats de tests' };
@@ -50,7 +51,7 @@ const Snapshot: React.FC<{ s: Record<string, unknown>; palette: { accent: string
           {n > 0 && (
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 8 }}>
               {Object.entries(results).map(([id, r]) => (
-                <span key={id} title={r.label} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '4px 10px', borderRadius: 999, border: `1px solid ${DC.line}`, fontSize: 12.5, color: DC.soft }}>
+                <span key={id} title={r.label} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '4px 10px', borderRadius: 999, border: `1px solid ${DC.line}`, fontSize: 13, color: DC.soft }}>
                   <i aria-hidden="true" style={{ width: 8, height: 8, borderRadius: '50%', background: SEV_COLOR[r.severity] ?? palette.accent, display: 'inline-block' }} />
                   {getScaleMeta(id).label}
                 </span>
@@ -70,7 +71,7 @@ const Snapshot: React.FC<{ s: Record<string, unknown>; palette: { accent: string
 };
 
 const mmss = (n: number) => `${Math.floor(n / 60)}:${String(Math.round(n % 60)).padStart(2, '0')}`;
-const miniBtn: React.CSSProperties = { minHeight: 36, padding: '0 12px', borderRadius: 10, border: `1px solid ${DC.line}`, background: DC.glass, color: DC.muted, cursor: 'pointer', fontSize: 12.5 };
+const miniBtn: React.CSSProperties = { minHeight: 36, padding: '0 12px', borderRadius: 10, border: `1px solid ${DC.line}`, background: DC.glass, color: DC.muted, cursor: 'pointer', fontSize: 13 };
 /** À répondre : jamais répondu, ou la personne a écrit en dernier et la discussion n'est pas close. */
 const needsAnswer = (q: AdminQuestion) => q.status === 'pending' || (!q.closed && q.thread.length > 0 && q.thread[q.thread.length - 1].from === 'user');
 
@@ -91,13 +92,13 @@ const QuestionCard: React.FC<{
     <article style={{ ...card, padding: 14, borderColor: late ? 'rgba(240,154,122,.6)' : todo && q.thread.length ? palette.accent : DC.line }}>
       <button type="button" onClick={() => setOpen(o => !o)} aria-expanded={open}
         style={{ all: 'unset', display: 'block', width: '100%', boxSizing: 'border-box', cursor: 'pointer' }}>
-        <span style={{ display: 'flex', justifyContent: 'space-between', gap: 8, fontSize: 12, color: DC.faint }}>
+        <span style={{ display: 'flex', justifyContent: 'space-between', gap: 8, fontSize: 13, color: DC.faint }}>
           <span>{fmt(q.createdAt)} · {who}{late ? ' · plus de 5 jours' : ''}</span>
           {q.videoConsent && <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, color: DC.ok }}><Video size={12} aria-hidden="true" /> vidéo OK</span>}
         </span>
         <span style={{ display: 'block', marginTop: 6, fontSize: 15, lineHeight: 1.5, color: DC.text, whiteSpace: open ? 'pre-wrap' : undefined,
           ...(open ? {} : { overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as const }) }}>{q.text}</span>
-        {!open && hasDrlo && <span style={{ display: 'block', marginTop: 6, fontSize: 12.5, color: palette.accent, fontWeight: 600 }}>
+        {!open && hasDrlo && <span style={{ display: 'block', marginTop: 6, fontSize: 13, color: palette.accent, fontWeight: 600 }}>
           {todo ? 'La personne t\'a répondu : à toi' : q.closed ? 'Discussion clôturée' : `Répondu le ${fmt(q.answer?.at ?? 0)}`} · toucher pour voir</span>}
       </button>
       {open && (
@@ -107,7 +108,7 @@ const QuestionCard: React.FC<{
             const mine = e.from === 'drlo';
             return (
               <div key={e.index} style={{ marginTop: 10, borderLeft: `2px solid ${mine ? palette.accent : DC.line}`, paddingLeft: 10 }}>
-                <p style={{ margin: 0, fontSize: 12, fontWeight: 700, color: mine ? palette.accent : DC.faint }}>
+                <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: mine ? palette.accent : DC.faint }}>
                   {mine ? 'Toi' : who}{e.editedAt ? ' · modifié' : ''} · {fmt(e.editedAt ?? e.at)}
                 </p>
                 {editing === e.index ? (
@@ -115,14 +116,14 @@ const QuestionCard: React.FC<{
                     <ReplyComposer initialText={e.text} existingAudio={e.audioSec ? { url: e.audioUrl ?? null, sec: e.audioSec } : null} placeholder="Ta réponse" submitLabel="Enregistrer la modification"
                       onSubmit={async (t, clip, removeAudio) => { await adminEditEntry(q.id, e.index, { text: t, audio: clip, removeAudio }); setEditing(null); onChanged(); }}
                       onCancel={() => setEditing(null)} />
-                    <p style={{ margin: '6px 0 0', fontSize: 12, color: DC.faint }}>La personne verra « Réponse mise à jour ».</p>
+                    <p style={{ margin: '6px 0 0', fontSize: 13, color: DC.faint }}>La personne verra « Réponse mise à jour ».</p>
                   </div>
                 ) : (
                   <>
                     {e.audioSec > 0 && (e.audioUrl
-                      ? <audio controls preload="metadata" src={e.audioUrl} aria-label={mine ? 'Ton vocal' : 'Vocal'} style={{ width: '100%', height: 40, marginTop: 6 }} />
+                      ? <AudioPlayer src={e.audioUrl} ariaLabel={mine ? 'Ton vocal' : 'Vocal'} style={{ marginTop: 6 }} />
                       : <p style={{ margin: '6px 0 0', fontSize: 13, color: DC.muted }}>Vocal de {mmss(e.audioSec)}</p>)}
-                    {e.text && <p style={{ margin: '4px 0 0', fontSize: 14.5, lineHeight: 1.5, color: mine ? DC.soft : DC.text, whiteSpace: 'pre-wrap' }}>{e.text}</p>}
+                    {e.text && <p style={{ margin: '4px 0 0', fontSize: 15, lineHeight: 1.5, color: mine ? DC.soft : DC.text, whiteSpace: 'pre-wrap' }}>{e.text}</p>}
                     {mine && (confirmDel === e.index ? (
                       <div role="alertdialog" aria-label="Supprimer cette réponse" style={{ marginTop: 8, padding: 10, borderRadius: 12, border: '1px solid rgba(240,154,122,.5)', background: 'rgba(240,154,122,.08)' }}>
                         <p style={{ margin: 0, fontSize: 13, lineHeight: 1.45, color: DC.text }}>Supprimer cette réponse pour de bon ?{q.thread.filter(x => x.from === 'drlo').length === 1 ? ' La question reviendra dans « À répondre ».' : ''}</p>
@@ -142,7 +143,7 @@ const QuestionCard: React.FC<{
               </div>
             );
           })}
-          {last && last.from === 'user' && !q.closed && <p style={{ margin: '10px 0 0', fontSize: 12.5, fontWeight: 700, color: '#F0C987' }}>La personne t'a répondu : à toi.</p>}
+          {last && last.from === 'user' && !q.closed && <p style={{ margin: '10px 0 0', fontSize: 13, fontWeight: 700, color: '#F0C987' }}>La personne t'a répondu : à toi.</p>}
           {q.closed ? (
             <div style={{ marginTop: 12 }}>
               <p style={{ margin: 0, fontSize: 13, color: DC.muted }}>Discussion clôturée : la personne ne peut plus écrire.</p>
@@ -225,7 +226,7 @@ const DrLoConsole: React.FC = () => {
 
   const title = (
     <div style={{ marginTop: 18 }}>
-      <p style={{ margin: 0, fontSize: 12, letterSpacing: '.14em', textTransform: 'uppercase', color: palette.accent, fontWeight: 700 }}>Espace Dr Lô</p>
+      <p style={{ margin: 0, fontSize: 13, letterSpacing: '.14em', textTransform: 'uppercase', color: palette.accent, fontWeight: 700 }}>Espace Dr Lô</p>
       <h1 style={{ margin: '6px 0 0', fontFamily: 'Fraunces, serif', fontSize: 28, fontWeight: 600, color: DC.title }}>Tes échanges avec les utilisateurs</h1>
     </div>
   );
@@ -255,7 +256,7 @@ const DrLoConsole: React.FC = () => {
       <DrLoShell back={{ to: '/', label: 'Accueil' }} palette={palette}>
         {title}
         <section style={{ ...card, marginTop: 16 }}>
-          <p style={{ margin: 0, fontSize: 14.5, color: DC.soft, lineHeight: 1.5 }}>Ce compte n'a pas accès à l'espace Dr Lô.</p>
+          <p style={{ margin: 0, fontSize: 15, color: DC.soft, lineHeight: 1.5 }}>Ce compte n'a pas accès à l'espace Dr Lô.</p>
           <button onClick={() => signOut(auth)} className="drl-btn" style={{ marginTop: 12, minHeight: 44, padding: '0 16px', borderRadius: 999, border: `1px solid ${DC.line}`, background: DC.glass, color: DC.text, fontWeight: 600, cursor: 'pointer' }}>Changer de compte</button>
         </section>
       </DrLoShell>
@@ -267,7 +268,7 @@ const DrLoConsole: React.FC = () => {
     <DrLoShell back={{ to: '/', label: 'Accueil' }} palette={palette}>
       {title}
       {week && (
-        <p style={{ margin: '8px 0 0', fontSize: 13.5, color: DC.muted, lineHeight: 1.5 }}>
+        <p style={{ margin: '8px 0 0', fontSize: 14, color: DC.muted, lineHeight: 1.5 }}>
           Cette semaine : <b style={{ color: DC.text }}>{week.used} / {week.cap}</b> questions · {week.queued} en file d'attente. Réponse promise sous 7 jours.
         </p>
       )}
@@ -277,9 +278,9 @@ const DrLoConsole: React.FC = () => {
           const label = t === 'pending' ? 'À répondre' : t === 'done' ? 'Répondues' : t === 'community' ? 'Ma communauté' : t === 'channels' ? 'Chaînes' : 'Banc d\'essai';
           return (
             <button key={t} onClick={() => setTab(t)} className="drl-btn" aria-label={n > 0 ? `${label} : ${n} nouveauté${n > 1 ? 's' : ''}` : label}
-              style={{ position: 'relative', minHeight: 38, padding: '0 14px', borderRadius: 999, border: `1px solid ${tab === t ? palette.accent : DC.line}`, background: tab === t ? 'rgba(242,182,109,.15)' : DC.glass, color: tab === t ? palette.accent : DC.muted, fontWeight: 700, fontSize: 13.5, cursor: 'pointer' }}>
+              style={{ position: 'relative', minHeight: 38, padding: '0 14px', borderRadius: 999, border: `1px solid ${tab === t ? palette.accent : DC.line}`, background: tab === t ? 'rgba(242,182,109,.15)' : DC.glass, color: tab === t ? palette.accent : DC.muted, fontWeight: 700, fontSize: 14, cursor: 'pointer' }}>
               {label}
-              {n > 0 && <span aria-hidden="true" style={{ position: 'absolute', top: -7, right: -4, minWidth: 20, height: 20, padding: '0 6px', boxSizing: 'border-box', borderRadius: 10, background: '#E8664F', color: '#fff', fontSize: 11.5, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid #1C1612' }}>{n}</span>}
+              {n > 0 && <span aria-hidden="true" style={{ position: 'absolute', top: -7, right: -4, minWidth: 20, height: 20, padding: '0 6px', boxSizing: 'border-box', borderRadius: 10, background: '#E8664F', color: '#fff', fontSize: 13, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid #1C1612' }}>{n}</span>}
             </button>
           );
         })}
@@ -287,7 +288,7 @@ const DrLoConsole: React.FC = () => {
           <LogOut size={16} aria-hidden="true" />
         </button>
       </div>
-      {error && <p role="alert" style={{ color: '#F09A7A', fontSize: 13.5 }}>{error}</p>}
+      {error && <p role="alert" style={{ color: '#F09A7A', fontSize: 14 }}>{error}</p>}
       {tab === 'community' ? <CommunityPanel palette={palette} newByBroadcast={activity.byBroadcast} /> : tab === 'channels' ? <ChannelsAdmin palette={palette} /> : tab === 'bench' && currentUser ? <DrloBench uid={currentUser.id} palette={palette} /> : loading && items.length === 0 ? <Loader2 className="animate-spin" style={{ marginTop: 20 }} /> : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginTop: 14 }}>
           {list.length === 0 && <p style={{ color: DC.faint, fontSize: 14 }}>{tab === 'pending' ? 'Aucune question en attente. 🙏' : 'Pas encore de réponse envoyée.'}</p>}
@@ -297,7 +298,7 @@ const DrLoConsole: React.FC = () => {
           ))}
         </div>
       )}
-      <p style={{ margin: '18px 0 0', textAlign: 'center', fontSize: 11.5, color: DC.faint }}>
+      <p style={{ margin: '18px 0 0', textAlign: 'center', fontSize: 13, color: DC.faint }}>
         Les questions anonymes arrivent sans prénom. <Link to="/" style={{ color: palette.accent }}>Retour au site</Link>
       </p>
     </DrLoShell>

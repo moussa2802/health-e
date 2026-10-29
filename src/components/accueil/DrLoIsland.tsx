@@ -60,7 +60,7 @@ const DrLoIsland: React.FC<{ state: DrLoState; label: string | null; palette: Mo
       </div>
       <div style={{ padding: '18px 18px 10px', minWidth: 170, borderRadius: 20, background: 'rgba(30,25,21,.92)', border: '1px solid rgba(255,255,255,.12)', boxShadow: '0 10px 30px rgba(0,0,0,.45)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', textAlign: 'center' }}>
         <p style={{ margin: 0, fontSize: 15, fontWeight: 700, color: '#F4EEE4' }}>Dr Lô</p>
-        <p style={{ margin: '2px 0 0', fontSize: 13.5, fontWeight: 600, color: '#DCD3C5', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+        <p style={{ margin: '2px 0 0', fontSize: 14, fontWeight: 600, color: '#DCD3C5', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
           <Sparkles size={14} color={ring} aria-hidden="true" /> {shown.label}
         </p>
       </div>

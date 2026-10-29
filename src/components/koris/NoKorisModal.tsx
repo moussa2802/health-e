@@ -94,7 +94,7 @@ const NoKorisModal: React.FC = () => {
                 <img src={KORI_IMG} alt="" className="w-4 h-4 rounded-full object-cover" />
                 <span className="text-sm font-bold text-gold">{pack.koris}</span>
               </div>
-              <div className="text-[11px] text-ink-soft font-medium">
+              <div className="text-[13px] text-ink-soft font-medium">
                 {formatPrice(pack.price)} FCFA
               </div>
               {loading === pack.id && (

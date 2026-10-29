@@ -42,7 +42,7 @@ const FrequencyStripInput: React.FC<FrequencyStripInputProps> = ({
       <div style={{
         display: 'flex',
         justifyContent: 'space-between',
-        fontSize: 10.5,
+        fontSize: 13,
         color: '#A79E90',
         fontWeight: 600,
         marginBottom: 7,
@@ -110,7 +110,7 @@ const FrequencyStripInput: React.FC<FrequencyStripInputProps> = ({
                 borderRadius: 7,
                 background: isSelected ? 'rgba(244,241,233,0.22)' : 'rgba(255,255,255,.1)',
                 color: isSelected ? '#F4F1E9' : '#A79E90',
-                fontSize: 10.5,
+                fontSize: 13,
                 fontWeight: 800,
                 display: 'flex',
                 alignItems: 'center',

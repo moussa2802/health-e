@@ -3,6 +3,7 @@
  * suivre les publications (vus, écoutes, réactions), voir les membres (prénoms seulement, jamais leurs résultats).
  */
 import React, { useEffect, useRef, useState } from 'react';
+import AudioPlayer from './AudioPlayer';
 import { ArrowLeft, Eye, Loader2, Mic, Pencil, Send, Trash2 } from 'lucide-react';
 import { blobToBase64, useVoiceRecorder } from '../../hooks/useVoiceRecorder';
 import VoiceInput from './VoiceInput';
@@ -46,16 +47,16 @@ export const MemberList: React.FC<{ channelId: string; postId?: string; kind: Au
       <ul style={{ listStyle: 'none', margin: '8px 0 0', padding: 0, maxHeight: 320, overflowY: 'auto', WebkitOverflowScrolling: 'touch' }}>
         {items.map((i, idx) => (
           <li key={`${i.name}-${idx}`} style={{ display: 'flex', alignItems: 'center', gap: 10, minHeight: 42, borderTop: idx ? `1px solid ${DC.line}` : undefined }}>
-            <span aria-hidden="true" style={{ width: 28, height: 28, flexShrink: 0, borderRadius: '50%', background: 'rgba(242,182,109,.16)', color: palette.accent, fontSize: 12.5, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{i.name.slice(0, 1).toUpperCase()}</span>
+            <span aria-hidden="true" style={{ width: 28, height: 28, flexShrink: 0, borderRadius: '50%', background: 'rgba(242,182,109,.16)', color: palette.accent, fontSize: 13, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{i.name.slice(0, 1).toUpperCase()}</span>
             <span style={{ flex: 1, minWidth: 0, fontSize: 14, color: DC.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{i.name}</span>
-            {kind !== 'unseen' && i.at > 0 && <span style={{ fontSize: 12, color: DC.faint, flexShrink: 0 }}>{when(i.at)}</span>}
+            {kind !== 'unseen' && i.at > 0 && <span style={{ fontSize: 13, color: DC.faint, flexShrink: 0 }}>{when(i.at)}</span>}
           </li>
         ))}
-        {done && !loading && items.length === 0 && <li style={{ padding: '10px 0', fontSize: 13.5, color: DC.faint }}>{q.trim() ? 'Aucun prénom trouvé.' : 'Personne pour l\'instant.'}</li>}
+        {done && !loading && items.length === 0 && <li style={{ padding: '10px 0', fontSize: 14, color: DC.faint }}>{q.trim() ? 'Aucun prénom trouvé.' : 'Personne pour l\'instant.'}</li>}
       </ul>
       {loading && <Loader2 size={16} className="animate-spin" aria-label="Chargement" style={{ marginTop: 8 }} />}
-      {next && !loading && <button type="button" onClick={() => load(q, next)} className="drl-btn" style={{ marginTop: 8, width: '100%', minHeight: 44, borderRadius: 12, border: `1px solid ${DC.line}`, background: DC.glass, color: DC.soft, cursor: 'pointer', fontSize: 13.5, fontWeight: 600 }}>Voir plus ({items.length} affichés)</button>}
-      <p style={{ margin: '10px 0 0', fontSize: 12, color: DC.faint }}>Tu ne vois que les prénoms, jamais les résultats de tests.</p>
+      {next && !loading && <button type="button" onClick={() => load(q, next)} className="drl-btn" style={{ marginTop: 8, width: '100%', minHeight: 44, borderRadius: 12, border: `1px solid ${DC.line}`, background: DC.glass, color: DC.soft, cursor: 'pointer', fontSize: 14, fontWeight: 600 }}>Voir plus ({items.length} affichés)</button>}
+      <p style={{ margin: '10px 0 0', fontSize: 13, color: DC.faint }}>Tu ne vois que les prénoms, jamais les résultats de tests.</p>
     </div>
   );
 };
@@ -83,24 +84,24 @@ const Composer: React.FC<{ channel: AdminChannel; palette: MomentPalette; onPubl
   const sw = (on: boolean, set: (v: boolean) => void, label: string, hint: string) => (
     <label style={{ display: 'flex', alignItems: 'flex-start', gap: 8, marginTop: 10, fontSize: 14, color: DC.soft, cursor: 'pointer' }}>
       <input type="checkbox" checked={on} onChange={e => set(e.target.checked)} style={{ marginTop: 3 }} />
-      <span>{label}<span style={{ display: 'block', fontSize: 12, color: DC.faint }}>{hint}</span></span>
+      <span>{label}<span style={{ display: 'block', fontSize: 13, color: DC.faint }}>{hint}</span></span>
     </label>
   );
   return (
     <section style={card}>
       <p style={{ margin: 0, fontSize: 15, fontWeight: 700, color: DC.text }}>Nouvelle publication</p>
-      {channel.status !== 'active' && <p style={{ margin: '8px 0 0', fontSize: 13.5, color: '#F09A7A' }}>Cette chaîne est archivée : réactive-la pour publier.</p>}
+      {channel.status !== 'active' && <p style={{ margin: '8px 0 0', fontSize: 14, color: '#F09A7A' }}>Cette chaîne est archivée : réactive-la pour publier.</p>}
       <input aria-label="Titre de la publication" maxLength={TITLE_MAX} value={title} onChange={e => setTitle(e.target.value)} placeholder="Titre (facultatif)" className="drl-input" style={{ ...field, marginTop: 10, fontWeight: 700 }} />
       <textarea aria-label="Ta publication" rows={6} maxLength={MAX} value={text} onChange={e => setText(e.target.value)} placeholder="Écris comme tu parles…" className="drl-input" style={{ ...field, marginTop: 10, lineHeight: 1.5, resize: 'vertical', minHeight: 130 }} />
-      <p style={{ margin: '4px 0 0', fontSize: 12, color: DC.faint, textAlign: 'right' }}>{text.length} / {MAX}</p>
+      <p style={{ margin: '4px 0 0', fontSize: 13, color: DC.faint, textAlign: 'right' }}>{text.length} / {MAX}</p>
       <div style={{ marginTop: 10 }}>
         <VoiceInput voice={voice} recordLabel="Enregistrer un vocal" readyHint="Le texte devient facultatif." />
       </div>
       {sw(preview, setPreview, 'Aperçu gratuit', 'Visible et écoutable par tout le monde, même sans être membre. Pour donner envie.')}
       {sw(commentsOpen, setCommentsOpen, 'Commentaires ouverts', 'Les membres peuvent commenter et tu peux leur répondre.')}
       {sw(notify, setNotify, 'Prévenir les membres', 'Notification neutre « Dr Lô a publié dans ' + channel.name + ' » (jamais le contenu). Pas de notification la nuit (22 h – 7 h), ni pour ceux qui ont coupé les alertes.')}
-      {err && <p role="alert" style={{ margin: '12px 0 0', color: '#F09A7A', fontSize: 13.5 }}>{err}</p>}
-      {msg && <p role="status" style={{ margin: '12px 0 0', color: DC.ok, fontSize: 13.5 }}>{msg}</p>}
+      {err && <p role="alert" style={{ margin: '12px 0 0', color: '#F09A7A', fontSize: 14 }}>{err}</p>}
+      {msg && <p role="status" style={{ margin: '12px 0 0', color: DC.ok, fontSize: 14 }}>{msg}</p>}
       <button type="button" disabled={!canSend} onClick={send} className="drl-btn" style={{ marginTop: 14, width: '100%', minHeight: 48, borderRadius: 999, border: 0, background: palette.primary, color: DC.ink, fontWeight: 700, fontSize: 15, cursor: canSend ? 'pointer' : 'default', opacity: canSend ? 1 : 0.45, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
         {busy ? <Loader2 size={16} className="animate-spin" aria-label="Publication" /> : <><Send size={16} aria-hidden="true" /> Publier{preview ? ' en aperçu' : ''}</>}
       </button>
@@ -119,7 +120,7 @@ const PostRow: React.FC<{ p: AdminPost; channelId: string; palette: MomentPalett
   const run = async (f: () => Promise<unknown>) => { setBusy(true); onError(''); try { await f(); await onChanged(); } catch (e) { onError(e instanceof Error ? e.message : 'Erreur'); } finally { setBusy(false); } };
   const tab = (k: AudienceKind, label: string, n?: number) => (
     <button key={k} type="button" onClick={() => setOpen(o => (o === k ? null : k))} aria-pressed={open === k} className="drl-btn"
-      style={{ minHeight: 36, padding: '0 12px', borderRadius: 999, cursor: 'pointer', fontSize: 12.5, fontWeight: 700, border: `1px solid ${open === k ? palette.accent : DC.line}`, background: open === k ? 'rgba(242,182,109,.15)' : DC.glass, color: open === k ? palette.accent : DC.muted }}>
+      style={{ minHeight: 36, padding: '0 12px', borderRadius: 999, cursor: 'pointer', fontSize: 13, fontWeight: 700, border: `1px solid ${open === k ? palette.accent : DC.line}`, background: open === k ? 'rgba(242,182,109,.15)' : DC.glass, color: open === k ? palette.accent : DC.muted }}>
       {label}{n !== undefined ? ` · ${n}` : ''}
     </button>
   );
@@ -127,9 +128,9 @@ const PostRow: React.FC<{ p: AdminPost; channelId: string; palette: MomentPalett
   return (
     <article style={card}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-        <span style={{ fontSize: 12.5, color: DC.faint }}>{when(p.createdAt)}</span>
-        {p.preview && <span style={{ padding: '2px 9px', borderRadius: 999, background: 'rgba(127,209,160,.15)', color: DC.ok, fontSize: 11.5, fontWeight: 700 }}>Aperçu gratuit</span>}
-        {p.hasAudio && <span style={{ fontSize: 12, color: DC.muted, display: 'inline-flex', alignItems: 'center', gap: 4 }}><Mic size={12} aria-hidden="true" /> {mmss(p.audioSec)}</span>}
+        <span style={{ fontSize: 13, color: DC.faint }}>{when(p.createdAt)}</span>
+        {p.preview && <span style={{ padding: '2px 9px', borderRadius: 999, background: 'rgba(127,209,160,.15)', color: DC.ok, fontSize: 13, fontWeight: 700 }}>Aperçu gratuit</span>}
+        {p.hasAudio && <span style={{ fontSize: 13, color: DC.muted, display: 'inline-flex', alignItems: 'center', gap: 4 }}><Mic size={12} aria-hidden="true" /> {mmss(p.audioSec)}</span>}
       </div>
       {editing ? (
         <div style={{ marginTop: 8 }}>
@@ -143,11 +144,11 @@ const PostRow: React.FC<{ p: AdminPost; channelId: string; palette: MomentPalett
       ) : (
         <>
           {p.title && <p style={{ margin: '8px 0 0', fontSize: 16, fontWeight: 700, color: DC.text, lineHeight: 1.35 }}>{p.title}</p>}
-          {p.text && <p style={{ margin: '8px 0 0', fontSize: 14.5, color: DC.text, lineHeight: 1.55, whiteSpace: 'pre-wrap' }}>{p.text}</p>}
+          {p.text && <p style={{ margin: '8px 0 0', fontSize: 15, color: DC.text, lineHeight: 1.55, whiteSpace: 'pre-wrap' }}>{p.text}</p>}
         </>
       )}
-      {p.audioUrl && <audio controls preload="metadata" src={p.audioUrl} aria-label="Vocal publié" style={{ width: '100%', height: 40, marginTop: 8 }} />}
-      <p style={{ margin: '10px 0 0', fontSize: 12.5, color: DC.faint }}>❤️ {r.heart} · 🙏 {r.pray} · 💪 {r.strong}{p.stats.comments > 0 ? ` · 💬 ${p.stats.comments}` : ''}</p>
+      {p.audioUrl && <AudioPlayer src={p.audioUrl} ariaLabel="Vocal publié" style={{ marginTop: 8 }} />}
+      <p style={{ margin: '10px 0 0', fontSize: 13, color: DC.faint }}>❤️ {r.heart} · 🙏 {r.pray} · 💪 {r.strong}{p.stats.comments > 0 ? ` · 💬 ${p.stats.comments}` : ''}</p>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 8 }}>
         {tab('seen', 'Ont vu', p.stats.views)}
         {p.hasAudio && tab('listened', 'Ont écouté', p.stats.listens)}
@@ -178,17 +179,17 @@ const ChannelPostsAdmin: React.FC<{ channel: AdminChannel; palette: MomentPalett
   const load = () => listPosts(channel.id).then(r => { setPosts(r.items); }).catch(e => setErr(e instanceof Error ? e.message : 'Erreur'));
   useEffect(() => { load(); }, [channel.id]); // eslint-disable-line react-hooks/exhaustive-deps
   const t = (k: typeof tab, label: string) => (
-    <button key={k} type="button" onClick={() => setTab(k)} className="drl-btn" style={{ minHeight: 38, padding: '0 14px', borderRadius: 999, cursor: 'pointer', fontSize: 13.5, fontWeight: 700, border: `1px solid ${tab === k ? palette.accent : DC.line}`, background: tab === k ? 'rgba(242,182,109,.15)' : DC.glass, color: tab === k ? palette.accent : DC.muted }}>{label}</button>
+    <button key={k} type="button" onClick={() => setTab(k)} className="drl-btn" style={{ minHeight: 38, padding: '0 14px', borderRadius: 999, cursor: 'pointer', fontSize: 14, fontWeight: 700, border: `1px solid ${tab === k ? palette.accent : DC.line}`, background: tab === k ? 'rgba(242,182,109,.15)' : DC.glass, color: tab === k ? palette.accent : DC.muted }}>{label}</button>
   );
   return (
     <div style={{ marginTop: 14 }}>
       <button type="button" onClick={onBack} style={{ ...small, marginBottom: 10 }}><ArrowLeft size={14} aria-hidden="true" /> Mes chaînes</button>
-      <h2 style={{ margin: 0, fontFamily: 'Georgia, serif', fontSize: 21, color: DC.title }}>{channel.name}</h2>
+      <h2 style={{ margin: 0, fontFamily: "'Fraunces', Georgia, serif", fontSize: 21, color: DC.title }}>{channel.name}</h2>
       <p style={{ margin: '4px 0 0', fontSize: 13, color: DC.muted }}>{channel.memberCount} membre{channel.memberCount > 1 ? 's' : ''} · {channel.price > 0 ? `${channel.price} étincelle${channel.price > 1 ? 's' : ''}` : 'Gratuite'}{channel.status === 'archived' ? ' · Archivée' : ''}</p>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, margin: '12px 0' }}>
         {t('publish', 'Publier')}{t('posts', `Publications${posts ? ` · ${posts.length}` : ''}`)}{t('members', `Membres · ${channel.memberCount}`)}
       </div>
-      {err && <p role="alert" style={{ color: '#F09A7A', fontSize: 13.5 }}>{err}</p>}
+      {err && <p role="alert" style={{ color: '#F09A7A', fontSize: 14 }}>{err}</p>}
       {tab === 'publish' && <Composer channel={channel} palette={palette} onPublished={() => { load(); }} />}
       {tab === 'posts' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>

@@ -47,7 +47,7 @@ const QuestionItem: React.FC<QuestionItemProps> = ({
       {experience.answerPrompt && (
         <p style={{
           margin: '14px 0 14px',
-          fontSize: 12.5,
+          fontSize: 13,
           fontWeight: 700,
           color: '#9DBFAF',
           display: 'flex',

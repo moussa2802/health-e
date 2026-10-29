@@ -80,7 +80,7 @@ const OptimizedHeader: React.FC = memo(() => {
                   <KoriBalance />
                 </div>
 
-                <Link to="/patient/profile" className="flex items-center gap-2 no-underline hover:opacity-75 transition-opacity">
+                <Link to="/assessment/profile" className="flex items-center gap-2 no-underline hover:opacity-75 transition-opacity">
                   {currentUser.profileImage ? (
                     <img
                       src={currentUser.profileImage}
@@ -170,7 +170,7 @@ const OptimizedHeader: React.FC = memo(() => {
                 <Link to="/espace" className={mobileLinkClass} onClick={() => setIsMenuOpen(false)}>
                   Mon Espace
                 </Link>
-                <Link to="/patient/profile" className={mobileLinkClass} onClick={() => setIsMenuOpen(false)}>
+                <Link to="/assessment/profile" className={mobileLinkClass} onClick={() => setIsMenuOpen(false)}>
                   Mon Profil
                 </Link>
                 <Link to="/faq" className={`${mobileLinkClass} text-muted`} onClick={() => setIsMenuOpen(false)}>

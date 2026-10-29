@@ -193,3 +193,16 @@ test('âge : tranche 26-35 passe un minimum de 26 mais pas de 36', () => {
   assert.equal(CH.eligibility({}, 0, { rules: {} }).eligible, true);
   assert.equal(CH.eligibility({}, 5, { price: 0, rules: {} }).eligible, true);
 });
+
+test('supprimer une chaîne : réservé à Dr Lô, et il faut écrire le nom exact', async () => {
+  uid = 'drlo1';
+  storageFail = false;
+  const made = await call({ action: 'drlo_save', ...base, name: 'À supprimer', price: 0 });
+  const id = made.body.channel.id;
+  uid = 'u1';
+  assert.equal((await call({ action: 'drlo_delete', id, confirmName: 'À supprimer' })).status, 403);
+  uid = 'drlo1';
+  assert.equal((await call({ action: 'drlo_delete', id: 'nope', confirmName: 'x' })).status, 404);
+  assert.equal((await call({ action: 'drlo_delete', id, confirmName: 'à supprimer' })).status, 400);
+  assert.ok(store.channels[id], 'la chaîne est toujours là');
+});

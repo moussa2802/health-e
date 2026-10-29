@@ -80,21 +80,21 @@ const KorisDetailPanel: React.FC<Props> = ({ onClose }) => {
           className="w-12 h-12 rounded-full object-cover border-2 border-white/30"
         />
         <div>
-          <div className="text-[11px] opacity-85">Mon solde</div>
+          <div className="text-[13px] opacity-85">Mon solde</div>
           <div className="text-[28px] font-extrabold tracking-tight">
             {balance}
             <span className="text-[13px] font-medium ml-1 opacity-85">{CREDIT.many}</span>
           </div>
-          <div className="text-[10px] opacity-75">{cap(credits(25))} offertes, puis achat de packs</div>
+          <div className="text-[13px] opacity-75">{cap(credits(25))} offertes, puis achat de packs</div>
         </div>
       </div>
 
       {/* Tarifs */}
       <div className="px-4 py-2.5 border-b border-line">
-        <div className="text-[10px] font-semibold text-muted uppercase mb-1.5">
+        <div className="text-[13px] font-semibold text-muted uppercase mb-1.5">
           Tarifs
         </div>
-        <div className="grid grid-cols-[1fr_auto] gap-x-3 gap-y-1 text-[11px]">
+        <div className="grid grid-cols-[1fr_auto] gap-x-3 gap-y-1 text-[13px]">
           {Object.entries(KORIS_COSTS)
             .filter(([, cost]) => cost > 0)
             .map(([feature, cost]) => (
@@ -113,13 +113,13 @@ const KorisDetailPanel: React.FC<Props> = ({ onClose }) => {
 
       {/* Historique */}
       <div className="px-4 py-2.5 max-h-[180px] overflow-y-auto">
-        <div className="text-[10px] font-semibold text-muted uppercase mb-1.5">
+        <div className="text-[13px] font-semibold text-muted uppercase mb-1.5">
           Historique récent
         </div>
         {loading ? (
-          <div className="text-[11px] text-muted text-center py-2.5">Chargement...</div>
+          <div className="text-[13px] text-muted text-center py-2.5">Chargement...</div>
         ) : history.length === 0 ? (
-          <div className="text-[11px] text-muted text-center py-2.5">Aucune transaction</div>
+          <div className="text-[13px] text-muted text-center py-2.5">Aucune transaction</div>
         ) : (
           history.map((tx, i) => (
             <div
@@ -133,8 +133,8 @@ const KorisDetailPanel: React.FC<Props> = ({ onClose }) => {
                   {typeIcon(tx.type)}
                 </span>
                 <div>
-                  <div className="text-[11px] text-ink-soft font-medium">{getFeatureLabel(tx.feature)}</div>
-                  <div className="text-[9px] text-muted">
+                  <div className="text-[13px] text-ink-soft font-medium">{getFeatureLabel(tx.feature)}</div>
+                  <div className="text-[13px] text-muted">
                     {new Date(tx.timestamp).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
                   </div>
                 </div>

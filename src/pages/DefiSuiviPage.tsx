@@ -1,8 +1,9 @@
 import '../components/accueil/accueil.css';
+import PageHeader from '../components/ui/PageHeader';
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Navigate } from 'react-router-dom';
 import { doc, onSnapshot, getDoc, collection, query as fsQuery, orderBy, getDocs, updateDoc } from 'firebase/firestore';
-import { ArrowLeft, Copy, Check, Clock, Share2, EyeOff, Eye, Flag, Loader2, CheckCircle } from 'lucide-react';
+import { Copy, Check, Clock, Share2, EyeOff, Eye, Flag, Loader2, CheckCircle } from 'lucide-react';
 import { db } from '../utils/firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { authedFetch } from '../utils/authedFetch';
@@ -169,14 +170,7 @@ const DefiSuiviPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-paper drl-screen drl-page">
-      <div className="sticky top-0 z-20 bg-paper/95 backdrop-blur-md border-b border-line">
-        <div className="max-w-[600px] mx-auto px-5 py-3.5 flex items-center gap-3">
-          <button onClick={() => navigate('/defi', { replace: true })} className="p-0 border-none bg-transparent cursor-pointer text-ink">
-            <ArrowLeft size={20} />
-          </button>
-          <h1 className="font-display text-[18px] font-semibold text-ink m-0">Suivi du défi</h1>
-        </div>
-      </div>
+      <PageHeader onBack={() => navigate('/defi', { replace: true })} title={"Suivi du défi"} />
 
       <div className="max-w-[600px] mx-auto px-5 py-6">
         {/* Header */}
@@ -263,7 +257,7 @@ const DefiSuiviPage: React.FC = () => {
               💌 Petits mots ({messages.length}{masqueCount > 0 ? ` · ${masqueCount} masqué${masqueCount > 1 ? 's' : ''}` : ''})
             </h3>
             {msgError && (
-              <p className="text-[12px] text-red-500 m-0 mb-2">{msgError}</p>
+              <p className="text-[13px] text-red-500 m-0 mb-2">{msgError}</p>
             )}
             <div className="flex flex-col gap-2">
               {messages.map(msg => (
@@ -295,7 +289,7 @@ const DefiSuiviPage: React.FC = () => {
                             setMsgBusy(null);
                           }
                         }}
-                        className="text-[11px] text-sage flex items-center gap-1 bg-transparent border-none cursor-pointer p-0 disabled:opacity-50"
+                        className="text-[13px] text-sage flex items-center gap-1 bg-transparent border-none cursor-pointer p-0 disabled:opacity-50"
                       >
                         {msgBusy === msg.id ? <Loader2 size={12} className="animate-spin" /> : <Eye size={12} />} Afficher
                       </button>
@@ -304,7 +298,7 @@ const DefiSuiviPage: React.FC = () => {
                     <>
                       <div className="flex items-center justify-between mb-1">
                         <span className="text-sm font-medium text-ink">{msg.pseudo}</span>
-                        <span className="text-[11px] text-muted">
+                        <span className="text-[13px] text-muted">
                           {msg.createdAt.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}
                         </span>
                       </div>
@@ -331,7 +325,7 @@ const DefiSuiviPage: React.FC = () => {
                               setMsgBusy(null);
                             }
                           }}
-                          className="text-[11px] text-muted flex items-center gap-1 bg-transparent border-none cursor-pointer p-0 disabled:opacity-50"
+                          className="text-[13px] text-muted flex items-center gap-1 bg-transparent border-none cursor-pointer p-0 disabled:opacity-50"
                         >
                           {msgBusy === msg.id ? <Loader2 size={12} className="animate-spin" /> : <EyeOff size={12} />} Masquer
                         </button>
@@ -357,7 +351,7 @@ const DefiSuiviPage: React.FC = () => {
                                 setMsgBusy(null);
                               }
                             }}
-                            className="text-[11px] text-red-400 flex items-center gap-1 bg-transparent border-none cursor-pointer p-0 disabled:opacity-50"
+                            className="text-[13px] text-red-400 flex items-center gap-1 bg-transparent border-none cursor-pointer p-0 disabled:opacity-50"
                           >
                             {msgBusy === msg.id ? <Loader2 size={12} className="animate-spin" /> : <Flag size={12} />} Signaler
                           </button>
@@ -422,7 +416,7 @@ const DefiSuiviPage: React.FC = () => {
               Créer un nouveau défi
             </button>
             {activeCount >= 3 && (
-              <p className="text-[12px] text-muted text-center m-0">
+              <p className="text-[13px] text-muted text-center m-0">
                 Maximum 3 défis actifs simultanément
               </p>
             )}
@@ -471,7 +465,7 @@ const DefiSuiviPage: React.FC = () => {
               Terminer ce défi
             </button>
             {closeError && (
-              <p className="text-[12px] text-red-500 text-center m-0">{closeError}</p>
+              <p className="text-[13px] text-red-500 text-center m-0">{closeError}</p>
             )}
           </div>
         )}

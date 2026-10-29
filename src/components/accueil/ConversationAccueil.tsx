@@ -817,7 +817,7 @@ const ConversationAccueil: React.FC = () => {
     <span style={{ width: 42, height: 42, borderRadius: 13, background: 'rgba(242,182,109,.14)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>{node}</span>
   );
   const countBadge = (n: number) => (
-    <span aria-label={`${n} à faire`} style={{ minWidth: 22, height: 22, padding: '0 6px', boxSizing: 'border-box', borderRadius: 11, background: '#E8664F', color: '#fff', fontSize: 12, fontWeight: 700, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>{n}</span>
+    <span aria-label={`${n} à faire`} style={{ minWidth: 22, height: 22, padding: '0 6px', boxSizing: 'border-box', borderRadius: 11, background: '#E8664F', color: '#fff', fontSize: 13, fontWeight: 700, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>{n}</span>
   );
   const todayRows: TodayRow[] = [];
   if (testing) {
@@ -910,7 +910,7 @@ const ConversationAccueil: React.FC = () => {
     if (c.kind === 'breath') { startBreathing(); return; }
     const q = c.q!;
     if (q.value.startsWith('flow:')) { void onFlowChip(q.value, q.label); return; }
-    if (q.action === 'catalogue') { navigate('/assessment'); return; }
+    if (q.action === 'catalogue') { navigate('/espace'); return; }
     if (q.action === 'signup') { openSignup('signup', q.label); return; }
     if (q.action === 'free_chat') { void enterTalk(null, null); return; }
     let next = respond(state, { value: q.value, label: q.label }, known);
@@ -1740,7 +1740,7 @@ const ConversationAccueil: React.FC = () => {
 
   const glassBtn: React.CSSProperties = {
     minHeight: 40, padding: '0 14px', borderRadius: 999, border: `1px solid ${C.line}`, background: C.glass,
-    color: C.text, fontSize: 13.5, fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 6, cursor: 'pointer',
+    color: C.text, fontSize: 14, fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 6, cursor: 'pointer',
   };
   const pill: React.CSSProperties = {
     minHeight: 36, padding: '0 12px', borderRadius: 999, background: C.glass, fontSize: 13, fontWeight: 700,
@@ -1782,7 +1782,7 @@ const ConversationAccueil: React.FC = () => {
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, minmax(0, 1fr))', gap: 6 }}>
                 {MOODS.map(md => (
                   <button key={md.id} onClick={() => pickMood(md.id)} className="drl-mood"
-                    style={{ minHeight: 72, borderRadius: 14, border: `1px solid ${C.line}`, background: C.glass, color: C.text, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 6, fontSize: 11, fontWeight: 600, cursor: 'pointer', padding: 0 }}>
+                    style={{ minHeight: 72, borderRadius: 14, border: `1px solid ${C.line}`, background: C.glass, color: C.text, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 6, fontSize: 13, fontWeight: 600, cursor: 'pointer', padding: 0 }}>
                     <MoodIcon id={md.id} color={md.color} />
                     {md.label}
                   </button>
@@ -1824,7 +1824,7 @@ const ConversationAccueil: React.FC = () => {
                 </div>
               )}
               {isAuthenticated && freeLeft !== null && freeLeft <= 3 && state.step !== 'testing' && (
-                <p className="drl-in" style={{ margin: '0 0 2px', fontSize: 12, color: C.faint, textAlign: 'center' }}>
+                <p className="drl-in" style={{ margin: '0 0 2px', fontSize: 13, color: C.faint, textAlign: 'center' }}>
                   {freeLeft > 0
                     ? `Encore ${freeLeft} message${freeLeft > 1 ? 's' : ''} offert${freeLeft > 1 ? 's' : ''} aujourd'hui, puis ${credits(KORIS_COSTS.chat)} par message.`
                     : `Messages offerts utilisés aujourd'hui : ${credits(KORIS_COSTS.chat)} par message jusqu'à demain.`}
@@ -1842,14 +1842,14 @@ const ConversationAccueil: React.FC = () => {
                       { label: 'Défi : tes proches te connaissent ?', hint: '', icon: Users, go: () => navigate(isAuthenticated ? '/defi' : '/decouvre') },
                       { label: 'Écrire au vrai Dr Lô', hint: '', icon: Mail, go: () => navigate('/question') },
                       ...(isAuthenticated ? [{ label: 'Les messages de Dr Lô', hint: '', icon: MessagesSquare, go: () => navigate('/messages-dr-lo') }] : []),
-                      { label: 'Tous les tests', hint: '', icon: ListChecks, go: () => navigate('/assessment') },
+                      { label: 'Tous les tests', hint: '', icon: ListChecks, go: () => navigate('/espace') },
                       { label: isAuthenticated ? 'Mon espace bien-être' : 'Ce que propose Health-e', hint: '', icon: Sprout, go: () => navigate('/espace') },
                     ].map(it => (
                       <button key={it.label} type="button" role="menuitem" onClick={() => { setMenuOpen(false); it.go(); }} className="drl-btn"
-                        style={{ width: '100%', minHeight: 46, padding: '0 12px', border: 0, borderRadius: 12, background: 'transparent', color: C.text, display: 'flex', alignItems: 'center', gap: 10, fontSize: 14.5, fontWeight: 600, cursor: 'pointer', textAlign: 'left' }}>
+                        style={{ width: '100%', minHeight: 46, padding: '0 12px', border: 0, borderRadius: 12, background: 'transparent', color: C.text, display: 'flex', alignItems: 'center', gap: 10, fontSize: 15, fontWeight: 600, cursor: 'pointer', textAlign: 'left' }}>
                         <it.icon size={18} color={palette.accent} aria-hidden="true" />
                         <span style={{ flex: 1 }}>{it.label}</span>
-                        {it.hint && <span style={{ fontSize: 12, color: C.faint }}>{it.hint}</span>}
+                        {it.hint && <span style={{ fontSize: 13, color: C.faint }}>{it.hint}</span>}
                       </button>
                     ))}
                   </div>
@@ -1890,10 +1890,10 @@ const ConversationAccueil: React.FC = () => {
                 </form>
               </>)}
               {dictation.error && (
-                <p role="alert" style={{ margin: 0, fontSize: 12.5, color: C.muted, textAlign: 'center' }}>{dictation.error}</p>
+                <p role="alert" style={{ margin: 0, fontSize: 13, color: C.muted, textAlign: 'center' }}>{dictation.error}</p>
               )}
               {dictation.listening && (
-                <p style={{ margin: 0, fontSize: 11.5, color: C.faint, textAlign: 'center' }}>
+                <p style={{ margin: 0, fontSize: 13, color: C.faint, textAlign: 'center' }}>
                   Tu relis avant d'envoyer. Aucun audio n'est gardé par Health-e.
                 </p>
               )}
@@ -1969,8 +1969,8 @@ const ConversationAccueil: React.FC = () => {
               <div style={{ transform: 'scale(.7)' }}><DrLoAvatar state={avatarState} palette={palette} size={38} /></div>
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
-              <p style={{ margin: 0, fontSize: 15.5, fontWeight: 700 }}>Dr Lô</p>
-              <p role="status" style={{ margin: '1px 0 0', fontSize: 12.5, fontWeight: 600, color: online ? '#7FD1A0' : palette.accent, fontStyle: online ? 'normal' : 'italic' }}>{statusText}</p>
+              <p style={{ margin: 0, fontSize: 16, fontWeight: 700 }}>Dr Lô</p>
+              <p role="status" style={{ margin: '1px 0 0', fontSize: 13, fontWeight: 600, color: online ? '#7FD1A0' : palette.accent, fontStyle: online ? 'normal' : 'italic' }}>{statusText}</p>
             </div>
             {isAuthenticated ? (!korisLoading && (
               <Link to="/acheter-koris" aria-label={`Tes ${CREDIT.many} : ${balance}. Recharger`} className="drl-btn"
@@ -1981,7 +1981,7 @@ const ConversationAccueil: React.FC = () => {
               <button onClick={() => openSignup('login', 'Me connecter')} className="drl-btn" style={{ ...pill, border: `1px solid ${C.line}`, color: C.text, cursor: 'pointer' }}>Se connecter</button>
             )}
             <button onClick={() => { discret.dismiss(); setVeiled(true); }} aria-label="Masquer l'écran" className="drl-btn"
-              style={{ width: 40, height: 40, padding: 0, borderRadius: 12, border: `1px solid ${C.line}`, background: 'transparent', color: C.muted, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: 12.5, fontWeight: 600 }}>
+              style={{ width: 40, height: 40, padding: 0, borderRadius: 12, border: `1px solid ${C.line}`, background: 'transparent', color: C.muted, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: 13, fontWeight: 600 }}>
               <EyeOff size={17} aria-hidden="true" />
             </button>
           </header>
@@ -1991,7 +1991,7 @@ const ConversationAccueil: React.FC = () => {
             {(['discuter', 'confier'] as const).map(t => (
               <button key={t} onClick={() => { if (t === tab) return; setTab(t); setMode('home'); if (t === 'confier') { setBreath(null); trackAccueil('confier_open', { guest: !isAuthenticated }); } }}
                 aria-current={tab === t ? 'page' : undefined} className="drl-btn"
-                style={{ minHeight: 36, borderRadius: 11, border: 0, cursor: 'pointer', fontSize: 13.5, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                style={{ minHeight: 36, borderRadius: 11, border: 0, cursor: 'pointer', fontSize: 14, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
                   background: tab === t ? (t === 'confier' ? CONFIER.accent : palette.accent) : 'transparent', color: tab === t ? C.ink : C.muted }}>
                 {t === 'confier' && <Lock size={13} aria-hidden="true" />}{t === 'discuter' ? 'Discuter' : 'Me confier'}
               </button>
@@ -2002,7 +2002,7 @@ const ConversationAccueil: React.FC = () => {
           {tab === 'discuter' && (
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, margin: '8px 14px 0' }}>
               <button onClick={() => setShowConvs(v => !v)} aria-expanded={showConvs} className="drl-btn"
-                style={{ flex: 1, minWidth: 0, minHeight: 36, padding: '0 12px', borderRadius: 11, border: `1px solid ${C.line}`, background: showConvs ? 'rgba(242,182,109,.12)' : 'transparent', color: C.text, fontSize: 13.5, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
+                style={{ flex: 1, minWidth: 0, minHeight: 36, padding: '0 12px', borderRadius: 11, border: `1px solid ${C.line}`, background: showConvs ? 'rgba(242,182,109,.12)' : 'transparent', color: C.text, fontSize: 14, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
                 <MessagesSquare size={15} color={palette.accent} aria-hidden="true" />
                 <span style={{ flex: 1, textAlign: 'left', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{convMeta?.title ?? 'Discussion principale'}</span>
                 <ChevronDown size={15} aria-hidden="true" style={{ transform: showConvs ? 'rotate(180deg)' : 'none', transition: 'transform .2s' }} />
@@ -2016,7 +2016,7 @@ const ConversationAccueil: React.FC = () => {
 
           {tab === 'discuter' && showConvs ? (
             <div style={{ flex: 1, overflowY: 'auto', padding: '10px 14px 16px', display: 'flex', flexDirection: 'column', gap: 8 }}>
-              <p style={{ margin: '0 0 2px', fontSize: 12, letterSpacing: '.08em', textTransform: 'uppercase', fontWeight: 700, color: palette.accent }}>Mes discussions</p>
+              <p style={{ margin: '0 0 2px', fontSize: 13, letterSpacing: '.08em', textTransform: 'uppercase', fontWeight: 700, color: palette.accent }}>Mes discussions</p>
               {sortedConvs(convIdx).map(c => {
                 const current = c.id === convId;
                 const isEditing = editingConv?.id === c.id;
@@ -2032,8 +2032,8 @@ const ConversationAccueil: React.FC = () => {
                     ) : (
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                         <button onClick={() => switchConversation(c.id)} style={{ flex: 1, minWidth: 0, border: 0, background: 'transparent', color: C.text, textAlign: 'left', cursor: 'pointer', padding: 0 }}>
-                          <span style={{ display: 'block', fontSize: 14.5, fontWeight: 700 }}>{c.title}{current ? ' · en cours' : ''}</span>
-                          <span style={{ display: 'block', fontSize: 12, color: C.faint, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          <span style={{ display: 'block', fontSize: 15, fontWeight: 700 }}>{c.title}{current ? ' · en cours' : ''}</span>
+                          <span style={{ display: 'block', fontSize: 13, color: C.faint, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                             {Number.isNaN(d.getTime()) ? '' : d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}{c.preview ? ` · « ${c.preview} »` : ''}
                           </span>
                         </button>
@@ -2042,7 +2042,7 @@ const ConversationAccueil: React.FC = () => {
                         </button>
                         {c.id !== MAIN_ID && (
                           <button onClick={() => removeConversation(c.id)} aria-label={confirmDel === c.id ? 'Confirmer la suppression' : `Supprimer ${c.title}`}
-                            style={{ border: 0, background: 'transparent', color: confirmDel === c.id ? '#E8A0A0' : C.muted, cursor: 'pointer', minWidth: 34, height: 34, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, fontSize: 12, fontWeight: 700 }}>
+                            style={{ border: 0, background: 'transparent', color: confirmDel === c.id ? '#E8A0A0' : C.muted, cursor: 'pointer', minWidth: 34, height: 34, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, fontSize: 13, fontWeight: 700 }}>
                             <Trash2 size={15} aria-hidden="true" />{confirmDel === c.id ? 'Supprimer ?' : ''}
                           </button>
                         )}
@@ -2055,7 +2055,7 @@ const ConversationAccueil: React.FC = () => {
                 style={{ marginTop: 4, minHeight: 46, borderRadius: 14, border: `1px dashed ${C.line}`, background: 'transparent', color: C.text, fontSize: 14, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
                 <Plus size={16} aria-hidden="true" /> Nouvelle discussion
               </button>
-              <p style={{ margin: '6px 0 0', fontSize: 11.5, color: C.faint, textAlign: 'center' }}>{isAuthenticated ? 'Tes discussions sont gardées dans ton compte : tu les retrouves sur tous tes appareils.' : 'Tes discussions restent sur ce téléphone.'} Touche le crayon pour les renommer.</p>
+              <p style={{ margin: '6px 0 0', fontSize: 13, color: C.faint, textAlign: 'center' }}>{isAuthenticated ? 'Tes discussions sont gardées dans ton compte : tu les retrouves sur tous tes appareils.' : 'Tes discussions restent sur ce téléphone.'} Touche le crayon pour les renommer.</p>
             </div>
           ) : tab === 'confier' ? (
             <div style={{ flex: 1, overflowY: 'auto', padding: '4px 14px 16px' }}>
@@ -2102,10 +2102,10 @@ const ConversationAccueil: React.FC = () => {
                 </div>
               )}
               {noted && !revealing && (
-                <div className="drl-in" style={{ marginLeft: 36, display: 'flex', alignItems: 'center', gap: 8, fontSize: 12.5, fontWeight: 600, color: C.sage }}>
+                <div className="drl-in" style={{ marginLeft: 36, display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, fontWeight: 600, color: C.sage }}>
                   <Check size={14} strokeWidth={2.6} aria-hidden="true" />
                   <span style={{ textDecoration: noted.cancelled ? 'line-through' : 'none' }}>Noté dans ton humeur du jour</span>
-                  {!noted.cancelled && <button onClick={cancelMood} style={{ ...linkBtn, color: C.muted, fontSize: 12.5, fontWeight: 700, padding: '0 6px' }}>Annuler</button>}
+                  {!noted.cancelled && <button onClick={cancelMood} style={{ ...linkBtn, color: C.muted, fontSize: 13, fontWeight: 700, padding: '0 6px' }}>Annuler</button>}
                 </div>
               )}
               {breathing && (
@@ -2120,7 +2120,7 @@ const ConversationAccueil: React.FC = () => {
                   style={{ marginLeft: 36, display: 'flex', flexWrap: 'wrap', gap: 8 }}>
                   {chips.map(c => (
                     <button key={c.label} onClick={() => onChip(c)} className="drl-btn"
-                      style={{ minHeight: 44, padding: '0 16px', borderRadius: 999, cursor: 'pointer', fontSize: 14.5, fontWeight: 600, color: c.kind === 'breath' ? palette.accent : C.text,
+                      style={{ minHeight: 44, padding: '0 16px', borderRadius: 999, cursor: 'pointer', fontSize: 15, fontWeight: 600, color: c.kind === 'breath' ? palette.accent : C.text,
                         background: 'rgba(242,182,109,.10)', border: '1px solid rgba(242,182,109,.45)', textAlign: 'left' }}>
                       {c.label}
                     </button>
@@ -2133,9 +2133,9 @@ const ConversationAccueil: React.FC = () => {
             {/* Répondre */}
             <div style={{ padding: '8px 14px 10px', borderTop: '1px solid rgba(255,255,255,.06)', background: 'rgba(20,16,13,.7)', maxHeight: '58svh', overflowY: 'auto' }}>
               {controls}
-              <p style={{ margin: '8px 0 0', textAlign: 'center', fontSize: 11.5, color: C.faint, lineHeight: 1.5 }}>
+              <p style={{ margin: '8px 0 0', textAlign: 'center', fontSize: 13, color: C.faint, lineHeight: 1.5 }}>
                 Conseils de bien-être, pas de diagnostic · Urgence : <a href="tel:1515" style={{ fontWeight: 700 }}>1515</a>
-                {' · '}<button onClick={resetConversation} style={{ ...linkBtn, fontSize: 11.5, fontWeight: 500, minHeight: 0, padding: 0 }}>Effacer</button>
+                {' · '}<button onClick={resetConversation} style={{ ...linkBtn, fontSize: 13, fontWeight: 500, minHeight: 0, padding: 0 }}>Effacer</button>
               </p>
             </div>
           </>)}
@@ -2171,7 +2171,7 @@ const ConversationAccueil: React.FC = () => {
 
         {/* En-tête */}
         <header style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
-          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 7, fontSize: 12.5, fontWeight: 600, color: C.muted }}>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 7, fontSize: 13, fontWeight: 600, color: C.muted }}>
             <Lock size={14} aria-hidden="true" />
             Privé · visible par toi {fem ? 'seule' : genreKnown === 'homme' ? 'seul' : 'uniquement'}
           </span>
@@ -2193,12 +2193,12 @@ const ConversationAccueil: React.FC = () => {
                 style={{ position: 'relative', width: 44, height: 44, borderRadius: 13, border: `1px solid ${C.line}`, background: C.glass, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: C.text }}>
                 <Bell size={20} aria-hidden="true" />
                 {bellCount > 0 && (
-                  <span aria-hidden="true" style={{ position: 'absolute', top: -5, right: -5, minWidth: 20, height: 20, padding: '0 5px', boxSizing: 'border-box', borderRadius: 10, background: '#E8664F', color: '#fff', fontSize: 11.5, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid #1C1612' }}>{bellCount}</span>
+                  <span aria-hidden="true" style={{ position: 'absolute', top: -5, right: -5, minWidth: 20, height: 20, padding: '0 5px', boxSizing: 'border-box', borderRadius: 10, background: '#E8664F', color: '#fff', fontSize: 13, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid #1C1612' }}>{bellCount}</span>
                 )}
               </button>
             )}
             <button onClick={() => { discret.dismiss(); setVeiled(true); }} aria-label="Masquer l'écran" title="Masquer l'écran" className="drl-btn"
-              style={{ minWidth: 44, height: 44, padding: discret.show ? '0 12px' : 0, gap: 6, borderRadius: 13, border: `1px solid ${C.line}`, background: C.glass, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: C.muted, fontSize: 12.5, fontWeight: 600 }}>
+              style={{ minWidth: 44, height: 44, padding: discret.show ? '0 12px' : 0, gap: 6, borderRadius: 13, border: `1px solid ${C.line}`, background: C.glass, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: C.muted, fontSize: 13, fontWeight: 600 }}>
               <EyeOff size={20} aria-hidden="true" />{discret.show && <span>Discret</span>}
             </button>
           </span>
@@ -2220,7 +2220,7 @@ const ConversationAccueil: React.FC = () => {
               {statusLabel}
             </p>
           ) : (
-            <p style={{ margin: '12px 0 0', fontSize: 12, letterSpacing: '.14em', textTransform: 'uppercase', color: palette.accent, fontWeight: 700 }}>Ton Dr Lô</p>
+            <p style={{ margin: '12px 0 0', fontSize: 13, letterSpacing: '.14em', textTransform: 'uppercase', color: palette.accent, fontWeight: 700 }}>Ton Dr Lô</p>
           )}
           <nav aria-label="Mode de conversation" style={{ marginTop: 14, display: 'inline-flex', padding: 4, borderRadius: 999, background: 'rgba(255,255,255,.06)', border: '1px solid rgba(255,255,255,.10)' }}>
             {(['discuter', 'confier'] as const).map(t => (
@@ -2232,7 +2232,7 @@ const ConversationAccueil: React.FC = () => {
                 }}
                 aria-current={tab === t ? 'page' : undefined}
                 className="drl-btn"
-                style={{ minHeight: 38, padding: '0 16px', borderRadius: 999, border: 0, cursor: 'pointer', fontSize: 13.5, fontWeight: 700,
+                style={{ minHeight: 38, padding: '0 16px', borderRadius: 999, border: 0, cursor: 'pointer', fontSize: 14, fontWeight: 700,
                   background: tab === t ? (t === 'confier' ? 'rgba(201,184,228,.22)' : 'rgba(242,182,109,.20)') : 'transparent',
                   color: tab === t ? (t === 'confier' ? CONFIER.accent : palette.accent) : C.muted }}>
                 {t === 'discuter' ? 'Discuter' : 'Me confier'}
@@ -2267,11 +2267,11 @@ const ConversationAccueil: React.FC = () => {
             )}
           </div>
           {noted && !revealing && (
-            <div className="drl-in" style={{ marginTop: 10, display: 'inline-flex', alignItems: 'center', gap: 8, fontSize: 12.5, fontWeight: 600, color: C.sage }}>
+            <div className="drl-in" style={{ marginTop: 10, display: 'inline-flex', alignItems: 'center', gap: 8, fontSize: 13, fontWeight: 600, color: C.sage }}>
               <Check size={14} strokeWidth={2.6} aria-hidden="true" />
               <span style={{ textDecoration: noted.cancelled ? 'line-through' : 'none' }}>Noté dans ton humeur du jour</span>
               {!noted.cancelled && (
-                <button onClick={cancelMood} style={{ ...linkBtn, color: C.muted, fontSize: 12.5, fontWeight: 700, padding: '0 6px' }}>Annuler</button>
+                <button onClick={cancelMood} style={{ ...linkBtn, color: C.muted, fontSize: 13, fontWeight: 700, padding: '0 6px' }}>Annuler</button>
               )}
             </div>
           )}
@@ -2280,15 +2280,15 @@ const ConversationAccueil: React.FC = () => {
         {/* 3. Aujourd'hui : une seule liste, une ligne par chose à faire */}
         {todayRows.length > 0 && (
           <section aria-label="Aujourd'hui" style={{ marginTop: 22, marginBottom: 14 }}>
-            <p style={{ margin: '0 4px 8px', fontSize: 11.5, letterSpacing: '.12em', textTransform: 'uppercase', fontWeight: 700, color: C.faint }}>Aujourd'hui</p>
+            <p style={{ margin: '0 4px 8px', fontSize: 13, letterSpacing: '.12em', textTransform: 'uppercase', fontWeight: 700, color: C.faint }}>Aujourd'hui</p>
             <div style={{ borderRadius: 18, border: `1px solid ${C.line}`, background: C.glass, overflow: 'hidden' }}>
               {todayRows.map((r, i) => (
                 <button key={r.key} onClick={r.onClick} className="drl-btn"
                   style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 12, padding: '13px 14px', border: 0, borderTop: i ? `1px solid ${C.line}` : 0, background: 'transparent', color: C.text, cursor: 'pointer', textAlign: 'left', fontFamily: 'inherit' }}>
                   {r.visual}
                   <span style={{ flex: 1, minWidth: 0 }}>
-                    <span style={{ display: 'block', fontSize: 14.5, fontWeight: 700 }}>{r.title}</span>
-                    <span style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', fontSize: 12.5, lineHeight: 1.45, color: r.subColor ?? C.faint, marginTop: 2 }}>{r.sub}</span>
+                    <span style={{ display: 'block', fontSize: 15, fontWeight: 700 }}>{r.title}</span>
+                    <span style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', fontSize: 13, lineHeight: 1.45, color: r.subColor ?? C.faint, marginTop: 2 }}>{r.sub}</span>
                   </span>
                   {r.badge}
                   <ArrowRight size={16} color={C.muted} aria-hidden="true" style={{ flexShrink: 0 }} />
@@ -2306,7 +2306,7 @@ const ConversationAccueil: React.FC = () => {
           </h1>
           {history.length > 0 && (
             <div style={{ marginTop: 10 }}>
-              <button onClick={() => setShowHistory(v => !v)} aria-expanded={showHistory} style={{ ...linkBtn, fontSize: 12.5 }}>
+              <button onClick={() => setShowHistory(v => !v)} aria-expanded={showHistory} style={{ ...linkBtn, fontSize: 13 }}>
                 {showHistory ? 'Masquer le début de la conversation' : 'Voir le début de la conversation'}
               </button>
               {showHistory && (
@@ -2324,7 +2324,7 @@ const ConversationAccueil: React.FC = () => {
                 {m.card && renderCard(m)}
               </div>
             ))}
-            {partial !== null && <p style={{ margin: 0, fontSize: 16.5, lineHeight: 1.55, color: C.soft }}>{partial}</p>}
+            {partial !== null && <p style={{ margin: 0, fontSize: 17, lineHeight: 1.55, color: C.soft }}>{partial}</p>}
             {(phase === 'thinking' || phase === 'reading' || routing) && (
               <div role="status" aria-label="Dr Lô écrit" style={{ alignSelf: 'center', display: 'inline-flex', gap: 6, padding: '10px 14px', borderRadius: 999, background: 'rgba(255,255,255,.06)' }}>
                 {[0, 0.15, 0.3].map(d => <span key={d} className="drl-dot" style={{ width: 7, height: 7, borderRadius: '50%', background: C.muted, animationDelay: `${d}s` }} />)}
@@ -2332,11 +2332,11 @@ const ConversationAccueil: React.FC = () => {
             )}
           </div>
           {noted && !revealing && (
-            <div className="drl-in" style={{ marginTop: 10, display: 'inline-flex', alignItems: 'center', gap: 8, fontSize: 12.5, fontWeight: 600, color: C.sage }}>
+            <div className="drl-in" style={{ marginTop: 10, display: 'inline-flex', alignItems: 'center', gap: 8, fontSize: 13, fontWeight: 600, color: C.sage }}>
               <Check size={14} strokeWidth={2.6} aria-hidden="true" />
               <span style={{ textDecoration: noted.cancelled ? 'line-through' : 'none' }}>Noté dans ton humeur du jour</span>
               {!noted.cancelled && (
-                <button onClick={cancelMood} style={{ ...linkBtn, color: C.muted, fontSize: 12.5, fontWeight: 700, padding: '0 6px' }}>Annuler</button>
+                <button onClick={cancelMood} style={{ ...linkBtn, color: C.muted, fontSize: 13, fontWeight: 700, padding: '0 6px' }}>Annuler</button>
               )}
             </div>
           )}
@@ -2366,15 +2366,15 @@ const ConversationAccueil: React.FC = () => {
           <Sprout size={26} color={palette.accent} strokeWidth={1.8} aria-hidden="true" />
           <span style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 3 }}>
             <span style={{ fontSize: 15, fontWeight: 700 }}>{isAuthenticated ? 'Mon espace bien-être' : 'Toutes les évaluations'}</span>
-            <span style={{ fontSize: 12.5, color: '#B9B0A2' }}>{isAuthenticated ? 'Mental · Humeur · Social · Intime' : 'Mental · Vie intime · Bonus'}</span>
+            <span style={{ fontSize: 13, color: '#B9B0A2' }}>{isAuthenticated ? 'Mental · Humeur · Social · Intime' : 'Mental · Vie intime · Bonus'}</span>
           </span>
           <ArrowRight size={18} color={C.muted} aria-hidden="true" />
         </Link>
 
-        <p style={{ margin: '14px 0 16px', textAlign: 'center', fontSize: 11.5, color: C.faint, lineHeight: 1.5 }}>
+        <p style={{ margin: '14px 0 16px', textAlign: 'center', fontSize: 13, color: C.faint, lineHeight: 1.5 }}>
           Un espace d'écoute, sans jugement. Pas de diagnostic · 18 ans et plus · Urgence : <a href="tel:1515" style={{ fontWeight: 700 }}>1515</a>
           <br />
-          <button onClick={resetConversation} style={{ ...linkBtn, fontSize: 11.5, fontWeight: 500 }}>
+          <button onClick={resetConversation} style={{ ...linkBtn, fontSize: 13, fontWeight: 500 }}>
             Effacer cette conversation
           </button>
         </p>
@@ -2453,20 +2453,20 @@ const ChatCard: React.FC<{
     const items: { text: string; tag?: 'perso' | 'totem'; note?: string }[] = card.items ?? (card.questions ?? []).map(t => ({ text: t }));
     return (
       <div className="drl-in" style={box}>
-        <p style={{ margin: 0, fontSize: 11, letterSpacing: '.08em', textTransform: 'uppercase', fontWeight: 700, color: palette.accent }}>
+        <p style={{ margin: 0, fontSize: 13, letterSpacing: '.08em', textTransform: 'uppercase', fontWeight: 700, color: palette.accent }}>
           Tes proches devront deviner · {items.length} questions
         </p>
         <div style={{ marginTop: 8, display: 'flex', flexDirection: 'column', gap: 8 }}>
           {items.map((q, i) => (
             <div key={i} style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
-              <span style={{ flexShrink: 0, width: 22, height: 22, borderRadius: '50%', background: q.tag === 'totem' ? 'rgba(233,200,143,.22)' : q.tag === 'perso' ? 'rgba(157,191,175,.2)' : 'rgba(255,255,255,.08)', color: q.tag === 'totem' ? '#E9C88F' : q.tag === 'perso' ? '#9DBFAF' : C.muted, fontSize: 12, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', marginTop: 1 }}>
+              <span style={{ flexShrink: 0, width: 22, height: 22, borderRadius: '50%', background: q.tag === 'totem' ? 'rgba(233,200,143,.22)' : q.tag === 'perso' ? 'rgba(157,191,175,.2)' : 'rgba(255,255,255,.08)', color: q.tag === 'totem' ? '#E9C88F' : q.tag === 'perso' ? '#9DBFAF' : C.muted, fontSize: 13, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', marginTop: 1 }}>
                 {q.tag === 'totem' ? '🐾' : i + 1}
               </span>
               <span style={{ fontSize: 14, lineHeight: 1.45, color: C.soft }}>
-                {q.tag === 'totem' && <b style={{ display: 'block', fontSize: 11, letterSpacing: '.06em', textTransform: 'uppercase', color: '#E9C88F' }}>Question totem</b>}
-                {q.tag === 'perso' && <b style={{ display: 'block', fontSize: 11, letterSpacing: '.06em', textTransform: 'uppercase', color: '#9DBFAF' }}>Question perso</b>}
+                {q.tag === 'totem' && <b style={{ display: 'block', fontSize: 13, letterSpacing: '.06em', textTransform: 'uppercase', color: '#E9C88F' }}>Question totem</b>}
+                {q.tag === 'perso' && <b style={{ display: 'block', fontSize: 13, letterSpacing: '.06em', textTransform: 'uppercase', color: '#9DBFAF' }}>Question perso</b>}
                 {q.text}
-                {q.note && <span style={{ display: 'block', fontSize: 12.5, color: C.faint }}>{q.note}</span>}
+                {q.note && <span style={{ display: 'block', fontSize: 13, color: C.faint }}>{q.note}</span>}
               </span>
             </div>
           ))}
@@ -2492,7 +2492,7 @@ const ChatCard: React.FC<{
     const wa = `https://wa.me/?text=${encodeURIComponent(`On regarde notre compatibilité sur Health-e ? Fais tes tests sur https://health-e.sn puis envoie-moi ton code de compatibilité. Le mien : ${card.code}`)}`;
     return (
       <div className="drl-in" style={box}>
-        <p style={{ margin: 0, fontSize: 11, letterSpacing: '.08em', textTransform: 'uppercase', fontWeight: 700, color: palette.accent }}>Ton code à partager</p>
+        <p style={{ margin: 0, fontSize: 13, letterSpacing: '.08em', textTransform: 'uppercase', fontWeight: 700, color: palette.accent }}>Ton code à partager</p>
         <p style={{ margin: '6px 0 0', fontFamily: 'Fraunces, serif', fontSize: 22, fontWeight: 600, color: C.title, letterSpacing: '.02em' }}>{card.code || '…'}</p>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 12 }}>
           <a href={wa} target="_blank" rel="noopener noreferrer" style={{ ...primary, background: '#25D366', color: '#0B2915' }}>Envoyer sur WhatsApp</a>
@@ -2504,18 +2504,18 @@ const ChatCard: React.FC<{
   if (card.type === 'compat_result') {
     return (
       <div className="drl-in" style={{ ...box, background: 'rgba(240,154,122,.08)', border: '1px solid rgba(240,154,122,.3)' }}>
-        <p style={{ margin: 0, fontSize: 11, letterSpacing: '.08em', textTransform: 'uppercase', fontWeight: 700, color: '#F09A7A' }}>Compatibilité{card.prenom ? ` · ${card.prenom}` : ''}</p>
+        <p style={{ margin: 0, fontSize: 13, letterSpacing: '.08em', textTransform: 'uppercase', fontWeight: 700, color: '#F09A7A' }}>Compatibilité{card.prenom ? ` · ${card.prenom}` : ''}</p>
         <p style={{ margin: '6px 0 0', fontFamily: 'Fraunces, serif', fontSize: 30, fontWeight: 600, color: C.title }}>{card.score} %</p>
         {card.strengths.length > 0 && (
-          <p style={{ margin: '8px 0 0', fontSize: 13.5, lineHeight: 1.5, color: C.soft }}><b style={{ color: '#7FD1A0' }}>Ce qui vous rapproche : </b>{card.strengths.join(' · ')}</p>
+          <p style={{ margin: '8px 0 0', fontSize: 14, lineHeight: 1.5, color: C.soft }}><b style={{ color: '#7FD1A0' }}>Ce qui vous rapproche : </b>{card.strengths.join(' · ')}</p>
         )}
         {card.tensions.length > 0 && (
-          <p style={{ margin: '6px 0 0', fontSize: 13.5, lineHeight: 1.5, color: C.soft }}><b style={{ color: '#E9C88F' }}>À surveiller : </b>{card.tensions.join(' · ')}</p>
+          <p style={{ margin: '6px 0 0', fontSize: 14, lineHeight: 1.5, color: C.soft }}><b style={{ color: '#E9C88F' }}>À surveiller : </b>{card.tensions.join(' · ')}</p>
         )}
         <button onClick={() => onOpen('/assessment/compatibility')} style={{ ...primary, marginTop: 12 }}>
           Voir l'analyse complète <ArrowRight size={16} aria-hidden="true" />
         </button>
-        <p style={{ margin: '8px 0 0', fontSize: 11.5, color: C.faint }}>Un repère, pas un verdict.</p>
+        <p style={{ margin: '8px 0 0', fontSize: 13, color: C.faint }}>Un repère, pas un verdict.</p>
       </div>
     );
   }
@@ -2524,7 +2524,7 @@ const ChatCard: React.FC<{
     return (
       <div className="drl-in" style={{ marginTop: 10 }}>
         <button onClick={() => onGo(card.to, card.path)} className="drl-btn"
-          style={{ minHeight: 46, padding: '0 18px', display: 'inline-flex', alignItems: 'center', gap: 6, borderRadius: 14, border: 0, background: palette.primary, color: C.ink, fontSize: 14.5, fontWeight: 700, cursor: 'pointer' }}>
+          style={{ minHeight: 46, padding: '0 18px', display: 'inline-flex', alignItems: 'center', gap: 6, borderRadius: 14, border: 0, background: palette.primary, color: C.ink, fontSize: 15, fontWeight: 700, cursor: 'pointer' }}>
           {card.label ?? go.label}{card.to === 'chat' && <span style={{ fontWeight: 600, opacity: 0.75 }}>· {credits(1)} / message</span>}
           <ArrowRight size={16} aria-hidden="true" />
         </button>
@@ -2557,14 +2557,14 @@ const ChatCard: React.FC<{
           </div>
           <div style={{ minWidth: 0 }}>
             <p style={{ margin: 0, fontSize: 15, fontWeight: 700, color: C.text, lineHeight: 1.25 }}>{meta.label}</p>
-            <p style={{ margin: '3px 0 0', fontSize: 12, color: C.faint, display: 'flex', gap: 12 }}>
+            <p style={{ margin: '3px 0 0', fontSize: 13, color: C.faint, display: 'flex', gap: 12 }}>
               <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><Clock size={12} aria-hidden="true" /> {scale?.timeEstimateMinutes ?? 3} min</span>
               <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><ListChecks size={12} aria-hidden="true" /> {scale?.items.length ?? '?'} questions</span>
             </p>
           </div>
         </div>
         <button onClick={() => onStart(card.scaleId)} className="drl-btn" disabled={busy}
-          style={{ marginTop: 12, width: '100%', minHeight: 46, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6, borderRadius: 14, border: 0, background: palette.primary, color: C.ink, fontSize: 14.5, fontWeight: 700, cursor: busy ? 'default' : 'pointer', opacity: busy ? 0.55 : 1 }}>
+          style={{ marginTop: 12, width: '100%', minHeight: 46, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6, borderRadius: 14, border: 0, background: palette.primary, color: C.ink, fontSize: 15, fontWeight: 700, cursor: busy ? 'default' : 'pointer', opacity: busy ? 0.55 : 1 }}>
           {card.resume ? 'Reprendre le test' : <>Commencer ici avec moi <span style={{ fontWeight: 600, opacity: 0.75 }}>· {costLabel(card.scaleId)}</span></>}
           <ArrowRight size={16} aria-hidden="true" />
         </button>
@@ -2578,7 +2578,7 @@ const ChatCard: React.FC<{
         <p style={{ margin: '0 0 8px', fontSize: 13, fontWeight: 700, color: '#B4C3DC' }}>Parler à quelqu'un maintenant</p>
         <ul style={{ margin: 0, padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 8 }}>
           {resources.map(r => (
-            <li key={r.label} style={{ fontSize: 13.5, color: C.text }}>
+            <li key={r.label} style={{ fontSize: 14, color: C.text }}>
               {r.phone ? (
                 <a href={`tel:${r.phone.replace(/\s/g, '')}`} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontWeight: 700, color: '#DCE5F2', textDecoration: 'none', minHeight: 32 }}>
                   <Phone size={14} aria-hidden="true" /> {r.label}{r.phone !== r.label.split(' ')[0] ? ` · ${r.phone}` : ''}
@@ -2586,10 +2586,10 @@ const ChatCard: React.FC<{
               ) : (
                 <span style={{ fontWeight: 700 }}>{r.label}</span>
               )}
-              {r.note && <span style={{ display: 'block', fontSize: 11.5, color: C.faint }}>{r.note}</span>}
+              {r.note && <span style={{ display: 'block', fontSize: 13, color: C.faint }}>{r.note}</span>}
             </li>
           ))}
-          <li style={{ fontSize: 12, color: C.muted }}>Ou va voir quelqu'un de confiance autour de toi, maintenant.</li>
+          <li style={{ fontSize: 13, color: C.muted }}>Ou va voir quelqu'un de confiance autour de toi, maintenant.</li>
         </ul>
       </div>
     );
@@ -2623,7 +2623,7 @@ const TestPanel: React.FC<{
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
       <div aria-label={`${label} : question ${Math.min(p.done + 1, p.total)} sur ${p.total}`}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, fontWeight: 600, color: C.faint, marginBottom: 6 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, fontWeight: 600, color: C.faint, marginBottom: 6 }}>
           <span>{label}</span>
           <span>{item ? Math.max(1, visibleItems(scale, answers).findIndex(i => i.id === item.id) + 1) : p.total} / {p.total}</span>
         </div>
@@ -2634,10 +2634,10 @@ const TestPanel: React.FC<{
       {!hidden && item && (
         <div className="drl-in" style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
           {scale.instructions && !/(…|\.\.\.)\s*$/.test(scale.instructions) && (
-            <p style={{ margin: '0', fontSize: 11.5, color: C.faint, textAlign: 'center', lineHeight: 1.4 }}>{scale.instructions}</p>
+            <p style={{ margin: '0', fontSize: 13, color: C.faint, textAlign: 'center', lineHeight: 1.4 }}>{scale.instructions}</p>
           )}
           {/* La question reste TOUJOURS visible, au-dessus des réponses (même sur un petit écran) */}
-          <p aria-live="polite" style={{ margin: '2px 0 2px', fontSize: 15.5, fontWeight: 700, color: C.title, textAlign: 'center', lineHeight: 1.4 }}>{item.text}</p>
+          <p aria-live="polite" style={{ margin: '2px 0 2px', fontSize: 16, fontWeight: 700, color: C.title, textAlign: 'center', lineHeight: 1.4 }}>{item.text}</p>
           {item.options.map(o => {
             const chosen = answers[item.id] === o.value;
             return (
@@ -2646,8 +2646,8 @@ const TestPanel: React.FC<{
                   border: `1px solid ${chosen ? palette.accent : 'rgba(242,182,109,.30)'}`,
                   background: chosen ? 'rgba(242,182,109,.20)' : 'rgba(255,255,255,.05)', color: C.text,
                   display: 'flex', flexDirection: 'column', gap: 2 }}>
-                <span style={{ fontSize: 14.5, fontWeight: 700 }}>{o.label}</span>
-                {o.subtitle && <span style={{ fontSize: 12, color: C.faint }}>{o.subtitle}</span>}
+                <span style={{ fontSize: 15, fontWeight: 700 }}>{o.label}</span>
+                {o.subtitle && <span style={{ fontSize: 13, color: C.faint }}>{o.subtitle}</span>}
               </button>
             );
           })}
@@ -2655,7 +2655,7 @@ const TestPanel: React.FC<{
       )}
       {!hidden && !item && (
         <button onClick={onFinish} disabled={busy} className="drl-btn"
-          style={{ minHeight: 46, borderRadius: 14, border: 0, background: palette.primary, color: C.ink, fontSize: 14.5, fontWeight: 700, cursor: 'pointer', opacity: busy ? 0.55 : 1 }}>
+          style={{ minHeight: 46, borderRadius: 14, border: 0, background: palette.primary, color: C.ink, fontSize: 15, fontWeight: 700, cursor: 'pointer', opacity: busy ? 0.55 : 1 }}>
           Voir mon résultat
         </button>
       )}

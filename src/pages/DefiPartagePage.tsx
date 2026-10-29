@@ -1,7 +1,8 @@
 import '../components/accueil/accueil.css';
+import PageHeader from '../components/ui/PageHeader';
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Navigate } from 'react-router-dom';
-import { ArrowLeft, Copy, Check, Share2, ExternalLink } from 'lucide-react';
+import { Copy, Check, Share2, ExternalLink, PartyPopper } from 'lucide-react';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../utils/firebase';
 import { useAuth } from '../contexts/AuthContext';
@@ -55,18 +56,11 @@ const DefiPartagePage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-paper drl-screen drl-page">
-      <div className="sticky top-0 z-20 bg-paper/95 backdrop-blur-md border-b border-line">
-        <div className="max-w-[600px] mx-auto px-5 py-3.5 flex items-center gap-3">
-          <button onClick={() => navigate('/defi', { replace: true })} className="p-0 border-none bg-transparent cursor-pointer text-ink">
-            <ArrowLeft size={20} />
-          </button>
-          <h1 className="font-display text-[18px] font-semibold text-ink m-0 truncate">{titre}</h1>
-        </div>
-      </div>
+      <PageHeader onBack={() => navigate('/defi', { replace: true })} title={titre} />
 
       <div className="max-w-[600px] mx-auto px-5 py-8 flex flex-col items-center gap-6">
         <div className="text-center">
-          <div className="text-[40px] mb-2">🎉</div>
+          <div className="w-16 h-16 rounded-2xl bg-gold-soft flex items-center justify-center mx-auto mb-3"><PartyPopper size={28} className="text-gold" aria-hidden="true" /></div>
           <h2 className="font-display text-xl font-semibold text-ink m-0 mb-1">
             Ton défi est lancé !
           </h2>
@@ -77,7 +71,7 @@ const DefiPartagePage: React.FC = () => {
 
         {/* Link display */}
         <div className="w-full rounded-[14px] border border-line bg-white p-4">
-          <p className="text-[11px] font-bold uppercase tracking-[0.1em] text-muted m-0 mb-2">
+          <p className="text-[13px] font-bold uppercase tracking-[0.1em] text-muted m-0 mb-2">
             Lien du défi
           </p>
           <p className="text-[15px] text-ink font-medium m-0 break-all select-all">

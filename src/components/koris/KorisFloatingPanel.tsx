@@ -68,7 +68,7 @@ const KorisFloatingPanel: React.FC<Props> = ({ onClose }) => {
             className="w-12 h-12 rounded-full object-cover border-[3px] border-white/30 flex-shrink-0"
           />
           <div>
-            <div className="text-[11px] opacity-85">Mon solde</div>
+            <div className="text-[13px] opacity-85">Mon solde</div>
             <div className="text-[30px] font-extrabold tracking-tight leading-tight">
               {balance}
               <span className="text-[13px] font-medium ml-1 opacity-85">{CREDIT.many}</span>
@@ -81,7 +81,7 @@ const KorisFloatingPanel: React.FC<Props> = ({ onClose }) => {
           <div className="px-4 py-3 border-b border-line">
             <div className="flex items-center gap-2">
               <AlertTriangle size={16} className={balance === 0 ? 'text-danger flex-shrink-0' : 'text-warn flex-shrink-0'} />
-              <div className="text-[11px] text-ink-soft leading-relaxed">
+              <div className="text-[13px] text-ink-soft leading-relaxed">
                 {balance === 0
                   ? `Plus ${CREDIT.ofMany} · Recharger dès 500 FCFA`
                   : `Il te reste ${credits(balance)} · Recharger`}
@@ -102,13 +102,13 @@ const KorisFloatingPanel: React.FC<Props> = ({ onClose }) => {
 
         {/* Recent transactions */}
         <div className="px-4 py-2.5 border-b border-line max-h-40 overflow-y-auto">
-          <div className="text-[10px] font-semibold text-muted uppercase mb-1.5">
+          <div className="text-[13px] font-semibold text-muted uppercase mb-1.5">
             Dernieres transactions
           </div>
           {loading ? (
-            <div className="text-[11px] text-muted text-center py-2">...</div>
+            <div className="text-[13px] text-muted text-center py-2">...</div>
           ) : history.length === 0 ? (
-            <div className="text-[11px] text-muted text-center py-2">Aucune transaction</div>
+            <div className="text-[13px] text-muted text-center py-2">Aucune transaction</div>
           ) : (
             history.map((tx, i) => (
               <div
@@ -124,7 +124,7 @@ const KorisFloatingPanel: React.FC<Props> = ({ onClose }) => {
                     className="w-4 h-4 rounded-full object-cover"
                     style={{ opacity: tx.type === 'spend' ? 0.5 : 1 }}
                   />
-                  <span className="text-[11px] text-ink-soft">{getFeatureLabel(tx.feature)}</span>
+                  <span className="text-[13px] text-ink-soft">{getFeatureLabel(tx.feature)}</span>
                 </div>
                 <span className={`text-xs font-bold ${typeTextClass(tx.type)}`}>
                   {typeSign(tx.type)}{tx.amount}
@@ -136,10 +136,10 @@ const KorisFloatingPanel: React.FC<Props> = ({ onClose }) => {
 
         {/* Cost grid */}
         <div className="px-4 pt-2.5 pb-3.5">
-          <div className="text-[10px] font-semibold text-muted uppercase mb-1.5">
+          <div className="text-[13px] font-semibold text-muted uppercase mb-1.5">
             Couts
           </div>
-          <div className="grid grid-cols-[1fr_auto] gap-x-2.5 gap-y-1 text-[11px]">
+          <div className="grid grid-cols-[1fr_auto] gap-x-2.5 gap-y-1 text-[13px]">
             {Object.entries(KORIS_COSTS)
               .filter(([, cost]) => cost > 0)
               .map(([feature, cost]) => (

@@ -3,6 +3,7 @@
  * On ne voit jamais de noms : seulement le nombre de personnes visées. Ciblage fin : au moins 5 personnes.
  */
 import React, { useEffect, useMemo, useRef, useState } from 'react';
+import AudioPlayer from './AudioPlayer';
 import { Eye, EyeOff, Loader2, Mic, Send, Trash2 } from 'lucide-react';
 import { blobToBase64, useVoiceRecorder } from '../../hooks/useVoiceRecorder';
 import VoiceInput from './VoiceInput';
@@ -41,7 +42,7 @@ const CommentsAdmin: React.FC<{ row: BroadcastRow; palette: MomentPalette; onCha
   useEffect(() => { if (open) load(); }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
   const act = (p: Promise<unknown>) => p.then(load).catch(e => setErr(e instanceof Error ? e.message : 'Erreur'));
   const distress = (items ?? []).filter(c => c.status === 'distress').length;
-  const btn: React.CSSProperties = { minHeight: 34, padding: '0 10px', borderRadius: 10, border: `1px solid ${DC.line}`, background: DC.glass, color: DC.muted, cursor: 'pointer', fontSize: 12.5 };
+  const btn: React.CSSProperties = { minHeight: 34, padding: '0 10px', borderRadius: 10, border: `1px solid ${DC.line}`, background: DC.glass, color: DC.muted, cursor: 'pointer', fontSize: 13 };
   return (
     <div style={{ marginTop: 10, borderTop: `1px solid ${DC.line}`, paddingTop: 10 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
@@ -57,12 +58,12 @@ const CommentsAdmin: React.FC<{ row: BroadcastRow; palette: MomentPalette; onCha
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 10 }}>
           {items === null && <Loader2 size={16} className="animate-spin" aria-label="Chargement" />}
           {items && items.length === 0 && <p style={{ margin: 0, fontSize: 13, color: DC.faint }}>Aucun commentaire.</p>}
-          {distress > 0 && <p style={{ margin: 0, fontSize: 12.5, color: '#F0C987', lineHeight: 1.5 }}>{distress} commentaire{distress > 1 ? 's' : ''} montrant une détresse : non publié{distress > 1 ? 's' : ''}, la personne a reçu en privé le 1515 et le CHU Fann. Tu ne vois pas qui c'est.</p>}
+          {distress > 0 && <p style={{ margin: 0, fontSize: 13, color: '#F0C987', lineHeight: 1.5 }}>{distress} commentaire{distress > 1 ? 's' : ''} montrant une détresse : non publié{distress > 1 ? 's' : ''}, la personne a reçu en privé le 1515 et le CHU Fann. Tu ne vois pas qui c'est.</p>}
           {(items ?? []).map(c => (
             <div key={c.id} style={{ borderRadius: 12, border: `1px solid ${c.status === 'distress' ? 'rgba(240,201,135,.5)' : c.reports > 0 ? 'rgba(240,154,122,.5)' : DC.line}`, background: 'rgba(255,255,255,.03)', padding: 10, opacity: c.hidden ? 0.55 : 1 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 {c.status !== 'distress' && <TotemAvatar animal={c.totem} size={28} />}
-                <p style={{ margin: 0, fontSize: 12, color: DC.faint }}>
+                <p style={{ margin: 0, fontSize: 13, color: DC.faint }}>
                   {c.status === 'distress' ? 'Détresse (non publié)' : c.name}{c.pinned ? ' · épinglé' : ''}{c.hidden && c.status !== 'distress' ? ' · masqué' : ''}{c.reports > 0 ? ` · signalé ${c.reports} fois` : ''}
                 </p>
               </div>
@@ -72,7 +73,7 @@ const CommentsAdmin: React.FC<{ row: BroadcastRow; palette: MomentPalette; onCha
                 const mine = e.from === 'drlo';
                 return (
                   <div key={key} style={{ marginTop: 8, borderLeft: `2px solid ${mine ? palette.accent : DC.line}`, paddingLeft: 10 }}>
-                    <p style={{ margin: 0, fontSize: 12, fontWeight: 700, color: mine ? palette.accent : DC.faint }}>
+                    <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: mine ? palette.accent : DC.faint }}>
                       {mine ? 'Toi' : c.name}{e.editedAt ? ' · modifié' : ''} · {fmt(e.editedAt ?? e.at)}
                     </p>
                     {editing === key ? (
@@ -80,12 +81,12 @@ const CommentsAdmin: React.FC<{ row: BroadcastRow; palette: MomentPalette; onCha
                         <ReplyComposer initialText={e.text} existingAudio={e.audioSec ? { url: e.audioUrl ?? null, sec: e.audioSec } : null} placeholder="Ta réponse" submitLabel="Enregistrer la modification"
                           onSubmit={async (t, clip, removeAudio) => { await editReply(c.id, e.index, { text: t, audio: clip, removeAudio }); setEditing(null); await load(); }}
                           onCancel={() => setEditing(null)} />
-                        <p style={{ margin: '6px 0 0', fontSize: 12, color: DC.faint }}>La personne verra que ta réponse a été mise à jour.</p>
+                        <p style={{ margin: '6px 0 0', fontSize: 13, color: DC.faint }}>La personne verra que ta réponse a été mise à jour.</p>
                       </div>
                     ) : (
                       <>
                         {e.audioSec > 0 && (e.audioUrl
-                          ? <audio controls preload="metadata" src={e.audioUrl} aria-label={mine ? 'Ton vocal' : 'Vocal'} style={{ width: '100%', height: 40, marginTop: 6 }} />
+                          ? <AudioPlayer src={e.audioUrl} ariaLabel={mine ? 'Ton vocal' : 'Vocal'} style={{ marginTop: 6 }} />
                           : <p style={{ margin: '6px 0 0', fontSize: 13, color: DC.muted }}>Vocal de {mmss(e.audioSec)}</p>)}
                         {e.text && <p style={{ margin: '4px 0 0', fontSize: 14, lineHeight: 1.5, color: mine ? palette.accent : DC.text, whiteSpace: 'pre-wrap' }}>{e.text}</p>}
                         {mine && <button type="button" onClick={() => setEditing(key)} style={{ ...btn, marginTop: 6 }}>Modifier</button>}
@@ -95,7 +96,7 @@ const CommentsAdmin: React.FC<{ row: BroadcastRow; palette: MomentPalette; onCha
                 );
               })}
               {c.status === 'public' && c.thread.length > 0 && c.thread[c.thread.length - 1].from === 'user' && !c.closed && (
-                <p style={{ margin: '8px 0 0', fontSize: 12.5, fontWeight: 700, color: '#F0C987' }}>La personne t'a répondu : à toi.</p>
+                <p style={{ margin: '8px 0 0', fontSize: 13, fontWeight: 700, color: '#F0C987' }}>La personne t'a répondu : à toi.</p>
               )}
               {c.status === 'public' && (
                 <div style={{ marginTop: 8 }}>
@@ -158,7 +159,7 @@ const AudienceList: React.FC<{ row: BroadcastRow; palette: MomentPalette; initia
         {tab('unseen', 'Pas encore vu', Math.max(0, row.audienceCount - row.stats.views))}
       </div>
       <div aria-hidden="true" style={{ height: 6, borderRadius: 3, background: 'rgba(255,255,255,.08)', marginTop: 10, overflow: 'hidden' }}><div style={{ width: `${pct}%`, height: '100%', background: palette.accent }} /></div>
-      <p style={{ margin: '6px 0 0', fontSize: 12, color: DC.faint }}>{total} sur {row.audienceCount} personne{row.audienceCount > 1 ? 's' : ''} ({pct} %)</p>
+      <p style={{ margin: '6px 0 0', fontSize: 13, color: DC.faint }}>{total} sur {row.audienceCount} personne{row.audienceCount > 1 ? 's' : ''} ({pct} %)</p>
       {restricted ? (
         <p style={{ margin: '10px 0 0', fontSize: 13, lineHeight: 1.5, color: DC.muted }}>Ce message vise un groupe précis (test, totem ou programme). Pour que personne ne soit reconnu, seuls les totaux sont affichés.</p>
       ) : (
@@ -169,16 +170,16 @@ const AudienceList: React.FC<{ row: BroadcastRow; palette: MomentPalette; initia
           <ul style={{ listStyle: 'none', margin: '8px 0 0', padding: 0, maxHeight: 320, overflowY: 'auto', WebkitOverflowScrolling: 'touch' }}>
             {shown.map((i, idx) => (
               <li key={`${i.name}-${idx}`} style={{ display: 'flex', alignItems: 'center', gap: 10, minHeight: 42, borderTop: idx ? `1px solid ${DC.line}` : undefined }}>
-                <span aria-hidden="true" style={{ width: 28, height: 28, flexShrink: 0, borderRadius: '50%', background: 'rgba(242,182,109,.16)', color: palette.accent, fontSize: 12.5, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{i.name.slice(0, 1).toUpperCase()}</span>
+                <span aria-hidden="true" style={{ width: 28, height: 28, flexShrink: 0, borderRadius: '50%', background: 'rgba(242,182,109,.16)', color: palette.accent, fontSize: 13, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{i.name.slice(0, 1).toUpperCase()}</span>
                 <span style={{ flex: 1, minWidth: 0, fontSize: 14, color: DC.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{i.name}</span>
-                {kind !== 'unseen' && <span style={{ fontSize: 12, color: DC.faint, flexShrink: 0 }}>{when(i.at)}</span>}
+                {kind !== 'unseen' && <span style={{ fontSize: 13, color: DC.faint, flexShrink: 0 }}>{when(i.at)}</span>}
               </li>
             ))}
-            {done && !loading && shown.length === 0 && <li style={{ padding: '10px 0', fontSize: 13.5, color: DC.faint }}>{q.trim() ? 'Aucun prénom trouvé parmi ceux chargés.' : 'Personne pour l\'instant.'}</li>}
+            {done && !loading && shown.length === 0 && <li style={{ padding: '10px 0', fontSize: 14, color: DC.faint }}>{q.trim() ? 'Aucun prénom trouvé parmi ceux chargés.' : 'Personne pour l\'instant.'}</li>}
           </ul>
           {loading && <Loader2 size={16} className="animate-spin" aria-label="Chargement" style={{ marginTop: 8 }} />}
           {next && !loading && (
-            <button type="button" onClick={() => load(kind, next)} className="drl-btn" style={{ marginTop: 8, width: '100%', minHeight: 44, borderRadius: 12, border: `1px solid ${DC.line}`, background: DC.glass, color: DC.soft, cursor: 'pointer', fontSize: 13.5, fontWeight: 600 }}>
+            <button type="button" onClick={() => load(kind, next)} className="drl-btn" style={{ marginTop: 8, width: '100%', minHeight: 44, borderRadius: 12, border: `1px solid ${DC.line}`, background: DC.glass, color: DC.soft, cursor: 'pointer', fontSize: 14, fontWeight: 600 }}>
               Voir plus ({items.length} affichés)
             </button>
           )}
@@ -266,7 +267,7 @@ const CommunityPanel: React.FC<{ palette: MomentPalette; newByBroadcast?: Record
     minHeight: 36, padding: '0 12px', borderRadius: 999, cursor: 'pointer', fontSize: 13, fontWeight: 600,
     border: `1px solid ${on ? palette.accent : DC.line}`, background: on ? 'rgba(242,182,109,.15)' : DC.glass, color: on ? palette.accent : DC.muted,
   });
-  const lab: React.CSSProperties = { margin: '14px 0 6px', fontSize: 12.5, fontWeight: 700, color: DC.soft };
+  const lab: React.CSSProperties = { margin: '14px 0 6px', fontSize: 13, fontWeight: 700, color: DC.soft };
 
   const scaleOptions = Object.entries(SCALE_META).map(([id, m]) => ({ id, label: m.label })).sort((a, b) => a.label.localeCompare(b.label, 'fr'));
 
@@ -277,7 +278,7 @@ const CommunityPanel: React.FC<{ palette: MomentPalette; newByBroadcast?: Record
         <textarea aria-label="Ton message" rows={6} maxLength={MAX} value={text} onChange={e => setText(e.target.value)}
           placeholder="Écris comme tu parles. Les gens recevront simplement « Dr Lô t'a laissé un message »."
           className="drl-input" style={{ ...field, marginTop: 10, lineHeight: 1.5, resize: 'vertical', minHeight: 130 }} />
-        <p style={{ margin: '4px 0 0', fontSize: 12, color: DC.faint, textAlign: 'right' }}>{text.length} / {MAX}</p>
+        <p style={{ margin: '4px 0 0', fontSize: 13, color: DC.faint, textAlign: 'right' }}>{text.length} / {MAX}</p>
 
         <div style={{ marginTop: 10 }}>
           <VoiceInput voice={voice} recordLabel="Enregistrer un vocal" readyHint="Le texte ci-dessus devient facultatif." />
@@ -333,12 +334,12 @@ const CommunityPanel: React.FC<{ palette: MomentPalette; newByBroadcast?: Record
           <div>
             <input type="datetime-local" aria-label="Date d'envoi" value={when} onChange={e => setWhen(e.target.value)} className="drl-input" style={{ ...field, marginTop: 8, minHeight: 46, padding: '0 12px' }} />
             {when && !whenOk && <p style={{ margin: '6px 0 0', fontSize: 13, color: '#F09A7A' }}>Choisis une heure dans le futur.</p>}
-            <p style={{ margin: '6px 0 0', fontSize: 12, color: DC.faint }}>L'envoi se fait à l'heure pile qui suit (vérification chaque heure). Aucune notification la nuit (22 h – 7 h).</p>
+            <p style={{ margin: '6px 0 0', fontSize: 13, color: DC.faint }}>L'envoi se fait à l'heure pile qui suit (vérification chaque heure). Aucune notification la nuit (22 h – 7 h).</p>
           </div>
         )}
 
-        {err && <p role="alert" style={{ margin: '12px 0 0', color: '#F09A7A', fontSize: 13.5 }}>{err}</p>}
-        {msg && <p role="status" style={{ margin: '12px 0 0', color: DC.ok, fontSize: 13.5 }}>{msg}</p>}
+        {err && <p role="alert" style={{ margin: '12px 0 0', color: '#F09A7A', fontSize: 14 }}>{err}</p>}
+        {msg && <p role="status" style={{ margin: '12px 0 0', color: DC.ok, fontSize: 14 }}>{msg}</p>}
 
         {!confirm ? (
           <button type="button" disabled={!canSend} onClick={() => setConfirm(true)} className="drl-btn"
@@ -365,15 +366,15 @@ const CommunityPanel: React.FC<{ palette: MomentPalette; newByBroadcast?: Record
         {rows.length === 0 && <p style={{ color: DC.faint, fontSize: 14, margin: 0 }}>Aucun message pour l'instant.</p>}
         {rows.map(r => (
           <article key={r.id} style={{ ...card, opacity: r.hidden ? 0.55 : 1 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, fontSize: 12, color: DC.faint }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, fontSize: 13, color: DC.faint }}>
               <span>{STATUS[r.status] ?? r.status} · {fmt(r.status === 'scheduled' ? r.sendAt : r.createdAt)}{r.hidden ? ' · masqué' : ''}</span>
               <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
-                {(newByBroadcast[r.id] ?? 0) > 0 && <b aria-label={`${newByBroadcast[r.id]} nouvelle${newByBroadcast[r.id] > 1 ? 's' : ''} interaction${newByBroadcast[r.id] > 1 ? 's' : ''}`} style={{ minWidth: 20, height: 20, padding: '0 6px', boxSizing: 'border-box', borderRadius: 10, background: '#E8664F', color: '#fff', fontSize: 11.5, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>{newByBroadcast[r.id]}</b>}
+                {(newByBroadcast[r.id] ?? 0) > 0 && <b aria-label={`${newByBroadcast[r.id]} nouvelle${newByBroadcast[r.id] > 1 ? 's' : ''} interaction${newByBroadcast[r.id] > 1 ? 's' : ''}`} style={{ minWidth: 20, height: 20, padding: '0 6px', boxSizing: 'border-box', borderRadius: 10, background: '#E8664F', color: '#fff', fontSize: 13, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>{newByBroadcast[r.id]}</b>}
                 {r.audienceCount} personne{r.audienceCount > 1 ? 's' : ''}
               </span>
             </div>
             {r.audio && <p style={{ margin: '8px 0 0', fontSize: 13, color: palette.accent, display: 'inline-flex', alignItems: 'center', gap: 5 }}><Mic size={13} aria-hidden="true" /> Vocal de {mmss(r.audio.durationSec)}</p>}
-            {r.text && <p style={{ margin: '8px 0 0', fontSize: 14.5, lineHeight: 1.55, color: DC.text, whiteSpace: 'pre-wrap' }}>{r.text}</p>}
+            {r.text && <p style={{ margin: '8px 0 0', fontSize: 15, lineHeight: 1.55, color: DC.text, whiteSpace: 'pre-wrap' }}>{r.text}</p>}
             <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '6px 14px', marginTop: 10, fontSize: 13, color: DC.muted }}>
               <button type="button" onClick={() => setAud(aud?.id === r.id && aud.kind === 'seen' ? null : { id: r.id, kind: 'seen' })} aria-expanded={aud?.id === r.id} aria-label="Voir qui a vu ce message" className="drl-btn"
                 style={{ minHeight: 40, padding: '0 10px', borderRadius: 10, border: `1px solid ${aud?.id === r.id ? palette.accent : DC.line}`, background: DC.glass, color: DC.soft, cursor: 'pointer', fontSize: 13 }}>👁 {r.stats.views} vu{r.stats.views > 1 ? 's' : ''} sur {r.audienceCount}</button>
@@ -386,17 +387,17 @@ const CommunityPanel: React.FC<{ palette: MomentPalette; newByBroadcast?: Record
             {aud?.id === r.id && <AudienceList key={`${r.id}-${aud.kind}`} row={r} palette={palette} initial={aud.kind} />}
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 10 }}>
               <button type="button" onClick={() => hideBroadcast(r.id, !r.hidden).then(refresh).catch(() => {})} aria-label={r.hidden ? 'Réafficher' : 'Masquer'} className="drl-btn"
-                style={{ flex: '1 1 130px', minHeight: 44, padding: '0 12px', borderRadius: 12, border: `1px solid ${DC.line}`, background: DC.glass, color: DC.muted, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6, fontSize: 13.5 }}>
+                style={{ flex: '1 1 130px', minHeight: 44, padding: '0 12px', borderRadius: 12, border: `1px solid ${DC.line}`, background: DC.glass, color: DC.muted, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6, fontSize: 14 }}>
                 {r.hidden ? <Eye size={16} aria-hidden="true" /> : <EyeOff size={16} aria-hidden="true" />} {r.hidden ? 'Réafficher' : 'Masquer'}
               </button>
               <button type="button" onClick={() => { setDelId(r.id); setDelError(''); }} aria-label="Supprimer ce message" className="drl-btn"
-                style={{ flex: '1 1 130px', minHeight: 44, padding: '0 12px', borderRadius: 12, border: '1px solid rgba(232,102,79,.55)', background: 'rgba(232,102,79,.08)', color: '#E8664F', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6, fontSize: 13.5, fontWeight: 600 }}>
+                style={{ flex: '1 1 130px', minHeight: 44, padding: '0 12px', borderRadius: 12, border: '1px solid rgba(232,102,79,.55)', background: 'rgba(232,102,79,.08)', color: '#E8664F', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6, fontSize: 14, fontWeight: 600 }}>
                 <Trash2 size={16} aria-hidden="true" /> Supprimer
               </button>
             </div>
             {delId === r.id && (
               <div role="alertdialog" aria-label="Supprimer ce message" style={{ marginTop: 10, padding: 12, borderRadius: 12, border: `1px solid ${DC.line}`, background: DC.glass }}>
-                <p style={{ margin: 0, fontSize: 13.5, lineHeight: 1.5, color: DC.text }}>Supprimer ce message pour de bon ? Il disparaît chez tout le monde, avec ses commentaires et son vocal. Tu ne pourras pas le récupérer.</p>
+                <p style={{ margin: 0, fontSize: 14, lineHeight: 1.5, color: DC.text }}>Supprimer ce message pour de bon ? Il disparaît chez tout le monde, avec ses commentaires et son vocal. Tu ne pourras pas le récupérer.</p>
                 {delError && <p role="alert" style={{ margin: '6px 0 0', fontSize: 13, color: '#E8664F' }}>{delError}</p>}
                 <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
                   <button type="button" onClick={() => remove(r.id)} disabled={delBusy} className="drl-btn" style={{ flex: 1, minHeight: 42, borderRadius: 999, border: 0, background: '#E8664F', color: '#fff', fontWeight: 700, cursor: 'pointer' }}>{delBusy ? 'Suppression…' : 'Oui, supprimer'}</button>

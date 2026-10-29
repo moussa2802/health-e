@@ -31,7 +31,7 @@ const Group: React.FC<{ title: string; hint: string; icon: React.ElementType; id
       <span aria-hidden="true" className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#F2B66D]/15"><Icon size={22} className="text-[#F2B66D]" /></span>
       <span className="flex-1">
         <span className="block font-display text-[15px] font-bold text-[#F4EEE4]">{title} <span className="font-normal text-[13px] text-[#A79E90]">· {ids.length} tests</span></span>
-        <span className="block text-[12.5px] leading-snug text-[#CFC6B8]">{hint}</span>
+        <span className="block text-[13px] leading-snug text-[#CFC6B8]">{hint}</span>
       </span>
       <ChevronDown size={18} aria-hidden="true" className="shrink-0 text-[#A79E90] transition-transform group-open:rotate-180" />
     </summary>
@@ -41,7 +41,7 @@ const Group: React.FC<{ title: string; hint: string; icon: React.ElementType; id
         return (
           <li key={id} className="text-[13px] leading-snug">
             <Link to={`/assessment/test/${id}`} className="font-semibold text-[#F4EEE4] no-underline hover:text-[#F2B66D]">{m.label}</Link>
-            {m.description && <span className="block text-[12px] text-[#A79E90]">{m.description}</span>}
+            {m.description && <span className="block text-[13px] text-[#A79E90]">{m.description}</span>}
           </li>
         );
       })}
@@ -52,7 +52,7 @@ const Group: React.FC<{ title: string; hint: string; icon: React.ElementType; id
 const AccueilSeoSections: React.FC = () => (
   <div className="w-full max-w-3xl mx-auto mt-14 px-5 text-left flex flex-col gap-14">
     <section>
-      <p className="m-0 mb-1 text-[12px] font-semibold uppercase tracking-[0.08em] text-[#A79E90]">Health-e · santé mentale & vie intime</p>
+      <p className="m-0 mb-1 text-[13px] font-semibold uppercase tracking-[0.08em] text-[#A79E90]">Health-e · santé mentale & vie intime</p>
       <h2 className="font-display m-0 mb-6 text-[clamp(1.4rem,4vw,2rem)] font-bold leading-tight text-[#FBF5EA]">
         Comprends ce que tu ressens, <span className="text-[#F2B66D]">en parlant avec Dr Lô.</span>
       </h2>
@@ -97,7 +97,7 @@ const AccueilSeoSections: React.FC = () => (
         {FAQ.map(f => (
           <details key={f.q} className="rounded-card border border-white/[0.12] bg-white/[0.05] px-4 py-3">
             <summary className="cursor-pointer text-[14px] font-bold text-[#F4EEE4]">{f.q}</summary>
-            <p className="m-0 mt-2 text-[13.5px] text-[#CFC6B8] leading-relaxed">{f.a}</p>
+            <p className="m-0 mt-2 text-[14px] text-[#CFC6B8] leading-relaxed">{f.a}</p>
           </details>
         ))}
       </div>

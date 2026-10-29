@@ -5,6 +5,7 @@ import AdminSidebar from "./AdminSidebar";
 import { useAuth } from "../../contexts/AuthContext";
 import { useLanguage } from "../../contexts/LanguageContext";
 import AdminNotificationCenter from "./AdminNotificationCenter";
+import "../accueil/accueil.css";
 
 interface AdminLayoutProps {
   children: React.ReactNode;
@@ -27,6 +28,8 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
 
     if (path.includes("/admin/dashboard")) {
       return language === "fr" ? "Tableau de bord" : "Dashboard";
+    } else if (path.includes("/admin/notifications")) {
+      return "Notifications";
     } else if (path.includes("/admin/users")) {
       return language === "fr" ? "Utilisateurs" : "Users";
     } else if (path.includes("/admin/professionals")) {
@@ -55,9 +58,9 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
   };
 
   return (
-    <div className="min-h-screen bg-paper">
+    <div className="min-h-screen drl-screen drl-page">
       {/* Header Admin harmonisé avec le sidebar */}
-      <header className="fixed top-0 left-0 right-0 h-16 bg-card border-b border-line shadow-soft z-40 flex items-center justify-between px-4">
+      <header style={{ background: "rgba(24,18,13,.94)", backdropFilter: "blur(14px)" }} className="fixed top-0 left-0 right-0 h-16 border-b border-line z-40 flex items-center justify-between px-4">
         {/* Gauche : Menu + Titre */}
         <div className="flex items-center">
           <button
@@ -70,7 +73,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
 
           <div className="flex items-center">
             <div className="w-8 h-8 bg-ink rounded-card flex items-center justify-center mr-3">
-              <span className="text-white font-display font-semibold text-sm">
+              <span className="font-display font-semibold text-sm">
                 H
               </span>
             </div>
@@ -78,7 +81,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
               <h1 className="text-xl font-display font-semibold text-ink">
                 {language === "fr" ? "Health-e Admin" : "Health-e Admin"}
               </h1>
-              <p className="text-xs text-muted">
+              <p className="text-[13px] text-muted">
                 {language === "fr" ? "Administration" : "Administration"}
               </p>
             </div>
@@ -129,7 +132,8 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
 
       {/* Sidebar */}
       <div
-        className={`fixed top-12 left-0 h-[calc(100vh-3rem)] z-30 w-64 bg-card transform transition-transform duration-200 ease-in-out shadow-soft border-r border-line ${
+        style={{ background: "#1C140D" }}
+        className={`fixed top-16 left-0 h-[calc(100vh-4rem)] z-30 w-64 transform transition-transform duration-200 ease-in-out border-r border-line ${
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
@@ -159,7 +163,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
       {/* Overlay for mobile */}
       {sidebarOpen && (
         <div
-          className="fixed inset-0 bg-ink/50 z-20 md:hidden"
+          className="fixed inset-0 bg-black/60 z-20 md:hidden"
           onClick={() => setSidebarOpen(false)}
         />
       )}

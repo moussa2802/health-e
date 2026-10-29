@@ -7,6 +7,7 @@ import React, { useRef } from 'react';
 import { Mic, Square, Trash2, Upload } from 'lucide-react';
 import { MAX_VOICE_SEC, VOICE_FILE_ACCEPT, type useVoiceRecorder } from '../../hooks/useVoiceRecorder';
 import { DC } from './DrLoShell';
+import AudioPlayer from './AudioPlayer';
 
 type Voice = ReturnType<typeof useVoiceRecorder>;
 
@@ -41,7 +42,7 @@ const VoiceInput: React.FC<Props> = ({ voice, recordLabel = 'Enregistrer', ready
         <p role="status" style={{ margin: 0, fontSize: 14, color: DC.muted }}>Préparation du vocal pour tous les téléphones…</p>
       ) : voice.state === 'ready' && voice.clip ? (
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <audio controls src={voice.clip.url} aria-label="Écouter le vocal avant de l'envoyer" style={{ flex: 1, minWidth: 0, height: 40 }} />
+          <AudioPlayer src={voice.clip.url} ariaLabel="Écouter le vocal avant de l'envoyer" style={{ flex: 1 }} />
           <button type="button" onClick={voice.reset} aria-label="Supprimer le vocal" className="drl-btn" style={square}><Trash2 size={16} aria-hidden="true" /></button>
         </div>
       ) : (
@@ -58,12 +59,12 @@ const VoiceInput: React.FC<Props> = ({ voice, recordLabel = 'Enregistrer', ready
       )}
 
       {voice.state !== 'ready' && voice.state !== 'recording' && voice.state !== 'processing' && !voice.error && (
-        <p style={{ margin: '6px 0 0', fontSize: 12, color: DC.faint, lineHeight: 1.45 }}>5 min au plus. Fichier : MP3, M4A (mémo vocal iPhone), OGG (note WhatsApp), WAV.</p>
+        <p style={{ margin: '6px 0 0', fontSize: 13, color: DC.faint, lineHeight: 1.45 }}>5 min au plus. Fichier : MP3, M4A (mémo vocal iPhone), OGG (note WhatsApp), WAV.</p>
       )}
       {voice.state === 'denied' && <p role="alert" style={{ margin: '6px 0 0', fontSize: 13, color: '#F09A7A' }}>Le micro est bloqué. Autorise-le dans ton navigateur, ou importe un fichier.</p>}
       {voice.error && <p role="alert" style={{ margin: '6px 0 0', fontSize: 13, color: '#F09A7A', lineHeight: 1.45 }}>{voice.error}</p>}
       {voice.clip && voice.state === 'ready' && (
-        <p style={{ margin: '6px 0 0', fontSize: 12, color: DC.faint }}>Vocal de {mmss(voice.clip.durationSec)}.{readyHint ? ` ${readyHint}` : ''}</p>
+        <p style={{ margin: '6px 0 0', fontSize: 13, color: DC.faint }}>Vocal de {mmss(voice.clip.durationSec)}.{readyHint ? ` ${readyHint}` : ''}</p>
       )}
     </div>
   );

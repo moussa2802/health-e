@@ -1,3 +1,4 @@
+import '../../components/accueil/accueil.css';
 import React, { useEffect, useState, useRef } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { ArrowLeft, ArrowRight, ChevronLeft, AlertCircle, Heart, User, Eye, EyeOff, Mail } from "lucide-react";
@@ -232,7 +233,7 @@ const PatientAccess: React.FC = () => {
     e.preventDefault();
     setErr("");
     if (!emailValue.trim() || !passwordValue) {
-      setErr("Veuillez remplir tous les champs.");
+      setErr("Remplis tous les champs.");
       return;
     }
     const emailCheck = validateEmail(emailValue);
@@ -255,7 +256,7 @@ const PatientAccess: React.FC = () => {
       if (msg.includes("mot de passe") || msg.includes("password") || e?.code === "auth/wrong-password" || e?.code === "auth/invalid-credential") {
         setErr("Email ou mot de passe incorrect.");
       } else if (e?.code === "auth/user-not-found") {
-        setErr("Aucun compte trouvé avec cet email. Créez un compte.");
+        setErr("Aucun compte avec cet e-mail. Crée ton compte.");
         setEmailMode("register");
       } else {
         setErr(msg);
@@ -270,7 +271,7 @@ const PatientAccess: React.FC = () => {
     e.preventDefault();
     setErr("");
     if (!emailValue.trim() || !passwordValue || !emailFullName.trim() || !emailGender) {
-      setErr("Veuillez remplir tous les champs.");
+      setErr("Remplis tous les champs.");
       return;
     }
     const emailCheck = validateEmail(emailValue);
@@ -284,7 +285,7 @@ const PatientAccess: React.FC = () => {
     }
     if (!hasAgreedToTerms) {
       setShowTermsModal(true);
-      setErr("Vous devez accepter les conditions d'utilisation.");
+      setErr("Accepte les conditions d'utilisation pour continuer.");
       return;
     }
     setLoading(true);
@@ -325,7 +326,7 @@ const PatientAccess: React.FC = () => {
 
     if (!e164 || !isValidPhoneNumber(e164)) {
       console.log("[PATIENT] Numéro invalide");
-      setErr("Saisissez un numéro valide au format international (ex: +221…).");
+      setErr("Écris un numéro valide au format international (ex : +221…).");
       return;
     }
 
@@ -367,17 +368,17 @@ const PatientAccess: React.FC = () => {
 
     if (!fullName.trim()) {
       console.log("[PATIENT] Nom manquant");
-      return setErr("Veuillez renseigner votre nom et prénom.");
+      return setErr("Écris ton prénom et ton nom.");
     }
     if (!gender) {
       console.log("[PATIENT] Genre manquant");
-      return setErr("Veuillez sélectionner votre genre.");
+      return setErr("Choisis ton genre.");
     }
     if (!hasAgreedToTerms) {
       console.log("[PATIENT] Terms non acceptés");
       setShowTermsModal(true);
       return setErr(
-        "Vous devez accepter les conditions d'utilisation et la politique de confidentialité."
+        "Accepte les conditions d'utilisation et la politique de confidentialité pour continuer."
       );
     }
 
@@ -435,7 +436,7 @@ const PatientAccess: React.FC = () => {
 
     if (!code.trim()) {
       console.log("[PATIENT] Code vide");
-      setErr("Veuillez saisir le code reçu par SMS.");
+      setErr("Écris le code reçu par SMS.");
       return;
     }
 
@@ -560,7 +561,7 @@ const PatientAccess: React.FC = () => {
     "w-full flex items-center justify-center gap-1.5 text-sm text-ink-soft hover:text-ink font-medium pt-1 transition-colors";
 
   return (
-    <div className="min-h-screen bg-paper">
+    <div className="min-h-screen drl-screen drl-page">
       {/* ── Back link ── */}
       <div className="pt-6 px-6">
         <Link
@@ -590,14 +591,14 @@ const PatientAccess: React.FC = () => {
             </div>
 
             <h1 className="font-display text-2xl font-bold text-center text-ink">
-              Espace Patient
+              Mon espace
             </h1>
             <p className="text-sm text-ink-soft mt-1 text-center">
-              {step === "enterPhone" && !showSmsForm && (emailMode === "login" ? "Connectez-vous avec Google ou votre email." : "Créez votre compte en quelques secondes.")}
-              {step === "enterPhone" && showSmsForm && "Connectez-vous avec votre numéro existant."}
-              {step === "verify" && "Entrez le code reçu par SMS."}
-              {step === "completeProfile" && "Finalisez votre inscription."}
-              {step === "alreadyAuthenticated" && "Vous êtes déjà connecté(e)."}
+              {step === "enterPhone" && !showSmsForm && (emailMode === "login" ? "Connecte-toi avec Google ou ton e-mail." : "Crée ton compte en quelques secondes.")}
+              {step === "enterPhone" && showSmsForm && "Connecte-toi avec ton numéro."}
+              {step === "verify" && "Écris le code reçu par SMS."}
+              {step === "completeProfile" && "Encore une étape pour créer ton compte."}
+              {step === "alreadyAuthenticated" && "Tu es déjà connecté à ton compte."}
             </p>
 
             {/* Step progress dots */}
@@ -670,7 +671,7 @@ const PatientAccess: React.FC = () => {
                         value={emailFullName}
                         onChange={(e) => setEmailFullName(e.target.value)}
                         className={inputCls}
-                        placeholder="Votre nom complet"
+                        placeholder="Ton prénom et ton nom"
                       />
                     </div>
                     <div>
@@ -702,7 +703,7 @@ const PatientAccess: React.FC = () => {
                     value={emailValue}
                     onChange={setEmailValue}
                     className={inputCls}
-                    placeholder="votre@email.com"
+                    placeholder="ton@email.com"
                     autoComplete="email"
                   />
                 </div>
@@ -715,7 +716,7 @@ const PatientAccess: React.FC = () => {
                       value={passwordValue}
                       onChange={(e) => setPasswordValue(e.target.value)}
                       className={`${inputCls} pr-10`}
-                      placeholder={emailMode === "register" ? "6 caractères minimum" : "Votre mot de passe"}
+                      placeholder={emailMode === "register" ? "6 caractères minimum" : "Ton mot de passe"}
                       autoComplete={emailMode === "register" ? "new-password" : "current-password"}
                     />
                     <button
@@ -823,7 +824,7 @@ const PatientAccess: React.FC = () => {
                   {loading || phoneLoading
                     ? "Envoi du code..."
                     : isInCooldown
-                    ? `Réessayez dans ${cooldownTime}s`
+                    ? `Réessaie dans ${cooldownTime} s`
                     : "Recevoir le code"}
                 </button>
               </form>
@@ -888,7 +889,7 @@ const PatientAccess: React.FC = () => {
           {step === "completeProfile" && (
             <form onSubmit={onSubmitProfile} className="space-y-5">
               <p className="text-sm text-ink-soft text-center -mt-2 mb-1">
-                Complétez votre profil pour finaliser l'inscription.
+                Complète ton profil pour finir ton inscription.
               </p>
 
               <div>
@@ -900,7 +901,7 @@ const PatientAccess: React.FC = () => {
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
                   className={inputCls}
-                  placeholder="Votre nom complet"
+                  placeholder="Ton prénom et ton nom"
                 />
               </div>
 
@@ -977,7 +978,7 @@ const PatientAccess: React.FC = () => {
           {step === "alreadyAuthenticated" && getPendingGroupTherapySessionId() && (
             <div className="space-y-5">
               <p className="text-sm text-ink-soft text-center">
-                Vous êtes déjà connecté(e). Confirmez pour rejoindre la session de thérapie de groupe.
+                Tu es déjà connecté. Confirme pour rejoindre la séance de groupe.
               </p>
 
               <button

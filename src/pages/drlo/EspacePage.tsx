@@ -13,6 +13,7 @@ import MoodIcon from '../../components/accueil/MoodIcon';
 import { useAuth } from '../../contexts/AuthContext';
 import { db } from '../../utils/firebase';
 import { getOnboardingProfile } from '../../utils/onboardingProfile';
+import { getGenderHiddenIds } from '../../utils/scaleVisibility';
 import { getProfileProgress } from '../../services/evaluationService';
 import { getAllGuestResults, getGuestCount, GUEST_MAX_TESTS } from '../../utils/guestSession';
 import { MENTAL_HEALTH_SCALES, SEXUAL_HEALTH_SCALES } from '../../data/scales';
@@ -84,9 +85,13 @@ const EspacePage: React.FC = () => {
   }, [uid, today]);
 
   const doneIds = Object.keys(results);
-  const doneMental = MENTAL_HEALTH_SCALES.filter(s => results[s.id]).length;
-  const doneSexual = SEXUAL_HEALTH_SCALES.filter(s => results[s.id]).length;
-  const totalCore = MENTAL_HEALTH_SCALES.length + SEXUAL_HEALTH_SCALES.length;
+  // Mêmes listes que les pages Mental et Intime (tests masqués selon le genre exclus) : les compteurs concordent.
+  const hiddenIds = ob ? getGenderHiddenIds(ob) : [];
+  const mentalScales = MENTAL_HEALTH_SCALES.filter(s => !hiddenIds.includes(s.id));
+  const sexualScales = SEXUAL_HEALTH_SCALES.filter(s => !hiddenIds.includes(s.id));
+  const doneMental = mentalScales.filter(s => results[s.id]).length;
+  const doneSexual = sexualScales.filter(s => results[s.id]).length;
+  const totalCore = mentalScales.length + sexualScales.length;
   const portrait = computePortrait({ doneCore: doneMental + doneSexual, totalCore, journalCount: counts.journal, chatCount: counts.chats });
   const next = pickNextScale('decouvre', doneIds);
   const totemProgress = getTotemProgress(results);
@@ -138,7 +143,7 @@ const EspacePage: React.FC = () => {
     borderColor: `${accent}55`, background: `${accent}12`, minHeight: 104, cursor: 'pointer',
   });
   const domains = [
-    { key: 'mental', label: 'Mental', icon: Brain, color: DC.sage, word: doneMental ? `${doneMental} / ${MENTAL_HEALTH_SCALES.length} tests` : 'À découvrir', to: '/espace/mental' },
+    { key: 'mental', label: 'Mental', icon: Brain, color: DC.sage, word: doneMental ? `${doneMental} / ${mentalScales.length} tests` : 'À découvrir', to: '/espace/mental' },
     { key: 'humeur', label: 'Humeur', icon: CloudSun, color: DC.gold, word: humeurWord, to: '/humeur' },
     { key: 'social', label: 'Compatibilité', icon: Users, color: DC.social, word: 'Toi et l\'autre', to: '/assessment/compatibility' },
   ];
@@ -162,11 +167,11 @@ const EspacePage: React.FC = () => {
           <Link to="/assessment/totem" className="drl-btn" style={{ marginTop: 12, display: 'flex', alignItems: 'center', gap: 12, padding: '10px 12px', borderRadius: 14, background: 'rgba(233,200,143,.08)', border: '1px solid rgba(233,200,143,.25)', color: DC.text, textDecoration: 'none' }}>
             <Sparkles size={20} color={DC.gold} aria-hidden="true" />
             <span style={{ flex: 1, minWidth: 0 }}>
-              <span style={{ display: 'block', fontSize: 12, color: DC.faint }}>Ton totem</span>
+              <span style={{ display: 'block', fontSize: 13, color: DC.faint }}>Ton totem</span>
               <span style={{ display: 'block', fontFamily: 'Fraunces, serif', fontSize: 17, fontWeight: 600 }}>{getTotemSignature(totem!.animal as TotemAnimal)?.label ?? totem!.animal}</span>
-              <span style={{ display: 'block', fontSize: 12.5, color: DC.muted, lineHeight: 1.4 }}>{totemMeaning(totem!.animal as TotemAnimal, genre === 'femme' ? 'femme' : 'homme')}</span>
+              <span style={{ display: 'block', fontSize: 13, color: DC.muted, lineHeight: 1.4 }}>{totemMeaning(totem!.animal as TotemAnimal, genre === 'femme' ? 'femme' : 'homme')}</span>
               {totem!.pending && totem!.pending !== totem!.animal && (
-                <span style={{ display: 'block', marginTop: 4, fontSize: 12.5, fontWeight: 700, color: DC.gold }}>Ton totem a évolué : viens découvrir le nouveau</span>
+                <span style={{ display: 'block', marginTop: 4, fontSize: 13, fontWeight: 700, color: DC.gold }}>Ton totem a évolué : viens découvrir le nouveau</span>
               )}
             </span>
             <ArrowRight size={16} color={DC.muted} aria-hidden="true" />
@@ -177,7 +182,7 @@ const EspacePage: React.FC = () => {
           </Link>
         ) : (
           <div style={{ marginTop: 12 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, fontSize: 12.5, color: DC.muted }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, fontSize: 13, color: DC.muted }}>
               <span>Ton portrait se dessine · encore {totemProgress.missing.length} test{totemProgress.missing.length > 1 ? 's' : ''} pour ton totem</span>
               <b style={{ color: palette.accent, whiteSpace: 'nowrap' }}>{portrait} %</b>
             </div>
@@ -203,14 +208,14 @@ const EspacePage: React.FC = () => {
       <section aria-label="Tes domaines" style={{ marginTop: 18 }}>
         <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between' }}>
           <h2 style={h2}>Ton équilibre</h2>
-          <span style={{ fontSize: 12, color: DC.faint }}>Touche un domaine</span>
+          <span style={{ fontSize: 13, color: DC.faint }}>Touche un domaine</span>
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 10, marginTop: 10 }}>
           {domains.map(dm => (
             <Link key={dm.key} to={dm.to} className="drl-btn" style={tile(dm.color)}>
               <dm.icon size={20} color={dm.color} aria-hidden="true" />
               <span style={{ fontSize: 15, fontWeight: 700 }}>{dm.label}</span>
-              <span style={{ fontSize: 12.5, color: DC.muted }}>{dm.word}</span>
+              <span style={{ fontSize: 13, color: DC.muted }}>{dm.word}</span>
             </Link>
           ))}
           {/* Intime : toute la tuile s'ouvre ; l'œil ne fait que cacher le chiffre sur cet écran */}
@@ -218,8 +223,8 @@ const EspacePage: React.FC = () => {
             <Link to="/espace/intime" className="drl-btn" style={{ ...tile(DC.intime), height: '100%', boxSizing: 'border-box' }}>
               <Heart size={20} color={DC.intime} aria-hidden="true" />
               <span style={{ fontSize: 15, fontWeight: 700 }}>Intime</span>
-              <span style={{ fontSize: 12.5, color: showIntime ? DC.muted : DC.faint }}>
-                {!uid ? 'Avec un espace personnel' : !showIntime ? 'En toute discrétion' : doneSexual ? `${doneSexual} / ${SEXUAL_HEALTH_SCALES.length} tests` : 'À découvrir'}
+              <span style={{ fontSize: 13, color: showIntime ? DC.muted : DC.faint }}>
+                {!uid ? 'Avec un espace personnel' : !showIntime ? 'En toute discrétion' : doneSexual ? `${doneSexual} / ${sexualScales.length} tests` : 'À découvrir'}
               </span>
             </Link>
             {uid && (
@@ -232,12 +237,12 @@ const EspacePage: React.FC = () => {
           <button onClick={() => (uid ? navigate('/defi') : navigate('/', { state: { signup: true } }))} className="drl-btn" style={{ ...tile(DC.gold), textAlign: 'left' }}>
             <Crown size={20} color={DC.gold} aria-hidden="true" />
             <span style={{ fontSize: 15, fontWeight: 700 }}>Défi</span>
-            <span style={{ fontSize: 12.5, color: DC.muted }}>{defis ? `${defis} en cours` : 'Qui te connaît le mieux ?'}</span>
+            <span style={{ fontSize: 13, color: DC.muted }}>{defis ? `${defis} en cours` : 'Qui te connaît le mieux ?'}</span>
           </button>
           <button onClick={() => navigate('/journal')} className="drl-btn" style={{ ...tile(DC.confier), textAlign: 'left' }}>
             <BookOpen size={20} color={DC.confier} aria-hidden="true" />
             <span style={{ fontSize: 15, fontWeight: 700 }}>Journal</span>
-            <span style={{ fontSize: 12.5, color: DC.muted }}>{counts.journal ? `${counts.journal} page${counts.journal > 1 ? 's' : ''} · écrire, relire` : 'Écrire, te confier'}</span>
+            <span style={{ fontSize: 13, color: DC.muted }}>{counts.journal ? `${counts.journal} page${counts.journal > 1 ? 's' : ''} · écrire, relire` : 'Écrire, te confier'}</span>
           </button>
         </div>
 
@@ -260,7 +265,7 @@ const EspacePage: React.FC = () => {
                   border: def ? '1px solid rgba(255,255,255,.10)' : '1.5px dashed rgba(255,255,255,.16)', background: def ? 'rgba(255,255,255,.06)' : 'transparent' }}>
                   {def ? <MoodIcon id={def.id} color={def.color} size={20} /> : <span style={{ color: DC.faint, fontSize: 16 }}>{day === today ? '+' : ''}</span>}
                 </div>
-                <span style={{ fontSize: 11, fontWeight: 700, color: day === today ? palette.accent : DC.faint }}>{day === today ? 'Auj.' : WEEKDAYS[weekdayIndex(day)]}</span>
+                <span style={{ fontSize: 13, fontWeight: 700, color: day === today ? palette.accent : DC.faint }}>{day === today ? 'Auj.' : WEEKDAYS[weekdayIndex(day)]}</span>
               </div>
             );
           })}
@@ -278,7 +283,7 @@ const EspacePage: React.FC = () => {
       {/* Ton chemin vers Dr Lô (paliers) */}
       {drlo && <PaliersCard status={drlo} palette={palette} />}
 
-      <p style={{ margin: '18px 0 0', textAlign: 'center', fontSize: 11.5, lineHeight: 1.5, color: DC.faint }}>
+      <p style={{ margin: '18px 0 0', textAlign: 'center', fontSize: 13, lineHeight: 1.5, color: DC.faint }}>
         Des tendances, jamais des notes. Pas de diagnostic · Urgence : <a href="tel:1515" style={{ fontWeight: 700 }}>1515</a>
       </p>
     </DrLoShell>

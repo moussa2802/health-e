@@ -5,6 +5,7 @@
  * Rien de ce que la personne a répondu n'est visible des autres : seuls des totaux s'affichent.
  */
 import React, { useEffect, useState } from 'react';
+import AudioPlayer from '../../components/accueil/AudioPlayer';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { Bell, BellOff } from 'lucide-react';
 import DrLoShell, { DC, card, usePalette } from '../../components/accueil/DrLoShell';
@@ -89,7 +90,7 @@ const MessagesDrLoPage: React.FC = () => {
     // Une fois affichée, la discussion est marquée comme lue (les « Nouveau » restent visibles pendant cette visite)
     return (
       <DrLoShell back={{ to: '/messages-dr-lo', label: 'Mes messages' }} palette={palette}>
-        <p style={{ margin: '18px 0 0', fontSize: 12, letterSpacing: '.14em', textTransform: 'uppercase', color: palette.accent, fontWeight: 700 }}>Dr Lô</p>
+        <p style={{ margin: '18px 0 0', fontSize: 13, letterSpacing: '.14em', textTransform: 'uppercase', color: palette.accent, fontWeight: 700 }}>Dr Lô</p>
         <h1 style={h1}>Ta discussion avec Dr Lô</h1>
         {error && <p role="alert" style={{ marginTop: 16, color: DC.muted, fontSize: 15 }}>{error}</p>}
         {!disc && !error && <LoadingCards label="Ouverture de la discussion…" count={1} />}
@@ -98,12 +99,12 @@ const MessagesDrLoPage: React.FC = () => {
           <>
             <article style={{ ...card, marginTop: 16 }}>
               <RealDrLoBadge palette={palette} kind={q.thread.some(e => e.from === 'drlo' && e.audioSec > 0) ? 'vocal' : 'texte'} />
-              <p style={{ margin: '12px 0 0', fontSize: 12, color: DC.faint }}>Ta question du {day(q.createdAt)}</p>
-              <p style={{ margin: '4px 0 0', fontSize: 14.5, color: DC.muted, fontStyle: 'italic', whiteSpace: 'pre-wrap' }}>« {q.text} »</p>
+              <p style={{ margin: '12px 0 0', fontSize: 13, color: DC.faint }}>Ta question du {day(q.createdAt)}</p>
+              <p style={{ margin: '4px 0 0', fontSize: 15, color: DC.muted, fontStyle: 'italic', whiteSpace: 'pre-wrap' }}>« {q.text} »</p>
               <ThreadView entries={q.thread} author="Toi" palette={palette} />
-              {q.closed && <p style={{ margin: '12px 0 0', fontSize: 13.5, color: DC.muted }}>Dr Lô a clôturé cette discussion.</p>}
+              {q.closed && <p style={{ margin: '12px 0 0', fontSize: 14, color: DC.muted }}>Dr Lô a clôturé cette discussion.</p>}
               {!q.closed && q.canReply && <FollowUp send={t => followUpQuestion(q.id, t)} palette={palette} onSent={reload} />}
-              {!q.closed && !q.canReply && q.thread.length > 0 && q.thread[q.thread.length - 1].from === 'user' && <p style={{ margin: '12px 0 0', fontSize: 13.5, color: DC.muted }}>Dr Lô te répondra ici.</p>}
+              {!q.closed && !q.canReply && q.thread.length > 0 && q.thread[q.thread.length - 1].from === 'user' && <p style={{ margin: '12px 0 0', fontSize: 14, color: DC.muted }}>Dr Lô te répondra ici.</p>}
             </article>
             <SeenMarker onMount={() => { markDrloAnswersSeen().catch(() => {}); }} />
           </>
@@ -115,7 +116,7 @@ const MessagesDrLoPage: React.FC = () => {
   if (id) {
     return (
       <DrLoShell back={{ to: '/messages-dr-lo', label: 'Mes messages' }} palette={palette}>
-        <p style={{ margin: '18px 0 0', fontSize: 12, letterSpacing: '.14em', textTransform: 'uppercase', color: palette.accent, fontWeight: 700 }}>Dr Lô</p>
+        <p style={{ margin: '18px 0 0', fontSize: 13, letterSpacing: '.14em', textTransform: 'uppercase', color: palette.accent, fontWeight: 700 }}>Dr Lô</p>
         <h1 style={h1}>Un message pour toi</h1>
         {error && <p role="alert" style={{ marginTop: 16, color: DC.muted, fontSize: 15 }}>{error} <Link to="/" style={{ color: palette.accent }}>Retour</Link></p>}
         {!msg && !error && <LoadingCards label="Ouverture du message…" count={1} withMedia />}
@@ -123,11 +124,11 @@ const MessagesDrLoPage: React.FC = () => {
           <>
             <article style={{ ...card, marginTop: 16 }}>
               <RealDrLoBadge palette={palette} kind={msg.audio ? 'vocal' : 'texte'} />
-              <p style={{ margin: '12px 0 0', fontSize: 12, color: DC.faint }}>{day(msg.at)}</p>
+              <p style={{ margin: '12px 0 0', fontSize: 13, color: DC.faint }}>{day(msg.at)}</p>
               {msg.audio && (audioUrl
-                ? <audio controls preload="metadata" src={audioUrl} onPlay={() => { if (id) markListened(id).catch(() => {}); }} aria-label="Le vocal de Dr Lô" style={{ width: '100%', marginTop: 10 }} />
+                ? <AudioPlayer src={audioUrl} ariaLabel="Le vocal de Dr Lô" onPlay={() => { if (id) markListened(id).catch(() => {}); }} style={{ marginTop: 10 }} />
                 : <p style={{ margin: '10px 0 0', fontSize: 14, color: DC.muted }}>Le vocal n'est pas disponible pour le moment. Réessaie dans un instant.</p>)}
-              {msg.text && <p style={{ margin: '10px 0 0', fontSize: 16.5, lineHeight: 1.65, color: DC.text, whiteSpace: 'pre-wrap' }}>{msg.text}</p>}
+              {msg.text && <p style={{ margin: '10px 0 0', fontSize: 17, lineHeight: 1.65, color: DC.text, whiteSpace: 'pre-wrap' }}>{msg.text}</p>}
             </article>
             <div style={{ display: 'flex', gap: 8, marginTop: 14 }} role="group" aria-label="Ta réaction">
               {REACTIONS.map(r => (
@@ -138,10 +139,10 @@ const MessagesDrLoPage: React.FC = () => {
                 </button>
               ))}
             </div>
-            <p style={{ margin: '10px 0 0', fontSize: 12.5, color: DC.faint, textAlign: 'center' }}>Tes réactions restent anonymes. Dr Lô peut voir si tu as lu ou écouté un message envoyé à toute la communauté.</p>
+            <p style={{ margin: '10px 0 0', fontSize: 13, color: DC.faint, textAlign: 'center' }}>Tes réactions restent anonymes. Dr Lô peut voir si tu as lu ou écouté un message envoyé à toute la communauté.</p>
             {msg.commentsOpen && (
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginTop: 14 }}>
-                <p style={{ margin: 0, fontSize: 12.5, color: DC.faint }}>{msg.muted ? 'Alertes de commentaires coupées' : 'Tu es alerté des nouveaux commentaires'}</p>
+                <p style={{ margin: 0, fontSize: 13, color: DC.faint }}>{msg.muted ? 'Alertes de commentaires coupées' : 'Tu es alerté des nouveaux commentaires'}</p>
                 {muteBtn(msg.id, !!msg.muted)}
               </div>
             )}
@@ -154,7 +155,7 @@ const MessagesDrLoPage: React.FC = () => {
 
   return (
     <DrLoShell back={{ to: '/', label: 'Accueil' }} palette={palette}>
-      <p style={{ margin: '18px 0 0', fontSize: 12, letterSpacing: '.14em', textTransform: 'uppercase', color: palette.accent, fontWeight: 700 }}>Dr Lô</p>
+      <p style={{ margin: '18px 0 0', fontSize: 13, letterSpacing: '.14em', textTransform: 'uppercase', color: palette.accent, fontWeight: 700 }}>Dr Lô</p>
       <h1 style={h1}>Les messages de Dr Lô</h1>
       <ChannelsLinkCard palette={palette} />
       <WriteDrLoCard palette={palette} />
@@ -163,9 +164,9 @@ const MessagesDrLoPage: React.FC = () => {
       {items && items.length === 0 && !(disc && disc.length > 0) && <p style={{ marginTop: 16, color: DC.muted, fontSize: 15, lineHeight: 1.55 }}>Pas encore de message. Quand Dr Lô t'en laissera un, tu le retrouveras ici.</p>}
       {((items && items.length > 0) || (disc && disc.length > 0)) && (
         <section aria-label="Du nouveau" style={{ ...card, marginTop: 16, borderColor: (news.unread + news.replies + news.comments + discNews) > 0 ? palette.accent : DC.line }}>
-          <p style={{ margin: 0, fontSize: 12, letterSpacing: '.12em', textTransform: 'uppercase', color: palette.accent, fontWeight: 700 }}>Du nouveau</p>
+          <p style={{ margin: 0, fontSize: 13, letterSpacing: '.12em', textTransform: 'uppercase', color: palette.accent, fontWeight: 700 }}>Du nouveau</p>
           {(news.unread + news.replies + news.comments + discNews) === 0 ? (
-            <p style={{ margin: '8px 0 0', fontSize: 14.5, color: DC.muted }}>Tu es à jour. Rien de nouveau pour le moment.</p>
+            <p style={{ margin: '8px 0 0', fontSize: 15, color: DC.muted }}>Tu es à jour. Rien de nouveau pour le moment.</p>
           ) : (
             <ul style={{ margin: '8px 0 0', padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 6, fontSize: 15, color: DC.text }}>
               {discNews > 0 && <li>🩺 Dr Lô t'a répondu personnellement</li>}
@@ -187,7 +188,7 @@ const MessagesDrLoPage: React.FC = () => {
                 <Link key={d.id} to={`/messages-dr-lo/discussion/${d.id}`} className="drl-btn" style={{ ...card, textDecoration: 'none', display: 'flex', gap: 12, alignItems: 'flex-start', borderColor: d.news > 0 ? palette.accent : DC.line }}>
                   <RealDrLoPhoto size={40} palette={palette} />
                   <span style={{ flex: 1, minWidth: 0 }}>
-                    <span style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: DC.faint }}>
+                    <span style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: DC.faint }}>
                       <span>Réponse à ta question du {day(d.createdAt)}</span>
                       {d.news > 0 && <b style={{ color: palette.accent }}>{upd ? 'Mis à jour' : 'Nouveau'}</b>}
                     </span>
@@ -196,8 +197,8 @@ const MessagesDrLoPage: React.FC = () => {
                     </span>
                     {(d.closed || d.canReply) && (
                       <span style={{ display: 'flex', gap: 6, marginTop: 8 }}>
-                        {d.canReply && <span style={{ fontSize: 12, fontWeight: 700, padding: '3px 9px', borderRadius: 999, background: 'rgba(242,182,109,.16)', color: palette.accent }}>Tu peux répondre</span>}
-                        {d.closed && <span style={{ fontSize: 12, fontWeight: 600, padding: '3px 9px', borderRadius: 999, background: DC.glass, color: DC.muted }}>Clôturée</span>}
+                        {d.canReply && <span style={{ fontSize: 13, fontWeight: 700, padding: '3px 9px', borderRadius: 999, background: 'rgba(242,182,109,.16)', color: palette.accent }}>Tu peux répondre</span>}
+                        {d.closed && <span style={{ fontSize: 13, fontWeight: 600, padding: '3px 9px', borderRadius: 999, background: DC.glass, color: DC.muted }}>Clôturée</span>}
                       </span>
                     )}
                   </span>
@@ -214,18 +215,18 @@ const MessagesDrLoPage: React.FC = () => {
             <Link to={`/messages-dr-lo/${i.id}`} className="drl-btn" style={{ ...card, textDecoration: 'none', display: 'flex', gap: 12, alignItems: 'flex-start', borderColor: i.seen && !(i.newReplies || i.newComments) ? DC.line : palette.accent, paddingBottom: i.commentsOpen ? 16 : undefined }}>
               <RealDrLoPhoto size={40} palette={palette} />
               <span style={{ flex: 1, minWidth: 0 }}>
-                <span style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: DC.faint }}>
+                <span style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: DC.faint }}>
                   <span>{day(i.at)}</span>{!i.seen && <b style={{ color: palette.accent }}>Nouveau</b>}
                 </span>
                 <span style={{ display: '-webkit-box', marginTop: 6, fontSize: 15, lineHeight: 1.5, color: DC.soft, overflow: 'hidden', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' } as React.CSSProperties}>{i.text || '🎙 Un vocal de Dr Lô'}</span>
                 {(i.commentsOpen || (i.newReplies ?? 0) > 0) && (
                   <span style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 6, marginTop: 8, paddingRight: 52 }}>
-                    {(i.newReplies ?? 0) > 0 && <span style={{ fontSize: 12, fontWeight: 700, padding: '3px 9px', borderRadius: 999, background: 'rgba(242,182,109,.16)', color: palette.accent }}>Dr Lô t'a répondu</span>}
+                    {(i.newReplies ?? 0) > 0 && <span style={{ fontSize: 13, fontWeight: 700, padding: '3px 9px', borderRadius: 999, background: 'rgba(242,182,109,.16)', color: palette.accent }}>Dr Lô t'a répondu</span>}
                     {i.commentsOpen && (
-                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 12.5, fontWeight: 600, color: DC.muted }}>
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 13, fontWeight: 600, color: DC.muted }}>
                         💬 {i.commentsTotal ?? 0}
-                        {(i.newComments ?? 0) > 0 && <span aria-label={`${i.newComments} nouveau${(i.newComments ?? 0) > 1 ? 'x' : ''}`} style={{ minWidth: 20, height: 20, padding: '0 6px', boxSizing: 'border-box', borderRadius: 10, background: '#E8664F', color: '#fff', fontSize: 11.5, fontWeight: 800, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>{i.newComments}</span>}
-                        {i.muted && <span style={{ fontSize: 11.5, color: DC.faint }}>alertes coupées</span>}
+                        {(i.newComments ?? 0) > 0 && <span aria-label={`${i.newComments} nouveau${(i.newComments ?? 0) > 1 ? 'x' : ''}`} style={{ minWidth: 20, height: 20, padding: '0 6px', boxSizing: 'border-box', borderRadius: 10, background: '#E8664F', color: '#fff', fontSize: 13, fontWeight: 800, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>{i.newComments}</span>}
+                        {i.muted && <span style={{ fontSize: 13, color: DC.faint }}>alertes coupées</span>}
                       </span>
                     )}
                   </span>

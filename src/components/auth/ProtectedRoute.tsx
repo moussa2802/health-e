@@ -36,7 +36,7 @@ export default function ProtectedRoute({ children, userType }: Props) {
       userType === "admin"
         ? "/admin/login"
         : userType === "professional"
-        ? "/professional/access"
+        ? "/patient"
         : "/patient";
 
     if (location.pathname !== loginPath) {
@@ -57,8 +57,8 @@ export default function ProtectedRoute({ children, userType }: Props) {
       currentUser?.type === "admin"
         ? "/admin/dashboard"
         : currentUser?.type === "professional"
-        ? "/professional/dashboard"
-        : "/patient/dashboard";
+        ? "/"
+        : "/espace";
 
     if (location.pathname !== home) {
       return <Navigate to={home} replace />;

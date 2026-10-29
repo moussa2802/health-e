@@ -27,7 +27,7 @@ const KorisCostBadge: React.FC<Props> = ({ feature, style, className = '' }) => 
   return (
     <span
       style={style}
-      className={`inline-flex items-center gap-1 pl-1 pr-1.5 py-0.5 rounded-lg text-[11px] font-semibold whitespace-nowrap ${
+      className={`inline-flex items-center gap-1 pl-1 pr-1.5 py-0.5 rounded-lg text-[13px] font-semibold whitespace-nowrap ${
         affordable ? 'text-gold bg-gold-soft' : 'text-danger bg-danger/10'
       } ${className}`}
       title={affordable ? `Coût : ${credits(cost)} · reste : ${remaining}` : `Solde insuffisant (${credits(cost)} nécessaires, solde : ${balance})`}
@@ -38,7 +38,7 @@ const KorisCostBadge: React.FC<Props> = ({ feature, style, className = '' }) => 
         className="w-3.5 h-3.5 rounded-full object-cover"
       />
       {cost}
-      <span className="opacity-60 text-[10px]">→ {remaining}</span>
+      <span className="opacity-60 text-[13px]">→ {remaining}</span>
     </span>
   );
 };

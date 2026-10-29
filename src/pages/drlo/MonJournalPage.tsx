@@ -32,7 +32,7 @@ import { trackAccueil } from '../../utils/accueilTracking';
 
 const btn = (primary: boolean, accent: string): React.CSSProperties => ({
   minHeight: 46, padding: '0 18px', borderRadius: 14, border: primary ? 0 : `1px solid ${DC.line}`, cursor: 'pointer', fontFamily: 'inherit',
-  background: primary ? accent : DC.glass, color: primary ? DC.ink : DC.text, fontSize: 14.5, fontWeight: 700,
+  background: primary ? accent : DC.glass, color: primary ? DC.ink : DC.text, fontSize: 15, fontWeight: 700,
   display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 7, textDecoration: 'none',
 });
 
@@ -61,12 +61,12 @@ const Calendar: React.FC<{ items: JournalItem[]; palette: { accent: string } }> 
           <button onClick={() => move(-1)} aria-label="Mois précédent" className="drl-btn" style={{ width: 40, height: 40, borderRadius: 12, border: `1px solid ${DC.line}`, background: DC.glass, color: DC.muted, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><ChevronLeft size={18} /></button>
           <div style={{ textAlign: 'center' }}>
             <p style={{ margin: 0, fontFamily: 'Fraunces, serif', fontSize: 18, fontWeight: 600, color: DC.title }}>{cap(MONTHS[cur.m])} {cur.y}</p>
-            <p style={{ margin: 0, fontSize: 12, color: DC.faint }}>{monthCount ? `${monthCount} jour${monthCount > 1 ? 's' : ''} écrit${monthCount > 1 ? 's' : ''}` : 'Aucune page ce mois-ci'}</p>
+            <p style={{ margin: 0, fontSize: 13, color: DC.faint }}>{monthCount ? `${monthCount} jour${monthCount > 1 ? 's' : ''} écrit${monthCount > 1 ? 's' : ''}` : 'Aucune page ce mois-ci'}</p>
           </div>
           <button onClick={() => move(1)} aria-label="Mois suivant" className="drl-btn" style={{ width: 40, height: 40, borderRadius: 12, border: `1px solid ${DC.line}`, background: DC.glass, color: DC.muted, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><ChevronRight size={18} /></button>
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, minmax(0,1fr))', gap: 4, marginTop: 12 }}>
-          {['L', 'M', 'M', 'J', 'V', 'S', 'D'].map((w, i) => <span key={i} style={{ textAlign: 'center', fontSize: 11, color: DC.faint, fontWeight: 700 }}>{w}</span>)}
+          {['L', 'M', 'M', 'J', 'V', 'S', 'D'].map((w, i) => <span key={i} style={{ textAlign: 'center', fontSize: 13, color: DC.faint, fontWeight: 700 }}>{w}</span>)}
           {cells.map((n, i) => {
             if (n === null) return <span key={`e${i}`} />;
             const k = `${cur.y}-${String(cur.m + 1).padStart(2, '0')}-${String(n).padStart(2, '0')}`;
@@ -87,7 +87,7 @@ const Calendar: React.FC<{ items: JournalItem[]; palette: { accent: string } }> 
       </section>
       {picked && (
         <div style={{ marginTop: 14 }}>
-          <p style={{ margin: '0 0 8px', fontSize: 12, letterSpacing: '.08em', textTransform: 'uppercase', fontWeight: 700, color: INK }}>{fullDate(new Date(`${picked}T12:00:00`))}</p>
+          <p style={{ margin: '0 0 8px', fontSize: 13, letterSpacing: '.08em', textTransform: 'uppercase', fontWeight: 700, color: INK }}>{fullDate(new Date(`${picked}T12:00:00`))}</p>
           {dayItems.length ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>{dayItems.map(it => <EntryCard key={it.id} it={it} />)}</div>
           ) : <p style={{ margin: 0, fontSize: 14, color: DC.faint }}>Rien d'écrit ce jour-là.</p>}
@@ -125,7 +125,7 @@ const Feed: React.FC<{ items: JournalItem[]; palette: { accent: string; primary:
   }, [items]);
   const tab = (v: 'fil' | 'calendrier', label: string, Icon: typeof List) => (
     <button role="tab" aria-selected={view === v} onClick={() => setV(v)} className="drl-btn"
-      style={{ flex: 1, minHeight: 40, borderRadius: 10, border: 0, cursor: 'pointer', fontSize: 13.5, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, fontFamily: 'inherit',
+      style={{ flex: 1, minHeight: 40, borderRadius: 10, border: 0, cursor: 'pointer', fontSize: 14, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, fontFamily: 'inherit',
         background: view === v ? 'rgba(201,184,228,.25)' : 'transparent', color: view === v ? DC.text : DC.muted }}>
       <Icon size={15} aria-hidden="true" /> {label}
     </button>
@@ -137,7 +137,7 @@ const Feed: React.FC<{ items: JournalItem[]; palette: { accent: string; primary:
         const months = (new Date().getFullYear() - d.getFullYear()) * 12 + new Date().getMonth() - d.getMonth();
         return (
           <Link to={`/journal/${memory.id}`} className="drl-btn" style={{ ...card, marginTop: 14, display: 'block', textDecoration: 'none', color: DC.text, borderColor: 'rgba(233,200,143,.4)', background: 'rgba(233,200,143,.07)' }}>
-            <p style={{ margin: 0, fontSize: 11.5, letterSpacing: '.1em', textTransform: 'uppercase', fontWeight: 800, color: '#E9C88F' }}>Ce jour-là · il y a {months >= 12 ? `${Math.floor(months / 12)} an${months >= 24 ? 's' : ''}` : `${months} mois`}</p>
+            <p style={{ margin: 0, fontSize: 13, letterSpacing: '.1em', textTransform: 'uppercase', fontWeight: 800, color: '#E9C88F' }}>Ce jour-là · il y a {months >= 12 ? `${Math.floor(months / 12)} an${months >= 24 ? 's' : ''}` : `${months} mois`}</p>
             <p style={{ margin: '6px 0 0', fontFamily: 'Fraunces, serif', fontSize: 16, color: DC.title }}>{split(memory.contenu).title}</p>
           </Link>
         );
@@ -239,15 +239,15 @@ const Writer: React.FC<{ uid: string | null; existing: JournalItem | null; palet
 
   return (
     <div style={{ marginTop: 18 }}>
-      <p style={{ margin: 0, fontSize: 12, letterSpacing: '.1em', textTransform: 'uppercase', fontWeight: 800, color: INK }}>{existing ? 'Modifier ma page' : 'Nouvelle page'}</p>
+      <p style={{ margin: 0, fontSize: 13, letterSpacing: '.1em', textTransform: 'uppercase', fontWeight: 800, color: INK }}>{existing ? 'Modifier ma page' : 'Nouvelle page'}</p>
       <h1 style={{ margin: '4px 0 0', fontFamily: 'Fraunces, serif', fontSize: 26, lineHeight: 1.2, fontWeight: 600, color: DC.title }}>{fullDate(date)}</h1>
-      {existing && <p style={{ margin: '2px 0 0', fontSize: 12.5, color: DC.faint }}>Écrite à {hhmm(date)} · la date ne change pas</p>}
+      {existing && <p style={{ margin: '2px 0 0', fontSize: 13, color: DC.faint }}>Écrite à {hhmm(date)} · la date ne change pas</p>}
 
       <p style={{ margin: '16px 0 6px', fontSize: 13, color: DC.muted, fontWeight: 600 }}>Comment tu te sens ? <span style={{ color: DC.faint, fontWeight: 500 }}>(facultatif)</span></p>
       <div role="group" aria-label="Mon humeur" style={{ display: 'grid', gridTemplateColumns: 'repeat(5, minmax(0,1fr))', gap: 6 }}>
         {MOODS.map(md => (
           <button key={md.id} onClick={() => setMood(m => (m === md.id ? null : md.id))} aria-pressed={mood === md.id} className="drl-mood"
-            style={{ minHeight: 62, borderRadius: 14, border: `1px solid ${mood === md.id ? md.color : DC.line}`, background: mood === md.id ? `${md.color}22` : DC.glass, color: DC.text, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4, fontSize: 10.5, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>
+            style={{ minHeight: 62, borderRadius: 14, border: `1px solid ${mood === md.id ? md.color : DC.line}`, background: mood === md.id ? `${md.color}22` : DC.glass, color: DC.text, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4, fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>
             <MoodIcon id={md.id} color={md.color} />{md.label}
           </button>
         ))}
@@ -258,7 +258,7 @@ const Writer: React.FC<{ uid: string | null; existing: JournalItem | null; palet
         style={{ marginTop: 14, width: '100%', boxSizing: 'border-box', minHeight: '42vh', resize: 'vertical', borderRadius: 18, border: '1px solid rgba(201,184,228,.3)', outline: 'none', padding: '16px 16px 16px 18px',
           fontFamily: 'Fraunces, Georgia, serif', fontSize: 17, lineHeight: '30px', color: DC.text,
           background: 'repeating-linear-gradient(transparent, transparent 29px, rgba(201,184,228,.10) 29px, rgba(201,184,228,.10) 30px), rgba(255,255,255,.03)', backgroundAttachment: 'local' }} />
-      <p style={{ margin: '4px 2px 0', fontSize: 12, color: DC.faint, textAlign: 'right' }}>{text.length} / 4000</p>
+      <p style={{ margin: '4px 2px 0', fontSize: 13, color: DC.faint, textAlign: 'right' }}>{text.length} / 4000</p>
 
       <p style={{ margin: '10px 0 6px', fontSize: 13, color: DC.muted, fontWeight: 600 }}>Carnet</p>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
@@ -276,14 +276,14 @@ const Writer: React.FC<{ uid: string | null; existing: JournalItem | null; palet
         )}
       </div>
 
-      {error && <p role="alert" style={{ margin: '12px 0 0', fontSize: 13.5, color: '#F09A7A' }}>{error}</p>}
+      {error && <p role="alert" style={{ margin: '12px 0 0', fontSize: 14, color: '#F09A7A' }}>{error}</p>}
       <div style={{ display: 'flex', gap: 8, marginTop: 18 }}>
         <button onClick={() => void save()} disabled={text.trim().length < 2 || busy} style={{ ...btn(true, palette.primary), flex: 1, opacity: text.trim().length < 2 || busy ? 0.45 : 1 }}>
           {busy ? 'Enregistrement…' : existing ? 'Enregistrer les changements' : 'Ranger dans mon journal'}
         </button>
         <button onClick={() => navigate(existing ? `/journal/${existing.id}` : '/journal')} style={btn(false, palette.accent)}>Annuler</button>
       </div>
-      <p style={{ margin: '10px 0 0', fontSize: 12, color: DC.faint, display: 'flex', alignItems: 'center', gap: 6 }}><Lock size={12} aria-hidden="true" /> Visible par toi seul. Dr Lô ne lit que si tu le lui demandes.</p>
+      <p style={{ margin: '10px 0 0', fontSize: 13, color: DC.faint, display: 'flex', alignItems: 'center', gap: 6 }}><Lock size={12} aria-hidden="true" /> Visible par toi seul. Dr Lô ne lit que si tu le lui demandes.</p>
     </div>
   );
 };
@@ -315,7 +315,7 @@ const Reader: React.FC<{ uid: string | null; it: JournalItem; palette: { accent:
 
   return (
     <article style={{ marginTop: 18 }}>
-      <p style={{ margin: 0, fontSize: 12, letterSpacing: '.1em', textTransform: 'uppercase', fontWeight: 800, color: INK }}>{it.carnet}</p>
+      <p style={{ margin: 0, fontSize: 13, letterSpacing: '.1em', textTransform: 'uppercase', fontWeight: 800, color: INK }}>{it.carnet}</p>
       <h1 style={{ margin: '4px 0 0', fontFamily: 'Fraunces, serif', fontSize: 26, lineHeight: 1.2, fontWeight: 600, color: DC.title }}>{Number.isNaN(d.getTime()) ? 'Ma page' : fullDate(d)}</h1>
       <p style={{ margin: '4px 0 0', fontSize: 13, color: DC.faint, display: 'flex', alignItems: 'center', gap: 8 }}>
         {!Number.isNaN(d.getTime()) && hhmm(d)}
@@ -328,7 +328,7 @@ const Reader: React.FC<{ uid: string | null; it: JournalItem; palette: { accent:
       {it.drLo && (
         <section style={{ ...card, marginTop: 14, borderColor: 'rgba(233,200,143,.4)', background: 'rgba(233,200,143,.06)' }}>
           <p style={{ margin: 0, fontSize: 13, fontWeight: 800, color: '#E9C88F', display: 'flex', alignItems: 'center', gap: 6 }}><Sparkles size={14} aria-hidden="true" /> L'avis de Dr Lô</p>
-          <p style={{ margin: '8px 0 0', fontSize: 14.5, lineHeight: 1.6, color: DC.soft, whiteSpace: 'pre-wrap' }}>{it.drLo}</p>
+          <p style={{ margin: '8px 0 0', fontSize: 15, lineHeight: 1.6, color: DC.soft, whiteSpace: 'pre-wrap' }}>{it.drLo}</p>
         </section>
       )}
 
@@ -340,10 +340,10 @@ const Reader: React.FC<{ uid: string | null; it: JournalItem; palette: { accent:
           </button>
         )}
       </div>
-      <button onClick={() => void del()} style={{ marginTop: 14, minHeight: 40, border: 0, background: 'transparent', color: confirm ? '#F09A7A' : DC.faint, fontSize: 13.5, fontWeight: 700, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 6, fontFamily: 'inherit' }}>
+      <button onClick={() => void del()} style={{ marginTop: 14, minHeight: 40, border: 0, background: 'transparent', color: confirm ? '#F09A7A' : DC.faint, fontSize: 14, fontWeight: 700, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 6, fontFamily: 'inherit' }}>
         <Trash2 size={15} aria-hidden="true" /> {confirm ? 'Supprimer pour de bon ? Touche encore' : 'Supprimer cette page'}
       </button>
-      {note && <p role="status" style={{ margin: '8px 0 0', fontSize: 13.5, color: DC.muted }}>{note}</p>}
+      {note && <p role="status" style={{ margin: '8px 0 0', fontSize: 14, color: DC.muted }}>{note}</p>}
     </article>
   );
 };
@@ -389,7 +389,7 @@ const MonJournalPage: React.FC = () => {
                 </p>
               </div>
             </div>
-            <Link to="/journal/ecrire" className="drl-btn" style={{ ...btn(true, 'linear-gradient(180deg, #D8CAF0 0%, #B9A6D6 100%)'), width: '100%', boxSizing: 'border-box', marginTop: 16, minHeight: 54, fontSize: 15.5 }}>
+            <Link to="/journal/ecrire" className="drl-btn" style={{ ...btn(true, 'linear-gradient(180deg, #D8CAF0 0%, #B9A6D6 100%)'), width: '100%', boxSizing: 'border-box', marginTop: 16, minHeight: 54, fontSize: 16 }}>
               <Feather size={18} aria-hidden="true" /> Écrire aujourd'hui
             </Link>
             <Link to="/" state={{ tab: 'confier' }} style={{ marginTop: 8, minHeight: 36, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, color: DC.muted, fontSize: 13, textDecoration: 'none' }}>
