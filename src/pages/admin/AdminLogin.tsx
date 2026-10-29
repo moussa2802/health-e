@@ -83,7 +83,7 @@ const AdminLogin: React.FC = () => {
               Espace administrateur
             </h2>
             <p className="text-ink-soft">
-              Connectez-vous pour accéder au tableau de bord d'administration
+              Connecte-toi pour accéder au tableau de bord d'administration
             </p>
           </div>
 

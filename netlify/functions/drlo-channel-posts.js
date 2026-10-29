@@ -4,7 +4,7 @@
  * Espace Dr Lô (staff/{uid}.drlo === true) :
  *   post_create { channelId, title?, text?, audio?, preview?, commentsOpen?, notify? } → publie (titre facultatif, texte et/ou vocal ≤ 5 min) ; notify (défaut oui) = prévenir les membres
  *   post_list   { channelId }                → les publications (de la plus ancienne à la plus récente) avec leurs chiffres et le lien d'écoute
- *   post_update { id, title?, text?, preview?, commentsOpen? }
+ *   post_update { id, title?, text?, preview?, commentsOpen?, practiceIds? } (post_create accepte aussi practiceIds : 2 pratiques au plus, proposées sous l'épisode)
  *   post_delete { id }                       → supprime la publication, le vocal et les vues
  *   audience    { channelId, postId?, kind: 'all'|'seen'|'listened'|'unseen', after?, q? }
  *               → prénoms des membres (jamais de résultats de tests), paginés, avec recherche
@@ -29,6 +29,18 @@ const reply = (statusCode, body) => ({ statusCode, headers, body: JSON.stringify
 const ms = (v) => (v && typeof v.toMillis === 'function' ? v.toMillis() : typeof v === 'string' ? Date.parse(v) || 0 : Number(v) || 0);
 const inc = (n) => admin.firestore.FieldValue.increment(n);
 const MAX_POST_TEXT = 4000;
+const MAX_PRACTICES = 2;
+
+/** Pratiques à proposer sous une publication : 2 au plus, qui existent. Ajoute la chaîne à la pratique (pour « offerte aux membres »). */
+async function checkPractices(raw, channelId) {
+  const ids = [...new Set((Array.isArray(raw) ? raw : []).map(String).filter(Boolean))];
+  if (ids.length > MAX_PRACTICES) return { error: `${MAX_PRACTICES} pratiques au plus par publication.` };
+  if (!ids.length) return { ids: [] };
+  const snaps = await db.getAll(...ids.map((i) => db.collection('practices').doc(i)));
+  if (snaps.some((x) => !x.exists)) return { error: 'Une des pratiques n\'existe plus.' };
+  await Promise.all(ids.map((i) => db.collection('practices').doc(i).update({ channelIds: admin.firestore.FieldValue.arrayUnion(channelId) })));
+  return { ids };
+}
 const MAX_TITLE = 80;
 const FEED_LIMIT = 50;
 const vid = (pid, uid) => `${pid}_${uid}`;
@@ -54,7 +66,7 @@ const counts = (p) => { const r = (p.stats && p.stats.reactions) || {}; return {
 const adminPost = async (id, p) => ({
   id, channelId: p.channelId, title: p.title || '', text: p.text || '', hasAudio: !!p.audio, audioSec: p.audio ? Number(p.audio.durationSec) || 0 : 0,
   audioUrl: p.audio ? await signedUrl(p.audio.path) : null, preview: !!p.preview, commentsOpen: p.commentsOpen !== false,
-  createdAt: ms(p.createdAt), stats: { views: (p.stats && p.stats.views) || 0, listens: (p.stats && p.stats.listens) || 0, reactions: counts(p), comments: (p.stats && p.stats.comments) || 0 },
+  practiceIds: p.practiceIds || [], createdAt: ms(p.createdAt), stats: { views: (p.stats && p.stats.views) || 0, listens: (p.stats && p.stats.listens) || 0, reactions: counts(p), comments: (p.stats && p.stats.comments) || 0 },
 });
 
 /** Une publication telle que la voit une personne : verrouillée = aucun contenu, aucun lien. */
@@ -66,7 +78,7 @@ async function userPost(id, p, { member, view }) {
     mine: (view && view.reaction) || null, seen: !!(view && view.seenAt),
   };
   if (!open) return base;
-  return { ...base, title: p.title || '', text: p.text || '', audioUrl: p.audio ? await signedUrl(p.audio.path) : null };
+  return { ...base, title: p.title || '', text: p.text || '', audioUrl: p.audio ? await signedUrl(p.audio.path) : null, practiceIds: p.practiceIds || [] };
 }
 
 /** Parcourt les membres d'une chaîne (500 par page, jusqu'à 80 résultats) et renvoie leurs prénoms. */
@@ -132,6 +144,8 @@ exports.handler = async (event) => {
         if (!body.audio && text.length < 2) return reply(400, { error: 'Écris un texte ou ajoute un vocal.' });
         const title = cleanTitle(body.title);
         if (title.length > MAX_TITLE) return reply(400, { error: `Le titre est trop long (${MAX_TITLE} caractères au plus).` });
+        const pr = await checkPractices(body.practiceIds, channelId);
+        if (pr.error) return reply(400, { error: pr.error });
         const ref = db.collection('channelPosts').doc();
         let audio = null;
         if (body.audio) {
@@ -147,7 +161,7 @@ exports.handler = async (event) => {
           audio = { path, mime: au.mime, durationSec: au.durationSec };
         }
         await ref.set({
-          channelId, ...(title ? { title } : {}), text, ...(audio ? { audio } : {}), preview: body.preview === true, commentsOpen: body.commentsOpen !== false, status: 'published', pushDone: body.notify === false, pushCursor: null,
+          channelId, ...(title ? { title } : {}), text, ...(audio ? { audio } : {}), ...(pr.ids.length ? { practiceIds: pr.ids } : {}), preview: body.preview === true, commentsOpen: body.commentsOpen !== false, status: 'published', pushDone: body.notify === false, pushCursor: null,
           createdAt: admin.firestore.FieldValue.serverTimestamp(), createdBy: uid,
           stats: { views: 0, listens: 0, comments: 0, reactions: { heart: 0, pray: 0, strong: 0 } },
         });
@@ -207,6 +221,11 @@ exports.handler = async (event) => {
         }
         if (body.preview !== undefined) upd.preview = body.preview === true;
         if (body.commentsOpen !== undefined) upd.commentsOpen = body.commentsOpen !== false;
+        if (body.practiceIds !== undefined) {
+          const pr = await checkPractices(body.practiceIds, p.channelId);
+          if (pr.error) return reply(400, { error: pr.error });
+          upd.practiceIds = pr.ids;
+        }
         if (!Object.keys(upd).length) return reply(400, { error: 'Rien à modifier.' });
         await ref.update(upd);
         const fresh = await ref.get();

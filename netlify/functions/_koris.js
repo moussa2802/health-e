@@ -14,6 +14,7 @@ const KORIS_COSTS = {
   programme: 3,
   programme_bilan: 3,
   channel: 1, // entrée dans une chaîne de Dr Lô : quantité = prix en étincelles fixé par Dr Lô
+  practice: 1, // déblocage d'une pratique de Dr Lô (une fois) : quantité = prix fixé par Dr Lô
 };
 
 /**

@@ -16,7 +16,7 @@ interface Props {
 }
 
 /** Pages où la pastille n'a pas sa place : l'accueil (Dr Lô y est déjà) et les écrans du vrai Dr Lô / de l'équipe. */
-const NO_LAUNCHER = (p: string) => p === '/' || p === '/drlo' || p === '/equipe' || p === '/question' || p.startsWith('/d/') || p.startsWith('/assessment/quiz/');
+const NO_LAUNCHER = (p: string) => p === '/' || p === '/drlo' || p === '/equipe' || p === '/question' || p.startsWith('/d/') || p.startsWith('/c/') || p.startsWith('/admin') || p.startsWith('/assessment/quiz/');
 
 const FloatingChat: React.FC<Props> = ({ userId, hideLauncher = false }) => {
   const navigate = useNavigate();

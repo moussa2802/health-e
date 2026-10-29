@@ -59,6 +59,7 @@ const EquipePage = lazy(() => import("./pages/drlo/EquipePage"));
 const MessagesDrLoPage = lazy(() => import("./pages/drlo/MessagesDrLoPage"));
 const ChainesPage = lazy(() => import("./pages/drlo/ChainesPage"));
 const ChannelInvitePage = lazy(() => import("./pages/drlo/ChannelInvitePage"));
+const PratiquePage = lazy(() => import("./pages/drlo/PratiquePage"));
 const MonJournalPage = lazy(() => import("./pages/drlo/MonJournalPage"));
 const ResultatPage = lazy(() => import("./pages/drlo/ResultatPage"));
 const PatientAccess = lazy(() => import("./pages/patient/PatientAccess"));
@@ -108,10 +109,10 @@ const DecouvreDefiPage = lazy(() => import("./pages/DecouvreDefiPage"));
 
 // Loading fallback component
 const PageLoader = () => (
-  <div className="min-h-screen flex items-center justify-center bg-gray-50">
+  <div className="min-h-screen flex items-center justify-center" style={{ background: "#17120E" }}>
     <div className="text-center">
       <LoadingSpinner size="lg" />
-      <p className="mt-4 text-lg text-gray-600">Chargement de la page...</p>
+      <p className="mt-4 text-lg" style={{ color: "#CFC6B8" }}>Chargement…</p>
     </div>
   </div>
 );
@@ -125,7 +126,7 @@ const AppChrome: React.FC = () => {
   const isChromeless = isAdminRoute || isAppRoute || isDefiJouer;
   // Accueil : le premier écran est Dr Lô en plein écran (pas d'en-tête ni de pied de page du site)
   // Écrans « Mon Dr Lô » (thème chaud sombre, plein écran) : pas d'en-tête ni de pied de page du site
-  const isHome = pathname === "/" || pathname === "/espace" || pathname.startsWith("/espace/") || pathname === "/humeur" || pathname === "/journal" || pathname.startsWith("/journal/") || pathname === "/question" || pathname === "/drlo" || pathname === "/equipe" || pathname === "/confidentialite" || pathname === "/conditions" || pathname === "/cgu" || pathname === "/ethique" || pathname === "/faq" || pathname === "/contact" || pathname === "/patient/access" || pathname === "/patient" || pathname === "/messages-dr-lo" || pathname.startsWith("/messages-dr-lo/") || pathname === "/chaines" || pathname.startsWith("/chaines/") || pathname.startsWith("/c/") || pathname === "/assessment/totem" || pathname.startsWith("/assessment/results/") || pathname === "/defi" || pathname.startsWith("/defi/") || pathname === "/decouvre" || pathname === "/assessment/compatibility" || pathname.startsWith("/compat/") || pathname === "/assessment" || pathname.startsWith("/assessment/") || pathname === "/acheter-koris";
+  const isHome = pathname === "/" || pathname === "/espace" || pathname.startsWith("/espace/") || pathname === "/humeur" || pathname === "/journal" || pathname.startsWith("/journal/") || pathname === "/question" || pathname === "/drlo" || pathname === "/equipe" || pathname === "/confidentialite" || pathname === "/conditions" || pathname === "/cgu" || pathname === "/ethique" || pathname === "/faq" || pathname === "/contact" || pathname === "/patient/access" || pathname === "/patient" || pathname === "/messages-dr-lo" || pathname.startsWith("/messages-dr-lo/") || pathname === "/chaines" || pathname.startsWith("/chaines/") || pathname.startsWith("/c/") || pathname.startsWith("/pratique/") || pathname === "/assessment/totem" || pathname.startsWith("/assessment/results/") || pathname === "/defi" || pathname.startsWith("/defi/") || pathname === "/decouvre" || pathname === "/assessment/compatibility" || pathname.startsWith("/compat/") || pathname === "/assessment" || pathname.startsWith("/assessment/") || pathname === "/acheter-koris";
   const { currentUser } = useAuth();
   const userId = currentUser?.id ?? null;
 
@@ -150,6 +151,7 @@ const AppChrome: React.FC = () => {
             <Route path="/chaines" element={<ChainesPage />} />
             <Route path="/chaines/:id" element={<ChainesPage />} />
             <Route path="/c/:id" element={<ChannelInvitePage />} />
+            <Route path="/pratique/:id" element={<PratiquePage />} />
 
             {/* Companion app — layout mobile plein écran, distinct du site */}
             <Route
@@ -462,7 +464,7 @@ function App() {
                   height: 1,
                 }}
               />
-              <div className="min-h-screen flex flex-col bg-gray-50">
+              <div className="min-h-screen flex flex-col" style={{ background: "#17120E" }}>
                 <AppChrome />
               </div>
             </TermsProvider>

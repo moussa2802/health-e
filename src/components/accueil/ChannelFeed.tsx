@@ -13,12 +13,14 @@ import type { MomentPalette } from '../../utils/drloMoment';
 import { REACTIONS, type Reaction } from '../../services/drloBroadcastService';
 import { getFeed, markPostListened, markPostsSeen, reactToPost, type ChannelPost } from '../../services/drloChannelService';
 import AudioPlayer from './AudioPlayer';
+import PracticeCard from './PracticeCard';
+import { listPractices, type Practice } from '../../services/practiceService';
 
 const mmss = (n: number) => `${Math.floor(n / 60)}:${String(n % 60).padStart(2, '0')}`;
 const when = (t: number) => (t ? new Date(t).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' }) : '');
 const LONG = 320;
 
-const Post: React.FC<{ p: ChannelPost; member: boolean; palette: MomentPalette }> = ({ p, member, palette }) => {
+const Post: React.FC<{ p: ChannelPost; member: boolean; palette: MomentPalette; practices: Record<string, Practice>; channelId: string }> = ({ p, member, palette, practices, channelId }) => {
   const [more, setMore] = useState(false);
   const [mine, setMine] = useState<Reaction | null>(p.mine);
   const [counts, setCounts] = useState(p.counts);
@@ -67,6 +69,11 @@ const Post: React.FC<{ p: ChannelPost; member: boolean; palette: MomentPalette }
           {text.length > LONG && <button type="button" onClick={() => setMore(m => !m)} style={{ display: 'block', marginTop: 6, background: 'none', border: 0, padding: 0, color: palette.accent, fontWeight: 700, fontSize: 14, cursor: 'pointer' }}>{more ? 'Réduire' : 'Lire la suite'}</button>}
         </p>
       )}
+      {(p.practiceIds ?? []).some(id => practices[id]) && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 12 }}>
+          {(p.practiceIds ?? []).filter(id => practices[id]).map(id => <PracticeCard key={id} p={practices[id]} accent={palette.accent} from={`/chaines/${channelId}`} />)}
+        </div>
+      )}
       {member && (
         <div role="group" aria-label="Réagir" style={{ display: 'flex', gap: 8, marginTop: 12, flexWrap: 'wrap' }}>
           {REACTIONS.map(r => (
@@ -93,9 +100,15 @@ const Post: React.FC<{ p: ChannelPost; member: boolean; palette: MomentPalette }
 const ChannelFeed: React.FC<{ channelId: string; member: boolean; palette: MomentPalette }> = ({ channelId, member, palette }) => {
   const [posts, setPosts] = useState<ChannelPost[] | null>(null);
   const [error, setError] = useState('');
+  const [practices, setPractices] = useState<Record<string, Practice>>({});
   useEffect(() => {
     let live = true;
-    getFeed(channelId).then(r => { if (live) setPosts(r.posts); }).catch(e => { if (live) setError(e instanceof Error ? e.message : 'Erreur'); });
+    getFeed(channelId).then(r => {
+      if (!live) return;
+      setPosts(r.posts);
+      const ids = [...new Set(r.posts.flatMap(x => x.practiceIds ?? []))];
+      if (ids.length) listPractices(ids).then(pr => { if (live) setPractices(Object.fromEntries(pr.items.map(i => [i.id, i]))); }).catch(() => {});
+    }).catch(e => { if (live) setError(e instanceof Error ? e.message : 'Erreur'); });
     return () => { live = false; };
   }, [channelId, member]);
   // À l'ouverture : on descend à la première publication non lue (sinon à la plus récente). Une seule fois.
@@ -120,7 +133,7 @@ const ChannelFeed: React.FC<{ channelId: string; member: boolean; palette: Momen
   if (posts.length === 0) return <p style={{ marginTop: 14, color: DC.muted, fontSize: 15, lineHeight: 1.55 }}>Dr Lô n'a pas encore publié ici. Tu seras prévenu dès la première publication.</p>;
   return (
     <section aria-label="Publications" style={{ display: 'flex', flexDirection: 'column', gap: 12, marginTop: 14 }}>
-      {posts.map(p => <Post key={p.id} p={p} member={member} palette={palette} />)}
+      {posts.map(p => <Post key={p.id} p={p} member={member} palette={palette} practices={practices} channelId={channelId} />)}
     </section>
   );
 };

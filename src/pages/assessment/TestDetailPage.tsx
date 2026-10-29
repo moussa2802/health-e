@@ -4,7 +4,7 @@ import { useParams, useNavigate, Navigate } from 'react-router-dom';
 import { ArrowLeft, Lock, Clock, HelpCircle, Info, Check, RefreshCw, Loader2, Play } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { getScaleById, getScaleByCode } from '../../data/scales';
-import { getScaleMeta, CATEGORY_COLORS, type ScaleCategory } from '../../utils/scaleMeta';
+import { getScaleMeta, type ScaleCategory } from '../../utils/scaleMeta';
 import TEST_ABOUT from '../../data/testAbout';
 import TestHistoryPanel from '../../components/assessment/TestHistoryPanel';
 import ConseilsCard from '../../components/assessment/ConseilsCard';
@@ -223,7 +223,6 @@ const TestDetailPage: React.FC = () => {
   const meta = scaleId ? getScaleMeta(scaleId) : undefined;
 
   const category: ScaleCategory = meta?.category ?? 'mental';
-  const catColors = CATEGORY_COLORS[category];
   const iconBgClass = category === 'mental' ? 'bg-sage-soft' : category === 'sexual' ? 'bg-accent-soft' : 'bg-gold-soft';
   const iconColorClass = category === 'mental' ? 'text-sage' : category === 'sexual' ? 'text-accent' : 'text-gold';
 
@@ -429,8 +428,8 @@ const TestDetailPage: React.FC = () => {
           <div className="flex flex-col gap-2.5 mb-5">
             <button
               onClick={() => navigate(`/assessment/quiz/${pendingSessionId}${pendingIsGuest ? '?guest=true' : ''}`)}
-              className="w-full py-[15px] rounded-[16px] border-none text-[15px] font-bold cursor-pointer flex items-center justify-center gap-2.5 shadow-soft transition-colors hover:opacity-90"
-              style={{ background: catColors.accent, color: '#fff' }}
+              className="w-full py-[15px] rounded-[14px] border-none text-[17px] font-bold cursor-pointer flex items-center justify-center gap-2.5 bg-gold"
+              style={{ color: '#1C140D', minHeight: 52 }}
             >
               <Play size={15} fill="currentColor" /> Reprendre le test
             </button>

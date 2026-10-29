@@ -238,10 +238,10 @@ const ResultCard = React.forwardRef<HTMLDivElement, ResultCardProps>(({ scale, r
           const active = i === activeBand;
           return (
             <span key={i} style={{
-              flex: 1, fontSize: 13, fontWeight: active ? 800 : 600,
+              flex: '1 1 auto', minWidth: 0, fontSize: 13, fontWeight: active ? 800 : 600,
               color: active ? '#F1ECE1' : '#A79F8F',
               textAlign: i === 0 ? 'left' : i === bands.length - 1 ? 'right' : 'center',
-              lineHeight: 1.25, overflowWrap: 'anywhere', padding: '0 2px',
+              lineHeight: 1.25, overflowWrap: 'normal', wordBreak: 'normal', padding: '0 2px',
             }}>
               {shortBandLabel(b.label)}
             </span>
@@ -492,7 +492,7 @@ const ResultCard = React.forwardRef<HTMLDivElement, ResultCardProps>(({ scale, r
       {isCompact && !isEmpty && !isSober && card.variant === 'score' && (
         /* ── Compact + Score ── */
         <>
-          <p style={{ ...ST, ...z2 }}>Ton dernier résultat</p>
+          <p style={{ ...ST, ...z2, paddingRight: 104 }}>Ton dernier résultat</p>
           <h2 style={{ ...TT(true), ...z2 }}>
             {splitTitle(interp?.label ?? '', italicClr)}
           </h2>
@@ -529,7 +529,7 @@ const ResultCard = React.forwardRef<HTMLDivElement, ResultCardProps>(({ scale, r
       {isCompact && !isEmpty && !isSober && card.variant === 'dimensions' && (
         /* ── Compact + Dimensions ── */
         <>
-          <p style={{ ...ST, ...z2 }}>Ton dernier résultat</p>
+          <p style={{ ...ST, ...z2, paddingRight: 104 }}>Ton dernier résultat</p>
           <h2 style={{ ...TT(true), ...z2 }}>
             {bigFiveSummary
               ? splitTitle(bigFiveSummary.title, italicClr)

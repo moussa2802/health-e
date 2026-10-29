@@ -9,6 +9,7 @@ import { blobToBase64, useVoiceRecorder } from '../../hooks/useVoiceRecorder';
 import VoiceInput from './VoiceInput';
 import { DC, card } from './DrLoShell';
 import ChannelCommentsAdmin from './ChannelCommentsAdmin';
+import PracticePicker from './PracticePicker';
 import type { MomentPalette } from '../../utils/drloMoment';
 import {
   createPost, deletePost, getMembers, listPosts, updatePost,
@@ -67,6 +68,7 @@ const Composer: React.FC<{ channel: AdminChannel; palette: MomentPalette; onPubl
   const [preview, setPreview] = useState(false);
   const [commentsOpen, setCommentsOpen] = useState(true);
   const [notify, setNotify] = useState(true);
+  const [practiceIds, setPracticeIds] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState('');
   const [err, setErr] = useState('');
@@ -76,8 +78,8 @@ const Composer: React.FC<{ channel: AdminChannel; palette: MomentPalette; onPubl
     setBusy(true); setErr(''); setMsg('');
     try {
       const audio = voice.clip ? { data: await blobToBase64(voice.clip.blob), mime: voice.clip.mime, durationSec: voice.clip.durationSec } : undefined;
-      await createPost({ channelId: channel.id, title: title.trim() || undefined, text: text.trim(), audio, preview, commentsOpen, notify });
-      setMsg(`Publié dans « ${channel.name} ».`); setTitle(''); setText(''); setPreview(false); voice.reset(); onPublished();
+      await createPost({ channelId: channel.id, title: title.trim() || undefined, text: text.trim(), audio, preview, commentsOpen, notify, practiceIds });
+      setMsg(`Publié dans « ${channel.name} ».`); setTitle(''); setText(''); setPreview(false); setPracticeIds([]); voice.reset(); onPublished();
     } catch (e) { setErr(e instanceof Error ? e.message : 'Erreur'); }
     finally { setBusy(false); }
   };
@@ -97,6 +99,7 @@ const Composer: React.FC<{ channel: AdminChannel; palette: MomentPalette; onPubl
       <div style={{ marginTop: 10 }}>
         <VoiceInput voice={voice} recordLabel="Enregistrer un vocal" readyHint="Le texte devient facultatif." />
       </div>
+      <div style={{ marginTop: 14 }}><PracticePicker value={practiceIds} onChange={setPracticeIds} accent={palette.accent} /></div>
       {sw(preview, setPreview, 'Aperçu gratuit', 'Visible et écoutable par tout le monde, même sans être membre. Pour donner envie.')}
       {sw(commentsOpen, setCommentsOpen, 'Commentaires ouverts', 'Les membres peuvent commenter et tu peux leur répondre.')}
       {sw(notify, setNotify, 'Prévenir les membres', 'Notification neutre « Dr Lô a publié dans ' + channel.name + ' » (jamais le contenu). Pas de notification la nuit (22 h – 7 h), ni pour ceux qui ont coupé les alertes.')}
@@ -116,6 +119,8 @@ const PostRow: React.FC<{ p: AdminPost; channelId: string; palette: MomentPalett
   const [draft, setDraft] = useState(p.text);
   const [draftTitle, setDraftTitle] = useState(p.title);
   const [confirmDel, setConfirmDel] = useState(false);
+  const [pickPractices, setPickPractices] = useState(false);
+  const [draftPractices, setDraftPractices] = useState<string[]>(p.practiceIds ?? []);
   const [busy, setBusy] = useState(false);
   const run = async (f: () => Promise<unknown>) => { setBusy(true); onError(''); try { await f(); await onChanged(); } catch (e) { onError(e instanceof Error ? e.message : 'Erreur'); } finally { setBusy(false); } };
   const tab = (k: AudienceKind, label: string, n?: number) => (
@@ -160,6 +165,7 @@ const PostRow: React.FC<{ p: AdminPost; channelId: string; palette: MomentPalett
         <button type="button" disabled={busy} onClick={() => run(() => updatePost(p.id, { commentsOpen: !p.commentsOpen }))} style={small}>{p.commentsOpen ? 'Fermer les commentaires aux membres' : 'Rouvrir les commentaires'}</button>
         <button type="button" disabled={busy} onClick={() => run(() => updatePost(p.id, { preview: !p.preview }))} style={small}><Eye size={14} aria-hidden="true" /> {p.preview ? 'Retirer l\'aperçu' : 'Mettre en aperçu'}</button>
         {!editing && <button type="button" onClick={() => setEditing(true)} style={small}><Pencil size={14} aria-hidden="true" /> Modifier le titre et le texte</button>}
+        <button type="button" onClick={() => { setPickPractices(v => !v); setDraftPractices(p.practiceIds ?? []); }} aria-expanded={pickPractices} style={small}>Pratiques ({(p.practiceIds ?? []).length})</button>
         {!confirmDel ? <button type="button" onClick={() => setConfirmDel(true)} style={small}><Trash2 size={14} aria-hidden="true" /> Supprimer</button> : (
           <span style={{ display: 'inline-flex', gap: 6, alignItems: 'center' }}>
             <button type="button" disabled={busy} onClick={() => run(() => deletePost(p.id))} style={{ ...small, color: '#F09A7A', borderColor: 'rgba(240,154,122,.6)' }}>Oui, supprimer pour de bon</button>
@@ -167,6 +173,15 @@ const PostRow: React.FC<{ p: AdminPost; channelId: string; palette: MomentPalett
           </span>
         )}
       </div>
+      {pickPractices && (
+        <div style={{ marginTop: 10, padding: 12, borderRadius: 14, border: `1px solid ${DC.line}` }}>
+          <PracticePicker value={draftPractices} onChange={setDraftPractices} accent={palette.accent} />
+          <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
+            <button type="button" disabled={busy} onClick={() => run(async () => { await updatePost(p.id, { practiceIds: draftPractices }); setPickPractices(false); })} style={{ ...small, color: DC.text, borderColor: palette.accent }}>Enregistrer</button>
+            <button type="button" onClick={() => setPickPractices(false)} style={small}>Annuler</button>
+          </div>
+        </div>
+      )}
       {showComments && <ChannelCommentsAdmin postId={p.id} palette={palette} />}
     </article>
   );
