@@ -3,6 +3,7 @@ const { takeSlot, giveBack } = require('./_chatAllowance');
 const { VOICE } = require('./_drloVoice');
 const { reserveKoris, commitKoris, releaseKoris } = require('./_koris');
 const CH = require('./_drloChannels');
+const PR = require('./_practices');
 const { rulesV2 } = require('./_drloChatRules');
 const { rulesV1 } = require('./_drloChatRulesV1');
 const { wantsJournal, wantsNumbers, filterNotes } = require('./_drloChatContext');
@@ -150,28 +151,32 @@ ${rulesBlock}
 Chaînes de Dr Lô (ID, thème, situation de cette personne) :
 ${context.chaines_txt || 'Aucune pour le moment.'}
 
+Outils de Dr Lô (ID, ce qu'elle en connaît) :
+${context.outils_txt || 'Aucun pour le moment.'}
+
 Tests disponibles (ID = nom) :
 ${testsDispo || 'Aucun.'}`;
 }
 
 // ── Action proposée par Dr Lô (balise en dernière ligne) ─────────────────────
 
-const TAG = /\[\[(test:[a-z0-9_]{2,40}|chaine:[A-Za-z0-9]{4,40}|chaines|respiration|humeur|programme|journal|defi|compat|vrai_drlo|totem|catalogue|crise)\]\]/gi;
+const TAG = /\[\[(test:[a-z0-9_]{2,40}|chaine:[A-Za-z0-9]{4,40}|pratique:[A-Za-z0-9]{4,40}|chaines|respiration|humeur|programme|journal|defi|compat|vrai_drlo|totem|catalogue|crise)\]\]/gi;
 
 /**
  * Sépare le texte et les boutons proposés (balises n'importe où, retirées du texte).
  * Crise → seul bouton gardé. Sinon : jusqu'à 3 tests, ou une seule autre action.
  */
-function splitActions(raw, channels = {}) {
+function splitActions(raw, channels = {}, tools = {}) {
   let text = String(raw || '');
   const tags = [];
   // Les identifiants de chaîne gardent leur casse ; une chaîne inconnue est ignorée
-  text = text.replace(TAG, (_, t) => { tags.push(/^chaine:/i.test(t) ? `chaine:${t.slice(7)}` : t.toLowerCase()); return ''; });
+  text = text.replace(TAG, (_, t) => { tags.push(/^chaine:/i.test(t) ? `chaine:${t.slice(7)}` : /^pratique:/i.test(t) ? `pratique:${t.slice(9)}` : t.toLowerCase()); return ''; });
   text = text.replace(/\[\[[^\]]{0,60}\]\]/g, '').replace(/[ \t]+\n/g, '\n').replace(/\n{3,}/g, '\n\n').trim();
   if (tags.includes('crise')) return { text, actions: [{ kind: 'crise' }] };
   const tests = [...new Set(tags.filter(t => t.startsWith('test:')).map(t => t.slice(5)))].slice(0, 3);
   if (tests.length) return { text, actions: tests.map(scaleId => ({ kind: 'test', scaleId })) };
-  const other = tags.find(t => !t.startsWith('test:') && (!t.startsWith('chaine:') || Object.prototype.hasOwnProperty.call(channels, t.slice(7))));
+  const other = tags.find(t => !t.startsWith('test:') && (!t.startsWith('chaine:') || Object.prototype.hasOwnProperty.call(channels, t.slice(7))) && (!t.startsWith('pratique:') || Object.prototype.hasOwnProperty.call(tools, t.slice(9))));
+  if (other && other.startsWith('pratique:')) return { text, actions: [{ kind: 'pratique', id: other.slice(9), name: tools[other.slice(9)] }] };
   if (other && other.startsWith('chaine:')) return { text, actions: [{ kind: 'chaine', id: other.slice(7), name: channels[other.slice(7)] }] };
   return { text, actions: other ? [{ kind: other }] : [] };
 }
@@ -281,6 +286,17 @@ exports.handler = async (event) => {
     chaines = CH.chatSummary(cs.docs.map(d => ({ id: d.id, ...d.data() })), new Set(ms.docs.map(d => d.data().channelId)), up.exists ? up.data() : {}, Number(wallet.balance) || 0, labels);
   } catch (e) { console.warn('dr-lo-chat chaines', e.message); }
 
+  // Les outils de Dr Lô (pratiques publiées) et ce que la personne en connaît
+  let outils = { text: '', ids: {} };
+  try {
+    const [ps, us] = await Promise.all([
+      db.collection('practices').where('status', '==', 'published').limit(40).get(),
+      db.collection('practiceUnlocks').where('uid', '==', user.uid).get(),
+    ]);
+    const byP = Object.fromEntries(us.docs.map(d => [d.data().practiceId, d.data()]));
+    outils = PR.chatTools(ps.docs.map(d => ({ id: d.id, p: d.data(), u: byP[d.id] })));
+  } catch (e) { console.warn('dr-lo-chat outils', e.message); }
+
   // System prompt with cache_control (stable across messages in a conversation)
   // Banc d'essai seulement : on peut choisir l'ancien jeu de règles, en essayer un nouveau texte, ou un autre modèle
   const promptOpts = { message };
@@ -290,7 +306,7 @@ exports.handler = async (event) => {
     if (typeof body.rules === 'string' && body.rules.trim()) promptOpts.rules = body.rules.slice(0, 40000);
     if (body.model === 'sonnet') model0 = 'claude-sonnet-4-5-20250929';
   }
-  const systemPrompt = buildSystemPrompt({ ...context, memoire, chaines_txt: chaines.text }, promptOpts);
+  const systemPrompt = buildSystemPrompt({ ...context, memoire, chaines_txt: chaines.text, outils_txt: outils.text }, promptOpts);
 
   // Conversation history: the last 12 messages of the thread
   const trimmedHistory = (Array.isArray(historique) ? historique : [])
@@ -326,7 +342,7 @@ exports.handler = async (event) => {
 
       if (response.ok) {
         const data = await response.json();
-        const { text, actions } = splitActions(data?.content?.[0]?.text ?? '', chaines.ids);
+        const { text, actions } = splitActions(data?.content?.[0]?.text ?? '', chaines.ids, outils.ids);
         await commit();
         const cached = data?.usage?.cache_read_input_tokens || 0;
         const total = data?.usage?.input_tokens || 0;

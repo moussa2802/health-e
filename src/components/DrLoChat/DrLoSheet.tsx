@@ -49,6 +49,7 @@ function actionCard(a: TalkAction): Card | undefined {
     case 'catalogue': return { type: 'go', to: 'catalogue' };
     case 'chaines': return { type: 'go', to: 'chaines' };
     case 'chaine': return { type: 'go', to: 'chaines', path: `/chaines/${a.id}`, label: a.name ? `Voir la chaîne « ${a.name} »` : 'Voir la chaîne' };
+    case 'pratique': return { type: 'go', to: 'outils', path: `/pratique/${a.id}?from=/espace`, label: a.name ? `Ouvrir « ${a.name} »` : 'Ouvrir l\'outil' };
     default: return undefined;
   }
 }

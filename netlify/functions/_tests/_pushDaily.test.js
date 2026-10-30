@@ -50,3 +50,22 @@ test('routines comptées, jetons morts repérés', () => {
   assert.equal(P.remaining(prog({ routines: ['CE1', 'CE2'], rchecks: { d: ['CE1'] } }), 'd', true), 3);
   assert.deepEqual(P.deadTokens(['a', 'b'], [{ success: true }, { success: false, error: { code: 'messaging/registration-token-not-registered' } }]), ['b']);
 });
+
+test('rappel de la routine : un outil à apprendre pas fait aujourd\'hui, sans nommer l\'outil', () => {
+  const m = P.decideDaily(base(), { now: at19, routineDue: 1 });
+  assert.equal(m.kind, 'routine'); assert.equal(m.link, '/routine');
+  assert.ok(!/respiration|carnet|désir|anxi|stress/i.test(m.body));
+  assert.match(P.decideDaily(base(), { now: at19, routineDue: 2 }).body, /Tes exercices/);
+  assert.equal(P.decideDaily(base(), { now: at19, routineDue: 0 }), null);
+  assert.equal(P.decideDaily(base(), { now: at19 }), null);
+});
+
+test('routine : un seul message par jour, le programme passe d\'abord, silence en pause et si les rappels du programme sont coupés', () => {
+  assert.equal(P.decideDaily(base({ programme: prog() }), { now: at19, moodToday: false, routineDue: 1 }).kind, 'programme');
+  const fait = prog({ checks: { '2026-10-24': ['action', 'learn'] } });
+  assert.equal(P.decideDaily(base({ programme: fait }), { now: at19, moodToday: true, routineDue: 1 }).kind, 'routine');
+  assert.equal(P.decideDaily(base({ programme: prog({ status: 'paused', pausedDay: '2026-10-23' }) }), { now: at19, routineDue: 1 }), null);
+  assert.equal(P.decideDaily(base({ lastPushDay: '2026-10-24' }), { now: at19, routineDue: 1 }), null);
+  assert.equal(P.decideDaily({ notifPrefs: { on: true, hour: 19, tz: 'Africa/Dakar', programme: false } }, { now: at19, routineDue: 1 }), null);
+  assert.equal(P.decideDaily({ notifPrefs: { on: false, hour: 19 } }, { now: at19, routineDue: 1 }), null);
+});

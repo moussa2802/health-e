@@ -12,6 +12,7 @@
 /** Réglage qui commande chaque type de notification. */
 const KIND_PREF = {
   programme: 'programme',
+  routine: 'programme',
   bilan: 'totem',
   retest: 'totem',
   totem: 'totem',
@@ -79,7 +80,7 @@ const ms = (v) => (v && typeof v.toMillis === 'function' ? v.toMillis() : typeof
 
 /**
  * Le message du jour (un seul), ou null.
- * ctx = { now, moodToday }
+ * ctx = { now, moodToday, routineDue }
  */
 function decideDaily(p, ctx) {
   const prefs = prefsOf(p);
@@ -108,6 +109,17 @@ function decideDaily(p, ctx) {
     if (w >= 1 && dayN % 7 === 0 && !bilanDone && allowed(prefs, 'bilan', now)) {
       return { kind: 'bilan', title: 'Dr Lô', body: 'Ton bilan de la semaine est prêt. Ouvre-le quand tu veux.', link: '/?ouvrir=programme' };
     }
+  }
+
+  // Routine : un outil à apprendre n'a pas été fait aujourd'hui. Le message ne nomme jamais l'outil (écran verrouillé).
+  const due = Number(ctx.routineDue) || 0;
+  if (due > 0 && allowed(prefs, 'routine', now)) {
+    return {
+      kind: 'routine',
+      title: 'Dr Lô',
+      body: due === 1 ? 'Ton exercice du jour t\'attend. Quelques minutes, et c\'est fait.' : 'Tes exercices du jour t\'attendent. Quelques minutes, et c\'est fait.',
+      link: '/routine',
+    };
   }
 
   const defi = p.totemDefi;

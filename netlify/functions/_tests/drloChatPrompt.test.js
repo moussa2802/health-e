@@ -53,8 +53,8 @@ test('v1 reste disponible pour comparer, et un texte de règles peut remplacer l
 test('les balises citées dans les règles sont toutes comprises par l\'application', () => {
   const tags = [...new Set([...rulesV2(false).matchAll(/\[\[([a-z_]+)(?::ID)?\]\]/g)].map(m => m[1]))];
   for (const t of tags) {
-    const id = t === 'test' ? 'test:gad7' : t === 'chaine' ? 'chaine:AbCd1234' : t;
-    const out = split(`Texte\n[[${id}]]`, { AbCd1234: 'X' });
+    const id = t === 'test' ? 'test:gad7' : t === 'chaine' ? 'chaine:AbCd1234' : t === 'pratique' ? 'pratique:Resp1abc' : t;
+    const out = split(`Texte\n[[${id}]]`, { AbCd1234: 'X' }, { Resp1abc: 'Y' });
     assert.ok(out.actions.length === 1, `balise non reconnue : ${t}`);
   }
 });
@@ -64,6 +64,7 @@ test('les règles disent le vrai prix d\'un message et rien de plus', () => {
   assert.equal(KORIS_COSTS.chat, 1);
   assert.ok(r.includes('coûte 1 étincelle'));
   assert.ok(r.includes('UNE QUESTION AU PLUS'));
+  assert.ok(r.includes('[[pratique:ID]]') && r.includes('LES OUTILS DE DR LÔ'));
   assert.ok(r.includes('JAMAIS toi-même un numéro de téléphone'));
   assert.ok(!/en tant que médecin, /.test(r.replace(/« en tant que médecin »/g,'')) );
   assert.ok(!/messages? offerts?/i.test(r));

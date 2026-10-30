@@ -142,6 +142,42 @@ function learnProgress(u) {
   return { done, of, day: of ? Math.min(done + 1, of) : done, ready: of > 0 && done >= of, mieux: count('mieux'), pareil: count('pareil'), moins: count('moins'), days: keys };
 }
 
+/**
+ * Rappel du soir : combien d'apprentissages en cours n'ont pas été faits aujourd'hui.
+ * entries = [{ u: déblocage, p: pratique }] ; une pratique non publiée ou un apprentissage terminé ne compte pas.
+ */
+function routineDue(entries, today) {
+  return (entries || []).filter(({ u, p }) => {
+    if (!p || p.status !== 'published') return false;
+    const l = learnProgress(u);
+    return !!l && !l.ready && !l.days.includes(today);
+  }).length;
+}
+
+/**
+ * Les outils de la personne pour Dr Lô IA (une ligne chacun) : ceux qu'elle a (boîte à outils, apprentissage), puis quelques autres à lui proposer.
+ * entries = [{ id, p, u? }] pour les pratiques publiées. → { text, ids } (ids = identifiants valides pour [[pratique:ID]], avec le titre).
+ */
+function chatTools(entries) {
+  const ids = {};
+  const mine = [], others = [];
+  for (const { id, p, u } of (entries || []).slice(0, 40)) {
+    if (!p || p.status !== 'published') continue;
+    const what = p.type === 'carnet' ? 'carnet' : p.type === 'guided' ? 'exercice guidé audio' : 'technique';
+    const head = `• [${id}] « ${String(p.title).slice(0, 60)} » (${what}, ${Number(p.minutes) || 1} min)`;
+    const sum = String(p.summary || '').replace(/\s+/g, ' ').slice(0, 110);
+    if (u && unlockMode(u) === 'dropped') continue; // elle l'a mise de côté : on ne la lui remet pas
+    ids[id] = String(p.title || '').slice(0, 60);
+    if (u) {
+      const m = unlockMode(u);
+      const l = learnProgress(u);
+      mine.push(`${head} : ${sum} — ${m === 'learning' ? `EN APPRENTISSAGE, jour ${l ? l.day : 1} sur ${l ? l.of : '?'}` : 'DANS SA BOÎTE À OUTILS (elle la connaît)'}`);
+    } else others.push(`${head} : ${sum} — pas encore débloquée`);
+  }
+  const text = [mine.length ? 'Ses outils :' : '', ...mine, others.length ? 'Autres outils qu\'elle ne connaît pas encore :' : '', ...others.slice(0, 12)].filter(Boolean).join('\n');
+  return { text, ids };
+}
+
 /** Peut-on commencer un apprentissage ? usedElsewhere = apprentissages déjà en cours (hors celui-ci). */
 function canLearn(p, usedElsewhere) {
   if (!(Number(p && p.learnDays) > 0)) return { ok: false, reason: 'none' };
@@ -149,4 +185,4 @@ function canLearn(p, usedElsewhere) {
   return { ok: true };
 }
 
-module.exports = { MODES, PLACES_MAX, LEARN_MAX_DAYS, unlockMode, learnProgress, canLearn, TYPES, THEMES, STATUSES, FIELD_KINDS, FEELINGS, LIMITS, sanitizeFields, validatePractice, publishProblem, isFreeFor, publicPractice, validateLog, validDay, chatCatalog };
+module.exports = { routineDue, chatTools, MODES, PLACES_MAX, LEARN_MAX_DAYS, unlockMode, learnProgress, canLearn, TYPES, THEMES, STATUSES, FIELD_KINDS, FEELINGS, LIMITS, sanitizeFields, validatePractice, publishProblem, isFreeFor, publicPractice, validateLog, validDay, chatCatalog };

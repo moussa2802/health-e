@@ -202,3 +202,33 @@ test('3 places de routine : la quatrième est refusée ; un outil sans jours d\'
   assert.deepStrictEqual(P.canLearn({}, 0), { ok: false, reason: 'none' });
   assert.strictEqual(P.PLACES_MAX, 3);
 });
+
+test('rappel du soir : seulement les apprentissages publiés, en cours et pas faits aujourd\'hui', () => {
+  const pub = { status: 'published' };
+  const L = (progress, target = 5) => ({ mode: 'learning', learnTarget: target, progress });
+  const today = '2026-10-30';
+  assert.strictEqual(P.routineDue([{ u: L({}), p: pub }], today), 1);
+  assert.strictEqual(P.routineDue([{ u: L({ [today]: 'mieux' }), p: pub }], today), 0);          // fait aujourd'hui
+  assert.strictEqual(P.routineDue([{ u: L({ a: 'x', b: 'x', c: 'x' }, 3), p: pub }], today), 0);  // terminé : à elle de choisir
+  assert.strictEqual(P.routineDue([{ u: L({}), p: { status: 'retired' } }], today), 0);
+  assert.strictEqual(P.routineDue([{ u: { mode: 'toolbox' }, p: pub }], today), 0);
+  assert.strictEqual(P.routineDue([{ u: L({}), p: pub }, { u: L({ [today]: 'mieux' }), p: pub }, { u: L({ '2026-10-29': 'mieux' }), p: pub }], today), 2);
+  assert.strictEqual(P.routineDue(null, today), 0);
+});
+
+test('Dr Lô IA : voit sa boîte à outils et ses apprentissages, pas les outils mis de côté, ni les brouillons', () => {
+  const base = { type: 'technique', minutes: 3, summary: 'Calmer le corps.', status: 'published' };
+  const r = P.chatTools([
+    { id: 'resp1', p: { ...base, title: 'Respiration lente 4-6' }, u: { mode: 'toolbox' } },
+    { id: 'anc22', p: { ...base, title: 'Ancrage 5-4-3-2-1' }, u: { mode: 'learning', learnTarget: 3, progress: { a: 'mieux' } } },
+    { id: 'defu3', p: { ...base, title: 'Défusion' }, u: { mode: 'dropped' } },
+    { id: 'nouv4', p: { ...base, title: 'Pause d\'auto-compassion' } },
+    { id: 'brou5', p: { ...base, title: 'Brouillon', status: 'draft' } },
+  ]);
+  assert.match(r.text, /\[resp1\].*DANS SA BOÎTE À OUTILS/);
+  assert.match(r.text, /\[anc22\].*EN APPRENTISSAGE, jour 2 sur 3/);
+  assert.match(r.text, /\[nouv4\].*pas encore débloquée/);
+  assert.ok(!r.text.includes('defu3') && !r.text.includes('brou5'));
+  assert.deepStrictEqual(Object.keys(r.ids).sort(), ['anc22', 'nouv4', 'resp1']);
+  assert.strictEqual(P.chatTools([]).text, '');
+});

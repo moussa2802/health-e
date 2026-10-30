@@ -35,3 +35,15 @@ test('résumé des chaînes pour Dr Lô IA : membre, ce qui manque, jamais archi
   assert.ok(!r.text.includes('Vieille'));
   assert.deepStrictEqual(Object.keys(r.ids), ['c1', 'c3']);
 });
+
+test('balise [[pratique:ID]] : outil connu seulement, casse gardée, jamais avec [[crise]]', () => {
+  const { _splitActions } = require('../dr-lo-chat.js');
+  const tools = { Resp1abc: 'Respiration lente 4-6' };
+  let r = _splitActions('Fais ta respiration 4-6 maintenant.\n[[pratique:Resp1abc]]', {}, tools);
+  assert.deepStrictEqual(r.actions, [{ kind: 'pratique', id: 'Resp1abc', name: 'Respiration lente 4-6' }]);
+  assert.ok(!r.text.includes('[['));
+  r = _splitActions('Fais-le.\n[[pratique:Inconnu99]]', {}, tools);
+  assert.deepStrictEqual(r.actions, []);
+  r = _splitActions('Danger.\n[[pratique:Resp1abc]]\n[[crise]]', {}, tools);
+  assert.deepStrictEqual(r.actions, [{ kind: 'crise' }]);
+});

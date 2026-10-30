@@ -58,7 +58,7 @@ export type Card =
   | { type: 'quick'; what: 'breath' | 'mood' | 'programme' };
 
 /** Destinations hors conversation que Dr Lô peut proposer. */
-export type GoTarget = 'defi' | 'compat' | 'question_drlo' | 'totem' | 'catalogue' | 'chat' | 'confier' | 'defi_list' | 'chaines';
+export type GoTarget = 'defi' | 'compat' | 'question_drlo' | 'totem' | 'catalogue' | 'chat' | 'confier' | 'defi_list' | 'chaines' | 'outils';
 
 export const GO: Record<GoTarget, { label: string; path?: string; needsAccount: boolean; intro: string }> = {
   defi: { label: 'Lancer mon Défi', path: '/defi', needsAccount: true, intro: 'Le Défi « Kan moo ma gën a xam ? » : tes proches devinent tes réponses, et tu découvres qui te connaît le mieux.' },
@@ -69,6 +69,7 @@ export const GO: Record<GoTarget, { label: string; path?: string; needsAccount: 
   chat: { label: 'Discuter avec Dr Lô', needsAccount: true, intro: 'On peut en parler tranquillement, toi et moi.' },
   defi_list: { label: 'Voir mes défis', path: '/defi', needsAccount: true, intro: 'Tes défis en cours et qui a déjà joué.' },
   chaines: { label: 'Voir les chaînes de Dr Lô', path: '/chaines', needsAccount: true, intro: 'Les chaînes du vrai Dr Lô : ses vocaux et ses textes, thème par thème.' },
+  outils: { label: 'Ouvrir ma boîte à outils', path: '/boite-a-outils', needsAccount: true, intro: 'Tes outils sont dans ta boîte à outils : un tap, et c\'est lancé.' },
   confier: { label: 'Écrire dans mon journal', needsAccount: false, intro: 'Écris comme ça vient : je lis, sans juger et sans t\'interrompre.' },
 };
 
