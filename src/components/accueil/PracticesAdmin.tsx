@@ -36,6 +36,7 @@ const Form: React.FC<{ initial: AdminPractice | null; palette: MomentPalette; on
   const [theme, setTheme] = useState(initial?.theme ?? 'stress');
   const [minutes, setMinutes] = useState(initial?.minutes ?? 3);
   const [price, setPrice] = useState(initial?.price ?? 2);
+  const [learnDays, setLearnDays] = useState(initial?.learnDays ?? 0);
   const [freeForMembers, setFreeForMembers] = useState(initial?.freeForMembers ?? false);
   const [steps, setSteps] = useState((initial?.steps ?? []).join('\n'));
   const [fields, setFields] = useState<DraftField[]>(initial?.fields?.length ? initial.fields.map(toDraft) : [{ kind: 'scale', label: '', options: '', low: '', high: '' }]);
@@ -54,7 +55,7 @@ const Form: React.FC<{ initial: AdminPractice | null; palette: MomentPalette; on
     try {
       const audio = voice.clip ? { data: await blobToBase64(voice.clip.blob), mime: voice.clip.mime, durationSec: voice.clip.durationSec } : undefined;
       await savePractice({
-        id: initial?.id, type, title: title.trim(), summary: summary.trim(), theme, minutes: Number(minutes), price: Number(price), freeForMembers,
+        id: initial?.id, type, title: title.trim(), summary: summary.trim(), theme, minutes: Number(minutes), price: Number(price), freeForMembers, learnDays: Number(learnDays) || 0,
         steps: steps.split('\n').map(s => s.trim()).filter(Boolean),
         fields: type === 'carnet' ? fields.filter(f => f.label.trim()).map(f => ({ id: f.id, kind: f.kind, label: f.label.trim(), options: f.kind === 'choice' ? f.options.split(',').map(o => o.trim()).filter(Boolean) : undefined, low: f.low.trim() || undefined, high: f.high.trim() || undefined })) : [],
         script: script.trim(), source: source.trim(), cautions: cautions.trim(), status, audio, removeAudio: removeAudio && !audio,
@@ -104,6 +105,11 @@ const Form: React.FC<{ initial: AdminPractice | null; palette: MomentPalette; on
         </div>
       </div>
       <p style={hint}>Payé une seule fois : la personne garde la pratique et la refait autant qu'elle veut. 0 = gratuite.</p>
+      <div style={{ marginTop: 10 }}>
+        <label style={lab} htmlFor="pr-learn">Jours d'apprentissage (0 à 14)</label>
+        <input id="pr-learn" type="number" min={0} max={14} value={learnDays} onChange={e => setLearnDays(Number(e.target.value))} className="drl-input" style={{ ...field, maxWidth: 140 }} />
+        <p style={hint}>Combien de jours la personne s'entraîne dans sa routine (ex. 5 pour la respiration, 3 pour l'ancrage, 7 pour un carnet). 0 = pas d'apprentissage : l'outil va direct dans sa boîte à outils. Elle ne peut avoir que 3 apprentissages en même temps.</p>
+      </div>
       <label style={{ display: 'flex', gap: 8, alignItems: 'flex-start', marginTop: 10, fontSize: 14, color: DC.soft, cursor: 'pointer' }}>
         <input type="checkbox" checked={freeForMembers} onChange={e => setFreeForMembers(e.target.checked)} style={{ marginTop: 3 }} />
         <span>Offerte aux membres des chaînes où je la propose<span style={{ display: 'block', fontSize: 13, color: DC.faint }}>Les autres la débloquent au prix indiqué.</span></span>

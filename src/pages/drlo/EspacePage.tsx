@@ -6,7 +6,7 @@
  */
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ArrowRight, BookOpen, Brain, CloudSun, Crown, Eye, EyeOff, Heart, Sparkles, Users } from 'lucide-react';
+import { ArrowRight, BookOpen, Brain, CalendarCheck, CloudSun, Crown, Eye, EyeOff, Heart, Sparkles, Users, Wrench } from 'lucide-react';
 import { collection, getCountFromServer } from 'firebase/firestore';
 import DrLoShell, { DC, card, usePalette } from '../../components/accueil/DrLoShell';
 import MoodIcon from '../../components/accueil/MoodIcon';
@@ -29,6 +29,7 @@ import { trackAccueil } from '../../utils/accueilTracking';
 import { openDrLoChat } from '../../components/DrLoChat/drLoEvents';
 import PaliersCard from '../../components/accueil/PaliersCard';
 import DrloMemoryCard from '../../components/accueil/DrloMemoryCard';
+import { myPractices, PLACES_MAX, type Mine } from '../../services/practiceService';
 import { getDrloStatus, registerReferralIfAny, type DrloStatus } from '../../services/drloQuestionService';
 import type { ScaleResult } from '../../types/assessment';
 
@@ -55,6 +56,7 @@ const EspacePage: React.FC = () => {
   const [moods, setMoods] = useState<MoodMap>({});
   const [loaded, setLoaded] = useState(false);
   const [drlo, setDrlo] = useState<DrloStatus | null>(null);
+  const [mine, setMine] = useState<Mine | null>(null);
   const [showIntime, setShowIntime] = useState(() => { try { return localStorage.getItem(SHOW_INTIME_KEY) === '1'; } catch { return false; } });
 
   useEffect(() => {
@@ -66,6 +68,7 @@ const EspacePage: React.FC = () => {
       setLoaded(true);
       return () => { off = true; };
     }
+    myPractices().then(m => { if (!off) setMine(m); }).catch(() => {});
     registerReferralIfAny().finally(() => getDrloStatus().then(st => { if (!off) setDrlo(st); }).catch(() => {}));
     getProfileProgress(uid).then(p => {
       if (off) return;
@@ -211,7 +214,7 @@ const EspacePage: React.FC = () => {
           <span style={{ fontSize: 13, color: DC.faint }}>Touche un domaine</span>
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 10, marginTop: 10 }}>
-          {domains.map(dm => (
+          {domains.filter(dm => dm.key === 'mental').map(dm => (
             <Link key={dm.key} to={dm.to} className="drl-btn" style={tile(dm.color)}>
               <dm.icon size={20} color={dm.color} aria-hidden="true" />
               <span style={{ fontSize: 15, fontWeight: 700 }}>{dm.label}</span>
@@ -234,16 +237,44 @@ const EspacePage: React.FC = () => {
               </button>
             )}
           </div>
-          <button onClick={() => (uid ? navigate('/defi') : navigate('/', { state: { signup: true } }))} className="drl-btn" style={{ ...tile(DC.gold), textAlign: 'left' }}>
-            <Crown size={20} color={DC.gold} aria-hidden="true" />
-            <span style={{ fontSize: 15, fontWeight: 700 }}>Défi</span>
-            <span style={{ fontSize: 13, color: DC.muted }}>{defis ? `${defis} en cours` : 'Qui te connaît le mieux ?'}</span>
-          </button>
+          {domains.filter(dm => dm.key === 'humeur').map(dm => (
+            <Link key={dm.key} to={dm.to} className="drl-btn" style={tile(dm.color)}>
+              <dm.icon size={20} color={dm.color} aria-hidden="true" />
+              <span style={{ fontSize: 15, fontWeight: 700 }}>{dm.label}</span>
+              <span style={{ fontSize: 13, color: DC.muted }}>{dm.word}</span>
+            </Link>
+          ))}
           <button onClick={() => navigate('/journal')} className="drl-btn" style={{ ...tile(DC.confier), textAlign: 'left' }}>
             <BookOpen size={20} color={DC.confier} aria-hidden="true" />
             <span style={{ fontSize: 15, fontWeight: 700 }}>Journal</span>
             <span style={{ fontSize: 13, color: DC.muted }}>{counts.journal ? `${counts.journal} page${counts.journal > 1 ? 's' : ''} · écrire, relire` : 'Écrire, te confier'}</span>
           </button>
+          {domains.filter(dm => dm.key === 'social').map(dm => (
+            <Link key={dm.key} to={dm.to} className="drl-btn" style={tile(dm.color)}>
+              <dm.icon size={20} color={dm.color} aria-hidden="true" />
+              <span style={{ fontSize: 15, fontWeight: 700 }}>{dm.label}</span>
+              <span style={{ fontSize: 13, color: DC.muted }}>{dm.word}</span>
+            </Link>
+          ))}
+          <button onClick={() => (uid ? navigate('/defi') : navigate('/', { state: { signup: true } }))} className="drl-btn" style={{ ...tile(DC.gold), textAlign: 'left' }}>
+            <Crown size={20} color={DC.gold} aria-hidden="true" />
+            <span style={{ fontSize: 15, fontWeight: 700 }}>Défi</span>
+            <span style={{ fontSize: 13, color: DC.muted }}>{defis ? `${defis} en cours` : 'Qui te connaît le mieux ?'}</span>
+          </button>
+          {uid && (
+            <Link to="/routine" className="drl-btn" style={tile(DC.sage)}>
+              <CalendarCheck size={20} color={DC.sage} aria-hidden="true" />
+              <span style={{ fontSize: 15, fontWeight: 700 }}>Ma routine</span>
+              <span style={{ fontSize: 13, color: DC.muted }}>{mine && mine.places.used > 0 ? `${mine.places.used} place${mine.places.used > 1 ? 's' : ''} sur ${PLACES_MAX}` : 'Apprendre un outil'}</span>
+            </Link>
+          )}
+          {uid && (
+            <Link to="/boite-a-outils" className="drl-btn" style={tile(DC.gold)}>
+              <Wrench size={20} color={DC.gold} aria-hidden="true" />
+              <span style={{ fontSize: 15, fontWeight: 700 }}>Boîte à outils</span>
+              <span style={{ fontSize: 13, color: DC.muted }}>{mine && mine.toolbox.length > 0 ? `${mine.toolbox.length} outil${mine.toolbox.length > 1 ? 's' : ''} prêt${mine.toolbox.length > 1 ? 's' : ''}` : 'Pour quand ça monte'}</span>
+            </Link>
+          )}
         </div>
 
       </section>

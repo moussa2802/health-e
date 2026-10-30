@@ -9,7 +9,10 @@
  * Personne connectée :
  *   list   { ids[] }           → résumés de pratiques publiées (carte sous un épisode) : prix, gratuite pour moi, déjà débloquée
  *   get    { id }              → la pratique (contenu et lien d'écoute si débloquée) + mes 28 derniers jours de carnet
- *   unlock { id }              → débloque (étincelles débitées UNE fois ; gratuit si prix 0 ou offerte aux membres d'une de mes chaînes)
+ *   mine   { }                 → mes outils : en apprentissage (routine, 3 places), boîte à outils, abandonnés
+ *   catalog { }                → toutes les pratiques publiées (page « Les outils »), avec mon état
+ *   setMode { id, mode }       → 'learning' (commencer / recommencer l'apprentissage), 'toolbox' (garder dans ma boîte), 'dropped' (ne me convient pas)
+ *   unlock { id, mode? }       → débloque (étincelles débitées UNE fois ; gratuit si prix 0 ou offerte aux membres d'une de mes chaînes)
  *   finish { id, feeling }     → « mieux / pareil / moins bien » à la fin d'un exercice
  *   stop   { id }              → « J'arrête, ça ne va pas » (compté, anonyme pour Dr Lô)
  *   log    { id, day, values } → enregistre un jour de carnet (AAAA-MM-JJ, aujourd'hui ou les 7 jours d'avant)
@@ -43,7 +46,7 @@ const dropFile = (path) => (path ? admin.storage().bucket(BUCKET).file(path).del
 
 const adminView = async (id, p) => ({
   id, type: p.type, title: p.title, summary: p.summary || '', theme: p.theme || 'autre', minutes: Number(p.minutes) || 1, price: Number(p.price) || 0,
-  freeForMembers: !!p.freeForMembers, steps: p.steps || [], fields: p.fields || [], script: p.script || '', source: p.source || '', cautions: p.cautions || '',
+  freeForMembers: !!p.freeForMembers, learnDays: Number(p.learnDays) || 0, steps: p.steps || [], fields: p.fields || [], script: p.script || '', source: p.source || '', cautions: p.cautions || '',
   status: p.status || 'draft', audioSec: p.audio ? Number(p.audio.durationSec) || 0 : 0, audioUrl: p.audio ? await signedUrl(p.audio.path) : null,
   channelIds: p.channelIds || [], createdAt: ms(p.createdAt), stats: p.stats || {},
 });
@@ -55,6 +58,16 @@ async function memberOf(uid, channelIds) {
   const snaps = await db.getAll(...ids.map((c) => db.collection('channelMembers').doc(`${c}_${uid}`)));
   return new Set(ids.filter((_, i) => snaps[i].exists));
 }
+
+/** Combien d'apprentissages en cours (places de la routine occupées), sans compter l'outil `exceptId`. */
+async function learningCount(uid, exceptId) {
+  const snap = await db.collection('practiceUnlocks').where('uid', '==', uid).where('mode', '==', 'learning').get();
+  return snap.docs.filter((d) => d.data().practiceId !== exceptId).length;
+}
+const mineItem = (id, p, u) => ({
+  id, type: p.type, title: p.title, summary: p.summary || '', theme: p.theme || 'autre', minutes: Number(p.minutes) || 1, learnDays: Number(p.learnDays) || 0,
+  mode: P.unlockMode(u), learning: P.learnProgress(u),
+});
 
 exports.handler = async (event) => {
   if (event.httpMethod === 'OPTIONS') return { statusCode: 200, headers, body: '' };
@@ -139,6 +152,36 @@ exports.handler = async (event) => {
       return reply(200, { items });
     }
 
+    if (action === 'mine') {
+      const us = await db.collection('practiceUnlocks').where('uid', '==', uid).get();
+      const docs = us.docs.map((d) => d.data()).filter((u) => u.practiceId);
+      const snaps = docs.length ? await db.getAll(...docs.map((u) => db.collection('practices').doc(u.practiceId))) : [];
+      const items = [];
+      snaps.forEach((sn, i) => { if (sn.exists && sn.data().status === 'published') items.push(mineItem(sn.id, sn.data(), docs[i])); });
+      const learning = items.filter((x) => x.mode === 'learning');
+      return reply(200, {
+        places: { used: learning.length, max: P.PLACES_MAX },
+        learning,
+        toolbox: items.filter((x) => x.mode === 'toolbox'),
+        dropped: items.filter((x) => x.mode === 'dropped'),
+      });
+    }
+    if (action === 'catalog') {
+      const [ps, us] = await Promise.all([
+        db.collection('practices').where('status', '==', 'published').limit(100).get(),
+        db.collection('practiceUnlocks').where('uid', '==', uid).get(),
+      ]);
+      const mineById = Object.fromEntries(us.docs.map((d) => [d.data().practiceId, d.data()]));
+      const items = await Promise.all(ps.docs.map(async (sn) => {
+        const p = sn.data();
+        const free = P.isFreeFor(p, p.freeForMembers ? await memberOf(uid, p.channelIds) : new Set());
+        const u = mineById[sn.id];
+        return { id: sn.id, type: p.type, title: p.title, summary: p.summary || '', theme: p.theme || 'autre', minutes: Number(p.minutes) || 1, price: Number(p.price) || 0, free, learnDays: Number(p.learnDays) || 0, unlocked: !!u, mode: u ? P.unlockMode(u) : null };
+      }));
+      items.sort((a, b) => a.title.localeCompare(b.title, 'fr'));
+      return reply(200, { items });
+    }
+
     const id = String(body.id || '');
     if (!id) return reply(400, { error: 'Pratique manquante' });
     const ref = db.collection('practices').doc(id);
@@ -152,7 +195,11 @@ exports.handler = async (event) => {
       const free = P.isFreeFor(p, await memberOf(uid, p.channelIds));
       const view = P.publicPractice(id, p, { unlocked: u.exists, free });
       let logs = [];
+      view.learnDays = Number(p.learnDays) || 0;
+      if (!u.exists && view.learnDays > 0) view.placesUsed = await learningCount(uid, id);
       if (u.exists) {
+        view.mode = P.unlockMode(u.data());
+        view.learning = P.learnProgress(u.data());
         if (p.audio) view.audioUrl = await signedUrl(p.audio.path);
         if (p.type === 'carnet') {
           const ls = await db.collection('practiceLogs').where('uid', '==', uid).where('practiceId', '==', id).get();
@@ -166,6 +213,12 @@ exports.handler = async (event) => {
       if (u.exists) return reply(200, { ok: true, paid: 0, already: true });
       const free = P.isFreeFor(p, await memberOf(uid, p.channelIds));
       const price = free ? 0 : Number(p.price) || 0;
+      let mode = 'toolbox';
+      if (body.mode === 'learning') {
+        const can = P.canLearn(p, await learningCount(uid, id));
+        if (!can.ok && can.reason === 'full') return reply(409, { error: 'Ta routine est pleine (3 outils en apprentissage). Termine un apprentissage ou ajoute cet outil à ta boîte à outils.', full: true });
+        if (can.ok) mode = 'learning';
+      }
       let holdId = null;
       if (price > 0) {
         const res = await reserveKoris(uid, 'practice', price, { practiceId: id });
@@ -176,7 +229,7 @@ exports.handler = async (event) => {
         await db.runTransaction(async (tx) => {
           const cur = await tx.get(uRef);
           if (cur.exists) throw new Error('ALREADY');
-          tx.set(uRef, { uid, practiceId: id, paid: price, at: admin.firestore.FieldValue.serverTimestamp() });
+          tx.set(uRef, { uid, practiceId: id, paid: price, mode, ...(mode === 'learning' ? { learnTarget: Number(p.learnDays) || 0, progress: {}, learnStartedAt: admin.firestore.FieldValue.serverTimestamp() } : {}), at: admin.firestore.FieldValue.serverTimestamp() });
           tx.update(ref, { 'stats.unlocks': inc(1), 'stats.earned': inc(price) });
         });
       } catch (e) {
@@ -185,16 +238,34 @@ exports.handler = async (event) => {
         throw e;
       }
       await commitKoris(holdId);
-      return reply(200, { ok: true, paid: price });
+      return reply(200, { ok: true, paid: price, mode });
     }
 
     if (!u.exists) return reply(403, { error: 'Débloque d\'abord cette pratique.' });
+
+    if (action === 'setMode') {
+      if (!P.MODES.includes(body.mode)) return reply(400, { error: 'Choix inconnu' });
+      if (body.mode === 'learning') {
+        const can = P.canLearn(p, await learningCount(uid, id));
+        if (!can.ok && can.reason === 'none') return reply(400, { error: 'Cet outil n\'a pas d\'apprentissage.' });
+        if (!can.ok) return reply(409, { error: 'Ta routine est pleine (3 outils en apprentissage). Termine-en un d\'abord.', full: true });
+        await uRef.update({ mode: 'learning', learnTarget: Number(p.learnDays) || 0, progress: {}, learnStartedAt: admin.firestore.FieldValue.serverTimestamp() });
+      } else {
+        await uRef.update({ mode: body.mode, ...(body.mode === 'toolbox' && P.unlockMode(u.data()) === 'learning' ? { learnedAt: admin.firestore.FieldValue.serverTimestamp() } : {}) });
+      }
+      return reply(200, { ok: true, mode: body.mode });
+    }
 
     if (action === 'finish') {
       if (!P.FEELINGS.includes(body.feeling)) return reply(400, { error: 'Ressenti inconnu' });
       await db.collection('practiceRuns').add({ uid, practiceId: id, feeling: body.feeling, at: admin.firestore.FieldValue.serverTimestamp() });
       await ref.update({ 'stats.runs': inc(1), [`stats.${body.feeling}`]: inc(1) });
-      return reply(200, { ok: true });
+      let learning = null;
+      if (P.unlockMode(u.data()) === 'learning' && P.validDay(body.day)) {
+        await uRef.update({ [`progress.${body.day}`]: body.feeling });
+        learning = P.learnProgress((await uRef.get()).data());
+      }
+      return reply(200, { ok: true, learning });
     }
     if (action === 'stop') {
       await db.collection('practiceRuns').add({ uid, practiceId: id, stoppedUnwell: true, at: admin.firestore.FieldValue.serverTimestamp() });
@@ -210,7 +281,12 @@ exports.handler = async (event) => {
       const existed = (await lRef.get()).exists;
       await lRef.set({ uid, practiceId: id, day: body.day, values: v.values, updatedAt: admin.firestore.FieldValue.serverTimestamp() });
       if (!existed) await ref.update({ 'stats.logs': inc(1) });
-      return reply(200, { ok: true, values: v.values });
+      let learning = null;
+      if (P.unlockMode(u.data()) === 'learning') {
+        await uRef.update({ [`progress.${body.day}`]: 'fait' });
+        learning = P.learnProgress((await uRef.get()).data());
+      }
+      return reply(200, { ok: true, values: v.values, learning });
     }
 
     return reply(400, { error: 'Action inconnue' });

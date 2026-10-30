@@ -115,7 +115,7 @@ test('une personne voit le résumé, débloque UNE fois, puis remplit son carnet
   assert.strictEqual(r.body.practice.fields, undefined);
   assert.strictEqual((await call({ action: 'log', id, day: new Date().toISOString().slice(0, 10), values: { f1: 5 } })).status, 403);
   r = await call({ action: 'unlock', id });
-  assert.deepStrictEqual(r.body, { ok: true, paid: 3 });
+  assert.deepStrictEqual(r.body, { ok: true, paid: 3, mode: 'toolbox' });
   assert.strictEqual(balance, 7);
   r = await call({ action: 'unlock', id });
   assert.strictEqual(r.body.already, true);
@@ -145,7 +145,7 @@ test('offerte aux membres de la chaîne où elle est proposée', async () => {
   store.channelMembers.c1_u3 = { channelId: 'c1' };
   uid = 'u3';
   const r = await call({ action: 'unlock', id: store.carnetId });
-  assert.deepStrictEqual(r.body, { ok: true, paid: 0 });
+  assert.deepStrictEqual(r.body, { ok: true, paid: 0, mode: 'toolbox' });
 });
 
 test('ressenti et arrêt « ça ne va pas » comptés ; brouillon invisible', async () => {
@@ -161,4 +161,44 @@ test('ressenti et arrêt « ça ne va pas » comptés ; brouillon invisible', as
   const l = await call({ action: 'list', ids: [d.body.practice.id, store.carnetId] });
   assert.deepStrictEqual(l.body.items.map((i) => i.id), [store.carnetId]);
   assert.strictEqual(l.body.items[0].unlocked, true);
+});
+
+// ── routine : apprentissage (3 places) et boîte à outils ──
+test('jours d\'apprentissage : entier de 0 à 14', () => {
+  assert.strictEqual(P.validatePractice({ ...carnet, learnDays: 5 }).data.learnDays, 5);
+  assert.strictEqual(P.validatePractice({ ...carnet, learnDays: 0 }).data.learnDays, 0);
+  assert.match(P.validatePractice({ ...carnet, learnDays: 15 }).error, /apprentissage/);
+  assert.match(P.validatePractice({ ...carnet, learnDays: 2.5 }).error, /apprentissage/);
+  assert.strictEqual(P.publicPractice('p1', { ...carnet, learnDays: 5 }, { unlocked: false, free: true }).learnDays, 5);
+});
+
+test('un déblocage sans mode (d\'avant la routine) est dans la boîte à outils, sans apprentissage', () => {
+  assert.strictEqual(P.unlockMode({ uid: 'u' }), 'toolbox');
+  assert.strictEqual(P.unlockMode({ mode: 'learning' }), 'learning');
+  assert.strictEqual(P.unlockMode({ mode: 'n\'importe quoi' }), 'toolbox');
+  assert.strictEqual(P.learnProgress({ uid: 'u' }), null);
+  assert.strictEqual(P.learnProgress({ mode: 'toolbox' }), null);
+});
+
+test('avancement : un jour compte une fois ; prêt à garder quand tous les jours sont faits ; « mieux X fois »', () => {
+  const u = { mode: 'learning', learnTarget: 3, progress: {} };
+  assert.deepStrictEqual({ ...P.learnProgress(u) }, { done: 0, of: 3, day: 1, ready: false, mieux: 0, pareil: 0, moins: 0, days: [] });
+  u.progress = { '2026-10-30': 'mieux', '2026-10-31': 'pareil' };
+  const mid = P.learnProgress(u);
+  assert.strictEqual(mid.done, 2); assert.strictEqual(mid.day, 3); assert.strictEqual(mid.ready, false);
+  u.progress['2026-10-30'] = 'mieux'; // refaire le même jour ne compte pas deux fois
+  assert.strictEqual(P.learnProgress(u).done, 2);
+  u.progress['2026-11-01'] = 'mieux';
+  const end = P.learnProgress(u);
+  assert.strictEqual(end.ready, true); assert.strictEqual(end.mieux, 2); assert.strictEqual(end.pareil, 1); assert.strictEqual(end.day, 3);
+  assert.strictEqual(P.learnProgress({ mode: 'learning', learnTarget: 3, progress: { a: 'fait', b: 'fait', c: 'fait' } }).ready, true);
+});
+
+test('3 places de routine : la quatrième est refusée ; un outil sans jours d\'apprentissage va direct dans la boîte', () => {
+  const p = { learnDays: 5 };
+  assert.deepStrictEqual(P.canLearn(p, 2), { ok: true });
+  assert.deepStrictEqual(P.canLearn(p, 3), { ok: false, reason: 'full' });
+  assert.deepStrictEqual(P.canLearn({ learnDays: 0 }, 0), { ok: false, reason: 'none' });
+  assert.deepStrictEqual(P.canLearn({}, 0), { ok: false, reason: 'none' });
+  assert.strictEqual(P.PLACES_MAX, 3);
 });

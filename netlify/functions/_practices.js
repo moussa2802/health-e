@@ -9,6 +9,9 @@ const THEMES = ['stress', 'humeur', 'sommeil', 'emotions', 'estime', 'couple', '
 const STATUSES = ['draft', 'published', 'retired'];
 const FIELD_KINDS = ['scale', 'check', 'text', 'choice'];
 const FEELINGS = ['mieux', 'pareil', 'moins'];
+const MODES = ['learning', 'toolbox', 'dropped'];
+const PLACES_MAX = 3;      // places de la routine, occupées seulement pendant l'apprentissage d'un outil
+const LEARN_MAX_DAYS = 14;
 const LIMITS = { title: 80, summary: 280, step: 300, steps: 12, fields: 10, label: 60, option: 30, options: 8, script: 12000, source: 300, cautions: 1000, price: 500, text: 280, minutes: 60 };
 
 const clean = (v, max) => String(v ?? '').replace(/\r/g, '').trim().slice(0, max);
@@ -49,6 +52,7 @@ function validatePractice(b, { partial = false } = {}) {
   if (has('minutes')) { const m = Number(b.minutes); if (!Number.isInteger(m) || m < 1 || m > LIMITS.minutes) return { error: `La durée doit être entre 1 et ${LIMITS.minutes} minutes.` }; d.minutes = m; }
   if (has('price')) { const p = Number(b.price ?? 0); if (!Number.isInteger(p) || p < 0 || p > LIMITS.price) return { error: `Le prix doit être un nombre entier d'étincelles entre 0 et ${LIMITS.price}.` }; d.price = p; }
   if (has('freeForMembers')) d.freeForMembers = b.freeForMembers === true;
+  if (has('learnDays')) { const n = Number(b.learnDays ?? 0); if (!Number.isInteger(n) || n < 0 || n > LEARN_MAX_DAYS) return { error: `Les jours d'apprentissage : un nombre entier de 0 à ${LEARN_MAX_DAYS} (0 = pas d'apprentissage, l'outil va directement dans la boîte à outils).` }; d.learnDays = n; }
   if (has('steps')) {
     const steps = (Array.isArray(b.steps) ? b.steps : []).map((s) => clean(s, LIMITS.step + 1)).filter(Boolean);
     if (steps.length > LIMITS.steps) return { error: `${LIMITS.steps} étapes au plus.` };
@@ -84,7 +88,7 @@ function publicPractice(id, p, { unlocked, free }) {
   const base = {
     id, type: p.type, title: p.title, summary: p.summary || '', theme: p.theme || 'autre', minutes: Number(p.minutes) || 1,
     price: Number(p.price) || 0, free: !!free, unlocked: !!unlocked, hasAudio: !!p.audio, source: p.source || '', cautions: p.cautions || '',
-    stepCount: (p.steps || []).length,
+    stepCount: (p.steps || []).length, learnDays: Number(p.learnDays) || 0,
   };
   if (!unlocked) return base;
   return { ...base, steps: p.steps || [], fields: p.type === 'carnet' ? (p.fields || []) : [] };
@@ -124,4 +128,25 @@ function chatCatalog(list) {
   }).join('\n');
 }
 
-module.exports = { TYPES, THEMES, STATUSES, FIELD_KINDS, FEELINGS, LIMITS, sanitizeFields, validatePractice, publishProblem, isFreeFor, publicPractice, validateLog, validDay, chatCatalog };
+/** Mode d'un déblocage. Les déblocages d'avant la routine n'ont pas de mode : ils sont dans la boîte à outils. */
+function unlockMode(u) { return u && MODES.includes(u.mode) ? u.mode : 'toolbox'; }
+
+/** Avancement de l'apprentissage : un jour compte quand la personne a fait l'exercice (ou rempli le carnet) ce jour-là. */
+function learnProgress(u) {
+  if (!u || unlockMode(u) !== 'learning') return null;
+  const of = Number(u.learnTarget) || 0;
+  const days = u.progress && typeof u.progress === 'object' ? u.progress : {};
+  const keys = Object.keys(days).sort();
+  const done = keys.length;
+  const count = (f) => keys.filter((k) => days[k] === f).length;
+  return { done, of, day: of ? Math.min(done + 1, of) : done, ready: of > 0 && done >= of, mieux: count('mieux'), pareil: count('pareil'), moins: count('moins'), days: keys };
+}
+
+/** Peut-on commencer un apprentissage ? usedElsewhere = apprentissages déjà en cours (hors celui-ci). */
+function canLearn(p, usedElsewhere) {
+  if (!(Number(p && p.learnDays) > 0)) return { ok: false, reason: 'none' };
+  if (usedElsewhere >= PLACES_MAX) return { ok: false, reason: 'full' };
+  return { ok: true };
+}
+
+module.exports = { MODES, PLACES_MAX, LEARN_MAX_DAYS, unlockMode, learnProgress, canLearn, TYPES, THEMES, STATUSES, FIELD_KINDS, FEELINGS, LIMITS, sanitizeFields, validatePractice, publishProblem, isFreeFor, publicPractice, validateLog, validDay, chatCatalog };

@@ -60,6 +60,9 @@ const MessagesDrLoPage = lazy(() => import("./pages/drlo/MessagesDrLoPage"));
 const ChainesPage = lazy(() => import("./pages/drlo/ChainesPage"));
 const ChannelInvitePage = lazy(() => import("./pages/drlo/ChannelInvitePage"));
 const PratiquePage = lazy(() => import("./pages/drlo/PratiquePage"));
+const RoutinePage = lazy(() => import("./pages/drlo/RoutinePage"));
+const BoiteOutilsPage = lazy(() => import("./pages/drlo/BoiteOutilsPage"));
+const OutilsPage = lazy(() => import("./pages/drlo/OutilsPage"));
 const MonJournalPage = lazy(() => import("./pages/drlo/MonJournalPage"));
 const ResultatPage = lazy(() => import("./pages/drlo/ResultatPage"));
 const PatientAccess = lazy(() => import("./pages/patient/PatientAccess"));
@@ -126,7 +129,7 @@ const AppChrome: React.FC = () => {
   const isChromeless = isAdminRoute || isAppRoute || isDefiJouer;
   // Accueil : le premier écran est Dr Lô en plein écran (pas d'en-tête ni de pied de page du site)
   // Écrans « Mon Dr Lô » (thème chaud sombre, plein écran) : pas d'en-tête ni de pied de page du site
-  const isHome = pathname === "/" || pathname === "/espace" || pathname.startsWith("/espace/") || pathname === "/humeur" || pathname === "/journal" || pathname.startsWith("/journal/") || pathname === "/question" || pathname === "/drlo" || pathname === "/equipe" || pathname === "/confidentialite" || pathname === "/conditions" || pathname === "/cgu" || pathname === "/ethique" || pathname === "/faq" || pathname === "/contact" || pathname === "/patient/access" || pathname === "/patient" || pathname === "/messages-dr-lo" || pathname.startsWith("/messages-dr-lo/") || pathname === "/chaines" || pathname.startsWith("/chaines/") || pathname.startsWith("/c/") || pathname.startsWith("/pratique/") || pathname === "/assessment/totem" || pathname.startsWith("/assessment/results/") || pathname === "/defi" || pathname.startsWith("/defi/") || pathname === "/decouvre" || pathname === "/assessment/compatibility" || pathname.startsWith("/compat/") || pathname === "/assessment" || pathname.startsWith("/assessment/") || pathname === "/acheter-koris";
+  const isHome = pathname === "/" || pathname === "/espace" || pathname.startsWith("/espace/") || pathname === "/humeur" || pathname === "/journal" || pathname.startsWith("/journal/") || pathname === "/question" || pathname === "/drlo" || pathname === "/equipe" || pathname === "/confidentialite" || pathname === "/conditions" || pathname === "/cgu" || pathname === "/ethique" || pathname === "/faq" || pathname === "/contact" || pathname === "/patient/access" || pathname === "/patient" || pathname === "/messages-dr-lo" || pathname.startsWith("/messages-dr-lo/") || pathname === "/chaines" || pathname.startsWith("/chaines/") || pathname.startsWith("/c/") || pathname.startsWith("/pratique/") || pathname === "/routine" || pathname === "/boite-a-outils" || pathname === "/outils" || pathname === "/assessment/totem" || pathname.startsWith("/assessment/results/") || pathname === "/defi" || pathname.startsWith("/defi/") || pathname === "/decouvre" || pathname === "/assessment/compatibility" || pathname.startsWith("/compat/") || pathname === "/assessment" || pathname.startsWith("/assessment/") || pathname === "/acheter-koris";
   const { currentUser } = useAuth();
   const userId = currentUser?.id ?? null;
 
@@ -152,6 +155,9 @@ const AppChrome: React.FC = () => {
             <Route path="/chaines/:id" element={<ChainesPage />} />
             <Route path="/c/:id" element={<ChannelInvitePage />} />
             <Route path="/pratique/:id" element={<PratiquePage />} />
+            <Route path="/routine" element={<RoutinePage />} />
+            <Route path="/boite-a-outils" element={<BoiteOutilsPage />} />
+            <Route path="/outils" element={<OutilsPage />} />
 
             {/* Companion app — layout mobile plein écran, distinct du site */}
             <Route
