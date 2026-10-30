@@ -63,6 +63,9 @@ test('les règles disent le vrai prix d\'un message et rien de plus', () => {
   const r = rulesV2(false);
   assert.equal(KORIS_COSTS.chat, 1);
   assert.ok(r.includes('coûte 1 étincelle'));
+  assert.ok(r.includes('UNE QUESTION AU PLUS'));
+  assert.ok(r.includes('JAMAIS toi-même un numéro de téléphone'));
+  assert.ok(!/en tant que médecin, /.test(r.replace(/« en tant que médecin »/g,'')) );
   assert.ok(!/messages? offerts?/i.test(r));
 });
 
