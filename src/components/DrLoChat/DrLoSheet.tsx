@@ -1,7 +1,7 @@
 /**
  * DrLoSheet — parler à Dr Lô IA sans quitter la page : un panneau qui monte du bas.
  * C'est LA MÊME conversation que l'accueil (même stockage, même compte) : ce qui est dit ici
- * se retrouve dans « Mon Dr Lô », et inversement. Mêmes règles : messages offerts puis 1 étincelle,
+ * se retrouve dans « Mon Dr Lô », et inversement. Mêmes règles : 1 étincelle par message,
  * protocole de crise. Les tests dans la conversation restent sur l'accueil (bouton « Faire le test »).
  */
 import React, { useEffect, useRef, useState } from 'react';
@@ -122,7 +122,7 @@ const DrLoSheet: React.FC<Props> = ({ open, greeting, draft, onClose }) => {
     if (!out.ok) {
       if (out.reason === 'no_koris') openNoKorisModal('Un message à Dr Lô', KORIS_COSTS.chat);
       next = addExchange(cur, null, [out.reason === 'no_koris'
-        ? 'Tes messages offerts d\'aujourd\'hui sont utilisés, et il te manque une étincelle pour celui-ci. Ils reviennent demain.'
+        ? 'Il te manque une étincelle pour ce message à Dr Lô. En attendant, ton journal et ton humeur restent gratuits.'
         : out.reason === 'limit' ? 'On a beaucoup parlé aujourd\'hui, on reprend demain. En attendant, tu peux écrire dans ton journal.'
         : 'Je n\'arrive pas à te répondre maintenant (connexion instable). Réessaie dans un instant.']);
     } else if (out.actions.some(a => a.kind === 'crise')) {

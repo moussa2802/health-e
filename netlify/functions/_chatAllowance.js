@@ -1,20 +1,20 @@
 /**
- * _chatAllowance.js — messages offerts avec Dr Lô.
- * Chaque jour (heure de Dakar = UTC), les FREE_PER_DAY premiers messages sont offerts ; ensuite
- * 1 étincelle par message ; au-delà de MAX_PER_DAY, on reprend demain (garde-fou de coût).
+ * _chatAllowance.js — garde-fou des messages avec Dr Lô.
+ * Plus aucun message n'est offert : chaque réponse de l'IA coûte 1 étincelle (voir dr-lo-chat.js).
+ * Ce fichier ne sert plus qu'à compter les messages du jour (heure de Dakar = UTC) : au-delà de
+ * MAX_PER_DAY, on reprend demain (garde-fou de coût), et toutes les 5 réponses l'appli met à jour
+ * ce que Dr Lô retient (cette mise à jour est comprise dans le prix du message).
  * Compté côté serveur dans patients/{uid}.chatDay = { day, count }.
  */
-const FREE_PER_DAY = 15;
 const MAX_PER_DAY = 60;
 
 const dayOf = (now = new Date()) => now.toISOString().slice(0, 10);
 
-/** Logique pure : que faire de ce message, et le nouveau compteur. */
+/** Logique pure : peut-on répondre à ce message, et le nouveau compteur. */
 function nextAllowance(prev, today) {
   const count = prev && prev.day === today ? Number(prev.count) || 0 : 0;
-  if (count >= MAX_PER_DAY) return { limit: true, free: false, next: { day: today, count }, freeLeft: 0 };
-  const free = count < FREE_PER_DAY;
-  return { limit: false, free, next: { day: today, count: count + 1 }, freeLeft: Math.max(0, FREE_PER_DAY - (count + 1)) };
+  if (count >= MAX_PER_DAY) return { limit: true, next: { day: today, count } };
+  return { limit: false, next: { day: today, count: count + 1 } };
 }
 
 /** Réserve une place pour ce message (transaction). */
@@ -40,4 +40,4 @@ async function giveBack(db, uid, now = new Date()) {
   }).catch(() => {});
 }
 
-module.exports = { FREE_PER_DAY, MAX_PER_DAY, dayOf, nextAllowance, takeSlot, giveBack };
+module.exports = { MAX_PER_DAY, dayOf, nextAllowance, takeSlot, giveBack };

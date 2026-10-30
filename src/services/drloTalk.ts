@@ -1,7 +1,7 @@
 /**
  * drloTalk — la discussion approfondie avec Dr Lô (IA, 1 étincelle par message), désormais
  * DANS la conversation de l'accueil : un seul Dr Lô, un seul fil. Même fonction serveur
- * (dr-lo-chat), même contexte (profil, tests, journal récent, compatibilités), même limite du jour.
+ * (dr-lo-chat), même contexte (profil, tests, journal récent, compatibilités). Chaque réponse coûte 1 étincelle.
  */
 import { collection, query, orderBy, getDocs, doc, setDoc, getDoc, limit } from 'firebase/firestore';
 import { db } from '../utils/firebase';
@@ -188,7 +188,7 @@ export type TalkAction =
   | { kind: 'respiration' | 'humeur' | 'programme' | 'journal' | 'defi' | 'compat' | 'vrai_drlo' | 'totem' | 'catalogue' | 'chaines' | 'crise' };
 
 export type TalkOutcome =
-  | { ok: true; text: string; actions: TalkAction[]; freeLeft: number | null; remember: boolean }
+  | { ok: true; text: string; actions: TalkAction[]; remember: boolean }
   | { ok: false; reason: 'no_koris' | 'limit' | 'error' };
 
 const TALK_ACTIONS = new Set(['respiration', 'humeur', 'programme', 'journal', 'defi', 'compat', 'vrai_drlo', 'totem', 'catalogue', 'chaines', 'crise']);
@@ -237,13 +237,13 @@ export async function talk(userId: string, convId: string, text: string, history
       .map(m => ({ role: m.role, content: m.content, timestamp: now }));
     setDoc(doc(db!, 'users', userId, 'chat_dr_lo', convId), { messages: msgs, updated_at: now, created_at: convId.replace('conv_', '') }, { merge: true }).catch(() => {});
     const actions = (Array.isArray(data.actions) ? data.actions : data.action ? [data.action] : []).map(cleanAction).filter(Boolean) as TalkAction[];
-    return { ok: true, text: answer, actions, freeLeft: typeof data.free_left === 'number' ? data.free_left : null, remember: !!data.remember };
+    return { ok: true, text: answer, actions, remember: !!data.remember };
   } catch {
     return { ok: false, reason: 'error' };
   }
 }
 
-/** Dr Lô met à jour ce qu'il retient de la personne (gratuit, en arrière-plan). */
+/** Dr Lô met à jour ce qu'il retient de la personne (en arrière-plan ; compris dans le prix du message). */
 export function rememberNow(history: TalkTurn[]): void {
   authedFetch('/.netlify/functions/drlo-memory', {
     method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ historique: history.slice(-14) }),
@@ -251,13 +251,14 @@ export function rememberNow(history: TalkTurn[]): void {
 }
 
 /** Banc d'essai (console du vrai Dr Lô) : une réponse sur son propre profil, sans rien compter ni retenir. */
-export async function benchTalk(userId: string, text: string, withMemory: boolean): Promise<{ ok: boolean; text: string; actions: TalkAction[]; ms: number }> {
+export interface BenchOptions { history?: TalkTurn[]; rulesVersion?: 'v1' | 'v2'; rules?: string; model?: 'haiku' | 'sonnet' }
+export async function benchTalk(userId: string, text: string, withMemory: boolean, opts: BenchOptions = {}): Promise<{ ok: boolean; text: string; actions: TalkAction[]; ms: number }> {
   const t0 = Date.now();
   try {
     const context = await contextFor(userId);
     const res = await authedFetch('/.netlify/functions/dr-lo-chat', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ test: true, withMemory, message: text, historique: [], context: { ...context, tests_dispo: TESTS_DISPO } }),
+      body: JSON.stringify({ test: true, withMemory, message: text, historique: opts.history ?? [], rulesVersion: opts.rulesVersion, rules: opts.rules, model: opts.model, context: { ...context, tests_dispo: TESTS_DISPO } }),
     });
     const data = await res.json().catch(() => ({}));
     if (!res.ok) return { ok: false, text: data.error ?? `Erreur ${res.status}`, actions: [], ms: Date.now() - t0 };

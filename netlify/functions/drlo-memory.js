@@ -2,7 +2,9 @@
  * drlo-memory — ce que Dr Lô retient de la personne, d'une discussion à l'autre.
  * Appelée par l'appli toutes les 5 réponses : on met à jour quelques notes courtes
  * (patients/{uid}.drloMemory), que Dr Lô relit à chaque message. La personne les voit et
- * peut les effacer dans « Mon espace ». Gratuit pour la personne.
+ * peut les effacer dans « Mon espace ». Pas facturée à part : elle est comprise dans le prix du message
+ * (1 étincelle) ; pour éviter les abus, elle ne tourne que si la personne a écrit à Dr Lô aujourd'hui
+ * et pas plus d'une fois par minute.
  */
 const { admin, db, verifyAuth } = require('./_firebase');
 const { cleanNotes, buildMemoryPrompt, MAX_NOTES } = require('./_drloMemory');
@@ -33,6 +35,12 @@ exports.handler = async (event) => {
   const ref = db.collection('patients').doc(user.uid);
   const snap = await ref.get().catch(() => null);
   const current = snap && snap.exists && Array.isArray(snap.data().drloMemory) ? snap.data().drloMemory : [];
+  // Garde-fou de coût : seulement après de vrais messages payés aujourd'hui, et pas en rafale
+  const pd = snap && snap.exists ? snap.data() : {};
+  const today = new Date().toISOString().slice(0, 10);
+  if (!pd.chatDay || pd.chatDay.day !== today || !(Number(pd.chatDay.count) > 0)) return reply(200, { ok: true, notes: null });
+  const lastAt = pd.drloMemoryAt && typeof pd.drloMemoryAt.toMillis === 'function' ? pd.drloMemoryAt.toMillis() : 0;
+  if (lastAt && Date.now() - lastAt < 60000) return reply(200, { ok: true, notes: null });
 
   try {
     const res = await fetch('https://api.anthropic.com/v1/messages', {

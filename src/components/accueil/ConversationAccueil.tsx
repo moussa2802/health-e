@@ -70,8 +70,6 @@ import { getScaleMeta } from '../../utils/scaleMeta';
 import { getCrisisResources } from '../../data/crisisResources';
 import { invalidateTalkContext, rememberNow, talk as talkToDrLo, type TalkAction } from '../../services/drloTalk';
 
-/** Messages offerts chaque jour avec Dr Lô (même valeur que netlify/functions/_chatAllowance.js). */
-const FREE_MESSAGES = 15;
 import { useDictation } from '../../hooks/useDictation';
 import { useDiscretHint } from '../../utils/discretHint';
 import { ShowcaseCards, DiscoveryRow } from './ShowcaseCards';
@@ -281,8 +279,6 @@ const ConversationAccueil: React.FC = () => {
   const [notifView, setNotifView] = useState<'list' | 'settings' | null>(null);
   const [pushOn, setPushOn] = useState<boolean | null>(null);
   const [pushHour, setPushHour] = useState(19);
-  /** Messages offerts restants aujourd'hui (connu après le premier message). */
-  const [freeLeft, setFreeLeft] = useState<number | null>(null);
   /** Reprendre l'activation des rappels dans le chat (retour depuis TikTok, l'écran d'accueil…). */
   const [resumeAsk, setResumeAsk] = useState<null | 'link' | `auto:${string}`>(null);
   const [state, setState] = useState<AccueilState | null>(null);
@@ -1674,7 +1670,7 @@ const ConversationAccueil: React.FC = () => {
     if (!out.ok) {
       if (out.reason === 'no_koris') {
         openNoKorisModal('Un message à Dr Lô', KORIS_COSTS.chat);
-        apply(addExchange(cur, null, ['Tes messages offerts d\'aujourd\'hui sont utilisés, et il te manque une étincelle pour celui-ci. Ils reviennent demain. En attendant, écrire dans ton journal et noter ton humeur restent gratuits.']), cur);
+        apply(addExchange(cur, null, ['Il te manque une étincelle pour ce message à Dr Lô. En attendant, écrire dans ton journal et noter ton humeur restent gratuits.']), cur);
       } else if (out.reason === 'limit') {
         apply(addExchange(cur, null, ['On a beaucoup parlé aujourd\'hui, on reprend demain. En attendant, tu peux écrire dans ton journal : je le garde pour toi.']), cur);
       } else {
@@ -1692,10 +1688,6 @@ const ConversationAccueil: React.FC = () => {
     const items: (string | { text: string; card?: Card })[] = cards.length
       ? [{ text: out.text, card: cards[0] }, ...cards.slice(1).map(card => ({ text: '', card }))]
       : [out.text];
-    // Les messages offerts touchent à leur fin : on le dit une fois, sans insister
-    const prevLeft = freeLeft;
-    setFreeLeft(out.freeLeft);
-    if (out.freeLeft === 0 && prevLeft !== 0) items.push(`(C'était ton dernier message offert d'aujourd'hui. Les suivants coûtent ${credits(KORIS_COSTS.chat)} chacun ; demain, ${FREE_MESSAGES} nouveaux messages offerts.)`);
     apply(addExchange(cur, null, items), cur);
     if (out.remember) rememberNow([...turns, { role: 'user', content: text }, { role: 'assistant', content: out.text }]);
   };
@@ -1823,11 +1815,9 @@ const ConversationAccueil: React.FC = () => {
                   ))}
                 </div>
               )}
-              {isAuthenticated && freeLeft !== null && freeLeft <= 3 && state.step !== 'testing' && (
+              {isAuthenticated && chatModeNow && state.step !== 'testing' && (
                 <p className="drl-in" style={{ margin: '0 0 2px', fontSize: 13, color: C.faint, textAlign: 'center' }}>
-                  {freeLeft > 0
-                    ? `Encore ${freeLeft} message${freeLeft > 1 ? 's' : ''} offert${freeLeft > 1 ? 's' : ''} aujourd'hui, puis ${credits(KORIS_COSTS.chat)} par message.`
-                    : `Messages offerts utilisés aujourd'hui : ${credits(KORIS_COSTS.chat)} par message jusqu'à demain.`}
+                  Chaque message à Dr Lô coûte {credits(KORIS_COSTS.chat)}.
                 </p>
               )}
               {state.step !== 'minor' && (<>
