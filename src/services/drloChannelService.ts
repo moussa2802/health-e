@@ -15,12 +15,14 @@ export type Missing =
   /** Test réservé à l'autre genre (fonction érectile / fonction sexuelle féminine) : la chaîne n'est pas ouverte à ce profil, rien à faire pour entrer. */
   | { kind: 'reserved'; scaleId: string; gender: 'homme' | 'femme' };
 
+export { CHANNEL_CATEGORIES, MAX_CHANNEL_CATEGORIES, categoryLabel } from '../utils/channelCategories';
+
 export interface AdminChannel {
   id: string; name: string; description: string; price: number; framingText: string; requireFramingAck: boolean;
-  rules: ChannelRules; status: 'active' | 'archived'; memberCount: number; createdAt: number; photoUrl: string | null;
+  rules: ChannelRules; categories: string[]; status: 'active' | 'archived'; memberCount: number; createdAt: number; photoUrl: string | null;
 }
 export interface Channel {
-  id: string; name: string; description: string; price: number; rules: ChannelRules; archived: boolean; memberCount: number; photoUrl: string | null;
+  id: string; name: string; description: string; price: number; rules: ChannelRules; categories: string[]; archived: boolean; memberCount: number; photoUrl: string | null;
   member: boolean; joinedAt: number | null; muted: boolean; eligible: boolean; missing: Missing[];
   requireFramingAck: boolean; hasFraming: boolean; framingText?: string;
   /** Nouveautés pour un membre : publications pas encore ouvertes, réponses de Dr Lô à ses commentaires. */
@@ -30,7 +32,7 @@ export interface ChannelsNews { badge: number; byChannel: Record<string, { posts
 export interface ChannelsActivity { badge: number; distress: number; byChannel: Record<string, { members: number; comments: number; replies: number }> }
 export interface ChannelInput {
   id?: string; name?: string; description?: string; price?: number; framingText?: string; requireFramingAck?: boolean;
-  rules?: ChannelRules; status?: 'active' | 'archived'; photo?: { data: string; mime: string }; removePhoto?: boolean;
+  rules?: ChannelRules; categories?: string[]; status?: 'active' | 'archived'; photo?: { data: string; mime: string }; removePhoto?: boolean;
 }
 
 async function call<T>(body: Record<string, unknown>): Promise<T> {

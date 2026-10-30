@@ -3,6 +3,8 @@
  *
  * Espace Dr Lô (staff/{uid}.drlo === true) :
  *   drlo_list → toutes les pratiques (brouillons et retirées comprises), script compris, avec leurs chiffres
+ *   drlo_delete { id } → supprime une pratique que personne n'a débloquée (brouillon, publiée sans déblocage ou retirée) : audio, et retrait des épisodes qui la proposaient.
+ *                        Si quelqu'un l'a déjà débloquée : refus, utilise « Retirer ».
  *   drlo_save { id?, type, title, summary, theme, minutes, price, freeForMembers, steps[], fields[], script, source, cautions, status, audio?, removeAudio? }
  * Personne connectée :
  *   list   { ids[] }           → résumés de pratiques publiées (carte sous un épisode) : prix, gratuite pour moi, déjà débloquée
@@ -66,13 +68,29 @@ exports.handler = async (event) => {
 
   try {
     // ───────── Dr Lô ─────────
-    if (action === 'drlo_list' || action === 'drlo_save') {
+    if (action === 'drlo_list' || action === 'drlo_save' || action === 'drlo_delete') {
       if (!(await isDrLo(uid))) return reply(403, { error: 'Réservé à Dr Lô' });
       if (action === 'drlo_list') {
         const snap = await db.collection('practices').get();
         const items = await Promise.all(snap.docs.map((d) => adminView(d.id, d.data())));
         items.sort((a, b) => b.createdAt - a.createdAt);
         return reply(200, { items });
+      }
+      if (action === 'drlo_delete') {
+        const id = String(body.id || '');
+        const dref = id ? db.collection('practices').doc(id) : null;
+        const ds = dref ? await dref.get() : null;
+        if (!ds || !ds.exists) return reply(404, { error: 'Pratique introuvable' });
+        const dp = ds.data();
+        const unlocked = Number(dp.stats && dp.stats.unlocks) || 0;
+        const anyUnlock = unlocked > 0 || !(await db.collection('practiceUnlocks').where('practiceId', '==', id).limit(1).get()).empty;
+        if (anyUnlock) return reply(409, { error: 'Des personnes ont déjà débloqué cette pratique : elle ne peut pas être supprimée. Utilise « Retirer » pour la cacher.' });
+        // Les épisodes qui la proposaient ne la proposent plus
+        const posts = await db.collection('channelPosts').where('practiceIds', 'array-contains', id).get();
+        for (const d of posts.docs) await d.ref.update({ practiceIds: admin.firestore.FieldValue.arrayRemove(id) });
+        await dref.delete();
+        if (dp.audio && dp.audio.path) await dropFile(dp.audio.path);
+        return reply(200, { ok: true, removedFromPosts: posts.size });
       }
       const isNew = !body.id;
       const ref = isNew ? db.collection('practices').doc() : db.collection('practices').doc(String(body.id));

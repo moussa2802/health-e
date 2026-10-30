@@ -49,6 +49,8 @@ async function call<T>(body: Record<string, unknown>): Promise<T> {
 
 // Espace Dr Lô
 export const listAdminPractices = () => call<{ items: AdminPractice[] }>({ action: 'drlo_list' });
+/** Supprime une pratique que personne n'a débloquée (sinon le serveur refuse : utiliser « Retirer »). */
+export const deletePractice = (id: string) => call<{ ok: boolean; removedFromPosts: number }>({ action: 'drlo_delete', id });
 export const savePractice = (p: PracticeInput) => call<{ ok: boolean; practice: AdminPractice }>({ action: 'drlo_save', ...p });
 
 // Personne connectée

@@ -6,7 +6,7 @@
  */
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { Bell, BellOff, Check, ChevronRight, Circle, Loader2, Lock, Users } from 'lucide-react';
+import { Bell, BellOff, Check, ChevronRight, Circle, Loader2, Lock, Search, Users, X } from 'lucide-react';
 import DrLoShell, { DC, card, usePalette } from '../../components/accueil/DrLoShell';
 import { RealDrLoPhoto } from '../../components/accueil/RealDrLoBadge';
 import LoadingCards from '../../components/accueil/LoadingCards';
@@ -14,8 +14,9 @@ import ChannelFeed from '../../components/accueil/ChannelFeed';
 import ShareChannelButton from '../../components/accueil/ShareChannelButton';
 import { useAuth } from '../../contexts/AuthContext';
 import { SCALE_META } from '../../utils/scaleMeta';
-import { getChannel, joinChannel, leaveChannel, listChannels, muteChannel, type Channel, type Missing } from '../../services/drloChannelService';
+import { CHANNEL_CATEGORIES, categoryLabel, getChannel, joinChannel, leaveChannel, listChannels, muteChannel, type Channel, type Missing } from '../../services/drloChannelService';
 import type { Level } from '../../services/drloBroadcastService';
+import { channelMatches } from '../../utils/channelCategories';
 
 const LEVEL_LABEL: Record<Level, string> = { bon: 'tout va bien', leger: 'léger', modere: 'modéré', eleve: 'élevé' };
 const scaleLabel = (id: string) => SCALE_META[id]?.label ?? id;
@@ -73,9 +74,16 @@ const Pills: React.FC<{ c: Channel }> = ({ c }) => (
 const List: React.FC<{ palette: ReturnType<typeof usePalette> }> = ({ palette }) => {
   const [items, setItems] = useState<Channel[] | null>(null);
   const [error, setError] = useState('');
+  const [query, setQuery] = useState('');
+  const [cat, setCat] = useState<string | null>(null);
   useEffect(() => { listChannels().then(r => setItems(r.items)).catch(e => setError(e instanceof Error ? e.message : 'Erreur')); }, []);
-  const mine = (items ?? []).filter(c => c.member);
-  const others = (items ?? []).filter(c => !c.member);
+  const filtered = (items ?? []).filter(c => (!cat || (c.categories ?? []).includes(cat)) && channelMatches(c, query));
+  const mine = filtered.filter(c => c.member);
+  const others = filtered.filter(c => !c.member);
+  // Seules les catégories qui contiennent au moins une chaîne sont proposées
+  const catCount = (id: string) => (items ?? []).filter(c => (c.categories ?? []).includes(id)).length;
+  const usedCats = CHANNEL_CATEGORIES.filter(k => catCount(k.id) > 0);
+  const filtering = !!cat || query.trim() !== '';
   const row = (c: Channel) => (
     <Link key={c.id} to={`/chaines/${c.id}`} className="drl-btn" style={{ ...card, padding: 0, overflow: 'hidden', textDecoration: 'none', display: 'block', borderColor: c.member ? palette.accent : DC.line }}>
       <Cover c={c} h={96} />
@@ -90,6 +98,7 @@ const List: React.FC<{ palette: ReturnType<typeof usePalette> }> = ({ palette })
           <ChevronRight size={18} color={DC.faint} aria-hidden="true" />
         </div>
         <p style={{ margin: '4px 0 8px', fontSize: 14, color: DC.soft, lineHeight: 1.45 }}>{c.description}</p>
+        {(c.categories ?? []).length > 0 && <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 8 }}>{c.categories.map(k => <span key={k} style={{ padding: '2px 10px', borderRadius: 999, background: DC.glass, fontSize: 13, fontWeight: 700, color: DC.muted }}>{categoryLabel(k)}</span>)}</div>}
         <Pills c={c} />
         {!c.member && (
           <p style={{ margin: '10px 0 0', fontSize: 14, fontWeight: 700, color: c.eligible ? DC.ok : palette.accent }}>
@@ -107,6 +116,28 @@ const List: React.FC<{ palette: ReturnType<typeof usePalette> }> = ({ palette })
       {error && <p role="alert" style={{ marginTop: 16, color: '#F09A7A', fontSize: 14 }}>{error}</p>}
       {!items && !error && <LoadingCards label="Chargement des chaînes…" />}
       {items && items.length === 0 && <p style={{ marginTop: 16, color: DC.muted, fontSize: 15 }}>Pas encore de chaîne. Dr Lô en ouvrira bientôt.</p>}
+      {items && items.length > 0 && (
+        <div style={{ marginTop: 16 }}>
+          <div style={{ position: 'relative' }}>
+            <Search size={16} color={DC.faint} aria-hidden="true" style={{ position: 'absolute', left: 14, top: 15 }} />
+            <input type="search" aria-label="Chercher une chaîne" value={query} onChange={e => setQuery(e.target.value)} placeholder="Chercher une chaîne (ex. anxiété, couple, érection)" className="drl-input"
+              style={{ width: '100%', boxSizing: 'border-box', minHeight: 46, borderRadius: 999, border: `1px solid ${DC.line}`, background: 'rgba(255,255,255,.06)', padding: '0 40px 0 38px', color: DC.text, fontSize: 15, fontFamily: 'inherit' }} />
+            {query && <button type="button" aria-label="Effacer la recherche" onClick={() => setQuery('')} style={{ position: 'absolute', right: 6, top: 4, width: 38, height: 38, border: 0, background: 'none', color: DC.faint, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><X size={16} aria-hidden="true" /></button>}
+          </div>
+          {usedCats.length > 0 && (
+            <div role="group" aria-label="Catégories" style={{ display: 'flex', gap: 8, marginTop: 10, overflowX: 'auto', paddingBottom: 4 }}>
+              {[{ id: '', label: 'Toutes' }, ...usedCats].map(k => {
+                const on = (cat ?? '') === k.id;
+                return <button key={k.id || 'all'} type="button" aria-pressed={on} onClick={() => setCat(k.id || null)} className="drl-btn"
+                  style={{ flex: 'none', minHeight: 38, padding: '0 14px', borderRadius: 999, cursor: 'pointer', fontSize: 14, fontWeight: 700, whiteSpace: 'nowrap', border: `1px solid ${on ? palette.accent : DC.line}`, background: on ? 'rgba(242,182,109,.15)' : DC.glass, color: on ? palette.accent : DC.muted }}>{k.label}</button>;
+              })}
+            </div>
+          )}
+        </div>
+      )}
+      {items && items.length > 0 && filtering && filtered.length === 0 && (
+        <p style={{ marginTop: 16, color: DC.muted, fontSize: 15, lineHeight: 1.5 }}>Aucune chaîne ne correspond. <button type="button" onClick={() => { setQuery(''); setCat(null); }} style={{ background: 'none', border: 0, padding: 0, color: palette.accent, fontWeight: 700, cursor: 'pointer', fontSize: 15, textDecoration: 'underline' }}>Tout afficher</button></p>
+      )}
       {mine.length > 0 && <section aria-label="Mes chaînes" style={{ marginTop: 20 }}><h2 style={{ margin: 0, fontSize: 15, fontWeight: 700, color: DC.text }}>Mes chaînes</h2><div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginTop: 10 }}>{mine.map(row)}</div></section>}
       {others.length > 0 && <section aria-label="À découvrir" style={{ marginTop: 20 }}><h2 style={{ margin: 0, fontSize: 15, fontWeight: 700, color: DC.text }}>À découvrir</h2><div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginTop: 10 }}>{others.map(row)}</div></section>}
     </>

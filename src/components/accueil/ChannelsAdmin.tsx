@@ -10,7 +10,7 @@ import { DC, card } from './DrLoShell';
 import ChannelPostsAdmin from './ChannelPostsAdmin';
 import type { MomentPalette } from '../../utils/drloMoment';
 import { SCALE_META } from '../../utils/scaleMeta';
-import { deleteChannel, getChannelActivity, listAdminChannels, saveChannel, type AdminChannel, type ChannelRules, type ChannelsActivity } from '../../services/drloChannelService';
+import { CHANNEL_CATEGORIES, MAX_CHANNEL_CATEGORIES, categoryLabel, deleteChannel, getChannelActivity, listAdminChannels, saveChannel, type AdminChannel, type ChannelRules, type ChannelsActivity } from '../../services/drloChannelService';
 import type { Level } from '../../services/drloBroadcastService';
 
 const TOTEMS = ['lion', 'loup', 'cerf', 'dauphin', 'tortue', 'hibou', 'aigle', 'éléphant', 'panthère', 'renard', 'cheval', 'ours'];
@@ -55,6 +55,7 @@ const Form: React.FC<{ initial: AdminChannel | null; palette: MomentPalette; onD
   const [tests, setTests] = useState<NonNullable<ChannelRules['tests']>>(initial?.rules.tests ?? []);
   const [totems, setTotems] = useState<string[]>(initial?.rules.totems ?? []);
   const [minAge, setMinAge] = useState<number>(initial?.rules.minAge ?? 18);
+  const [categories, setCategories] = useState<string[]>(initial?.categories ?? []);
   const [photo, setPhoto] = useState<string | null>(null); // data URL d'une nouvelle photo
   const [removePhoto, setRemovePhoto] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -96,7 +97,7 @@ const Form: React.FC<{ initial: AdminChannel | null; palette: MomentPalette; onD
       await saveChannel({
         ...(initial ? { id: initial.id } : {}),
         name: name.trim(), description: description.trim(), price: priceNum, framingText: framing.trim(), requireFramingAck: ack && framing.trim().length > 0,
-        rules, ...(photo ? { photo: { data: photo.split(',')[1], mime: 'image/jpeg' } } : {}), ...(removePhoto && !photo ? { removePhoto: true } : {}),
+        rules, categories, ...(photo ? { photo: { data: photo.split(',')[1], mime: 'image/jpeg' } } : {}), ...(removePhoto && !photo ? { removePhoto: true } : {}),
       });
       onDone();
     } catch (e) { setErr(e instanceof Error ? e.message : 'Erreur'); }
@@ -148,6 +149,15 @@ const Form: React.FC<{ initial: AdminChannel | null; palette: MomentPalette; onD
         <option value="">+ Ajouter un test exigé</option>
         {scaleOptions.filter(o => !tests.some(t => t.scaleId === o.id)).map(o => <option key={o.id} value={o.id}>{o.label}{GENDER_ONLY[o.id] ? ` (réservé aux ${GENDER_ONLY[o.id]})` : ''}</option>)}
       </select>
+
+      <p style={lab}>Catégories (pour ranger la chaîne, {MAX_CHANNEL_CATEGORIES} au plus)</p>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+        {CHANNEL_CATEGORIES.map(c => {
+          const on = categories.includes(c.id);
+          return <button key={c.id} type="button" aria-pressed={on} disabled={!on && categories.length >= MAX_CHANNEL_CATEGORIES} onClick={() => setCategories(v => toggle(v, c.id))} style={{ ...chip(on), opacity: !on && categories.length >= MAX_CHANNEL_CATEGORIES ? 0.4 : 1 }}>{c.label}</button>;
+        })}
+      </div>
+      <p style={{ margin: '6px 0 0', fontSize: 13, color: DC.faint, lineHeight: 1.5 }}>Les personnes retrouvent la chaîne en filtrant par catégorie sur la page « Les chaînes ».</p>
 
       <p style={lab}>Totem (facultatif)</p>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
@@ -249,6 +259,7 @@ const ChannelsAdmin: React.FC<{ palette: MomentPalette }> = ({ palette }) => {
                 <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><Users size={14} aria-hidden="true" /> {c.memberCount} membre{c.memberCount > 1 ? 's' : ''}</span>
                 <span>· {c.price > 0 ? `${c.price} étincelle${c.price > 1 ? 's' : ''}` : 'Gratuite'}</span>
               </div>
+              {c.categories?.length > 0 && <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 8 }}>{c.categories.map(k => <span key={k} style={{ padding: '2px 10px', borderRadius: 999, border: `1px solid ${DC.line}`, fontSize: 13, fontWeight: 700, color: palette.accent }}>{categoryLabel(k)}</span>)}</div>}
               <p style={{ margin: '6px 0 0', fontSize: 13, color: DC.faint, lineHeight: 1.45 }}>{conditionsText(c)}</p>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 12 }}>
                 <button type="button" onClick={() => setManaging({ id: c.id, tab: 'publish' })} className="drl-btn" style={{ minHeight: 38, padding: '0 14px', borderRadius: 999, border: `1px solid ${palette.accent}`, background: 'rgba(242,182,109,.15)', color: palette.accent, fontSize: 14, fontWeight: 700, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 6 }}><MessageSquarePlus size={14} aria-hidden="true" /> Publier et gérer</button>

@@ -2,7 +2,7 @@
  * drlo-channels — « Chaînes » de Dr Lô. POST { action, ... } avec le jeton Firebase. Tout passe par le serveur.
  *
  * Espace Dr Lô (rôle staff/{uid}.drlo === true) :
- *   drlo_save { id?, name, description, price, framingText?, requireFramingAck?, rules, photo?, status? }
+ *   drlo_save { id?, name, description, price, framingText?, requireFramingAck?, rules, categories?, photo?, status? }
  *             → crée (sans id) ou modifie (avec id) une chaîne. photo = { data (base64), mime }.
  *   drlo_delete { id, confirmName } → supprime définitivement la chaîne, ses publications, commentaires, membres et fichiers
  *   drlo_list → toutes les chaînes (même archivées) avec le nombre de membres
@@ -50,14 +50,14 @@ const dropFile = (path) => (path ? admin.storage().bucket(BUCKET).file(path).del
 /** La chaîne telle que la voit Dr Lô (conditions complètes). */
 const adminChannel = async (id, c) => ({
   id, name: c.name, description: c.description, price: c.price || 0, framingText: c.framingText || '', requireFramingAck: !!c.requireFramingAck,
-  rules: c.rules || {}, status: c.status || 'active', memberCount: Number(c.memberCount) || 0, createdAt: ms(c.createdAt), photoUrl: await signedUrl(c.photoPath),
+  rules: c.rules || {}, categories: CH.sanitizeCategories(c.categories), status: c.status || 'active', memberCount: Number(c.memberCount) || 0, createdAt: ms(c.createdAt), photoUrl: await signedUrl(c.photoPath),
 });
 
 /** La chaîne telle que la voit une personne : seulement le nombre de membres, jamais la liste. */
 async function userChannel(id, c, { profile, balance, member, withFraming }) {
   const elig = CH.eligibility(profile, balance, c);
   return {
-    id, name: c.name, description: c.description, price: c.price || 0, rules: c.rules || {}, archived: c.status === 'archived',
+    id, name: c.name, description: c.description, price: c.price || 0, rules: c.rules || {}, categories: CH.sanitizeCategories(c.categories), archived: c.status === 'archived',
     memberCount: Number(c.memberCount) || 0, photoUrl: await signedUrl(c.photoPath),
     member: !!member, joinedAt: member ? ms(member.joinedAt) : null, muted: !!(member && member.muted),
     eligible: elig.eligible, missing: member ? [] : elig.missing,

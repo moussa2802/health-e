@@ -12,7 +12,7 @@ import VoiceInput from './VoiceInput';
 import { blobToBase64, useVoiceRecorder } from '../../hooks/useVoiceRecorder';
 import type { MomentPalette } from '../../utils/drloMoment';
 import {
-  listAdminPractices, savePractice, PRACTICE_THEMES, PRACTICE_TYPES, typeLabel,
+  listAdminPractices, savePractice, deletePractice, PRACTICE_THEMES, PRACTICE_TYPES, typeLabel,
   type AdminPractice, type CarnetField, type FieldKind, type PracticeType,
 } from '../../services/practiceService';
 
@@ -183,11 +183,17 @@ const PracticesAdmin: React.FC<{ palette: MomentPalette }> = ({ palette }) => {
   const [err, setErr] = useState('');
   const [editing, setEditing] = useState<AdminPractice | 'new' | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [confirmDel, setConfirmDel] = useState<string | null>(null);
   const load = () => listAdminPractices().then(r => { setItems(r.items); setErr(''); }).catch(e => setErr(e instanceof Error ? e.message : 'Erreur'));
   useEffect(() => { load(); }, []);
   const setStatus = async (p: AdminPractice, status: AdminPractice['status']) => {
     setBusyId(p.id); setErr('');
     try { await savePractice({ id: p.id, status }); await load(); } catch (e) { setErr(e instanceof Error ? e.message : 'Erreur'); } finally { setBusyId(null); }
+  };
+
+  const remove = async (p: AdminPractice) => {
+    setBusyId(p.id); setErr('');
+    try { await deletePractice(p.id); setConfirmDel(null); await load(); } catch (e) { setErr(e instanceof Error ? e.message : 'Erreur'); setConfirmDel(null); } finally { setBusyId(null); }
   };
 
   return (
@@ -223,7 +229,17 @@ const PracticesAdmin: React.FC<{ palette: MomentPalette }> = ({ palette }) => {
                 <button type="button" onClick={() => setEditing(p)} className="drl-btn" style={small}><Pencil size={14} aria-hidden="true" /> Modifier</button>
                 {p.status !== 'published' && <button type="button" disabled={busyId === p.id} onClick={() => setStatus(p, 'published')} className="drl-btn" style={{ ...small, border: `1px solid ${palette.accent}`, color: palette.accent }}>Publier</button>}
                 {p.status === 'published' && <button type="button" disabled={busyId === p.id} onClick={() => setStatus(p, 'retired')} className="drl-btn" style={{ ...small, color: DC.muted }}>Retirer</button>}
+                <button type="button" disabled={busyId === p.id} onClick={() => setConfirmDel(p.id)} aria-label={`Supprimer la pratique ${p.title}`} className="drl-btn" style={{ ...small, border: '1px solid rgba(240,138,122,.55)', background: 'transparent', color: '#F08A7A' }}><Trash2 size={14} aria-hidden="true" /> Supprimer</button>
               </div>
+              {confirmDel === p.id && (
+                <div role="alertdialog" aria-label="Confirmer la suppression" style={{ marginTop: 12, padding: 12, borderRadius: 14, border: '1px solid rgba(240,138,122,.55)', background: 'rgba(240,138,122,.08)' }}>
+                  <p style={{ margin: 0, fontSize: 14, color: DC.text, lineHeight: 1.5 }}>Supprimer « {p.title} » pour de bon ? C'est impossible si des personnes l'ont déjà débloquée (utilise alors « Retirer »). Elle ne sera plus proposée sous les épisodes.</p>
+                  <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
+                    <button type="button" disabled={busyId === p.id} onClick={() => remove(p)} className="drl-btn" style={{ ...small, flex: 1, justifyContent: 'center', border: '1px solid rgba(240,138,122,.7)', color: '#F08A7A', fontWeight: 700 }}>{busyId === p.id ? 'Suppression…' : 'Oui, supprimer'}</button>
+                    <button type="button" onClick={() => setConfirmDel(null)} className="drl-btn" style={{ ...small, flex: 1, justifyContent: 'center' }}>Annuler</button>
+                  </div>
+                </div>
+              )}
             </article>
           );
         })}

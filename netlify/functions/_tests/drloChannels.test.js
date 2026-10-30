@@ -206,3 +206,15 @@ test('supprimer une chaîne : réservé à Dr Lô, et il faut écrire le nom exa
   assert.equal((await call({ action: 'drlo_delete', id, confirmName: 'à supprimer' })).status, 400);
   assert.ok(store.channels[id], 'la chaîne est toujours là');
 });
+
+test('catégories : validateChannel garde les ids connus, sans doublon, 4 au plus', () => {
+  const CH = require(path.join(__dirname, '..', '_drloChannels.js'));
+  const base = { name: 'Une chaîne', description: 'Une description assez longue', price: 0, rules: {} };
+  const ok = CH.validateChannel({ ...base, categories: ['couple', 'couple', 'inconnue', 'homme', 'femme', 'estime', 'famille'] });
+  assert.deepEqual(ok.data.categories, ['couple', 'homme', 'femme', 'estime']);
+  assert.equal(CH.validateChannel(base).data.categories, undefined);
+  assert.deepEqual(CH.validateChannel({ categories: ['x', 3, null] }, { partial: true }).data.categories, []);
+  assert.deepEqual(CH.validateChannel({ categories: 'couple' }, { partial: true }).data.categories, []);
+  assert.deepEqual(CH.validateChannel({ name: 'Nouveau nom' }, { partial: true }).data, { name: 'Nouveau nom' });
+  assert.ok(CH.CATEGORY_IDS.includes('sante-sexuelle'));
+});

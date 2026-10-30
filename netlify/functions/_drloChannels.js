@@ -17,6 +17,22 @@ const SCALE_ID = /^[a-zA-Z0-9_-]{1,60}$/;
 const GENDER_ONLY = { iief: 'homme', fsfi: 'femme' };
 const genreOf = (profile) => { const g = profile && profile.onboardingProfile && profile.onboardingProfile.genre; return g === 'homme' || g === 'femme' ? g : null; };
 
+/** Catégories pour ranger les chaînes (liste fermée ; les mêmes libellés côté navigateur). */
+const CATEGORIES = [
+  { id: 'sante-mentale', label: 'Santé mentale' },
+  { id: 'sante-sexuelle', label: 'Santé sexuelle' },
+  { id: 'couple', label: 'Couple et relations' },
+  { id: 'emotions', label: 'Émotions et stress' },
+  { id: 'estime', label: 'Confiance en soi' },
+  { id: 'famille', label: 'Famille et société' },
+  { id: 'homme', label: 'Pour les hommes' },
+  { id: 'femme', label: 'Pour les femmes' },
+];
+const CATEGORY_IDS = CATEGORIES.map((c) => c.id);
+const MAX_CATEGORIES = 4;
+/** Une liste venue du navigateur → ids connus, sans doublon, 4 au plus. */
+const sanitizeCategories = (v) => [...new Set((Array.isArray(v) ? v : []).filter((x) => CATEGORY_IDS.includes(x)))].slice(0, MAX_CATEGORIES);
+
 const clean = (v, max) => String(v ?? '').replace(/\r/g, '').trim().slice(0, max);
 
 /** Règles d'entrée venues du navigateur de Dr Lô → { rules } ou { error }. */
@@ -66,6 +82,7 @@ function validateChannel(b, { partial = false } = {}) {
     if (s.error) return { error: s.error };
     d.rules = s.rules;
   }
+  if (b.categories !== undefined) d.categories = sanitizeCategories(b.categories);
   if (b.status !== undefined) {
     if (!STATUSES.includes(b.status)) return { error: 'Statut inconnu.' };
     d.status = b.status;
@@ -171,4 +188,4 @@ function publicCard(id, c) {
   };
 }
 
-module.exports = { GENDER_ONLY, publicCard, chatSummary, MAX_NAME, MAX_DESC, MAX_FRAMING, MAX_PRICE, MIN_AGES, AGE_RANGES, PHOTO_TYPES, STATUSES, sanitizeRules, validateChannel, validatePhoto, ageLowerBound, eligibility };
+module.exports = { CATEGORIES, CATEGORY_IDS, MAX_CATEGORIES, sanitizeCategories, GENDER_ONLY, publicCard, chatSummary, MAX_NAME, MAX_DESC, MAX_FRAMING, MAX_PRICE, MIN_AGES, AGE_RANGES, PHOTO_TYPES, STATUSES, sanitizeRules, validateChannel, validatePhoto, ageLowerBound, eligibility };
