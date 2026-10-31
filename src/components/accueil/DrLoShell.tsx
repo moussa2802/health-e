@@ -3,7 +3,8 @@
  * fond selon le moment de la journée, retour, « visible par toi seul », masquer l'écran.
  */
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { canGoBackInApp } from '../../utils/navTrail';
 import { ArrowLeft, EyeOff, Lock } from 'lucide-react';
 import './accueil.css';
 import { getMoment, PALETTES, type MomentPalette } from '../../utils/drloMoment';
@@ -32,6 +33,7 @@ const DrLoShell: React.FC<{
   palette: MomentPalette;
   children: React.ReactNode;
 }> = ({ back, genre, palette, children }) => {
+  const navigate = useNavigate();
   const [veiled, setVeiled] = useState(false);
   const seul = genre === 'femme' ? 'seule' : genre === 'homme' ? 'seul' : 'uniquement';
   return (
@@ -39,6 +41,7 @@ const DrLoShell: React.FC<{
       <div style={{ maxWidth: 520, margin: '0 auto', padding: '16px 18px calc(92px + env(safe-area-inset-bottom, 0px))', boxSizing: 'border-box' }}>
         <header style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
           <Link to={back.to} aria-label={back.label} className="drl-btn"
+            onClick={e => { if (canGoBackInApp((window.history.state as { idx?: number } | null)?.idx)) { e.preventDefault(); navigate(-1); } }}
             style={{ width: 44, height: 44, borderRadius: 13, border: `1px solid ${DC.line}`, background: DC.glass, display: 'flex', alignItems: 'center', justifyContent: 'center', color: DC.muted }}>
             <ArrowLeft size={20} aria-hidden="true" />
           </Link>

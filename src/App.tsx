@@ -35,6 +35,7 @@ import NoKorisModal from "./components/koris/NoKorisModal";
 import KorisWelcome from "./components/koris/KorisWelcome";
 import FloatingKori from "./components/koris/FloatingKori";
 import BottomTabs from "./components/layout/BottomTabs";
+import { noteLocation } from "./utils/navTrail";
 
 import { useAuth } from "./contexts/AuthContext";
 import { cleanupAllProfessionalsListeners } from "./hooks/useProfessionals";
@@ -126,6 +127,7 @@ const PageLoader = () => (
 // Wrapper component that decides whether to show header/footer based on route
 const AppChrome: React.FC = () => {
   const { pathname } = useLocation();
+  useEffect(() => { noteLocation(pathname); }, [pathname]);
   const isAdminRoute = pathname.startsWith("/admin");
   const isAppRoute = pathname.startsWith("/app");
   const isDefiJouer = pathname.startsWith("/d/") || pathname.startsWith("/api/d/");

@@ -1,5 +1,5 @@
 /**
- * WriteDrLoCard — « Écrire à Dr Lô », visible dans « Les messages de Dr Lô » (avant : seulement en bas de Mon espace).
+ * WriteDrLoCard — « Question privée au médecin », visible dans « Mes messages » (avant : seulement en bas de Mon espace).
  * Débloqué → bouton direct vers la page d'envoi. Sinon → on déplie les étapes qui restent (Ton chemin vers Dr Lô).
  */
 import React, { useEffect, useState } from 'react';
@@ -33,15 +33,15 @@ const WriteDrLoCard: React.FC<{ palette: MomentPalette }> = ({ palette }) => {
           <PenLine size={20} />
         </span>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <p style={{ margin: 0, fontSize: 16, fontWeight: 700, color: DC.text }}>Écrire à Dr Lô</p>
+          <p style={{ margin: 0, fontSize: 16, fontWeight: 700, color: DC.text }}>Question privée au médecin</p>
           <p style={{ margin: '2px 0 0', fontSize: 13, color: DC.muted, lineHeight: 1.45 }}>
-            {unseen ? 'Il t\'a répondu : va lire sa réponse.' : unlocked ? 'C\'est débloqué : pose-lui ta question, gratuitement.' : `Encore ${remaining} étape${remaining > 1 ? 's' : ''} pour lui écrire. C'est gratuit.`}
+            {unseen ? 'Tu as une réponse : va la lire.' : unlocked ? 'C\'est débloqué : pose ta question, gratuitement.' : `Encore ${remaining} étape${remaining > 1 ? 's' : ''} pour la débloquer. C'est gratuit.`}
           </p>
         </div>
       </div>
       {ready ? (
         <Link to="/question" state={{ from: '/messages-dr-lo' }} className="drl-btn" style={{ marginTop: 12, minHeight: 46, borderRadius: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, textDecoration: 'none', fontSize: 15, fontWeight: 700, background: palette.primary, color: DC.ink }}>
-          {unseen ? 'Lire sa réponse' : 'Lui écrire'}
+          {unseen ? 'Lire la réponse' : 'Écrire ma question'}
         </Link>
       ) : (
         <button type="button" onClick={() => setOpen(o => !o)} aria-expanded={open} className="drl-btn"

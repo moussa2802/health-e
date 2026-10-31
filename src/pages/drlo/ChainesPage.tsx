@@ -291,7 +291,7 @@ const ChainesPage: React.FC = () => {
   useEffect(() => { if (authReady && !isAuthenticated) navigate(id ? `/patient/access?returnTo=${encodeURIComponent(`/chaines/${id}`)}` : '/patient/access?returnTo=%2Fchaines', { replace: true }); }, [authReady, isAuthenticated, navigate, id]);
   if (!authReady || !isAuthenticated) return null;
   return (
-    <DrLoShell back={id ? { to: '/chaines', label: 'Les chaînes' } : { to: '/messages-dr-lo', label: 'Les messages de Dr Lô' }} palette={palette}>
+    <DrLoShell back={id ? { to: '/chaines', label: 'Les chaînes' } : { to: '/', label: 'Retour à l\'accueil' }} palette={palette}>
       {id ? <Detail key={id} id={id} palette={palette} /> : <List palette={palette} />}
     </DrLoShell>
   );

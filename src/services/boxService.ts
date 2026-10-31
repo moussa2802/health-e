@@ -18,10 +18,12 @@ export async function getBoxAnswers(): Promise<BoxAnswer[]> {
 
 /** Dépose une question, sans compte. `website` est un piège à robots : il reste vide. */
 export async function sendBoxQuestion(text: string): Promise<{ support: boolean }> {
-  const res = await fetch(URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'send', text, website: '' }) });
-  const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error((data as { error?: string }).error ?? 'Erreur');
-  return { support: !!(data as { support?: boolean }).support };
+  let res: Response;
+  try { res = await fetch(URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'send', text, website: '' }) }); }
+  catch { throw new Error('Pas de connexion. Vérifie ton réseau et réessaie.'); }
+  const data = await res.json().catch(() => null) as { error?: string; support?: boolean } | null;
+  if (!res.ok || !data) throw new Error(data?.error ?? 'La boîte ne répond pas pour le moment. Réessaie dans un instant.');
+  return { support: !!data.support };
 }
 
 async function admin<T>(body: Record<string, unknown>): Promise<T> {

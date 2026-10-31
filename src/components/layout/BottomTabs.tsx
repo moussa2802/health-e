@@ -3,12 +3,12 @@
  * Elle s'affiche sur les pages de navigation et se cache d'elle-même pendant un test, un exercice et la conversation
  * (la conversation est plein écran, au-dessus de la barre).
  */
-import React from 'react';
+import React, { useRef } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Home, ClipboardList, MessageCircle, User } from 'lucide-react';
 import { COLOR } from '../../design/charte';
 
-import { tabForPath, type TabId } from '../../utils/tabForPath';
+import { isSharedPath, tabForPath, type TabId } from '../../utils/tabForPath';
 
 const TABS: { id: TabId; label: string; to: string; Icon: typeof Home }[] = [
   { id: 'accueil', label: 'Accueil', to: '/', Icon: Home },
@@ -19,7 +19,9 @@ const TABS: { id: TabId; label: string; to: string; Icon: typeof Home }[] = [
 
 const BottomTabs: React.FC = () => {
   const { pathname } = useLocation();
-  const active = tabForPath(pathname);
+  const last = useRef<TabId | null>(null);
+  const active = tabForPath(pathname, last.current);
+  if (active && !isSharedPath(pathname)) last.current = active;
   if (!active) return null;
   return (
     <nav aria-label="Navigation principale"

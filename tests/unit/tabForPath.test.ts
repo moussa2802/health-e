@@ -28,3 +28,11 @@ test('une barre oblique finale ne change rien', () => {
   assert.equal(tabForPath('/espace/mental/'), 'tests');
   assert.equal(tabForPath('/compagnon/'), 'compagnon');
 });
+
+test('les pages partagées gardent l\'onglet d\'où l\'on vient', () => {
+  assert.equal(tabForPath('/outils', 'accueil'), 'accueil');
+  assert.equal(tabForPath('/routine', 'accueil'), 'accueil');
+  assert.equal(tabForPath('/chaines', 'moi'), 'moi');
+  assert.equal(tabForPath('/outils', null), 'moi');
+  assert.equal(tabForPath('/espace', 'accueil'), 'moi');
+});

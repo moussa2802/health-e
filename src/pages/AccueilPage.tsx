@@ -8,6 +8,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { ArrowRight, CloudSun, Heart, Sparkles, Wind, PenLine, Wrench, MessageCircleQuestion } from 'lucide-react';
 import { usePalette, DC, card } from '../components/accueil/DrLoShell';
+import { MoodSheet } from '../components/accueil/HomeSheets';
 import { HScroll, SectionTitle, NewsCard, ChannelCard, WideLink, tintOf, type NewsItem } from '../components/accueil/HomeParts';
 import { RealDrLoPhoto } from '../components/accueil/RealDrLoBadge';
 import AccueilSeoSections from '../components/accueil/AccueilSeoSections';
@@ -175,6 +176,7 @@ const ConnectedHome: React.FC<{ feed: HomeFeed | null; palette: MomentPalette; u
   const [chBadge, setChBadge] = useState(0);
   const [mine, setMine] = useState<Mine | null>(null);
   const [moodDone, setMoodDone] = useState<boolean | null>(null);
+  const [moodOpen, setMoodOpen] = useState(false);
   const [drlo, setDrlo] = useState<DrloStatus | null>(null);
   const today = dayKey();
 
@@ -253,9 +255,14 @@ const ConnectedHome: React.FC<{ feed: HomeFeed | null; palette: MomentPalette; u
 
       {moodDone === false && (
         <div style={{ marginTop: 14 }}>
-          <WideLink to="/compagnon" state={{ openMood: true }} title="Comment tu te sens ?" sub="Note ton humeur en 30 secondes." tint={DC.gold} icon={<CloudSun size={22} color={DC.gold} aria-hidden="true" />} />
+          <button onClick={() => setMoodOpen(true)} className="drl-btn" style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 12, padding: 14, minHeight: 64, borderRadius: 18, textAlign: 'left', color: DC.text, border: `1px solid ${DC.gold}55`, background: `${DC.gold}12`, cursor: 'pointer', fontFamily: 'inherit' }}>
+            <CloudSun size={22} color={DC.gold} aria-hidden="true" />
+            <span style={{ flex: 1 }}><span style={{ display: 'block', fontFamily: 'Fraunces, serif', fontSize: 18, fontWeight: 600, color: DC.title }}>Comment tu te sens ?</span><span style={{ display: 'block', marginTop: 2, fontSize: 14, color: DC.muted }}>Note ton humeur en 30 secondes.</span></span>
+          </button>
         </div>
       )}
+
+      {moodOpen && <MoodSheet uid={uid} prenom={prenom} onNoted={() => setMoodDone(true)} onClose={() => setMoodOpen(false)} />}
 
       <Discover feed={feed} connected />
 

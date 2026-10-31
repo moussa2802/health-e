@@ -1,5 +1,5 @@
 /**
- * MessagesDrLoPage — les messages que Dr Lô a laissés à sa communauté.
+ * MessagesDrLoPage — « Mes messages » : tes échanges privés et les messages laissés à la communauté.
  *   /messages-dr-lo        la liste
  *   /messages-dr-lo/:id    un message, avec les réactions ❤️ 🙏 💪
  * Rien de ce que la personne a répondu n'est visible des autres : seuls des totaux s'affichent.
@@ -45,7 +45,7 @@ const MessagesDrLoPage: React.FC = () => {
 
   useEffect(() => {
     if (!authReady) return;
-    if (!isAuthenticated) { navigate('/', { replace: true }); return; }
+    if (!isAuthenticated) { navigate('/compagnon', { replace: true }); return; }
     setError(''); setMsg(null); setItems(null);
     if (qid) {
       setDisc(null);
@@ -155,31 +155,26 @@ const MessagesDrLoPage: React.FC = () => {
 
   return (
     <DrLoShell back={{ to: '/', label: 'Accueil' }} palette={palette}>
-      <p style={{ margin: '18px 0 0', fontSize: 13, letterSpacing: '.14em', textTransform: 'uppercase', color: palette.accent, fontWeight: 700 }}>Dr Lô</p>
-      <h1 style={h1}>Les messages de Dr Lô</h1>
+      <h1 style={{ ...h1, marginTop: 18 }}>Mes messages</h1>
       <ChannelsLinkCard palette={palette} />
       <WriteDrLoCard palette={palette} />
       {error && <p role="alert" style={{ marginTop: 16, color: DC.muted, fontSize: 15 }}>{error}</p>}
       {!items && !error && <LoadingCards label="Chargement des messages…" />}
-      {items && items.length === 0 && !(disc && disc.length > 0) && <p style={{ marginTop: 16, color: DC.muted, fontSize: 15, lineHeight: 1.55 }}>Pas encore de message. Quand Dr Lô t'en laissera un, tu le retrouveras ici.</p>}
-      {((items && items.length > 0) || (disc && disc.length > 0)) && (
+      {items && items.length === 0 && !(disc && disc.length > 0) && <p style={{ marginTop: 16, color: DC.muted, fontSize: 15, lineHeight: 1.55 }}>Pas encore de message. Les messages que tu reçois apparaîtront ici.</p>}
+      {(news.unread + news.replies + news.comments + discNews) > 0 && (
         <section aria-label="Du nouveau" style={{ ...card, marginTop: 16, borderColor: (news.unread + news.replies + news.comments + discNews) > 0 ? palette.accent : DC.line }}>
           <p style={{ margin: 0, fontSize: 13, letterSpacing: '.12em', textTransform: 'uppercase', color: palette.accent, fontWeight: 700 }}>Du nouveau</p>
-          {(news.unread + news.replies + news.comments + discNews) === 0 ? (
-            <p style={{ margin: '8px 0 0', fontSize: 15, color: DC.muted }}>Tu es à jour. Rien de nouveau pour le moment.</p>
-          ) : (
             <ul style={{ margin: '8px 0 0', padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 6, fontSize: 15, color: DC.text }}>
-              {discNews > 0 && <li>🩺 Dr Lô t'a répondu personnellement</li>}
-              {news.unread > 0 && <li>📩 {news.unread} nouveau{news.unread > 1 ? 'x' : ''} message{news.unread > 1 ? 's' : ''} de Dr Lô</li>}
-              {news.replies > 0 && <li>💬 Dr Lô a répondu à {news.replies > 1 ? `${news.replies} de tes commentaires` : 'un de tes commentaires'}</li>}
+              {discNews > 0 && <li>🩺 Une réponse personnelle t'attend</li>}
+              {news.unread > 0 && <li>📩 {news.unread} nouveau{news.unread > 1 ? 'x' : ''} message{news.unread > 1 ? 's' : ''} pour toute la communauté</li>}
+              {news.replies > 0 && <li>💬 Réponse à {news.replies > 1 ? `${news.replies} de tes commentaires` : 'un de tes commentaires'}</li>}
               {news.comments > 0 && <li>🗨 {news.comments} nouveau{news.comments > 1 ? 'x' : ''} commentaire{news.comments > 1 ? 's' : ''} de la communauté</li>}
             </ul>
-          )}
         </section>
       )}
       {disc && disc.length > 0 && (
-        <section aria-label="Tes échanges avec Dr Lô" style={{ marginTop: 16 }}>
-          <h2 style={{ margin: 0, fontSize: 15, fontWeight: 700, color: DC.text }}>Tes échanges avec Dr Lô</h2>
+        <section aria-label="Mes échanges privés" style={{ marginTop: 16 }}>
+          <h2 style={{ margin: 0, fontSize: 15, fontWeight: 700, color: DC.text }}>Mes échanges privés</h2>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 10 }}>
             {disc.map(d => {
               const lastD = [...d.thread].reverse().find(e => e.from === 'drlo');
@@ -189,11 +184,11 @@ const MessagesDrLoPage: React.FC = () => {
                   <RealDrLoPhoto size={40} palette={palette} />
                   <span style={{ flex: 1, minWidth: 0 }}>
                     <span style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: DC.faint }}>
-                      <span>Réponse à ta question du {day(d.createdAt)}</span>
+                      <span>Ta question du {day(d.createdAt)}</span>
                       {d.news > 0 && <b style={{ color: palette.accent }}>{upd ? 'Mis à jour' : 'Nouveau'}</b>}
                     </span>
                     <span style={{ display: '-webkit-box', marginTop: 6, fontSize: 15, lineHeight: 1.5, color: DC.soft, overflow: 'hidden', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' } as React.CSSProperties}>
-                      {lastD ? (lastD.text || '🎙 Un vocal de Dr Lô') : d.text}
+                      {lastD ? (lastD.text || '🎙 Un vocal') : d.text}
                     </span>
                     {(d.closed || d.canReply) && (
                       <span style={{ display: 'flex', gap: 6, marginTop: 8 }}>
@@ -208,7 +203,7 @@ const MessagesDrLoPage: React.FC = () => {
           </div>
         </section>
       )}
-      {items && items.length > 0 && <h2 style={{ margin: '20px 0 0', fontSize: 15, fontWeight: 700, color: DC.text }}>Messages à toute la communauté</h2>}
+      {items && items.length > 0 && <h2 style={{ margin: '20px 0 0', fontSize: 15, fontWeight: 700, color: DC.text }}>Messages pour tous</h2>}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 10 }}>
         {(items ?? []).map(i => (
           <div key={i.id} style={{ position: 'relative' }}>
@@ -218,10 +213,10 @@ const MessagesDrLoPage: React.FC = () => {
                 <span style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: DC.faint }}>
                   <span>{day(i.at)}</span>{!i.seen && <b style={{ color: palette.accent }}>Nouveau</b>}
                 </span>
-                <span style={{ display: '-webkit-box', marginTop: 6, fontSize: 15, lineHeight: 1.5, color: DC.soft, overflow: 'hidden', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' } as React.CSSProperties}>{i.text || '🎙 Un vocal de Dr Lô'}</span>
+                <span style={{ display: '-webkit-box', marginTop: 6, fontSize: 15, lineHeight: 1.5, color: DC.soft, overflow: 'hidden', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' } as React.CSSProperties}>{i.text || '🎙 Un vocal'}</span>
                 {(i.commentsOpen || (i.newReplies ?? 0) > 0) && (
                   <span style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 6, marginTop: 8, paddingRight: 52 }}>
-                    {(i.newReplies ?? 0) > 0 && <span style={{ fontSize: 13, fontWeight: 700, padding: '3px 9px', borderRadius: 999, background: 'rgba(242,182,109,.16)', color: palette.accent }}>Dr Lô t'a répondu</span>}
+                    {(i.newReplies ?? 0) > 0 && <span style={{ fontSize: 13, fontWeight: 700, padding: '3px 9px', borderRadius: 999, background: 'rgba(242,182,109,.16)', color: palette.accent }}>Réponse reçue</span>}
                     {i.commentsOpen && (
                       <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 13, fontWeight: 600, color: DC.muted }}>
                         💬 {i.commentsTotal ?? 0}

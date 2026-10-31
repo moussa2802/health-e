@@ -22,6 +22,7 @@ const BoitePage: React.FC = () => {
   useEffect(() => { getBoxAnswers().then(setAnswers).catch(() => {}); }, []);
 
   const send = async () => {
+    if (text.trim().length < 8) { setError('Écris au moins une phrase (8 caractères).'); return; }
     setBusy(true); setError('');
     try { setSent(await sendBoxQuestion(text)); setText(''); }
     catch (e) { setError(e instanceof Error ? e.message : 'Erreur'); }
@@ -52,8 +53,8 @@ const BoitePage: React.FC = () => {
             style={{ width: '100%', boxSizing: 'border-box', marginTop: 8, borderRadius: 14, border: `1px solid ${DC.line}`, background: 'rgba(255,255,255,.06)', padding: 12, fontFamily: 'inherit', fontSize: 16, lineHeight: 1.45, color: DC.text, outline: 'none', resize: 'vertical' }} />
           <p style={{ margin: '6px 0 0', fontSize: 13, color: DC.faint, textAlign: 'right' }}>{text.length} / {MAX}</p>
           {error && <p role="alert" style={{ margin: '8px 0 0', color: '#F09A7A', fontSize: 15 }}>{error}</p>}
-          <button onClick={send} disabled={busy || text.trim().length < 8} className="drl-btn"
-            style={{ marginTop: 12, width: '100%', minHeight: 52, borderRadius: 16, border: 'none', background: palette.accent, color: '#1C1612', fontSize: 16, fontWeight: 800, cursor: busy || text.trim().length < 8 ? 'default' : 'pointer', opacity: busy || text.trim().length < 8 ? 0.55 : 1 }}>
+          <button onClick={send} disabled={busy} className="drl-btn"
+            style={{ marginTop: 12, width: '100%', minHeight: 52, borderRadius: 16, border: 'none', background: palette.accent, color: '#1C1612', fontSize: 16, fontWeight: 800, cursor: busy ? 'default' : 'pointer', opacity: busy ? 0.55 : 1 }}>
             {busy ? 'Envoi…' : 'Déposer ma question'}
           </button>
           <p style={{ margin: '10px 0 0', fontSize: 13, lineHeight: 1.45, color: DC.faint }}>Anonyme : on ne garde ni ton nom, ni ton compte, ni ton adresse. Ce n'est pas une consultation : en cas d'urgence, appelle le SAMU (1515).</p>
