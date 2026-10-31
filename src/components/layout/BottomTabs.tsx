@@ -7,6 +7,7 @@ import React, { useRef } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Home, ClipboardList, MessageCircle, User } from 'lucide-react';
 import { COLOR } from '../../design/charte';
+import '../accueil/accueil.css';
 
 import { isSharedPath, tabForPath, type TabId } from '../../utils/tabForPath';
 
@@ -29,7 +30,7 @@ const BottomTabs: React.FC = () => {
         position: 'fixed', left: 0, right: 0, bottom: 0, zIndex: 30, background: '#1C130B', borderTop: `1px solid ${COLOR.line}`,
         paddingBottom: 'env(safe-area-inset-bottom, 0px)',
       }}>
-      <div style={{ maxWidth: 520, margin: '0 auto', height: 64, display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))' }}>
+      <div className="drl-wrap" style={{ margin: '0 auto', height: 64, display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))' }}>
         {TABS.map(({ id, label, to, Icon }) => {
           const on = id === active;
           return (

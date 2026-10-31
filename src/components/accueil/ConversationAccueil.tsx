@@ -102,10 +102,7 @@ import {
   type AxisSignal, type EngKey, type Programme, type SleepNote,
 } from '../../utils/programme';
 import { AXES, type ProgAxis } from '../../data/programmeLibrary';
-import { TOTEM_GUIDE, TOTEM_ROUTINES } from '../../data/totemGuide';
-import { TOTEM_IMAGES } from '../../data/totemImages';
-import { defiActive as isTotemDefiActive, loadTotemDefi, type TotemDefi } from '../../services/totemService';
-import { resolveGender } from '../../utils/gender';
+import { TOTEM_ROUTINES } from '../../data/totemGuide';
 import { addCarnet, saveConfidence } from '../../services/confierService';
 import { bilanProgramme, closeProgramme, loadProgramme, proposeProgramme, saveProgramme } from '../../services/programmeService';
 import {
@@ -278,7 +275,6 @@ const ConversationAccueil: React.FC = () => {
   const companionName = companion || COMPANION_DEFAULT;
   const toCompanion = companion || 'ton compagnon';
   const [totemAnimal, setTotemAnimal] = useState<TotemAnimal | null>(null);
-  const [totemDefi, setTotemDefi] = useState<TotemDefi | null>(null);
   const [totemPending, setTotemPending] = useState(false);
   // Notifications : la cloche, « Mes rappels », et la demande dans le chat
   const [inbox, setInbox] = useState<InboxItem[]>([]);
@@ -333,8 +329,6 @@ const ConversationAccueil: React.FC = () => {
         setTotemAnimal(p.totem?.revealedAt && p.totem.animal ? (p.totem.animal as TotemAnimal) : null);
         setTotemPending(!!(p.totem?.revealedAt && p.totem.pendingAnimal && p.totem.pendingAnimal !== p.totem.animal));
       })
-      .then(() => (cancelled ? null : loadTotemDefi(currentUser.id)))
-      .then(d => { if (!cancelled && d) setTotemDefi(d); })
       .catch(() => { if (!cancelled) setResults({}); });
     return () => { cancelled = true; };
   }, [authReady, isAuthenticated, currentUser?.id]);
@@ -792,7 +786,6 @@ const ConversationAccueil: React.FC = () => {
   // ── Mon programme ──
   const moodsNow = loadMoods(moodKey);
   const totemInfo = totemAnimal ? { animal: totemAnimal, label: getTotemSignature(totemAnimal).label, words: totemWords(totemAnimal) } : null;
-  const progSignals = results ? programmeSignals(results) : [];
   const progRemaining = prog ? remainingToday(prog, today, moodsNow) : 0;
 
   // ── Page d'accueil : toujours une salutation et une recommandation, jamais les derniers messages ──
@@ -806,7 +799,6 @@ const ConversationAccueil: React.FC = () => {
   })();
   const homeTestLabel = state.activeTest ? getScaleMeta(state.activeTest.scaleId).label : state.prescribed ? getScaleMeta(state.prescribed).label : '';
   const testing = state.step === 'testing' && !!state.activeTest;
-  const pendingTest = !testing && state.prescribed && !results?.[state.prescribed] ? state.prescribed : null;
   const progActive = !!prog && prog.status === 'active' && !prog.result;
   /** La seule phrase sous la salutation : ce qui compte le plus maintenant. */
   const focusLine = testing
@@ -814,50 +806,6 @@ const ConversationAccueil: React.FC = () => {
     : progActive && progRemaining > 0
       ? `${progRemaining} engagement${progRemaining > 1 ? 's t\'attendent' : ' t\'attend'} aujourd'hui. Ou dis-moi simplement comment tu vas.`
       : 'Comment tu vas aujourd\'hui ? Écris-moi, je t\'écoute.';
-
-  /** « Aujourd'hui » : une ligne par chose à faire, dans l'ordre d'importance (3 ou 4 au plus). */
-  type TodayRow = { key: string; title: string; sub: string; onClick: () => void; visual: React.ReactNode; badge?: React.ReactNode; subColor?: string };
-  const iconBox = (node: React.ReactNode) => (
-    <span style={{ width: 42, height: 42, borderRadius: 13, background: 'rgba(242,182,109,.14)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>{node}</span>
-  );
-  const countBadge = (n: number) => (
-    <span aria-label={`${n} à faire`} style={{ minWidth: 22, height: 22, padding: '0 6px', boxSizing: 'border-box', borderRadius: 11, background: '#E8664F', color: '#fff', fontSize: 13, fontWeight: 700, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>{n}</span>
-  );
-  const todayRows: TodayRow[] = [];
-  if (testing) {
-    todayRows.push({ key: 'test', title: `Reprendre « ${homeTestLabel} »`, sub: 'Tes réponses sont gardées', onClick: () => onChip({ label: 'Reprendre le test', kind: 'home', q: { label: 'Reprendre le test', value: 'home:resume' } }), visual: iconBox(<ListChecks size={20} color={palette.accent} aria-hidden="true" />) });
-  } else if (pendingTest) {
-    todayRows.push({ key: 'test', title: `Le test « ${homeTestLabel} »`, sub: `Environ ${getScaleById(pendingTest)?.timeEstimateMinutes ?? 3} minutes, avec moi`, onClick: () => onChip({ label: 'Faire le test', kind: 'home', q: { label: 'Faire le test', value: `home:test:${pendingTest}` } }), visual: iconBox(<ListChecks size={20} color={palette.accent} aria-hidden="true" />) });
-  }
-  if (prog) {
-    const day = Math.min(28, dayNumber(prog, today));
-    todayRows.push({
-      key: 'prog', title: 'Mon programme',
-      sub: prog.result ? 'Terminé : vois le chemin parcouru' : prog.status === 'paused' ? 'En pause' : progRemaining > 0 ? `${AXES[prog.axis].short} · Jour ${day} sur 28 · ${progRemaining} à faire` : `${AXES[prog.axis].short} · Jour ${day} sur 28 · journée validée`,
-      subColor: progActive && progRemaining === 0 ? C.sage : undefined,
-      onClick: () => { trackAccueil('programme_open'); setProgOpen(true); },
-      visual: iconBox(<ClipboardCheck size={20} color={palette.accent} aria-hidden="true" />),
-      badge: progActive && progRemaining > 0 ? countBadge(progRemaining) : progActive ? <Check size={18} color={C.sage} strokeWidth={2.6} aria-label="Fait" /> : undefined,
-    });
-  } else if (isAuthenticated && progSignals.length > 0 && !testing) {
-    todayRows.push({ key: 'prog', title: 'Un programme pour moi', sub: '28 jours, quelques minutes par jour, choisis pour toi', onClick: () => onChip({ label: 'Mon programme', kind: 'home', q: { label: 'Mon programme', value: 'home:programme' } }), visual: iconBox(<ClipboardCheck size={20} color={palette.accent} aria-hidden="true" />) });
-  }
-  // L'humeur : comptée dans le programme si on en suit un, sinon une ligne ici
-  if (!moodToday && !progActive) {
-    todayRows.push({ key: 'mood', title: 'Noter mon humeur', sub: '30 secondes, pour suivre ta météo intérieure', onClick: () => { trackAccueil('mood_open'); setMode('mood'); window.scrollTo({ top: 0, behavior: 'smooth' }); }, visual: iconBox(<CloudSun size={20} color={palette.accent} aria-hidden="true" />) });
-  }
-  if (totemInfo) {
-    const gd = TOTEM_GUIDE[totemInfo.animal];
-    const onDefi = isTotemDefiActive(totemDefi, totemInfo.animal);
-    const n = Math.floor(Date.now() / 864e5) % 3;
-    const title = onDefi ? `Ton défi ${totemInfo.words.du}` : n === 0 ? `Ce qui recharge ${totemInfo.words.ton}` : n === 1 ? `Le piège ${totemInfo.words.du}` : `La force ${totemInfo.words.du}`;
-    const text = onDefi ? gd.defi : n === 0 ? gd.recharge : n === 1 ? gd.piege : gd.force;
-    todayRows.push({
-      key: 'totem', title, sub: resolveGender(text, genreKnown === 'femme' ? 'femme' : 'homme'),
-      onClick: () => navigate('/assessment/totem'),
-      visual: <img src={TOTEM_IMAGES[totemInfo.animal]} alt="" width={42} height={42} style={{ width: 42, height: 42, borderRadius: 13, objectFit: 'cover', flexShrink: 0 }} />,
-    });
-  }
 
   /** La cloche : ce qui attend maintenant (calculé sur place) + ce que Dr Lô a envoyé. */
   const liveItems: LiveItem[] = [];
@@ -1958,7 +1906,7 @@ const ConversationAccueil: React.FC = () => {
     return (
       <section aria-label="Conversation avec ton compagnon" aria-busy={revealing} className="drl-screen font-sans"
         style={{ position: 'fixed', inset: 0, zIndex: 40, height: '100dvh', display: 'flex', flexDirection: 'column', overflow: 'hidden', background: palette.bg, color: C.text }}>
-        <div style={{ width: '100%', maxWidth: 560, margin: '0 auto', height: '100%', display: 'flex', flexDirection: 'column' }}>
+        <div className="drl-wrap-chat" style={{ width: '100%', margin: '0 auto', height: '100%', display: 'flex', flexDirection: 'column' }}>
           {/* En-tête de discussion */}
           <header style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 14px', borderBottom: '1px solid rgba(255,255,255,.08)', background: 'rgba(20,16,13,.6)' }}>
             <button onClick={() => { setInChat(false); setMode('home'); setShowConvs(false); }} aria-label="Revenir à l'accueil" className="drl-btn"
@@ -2167,7 +2115,7 @@ const ConversationAccueil: React.FC = () => {
       <div aria-hidden="true" className="drl-bokeh" style={{ position: 'absolute', right: -50, top: 300, width: 160, height: 160, borderRadius: '50%', background: palette.bokeh2, filter: 'blur(36px)', animationDelay: '-5s' }} />
       <div aria-hidden="true" className="drl-bokeh" style={{ position: 'absolute', left: 40, bottom: 120, width: 110, height: 110, borderRadius: '50%', background: palette.bokeh1, filter: 'blur(34px)', animationDelay: '-9s' }} />
 
-      <div style={{ position: 'relative', maxWidth: 460, margin: '0 auto', minHeight: '100svh', display: 'flex', flexDirection: 'column', padding: '18px 22px 0', boxSizing: 'border-box' }}>
+      <div className="drl-wrap-chat" style={{ position: 'relative', margin: '0 auto', minHeight: '100svh', display: 'flex', flexDirection: 'column', padding: '18px 22px 0', boxSizing: 'border-box' }}>
 
         {/* En-tête */}
         <header style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
@@ -2284,26 +2232,6 @@ const ConversationAccueil: React.FC = () => {
           )}
         </div>
 
-        {/* 3. Aujourd'hui : une seule liste, une ligne par chose à faire */}
-        {todayRows.length > 0 && (
-          <section aria-label="À faire avec ton compagnon" style={{ marginTop: 22, marginBottom: 14 }}>
-            <p style={{ margin: '0 4px 8px', fontSize: 13, letterSpacing: '.12em', textTransform: 'uppercase', fontWeight: 700, color: C.faint }}>Avec ton compagnon</p>
-            <div style={{ borderRadius: 18, border: `1px solid ${C.line}`, background: C.glass, overflow: 'hidden' }}>
-              {todayRows.map((r, i) => (
-                <button key={r.key} onClick={r.onClick} className="drl-btn"
-                  style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 12, padding: '13px 14px', border: 0, borderTop: i ? `1px solid ${C.line}` : 0, background: 'transparent', color: C.text, cursor: 'pointer', textAlign: 'left', fontFamily: 'inherit' }}>
-                  {r.visual}
-                  <span style={{ flex: 1, minWidth: 0 }}>
-                    <span style={{ display: 'block', fontSize: 15, fontWeight: 700 }}>{r.title}</span>
-                    <span style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', fontSize: 13, lineHeight: 1.45, color: r.subColor ?? C.faint, marginTop: 2 }}>{r.sub}</span>
-                  </span>
-                  {r.badge}
-                  <ArrowRight size={16} color={C.muted} aria-hidden="true" style={{ flexShrink: 0 }} />
-                </button>
-              ))}
-            </div>
-          </section>
-        )}
         </>) : (<>
         {/* Première visite : la conversation d'accueil, au centre */}
         <div style={{ marginTop: 16, textAlign: 'center' }}>
@@ -2365,17 +2293,6 @@ const ConversationAccueil: React.FC = () => {
         </>)}
 
         </>)}
-
-        {/* Mon espace : un tap plus loin */}
-        <Link to="/espace" className="drl-btn"
-          style={{ marginTop: 'auto', display: 'flex', alignItems: 'center', gap: 14, textDecoration: 'none', background: C.glass, border: '1px solid rgba(255,255,255,.12)', borderRadius: 18, padding: '14px 16px', color: C.text }}>
-          <Sprout size={26} color={palette.accent} strokeWidth={1.8} aria-hidden="true" />
-          <span style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 3 }}>
-            <span style={{ fontSize: 15, fontWeight: 700 }}>{isAuthenticated ? 'Mon espace bien-être' : 'Toutes les évaluations'}</span>
-            <span style={{ fontSize: 13, color: '#B9B0A2' }}>{isAuthenticated ? 'Mental · Humeur · Social · Intime' : 'Mental · Vie intime · Bonus'}</span>
-          </span>
-          <ArrowRight size={18} color={C.muted} aria-hidden="true" />
-        </Link>
 
         <p style={{ margin: '14px 0 16px', textAlign: 'center', fontSize: 13, color: C.faint, lineHeight: 1.5 }}>
           Un espace d'écoute, sans jugement. Pas de diagnostic · 18 ans et plus · Urgence : <a href="tel:1515" style={{ fontWeight: 700 }}>1515</a>

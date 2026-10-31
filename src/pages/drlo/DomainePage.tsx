@@ -10,7 +10,8 @@ import DrLoShell, { DC, card, usePalette } from '../../components/accueil/DrLoSh
 import { useAuth } from '../../contexts/AuthContext';
 import { getOnboardingProfile } from '../../utils/onboardingProfile';
 import { getProfileProgress } from '../../services/evaluationService';
-import { getTotemProgress, TOTEM_REQUIRED_SCALES } from '../../utils/totemAlgorithm';
+import { getTotemProgress, getTotemSignature, TOTEM_REQUIRED_SCALES, type TotemAnimal } from '../../utils/totemAlgorithm';
+import { TOTEM_IMAGES } from '../../data/totemImages';
 import { getAllGuestResults } from '../../utils/guestSession';
 import { BONUS_SCALES, MENTAL_HEALTH_SCALES, SEXUAL_HEALTH_SCALES } from '../../data/scales';
 import { getScaleMeta } from '../../utils/scaleMeta';
@@ -63,6 +64,7 @@ const DomainePage: React.FC = () => {
   const ob = getOnboardingProfile();
   const [results, setResults] = useState<Record<string, ScaleResult>>({});
   const [loaded, setLoaded] = useState(false);
+  const [totemInfo, setTotemInfo] = useState<{ animal: string; revealedAt: unknown } | null>(null);
   const [open, setOpen] = useState<string | null>(null);
   const d = (['mental', 'social', 'intime', 'bonus'].includes(domaine ?? '') ? domaine : null) as Domaine | null;
   const [showIntime, setShowIntime] = useState(() => { try { return localStorage.getItem(SHOW_INTIME_KEY) === '1'; } catch { return false; } });
@@ -81,6 +83,7 @@ const DomainePage: React.FC = () => {
     getProfileProgress(uid).then(p => {
       if (off) return;
       setResults(p.scaleResults ?? {});
+      setTotemInfo(p.totem ? { animal: p.totem.animal, revealedAt: p.totem.revealedAt } : null);
       setLoaded(true);
     }).catch(() => setLoaded(true));
     return () => { off = true; };
@@ -175,7 +178,7 @@ const DomainePage: React.FC = () => {
   ];
 
   return (
-    <DrLoShell back={isTests ? { to: '/', label: 'Retour à l\'accueil' } : { to: '/espace/mental', label: 'Retour aux tests' }} genre={ob?.genre} palette={palette}>
+    <DrLoShell back={isTests ? undefined : { to: '/espace/mental', label: 'Retour aux tests' }} genre={ob?.genre} palette={palette}>
       <div style={{ marginTop: 18 }}>
         <h1 style={{ margin: 0, fontFamily: 'Fraunces, serif', fontSize: 30, lineHeight: 1.2, fontWeight: 600, color: DC.title }}>{isTests ? 'Tests' : meta.title}</h1>
         {!isTests && <p style={{ margin: '8px 0 0', fontSize: 15, lineHeight: 1.55, color: DC.soft }}>{meta.intro}</p>}
@@ -183,18 +186,30 @@ const DomainePage: React.FC = () => {
 
       {isTests && loaded && (
         <>
+          {totemInfo?.animal && totemInfo.revealedAt ? (
+            <Link to="/assessment/totem" className="drl-btn"
+              style={{ ...card, marginTop: 14, padding: 12, display: 'flex', alignItems: 'center', gap: 12, textDecoration: 'none', color: DC.text, borderColor: 'rgba(242,182,109,.5)', background: 'rgba(242,182,109,.09)' }}>
+              <img src={TOTEM_IMAGES[totemInfo.animal as TotemAnimal]} alt="" aria-hidden="true" style={{ width: 52, height: 52, borderRadius: 14, objectFit: 'cover', flexShrink: 0 }} />
+              <span style={{ flex: 1, minWidth: 0 }}>
+                <span style={{ display: 'block', fontSize: 13, color: DC.faint }}>Ton animal intérieur</span>
+                <b style={{ display: 'block', fontFamily: 'Fraunces, serif', fontSize: 19, color: DC.title }}>{getTotemSignature(totemInfo.animal as TotemAnimal)?.label ?? totemInfo.animal}</b>
+              </span>
+              <span style={{ fontSize: 14, fontWeight: 700, color: DC.gold }}>Voir</span>
+            </Link>
+          ) : (
           <Link to={totem.missing.length === 0 ? '/assessment/totem' : '#'} onClick={e => { if (totem.missing.length > 0) e.preventDefault(); }} className="drl-btn"
-            style={{ ...card, marginTop: 14, padding: 14, display: 'flex', flexDirection: 'column', gap: 8, textDecoration: 'none', color: DC.text, borderColor: 'rgba(242,182,109,.5)', background: 'rgba(242,182,109,.09)', cursor: totem.missing.length === 0 ? 'pointer' : 'default' }}>
-            <span style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
-              <b style={{ fontSize: 16, color: DC.title }}>Ton animal intérieur</b>
-              <span style={{ fontSize: 14, fontWeight: 700, color: DC.gold }}>{totem.missing.length === 0 ? 'Prêt : le découvrir' : `${totem.completed} tests sur ${totem.total}`}</span>
-            </span>
-            <span style={{ display: 'flex', gap: 5 }} role="img" aria-label={`${totem.completed} tests faits sur ${totem.total}`}>
-              {Array.from({ length: totem.total }, (_, i) => (
-                <span key={i} style={{ flex: 1, height: 6, borderRadius: 3, background: i < totem.completed ? DC.gold : 'rgba(255,255,255,.18)' }} />
-              ))}
-            </span>
-          </Link>
+              style={{ ...card, marginTop: 14, padding: 14, display: 'flex', flexDirection: 'column', gap: 8, textDecoration: 'none', color: DC.text, borderColor: 'rgba(242,182,109,.5)', background: 'rgba(242,182,109,.09)', cursor: totem.missing.length === 0 ? 'pointer' : 'default' }}>
+              <span style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
+                <b style={{ fontSize: 16, color: DC.title }}>Ton animal intérieur</b>
+                <span style={{ fontSize: 14, fontWeight: 700, color: DC.gold }}>{totem.missing.length === 0 ? 'Prêt : le découvrir' : `${totem.completed} tests sur ${totem.total}`}</span>
+              </span>
+              <span style={{ display: 'flex', gap: 5 }} role="img" aria-label={`${totem.completed} tests faits sur ${totem.total}`}>
+                {Array.from({ length: totem.total }, (_, i) => (
+                  <span key={i} style={{ flex: 1, height: 6, borderRadius: 3, background: i < totem.completed ? DC.gold : 'rgba(255,255,255,.18)' }} />
+                ))}
+              </span>
+            </Link>
+          )}
 
           <div role="tablist" aria-label="Domaines" style={{ marginTop: 14, display: 'grid', gridTemplateColumns: `repeat(${segments.length}, minmax(0, 1fr))`, padding: 4, borderRadius: 999, border: `1px solid ${DC.line}`, gap: 4 }}>
             {segments.map(sg => (

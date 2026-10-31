@@ -99,3 +99,9 @@
 .drl-screen .border-red-200,.drl-screen .border-red-300{border-color:rgba(240,138,122,.4)!important}
 .drl-screen .bg-blue-500,.drl-screen .bg-blue-600,.drl-screen .hover\:bg-blue-600:hover,.drl-screen .hover\:bg-blue-700:hover{background:var(--he-action)!important;color:#1C140D!important}
 .drl-screen .bg-red-500,.drl-screen .bg-red-600{background:rgba(240,138,122,.25)!important;color:#F08A7A!important}
+
+/* Largeur de lecture : téléphone 520, tablette 720, ordinateur 820 (au lieu d'une colonne étroite perdue au milieu de l'écran) */
+.drl-wrap{max-width:520px}
+.drl-wrap-chat{max-width:520px}
+@media (min-width:768px){.drl-wrap{max-width:720px}.drl-wrap-chat{max-width:640px}}
+@media (min-width:1100px){.drl-wrap{max-width:820px}.drl-wrap-chat{max-width:720px}}

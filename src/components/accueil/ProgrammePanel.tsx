@@ -301,7 +301,7 @@ const ProgrammePanel: React.FC<ProgrammePanelProps> = props => {
   return (
     <div role="dialog" aria-modal="true" aria-label="Mes engagements du jour"
       style={{ position: 'fixed', inset: 0, zIndex: 55, background: palette.bg, color: C.text, overflowY: 'auto', fontFamily: '"Plus Jakarta Sans", system-ui, sans-serif' }}>
-      <div style={{ maxWidth: 520, margin: '0 auto', padding: '14px 16px 110px', display: 'flex', flexDirection: 'column', gap: 14 }}>
+      <div className="drl-wrap" style={{ margin: '0 auto', padding: '14px 16px 110px', display: 'flex', flexDirection: 'column', gap: 14 }}>
         <header style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <button onClick={props.onClose} aria-label="Revenir" style={{ width: 44, height: 44, border: 0, background: 'transparent', color: C.muted, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <ChevronLeft size={24} aria-hidden="true" />

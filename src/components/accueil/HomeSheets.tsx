@@ -19,7 +19,7 @@ const Sheet: React.FC<{ label: string; onClose: () => void; children: React.Reac
   return (
     <div role="dialog" aria-modal="true" aria-label={label} style={{ position: 'fixed', inset: 0, zIndex: 50, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
       <button aria-label="Fermer" onClick={onClose} style={{ position: 'absolute', inset: 0, border: 0, background: 'rgba(10,8,6,.66)', cursor: 'pointer' }} />
-      <div className="drl-in" style={{ position: 'relative', width: '100%', maxWidth: 520, boxSizing: 'border-box', background: '#1F1711', borderTop: `1px solid ${DC.line}`, borderRadius: '22px 22px 0 0', padding: '18px 18px calc(24px + env(safe-area-inset-bottom, 0px))' }}>
+      <div className="drl-in drl-wrap" style={{ position: 'relative', width: '100%', boxSizing: 'border-box', background: '#1F1711', borderTop: `1px solid ${DC.line}`, borderRadius: '22px 22px 0 0', padding: '18px 18px calc(24px + env(safe-area-inset-bottom, 0px))' }}>
         <button onClick={onClose} aria-label="Fermer" className="drl-btn" style={{ position: 'absolute', top: 8, right: 8, width: 44, height: 44, border: 0, background: 'transparent', color: DC.muted, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><X size={20} aria-hidden="true" /></button>
         {children}
       </div>

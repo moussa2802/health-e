@@ -8,6 +8,10 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { ArrowRight, CloudSun, Heart, Sparkles, Wind, PenLine, Wrench, MessageCircleQuestion } from 'lucide-react';
 import { usePalette, DC, card } from '../components/accueil/DrLoShell';
+import { addDays, type Programme } from '../utils/programme';
+import { loadProgramme } from '../services/programmeService';
+import type { MoodMap } from '../utils/moodLog';
+import HomeProgramme from '../components/accueil/HomeProgramme';
 import { MoodSheet } from '../components/accueil/HomeSheets';
 import { HScroll, SectionTitle, NewsCard, ChannelCard, WideLink, tintOf, type NewsItem } from '../components/accueil/HomeParts';
 import { RealDrLoPhoto } from '../components/accueil/RealDrLoBadge';
@@ -176,6 +180,8 @@ const ConnectedHome: React.FC<{ feed: HomeFeed | null; palette: MomentPalette; u
   const [chBadge, setChBadge] = useState(0);
   const [mine, setMine] = useState<Mine | null>(null);
   const [moodDone, setMoodDone] = useState<boolean | null>(null);
+  const [moods, setMoods] = useState<MoodMap>({});
+  const [prog, setProg] = useState<Programme | null>(null);
   const [moodOpen, setMoodOpen] = useState(false);
   const [drlo, setDrlo] = useState<DrloStatus | null>(null);
   const today = dayKey();
@@ -186,10 +192,14 @@ const ConnectedHome: React.FC<{ feed: HomeFeed | null; palette: MomentPalette; u
     getInbox().then(r => { if (!off) { setInbox(r.items); setUnread(r.unread); } }).catch(() => {});
     getChannelNews().then(r => { if (!off) setChBadge(r.badge); }).catch(() => {});
     myPractices().then(m => { if (!off) setMine(m); }).catch(() => {});
-    fetchMoods(uid, today).then(m => { if (!off) setMoodDone(!!m[today]); }).catch(() => {});
+    fetchMoods(uid, addDays(today, -35)).then(m => { if (!off) { setMoods(m); setMoodDone(!!m[today]); } }).catch(() => {});
+    loadProgramme(uid).then(p => { if (!off) setProg(p); }).catch(() => {});
     getDrloStatus().then(s => { if (!off) setDrlo(s); }).catch(() => {});
     return () => { off = true; };
   }, [uid, today]);
+
+  // Le test à la une : seulement s'il a été choisi dans l'espace Dr Lô, et pas déjà fait
+  const featuredForYou = feed?.featured && getScaleById(feed.featured.scaleId) && results && !results[feed.featured.scaleId] ? feed.featured : null;
 
   // Ta suite : la prochaine chose à faire, une seule
   const suite = useMemo(() => {
@@ -224,6 +234,8 @@ const ConnectedHome: React.FC<{ feed: HomeFeed | null; palette: MomentPalette; u
         </section>
       )}
 
+      {featuredForYou && <FeaturedCard featured={featuredForYou} guest={false} palette={palette} />}
+
       {(lastMsg || chBadge > 0) && (
         <>
           <SectionTitle>Nouveau pour toi</SectionTitle>
@@ -253,6 +265,8 @@ const ConnectedHome: React.FC<{ feed: HomeFeed | null; palette: MomentPalette; u
         </>
       )}
 
+      {prog && <HomeProgramme uid={uid} prog={prog} onProg={setProg} moods={moods} onMoods={setMoods} prenom={prenom} genre={getOnboardingProfile()?.genre ?? undefined} palette={palette} />}
+
       {moodDone === false && (
         <div style={{ marginTop: 14 }}>
           <button onClick={() => setMoodOpen(true)} className="drl-btn" style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 12, padding: 14, minHeight: 64, borderRadius: 18, textAlign: 'left', color: DC.text, border: `1px solid ${DC.gold}55`, background: `${DC.gold}12`, cursor: 'pointer', fontFamily: 'inherit' }}>
@@ -262,7 +276,7 @@ const ConnectedHome: React.FC<{ feed: HomeFeed | null; palette: MomentPalette; u
         </div>
       )}
 
-      {moodOpen && <MoodSheet uid={uid} prenom={prenom} onNoted={() => setMoodDone(true)} onClose={() => setMoodOpen(false)} />}
+      {moodOpen && <MoodSheet uid={uid} prenom={prenom} onNoted={() => { setMoodDone(true); setMoods(m => ({ ...m, [today]: { mood: 'bof', at: Date.now() } })); }} onClose={() => setMoodOpen(false)} />}
 
       <Discover feed={feed} connected />
 
@@ -299,7 +313,7 @@ const AccueilPage: React.FC = () => {
 
   return (
     <div className="drl-screen font-sans" style={{ minHeight: '100svh', background: palette.bg, color: DC.text, ['--he-action' as string]: palette.primary } as React.CSSProperties}>
-      <div style={{ maxWidth: 520, margin: '0 auto', padding: '16px 18px calc(92px + env(safe-area-inset-bottom, 0px))', boxSizing: 'border-box' }}>
+      <div className="drl-wrap" style={{ margin: '0 auto', padding: '16px 18px calc(92px + env(safe-area-inset-bottom, 0px))', boxSizing: 'border-box' }}>
         {authReady && (isAuthenticated && currentUser
           ? <ConnectedHome feed={feed} palette={palette} uid={currentUser.id} prenom={prenom} />
           : <VisitorHome feed={feed} palette={palette} />)}
@@ -308,7 +322,7 @@ const AccueilPage: React.FC = () => {
       {/* Contenu indexable pour Google : inutile pour une personne connectée */}
       {authReady && !isAuthenticated && <AccueilSeoSections />}
 
-      <div style={{ maxWidth: 520, margin: '0 auto', padding: '8px 18px calc(92px + env(safe-area-inset-bottom, 0px))', boxSizing: 'border-box', fontSize: 13, color: DC.faint, display: 'flex', flexDirection: 'column', gap: 4 }}>
+      <div className="drl-wrap" style={{ margin: '0 auto', padding: '8px 18px calc(92px + env(safe-area-inset-bottom, 0px))', boxSizing: 'border-box', fontSize: 13, color: DC.faint, display: 'flex', flexDirection: 'column', gap: 4 }}>
         <span><strong style={{ color: DC.text }}>Health-e</strong> — Ces évaluations ne remplacent pas un professionnel de santé.</span>
         <nav aria-label="Liens du site" style={{ display: 'flex', flexWrap: 'wrap', gap: '0 18px' }}>
           <Link to="/confidentialite" style={{ minHeight: 44, display: 'inline-flex', alignItems: 'center', color: DC.faint, textDecoration: 'none' }}>Confidentialité</Link>

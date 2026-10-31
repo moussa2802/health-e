@@ -28,7 +28,8 @@ export function usePalette(): MomentPalette {
 }
 
 const DrLoShell: React.FC<{
-  back: { to: string; label: string };
+  /** Absent sur les pages d'onglet (Tests, Moi) : il n'y a pas de page « avant ». */
+  back?: { to: string; label: string };
   genre?: 'homme' | 'femme';
   palette: MomentPalette;
   children: React.ReactNode;
@@ -38,13 +39,15 @@ const DrLoShell: React.FC<{
   const seul = genre === 'femme' ? 'seule' : genre === 'homme' ? 'seul' : 'uniquement';
   return (
     <div className="drl-screen font-sans" style={{ minHeight: '100svh', background: palette.bg, color: DC.text, position: 'relative', ['--he-action' as string]: palette.primary } as React.CSSProperties}>
-      <div style={{ maxWidth: 520, margin: '0 auto', padding: '16px 18px calc(92px + env(safe-area-inset-bottom, 0px))', boxSizing: 'border-box' }}>
+      <div className="drl-wrap" style={{ margin: '0 auto', padding: '16px 18px calc(92px + env(safe-area-inset-bottom, 0px))', boxSizing: 'border-box' }}>
         <header style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
-          <Link to={back.to} aria-label={back.label} className="drl-btn"
-            onClick={e => { if (canGoBackInApp((window.history.state as { idx?: number } | null)?.idx)) { e.preventDefault(); navigate(-1); } }}
-            style={{ width: 44, height: 44, borderRadius: 13, border: `1px solid ${DC.line}`, background: DC.glass, display: 'flex', alignItems: 'center', justifyContent: 'center', color: DC.muted }}>
-            <ArrowLeft size={20} aria-hidden="true" />
-          </Link>
+          {back ? (
+            <Link to={back.to} aria-label={back.label} className="drl-btn"
+              onClick={e => { if (canGoBackInApp((window.history.state as { idx?: number } | null)?.idx)) { e.preventDefault(); navigate(-1); } }}
+              style={{ width: 44, height: 44, borderRadius: 13, border: `1px solid ${DC.line}`, background: DC.glass, display: 'flex', alignItems: 'center', justifyContent: 'center', color: DC.muted }}>
+              <ArrowLeft size={20} aria-hidden="true" />
+            </Link>
+          ) : <span aria-hidden="true" style={{ width: 44, height: 44 }} />}
           <span style={{ display: 'inline-flex', alignItems: 'center', gap: 7, fontSize: 13, fontWeight: 600, color: DC.muted }}>
             <Lock size={14} aria-hidden="true" /> Visible par toi {seul}
           </span>
