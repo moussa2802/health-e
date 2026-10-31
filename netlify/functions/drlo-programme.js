@@ -1,5 +1,5 @@
 /**
- * drlo-programme — « Mon programme Dr Lô » : les deux moments où l'IA travaille.
+ * drlo-programme — « Mon programme » : les deux moments où l'IA travaille.
  *  - action "propose" : le mot de Dr Lô et l'ordre de la semaine 1 (3 étincelles) ;
  *  - action "bilan"   : le bilan de la semaine (3 étincelles).
  * Cocher chaque jour ne passe pas par ici (gratuit, enregistré par le navigateur).

@@ -4,8 +4,6 @@ import { getOnboardingState, markWelcomeCompleted, resetWelcome } from '../../se
 import { WELCOME_SLIDES } from '../../utils/onboardingConfig';
 import { getOnboardingProfile } from '../../utils/onboardingProfile';
 
-const DR_LO_PHOTO = '/dr-lo.png';
-
 const WelcomeFlow: React.FC = () => {
   const { currentUser, isAuthenticated } = useAuth();
   const [visible, setVisible] = useState(false);
@@ -85,21 +83,9 @@ const WelcomeFlow: React.FC = () => {
           transform: animating ? 'translateY(12px)' : 'translateY(0)',
         }}
       >
-        {/* Photo Dr Lô + illustration */}
+        {/* Illustration */}
         <div className="relative inline-block mb-7">
           <div className="w-[100px] h-[100px] rounded-full bg-sage flex items-center justify-center text-[42px] shadow-lift mx-auto">
-            <img
-              src={DR_LO_PHOTO}
-              alt="Dr Lô"
-              className="w-full h-full rounded-full object-cover"
-              onError={e => {
-                (e.target as HTMLImageElement).style.display = 'none';
-                (e.target as HTMLImageElement).parentElement!.style.fontSize = '42px';
-                (e.target as HTMLImageElement).parentElement!.textContent = slide.illustration;
-              }}
-            />
-          </div>
-          <div className="absolute -bottom-1 -right-1 w-9 h-9 rounded-full bg-card shadow-lift flex items-center justify-center text-lg">
             {slide.illustration}
           </div>
         </div>
@@ -120,7 +106,7 @@ const WelcomeFlow: React.FC = () => {
           </div>
         )}
 
-        {/* Citation Dr Lô */}
+        {/* Citation */}
         <div className="bg-card rounded-block border border-line px-4.5 py-3.5 mb-8 shadow-soft relative">
           {/* Bulle de speech triangle */}
           <div
@@ -143,7 +129,7 @@ const WelcomeFlow: React.FC = () => {
             "{slide.description}"
           </p>
           <p className="mt-2 mb-0 text-xs font-bold text-sage">
-            — Dr Lô
+            — Ton compagnon
           </p>
         </div>
 

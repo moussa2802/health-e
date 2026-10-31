@@ -345,18 +345,18 @@ export const RADIANCE_COLORS: Record<RadianceLevel, { primary: string; secondary
    ═══════════════════════════════════════════════════════════════════════════ */
 
 const ANIMAL_HOOKS: Record<TotemAnimal, string> = {
-  lion: 'Ton totem le Lion rayonne par sa confiance et son leadership.',
-  aigle: 'Ton totem l\'Aigle brille par sa vision et son indépendance.',
-  cheval: 'Ton totem le Cheval vibre par son énergie et sa liberté.',
-  loup: 'Ton totem le Loup rayonne par sa loyauté et son intuition.',
-  dauphin: 'Ton totem le Dauphin illumine par sa joie et son empathie.',
-  elephant: 'Ton totem l\'Éléphant impressionne par sa bienveillance et sa solidité.',
-  cerf: 'Ton totem le Cerf touche par sa sensibilité et sa finesse.',
-  hibou: 'Ton totem le Hibou inspire par sa profondeur et sa sagesse.',
-  panthere: 'Ton totem la Panthère force le respect par sa maîtrise et son calme.',
-  renard: 'Ton totem le Renard séduit par son intelligence et son adaptabilité.',
-  tortue: 'Ton totem la Tortue rassure par sa constance et sa résilience.',
-  ours: 'Ton totem l\'Ours protège par sa force tranquille et sa solidité.',
+  lion: 'Ton animal intérieur le Lion rayonne par sa confiance et son leadership.',
+  aigle: 'Ton animal intérieur l\'Aigle brille par sa vision et son indépendance.',
+  cheval: 'Ton animal intérieur le Cheval vibre par son énergie et sa liberté.',
+  loup: 'Ton animal intérieur le Loup rayonne par sa loyauté et son intuition.',
+  dauphin: 'Ton animal intérieur le Dauphin illumine par sa joie et son empathie.',
+  elephant: 'Ton animal intérieur l\'Éléphant impressionne par sa bienveillance et sa solidité.',
+  cerf: 'Ton animal intérieur le Cerf touche par sa sensibilité et sa finesse.',
+  hibou: 'Ton animal intérieur le Hibou inspire par sa profondeur et sa sagesse.',
+  panthere: 'Ton animal intérieur la Panthère force le respect par sa maîtrise et son calme.',
+  renard: 'Ton animal intérieur le Renard séduit par son intelligence et son adaptabilité.',
+  tortue: 'Ton animal intérieur la Tortue rassure par sa constance et sa résilience.',
+  ours: 'Ton animal intérieur l\'Ours protège par sa force tranquille et sa solidité.',
 };
 
 export function composeDrLoMessage(
@@ -366,7 +366,7 @@ export function composeDrLoMessage(
   radiance?: RadianceLevel,
 ): string {
   if (radiance === 'fully_blooming') {
-    return `${ANIMAL_HOOKS[animal]} Et quel chemin parcouru ! Tous tes domaines rayonnent — ton totem brille de toute sa lumière. Tu as atteint un bel équilibre, et c'est un vrai cadeau que tu te fais. Continue à prendre soin de toi, je suis là.`;
+    return `${ANIMAL_HOOKS[animal]} Et quel chemin parcouru ! Tous tes domaines rayonnent — ton animal intérieur brille de toute sa lumière. Tu as atteint un bel équilibre, et c'est un vrai cadeau que tu te fais. Continue à prendre soin de toi, je suis là.`;
   }
 
   const parts: string[] = [ANIMAL_HOOKS[animal]];

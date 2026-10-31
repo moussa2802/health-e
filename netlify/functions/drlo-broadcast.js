@@ -469,7 +469,7 @@ exports.handler = async (event) => {
       const up = await db.collection('userProfiles').doc(uid).get().catch(() => null);
       const upd = up && up.exists ? up.data() : null;
       const prenom = body.mode === 'prenom' ? ((upd && upd.onboardingProfile && upd.onboardingProfile.prenom) || '') : '';
-      const totem = C.totemOf(upd); // photo de profil : le totem (révélé), jamais un résultat
+      const totem = C.totemOf(upd); // photo de profil : l'animal intérieur (révélé), jamais un résultat
       const idt = C.resolveIdentity(body.mode, { prenom, pseudo: body.pseudo });
       if (idt.error) return reply(400, { error: idt.error });
 

@@ -203,7 +203,7 @@ function buildTotemQuestion(realAnimal, prenom, genre) {
       source: 'totem',
       bonus: TOTEM_POINTS,
       text: resolveGender(
-        `D'après toi, c'est quoi le totem de ${prenom} ?`,
+        `D'après toi, c'est quoi l'animal intérieur de ${prenom} ?`,
         genre
       ),
       options: publicOptions,

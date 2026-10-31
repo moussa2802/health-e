@@ -1,7 +1,7 @@
 /**
  * push-daily — tâche planifiée (toutes les heures, voir netlify.toml).
  * Pour chaque personne qui a activé ses rappels et dont c'est l'heure choisie (dans son fuseau),
- * envoie au plus UN message du jour (programme, bilan, routine, défi du totem, ou « prendre des nouvelles »).
+ * envoie au plus UN message du jour (programme, bilan, routine, défi de l'animal intérieur, ou « prendre des nouvelles »).
  */
 const { admin, db } = require('./_firebase');
 const { decideDaily, localParts, prefsOf } = require('./_pushDaily');

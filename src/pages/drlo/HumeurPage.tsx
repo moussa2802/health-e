@@ -18,6 +18,7 @@ import { getScaleMeta } from '../../utils/scaleMeta';
 import { openDrLoChat } from '../../components/DrLoChat/drLoEvents';
 import { trackAccueil } from '../../utils/accueilTracking';
 
+import CompanionMark from '../../components/accueil/CompanionMark';
 const MONTHS = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
 const fmtDay = (k: string) => { const [, m, d] = k.split('-').map(Number); return `${d} ${MONTHS[m - 1]}`; };
 const CYCLE_SHOW_KEY = 'he_humeur_show_cycle';
@@ -110,7 +111,7 @@ const HumeurPage: React.FC = () => {
     try { await deleteAllMoods(uid); } catch { /* ignore */ }
   };
 
-  const goTest = (scaleId: string) => navigate('/', { state: { prescribe: scaleId } });
+  const goTest = (scaleId: string) => navigate('/compagnon', { state: { prescribe: scaleId } });
 
   // Courbe des 30 jours (interrompue les jours non notés)
   const W = 320, H = 110;
@@ -136,9 +137,9 @@ const HumeurPage: React.FC = () => {
       </div>
 
       {/* Ce que Dr Lô remarque */}
-      <section aria-label="Ce que Dr Lô remarque" style={{ ...card, marginTop: 16, borderColor: rem.tone === 'care' ? 'rgba(180,195,220,.4)' : 'rgba(242,182,109,.3)', background: rem.tone === 'care' ? 'rgba(180,195,220,.10)' : 'rgba(242,182,109,.07)' }}>
+      <section aria-label="Ce que je remarque" style={{ ...card, marginTop: 16, borderColor: rem.tone === 'care' ? 'rgba(180,195,220,.4)' : 'rgba(242,182,109,.3)', background: rem.tone === 'care' ? 'rgba(180,195,220,.10)' : 'rgba(242,182,109,.07)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <img src="/dr-lo.png" alt="Dr Lô" width={34} height={34} style={{ width: 34, height: 34, borderRadius: '50%', objectFit: 'cover', objectPosition: 'top', border: `2px solid ${palette.accent}` }} />
+          <CompanionMark size={34} ring={palette.accent} />
           <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: palette.accent }}>Ce que je remarque</p>
         </div>
         <p style={{ margin: '10px 0 0', fontSize: 15, lineHeight: 1.55, color: DC.soft }}>{loaded ? rem.text : '…'}</p>
@@ -149,10 +150,10 @@ const HumeurPage: React.FC = () => {
           <button type="button" onClick={() => openDrLoChat({ greeting: rem.tone === 'care'
             ? `J'ai vu que ces derniers jours ont été durs pour toi${prenom ? `, ${prenom}` : ''}. Tu veux me dire ce qui pèse le plus en ce moment ?`
             : `On regarde ton humeur de ces derniers jours ensemble${prenom ? `, ${prenom}` : ''} ? Dis-moi ce qui t'a fait du bien, ou ce qui t'a pesé.`, source: 'humeur' })}
-            className="drl-btn" style={chip}>En parler avec Dr Lô</button>
+            className="drl-btn" style={chip}>En parler avec mon compagnon</button>
           {rem.suggestTest && (
             <button onClick={() => goTest(rem.suggestTest!)} className="drl-btn" style={{ ...chip, background: 'rgba(242,182,109,.12)', borderColor: 'rgba(242,182,109,.4)' }}>
-              Faire le test « {getScaleMeta(rem.suggestTest).label} » avec Dr Lô
+              Faire le test « {getScaleMeta(rem.suggestTest).label} »
             </button>
           )}
         </div>

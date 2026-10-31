@@ -66,7 +66,7 @@ const DecouvreDefiPage: React.FC = () => {
               {creatorName} est {totemData.label} {totemData.emoji}
             </p>
             <p className="text-[13px] text-gold/80 m-0 mt-1">
-              Et toi, c'est quoi ton totem ?
+              Et toi, c'est quoi ton animal intérieur ?
             </p>
           </div>
         )}
@@ -121,7 +121,7 @@ const DecouvreDefiPage: React.FC = () => {
           onClick={() => navigate(signupUrl)}
           className="w-full py-4 rounded-[14px] border-none bg-gold text-white text-[16px] font-bold cursor-pointer shadow-soft"
         >
-          Découvrir mon totem
+          Découvrir mon animal intérieur
         </button>
 
         <p className="text-[13px] text-muted text-center m-0 mt-3">

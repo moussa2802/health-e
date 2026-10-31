@@ -1,5 +1,5 @@
 /**
- * WriteDrLoCard — « Écrire au vrai Dr Lô », visible dans « Les messages de Dr Lô » (avant : seulement en bas de Mon espace).
+ * WriteDrLoCard — « Écrire à Dr Lô », visible dans « Les messages de Dr Lô » (avant : seulement en bas de Mon espace).
  * Débloqué → bouton direct vers la page d'envoi. Sinon → on déplie les étapes qui restent (Ton chemin vers Dr Lô).
  */
 import React, { useEffect, useState } from 'react';
@@ -33,7 +33,7 @@ const WriteDrLoCard: React.FC<{ palette: MomentPalette }> = ({ palette }) => {
           <PenLine size={20} />
         </span>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <p style={{ margin: 0, fontSize: 16, fontWeight: 700, color: DC.text }}>Écrire au vrai Dr Lô</p>
+          <p style={{ margin: 0, fontSize: 16, fontWeight: 700, color: DC.text }}>Écrire à Dr Lô</p>
           <p style={{ margin: '2px 0 0', fontSize: 13, color: DC.muted, lineHeight: 1.45 }}>
             {unseen ? 'Il t\'a répondu : va lire sa réponse.' : unlocked ? 'C\'est débloqué : pose-lui ta question, gratuitement.' : `Encore ${remaining} étape${remaining > 1 ? 's' : ''} pour lui écrire. C'est gratuit.`}
           </p>

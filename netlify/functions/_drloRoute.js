@@ -12,11 +12,11 @@ const ACTIONS = [
   'compat',        // comparer son profil avec quelqu'un (partenaire, crush, ami·e) via un code
   'mood',          // noter son humeur du jour
   'confier',       // écrire / vider son sac dans son journal privé
-  'programme',     // « Mon programme Dr Lô » : une routine de 28 jours, quelques minutes par jour
+  'programme',     // « Mon programme » : une routine de 28 jours, quelques minutes par jour
   'breath',        // se calmer maintenant (1 minute de respiration)
   'rappels',       // recevoir (ou régler) les rappels de Dr Lô sur son téléphone
   'chat',          // discuter librement avec Dr Lô (IA) d'une question ou d'une situation
-  'question_drlo', // écrire au vrai Dr Lô (le médecin)
+  'question_drlo', // écrire à Dr Lô (le médecin)
   'totem',         // voir son totem / son profil
   'catalogue',     // voir tous les tests
   'explain',       // pendant un test : reformuler la question en cours
@@ -76,7 +76,7 @@ Destinations possibles (champ "action") :
 - "defi" : la personne veut savoir si ses proches/ami(e)s la connaissent vraiment, jouer avec ses amis, un quiz entre amis, « kan moo ma gën a xam ». C'est le Défi : ses proches devinent ses réponses.
 - "compat" : comparer sa personnalité/compatibilité avec quelqu'un (partenaire, crush, fiancé(e), ami(e)), savoir si on est fait l'un pour l'autre, ou « avec qui je suis le plus compatible ». Fonctionnement RÉEL (ne rien inventer d'autre) : chacun a SON propre code de compatibilité ; l'autre personne fait ses tests sur Health-e et donne son code ; Dr Lô compare les deux profils. Tu ne génères aucun code pour l'autre et tu ne demandes pas son prénom. Dans ta réponse, dis seulement qu'on va le faire ensemble, étape par étape.
 - "mood" : noter son humeur du jour.
-- "programme" : elle veut un suivi au quotidien, une routine, des exercices à faire chaque jour, être accompagnée sur plusieurs semaines pour aller mieux (stress, moral, sommeil). C'est « Mon programme Dr Lô » : 28 jours, quelques minutes par jour. Dans ta réponse, dis seulement que tu vas regarder ce qui lui conviendrait, sans détailler le programme.
+- "programme" : elle veut un suivi au quotidien, une routine, des exercices à faire chaque jour, être accompagnée sur plusieurs semaines pour aller mieux (stress, moral, sommeil). C'est « Mon programme » : 28 jours, quelques minutes par jour. Dans ta réponse, dis seulement que tu vas regarder ce qui lui conviendrait, sans détailler le programme.
 - "confier" : elle veut raconter, vider son sac, écrire ce qu'elle a sur le cœur sans être interrompue (journal privé).
 - "breath" : angoisse, crise de panique, cœur qui bat vite, souffle court MAINTENANT, sans idée de mort ni danger : on respire ensemble tout de suite.
 RÈGLE DE CHOIX, PAR ORDRE DE PRIORITÉ
@@ -87,8 +87,8 @@ RÈGLE DE CHOIX, PAR ORDRE DE PRIORITÉ
 5. Simple échange (bonjour, merci, question sur le site) → "reply".
 
 - "chat" : elle pose une vraie question (santé, couple, sexualité, situation précise) ou veut discuter en profondeur. Et SURTOUT toute question sur elle-même : « qui je suis », « décris-moi », « parle-moi de moi », « la personne intérieure de moi », « de quoi j'ai besoin », « que penses-tu de moi », « mes forces / mes faiblesses », « pourquoi je réagis comme ça », « qu'est-ce qui ne va pas chez moi ». Ces questions méritent une vraie réponse personnelle : choisis "chat", jamais "totem" ni "reply". Ta réponse : quelques mots seulement (ex. « Je regarde tout ce que je sais de toi. »), sans répondre toi-même : la vraie réponse suit.
-- "question_drlo" : elle veut parler au vrai Dr Lô, le médecin. Attention : ce n'est PAS un appel ni un chat en direct. Elle lui écrit une question (gratuit, une à la fois) et il répond par écrit quand il peut. Ne promets jamais une mise en contact immédiate.
-- "totem" : seulement si elle demande à VOIR son animal-totem ou la page de son profil (« montre-moi mon totem », « c'est quoi mon animal »). Une question sur qui elle est → "chat".
+- "question_drlo" : elle veut parler à Dr Lô, le médecin. Attention : ce n'est PAS un appel ni un chat en direct. Elle lui écrit une question (gratuit, une à la fois) et il répond par écrit quand il peut. Ne promets jamais une mise en contact immédiate.
+- "totem" : seulement si elle demande à VOIR son animal intérieur ou la page de son profil (« montre-moi mon animal intérieur », « c'est quoi mon animal »). Une question sur qui elle est → "chat".
 - "rappels" : elle veut que Dr Lô lui envoie des rappels ou des notifications sur son téléphone, les activer, les régler, ou elle dit qu'elle ne les reçoit pas. Dans ta réponse, dis seulement qu'on règle ça ensemble tout de suite ; l'application affiche la suite.
 - "catalogue" : voir la liste de tous les tests.
 - "crisis" : idées de mort ou de suicide (y compris « à quoi bon vivre ») (même en wolof : « dama bëgg dee », « rey sama bopp », « xaru »…), se faire du mal, danger immédiat, violence subie en ce moment. Dans le doute, choisis "crisis". La réponse dit qu'on prend ça au sérieux et qu'elle a besoin d'une vraie personne maintenant.

@@ -2,7 +2,7 @@
  * ResultatPage — le résultat d'UN test, dans le design de « Mon espace » (/espace/resultat/:scaleId).
  * Ouvert par « Détail et conseils » (Mental, Vie intime, bonus) à la place de l'ancienne liste /assessment/... :
  * la carte de résultat (partageable si le test le permet), ce que ça veut dire, les conseils de Dr Lô,
- * puis « Le refaire » et « En parler à Dr Lô ». Le dernier résultat enregistré est affiché.
+ * puis « Le refaire » et « En parler avec mon compagnon ». Le dernier résultat enregistré est affiché.
  */
 import React, { useEffect, useRef, useState } from 'react';
 import { Navigate, useNavigate, useParams } from 'react-router-dom';
@@ -73,7 +73,7 @@ const ResultatPage: React.FC = () => {
   const retake = () => {
     trackAccueil('go', { to: intime ? 'test_intime' : 'test', from: 'resultat' });
     if (intime) navigate(isSexualFilterComplete() ? `/assessment/test/${scale.id}` : `/assessment/sexual?from=espace&test=${scale.id}`);
-    else navigate('/', { state: { prescribe: scale.id } });
+    else navigate('/compagnon', { state: { prescribe: scale.id } });
   };
   const talk = () => openDrLoChat({ greeting: `Ton résultat au test « ${getScaleMeta(scale.id).label} » : « ${interp.label} ». Qu'est-ce que tu aimerais en comprendre${ob?.prenom ? `, ${ob.prenom}` : ''} ?`, source: 'resultat' });
 
@@ -144,7 +144,7 @@ const ResultatPage: React.FC = () => {
       <button onClick={talk} className="drl-btn" style={{ ...SEC, width: '100%', cursor: 'pointer', textAlign: 'left', display: 'flex', alignItems: 'center', gap: 12, color: DC.text, fontFamily: 'inherit' }}>
         <MessageCircle size={20} color={palette.accent} aria-hidden="true" />
         <span style={{ flex: 1 }}>
-          <span style={{ display: 'block', fontSize: 15, fontWeight: 700 }}>En parler à Dr Lô</span>
+          <span style={{ display: 'block', fontSize: 15, fontWeight: 700 }}>En parler avec mon compagnon</span>
           <span style={{ display: 'block', fontSize: 13, color: DC.faint, marginTop: 2 }}>Il connaît ce résultat et peut t'aider à aller plus loin.</span>
         </span>
         <ChevronRight size={18} color={DC.faint} aria-hidden="true" />

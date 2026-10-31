@@ -124,7 +124,7 @@ exports.handler = async (event) => {
     }
     const profile = profileDoc.data();
     if (!profile.totem || !profile.totem.revealedAt) {
-      return { statusCode: 403, headers, body: JSON.stringify({ error: 'Tu dois révéler ton totem avant de créer un défi' }) };
+      return { statusCode: 403, headers, body: JSON.stringify({ error: 'Tu dois révéler ton animal intérieur avant de créer un défi' }) };
     }
 
     // ── 3. Multi-défi : max 3 actifs simultanés ────────────────────────
@@ -250,7 +250,7 @@ exports.handler = async (event) => {
         invalid_keys: 'Clés de questions invalides',
         invalid_key_count: 'Il faut entre 6 et 8 questions',
         duplicate_keys: 'Clés de questions en double',
-        totem_in_keys: 'Le totem ne doit pas figurer dans les clés',
+        totem_in_keys: 'L'animal intérieur ne doit pas figurer dans les clés',
         unknown_key: `Question inconnue : ${qResult.detail || ''}`,
         ineligible_key: `Question non éligible : ${qResult.detail || ''}`,
         too_many_big_five: 'Trop de questions Big Five (max 3)',

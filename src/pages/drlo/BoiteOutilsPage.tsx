@@ -1,6 +1,6 @@
 /**
  * BoiteOutilsPage — /boite-a-outils : « Ma boîte à outils ». Les outils appris (ou gardés tout de suite), pour les moments où on en a besoin.
- * Aucun rappel : la personne vient ici, ou Dr Lô IA le lui rappelle. Les carnets sont à part.
+ * Aucun rappel : la personne vient ici, ou le compagnon IA le lui rappelle. Les carnets sont à part.
  */
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';

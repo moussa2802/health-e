@@ -1,5 +1,5 @@
 /**
- * DrloMemoryCard — « Ce que Dr Lô retient de toi » (Mon espace).
+ * DrloMemoryCard — « Ce que ton compagnon retient de toi » (Mon espace).
  * Les notes que Dr Lô garde d'une discussion à l'autre : la personne les voit, en efface une,
  * ou efface tout. Rien n'est jamais partagé.
  */
@@ -31,9 +31,9 @@ const DrloMemoryCard: React.FC<{ uid: string; palette: MomentPalette }> = ({ uid
 
   if (!notes) return null;
   return (
-    <section aria-label="Ce que Dr Lô retient de toi" style={{ ...card, marginTop: 14 }}>
+    <section aria-label="Ce que ton compagnon retient de toi" style={{ ...card, marginTop: 14 }}>
       <p style={{ margin: 0, display: 'flex', alignItems: 'center', gap: 8, fontSize: 15, fontWeight: 700, color: DC.title }}>
-        <Brain size={17} color={palette.accent} aria-hidden="true" />Ce que Dr Lô retient de toi
+        <Brain size={17} color={palette.accent} aria-hidden="true" />Ce que ton compagnon retient de toi
       </p>
       <p style={{ margin: '4px 0 10px', fontSize: 13, lineHeight: 1.5, color: DC.faint }}>
         Pour se souvenir de toi d'une discussion à l'autre. Visible par toi seul, jamais partagé. Tu peux effacer ce que tu veux.

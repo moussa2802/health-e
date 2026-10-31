@@ -1,5 +1,5 @@
 /**
- * totemService — le défi du totem de la semaine, gardé dans le compte (patients/{uid}.totemDefi,
+ * totemService — le défi de l'animal intérieur de la semaine, gardé dans le compte (patients/{uid}.totemDefi,
  * même règle Firestore que le reste du document : la personne seule), avec une copie locale.
  */
 import { doc, getDoc, setDoc } from 'firebase/firestore';

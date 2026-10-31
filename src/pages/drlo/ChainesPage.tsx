@@ -30,7 +30,7 @@ function missingText(m: Missing): string {
   switch (m.kind) {
     case 'test': return `Fais le test « ${scaleLabel(m.scaleId)} »${m.levels?.length ? ` (résultat : ${m.levels.map(l => LEVEL_LABEL[l]).join(' ou ')})` : ''}`;
     case 'level': return `Ton résultat au test « ${scaleLabel(m.scaleId)} » ne correspond pas (il faut : ${m.levels.map(l => LEVEL_LABEL[l]).join(' ou ')})`;
-    case 'totem': return m.known ? `Réservé aux totems : ${m.totems.map(totemLabel).join(', ')}` : 'Découvre ton totem (7 tests psychologiques)';
+    case 'totem': return m.known ? `Réservé aux totems : ${m.totems.map(totemLabel).join(', ')}` : 'Découvre ton animal intérieur (7 tests psychologiques)';
     case 'age': return m.known ? `Réservé aux ${m.minAge} ans et plus` : 'Complète ton profil (tranche d\'âge) pour entrer';
     case 'balance': return `Il te manque ${m.need - m.have} étincelle${m.need - m.have > 1 ? 's' : ''}`;
     case 'reserved': return `Cette chaîne est réservée aux ${m.gender === 'homme' ? 'hommes' : 'femmes'} : le test « ${scaleLabel(m.scaleId)} » ne te concerne pas`;
@@ -41,7 +41,7 @@ function missingLink(m: Missing): { to: string; label: string } | null {
   switch (m.kind) {
     case 'test': return { to: `/assessment/test/${m.scaleId}`, label: 'Faire le test' };
     case 'level': return { to: `/assessment/test/${m.scaleId}`, label: 'Revoir le test' };
-    case 'totem': return m.known ? null : { to: '/assessment/totem', label: 'Mon totem' };
+    case 'totem': return m.known ? null : { to: '/assessment/totem', label: 'Mon animal intérieur' };
     case 'age': return m.known ? null : { to: '/assessment/profile', label: 'Mon profil' };
     case 'balance': return { to: '/acheter-koris', label: 'Obtenir des étincelles' };
     case 'reserved': return null; // rien à faire : le test n'est pas proposé à ce profil

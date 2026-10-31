@@ -1,4 +1,4 @@
-/** « Ton chemin vers Dr Lô » : les trois étapes qui débloquent une question au vrai Dr Lô. */
+/** « Ton chemin vers Dr Lô » : les trois étapes qui débloquent une question à Dr Lô. */
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Check, Lock } from 'lucide-react';
@@ -14,7 +14,7 @@ const PaliersCard: React.FC<{ status: DrloStatus; palette: MomentPalette; withCt
       <h2 style={{ margin: 0, fontFamily: 'Fraunces, serif', fontSize: 19, fontWeight: 600, color: DC.title }}>Ton chemin vers Dr Lô</h2>
       <p style={{ margin: '6px 0 0', fontSize: 14, lineHeight: 1.5, color: DC.muted }}>
         {unlocked
-          ? 'C\'est débloqué : tu peux écrire au vrai Dr Lô. C\'est gratuit, ta récompense.'
+          ? 'C\'est débloqué : tu peux écrire à Dr Lô. C\'est gratuit, ta récompense.'
           : `Encore ${remaining} étape${remaining > 1 ? 's' : ''} et tu pourras lui écrire directement. C'est gratuit : ta récompense.`}
       </p>
       <ol style={{ listStyle: 'none', margin: '12px 0 0', padding: 0, display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -38,7 +38,7 @@ const PaliersCard: React.FC<{ status: DrloStatus; palette: MomentPalette; withCt
           style={{ marginTop: 12, minHeight: 46, borderRadius: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, textDecoration: 'none', fontSize: 15, fontWeight: 700,
             ...(unlocked || unseen ? { background: palette.primary, color: DC.ink } : { border: `1px solid ${DC.line}`, background: DC.glass, color: DC.muted }) }}>
           {!unlocked && !unseen && <Lock size={15} aria-hidden="true" />}
-          {unseen ? 'Dr Lô t\'a répondu' : 'Écrire au vrai Dr Lô'}
+          {unseen ? 'Dr Lô t\'a répondu' : 'Écrire à Dr Lô'}
         </Link>
       )}
     </section>

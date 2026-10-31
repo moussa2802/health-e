@@ -26,8 +26,8 @@ const Contact: React.FC = () => {
       </InfoSection>
 
       <InfoSection title="Une question personnelle pour Dr Lô ?">
-        <P>Pour parler de ce que tu vis, passe plutôt par ton espace : Dr Lô IA te répond tout de suite, et tu peux <Link to="/question" style={{ color: COLOR.action, fontWeight: 700 }}>écrire au vrai Dr Lô</Link> une fois la récompense débloquée. Il répond lui-même sous 7 jours.</P>
-        <div style={{ marginTop: 12 }}><Btn variant="secondary" to="/" icon={<MessageCircle size={16} aria-hidden="true" />}>Parler à Dr Lô</Btn></div>
+        <P>Pour parler de ce que tu vis, passe plutôt par ton espace : le compagnon IA te répond tout de suite, et tu peux <Link to="/question" style={{ color: COLOR.action, fontWeight: 700 }}>écrire à Dr Lô</Link> une fois la récompense débloquée. Il répond lui-même sous 7 jours.</P>
+        <div style={{ marginTop: 12 }}><Btn variant="secondary" to="/compagnon" icon={<MessageCircle size={16} aria-hidden="true" />}>Parler à mon compagnon</Btn></div>
       </InfoSection>
 
       <InfoSection title="En cas d'urgence">

@@ -55,7 +55,7 @@ export const PAIR: AssessmentScale = {
     { key: 'recreational',  label: "Intimité récréative",      itemIds: [21,22,23,24],     range: { min: 4, max: 20 } },
   ],
   interpretation: [
-    { min: 24, max: 60,  label: "Intimité faible",    severity: 'moderate', description: "Plusieurs dimensions de l'intimité semblent peu développées dans votre couple. C'est pas une fatalité — on peut travailler dessus ensemble.", referralRequired: false, recommendation: "Une thérapie de couple peut vraiment vous aider à renforcer votre connexion sur tous les plans. Dr Lô te le recommande." },
+    { min: 24, max: 60,  label: "Intimité faible",    severity: 'moderate', description: "Plusieurs dimensions de l'intimité semblent peu développées dans votre couple. C'est pas une fatalité — on peut travailler dessus ensemble.", referralRequired: false, recommendation: "Une thérapie de couple peut vraiment vous aider à renforcer votre connexion sur tous les plans. On te le recommande." },
     { min: 61, max: 90,  label: "Intimité modérée",   severity: 'mild',     description: "Votre intimité est correcte, mais il y a des axes où vous pouvez encore grandir ensemble.", referralRequired: false, recommendation: "Regarde les dimensions les plus faibles — c'est là que vous avez le plus de marge pour enrichir votre relation." },
     { min: 91, max: 120, label: "Intimité élevée",    severity: 'positive', description: "Belle qualité d'intimité dans votre couple ! Vous êtes connectés sur plusieurs plans.", referralRequired: false, recommendation: "Continuez à nourrir cette belle complicité. L'intimité, ça s'entretient au quotidien." },
   ],

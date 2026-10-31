@@ -505,7 +505,7 @@ const DefiCreerPage: React.FC = () => {
               <div className="rounded-[14px] border border-gold/30 bg-gold-soft p-4">
                 <div className="flex items-center gap-2 mb-1">
                   <span className="text-[13px]">🐾</span>
-                  <p className="text-[13px] font-bold uppercase tracking-[0.12em] text-gold m-0">Question totem</p>
+                  <p className="text-[13px] font-bold uppercase tracking-[0.12em] text-gold m-0">Question animal intérieur</p>
                 </div>
                 <p className="text-[14px] text-ink m-0 leading-snug">{totemPreview.text}</p>
               </div>

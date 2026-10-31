@@ -13,7 +13,7 @@ const TotemTeaserCard: React.FC<{ remaining: number; total: number }> = ({ remai
           style={{ width: '100%', height: '100%', objectFit: 'cover', filter: 'blur(16px) brightness(.32) saturate(.5)', transform: 'scale(1.3)' }} />
       </div>
       <div style={{ minWidth: 0, flex: 1 }}>
-        <p style={{ margin: 0, fontSize: 14, fontWeight: 700, color: DC.title }}>Ton animal-totem t'attend</p>
+        <p style={{ margin: 0, fontSize: 14, fontWeight: 700, color: DC.title }}>Ton animal intérieur t'attend</p>
         <p style={{ margin: '3px 0 8px', fontSize: 13, color: DC.muted }}>
           {done} test{done > 1 ? 's' : ''} sur {total} · il se révèle au {total}e
         </p>

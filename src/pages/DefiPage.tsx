@@ -32,7 +32,7 @@ const TOTEM_IMAGES: Record<TotemAnimal, string> = {
 
 const STEPS = [
   { icon: <Sparkles size={20} className="text-gold" />, text: 'Tu lances ton défi' },
-  { icon: <Users size={20} className="text-gold" />, text: 'Tes proches devinent qui tu es vraiment — même ton totem 🐾' },
+  { icon: <Users size={20} className="text-gold" />, text: 'Tes proches devinent qui tu es vraiment — même ton animal intérieur 🐾' },
   { icon: <Crown size={20} className="text-gold" />, text: 'Tu découvres qui te connaît le mieux 👑' },
 ];
 
@@ -209,11 +209,11 @@ const DefiPage: React.FC = () => {
           </div>
           <h2 className="font-display text-xl font-semibold text-ink m-0 mb-2">
             {missing > 0
-              ? `Encore ${missing} test${missing > 1 ? 's' : ''} pour révéler ton totem`
-              : "Révèle ton totem d'abord"}
+              ? `Encore ${missing} test${missing > 1 ? 's' : ''} pour révéler ton animal intérieur`
+              : "Révèle ton animal intérieur d'abord"}
           </h2>
           <p className="text-[14px] text-muted m-0 mb-6">
-            Ton totem est la clé pour lancer ton défi. Complète tes évaluations pour le découvrir.
+            Ton animal intérieur est la clé pour lancer ton défi. Complète tes évaluations pour le découvrir.
           </p>
           <button
             onClick={() => navigate('/espace/mental')}
@@ -258,7 +258,7 @@ const DefiPage: React.FC = () => {
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-[13px] font-bold tracking-[0.15em] uppercase text-gold/60 m-0">
-                Ton Totem
+                Ton animal intérieur
               </p>
               <h3 className="font-display text-lg font-semibold text-[#F4F1E9] m-0 mt-0.5">
                 {sig.label}

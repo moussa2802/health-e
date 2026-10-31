@@ -24,7 +24,7 @@ const ReminderOptIn: React.FC<ReminderOptInProps> = ({
             <p className="text-xs text-ink-soft mt-1 leading-relaxed">
               {platform === "android"
                 ? "On te fait signe si tu n'as pas encore pris ton moment du jour."
-                : "Pas encore possible sur iPhone — reviens quand tu veux, Dr Lô t'attend."}
+                : "Pas encore possible sur iPhone — reviens quand tu veux, on t'attend."}
             </p>
           </div>
         </div>

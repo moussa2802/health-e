@@ -1,6 +1,6 @@
 /**
- * programmeLibrary.ts — « Mon programme Dr Lô » : la bibliothèque d'exercices validée par
- * Papa Moussa (doc « Mon programme Dr Lô — bibliothèque d'exercices », 23 oct. 2026).
+ * programmeLibrary.ts — « Mon programme » : la bibliothèque d'exercices validée par
+ * Papa Moussa (doc « Mon programme — bibliothèque d'exercices », 23 oct. 2026).
  * Dr Lô choisit dans cette liste ; il n'invente jamais d'exercice.
  */
 
@@ -58,8 +58,8 @@ export const AXES: Record<ProgAxis, AxisInfo> = {
 export const BREATH_EXERCISE: ProgExercise = {
   id: 'BR',
   week: 1,
-  title: 'Respirer une minute avec Dr Lô',
-  text: 'Suis le cercle autour de Dr Lô : il grandit, tu inspires ; il se resserre, tu expires. Une minute, rien de plus.',
+  title: 'Respirer une minute',
+  text: 'Suis le cercle : il grandit, tu inspires ; il se resserre, tu expires. Une minute, rien de plus.',
   duration: '1 min',
 };
 

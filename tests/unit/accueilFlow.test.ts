@@ -112,7 +112,7 @@ test('après le test : commentaire + portrait + prochaine pièce (règle d\'or)'
   s = afterTest(s, { scaleId: 'gad7', resultLabel: 'Anxiété légère', severity: 'mild', referralRequired: false }, { portraitPct: 3, guestRemaining: 2 }, k);
   const txt = s.messages.slice(-5).map(m => m.text).join(' ');
   assert.match(txt, /Anxiété légère/);
-  assert.match(txt, /Plus que 6 tests pour découvrir ton animal-totem/);
+  assert.match(txt, /Plus que 6 tests pour découvrir ton animal intérieur/);
   assert.doesNotMatch(txt, /portrait se dessine/);
   assert.match(txt, /2 tests gratuits/);
   assert.equal(s.prescribed, 'pss10');
@@ -166,7 +166,7 @@ test('dernier test du totem : plus de silhouette, on propose de le révéler', (
   let s = guestToPrescription('need:stress');
   s = afterTest(s, { scaleId: 'phq9', resultLabel: 'Moral plutôt bon', severity: 'minimal', referralRequired: false }, { portraitPct: 50, guestRemaining: null }, k);
   const last = s.messages[s.messages.length - 1];
-  assert.match(last.text, /totem est prêt/);
+  assert.match(last.text, /animal intérieur est prêt/);
   assert.deepEqual(last.card, { type: 'go', to: 'totem' });
 });
 

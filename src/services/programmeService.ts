@@ -1,5 +1,5 @@
 /**
- * programmeService — « Mon programme Dr Lô » : enregistrement et appels à l'IA.
+ * programmeService — « Mon programme » : enregistrement et appels à l'IA.
  *  - Le programme en cours vit dans le champ `programme` de patients/{uid} (règle Firestore
  *    existante : la personne seule lit et écrit son document, hors portefeuille d'étincelles),
  *    avec une copie locale pour l'affichage immédiat.

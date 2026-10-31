@@ -9,7 +9,7 @@
 
 export type GuideAction =
   | { kind: 'start_test' }            // aller choisir/faire un test (onglet Psychologique)
-  | { kind: 'reveal_totem' }          // faire défiler jusqu'à la révélation du totem
+  | { kind: 'reveal_totem' }          // faire défiler jusqu'à la révélation de l'animal intérieur
   | { kind: 'journal' }               // noter son humeur (/mon-espace)
   | { kind: 'signup' }                // créer un compte (invité au bout de ses essais)
   | { kind: 'chat'; greeting: string }; // ouvrir le chat Dr Lô avec ce premier message
@@ -138,7 +138,7 @@ function plural(n: number, word: string): string {
  *  2. Aucun test fait : prescrire le premier test
  *  3. Suivi post-test (3 à 14 jours après, une seule fois par test)
  *  4. Humeur du jour pas encore notée
- *  5. Totem prêt à révéler / tests manquants pour le totem
+ *  5. Totem prêt à révéler / tests manquants pour l'animal intérieur
  *  6. Par défaut : parler du portrait avec Dr Lô
  */
 export function pickGuideMessage(i: GuideInput): GuideMessage {
@@ -156,7 +156,7 @@ export function pickGuideMessage(i: GuideInput): GuideMessage {
     if (i.doneCore === 0) {
       return {
         id: 'first_test',
-        text: `Bienvenue ${toi} ! Je suis Dr Lô. Tu as ${i.guestMax - i.guestCount} test${i.guestMax - i.guestCount > 1 ? 's gratuits' : ' gratuit'} sans inscription : on commence ?`,
+        text: `Bienvenue ${toi} ! Je suis ton compagnon. Tu as ${i.guestMax - i.guestCount} test${i.guestMax - i.guestCount > 1 ? 's gratuits' : ' gratuit'} sans inscription : on commence ?`,
         cta: 'Faire mon premier test',
         action: { kind: 'start_test' },
       };
@@ -166,7 +166,7 @@ export function pickGuideMessage(i: GuideInput): GuideMessage {
   if (i.doneCore === 0) {
     return {
       id: 'first_test',
-      text: `Bonjour ${toi}, je suis Dr Lô. Commençons ton portrait par un premier test, 3 minutes suffisent.`,
+      text: `Bonjour ${toi}, je suis ton compagnon. Commençons ton portrait par un premier test, 3 minutes suffisent.`,
       cta: 'Faire mon premier test',
       action: { kind: 'start_test' },
     };
@@ -201,8 +201,8 @@ export function pickGuideMessage(i: GuideInput): GuideMessage {
   if (i.totemReady && !i.totemRevealed) {
     return {
       id: 'totem_ready',
-      text: `Ton totem est prêt. On le découvre ensemble ?`,
-      cta: 'Découvrir mon totem',
+      text: `Ton animal intérieur est prêt. On le découvre ensemble ?`,
+      cta: 'Découvrir mon animal intérieur',
       action: { kind: 'reveal_totem' },
     };
   }
@@ -210,7 +210,7 @@ export function pickGuideMessage(i: GuideInput): GuideMessage {
   if (i.totemMissing > 0) {
     return {
       id: 'totem_missing',
-      text: `Il te manque ${plural(i.totemMissing, 'test')} pour découvrir ton totem.`,
+      text: `Il te manque ${plural(i.totemMissing, 'test')} pour découvrir ton animal intérieur.`,
       cta: 'Continuer',
       action: { kind: 'start_test' },
     };
@@ -219,7 +219,7 @@ export function pickGuideMessage(i: GuideInput): GuideMessage {
   return {
     id: 'portrait',
     text: `Ton portrait se précise. Tu veux qu'on regarde ensemble ce qu'il dit de toi ?`,
-    cta: 'En parler avec Dr Lô',
+    cta: 'En parler avec mon compagnon',
     action: {
       kind: 'chat',
       greeting: `Ton portrait se précise${i.prenom ? `, ${i.prenom}` : ''}. Qu'est-ce qui t'occupe l'esprit en ce moment ?`,

@@ -1,5 +1,5 @@
 /**
- * QuestionPage — « Écris au vrai Dr Lô » (/question).
+ * QuestionPage — « Écris à Dr Lô » (/question).
  * Débloqué par les paliers ; gratuit (une question à la fois, une par mois) ; places limitées
  * chaque semaine (file par vagues, on passe devant en invitant 3 proches).
  * Rien du profil n'est partagé par défaut ; intime et journal exclus sauf accord explicite.
@@ -27,7 +27,7 @@ const fmtDay = (t: number) => { const d = new Date(t); return `${DAYS[d.getDay()
 
 const SHARE = [
   { value: 'none', label: 'Ma question seulement', desc: 'Dr Lô voit seulement ta question.' },
-  { value: 'totem', label: 'Mon totem et mes tendances', desc: 'Ton totem, ton âge et ton genre.' },
+  { value: 'totem', label: 'Mon animal intérieur et mes tendances', desc: 'Ton animal intérieur, ton âge et ton genre.' },
   { value: 'results', label: 'Mes résultats de tests', desc: 'Tes résultats, hors intime et journal (sauf si tu les ajoutes).' },
 ] as const;
 
@@ -97,9 +97,9 @@ const QuestionPage: React.FC = () => {
   if (!isAuthenticated) {
     return (
       <DrLoShell back={backTo} genre={genre} palette={palette}>
-        <h1 style={{ ...h1, marginTop: 22 }}>Écrire au vrai Dr Lô</h1>
+        <h1 style={{ ...h1, marginTop: 22 }}>Écrire à Dr Lô</h1>
         <p style={{ fontSize: 15, lineHeight: 1.55, color: DC.soft }}>Pour lui écrire, il te faut un espace personnel : c'est là qu'arrivera sa réponse.</p>
-        <Link to="/" state={{ signup: true }} className="drl-btn" style={{ display: 'inline-flex', minHeight: 48, padding: '0 20px', alignItems: 'center', borderRadius: 999, background: palette.primary, color: DC.ink, fontWeight: 700, textDecoration: 'none' }}>Créer mon espace</Link>
+        <Link to="/compagnon" state={{ signup: true }} className="drl-btn" style={{ display: 'inline-flex', minHeight: 48, padding: '0 20px', alignItems: 'center', borderRadius: 999, background: palette.primary, color: DC.ink, fontWeight: 700, textDecoration: 'none' }}>Créer mon espace</Link>
         {footer}
       </DrLoShell>
     );
@@ -114,7 +114,7 @@ const QuestionPage: React.FC = () => {
         <p style={{ margin: 0, fontSize: 13, letterSpacing: '.14em', textTransform: 'uppercase', color: DC.gold, fontWeight: 700 }}>
           {status?.paliers.unlocked ? 'Débloqué · gratuit, ta récompense' : 'Ta récompense'}
         </p>
-        <h1 style={h1}>Écris au vrai Dr Lô</h1>
+        <h1 style={h1}>Écris à Dr Lô</h1>
         <p style={{ margin: '6px 0 0', fontSize: 15, color: DC.muted, lineHeight: 1.5 }}>Il te répond lui-même, par écrit, sous 7 jours.</p>
       </div>
 

@@ -143,7 +143,7 @@ function eligibility(profile, balance, ch) {
 const LEVEL_WORDS = { bon: 'bon', leger: 'léger', modere: 'modéré', eleve: 'élevé' };
 
 /**
- * Les chaînes, résumées pour Dr Lô IA (une ligne chacune) : thème, prix, membre ou non, ce qui manque pour entrer.
+ * Les chaînes, résumées pour le compagnon IA (une ligne chacune) : thème, prix, membre ou non, ce qui manque pour entrer.
  * Jamais la liste des membres ni le contenu des publications. labels = { scaleId: nom du test }.
  * → { text, ids } (ids = identifiants valides pour la balise [[chaine:ID]]).
  */

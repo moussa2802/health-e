@@ -1,6 +1,6 @@
 /**
  * drloQuestionService.ts — client de la fonction serveur drlo-question
- * (paliers, file par vagues, parrainage, questions au vrai Dr Lô).
+ * (paliers, file par vagues, parrainage, questions à Dr Lô).
  */
 import { authedFetch } from '../utils/authedFetch';
 import type { ThreadEntry, VoiceClip } from './drloBroadcastService';

@@ -83,7 +83,7 @@ export function guideFor(d: Device, permission: 'default' | 'granted' | 'denied'
           : `Touche les trois points « ⋮ » de ${app}, puis « Ouvrir dans le navigateur » (ou « Ouvrir dans Chrome »).` },
         { title: 'Choisis « Ouvrir dans le navigateur »', visual: 'inapp_open', text: 'Le nom peut changer un peu selon l\'appli : « Ouvrir dans Safari », « Ouvrir dans Chrome »…' },
         { title: 'Ou copie le lien', text: 'Copie le lien ci-dessous et colle-le dans Chrome ou Safari. Ton espace t\'y attend : connecte-toi avec le même compte.' },
-        { title: 'Dr Lô reprend de l\'autre côté', text: 'Connecte-toi avec le même compte : je reprends là où on en était pour terminer.' },
+        { title: 'On reprend de l\'autre côté', text: 'Connecte-toi avec le même compte : je reprends là où on en était pour terminer.' },
       ],
     };
   }
@@ -149,7 +149,7 @@ export function guideFor(d: Device, permission: 'default' | 'granted' | 'denied'
     steps.push({ title: 'Conseillé : installe Health-e', text: 'Une icône sur ton écran, comme une appli. Les rappels arrivent plus sûrement. (Facultatif.)' });
   }
   steps.push({ title: 'Touche « Activer »', visual: 'allow_dialog', text: 'Ton téléphone va te demander : touche « Autoriser ».' });
-  steps.push({ title: 'Vérifie avec un essai', text: 'Touche « M\'envoyer un essai » : une notification de Dr Lô doit arriver dans les secondes qui suivent.' });
+  steps.push({ title: 'Vérifie avec un essai', text: 'Touche « M\'envoyer un essai » : une notification de Health-e doit arriver dans les secondes qui suivent.' });
   return { state: 'ready', title: 'Activer les rappels sur ce téléphone', action: canInstall && d.os === 'android' && !d.standalone ? 'install' : 'activate', steps };
 }
 

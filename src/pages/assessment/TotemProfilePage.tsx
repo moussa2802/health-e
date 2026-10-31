@@ -35,6 +35,7 @@ import type { ScaleResult } from '../../types/assessment';
 import { TOTEM_IMAGES } from '../../data/totemImages';
 
 
+import CompanionMark from '../../components/accueil/CompanionMark';
 /** Icônes au trait (charte : pas d'emoji dans l'interface). */
 const GAUGE_ICONS: Record<string, React.ElementType> = {
   gad7: Wind, phq9: Sun, pss10: Leaf, rses: Gem,
@@ -152,7 +153,7 @@ const TotemProfilePage: React.FC = () => {
   const [lastImprovement, setLastImprovement] = useState<{ scaleId: string; domainLabel: string; from: string; to: string; at: Date } | null>(null);
   // Le défi de la semaine : gardé dans le compte, pour 7 jours
   const [defi, setDefi] = useState<TotemDefi | null>(null);
-  /** Le totem a évolué (tests refaits) : on propose de découvrir le nouveau */
+  /** L'animal intérieur a évolué (tests refaits) : on propose de découvrir le nouveau */
   const [pending, setPending] = useState<TotemAnimal | null>(null);
   const [evolving, setEvolving] = useState(false);
   const [evolvedFrom, setEvolvedFrom] = useState<TotemAnimal | null>(null);
@@ -174,7 +175,7 @@ const TotemProfilePage: React.FC = () => {
           setHidden(!p.totem.revealedAt);
           if (p.totem.revealedAt && p.totem.pendingAnimal && p.totem.pendingAnimal !== p.totem.animal) setPending(p.totem.pendingAnimal as TotemAnimal);
         } else {
-          // Les 7 tests sont faits mais le totem n'a jamais été calculé (on arrive de Mon espace)
+          // Les 7 tests sont faits mais l'animal intérieur n'a jamais été calculé (on arrive de Mon espace)
           const computed = computeTotem(p.scaleResults ?? {});
           if (computed) {
             setAnimal(computed);
@@ -207,7 +208,7 @@ const TotemProfilePage: React.FC = () => {
   const back = () => navigate('/espace');
   const backTo = { to: '/espace', label: 'Revenir à mon espace' };
   const titleRow = (
-    <h1 style={{ margin: '18px 0 0', fontFamily: FONT.display, fontSize: 26, fontWeight: 600, color: C.title }}>Mon totem</h1>
+    <h1 style={{ margin: '18px 0 0', fontFamily: FONT.display, fontSize: 26, fontWeight: 600, color: C.title }}>Mon animal intérieur</h1>
   );
 
   if (loading) {
@@ -218,7 +219,7 @@ const TotemProfilePage: React.FC = () => {
     return (
       <DrLoShell back={backTo} genre={genre} palette={palette}>
         {titleRow}
-        <p style={{ marginTop: 24, color: C.soft, fontSize: 15 }}>Ton totem n'est pas encore révélé. Il apparaît après tes 7 tests psychologiques.</p>
+        <p style={{ marginTop: 24, color: C.soft, fontSize: 15 }}>Ton animal intérieur n'est pas encore révélé. Il apparaît après tes 7 tests psychologiques.</p>
         <Btn variant="secondary" onClick={back} style={{ marginTop: 12 }}>Revenir à mon espace</Btn>
       </DrLoShell>
     );
@@ -237,12 +238,12 @@ const TotemProfilePage: React.FC = () => {
           <div className={revealing ? 'drl-joy-glow' : undefined} style={{ marginTop: 40, width: 180, height: 180, borderRadius: 32, overflow: 'hidden', border: '3px solid rgba(233,200,143,.35)', background: '#2A1E14' }}>
             <img src={TOTEM_IMAGES[animal]} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', filter: revealing ? 'blur(6px) brightness(.8)' : 'blur(22px) brightness(.35)', transform: revealing ? 'scale(1.05)' : 'scale(1.2)', transition: 'filter 1.3s ease, transform 1.3s ease' }} />
           </div>
-          <p style={{ ...kicker(C.gold), marginTop: 24 }}>Ton totem est prêt</p>
+          <p style={{ ...kicker(C.gold), marginTop: 24 }}>Ton animal intérieur est prêt</p>
           <h1 style={{ margin: '8px 0 0', fontFamily: FONT.display, fontSize: 26, fontWeight: 600, color: C.title }}>Quel animal te ressemble ?</h1>
           <p style={{ margin: '10px 0 22px', fontSize: 15, lineHeight: 1.55, color: C.soft, maxWidth: 340 }}>
             Tes 7 tests ont dessiné ton tempérament. Un animal sur 12 te représente : ta force, ton piège, ta façon d'aimer.
           </p>
-          <Btn onClick={reveal} disabled={revealing} icon={<Sparkles size={18} aria-hidden="true" />}>{revealing ? 'Révélation…' : 'Révéler mon totem'}</Btn>
+          <Btn onClick={reveal} disabled={revealing} icon={<Sparkles size={18} aria-hidden="true" />}>{revealing ? 'Révélation…' : 'Révéler mon animal intérieur'}</Btn>
         </div>
       </DrLoShell>
     );
@@ -275,7 +276,7 @@ const TotemProfilePage: React.FC = () => {
   ];
   const note = (children: React.ReactNode) => (
     <div className="drl-in" style={{ ...card, display: 'flex', gap: 12, alignItems: 'center', borderColor: 'rgba(233,200,143,.4)', background: 'rgba(233,200,143,.10)' }}>
-      <img src="/dr-lo.png" alt="" width={36} height={36} style={{ width: 36, height: 36, borderRadius: '50%', objectFit: 'cover', objectPosition: 'top', flexShrink: 0 }} />
+      <CompanionMark size={36} />
       <p style={{ margin: 0, fontSize: 15, lineHeight: 1.5 }}>{children}</p>
     </div>
   );
@@ -289,7 +290,7 @@ const TotemProfilePage: React.FC = () => {
               <img src={TOTEM_IMAGES[pending]} alt="" className={evolving ? 'drl-joy-glow' : undefined}
                 style={{ width: 56, height: 56, borderRadius: 14, objectFit: 'cover', flexShrink: 0, filter: evolving ? 'none' : 'blur(8px) brightness(.6)', transition: 'filter 1.2s ease' }} />
               <p style={{ margin: 0, fontSize: 15, lineHeight: 1.5 }}>
-                <b>Ton totem a évolué.</b> Tes derniers tests dessinent un tempérament qui a bougé : un nouvel animal t'attend.
+                <b>Ton animal intérieur a évolué.</b> Tes derniers tests dessinent un tempérament qui a bougé : un nouvel animal t'attend.
               </p>
             </div>
             <Btn disabled={evolving} style={{ alignSelf: 'flex-start' }} icon={<Sparkles size={16} aria-hidden="true" />} onClick={async () => {
@@ -308,7 +309,7 @@ const TotemProfilePage: React.FC = () => {
         {lastImprovement && (
           <div className="drl-in" style={{ ...card, display: 'flex', gap: 10, alignItems: 'center', borderColor: 'rgba(233,200,143,.4)', background: 'rgba(233,200,143,.10)' }}>
             <Sparkles size={18} color={C.gold} aria-hidden="true" />
-            <p style={{ margin: 0, fontSize: 15 }}>Ton totem rayonne davantage : <b>{lastImprovement.domainLabel}</b> est devenu une force.</p>
+            <p style={{ margin: 0, fontSize: 15 }}>Ton animal intérieur rayonne davantage : <b>{lastImprovement.domainLabel}</b> est devenu une force.</p>
           </div>
         )}
 
@@ -321,7 +322,7 @@ const TotemProfilePage: React.FC = () => {
             </div>
             <div className="flex items-center gap-2 mb-1 mt-5">
               <Sparkles size={14} color={C.gold} aria-hidden="true" />
-              <p className="m-0" style={{ fontSize: 13, fontWeight: 700, letterSpacing: '.16em', textTransform: 'uppercase', color: C.gold }}>Mon totem</p>
+              <p className="m-0" style={{ fontSize: 13, fontWeight: 700, letterSpacing: '.16em', textTransform: 'uppercase', color: C.gold }}>Mon animal intérieur</p>
             </div>
             <h1 className="m-0 text-center" style={{ fontFamily: FONT.display, fontSize: 34, fontWeight: 600, color: C.title, lineHeight: 1.1 }}>{sig.label}</h1>
             <p className="m-0 mt-2 text-center" style={{ fontSize: 15, color: C.soft, lineHeight: 1.45 }}>{totemMeaning(animal, genre)}</p>
@@ -334,7 +335,7 @@ const TotemProfilePage: React.FC = () => {
             <p className="m-0 mt-2 mb-4 self-end" style={{ fontSize: 13, color: C.faint }}>health-e.sn</p>
           </div>
         </div>
-        <Btn variant="secondary" full onClick={handleShare} disabled={sharing} icon={<Share2 size={16} aria-hidden="true" />}>{sharing ? 'Préparation…' : 'Partager mon totem'}</Btn>
+        <Btn variant="secondary" full onClick={handleShare} disabled={sharing} icon={<Share2 size={16} aria-hidden="true" />}>{sharing ? 'Préparation…' : 'Partager mon animal intérieur'}</Btn>
 
         {/* Qui tu es + l'archétype : le cœur de la page, toujours visible */}
         <section style={card}>
@@ -370,7 +371,7 @@ const TotemProfilePage: React.FC = () => {
         </section>
 
         {/* Le détail, replié */}
-        <Fold title="Ton totem au quotidien" summary="Ta force, ton piège, ce qui te recharge, ta façon d'aimer" icon={<Sparkles size={18} color={C.gold} />}>
+        <Fold title="Ton animal intérieur au quotidien" summary="Ta force, ton piège, ce qui te recharge, ta façon d'aimer" icon={<Sparkles size={18} color={C.gold} />}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
             {daily.map(d => (
               <div key={d.title} style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
@@ -396,8 +397,8 @@ const TotemProfilePage: React.FC = () => {
                   Ta jauge « {RING_SHORT_LABELS[lowest.scaleId] ?? lowest.label} » est la plus basse ({lowest.fillPercent} %). C'est elle qui ferait le plus briller {w.ton}. Quand tu refais le test et que ça a bougé, il rayonne davantage.
                 </p>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                  {lowAxis && <Btn variant="secondary" onClick={() => navigate('/', { state: { programme: true } })}>{progActive ? 'Voir mon programme' : 'Un programme pour ça'}</Btn>}
-                  <Btn variant="secondary" onClick={() => navigate('/', { state: { prescribe: lowest.scaleId } })}>Refaire ce test avec Dr Lô</Btn>
+                  {lowAxis && <Btn variant="secondary" onClick={() => navigate('/compagnon', { state: { programme: true } })}>{progActive ? 'Voir mon programme' : 'Un programme pour ça'}</Btn>}
+                  <Btn variant="secondary" onClick={() => navigate('/compagnon', { state: { prescribe: lowest.scaleId } })}>Refaire ce test</Btn>
                 </div>
               </div>
             )}
@@ -413,7 +414,7 @@ const TotemProfilePage: React.FC = () => {
               </div>
             ))}
           </div>
-          <Btn variant="secondary" onClick={() => navigate('/', { state: { programme: true } })}>Les ajouter à mon programme</Btn>
+          <Btn variant="secondary" onClick={() => navigate('/compagnon', { state: { programme: true } })}>Les ajouter à mon programme</Btn>
           <p style={{ margin: '8px 0 0', fontSize: 13, color: C.faint }}>Tu choisis lesquelles garder, et tu peux les retirer à tout moment.</p>
         </Fold>
 
@@ -453,11 +454,11 @@ const TotemProfilePage: React.FC = () => {
           </p>
         </Fold>
 
-        {/* Le mot de Dr Lô */}
+        {/* Pour toi aujourd'hui */}
         <section style={{ ...card, display: 'flex', gap: 12, alignItems: 'flex-start' }}>
-          <img src="/dr-lo.png" alt="" width={40} height={40} style={{ width: 40, height: 40, borderRadius: '50%', objectFit: 'cover', objectPosition: 'top', flexShrink: 0 }} />
+          <CompanionMark size={40} />
           <span>
-            <span style={kicker(palette.accent)}>Le mot de Dr Lô</span>
+            <span style={kicker(palette.accent)}>Pour toi aujourd'hui</span>
             <span style={{ display: 'block', marginTop: 6, fontSize: 15, lineHeight: 1.6, color: C.soft, fontStyle: 'italic' }}>« {drLoMessage} »</span>
           </span>
         </section>
@@ -469,13 +470,13 @@ const TotemProfilePage: React.FC = () => {
               <Sparkles size={18} color={C.gold} aria-hidden="true" />
             </span>
             <span style={{ flex: 1 }}>
-              <span style={{ display: 'block', fontSize: 15, fontWeight: 700 }}>Tes proches auraient-ils deviné ton totem ?</span>
+              <span style={{ display: 'block', fontSize: 15, fontWeight: 700 }}>Tes proches auraient-ils deviné ton animal intérieur ?</span>
               <span style={{ display: 'block', fontSize: 14, color: C.muted, marginTop: 2 }}>Kan moo ma gën a xam ? Lance ton Défi</span>
             </span>
             <ChevronRight size={18} color={C.faint} aria-hidden="true" />
           </button>
         )}
-        <p style={{ margin: 0, textAlign: 'center', fontSize: 13, color: C.faint }}>Pas de diagnostic : ton totem décrit ton tempérament, il évolue avec toi.</p>
+        <p style={{ margin: 0, textAlign: 'center', fontSize: 13, color: C.faint }}>Pas de diagnostic : ton animal intérieur décrit ton tempérament, il évolue avec toi.</p>
       </div>
     </DrLoShell>
   );

@@ -1,5 +1,5 @@
 /**
- * DrLoConsole — l'espace personnel du vrai Dr Lô (/drlo), SÉPARÉ de l'administration.
+ * DrLoConsole — l'espace personnel de Dr Lô (/drlo), SÉPARÉ de l'administration.
  * Accès : compte avec le rôle staff/{uid}.drlo === true (posé à la main dans Firestore).
  * Les administrateurs (stats, utilisateurs…) n'y ont pas accès, et Dr Lô n'a pas besoin d'être admin.
  * Ici : les questions des utilisateurs, ce qu'ils ont choisi de partager, les réponses.
@@ -18,6 +18,8 @@ import { getScaleMeta } from '../../utils/scaleMeta';
 import DrloBench from '../../components/accueil/DrloBench';
 import CommunityPanel from '../../components/accueil/CommunityPanel';
 import ChannelsAdmin from '../../components/accueil/ChannelsAdmin';
+import BoxAdmin from '../../components/accueil/BoxAdmin';
+import HomeAdmin from '../../components/accueil/HomeAdmin';
 import PracticesAdmin from '../../components/accueil/PracticesAdmin';
 import { useChannelsActivity } from '../../hooks/useChannelsActivity';
 import { getDrloActivity, markCommunitySeen } from '../../services/drloBroadcastService';
@@ -179,7 +181,7 @@ const DrLoConsole: React.FC = () => {
   const [week, setWeek] = useState<{ used: number; cap: number; queued: number } | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [tab, setTabRaw] = useState<'pending' | 'done' | 'bench' | 'community' | 'channels' | 'practices'>('pending');
+  const [tab, setTabRaw] = useState<'pending' | 'done' | 'bench' | 'community' | 'channels' | 'practices' | 'home' | 'box'>('pending');
   const [activity, setActivity] = useState<{ community: number; distress: number; byBroadcast: Record<string, number> }>({ community: 0, distress: 0, byBroadcast: {} });
   const chBadge = useChannelsActivity(role === 'drlo', tab);
   const loadActivity = () => { getDrloActivity().then(setActivity).catch(() => {}); };
@@ -274,9 +276,9 @@ const DrLoConsole: React.FC = () => {
         </p>
       )}
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 14, alignItems: 'center' }}>
-        {(['pending', 'done', 'community', 'channels', 'practices', 'bench'] as const).map(t => {
+        {(['pending', 'done', 'community', 'channels', 'practices', 'home', 'box', 'bench'] as const).map(t => {
           const n = t === 'pending' ? pendingCount : t === 'community' && tab !== 'community' ? activity.community : t === 'channels' ? chBadge : 0;
-          const label = t === 'pending' ? 'À répondre' : t === 'done' ? 'Répondues' : t === 'community' ? 'Ma communauté' : t === 'channels' ? 'Chaînes' : t === 'practices' ? 'Pratiques' : 'Banc d\'essai';
+          const label = t === 'pending' ? 'À répondre' : t === 'done' ? 'Répondues' : t === 'community' ? 'Ma communauté' : t === 'channels' ? 'Chaînes' : t === 'practices' ? 'Pratiques' : t === 'home' ? 'Accueil' : t === 'box' ? 'Boîte' : 'Banc d\'essai';
           return (
             <button key={t} onClick={() => setTab(t)} className="drl-btn" aria-label={n > 0 ? `${label} : ${n} nouveauté${n > 1 ? 's' : ''}` : label}
               style={{ position: 'relative', minHeight: 38, padding: '0 14px', borderRadius: 999, border: `1px solid ${tab === t ? palette.accent : DC.line}`, background: tab === t ? 'rgba(242,182,109,.15)' : DC.glass, color: tab === t ? palette.accent : DC.muted, fontWeight: 700, fontSize: 14, cursor: 'pointer' }}>
@@ -290,7 +292,7 @@ const DrLoConsole: React.FC = () => {
         </button>
       </div>
       {error && <p role="alert" style={{ color: '#F09A7A', fontSize: 14 }}>{error}</p>}
-      {tab === 'community' ? <CommunityPanel palette={palette} newByBroadcast={activity.byBroadcast} /> : tab === 'channels' ? <ChannelsAdmin palette={palette} /> : tab === 'practices' ? <PracticesAdmin palette={palette} /> : tab === 'bench' && currentUser ? <DrloBench uid={currentUser.id} palette={palette} /> : loading && items.length === 0 ? <Loader2 className="animate-spin" style={{ marginTop: 20 }} /> : (
+      {tab === 'community' ? <CommunityPanel palette={palette} newByBroadcast={activity.byBroadcast} /> : tab === 'channels' ? <ChannelsAdmin palette={palette} /> : tab === 'practices' ? <PracticesAdmin palette={palette} /> : tab === 'home' ? <HomeAdmin palette={palette} /> : tab === 'box' ? <BoxAdmin palette={palette} /> : tab === 'bench' && currentUser ? <DrloBench uid={currentUser.id} palette={palette} /> : loading && items.length === 0 ? <Loader2 className="animate-spin" style={{ marginTop: 20 }} /> : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginTop: 14 }}>
           {list.length === 0 && <p style={{ color: DC.faint, fontSize: 14 }}>{tab === 'pending' ? 'Aucune question en attente. 🙏' : 'Pas encore de réponse envoyée.'}</p>}
           {list.map(q => (

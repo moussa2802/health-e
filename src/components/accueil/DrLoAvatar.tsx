@@ -1,11 +1,12 @@
 /**
- * DrLoAvatar — Dr Lô vivant : son halo montre ce qu'il fait réellement.
+ * DrLoAvatar — le compagnon vivant : son halo montre ce qu'il fait réellement.
  *  idle : respire doucement · listening : la personne écrit / dicte
  *  reading : relit (balayage) · thinking : réfléchit (orbite) · writing : écrit
  *  breathing : guide la respiration (le cercle grandit / se resserre)
  *  joy : se réjouit (test terminé, défi lancé…) : brève étincelle dorée, jamais sur un résultat difficile
  */
 import React from 'react';
+import CompanionMark from './CompanionMark';
 import type { MomentPalette } from '../../utils/drloMoment';
 
 export type DrLoState = 'idle' | 'listening' | 'reading' | 'thinking' | 'writing' | 'breathing' | 'joy';
@@ -40,13 +41,7 @@ const DrLoAvatar: React.FC<{ state: DrLoState; palette: MomentPalette; size?: nu
           <span style={{ position: 'absolute', right: '10%', bottom: '18%', width: 5, height: 5, borderRadius: '50%', background: palette.accent, opacity: 0.45 }} />
         </div>
       )}
-      <img
-        src="/dr-lo.png"
-        alt="Dr Lô"
-        width={size}
-        height={size}
-        style={{ position: 'relative', width: size, height: size, borderRadius: '50%', objectFit: 'cover', objectPosition: 'top', border: `3px solid ${joy ? '#F0C86E' : palette.accent}` }}
-      />
+      <CompanionMark size={size} ring={joy ? '#F0C86E' : palette.accent} style={{ position: 'relative' }} />
       <span aria-hidden="true" style={{ position: 'absolute', right: size * 0.14, bottom: size * 0.14, width: 16, height: 16, borderRadius: '50%', background: '#4CC37E', border: '3px solid #17130F' }} />
     </div>
   );

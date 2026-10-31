@@ -1,9 +1,9 @@
 /**
- * totemGuide.ts — À quoi sert ton totem, au quotidien.
+ * totemGuide.ts — À quoi sert ton animal intérieur, au quotidien.
  * Pour chaque animal : ta force, ton piège quand ça chauffe, ce qui te recharge,
  * comment tu aimes, et un défi concret pour la semaine.
  * Textes à valider par Papa Moussa (bien-être, pas de diagnostic, tutoiement neutre).
- * Le totem vient du tempérament (Big Five, attachement, résilience) : ces repères en découlent.
+ * L'animal intérieur vient du tempérament (Big Five, attachement, résilience) : ces repères en découlent.
  */
 import type { TotemAnimal } from '../utils/totemAlgorithm';
 
@@ -102,13 +102,13 @@ export const TOTEM_GUIDE: Record<TotemAnimal, TotemGuide> = {
   },
 };
 
-/** Quelle jauge relève quel programme (pour « Ce qui ferait rayonner ton totem »). */
+/** Quelle jauge relève quel programme (pour « Ce qui ferait rayonner ton animal intérieur »). */
 export const GAUGE_TO_AXIS: Record<string, 'stress' | 'humeur' | null> = {
   gad7: 'stress', pss10: 'stress', phq9: 'humeur', rses: null, brs: null, ecr_r: null, big_five: null,
 };
 
 /**
- * Routines propres à chaque totem, à ajouter (ou retirer) dans « Mon programme Dr Lô ».
+ * Routines propres à chaque totem, à ajouter (ou retirer) dans « Mon programme ».
  * Petites habitudes quotidiennes, cochables, gratuites. Tirées de la force, du piège et de ce
  * qui recharge chaque animal.
  */

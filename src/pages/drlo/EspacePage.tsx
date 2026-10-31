@@ -1,7 +1,7 @@
 /**
  * EspacePage — « Mon espace bien-être » (/espace), un tap après le premier écran.
- * Le mot de Dr Lô, les quatre domaines (Mental, Humeur, Social, Intime masqué par défaut),
- * le portrait, la météo de la semaine, le totem et les raccourcis. Tout renvoie vers Dr Lô
+ * Pour toi aujourd'hui, les quatre domaines (Mental, Humeur, Social, Intime masqué par défaut),
+ * le portrait, la météo de la semaine, l'animal intérieur et les raccourcis. Tout renvoie vers Dr Lô
  * ou vers les pages existantes (tests, journal, compatibilité, défis).
  */
 import React, { useEffect, useMemo, useState } from 'react';
@@ -33,6 +33,7 @@ import { myPractices, PLACES_MAX, type Mine } from '../../services/practiceServi
 import { getDrloStatus, registerReferralIfAny, type DrloStatus } from '../../services/drloQuestionService';
 import type { ScaleResult } from '../../types/assessment';
 
+import CompanionMark from '../../components/accueil/CompanionMark';
 const SHOW_INTIME_KEY = 'he_espace_show_intime';
 const DAYS = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'];
 const MONTHS = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
@@ -121,9 +122,9 @@ const EspacePage: React.FC = () => {
     // Un seul Dr Lô : la discussion s'ouvre dans la conversation de l'accueil
     if (a.kind === 'chat') openDrLoChat({ greeting: a.greeting ?? undefined, source: 'espace' });
     else if (a.kind === 'reveal_totem') navigate('/assessment/totem');
-    else if (a.kind === 'journal') navigate('/', { state: { openMood: true } });
-    else if (a.kind === 'signup') navigate('/', { state: { signup: true } });
-    else navigate('/', { state: next ? { prescribe: next } : undefined });
+    else if (a.kind === 'journal') navigate('/compagnon', { state: { openMood: true } });
+    else if (a.kind === 'signup') navigate('/compagnon', { state: { signup: true } });
+    else navigate('/compagnon', { state: next ? { prescribe: next } : undefined });
   };
 
   // Météo de la semaine
@@ -152,41 +153,41 @@ const EspacePage: React.FC = () => {
   ];
 
   return (
-    <DrLoShell back={{ to: '/', label: 'Retour à Dr Lô' }} genre={genre} palette={palette}>
+    <DrLoShell back={{ to: '/', label: 'Retour à l\'accueil' }} genre={genre} palette={palette}>
       <div style={{ marginTop: 18 }}>
         <p style={{ margin: 0, fontSize: 13, color: DC.faint }}>{dateLabel.charAt(0).toUpperCase() + dateLabel.slice(1)}</p>
         <h1 style={{ margin: '4px 0 0', fontFamily: 'Fraunces, serif', fontSize: 28, lineHeight: 1.2, fontWeight: 600, color: DC.title }}>Mon espace bien-être</h1>
       </div>
 
-      {/* Le mot de Dr Lô */}
-      <section aria-label="Le mot de Dr Lô" style={{ ...card, marginTop: 16, borderColor: 'rgba(242,182,109,.3)', background: 'rgba(242,182,109,.07)' }}>
+      {/* Pour toi aujourd'hui */}
+      <section aria-label="Pour toi aujourd'hui" style={{ ...card, marginTop: 16, borderColor: 'rgba(242,182,109,.3)', background: 'rgba(242,182,109,.07)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <img src="/dr-lo.png" alt="Dr Lô" width={36} height={36} style={{ width: 36, height: 36, borderRadius: '50%', objectFit: 'cover', objectPosition: 'top', border: `2px solid ${palette.accent}` }} />
-          <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: palette.accent }}>Le mot de Dr Lô</p>
+          <CompanionMark size={36} ring={palette.accent} />
+          <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: palette.accent }}>Pour toi aujourd'hui</p>
         </div>
         <p style={{ margin: '10px 0 0', fontSize: 15, lineHeight: 1.55, color: DC.soft }}>{loaded ? guide.text : '…'}</p>
-        {/* Ton totem (ou, tant qu'il n'est pas révélé, le portrait qui se dessine) */}
+        {/* Ton animal intérieur (ou, tant qu'il n'est pas révélé, le portrait qui se dessine) */}
         {loaded && (totemRevealed ? (
           <Link to="/assessment/totem" className="drl-btn" style={{ marginTop: 12, display: 'flex', alignItems: 'center', gap: 12, padding: '10px 12px', borderRadius: 14, background: 'rgba(233,200,143,.08)', border: '1px solid rgba(233,200,143,.25)', color: DC.text, textDecoration: 'none' }}>
             <Sparkles size={20} color={DC.gold} aria-hidden="true" />
             <span style={{ flex: 1, minWidth: 0 }}>
-              <span style={{ display: 'block', fontSize: 13, color: DC.faint }}>Ton totem</span>
+              <span style={{ display: 'block', fontSize: 13, color: DC.faint }}>Ton animal intérieur</span>
               <span style={{ display: 'block', fontFamily: 'Fraunces, serif', fontSize: 17, fontWeight: 600 }}>{getTotemSignature(totem!.animal as TotemAnimal)?.label ?? totem!.animal}</span>
               <span style={{ display: 'block', fontSize: 13, color: DC.muted, lineHeight: 1.4 }}>{totemMeaning(totem!.animal as TotemAnimal, genre === 'femme' ? 'femme' : 'homme')}</span>
               {totem!.pending && totem!.pending !== totem!.animal && (
-                <span style={{ display: 'block', marginTop: 4, fontSize: 13, fontWeight: 700, color: DC.gold }}>Ton totem a évolué : viens découvrir le nouveau</span>
+                <span style={{ display: 'block', marginTop: 4, fontSize: 13, fontWeight: 700, color: DC.gold }}>Ton animal intérieur a évolué : viens découvrir le nouveau</span>
               )}
             </span>
             <ArrowRight size={16} color={DC.muted} aria-hidden="true" />
           </Link>
         ) : totemProgress.missing.length === 0 ? (
           <Link to="/assessment/totem" className="drl-btn" style={{ marginTop: 12, display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderRadius: 14, background: 'rgba(233,200,143,.08)', border: '1px solid rgba(233,200,143,.25)', color: DC.text, textDecoration: 'none', fontSize: 14, fontWeight: 700 }}>
-            <Sparkles size={18} color={DC.gold} aria-hidden="true" /> Ton totem est prêt : viens le découvrir <ArrowRight size={16} aria-hidden="true" />
+            <Sparkles size={18} color={DC.gold} aria-hidden="true" /> Ton animal intérieur est prêt : viens le découvrir <ArrowRight size={16} aria-hidden="true" />
           </Link>
         ) : (
           <div style={{ marginTop: 12 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, fontSize: 13, color: DC.muted }}>
-              <span>Ton portrait se dessine · encore {totemProgress.missing.length} test{totemProgress.missing.length > 1 ? 's' : ''} pour ton totem</span>
+              <span>Ton portrait se dessine · encore {totemProgress.missing.length} test{totemProgress.missing.length > 1 ? 's' : ''} pour ton animal intérieur</span>
               <b style={{ color: palette.accent, whiteSpace: 'nowrap' }}>{portrait} %</b>
             </div>
             <div role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={portrait} aria-label="Portrait" style={{ height: 6, borderRadius: 4, background: 'rgba(255,255,255,.08)', marginTop: 6, overflow: 'hidden' }}>
@@ -201,7 +202,7 @@ const EspacePage: React.FC = () => {
           </button>
           {guide.action.kind !== 'chat' && (
             <Link to="/" className="drl-btn" style={{ minHeight: 44, padding: '0 16px', borderRadius: 999, border: `1px solid ${DC.line}`, background: DC.glass, color: DC.text, fontSize: 14, fontWeight: 600, display: 'inline-flex', alignItems: 'center', textDecoration: 'none' }}>
-              Discuter avec Dr Lô
+              Discuter avec mon compagnon
             </Link>
           )}
         </div>
@@ -256,7 +257,7 @@ const EspacePage: React.FC = () => {
               <span style={{ fontSize: 13, color: DC.muted }}>{dm.word}</span>
             </Link>
           ))}
-          <button onClick={() => (uid ? navigate('/defi') : navigate('/', { state: { signup: true } }))} className="drl-btn" style={{ ...tile(DC.gold), textAlign: 'left' }}>
+          <button onClick={() => (uid ? navigate('/defi') : navigate('/compagnon', { state: { signup: true } }))} className="drl-btn" style={{ ...tile(DC.gold), textAlign: 'left' }}>
             <Crown size={20} color={DC.gold} aria-hidden="true" />
             <span style={{ fontSize: 15, fontWeight: 700 }}>Défi</span>
             <span style={{ fontSize: 13, color: DC.muted }}>{defis ? `${defis} en cours` : 'Qui te connaît le mieux ?'}</span>
@@ -302,7 +303,7 @@ const EspacePage: React.FC = () => {
           })}
         </div>
         {!moods[today] && (
-          <button onClick={() => navigate('/', { state: { openMood: true } })} className="drl-btn"
+          <button onClick={() => navigate('/compagnon', { state: { openMood: true } })} className="drl-btn"
             style={{ marginTop: 12, width: '100%', minHeight: 46, borderRadius: 14, border: '1px solid rgba(242,182,109,.4)', background: 'rgba(242,182,109,.10)', color: DC.text, fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>
             Comment tu te sens aujourd'hui ? · 30 s
           </button>

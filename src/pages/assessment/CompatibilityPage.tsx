@@ -509,7 +509,7 @@ const CompatibilityPage: React.FC = () => {
         {result.claudeNarrative && (
           <div className="bg-card border border-line rounded-block shadow-soft px-6 py-5">
             <p className="m-0 mb-3 text-[13px] font-bold text-ink flex items-center gap-1.5">
-              <Stethoscope size={15} className="text-ink-soft" /> Analyse du Dr Lô
+              <Stethoscope size={15} className="text-ink-soft" /> Analyse croisée
             </p>
             <p className="m-0 text-sm text-ink-soft leading-[1.75] whitespace-pre-wrap">{result.claudeNarrative}</p>
           </div>
@@ -539,12 +539,12 @@ const CompatibilityPage: React.FC = () => {
               <p className="m-0 mt-1 font-display text-[21px] font-semibold text-ink leading-snug">{prenom ? `${prenom} t'invite` : 'On t\'invite'} à comparer vos profils</p>
               {!isAuthenticated ? (
                 <>
-                  <p className="m-0 mt-2 text-[14px] text-ink-soft leading-relaxed">Crée ton espace (gratuit), fais tes évaluations avec Dr Lô, puis reviens sur ce lien : tout sera prêt, rien à recopier.</p>
-                  <button onClick={() => navigate('/', { state: { signup: true } })} className="mt-3 w-full min-h-[48px] rounded-[14px] border-0 bg-gold text-ink text-[15px] font-bold cursor-pointer">Créer mon espace</button>
+                  <p className="m-0 mt-2 text-[14px] text-ink-soft leading-relaxed">Crée ton espace (gratuit), fais tes évaluations, puis reviens sur ce lien : tout sera prêt, rien à recopier.</p>
+                  <button onClick={() => navigate('/compagnon', { state: { signup: true } })} className="mt-3 w-full min-h-[48px] rounded-[14px] border-0 bg-gold text-ink text-[15px] font-bold cursor-pointer">Créer mon espace</button>
                 </>
               ) : !loadingProfile && !myIdMental && !myIdSexual ? (
                 <>
-                  <p className="m-0 mt-2 text-[14px] text-ink-soft leading-relaxed">Pour comparer, Dr Lô a besoin de ton profil : 8 évaluations psychologiques (ou 5 de vie intime pour un couple). Ton invitation est gardée : reviens ici quand c'est fait.</p>
+                  <p className="m-0 mt-2 text-[14px] text-ink-soft leading-relaxed">Pour comparer, il faut ton profil : 8 évaluations psychologiques (ou 5 de vie intime pour un couple). Ton invitation est gardée : reviens ici quand c'est fait.</p>
                   <Link to="/espace/mental" className="mt-3 w-full min-h-[48px] rounded-[14px] bg-gold text-ink text-[15px] font-bold no-underline flex items-center justify-center">Faire mes évaluations</Link>
                 </>
               ) : (
@@ -1114,7 +1114,7 @@ const CompatibilityPage: React.FC = () => {
                           {entry.result.claudeNarrative && (
                             <div className="bg-card border border-line rounded-2xl px-5 py-4">
                               <p className="m-0 mb-2.5 text-xs font-bold text-ink flex items-center gap-1.5">
-                                <Stethoscope size={13} className="text-ink-soft" /> Analyse du Dr Lô
+                                <Stethoscope size={13} className="text-ink-soft" /> Analyse croisée
                               </p>
                               <p className="m-0 text-[13px] text-ink-soft leading-[1.75] whitespace-pre-wrap">{entry.result.claudeNarrative}</p>
                             </div>

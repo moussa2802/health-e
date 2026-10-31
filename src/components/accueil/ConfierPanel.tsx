@@ -27,6 +27,7 @@ import { CREDIT, credits } from '../../config/creditName';
 import { CONFIER } from './confierTheme';
 import { dayKey } from '../../utils/moodLog';
 
+import CompanionMark from './CompanionMark';
 export { CONFIER };
 const PREFIX = 'he_confier_v1:';
 
@@ -169,7 +170,7 @@ const ConfierPanel: React.FC<{
     refreshBalance();
     if (out.ok) update(s => addAdvice(s, out.text));
     else if (out.reason === 'no_koris') {
-      openNoKorisModal('L\'avis de Dr Lô', KORIS_COSTS.journal);
+      openNoKorisModal('Un avis sur ton journal', KORIS_COSTS.journal);
       update(s => addNote(s, `Il te manque des ${CREDIT.many} pour mon avis. Tu peux continuer à écrire : c'est gratuit, et tout reste dans ton journal.`));
     } else update(s => addNote(s, 'Je n\'arrive pas à te répondre maintenant. Ce que tu as écrit est bien dans ton journal ; redemande-moi dans un moment.'));
   };
@@ -288,7 +289,7 @@ const ConfierPanel: React.FC<{
           if (it.kind === 'ack' || it.kind === 'note') {
             return (
               <div key={it.id} className="drl-in" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <img src="/dr-lo.png" alt="" width={24} height={24} style={{ width: 24, height: 24, borderRadius: '50%', objectFit: 'cover', objectPosition: 'top', border: `1.5px solid ${CONFIER.accent}` }} />
+                <CompanionMark size={24} ring={CONFIER.accent} />
                 <span style={{ fontSize: 14, fontStyle: it.kind === 'ack' ? 'italic' : 'normal', color: CONFIER.muted, textAlign: 'left', lineHeight: 1.45 }}>{it.text}</span>
               </div>
             );
@@ -296,7 +297,7 @@ const ConfierPanel: React.FC<{
           if (it.kind === 'advice') {
             return (
               <div key={it.id} className="drl-in" style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
-                <img src="/dr-lo.png" alt="" width={28} height={28} style={{ width: 28, height: 28, borderRadius: '50%', objectFit: 'cover', objectPosition: 'top', border: `1.5px solid ${CONFIER.accent}`, flexShrink: 0 }} />
+                <CompanionMark size={28} ring={CONFIER.accent} />
                 <div style={{ borderRadius: '4px 16px 16px 16px', background: 'rgba(255,255,255,.06)', border: '1px solid rgba(255,255,255,.12)', padding: '10px 13px', fontSize: 15, lineHeight: 1.55, color: CONFIER.text, textAlign: 'left', whiteSpace: 'pre-wrap' }}>{it.text}</div>
               </div>
             );
@@ -326,12 +327,12 @@ const ConfierPanel: React.FC<{
         userId ? (
           <button onClick={onAsk} disabled={asking} className="drl-btn"
             style={{ alignSelf: 'center', minHeight: 42, padding: '0 16px', borderRadius: 999, border: `1px solid ${CONFIER.line}`, background: CONFIER.tint, color: CONFIER.text, fontSize: 14, fontWeight: 700, cursor: asking ? 'default' : 'pointer', opacity: asking ? 0.6 : 1 }}>
-            {asking ? 'Dr Lô relit…' : `Demander l'avis de Dr Lô · ${credits(KORIS_COSTS.journal)}`}
+            {asking ? 'Je relis…' : `Demander un avis · ${credits(KORIS_COSTS.journal)}`}
           </button>
         ) : (
           <button onClick={onSignup} className="drl-btn"
             style={{ alignSelf: 'center', minHeight: 40, padding: '0 14px', borderRadius: 999, border: `1px solid ${CONFIER.line}`, background: 'transparent', color: CONFIER.muted, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
-            Crée ton espace pour avoir l'avis de Dr Lô
+            Crée ton espace pour avoir un avis
           </button>
         )
       )}

@@ -221,8 +221,8 @@ export function flowWantsText(f: SocialFlow | undefined): boolean {
 
 export const SAY = {
   defiStart: 'Le Défi « Kan moo ma gën a xam ? » : tes proches devinent tes réponses, et tu découvres qui te connaît vraiment. On le prépare ensemble, étape par étape. D\'abord : tu joues avec qui ?',
-  defiNeedTotem: (missing: number) => `Le Défi s'appuie sur ton totem : tes proches devinent ta personnalité. Il te manque encore ${missing} test${missing > 1 ? 's' : ''} pour le révéler. On en fait un maintenant ?`,
-  defiRevealTotem: 'Le Défi s\'appuie sur ton totem, et il est prêt à être révélé ! Va le découvrir, puis on lance ton défi.',
+  defiNeedTotem: (missing: number) => `Le Défi s'appuie sur ton animal intérieur : tes proches devinent ta personnalité. Il te manque encore ${missing} test${missing > 1 ? 's' : ''} pour le révéler. On en fait un maintenant ?`,
+  defiRevealTotem: 'Le Défi s\'appuie sur ton animal intérieur, et il est prêt à être révélé ! Va le découvrir, puis on lance ton défi.',
   defiTooMany: 'Tu as déjà 3 défis en cours, c\'est le maximum. Attends qu\'un défi se termine, ou regarde qui a déjà joué.',
   defiTitre: (t: string) => `Ton défi va s'appeler « ${t} ». Ça te va, ou tu préfères un autre nom ? Écris-le (30 caractères maximum).`,
   defiTitreBad: 'Un nom entre 3 et 30 caractères, sans lien ni long numéro. Tu me le réécris ?',

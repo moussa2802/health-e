@@ -1,5 +1,5 @@
 /**
- * _drloProgramme.js — « Mon programme Dr Lô » : textes de l'IA (logique pure, testée dans
+ * _drloProgramme.js — « Mon programme » : textes de l'IA (logique pure, testée dans
  * _tests/_drloProgramme.test.js).
  *
  * L'IA ne fait que : écrire le mot de Dr Lô qui présente le programme, choisir l'ordre des

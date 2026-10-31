@@ -383,7 +383,7 @@ export default function DefiJouerPage() {
             onClick={() => navigate(`/decouvre?src=defi&ref=${slug}`)}
             className="bg-gold text-white font-semibold px-6 py-3 rounded-xl w-full"
           >
-            Et toi, découvre ton totem
+            Et toi, découvre ton animal intérieur
           </button>
         </div>
       </div>

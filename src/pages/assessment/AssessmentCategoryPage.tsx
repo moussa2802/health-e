@@ -58,6 +58,7 @@ import TestCode from '../../components/assessment/TestCode';
 import type { ScaleResult, AssessmentScale } from '../../types/assessment';
 import type { SexualHealthFilter } from '../../types/onboarding';
 
+import CompanionMark from '../../components/accueil/CompanionMark';
 const LIGHT_ACCENT: Record<string, string> = { '#4A5D57': '#9DBFAF', '#B5522F': '#F09A7A', '#8F6A1F': '#E9C88F' };
 const lightAccent = (c: string) => LIGHT_ACCENT[c.toUpperCase()] ?? c;
 
@@ -294,7 +295,7 @@ const ScaleRow: React.FC<{
                       {cachedConseils!.avis_pro && (
                         <div className="mt-2.5 rounded-lg px-2.5 py-2" style={{ background: 'rgba(233,200,143,.13)', border: '1px solid rgba(183,138,46,0.25)' }}>
                           <div className="flex items-center gap-1 text-[13px] font-bold uppercase mb-1" style={{ color: '#E9C88F' }}>
-                            <Stethoscope size={11} /> Avis du Dr Lô
+                            <Stethoscope size={11} /> Conseils
                           </div>
                           <div className="text-xs text-ink-soft leading-relaxed">{cachedConseils!.avis_pro}</div>
                         </div>
@@ -495,10 +496,10 @@ const ProfileCard: React.FC<{
         <div className="py-5" style={{ borderBottom: '1px solid rgba(255,255,255,.1)' }}>
           <div className="flex items-center gap-2 mb-3">
             <div className="w-7 h-7 rounded-full overflow-hidden flex-shrink-0" style={{ border: `2px solid ${accentColor}30` }}>
-              <img src="/dr-lo.png" alt="Dr. Lô" className="w-full h-full object-cover" style={{ objectPosition: 'top center' }} />
+              <CompanionMark size={28} ring="transparent" style={{ width: '100%', height: '100%' }} />
             </div>
             <span className="text-xs font-extrabold tracking-wide flex items-center gap-1" style={{ color: accentText }}>
-              <Stethoscope size={12} /> ANALYSE DR LÔ
+              <Stethoscope size={12} /> TON ANALYSE
             </span>
             <div className="ml-auto flex items-center gap-1">
               <span className="w-1.5 h-1.5 rounded-full inline-block" style={{ background: '#3C7A5A' }} />
@@ -510,7 +511,7 @@ const ProfileCard: React.FC<{
             {!isAuthenticated && completedCount > 0 ? (
               <>
                 <p className="m-0 mb-2.5 text-[13px] text-ink-soft leading-relaxed">
-                  Tu as {completedCount} évaluation{completedCount > 1 ? 's' : ''} — crée un compte pour ton analyse Dr Lô personnalisée
+                  Tu as {completedCount} évaluation{completedCount > 1 ? 's' : ''} — crée un compte pour ton analyse personnalisée
                 </p>
                 <Link
                   to="/patient/access"
@@ -522,13 +523,13 @@ const ProfileCard: React.FC<{
               </>
             ) : completedCount === 0 ? (
               <p className="m-0 text-[13px] text-muted leading-relaxed italic">
-                Lance ta première évaluation pour que Dr Lô commence son analyse personnalisée. — Dr Lo
+                Lance ta première évaluation pour commencer ton analyse personnalisée.
               </p>
             ) : drLoUpdating ? (
               <div className="flex items-center gap-2.5">
                 <Loader2 size={16} className="animate-spin flex-shrink-0" style={{ color: accentText }} />
                 <p className="m-0 text-xs text-muted">
-                  Dr. Lô met à jour ton analyse… Cela peut prendre quelques secondes.
+                  Ton analyse se met à jour… Cela peut prendre quelques secondes.
                 </p>
               </div>
             ) : drLoAnalysis ? (
@@ -568,7 +569,7 @@ const ProfileCard: React.FC<{
               /* No analysis yet, but tests completed — show generate button */
               <div className="text-center py-1.5">
                 <p className="m-0 mb-2.5 text-[13px] text-muted leading-relaxed">
-                  Tu as {completedCount} évaluation{completedCount > 1 ? 's' : ''}. Génère ton analyse personnalisée Dr Lô.
+                  Tu as {completedCount} évaluation{completedCount > 1 ? 's' : ''}. Génère ton analyse personnalisée.
                 </p>
                 <button
                   onClick={onUpdateDrLo}
@@ -917,7 +918,7 @@ const AssessmentCategoryPage: React.FC = () => {
     if (!currentUser || drLoUpdating || !isAiAvailable()) return;
     const isRefresh = !!drLoAnalysis;
     const cost = getCost(isRefresh ? 'analysis_refresh' : 'analysis');
-    if (balance < cost) { openNoKorisModal(isRefresh ? 'Actualisation analyse' : 'Analyse Dr Lô', cost); return; }
+    if (balance < cost) { openNoKorisModal(isRefresh ? 'Actualisation analyse' : 'Ton analyse', cost); return; }
 
     setDrLoUpdating(true);
     try {
@@ -1397,7 +1398,7 @@ const AssessmentCategoryPage: React.FC = () => {
                     Réinitialiser mon profil
                   </p>
                   <p className="m-0 mt-0.5 text-[13px] leading-tight" style={{ color: '#F09A7A' }}>
-                    Supprime tous tes résultats et synthèses Dr Lô. Ton compte et préférences sont conservés.
+                    Supprime tous tes résultats et synthèses. Ton compte et préférences sont conservés.
                   </p>
                 </div>
                 <button
@@ -1513,7 +1514,7 @@ const AssessmentCategoryPage: React.FC = () => {
               {[
                 'Accéder aux 24 évaluations sans limite',
                 'Sauvegarder et suivre ta progression',
-                'Obtenir ton profil Dr Lô en profil psychologique & vie intime',
+                'Obtenir ton profil psychologique & ta vie intime',
                 'Tester ta compatibilité avec un proche',
               ].map(item => (
                 <li key={item} className="flex items-start gap-1.5 mb-1">

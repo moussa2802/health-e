@@ -47,7 +47,7 @@ const ConfirmResetModal: React.FC<ConfirmResetModalProps> = ({
           </div>
           <h2 className="font-display text-xl font-bold text-ink mb-2">Réinitialiser ton profil ?</h2>
           <p className="text-sm text-ink-soft leading-relaxed mb-6">
-            Tous tes résultats de tests, synthèses Dr Lô et codes de compatibilité seront
+            Tous tes résultats de tests, synthèses et codes de compatibilité seront
             supprimés définitivement. Ton compte et tes préférences seront conservés.
           </p>
           <div className="flex gap-3">

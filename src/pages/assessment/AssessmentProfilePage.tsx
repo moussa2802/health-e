@@ -59,6 +59,7 @@ import {
 } from 'lucide-react';
 import { credits } from '../../config/creditName';
 
+import CompanionMark from '../../components/accueil/CompanionMark';
 // ── Helpers couleur de sévérité ───────────────────────────────────────────────
 function getSeverityClasses(severity: string): string {
   switch (severity) {
@@ -281,7 +282,7 @@ const DrLoPanel: React.FC<{
   const [open, setOpen] = React.useState(false);
   if (completedCount === 0 || !analysis) return null;
   const catColor = getCategoryColor(bloc);
-  const title = bloc === 'mental' ? 'Dr Lô — Profil psychologique' : 'Dr Lô — Vie intime';
+  const title = bloc === 'mental' ? 'Ton profil psychologique' : 'Ta vie intime';
 
   return (
     <div className={`mt-2 overflow-hidden rounded-block border ${catColor.border} ${catColor.bg}`}>
@@ -290,7 +291,7 @@ const DrLoPanel: React.FC<{
         className="flex w-full items-center gap-2.5 bg-transparent px-[18px] py-4 text-left"
       >
         <div className={`h-9 w-9 flex-shrink-0 overflow-hidden rounded-full border-2 ${catColor.border}`}>
-          <img src="/dr-lo.png" alt="Dr. Lô" className="h-full w-full object-cover object-top" />
+          <CompanionMark size={36} ring="transparent" style={{ width: '100%', height: '100%' }} />
         </div>
         <div className="flex-1">
           <p className="m-0 text-[13px] font-extrabold text-ink">{title}</p>
@@ -353,7 +354,7 @@ const MentalProfileCard: React.FC<{
       {updating ? (
         <div className="mt-4 flex items-center gap-2.5">
           <Loader2 size={16} className="flex-shrink-0 animate-spin text-sage" />
-          <p className="m-0 text-[13px] italic text-muted">Dr. Lô met à jour ton analyse…</p>
+          <p className="m-0 text-[13px] italic text-muted">Ton analyse se met à jour…</p>
         </div>
       ) : drLoMentalAnalysis ? (
         revealed ? (
@@ -367,7 +368,7 @@ const MentalProfileCard: React.FC<{
         )
       ) : (
         <p className="mt-4 text-[13px] text-muted italic m-0">
-          Génère ton analyse personnalisée avec Dr Lô.
+          Génère ton analyse personnalisée.
         </p>
       )}
 
@@ -464,7 +465,7 @@ const IntimatePrivateCard: React.FC<{
       {updating ? (
         <div className="mt-4 flex items-center gap-2.5">
           <Loader2 size={16} className="flex-shrink-0 animate-spin text-accent" />
-          <p className="m-0 text-[13px] italic text-muted">Dr. Lô met à jour ton analyse…</p>
+          <p className="m-0 text-[13px] italic text-muted">Ton analyse se met à jour…</p>
         </div>
       ) : drLoSexualAnalysis ? (
         revealed ? (
@@ -478,7 +479,7 @@ const IntimatePrivateCard: React.FC<{
         )
       ) : (
         <p className="mt-4 text-[13px] text-muted italic m-0">
-          Génère ton analyse personnalisée avec Dr Lô.
+          Génère ton analyse personnalisée.
         </p>
       )}
 
@@ -746,7 +747,7 @@ const AssessmentProfilePage: React.FC = () => {
     if (bloc === 'sexual' && updatingSexual) return;
     const isRefresh = bloc === 'mental' ? !!drLoMentalAnalysis : !!drLoSexualAnalysis;
     const cost = getCost(isRefresh ? 'analysis_refresh' : 'analysis');
-    if (balance < cost) { openNoKorisModal(isRefresh ? 'Actualisation analyse' : 'Analyse Dr Lô', cost); return; }
+    if (balance < cost) { openNoKorisModal(isRefresh ? 'Actualisation analyse' : 'Ton analyse', cost); return; }
 
     if (bloc === 'mental') setUpdatingMental(true); else setUpdatingSexual(true);
     try {
@@ -933,7 +934,7 @@ const AssessmentProfilePage: React.FC = () => {
 
               {/* ── Cartes profil psycho + intime ───────────────────── */}
               {mentalCompletedCount > 0 && (
-                <div className="mb-3"><Fold title="Mon analyse psychologique" summary="Ton archétype et l'analyse de Dr Lô" icon={<Brain size={18} color="#9DBFAF" />}>
+                <div className="mb-3"><Fold title="Mon analyse psychologique" summary="Ton archétype et ton analyse" icon={<Brain size={18} color="#9DBFAF" />}>
                 <MentalProfileCard
                   archetype={archetype}
                   drLoMentalAnalysis={drLoMentalAnalysis}
@@ -1055,7 +1056,7 @@ const AssessmentProfilePage: React.FC = () => {
         <div className="mt-6">
           <Fold title="Réinitialiser mon profil" summary="Efface tous tes résultats. Irréversible." icon={<AlertTriangle size={18} color="#F08A7A" />}>
             <p className="m-0 mb-3.5 text-[15px] leading-relaxed text-ink-soft">
-              Supprime tous tes résultats de tests et les analyses de Dr Lô. Ton compte et tes préférences sont conservés. Cette action est irréversible.
+              Supprime tous tes résultats de tests et tes analyses. Ton compte et tes préférences sont conservés. Cette action est irréversible.
             </p>
             <Btn variant="danger" onClick={() => setShowResetModal(true)} icon={<RefreshCw size={15} />}>Réinitialiser mon profil</Btn>
           </Fold>

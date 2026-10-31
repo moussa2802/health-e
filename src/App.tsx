@@ -34,6 +34,7 @@ import HelpButton from "./components/Onboarding/HelpButton";
 import NoKorisModal from "./components/koris/NoKorisModal";
 import KorisWelcome from "./components/koris/KorisWelcome";
 import FloatingKori from "./components/koris/FloatingKori";
+import BottomTabs from "./components/layout/BottomTabs";
 
 import { useAuth } from "./contexts/AuthContext";
 import { cleanupAllProfessionalsListeners } from "./hooks/useProfessionals";
@@ -49,7 +50,8 @@ import {
 } from "./utils/firebase";
 
 // Lazy load pages for better performance
-const HomePage = lazy(() => import("./pages/OptimizedHomePage"));
+const HomePage = lazy(() => import("./pages/AccueilPage"));
+const CompagnonPage = lazy(() => import("./pages/CompagnonPage"));
 const EspacePage = lazy(() => import("./pages/drlo/EspacePage"));
 const DomainePage = lazy(() => import("./pages/drlo/DomainePage"));
 const HumeurPage = lazy(() => import("./pages/drlo/HumeurPage"));
@@ -62,6 +64,7 @@ const ChannelInvitePage = lazy(() => import("./pages/drlo/ChannelInvitePage"));
 const PratiquePage = lazy(() => import("./pages/drlo/PratiquePage"));
 const RoutinePage = lazy(() => import("./pages/drlo/RoutinePage"));
 const BoiteOutilsPage = lazy(() => import("./pages/drlo/BoiteOutilsPage"));
+const BoitePage = lazy(() => import("./pages/drlo/BoitePage"));
 const OutilsPage = lazy(() => import("./pages/drlo/OutilsPage"));
 const MonJournalPage = lazy(() => import("./pages/drlo/MonJournalPage"));
 const ResultatPage = lazy(() => import("./pages/drlo/ResultatPage"));
@@ -129,7 +132,7 @@ const AppChrome: React.FC = () => {
   const isChromeless = isAdminRoute || isAppRoute || isDefiJouer;
   // Accueil : le premier écran est Dr Lô en plein écran (pas d'en-tête ni de pied de page du site)
   // Écrans « Mon Dr Lô » (thème chaud sombre, plein écran) : pas d'en-tête ni de pied de page du site
-  const isHome = pathname === "/" || pathname === "/espace" || pathname.startsWith("/espace/") || pathname === "/humeur" || pathname === "/journal" || pathname.startsWith("/journal/") || pathname === "/question" || pathname === "/drlo" || pathname === "/equipe" || pathname === "/confidentialite" || pathname === "/conditions" || pathname === "/cgu" || pathname === "/ethique" || pathname === "/faq" || pathname === "/contact" || pathname === "/patient/access" || pathname === "/patient" || pathname === "/messages-dr-lo" || pathname.startsWith("/messages-dr-lo/") || pathname === "/chaines" || pathname.startsWith("/chaines/") || pathname.startsWith("/c/") || pathname.startsWith("/pratique/") || pathname === "/routine" || pathname === "/boite-a-outils" || pathname === "/outils" || pathname === "/assessment/totem" || pathname.startsWith("/assessment/results/") || pathname === "/defi" || pathname.startsWith("/defi/") || pathname === "/decouvre" || pathname === "/assessment/compatibility" || pathname.startsWith("/compat/") || pathname === "/assessment" || pathname.startsWith("/assessment/") || pathname === "/acheter-koris";
+  const isHome = pathname === "/" || pathname === "/compagnon" || pathname === "/espace" || pathname.startsWith("/espace/") || pathname === "/humeur" || pathname === "/journal" || pathname.startsWith("/journal/") || pathname === "/question" || pathname === "/drlo" || pathname === "/equipe" || pathname === "/confidentialite" || pathname === "/conditions" || pathname === "/cgu" || pathname === "/ethique" || pathname === "/faq" || pathname === "/contact" || pathname === "/patient/access" || pathname === "/patient" || pathname === "/messages-dr-lo" || pathname.startsWith("/messages-dr-lo/") || pathname === "/chaines" || pathname.startsWith("/chaines/") || pathname.startsWith("/c/") || pathname.startsWith("/pratique/") || pathname === "/routine" || pathname === "/boite-a-outils" || pathname === "/outils" || pathname === "/boite-a-questions" || pathname === "/assessment/totem" || pathname.startsWith("/assessment/results/") || pathname === "/defi" || pathname.startsWith("/defi/") || pathname === "/decouvre" || pathname === "/assessment/compatibility" || pathname.startsWith("/compat/") || pathname === "/assessment" || pathname.startsWith("/assessment/") || pathname === "/acheter-koris";
   const { currentUser } = useAuth();
   const userId = currentUser?.id ?? null;
 
@@ -140,12 +143,13 @@ const AppChrome: React.FC = () => {
         <Suspense fallback={<PageLoader />}>
           <Routes>
             <Route path="/" element={<HomePage />} />
+            <Route path="/compagnon" element={<CompagnonPage />} />
             <Route path="/espace" element={<EspacePage />} />
             <Route path="/espace/resultat/:scaleId" element={<ResultatPage />} />
             <Route path="/espace/:domaine" element={<DomainePage />} />
             <Route path="/humeur" element={<HumeurPage />} />
             <Route path="/question" element={<QuestionPage />} />
-            {/* Espace du vrai Dr Lô : séparé de l'admin, rôle staff/{uid}.drlo */}
+            {/* Espace de Dr Lô : séparé de l'admin, rôle staff/{uid}.drlo */}
             <Route path="/drlo" element={<DrLoConsole />} />
             <Route path="/equipe" element={<EquipePage />} />
             <Route path="/messages-dr-lo" element={<MessagesDrLoPage />} />
@@ -158,6 +162,7 @@ const AppChrome: React.FC = () => {
             <Route path="/routine" element={<RoutinePage />} />
             <Route path="/boite-a-outils" element={<BoiteOutilsPage />} />
             <Route path="/outils" element={<OutilsPage />} />
+            <Route path="/boite-a-questions" element={<BoitePage />} />
 
             {/* Companion app — layout mobile plein écran, distinct du site */}
             <Route
@@ -287,6 +292,7 @@ const AppChrome: React.FC = () => {
       {!isChromeless && !isHome && <Footer />}
       {!isChromeless && <FloatingChat userId={userId} />}
       <CompatInviteResume />
+      {!isChromeless && <BottomTabs />}
       {!isChromeless && !isHome && !!currentUser && <FloatingKori />}
       {!isChromeless && <NoKorisModal />}
       {!isChromeless && <KorisWelcome />}

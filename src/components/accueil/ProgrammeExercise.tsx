@@ -10,6 +10,7 @@ import type { Guide, ProgLearning } from '../../data/programmeLibrary';
 import type { MomentPalette } from '../../utils/drloMoment';
 import { detectCrisis } from '../../utils/accueilFlow';
 
+import CompanionMark from './CompanionMark';
 const C = { text: '#F4EEE4', soft: '#DCD3C5', muted: '#CFC6B8', faint: '#A79E90', title: '#FBF5EA', sage: '#9DBFAF', ink: '#1C140D', line: 'rgba(255,255,255,.14)' };
 
 export interface ExerciseDone { note?: string; held?: boolean }
@@ -56,7 +57,7 @@ const BreathGuide: React.FC<{ g: Extract<Guide, { kind: 'breath' }>; palette: Mo
   const cycle = Math.floor(Math.min(elapsed, total - 1) / cycleLen) + 1;
   const started = run || elapsed > 0;
   if (!started) {
-    return <button onClick={() => setRun(true)} style={{ ...btn(palette), alignSelf: 'flex-start' }}><Play size={16} aria-hidden="true" />Commencer avec Dr Lô</button>;
+    return <button onClick={() => setRun(true)} style={{ ...btn(palette), alignSelf: 'flex-start' }}><Play size={16} aria-hidden="true" />Commencer</button>;
   }
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, padding: '6px 0' }} role="timer" aria-live="polite">
@@ -66,7 +67,7 @@ const BreathGuide: React.FC<{ g: Extract<Guide, { kind: 'breath' }>; palette: Mo
           background: `radial-gradient(circle, ${palette.accentSoft} 0%, rgba(242,182,109,.08) 70%)`, border: `2px solid ${palette.accent}`,
           display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden',
         }}>
-          <img src="/dr-lo.png" alt="" style={{ width: 84, height: 84, borderRadius: '50%', objectFit: 'cover', objectPosition: 'top' }} />
+          <CompanionMark size={84} />
         </div>
       </div>
       <p style={{ margin: 0, fontFamily: 'Fraunces, serif', fontSize: 24, fontWeight: 600, color: palette.accent }}>{ph.label} · {left}</p>

@@ -15,7 +15,7 @@ export const GRISS_BASE: AssessmentScale = {
   shortName: "Communication Couple",
   category: 'sexual_health',
   description: "Évalue la communication sexuelle et la satisfaction dans la relation de couple. Basé sur les construits publiés par Golombok et Rust (1985).",
-  instructions: "Ces questions portent sur ta vie sexuelle en couple. Réponds honnêtement — c'est entre toi et Dr Lô",
+  instructions: "Ces questions portent sur ta vie sexuelle en couple. Réponds honnêtement — c'est confidentiel",
   timeEstimateMinutes: 7,
   reference: "Golombok, S. & Rust, J. (1985). The Golombok-Rust Inventory of Sexual Satisfaction. British Journal of Clinical Psychology, 24(1), 63–64.",
   licenseNote: "Basé sur les construits théoriques publiés de Golombok & Rust (1985). Ne constitue pas l'outil GRISS commercial (NFER-Nelson).",
@@ -51,7 +51,7 @@ export const GRISS_BASE: AssessmentScale = {
     { key: 'psychological',   label: "Facteurs psychologiques",   itemIds: [15,16],                    range: { min: 2, max: 10 } },
   ],
   interpretation: [
-    { min: 16, max: 40, label: "Vie sexuelle de couple en difficulté",                    severity: 'severe',   description: "Plusieurs dimensions de votre sexualité de couple semblent en difficulté. C'est courant et ça se travaille — le plus important c'est d'en prendre conscience.", referralRequired: true, recommendation: "Dr Lô te recommande vraiment une consultation en sexologie ou en thérapie de couple. Vous méritez une vie intime épanouissante." },
+    { min: 16, max: 40, label: "Vie sexuelle de couple en difficulté",                    severity: 'severe',   description: "Plusieurs dimensions de votre sexualité de couple semblent en difficulté. C'est courant et ça se travaille — le plus important c'est d'en prendre conscience.", referralRequired: true, recommendation: "On te recommande vraiment une consultation en sexologie ou en thérapie de couple. Vous méritez une vie intime épanouissante." },
     { min: 41, max: 60, label: "Quelques zones à améliorer dans votre intimité",          severity: 'moderate', description: "Certaines dimensions de votre vie sexuelle méritent un peu d'attention. Rien de dramatique, mais ça vaut le coup de s'y pencher.", referralRequired: false, recommendation: "Améliorer la communication sexuelle peut vraiment transformer votre intimité. Parlez-en ensemble, c'est le premier pas." },
     { min: 61, max: 80, label: "Bonne satisfaction sexuelle dans le couple",              severity: 'positive', description: "Belle qualité de vie sexuelle et de communication dans votre couple ! Vous êtes sur la bonne voie.", referralRequired: false, recommendation: "Continuez à nourrir cette intimité et cette complicité. C'est précieux ce que vous avez." },
   ],

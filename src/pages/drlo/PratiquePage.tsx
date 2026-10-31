@@ -3,7 +3,7 @@
  *  - pas encore débloquée : présentation, source, précautions, bouton « Débloquer » (étincelles payées une seule fois) ;
  *  - exercice guidé / technique : audio, étapes, « J'arrête, ça ne va pas » toujours visible, puis « Comment tu te sens ? » ;
  *  - carnet : la saisie du jour (ou d'un des 7 derniers jours) et la semaine.
- * Le script de l'audio n'arrive jamais ici (il reste pour Dr Lô IA).
+ * Le script de l'audio n'arrive jamais ici (il reste pour le compagnon IA).
  */
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
@@ -50,7 +50,7 @@ const Exercise: React.FC<{ p: Practice; accent: string; primary: string; onProgr
         <p style={{ margin: '8px 0 0', fontSize: 15, color: DC.soft, lineHeight: 1.6 }}>Ouvre les yeux, pose tes pieds bien à plat, regarde autour de toi et nomme trois choses que tu vois. Respire normalement. Ce que tu ressens est réel, et tu n'as pas à le traverser seul.</p>
         <p style={{ margin: '10px 0 0', fontSize: 15, color: DC.soft, lineHeight: 1.6 }}>Si ça ne passe pas, ou si tu te sens en danger, appelle maintenant :</p>
         <Crisis />
-        <p style={{ margin: '12px 0 0', fontSize: 14, color: DC.muted }}>Tu peux aussi <Link to="/question" style={{ color: accent, fontWeight: 700 }}>écrire au vrai Dr Lô</Link>.</p>
+        <p style={{ margin: '12px 0 0', fontSize: 14, color: DC.muted }}>Tu peux aussi <Link to="/question" style={{ color: accent, fontWeight: 700 }}>écrire à Dr Lô</Link>.</p>
       </section>
     );
   }
@@ -85,7 +85,7 @@ const Exercise: React.FC<{ p: Practice; accent: string; primary: string; onProgr
           <p style={{ margin: 0, fontSize: 15, color: DC.text, lineHeight: 1.6 }}>
             {feeling === 'mieux' ? 'Bravo. Garde ce moment en tête : tu peux le refaire quand tu veux, il est à toi.'
               : feeling === 'pareil' ? 'C\'est normal : ces exercices font effet avec la répétition. Essaie de le refaire demain, au même moment.'
-              : 'Merci de l\'avoir dit. Parfois, s\'arrêter sur ses sensations réveille des choses. Si ça dure ou si ça pèse, parles-en à quelqu\'un, ou écris au vrai Dr Lô.'}
+              : 'Merci de l\'avoir dit. Parfois, s\'arrêter sur ses sensations réveille des choses. Si ça dure ou si ça pèse, parles-en à quelqu\'un, ou écris à Dr Lô.'}
           </p>
           {feeling === 'moins' && <Crisis />}
           <button type="button" onClick={() => { setPhase('doing'); setFeeling(null); }} style={{ marginTop: 12, background: 'none', border: 0, padding: 0, color: accent, fontWeight: 700, fontSize: 15, cursor: 'pointer' }}>Refaire l'exercice</button>

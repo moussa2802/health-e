@@ -1,5 +1,5 @@
 /**
- * « Écrire au vrai Dr Lô » — logique pure (testable avec node --test).
+ * « Écrire à Dr Lô » — logique pure (testable avec node --test).
  *  - Paliers : Découverte (totem révélé) → Régulière (5 jours notés : humeur ou journal)
  *    → Cercle (un défi ou une compatibilité). Les trois débloquent une question gratuite.
  *  - Capacité : Dr Lô répond à WEEKLY_CAP questions par semaine (≈ 10 h). Au-delà, file d'attente

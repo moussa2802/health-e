@@ -1,5 +1,5 @@
 /**
- * DrLoSheet — parler à Dr Lô IA sans quitter la page : un panneau qui monte du bas.
+ * DrLoSheet — parler à le compagnon IA sans quitter la page : un panneau qui monte du bas.
  * C'est LA MÊME conversation que l'accueil (même stockage, même compte) : ce qui est dit ici
  * se retrouve dans « Mon Dr Lô », et inversement. Mêmes règles : 1 étincelle par message,
  * protocole de crise. Les tests dans la conversation restent sur l'accueil (bouton « Faire le test »).
@@ -21,6 +21,8 @@ import { getCrisisResources } from '../../data/crisisResources';
 import RichText from '../accueil/RichText';
 import { trackAccueil } from '../../utils/accueilTracking';
 
+import CompanionMark from '../accueil/CompanionMark';
+import { companionLabel, getCompanionName } from '../../utils/companion';
 /** Même préfixe que ConversationAccueil (la conversation de l'accueil). */
 const STORAGE_PREFIX = 'he_accueil_v1:';
 const C = {
@@ -35,13 +37,13 @@ function loadState(key: string): AccueilState | null {
   } catch { return null; }
 }
 
-/** Les boutons que Dr Lô IA propose, version « panneau » (tout ce qui ne demande pas l'accueil). */
+/** Les boutons que le compagnon IA propose, version « panneau » (tout ce qui ne demande pas l'accueil). */
 function actionCard(a: TalkAction): Card | undefined {
   switch (a.kind) {
     case 'test': return getScaleById(a.scaleId) ? { type: 'test', scaleId: a.scaleId } : undefined;
     case 'journal': return { type: 'go', to: 'confier', path: '/journal', label: 'Écrire dans mon journal' };
     case 'humeur': return { type: 'go', to: 'confier', path: '/humeur', label: 'Noter mon humeur' };
-    case 'programme': case 'respiration': return { type: 'go', to: 'chat', path: '/', label: a.kind === 'programme' ? 'Voir le programme avec Dr Lô' : 'Respirer avec Dr Lô' };
+    case 'programme': case 'respiration': return { type: 'go', to: 'chat', path: '/compagnon', label: a.kind === 'programme' ? 'Voir le programme' : 'Respirer avec moi' };
     case 'defi': return { type: 'go', to: 'defi' };
     case 'compat': return { type: 'go', to: 'compat' };
     case 'vrai_drlo': return { type: 'go', to: 'question_drlo' };
@@ -121,9 +123,9 @@ const DrLoSheet: React.FC<Props> = ({ open, greeting, draft, onClose }) => {
     const cur = stateRef.current ?? withUser;
     let next: AccueilState;
     if (!out.ok) {
-      if (out.reason === 'no_koris') openNoKorisModal('Un message à Dr Lô', KORIS_COSTS.chat);
+      if (out.reason === 'no_koris') openNoKorisModal('Un message au compagnon', KORIS_COSTS.chat);
       next = addExchange(cur, null, [out.reason === 'no_koris'
-        ? 'Il te manque une étincelle pour ce message à Dr Lô. En attendant, ton journal et ton humeur restent gratuits.'
+        ? 'Il te manque une étincelle pour ce message. En attendant, ton journal et ton humeur restent gratuits.'
         : out.reason === 'limit' ? 'On a beaucoup parlé aujourd\'hui, on reprend demain. En attendant, tu peux écrire dans ton journal.'
         : 'Je n\'arrive pas à te répondre maintenant (connexion instable). Réessaie dans un instant.']);
     } else if (out.actions.some(a => a.kind === 'crise')) {
@@ -164,24 +166,24 @@ const DrLoSheet: React.FC<Props> = ({ open, greeting, draft, onClose }) => {
   const msgs = (state?.messages ?? []).slice(-30);
 
   return (
-    <div role="dialog" aria-modal="true" aria-label="Discuter avec Dr Lô" style={{ position: 'fixed', inset: 0, zIndex: 80, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end' }}>
+    <div role="dialog" aria-modal="true" aria-label="Discuter avec ton compagnon" style={{ position: 'fixed', inset: 0, zIndex: 80, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end' }}>
       <button aria-label="Fermer" onClick={onClose} style={{ position: 'absolute', inset: 0, border: 0, background: 'rgba(0,0,0,.55)', cursor: 'pointer' }} />
       <div className="drl-in" style={{ position: 'relative', height: '82vh', maxHeight: 720, width: '100%', maxWidth: 560, margin: '0 auto', display: 'flex', flexDirection: 'column', background: C.bg, color: C.text, borderRadius: '22px 22px 0 0', border: `1px solid ${C.line}`, borderBottom: 0, boxShadow: '0 -16px 40px rgba(0,0,0,.45)' }}>
         <header style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 12px 10px 16px', borderBottom: `1px solid ${C.line}` }}>
-          <img src="/dr-lo.png" alt="" width={36} height={36} style={{ width: 36, height: 36, borderRadius: '50%', objectFit: 'cover', objectPosition: 'top', border: `2px solid ${C.accent}` }} />
+          <CompanionMark size={36} ring={C.accent} />
           <div style={{ flex: 1, minWidth: 0 }}>
-            <p style={{ margin: 0, fontSize: 16, fontWeight: 700 }}>Dr Lô</p>
-            <p style={{ margin: 0, fontSize: 13, color: C.faint }}>Ton compagnon IA · la même discussion que sur l'accueil</p>
+            <p style={{ margin: 0, fontSize: 16, fontWeight: 700 }}>{companionLabel()}</p>
+            <p style={{ margin: 0, fontSize: 13, color: C.faint }}>Ton compagnon IA · la même discussion que dans l'onglet Compagnon</p>
           </div>
-          <button onClick={() => go('/', { talk: { greeting: null, draft: input || null } })} aria-label="Ouvrir en plein écran" style={{ width: 40, height: 40, borderRadius: 12, border: `1px solid ${C.line}`, background: C.glass, color: C.muted, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Maximize2 size={17} /></button>
+          <button onClick={() => go('/compagnon', { talk: { greeting: null, draft: input || null } })} aria-label="Ouvrir en plein écran" style={{ width: 40, height: 40, borderRadius: 12, border: `1px solid ${C.line}`, background: C.glass, color: C.muted, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Maximize2 size={17} /></button>
           <button onClick={onClose} aria-label="Fermer" style={{ width: 40, height: 40, borderRadius: 12, border: `1px solid ${C.line}`, background: C.glass, color: C.muted, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><X size={18} /></button>
         </header>
 
         <div ref={listRef} aria-live="polite" style={{ flex: 1, overflowY: 'auto', padding: '14px 14px 8px', display: 'flex', flexDirection: 'column', gap: 10 }}>
           {missing && (
             <div style={{ margin: 'auto 0', textAlign: 'center', color: C.muted, fontSize: 15, lineHeight: 1.55 }}>
-              <p style={{ margin: 0 }}>Ta discussion avec Dr Lô commence sur l'accueil.</p>
-              <button onClick={() => go('/', { talk: { greeting: greeting ?? null, draft: draft ?? null } })} style={{ marginTop: 12, minHeight: 44, padding: '0 18px', borderRadius: 14, border: 0, background: C.accent, color: C.ink, fontWeight: 700, cursor: 'pointer' }}>Ouvrir Dr Lô</button>
+              <p style={{ margin: 0 }}>Ta discussion avec ton compagnon commence dans l'onglet Compagnon.</p>
+              <button onClick={() => go('/compagnon', { talk: { greeting: greeting ?? null, draft: draft ?? null } })} style={{ marginTop: 12, minHeight: 44, padding: '0 18px', borderRadius: 14, border: 0, background: C.accent, color: C.ink, fontWeight: 700, cursor: 'pointer' }}>Ouvrir mon compagnon</button>
             </div>
           )}
           {!state && !missing && <p style={{ margin: 'auto', color: C.faint }}><Loader2 size={18} className="animate-spin" aria-label="Chargement" /></p>}
@@ -195,12 +197,12 @@ const DrLoSheet: React.FC<Props> = ({ open, greeting, draft, onClose }) => {
               </div>
             )
           ))}
-          {busy && <div style={{ alignSelf: 'flex-start', padding: '9px 13px', borderRadius: 16, background: C.glass, color: C.faint, fontSize: 14 }}>Dr Lô écrit…</div>}
+          {busy && <div style={{ alignSelf: 'flex-start', padding: '9px 13px', borderRadius: 16, background: C.glass, color: C.faint, fontSize: 14 }}>Écrit…</div>}
         </div>
 
         {state && (
           <form onSubmit={e => { e.preventDefault(); void send(); }} style={{ display: 'flex', gap: 8, padding: '10px 12px calc(10px + env(safe-area-inset-bottom))', borderTop: `1px solid ${C.line}` }}>
-            <textarea aria-label="Ton message à Dr Lô" rows={1} value={input} onChange={e => setInput(e.target.value)} placeholder="Écris à Dr Lô…" maxLength={1500}
+            <textarea aria-label="Ton message" rows={1} value={input} onChange={e => setInput(e.target.value)} placeholder={`Écris à ${getCompanionName() || 'ton compagnon'}…`} maxLength={1500}
               onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); void send(); } }}
               style={{ flex: 1, minHeight: 44, maxHeight: 120, resize: 'none', borderRadius: 14, border: `1px solid ${C.line}`, background: C.glass, color: C.text, padding: '11px 13px', fontSize: 15, fontFamily: 'inherit', outline: 'none' }} />
             <button type="submit" disabled={!input.trim() || busy} aria-label="Envoyer" style={{ width: 44, height: 44, flexShrink: 0, borderRadius: '50%', border: 0, background: C.accent, color: C.ink, cursor: 'pointer', opacity: !input.trim() || busy ? 0.45 : 1, display: 'flex', alignItems: 'center', justifyContent: 'center', alignSelf: 'flex-end' }}>

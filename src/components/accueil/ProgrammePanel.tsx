@@ -1,5 +1,5 @@
 /**
- * ProgrammePanel — « Mes engagements du jour » (Mon programme Dr Lô), plein écran.
+ * ProgrammePanel — « Mes engagements du jour » (Mon programme), plein écran.
  * Chaque engagement se FAIT ici, guidé par Dr Lô (respiration, étapes, quelques lignes gardées
  * dans le journal, habitude du jour, vrai/faux), et Dr Lô réagit. Cocher reste gratuit.
  * Aucune culpabilisation : un jour manqué s'affiche en gris, jamais en rouge.
@@ -21,6 +21,7 @@ import { ExerciseRunner, LearnQuiz, type ExerciseDone } from './ProgrammeExercis
 import MoodIcon from './MoodIcon';
 import { MOODS, type MoodId } from '../../utils/moodLog';
 
+import CompanionMark from './CompanionMark';
 const C = {
   text: '#F4EEE4', soft: '#DCD3C5', muted: '#CFC6B8', faint: '#A79E90', title: '#FBF5EA',
   sage: '#9DBFAF', line: 'rgba(255,255,255,.12)', glass: 'rgba(255,255,255,.05)', ink: '#1C140D',
@@ -165,8 +166,8 @@ const ProgrammePanel: React.FC<ProgrammePanelProps> = props => {
     const tag = e.kind === 'mood' ? 'Un tap'
       : e.kind === 'learn' ? (e.reread ? 'À relire · vrai ou faux' : 'Vrai ou faux · 30 s')
       : g?.kind === 'habit' ? (committed && !done ? 'Engagé · je te le redemande' : 'Habitude du jour')
-      : g?.kind === 'breath' ? `Guidé par Dr Lô · ${e.duration ?? '1 min'}`
-      : g?.kind === 'write' || g?.kind === 'steps' || g?.kind === 'chips' ? `Avec Dr Lô · ${e.duration ?? '2 min'}`
+      : g?.kind === 'breath' ? `Guidé · ${e.duration ?? '1 min'}`
+      : g?.kind === 'write' || g?.kind === 'steps' || g?.kind === 'chips' ? `Accompagné · ${e.duration ?? '2 min'}`
       : e.duration ?? 'Dans la journée';
     const onCircle = () => {
       if (e.kind === 'mood') { if (!done) setOpen(e.key); return; }
@@ -249,7 +250,7 @@ const ProgrammePanel: React.FC<ProgrammePanelProps> = props => {
     );
   })();
 
-  // ── Mes routines (celles du totem) : en plus des 3 engagements, retirables ──
+  // ── Mes routines (celles de l'animal intérieur) : en plus des 3 engagements, retirables ──
   const gtxt = (t: string) => resolveGender(t, props.genre ?? 'homme');
   const myRoutines = (p.routines ?? []).map(id => routineById(id)).filter((r): r is NonNullable<typeof r> => !!r);
   const suggest = props.totem ? TOTEM_ROUTINES[props.totem.animal].filter(r => !(p.routines ?? []).includes(r.id)) : [];
@@ -307,7 +308,7 @@ const ProgrammePanel: React.FC<ProgrammePanelProps> = props => {
           </button>
           <div style={{ minWidth: 0 }}>
             <h1 style={{ margin: 0, fontFamily: 'Fraunces, serif', fontSize: 22, fontWeight: 600, color: C.title }}>
-              {result ? 'Mon programme Dr Lô' : 'Mes engagements du jour'}
+              {result ? 'Mon programme' : 'Mes engagements du jour'}
             </h1>
             <p style={{ margin: '2px 0 0', fontSize: 13, color: C.faint }}>
               {ax.short} · Jour {shownDay} sur {PROGRAMME_DAYS}{p.light ? ' · version légère' : ''}
@@ -318,8 +319,7 @@ const ProgrammePanel: React.FC<ProgrammePanelProps> = props => {
         {/* Dr Lô accueille chaque jour */}
         {!result && (
           <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
-            <img src="/dr-lo.png" alt="" width={44} height={44} className={cheer ? 'drl-joy-glow' : undefined}
-              style={{ width: 44, height: 44, borderRadius: '50%', objectFit: 'cover', objectPosition: 'top', flexShrink: 0, border: `2px solid ${cheer ? '#E9C88F' : 'rgba(242,182,109,.45)'}` }} />
+            <CompanionMark size={44} className={cheer ? 'drl-joy-glow' : undefined} ring={cheer ? '#E9C88F' : 'rgba(242,182,109,.45)'} />
             <p className="drl-in" key={complete ? 'c' : 'n'} style={{ margin: 0, padding: '12px 14px', borderRadius: '6px 18px 18px 18px', background: 'rgba(255,255,255,.07)', fontSize: 15, lineHeight: 1.55, color: C.soft }}>
               {complete
                 ? `Journée validée${props.prenom ? `, ${props.prenom}` : ''} ! ${tomorrow ? `Demain : ${tomorrow.title.toLowerCase()}${tomorrow.duration ? ` (${tomorrow.duration})` : ''}. ` : ''}Repose-toi bien.`
@@ -456,14 +456,14 @@ const ProgrammePanel: React.FC<ProgrammePanelProps> = props => {
             <div style={{ ...card, padding: 14, display: 'flex', alignItems: 'center', gap: 12 }}>
               <LineChart size={22} color={due ? palette.accent : C.muted} aria-hidden="true" />
               <div style={{ flex: 1, minWidth: 0 }}>
-                <span style={{ display: 'block', fontSize: 14, fontWeight: 700 }}>Bilan de la semaine avec Dr Lô</span>
+                <span style={{ display: 'block', fontSize: 14, fontWeight: 700 }}>Bilan de la semaine</span>
                 <span style={{ display: 'block', fontSize: 13, color: C.faint }}>
                   {due ? `Semaine ${due} · ${props.bilanCost}` : `Disponible au jour ${nextBilanDay} · ${props.bilanCost}`}
                 </span>
               </div>
               {due && (
                 <button onClick={props.onBilan} disabled={props.busy === 'bilan'} style={{ ...primary, opacity: props.busy === 'bilan' ? 0.6 : 1 }}>
-                  {props.busy === 'bilan' ? 'Dr Lô relit…' : 'Voir'}
+                  {props.busy === 'bilan' ? 'Je relis…' : 'Voir'}
                 </button>
               )}
             </div>
@@ -506,7 +506,7 @@ const ProgrammePanel: React.FC<ProgrammePanelProps> = props => {
       {/* Dr Lô réagit */}
       {toast && (
         <div role="status" className="drl-in" style={{ position: 'fixed', left: 16, right: 16, bottom: 20, zIndex: 56, maxWidth: 488, margin: '0 auto', display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', borderRadius: 18, background: '#2A211A', border: '1px solid rgba(242,182,109,.35)', boxShadow: '0 12px 30px rgba(0,0,0,.45)' }}>
-          <img src="/dr-lo.png" alt="" width={32} height={32} style={{ width: 32, height: 32, borderRadius: '50%', objectFit: 'cover', objectPosition: 'top', flexShrink: 0 }} />
+          <CompanionMark size={32} />
           <span style={{ fontSize: 14, lineHeight: 1.45, color: C.text }}>{toast}</span>
         </div>
       )}
@@ -525,7 +525,7 @@ export const ProgrammeHomeCard: React.FC<{ p: Programme; today: string; remainin
   const badge = p.status === 'active' && !p.result && remaining > 0 ? remaining : 0;
   return (
     <button onClick={onOpen} className="drl-btn drl-in"
-      aria-label={`Mon programme Dr Lô. ${sub}.${badge ? ` ${badge} engagement${badge > 1 ? 's' : ''} à faire aujourd'hui.` : ''}`}
+      aria-label={`Mon programme. ${sub}.${badge ? ` ${badge} engagement${badge > 1 ? 's' : ''} à faire aujourd'hui.` : ''}`}
       style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: 10, padding: 14, fontFamily: '"Plus Jakarta Sans", system-ui, sans-serif', borderRadius: 18, border: `1px solid ${C.line}`, background: C.glass, color: C.text, cursor: 'pointer', textAlign: 'left' }}>
       <span style={{ display: 'flex', alignItems: 'center', gap: 12, width: '100%' }}>
         <span style={{ position: 'relative', width: 44, height: 44, borderRadius: 14, background: 'rgba(242,182,109,.14)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
@@ -540,7 +540,7 @@ export const ProgrammeHomeCard: React.FC<{ p: Programme; today: string; remainin
           )}
         </span>
         <span style={{ flex: 1, minWidth: 0 }}>
-          <span style={{ display: 'block', fontSize: 15, fontWeight: 700 }}>Mon programme Dr Lô</span>
+          <span style={{ display: 'block', fontSize: 15, fontWeight: 700 }}>Mon programme</span>
           <span style={{ display: 'block', fontSize: 13, color: C.faint, marginTop: 2 }}>{sub}</span>
         </span>
         {totemImg && <img src={totemImg} alt="" width={36} height={36} style={{ width: 36, height: 36, borderRadius: 12, objectFit: 'cover', flexShrink: 0, border: '1px solid rgba(233,200,143,.35)' }} />}

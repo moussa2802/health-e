@@ -1,6 +1,6 @@
 /**
  * JournalEntryCard — une page du journal dans une liste (Mon journal, et l'onglet « Mon journal » de Me confier) :
- * la date en grand à gauche, la première ligne comme titre, l'humeur, le carnet, l'avis de Dr Lô.
+ * la date en grand à gauche, la première ligne comme titre, l'humeur, le carnet, l'avis du compagnon.
  * + les petits outils partagés du journal (dates, titres, carnets).
  */
 import React from 'react';
@@ -50,7 +50,7 @@ export const EntryCard: React.FC<{ it: JournalItem }> = ({ it }) => {
         <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: DC.faint }}>
           {!Number.isNaN(d.getTime()) && hhmm(d)}
           {it.carnet !== DEFAULT_CARNET && <span style={{ padding: '1px 8px', borderRadius: 999, border: '1px solid rgba(201,184,228,.35)', color: INK, fontWeight: 700 }}>{it.carnet}</span>}
-          {it.drLo && <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, color: '#E9C88F', fontWeight: 700 }}><Sparkles size={11} aria-hidden="true" /> avis de Dr Lô</span>}
+          {it.drLo && <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, color: '#E9C88F', fontWeight: 700 }}><Sparkles size={11} aria-hidden="true" /> avis du compagnon</span>}
         </span>
         <span style={{ display: 'block', marginTop: 4, fontFamily: 'Fraunces, serif', fontSize: 17, fontWeight: 600, lineHeight: 1.3, color: DC.title }}>{title || 'Page sans texte'}</span>
         {rest && <span style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', marginTop: 4, fontSize: 14, lineHeight: 1.5, color: DC.muted }}>{rest}</span>}

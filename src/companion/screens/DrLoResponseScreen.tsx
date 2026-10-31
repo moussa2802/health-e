@@ -5,6 +5,7 @@ import type { CyclePhase } from "../types";
 import type { DrLoResponse } from "../data/drLoResponses";
 import { PHASE_LABELS } from "../data/cyclePhases";
 
+import CompanionMark from '../../components/accueil/CompanionMark';
 interface DrLoResponseScreenProps {
   response: DrLoResponse;
   cycleInfo?: { phase: CyclePhase; cycleDay: number } | null;
@@ -25,11 +26,7 @@ const DrLoResponseScreen: React.FC<DrLoResponseScreenProps> = ({
       )}
       <div className="rounded-block bg-card border border-line shadow-soft px-5 py-5 mb-6">
         <div className="flex items-center gap-3 mb-4">
-          <img
-            src="/dr-lo.png"
-            alt="Dr Lô"
-            className="w-10 h-10 rounded-full object-cover"
-          />
+          <CompanionMark size={40} />
           <span className="text-sm text-muted">Ton accompagnant</span>
         </div>
         <p className="text-ink-soft leading-relaxed">{response.message}</p>
@@ -65,7 +62,7 @@ const DrLoResponseScreen: React.FC<DrLoResponseScreenProps> = ({
 
       <span className="inline-flex items-center gap-1.5 w-fit text-sm text-muted border border-line rounded-pill px-4 py-2">
         <Sparkles className="w-3.5 h-3.5" />
-        Parler à Dr Lô — Bientôt disponible
+        Parler à mon compagnon — Bientôt disponible
       </span>
     </div>
   );

@@ -1,5 +1,5 @@
 /**
- * drlo-question — « Écrire au vrai Dr Lô » : paliers, file d'attente par vagues, parrainage,
+ * drlo-question — « Écrire à Dr Lô » : paliers, file d'attente par vagues, parrainage,
  * envoi d'une question, et (admin) réponses. Toute la logique sensible est côté serveur.
  * POST { action, ... } avec le jeton Firebase de la personne.
  *   status            → paliers, place dans la file, mes questions, code de parrainage
@@ -220,7 +220,7 @@ exports.handler = async (event) => {
       thread.push({ from: 'drlo', text: v.text, at: now, ...(audio ? { audio } : {}) });
       await qRef.update({ ...sync(thread), status, seenAt: null });
       try {
-        if (q.uid) await sendToUser(q.uid, { kind: 'drlo_answer', title: 'Dr Lô', body: 'Le vrai Dr Lô t\'a répondu. Ta réponse t\'attend.', inboxTitle: 'Le vrai Dr Lô t\'a répondu', inboxBody: 'Ta réponse t\'attend.', link: '/messages-dr-lo' });
+        if (q.uid) await sendToUser(q.uid, { kind: 'drlo_answer', title: 'Dr Lô', body: 'Dr Lô t\'a répondu. Ta réponse t\'attend.', inboxTitle: 'Dr Lô t\'a répondu', inboxBody: 'Ta réponse t\'attend.', link: '/messages-dr-lo' });
       } catch (e) { console.warn('drlo answer push failed', e.message); }
       return reply(200, { ok: true });
     }

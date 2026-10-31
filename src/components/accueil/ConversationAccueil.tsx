@@ -89,7 +89,8 @@ import {
 } from '../../utils/conversations';
 import { KORIS_COSTS, isTestFreeRetake, isFirstTestFree } from '../../services/korisService';
 import ProgrammePanel from './ProgrammePanel';
-import VraiDrLoBand from './VraiDrLoBand';
+import CompanionNaming from './CompanionNaming';
+import { COMPANION_DEFAULT, companionAsked, getCompanionName, markCompanionAsked, saveCompanionName } from '../../utils/companion';
 import NotificationsPanel, { NotifOptinCard, type LiveItem } from './NotificationsPanel';
 import { loadInbox, type InboxItem } from '../../services/inboxService';
 import { canProposeReminders, loadPrefs, markSeen, noteProposed, permissionState, pushSupport } from '../../services/pushService';
@@ -113,6 +114,7 @@ import {
 import type { AssessmentScale, AnswerOption } from '../../types/assessment';
 import type { ScaleResult } from '../../types/assessment';
 
+import CompanionMark from './CompanionMark';
 const STORAGE_PREFIX = 'he_accueil_v1:';
 /** Les traces écrites des exercices du programme vont dans ce carnet du journal. */
 const PROGRAMME_CARNET = 'Programme';
@@ -271,6 +273,10 @@ const ConversationAccueil: React.FC = () => {
     : PALETTES[moment];
 
   const [results, setResults] = useState<Record<string, ScaleResult> | null>(null);
+  const [companion, setCompanion] = useState(() => getCompanionName());
+  const [naming, setNaming] = useState(false);
+  const companionName = companion || COMPANION_DEFAULT;
+  const toCompanion = companion || 'ton compagnon';
   const [totemAnimal, setTotemAnimal] = useState<TotemAnimal | null>(null);
   const [totemDefi, setTotemDefi] = useState<TotemDefi | null>(null);
   const [totemPending, setTotemPending] = useState(false);
@@ -533,7 +539,7 @@ const ConversationAccueil: React.FC = () => {
   // Lien d'invitation d'un proche (?ref=CODE) : gardé jusqu'à la création de l'espace
   useEffect(() => { captureReferral(location.search); }, []); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => {
-    const st = location.state as { prescribe?: string; openMood?: boolean; tab?: 'confier'; journal?: boolean; signup?: boolean; flow?: 'defi' | 'compat'; programme?: boolean; talk?: { greeting?: string | null; draft?: string | null } } | null;
+    const st = location.state as { prescribe?: string; openMood?: boolean; tab?: 'confier'; journal?: boolean; signup?: boolean; flow?: 'defi' | 'compat'; programme?: boolean; breath?: boolean; talk?: { greeting?: string | null; draft?: string | null } } | null;
     if (!st || !state || !known || state.step === 'testing') return;
     const sig = JSON.stringify(st) + location.key;
     if (intentRef.current === sig) return;
@@ -545,6 +551,7 @@ const ConversationAccueil: React.FC = () => {
     if (st.signup && !isAuthenticated) { setTimeout(() => openSignupRef.current?.('signup'), 0); return; }
     if (st.flow) { setTab('discuter'); setTimeout(() => startFlowRef.current?.(st.flow!), 0); return; }
     if (st.programme) { setTab('discuter'); setTimeout(() => programmeRef.current?.(), 0); return; }
+    if (st.breath) { setTab('discuter'); setTimeout(() => breathRef.current?.(), 0); return; }
     if (st.prescribe && getScaleById(st.prescribe) && !state.messages.slice(-2).some(m => m.card?.type === 'test' && m.card.scaleId === st.prescribe)) {
       const meta = getScaleMeta(st.prescribe);
       const prev = state;
@@ -557,6 +564,7 @@ const ConversationAccueil: React.FC = () => {
   const openSignupRef = useRef<((m: 'signup' | 'login', t?: string) => void) | null>(null);
   const startFlowRef = useRef<((k: 'defi' | 'compat', userText?: string) => void) | null>(null);
   const programmeRef = useRef<(() => void) | null>(null);
+  const breathRef = useRef<(() => void) | null>(null);
   const talkRef = useRef<((opening: string | null, draft: string | null) => void) | null>(null);
   const [confierView, setConfierView] = useState<'write' | 'journal'>('write');
   /** Retour au premier écran (flèche) ; la conversation reprend en plein écran dès qu'on écrit. */
@@ -566,7 +574,7 @@ const ConversationAccueil: React.FC = () => {
   const [editingConv, setEditingConv] = useState<{ id: string; text: string } | null>(null);
   const [confirmDel, setConfirmDel] = useState<string | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
-  // « Mon programme Dr Lô » (compte uniquement)
+  // « Mon programme » (compte uniquement)
   const [prog, setProg] = useState<Programme | null>(null);
   const progRef = useRef<Programme | null>(null);
   progRef.current = prog;
@@ -601,7 +609,7 @@ const ConversationAccueil: React.FC = () => {
     if (what === 'programme') { if (!prog) return; setProgOpen(true); }
     else if (what === 'notifications') setNotifView('list');
     else if (what === 'rappels') setResumeAsk('link'); // Dr Lô reprend dans la conversation, avec le guide
-    navigate({ pathname: '/', search: '' }, { replace: true });
+    navigate({ pathname: '/compagnon', search: '' }, { replace: true });
   }, [location.search, isAuthenticated, prog?.id]); // eslint-disable-line react-hooks/exhaustive-deps
   // Retour après avoir ouvert Health-e ailleurs (Chrome, Safari, icône de l'écran d'accueil) : on termine les rappels
   useEffect(() => {
@@ -781,7 +789,7 @@ const ConversationAccueil: React.FC = () => {
   ];
   const chatModeNow = inChat;
 
-  // ── Mon programme Dr Lô ──
+  // ── Mon programme ──
   const moodsNow = loadMoods(moodKey);
   const totemInfo = totemAnimal ? { animal: totemAnimal, label: getTotemSignature(totemAnimal).label, words: totemWords(totemAnimal) } : null;
   const progSignals = results ? programmeSignals(results) : [];
@@ -824,7 +832,7 @@ const ConversationAccueil: React.FC = () => {
   if (prog) {
     const day = Math.min(28, dayNumber(prog, today));
     todayRows.push({
-      key: 'prog', title: 'Mon programme Dr Lô',
+      key: 'prog', title: 'Mon programme',
       sub: prog.result ? 'Terminé : vois le chemin parcouru' : prog.status === 'paused' ? 'En pause' : progRemaining > 0 ? `${AXES[prog.axis].short} · Jour ${day} sur 28 · ${progRemaining} à faire` : `${AXES[prog.axis].short} · Jour ${day} sur 28 · journée validée`,
       subColor: progActive && progRemaining === 0 ? C.sage : undefined,
       onClick: () => { trackAccueil('programme_open'); setProgOpen(true); },
@@ -832,7 +840,7 @@ const ConversationAccueil: React.FC = () => {
       badge: progActive && progRemaining > 0 ? countBadge(progRemaining) : progActive ? <Check size={18} color={C.sage} strokeWidth={2.6} aria-label="Fait" /> : undefined,
     });
   } else if (isAuthenticated && progSignals.length > 0 && !testing) {
-    todayRows.push({ key: 'prog', title: 'Un programme pour moi', sub: '28 jours, quelques minutes par jour, choisis pour toi', onClick: () => onChip({ label: 'Mon programme Dr Lô', kind: 'home', q: { label: 'Mon programme Dr Lô', value: 'home:programme' } }), visual: iconBox(<ClipboardCheck size={20} color={palette.accent} aria-hidden="true" />) });
+    todayRows.push({ key: 'prog', title: 'Un programme pour moi', sub: '28 jours, quelques minutes par jour, choisis pour toi', onClick: () => onChip({ label: 'Mon programme', kind: 'home', q: { label: 'Mon programme', value: 'home:programme' } }), visual: iconBox(<ClipboardCheck size={20} color={palette.accent} aria-hidden="true" />) });
   }
   // L'humeur : comptée dans le programme si on en suit un, sinon une ligne ici
   if (!moodToday && !progActive) {
@@ -860,7 +868,7 @@ const ConversationAccueil: React.FC = () => {
     if (dueW) liveItems.push({ key: 'bilan', title: 'Ton bilan de la semaine est prêt', body: `Semaine ${dueW} · à ouvrir quand tu veux`, onOpen: () => setProgOpen(true) });
     if (rt?.available) liveItems.push({ key: 'retest', title: 'Ton nouveau test est prêt', body: 'Pour voir le chemin parcouru', onOpen: () => setProgOpen(true) });
   }
-  if (totemPending) liveItems.push({ key: 'totem', title: 'Ton totem a évolué', body: 'Viens découvrir le nouveau', onOpen: () => navigate('/assessment/totem') });
+  if (totemPending) liveItems.push({ key: 'totem', title: 'Ton animal intérieur a évolué', body: 'Viens découvrir le nouveau', onOpen: () => navigate('/assessment/totem') });
   const unreadCount = inbox.filter(i => !i.read).length;
   const bellCount = liveItems.length + unreadCount;
 
@@ -886,6 +894,7 @@ const ConversationAccueil: React.FC = () => {
   };
 
   openSignupRef.current = openSignup;
+  breathRef.current = () => { if (!breathing) startBreathing(); };
 
   const onChip = (c: Chip) => {
     if (c.kind === 'mood') { trackAccueil('mood_open'); setMode('mood'); return; }
@@ -894,7 +903,7 @@ const ConversationAccueil: React.FC = () => {
       if (v === 'home:couple') { navigate('/assessment/compatibility'); return; }
       setInChat(true);
       if (v.startsWith('home:test:')) void startTest(v.slice(10));
-      if (v === 'home:programme') offerProgramme(state, 'Mon programme Dr Lô');
+      if (v === 'home:programme') offerProgramme(state, 'Mon programme');
       return;
     }
     // Depuis l'accueil, un besoin ouvre un nouveau sujet dans la discussion en cours
@@ -1020,7 +1029,7 @@ const ConversationAccueil: React.FC = () => {
    */
   const routeProfile = (): string => {
     const parts: string[] = [];
-    if (totemAnimal) parts.push(`Totem : ${getTotemSignature(totemAnimal).label}.`);
+    if (totemAnimal) parts.push(`Animal intérieur : ${getTotemSignature(totemAnimal).label}.`);
     const sexual = new Set(SEXUAL_HEALTH_SCALES.map(x => x.id));
     const lines = Object.entries(results ?? {})
       .filter(([id, r]) => !sexual.has(id) && r?.interpretation?.label)
@@ -1028,7 +1037,7 @@ const ConversationAccueil: React.FC = () => {
       .map(([id, r]) => `${getScaleMeta(id).label} : ${r.interpretation!.label}`);
     if (lines.length) parts.push(`Ce qui ressort de ses tests : ${lines.join(' ; ')}.`);
     const p = progRef.current;
-    if (p && !p.result) parts.push(`Programme Dr Lô en cours : ${AXES[p.axis].short}${p.status === 'paused' ? ' (en pause)' : ''}.`);
+    if (p && !p.result) parts.push(`Programme en cours : ${AXES[p.axis].short}${p.status === 'paused' ? ' (en pause)' : ''}.`);
     return parts.join(' ').slice(0, 900);
   };
 
@@ -1086,7 +1095,7 @@ const ConversationAccueil: React.FC = () => {
     noteProposed(currentUser.id);
   };
 
-  // ── Mon programme Dr Lô ────────────────────────────────────────────────────
+  // ── Mon programme ────────────────────────────────────────────────────
 
   /** Dr Lô regarde le profil : il invite (axe conseillé), propose un test d'abord, ou rouvre le programme. */
   const offerProgramme = (from?: AccueilState, userText?: string) => {
@@ -1129,7 +1138,7 @@ const ConversationAccueil: React.FC = () => {
   const prepareProgramme = async (axis: ProgAxis) => {
     if (routing || !currentUser) return;
     const cost = KORIS_COSTS.programme;
-    if (!korisLoading && balance < cost) { openNoKorisModal('Mon programme Dr Lô', cost); return; }
+    if (!korisLoading && balance < cost) { openNoKorisModal('Mon programme', cost); return; }
     const sigs = programmeSignals(results ?? {});
     const sig = sigs.find(x => x.axis === axis);
     const fragile = !!sig?.fragile;
@@ -1148,7 +1157,7 @@ const ConversationAccueil: React.FC = () => {
     setRouting(false);
     refreshBalance();
     const cur = stateRef.current ?? base;
-    if (!out.ok && out.reason === 'no_koris') { openNoKorisModal('Mon programme Dr Lô', out.required ?? cost); return; }
+    if (!out.ok && out.reason === 'no_koris') { openNoKorisModal('Mon programme', out.required ?? cost); return; }
     const intro = out.ok ? out.intro : `${AXES[axis].goal} Je n'ai pas pu l'écrire sur mesure cette fois (rien n'a été débité), mais voici le programme.`;
     apply(addExchange(cur, null, [{ text: intro, card: { type: 'programme_offer', axis, intro, order: out.ok ? out.order : [], light: fragile, fragile } }]), cur);
     trackAccueil('programme_proposed', { axis, ai: out.ok });
@@ -1224,7 +1233,7 @@ const ConversationAccueil: React.FC = () => {
     persistProg(newProgramme({ axis: p.axis, today, light: p.light, intro: p.intro, order1: p.order1, signal: sig }));
   };
 
-  programmeRef.current = () => { if (prog) setProgOpen(true); else offerProgramme(stateRef.current ?? state, 'Mon programme Dr Lô'); };
+  programmeRef.current = () => { if (prog) setProgOpen(true); else offerProgramme(stateRef.current ?? state, 'Mon programme'); };
 
   const progEnv: ProgCardEnv = {
     palette,
@@ -1460,7 +1469,7 @@ const ConversationAccueil: React.FC = () => {
   startFlowRef.current = (k, t) => { void startFlow(k, t); };
   talkRef.current = (o, d) => { void enterTalk(o, d); };
 
-  /** Premier test du totem qui manque encore. */
+  /** Premier test de l'animal intérieur qui manque encore. */
   function getTotemNext(): string | null {
     return getTotemProgress(results ?? {}).missing[0] ?? null;
   }
@@ -1670,8 +1679,8 @@ const ConversationAccueil: React.FC = () => {
     const cur = stateRef.current ?? withTalk;
     if (!out.ok) {
       if (out.reason === 'no_koris') {
-        openNoKorisModal('Un message à Dr Lô', KORIS_COSTS.chat);
-        apply(addExchange(cur, null, ['Il te manque une étincelle pour ce message à Dr Lô. En attendant, écrire dans ton journal et noter ton humeur restent gratuits.']), cur);
+        openNoKorisModal('Un message au compagnon', KORIS_COSTS.chat);
+        apply(addExchange(cur, null, ['Il te manque une étincelle pour ce message. En attendant, écrire dans ton journal et noter ton humeur restent gratuits.']), cur);
       } else if (out.reason === 'limit') {
         apply(addExchange(cur, null, ['On a beaucoup parlé aujourd\'hui, on reprend demain. En attendant, tu peux écrire dans ton journal : je le garde pour toi.']), cur);
       } else {
@@ -1818,7 +1827,7 @@ const ConversationAccueil: React.FC = () => {
               )}
               {isAuthenticated && chatModeNow && state.step !== 'testing' && (
                 <p className="drl-in" style={{ margin: '0 0 2px', fontSize: 13, color: C.faint, textAlign: 'center' }}>
-                  Chaque message à Dr Lô coûte {credits(KORIS_COSTS.chat)}.
+                  Chaque message coûte {credits(KORIS_COSTS.chat)}.
                 </p>
               )}
               {state.step !== 'minor' && (<>
@@ -1827,11 +1836,11 @@ const ConversationAccueil: React.FC = () => {
                     {[
                       ...(!moodToday ? [{ label: 'Noter mon humeur', hint: '30 s', icon: CloudSun, go: () => { trackAccueil('mood_open'); setMode('mood'); } }] : []),
                       { label: 'Respirer avec moi', hint: '1 min', icon: Wind, go: () => startBreathing() },
-                      ...(isAuthenticated ? [{ label: 'Mon programme Dr Lô', hint: prog && prog.status === 'active' && progRemaining ? `${progRemaining} à faire` : '', icon: ClipboardCheck, go: () => (prog ? setProgOpen(true) : offerProgramme(state, 'Mon programme Dr Lô')) }] : []),
-                      { label: 'Mon animal-totem', hint: '', icon: PawPrint, go: () => navigate('/assessment/totem') },
+                      ...(isAuthenticated ? [{ label: 'Mon programme', hint: prog && prog.status === 'active' && progRemaining ? `${progRemaining} à faire` : '', icon: ClipboardCheck, go: () => (prog ? setProgOpen(true) : offerProgramme(state, 'Mon programme')) }] : []),
+                      { label: 'Mon animal intérieur', hint: '', icon: PawPrint, go: () => navigate('/assessment/totem') },
                       { label: 'Compatibilité de couple', hint: '', icon: Heart, go: () => navigate('/assessment/compatibility') },
                       { label: 'Défi : tes proches te connaissent ?', hint: '', icon: Users, go: () => navigate(isAuthenticated ? '/defi' : '/decouvre') },
-                      { label: 'Écrire au vrai Dr Lô', hint: '', icon: Mail, go: () => navigate('/question') },
+                      { label: 'Écrire à Dr Lô', hint: '', icon: Mail, go: () => navigate('/question') },
                       ...(isAuthenticated ? [{ label: 'Les messages de Dr Lô', hint: '', icon: MessagesSquare, go: () => navigate('/messages-dr-lo') }] : []),
                       { label: 'Tous les tests', hint: '', icon: ListChecks, go: () => navigate('/espace') },
                       { label: isAuthenticated ? 'Mon espace bien-être' : 'Ce que propose Health-e', hint: '', icon: Sprout, go: () => navigate('/espace') },
@@ -1857,8 +1866,8 @@ const ConversationAccueil: React.FC = () => {
                     value={input}
                     onChange={e => setInput(e.target.value)}
                     maxLength={500}
-                    placeholder={dictation.listening ? 'Parle, je t\'écoute…' : state.step === 'testing' ? 'Si quelque chose te pèse, écris-le-moi…' : state.talk || !chatModeNow ? 'Écris à Dr Lô…' : 'Réponds à Dr Lô…'}
-                    aria-label="Répondre à Dr Lô"
+                    placeholder={dictation.listening ? 'Parle, je t\'écoute…' : state.step === 'testing' ? 'Si quelque chose te pèse, écris-le-moi…' : state.talk || !chatModeNow ? `Écris à ${toCompanion}…` : `Réponds à ${toCompanion}…`}
+                    aria-label="Répondre"
                     className="drl-input"
                     style={{
                       flex: 1, minWidth: 0, minHeight: 54, boxSizing: 'border-box', borderRadius: 27,
@@ -1874,7 +1883,7 @@ const ConversationAccueil: React.FC = () => {
                       <Mic size={20} aria-hidden="true" />
                     </button>
                   )}
-                  <button type="submit" aria-label="Envoyer à Dr Lô" className="drl-btn" disabled={!input.trim()}
+                  <button type="submit" aria-label="Envoyer" className="drl-btn" disabled={!input.trim()}
                     style={{ width: 50, height: 50, borderRadius: '50%', border: 0, background: palette.primary, boxShadow: `0 8px 24px ${palette.glow}`, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0, opacity: !input.trim() ? 0.55 : 1, color: C.ink }}>
                     <Send size={19} aria-hidden="true" />
                   </button>
@@ -1947,7 +1956,7 @@ const ConversationAccueil: React.FC = () => {
     const online = !statusLabel && !listening;
     const shownMsgs = messages.slice(0, shown);
     return (
-      <section aria-label="Conversation avec Dr Lô" aria-busy={revealing} className="drl-screen font-sans"
+      <section aria-label="Conversation avec ton compagnon" aria-busy={revealing} className="drl-screen font-sans"
         style={{ position: 'fixed', inset: 0, zIndex: 40, height: '100dvh', display: 'flex', flexDirection: 'column', overflow: 'hidden', background: palette.bg, color: C.text }}>
         <div style={{ width: '100%', maxWidth: 560, margin: '0 auto', height: '100%', display: 'flex', flexDirection: 'column' }}>
           {/* En-tête de discussion */}
@@ -1960,7 +1969,7 @@ const ConversationAccueil: React.FC = () => {
               <div style={{ transform: 'scale(.7)' }}><DrLoAvatar state={avatarState} palette={palette} size={38} /></div>
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
-              <p style={{ margin: 0, fontSize: 16, fontWeight: 700 }}>Dr Lô</p>
+              <p style={{ margin: 0, fontSize: 16, fontWeight: 700 }}>{companionName}</p>
               <p role="status" style={{ margin: '1px 0 0', fontSize: 13, fontWeight: 600, color: online ? '#7FD1A0' : palette.accent, fontStyle: online ? 'normal' : 'italic' }}>{statusText}</p>
             </div>
             {isAuthenticated ? (!korisLoading && (
@@ -2066,7 +2075,7 @@ const ConversationAccueil: React.FC = () => {
                     </div>
                   ) : !m.text ? null : (
                     <div style={{ display: 'flex', alignItems: 'flex-end', gap: 8, maxWidth: '92%' }}>
-                      <img src="/dr-lo.png" alt="" width={28} height={28} style={{ width: 28, height: 28, borderRadius: '50%', objectFit: 'cover', objectPosition: 'top', flexShrink: 0, opacity: shownMsgs[i + 1]?.from === 'drlo' ? 0 : 1 }} />
+                      <CompanionMark size={28} style={{ opacity: shownMsgs[i + 1]?.from === 'drlo' ? 0 : 1 }} />
                       <div style={{ padding: '11px 14px', borderRadius: '18px 18px 18px 4px', background: 'rgba(255,255,255,.07)', border: '1px solid rgba(255,255,255,.08)', fontSize: 15, lineHeight: 1.5, color: C.text }}><RichText text={m.text} /></div>
                     </div>
                   )}
@@ -2075,19 +2084,19 @@ const ConversationAccueil: React.FC = () => {
               ))}
               {partial !== null && (
                 <div style={{ display: 'flex', alignItems: 'flex-end', gap: 8, maxWidth: '92%' }}>
-                  <img src="/dr-lo.png" alt="" width={28} height={28} style={{ width: 28, height: 28, borderRadius: '50%', objectFit: 'cover', objectPosition: 'top', flexShrink: 0 }} />
+                  <CompanionMark size={28} />
                   <div style={{ padding: '11px 14px', borderRadius: '18px 18px 18px 4px', background: 'rgba(255,255,255,.07)', border: '1px solid rgba(255,255,255,.08)', fontSize: 15, lineHeight: 1.5, color: C.text }}><RichText text={partial} /></div>
                 </div>
               )}
               {(phase === 'thinking' || phase === 'reading' || routing || testBusy) && partial === null && (
-                <div role="status" aria-label="Dr Lô écrit" style={{ display: 'flex', alignItems: 'flex-end', gap: 8 }}>
-                  <img src="/dr-lo.png" alt="" width={28} height={28} style={{ width: 28, height: 28, borderRadius: '50%', objectFit: 'cover', objectPosition: 'top' }} />
+                <div role="status" aria-label="Ton compagnon écrit" style={{ display: 'flex', alignItems: 'flex-end', gap: 8 }}>
+                  <CompanionMark size={28} />
                   <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '12px 14px', borderRadius: '18px 18px 18px 4px', background: 'rgba(255,255,255,.07)' }}>
                     <span style={{ display: 'inline-flex', gap: 5 }}>
                       {[0, 0.15, 0.3].map(d => <span key={d} className="drl-dot" style={{ width: 7, height: 7, borderRadius: '50%', background: C.muted, animationDelay: `${d}s` }} />)}
                     </span>
                     {typeof routing === 'string' && routing && (
-                      <span style={{ fontSize: 13, color: C.muted }}>Dr Lô {routing.charAt(0).toLowerCase() + routing.slice(1)}…</span>
+                      <span style={{ fontSize: 13, color: C.muted }}>{companionName} {routing.charAt(0).toLowerCase() + routing.slice(1)}…</span>
                     )}
                   </div>
                 </div>
@@ -2148,7 +2157,7 @@ const ConversationAccueil: React.FC = () => {
 
   return (
     <section
-      aria-label="Conversation avec Dr Lô"
+      aria-label="Conversation avec ton compagnon"
       aria-busy={revealing}
       className="drl-screen font-sans"
       style={{ position: 'relative', overflow: 'hidden', minHeight: '100svh', background: palette.bg, color: C.text }}
@@ -2195,10 +2204,7 @@ const ConversationAccueil: React.FC = () => {
           </span>
         </header>
 
-        {/* Le vrai Dr Lô, au-dessus de Dr Lô IA : ses messages, ses chaînes, lui écrire */}
-        {isAuthenticated && currentUser && <VraiDrLoBand uid={currentUser.id} palette={palette} />}
-
-        {/* Dr Lô */}
+        {/* Le compagnon */}
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: 18 }}>
           <div style={{ position: 'relative', width: '100%', display: 'flex', justifyContent: 'center' }}>
             <DrLoAvatar state={avatarState} palette={palette} aura={isAuthenticated && !korisLoading ? balance / AURA_FULL : null} />
@@ -2211,7 +2217,17 @@ const ConversationAccueil: React.FC = () => {
               {statusLabel}
             </p>
           ) : (
-            <p style={{ margin: '12px 0 0', fontSize: 13, letterSpacing: '.14em', textTransform: 'uppercase', color: palette.accent, fontWeight: 700 }}>Ton Dr Lô</p>
+            <button type="button" onClick={() => { if (isAuthenticated) setNaming(v => !v); }} disabled={!isAuthenticated} aria-label={isAuthenticated ? `${companionName} : changer son nom` : companionName} className="drl-btn"
+              style={{ margin: '12px 0 0', minHeight: 44, padding: '0 10px', border: 0, background: 'transparent', fontSize: 13, letterSpacing: '.14em', textTransform: 'uppercase', color: palette.accent, fontWeight: 700, cursor: isAuthenticated ? 'pointer' : 'default', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+              {companionName}{isAuthenticated && <Pencil size={13} aria-hidden="true" />}
+            </button>
+          )}
+          {isAuthenticated && (naming || (!companion && !companionAsked())) && (
+            <div style={{ width: '100%' }}>
+              <CompanionNaming current={companion} accent={palette.primary}
+                onSave={(n) => { setCompanion(saveCompanionName(n)); markCompanionAsked(); setNaming(false); }}
+                onSkip={() => { markCompanionAsked(); setNaming(false); }} />
+            </div>
           )}
           <nav aria-label="Mode de conversation" style={{ marginTop: 14, display: 'inline-flex', padding: 4, borderRadius: 999, background: 'rgba(255,255,255,.06)', border: '1px solid rgba(255,255,255,.10)' }}>
             {(['discuter', 'confier'] as const).map(t => (
@@ -2270,8 +2286,8 @@ const ConversationAccueil: React.FC = () => {
 
         {/* 3. Aujourd'hui : une seule liste, une ligne par chose à faire */}
         {todayRows.length > 0 && (
-          <section aria-label="Aujourd'hui" style={{ marginTop: 22, marginBottom: 14 }}>
-            <p style={{ margin: '0 4px 8px', fontSize: 13, letterSpacing: '.12em', textTransform: 'uppercase', fontWeight: 700, color: C.faint }}>Aujourd'hui</p>
+          <section aria-label="À faire avec ton compagnon" style={{ marginTop: 22, marginBottom: 14 }}>
+            <p style={{ margin: '0 4px 8px', fontSize: 13, letterSpacing: '.12em', textTransform: 'uppercase', fontWeight: 700, color: C.faint }}>Avec ton compagnon</p>
             <div style={{ borderRadius: 18, border: `1px solid ${C.line}`, background: C.glass, overflow: 'hidden' }}>
               {todayRows.map((r, i) => (
                 <button key={r.key} onClick={r.onClick} className="drl-btn"
@@ -2288,7 +2304,6 @@ const ConversationAccueil: React.FC = () => {
             </div>
           </section>
         )}
-        {isAuthenticated && <DiscoveryRow ids={nextDiscoveries} onStart={id => { setInChat(true); void startTest(id); }} />}
         </>) : (<>
         {/* Première visite : la conversation d'accueil, au centre */}
         <div style={{ marginTop: 16, textAlign: 'center' }}>
@@ -2317,7 +2332,7 @@ const ConversationAccueil: React.FC = () => {
             ))}
             {partial !== null && <p style={{ margin: 0, fontSize: 17, lineHeight: 1.55, color: C.soft }}>{partial}</p>}
             {(phase === 'thinking' || phase === 'reading' || routing) && (
-              <div role="status" aria-label="Dr Lô écrit" style={{ alignSelf: 'center', display: 'inline-flex', gap: 6, padding: '10px 14px', borderRadius: 999, background: 'rgba(255,255,255,.06)' }}>
+              <div role="status" aria-label="Ton compagnon écrit" style={{ alignSelf: 'center', display: 'inline-flex', gap: 6, padding: '10px 14px', borderRadius: 999, background: 'rgba(255,255,255,.06)' }}>
                 {[0, 0.15, 0.3].map(d => <span key={d} className="drl-dot" style={{ width: 7, height: 7, borderRadius: '50%', background: C.muted, animationDelay: `${d}s` }} />)}
               </div>
             )}
@@ -2340,7 +2355,7 @@ const ConversationAccueil: React.FC = () => {
 
         {!isAuthenticated ? (
           <ShowcaseCards
-            onTotem={() => onChip({ label: 'Découvrir mon animal-totem', kind: 'flow', q: { label: 'Découvrir mon animal-totem', value: 'need:connaitre' } })}
+            onTotem={() => onChip({ label: 'Découvrir mon animal intérieur', kind: 'flow', q: { label: 'Découvrir mon animal intérieur', value: 'need:connaitre' } })}
             onCompat={() => navigate('/assessment/compatibility')}
             onDefi={() => navigate('/decouvre')}
           />
@@ -2454,7 +2469,7 @@ const ChatCard: React.FC<{
                 {q.tag === 'totem' ? '🐾' : i + 1}
               </span>
               <span style={{ fontSize: 14, lineHeight: 1.45, color: C.soft }}>
-                {q.tag === 'totem' && <b style={{ display: 'block', fontSize: 13, letterSpacing: '.06em', textTransform: 'uppercase', color: '#E9C88F' }}>Question totem</b>}
+                {q.tag === 'totem' && <b style={{ display: 'block', fontSize: 13, letterSpacing: '.06em', textTransform: 'uppercase', color: '#E9C88F' }}>Compte pour ton animal intérieur</b>}
                 {q.tag === 'perso' && <b style={{ display: 'block', fontSize: 13, letterSpacing: '.06em', textTransform: 'uppercase', color: '#9DBFAF' }}>Question perso</b>}
                 {q.text}
                 {q.note && <span style={{ display: 'block', fontSize: 13, color: C.faint }}>{q.note}</span>}

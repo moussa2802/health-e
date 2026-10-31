@@ -1,9 +1,10 @@
-import React, { useEffect, useRef, useState, useCallback } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Sparkles, Droplet, Heart, Shield } from 'lucide-react';
 import type { Archetype, KeyDimension } from '../../utils/profileArchetype';
 import TestSignature from './TestSignature';
 import InfoTip from '../Onboarding/InfoTip';
 
+import CompanionMark from '../accueil/CompanionMark';
 const TRAIT_ICONS: Record<string, React.FC<{ size?: number; className?: string }>> = {
   'Haut potentiel': Sparkles,
   'Hypersensible': Droplet,
@@ -33,37 +34,7 @@ function shortDimLabel(label: string, dimName: string): string {
   return cleaned || label;
 }
 
-const DrLoAvatar: React.FC<{ size: number; fontSize: number }> = ({ size, fontSize }) => {
-  const [failed, setFailed] = useState(false);
-  const handleError = useCallback(() => setFailed(true), []);
-
-  if (failed) {
-    return (
-      <div
-        className="flex items-center justify-center font-display font-semibold flex-shrink-0"
-        style={{
-          width: size, height: size, borderRadius: '50%',
-          background: '#F5E4DC', color: '#C9603F', fontSize,
-        }}
-      >
-        DL
-      </div>
-    );
-  }
-
-  return (
-    <img
-      src="/dr-lo.png"
-      alt="Dr Lô"
-      onError={handleError}
-      className="flex-shrink-0"
-      style={{
-        width: size, height: size, borderRadius: '50%',
-        objectFit: 'cover', background: '#F5E4DC',
-      }}
-    />
-  );
-};
+const DrLoAvatar: React.FC<{ size: number; fontSize: number }> = ({ size }) => <CompanionMark size={size} ring="transparent" />;
 
 interface ShareableProfileCardProps {
   archetype: Archetype;
@@ -312,7 +283,7 @@ const ShareableProfileCard: React.FC<ShareableProfileCardProps> = ({
               fontSize: isExport ? 31 : 12.5,
             }}
           >
-            « {quote} » — <b style={{ color: '#F1ECE1' }}>Dr Lô</b>
+            « {quote} »
           </p>
         </div>
       )}

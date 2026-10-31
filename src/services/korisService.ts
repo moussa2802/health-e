@@ -305,11 +305,11 @@ async function computeGlobalKorisStatsFromRaw(): Promise<{
 
 export function getFeatureLabel(feature: string): string {
   const labels: Record<string, string> = {
-    chat: 'Message Dr Lô',
-    journal: 'Avis Dr Lô (journal)',
-    analysis: 'Analyse Dr Lô',
-    analysis_refresh: 'Actualisation analyse Dr Lô',
-    synthesis: 'Synthèse Dr Lô',
+    chat: 'Message au compagnon',
+    journal: 'Avis sur ton journal',
+    analysis: 'Ton analyse',
+    analysis_refresh: 'Actualisation analyse',
+    synthesis: 'Ta synthèse',
     refresh_synthesis: 'Rafraîchir synthèse',
     conseils: 'Conseils personnalisés',
     compatibility: 'Test de compatibilité',
@@ -318,7 +318,7 @@ export function getFeatureLabel(feature: string): string {
     purchase: `Achat ${CREDIT.ofMany}`,
     refund: 'Remboursement',
     unlock_chat: 'Débloquer chat',
-    programme: 'Mon programme Dr Lô',
+    programme: 'Mon programme',
     programme_bilan: 'Bilan du programme',
   };
   return labels[feature] ?? feature;

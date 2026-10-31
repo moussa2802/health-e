@@ -1,7 +1,7 @@
 /**
  * PracticesAdmin — onglet « Pratiques » de l'espace Dr Lô : la banque d'exercices guidés, de techniques et de carnets.
  * Dr Lô fixe le prix (débloqué une fois par la personne), écrit la source et les précautions, et peut saisir le script
- * de l'audio : il n'est jamais montré aux personnes, il sert à Dr Lô IA.
+ * de l'audio : il n'est jamais montré aux personnes, il sert à le compagnon IA.
  * Les pratiques se proposent ensuite sous un épisode de chaîne (onglet Chaînes → Publier).
  */
 import React, { useEffect, useState } from 'react';
@@ -164,8 +164,8 @@ const Form: React.FC<{ initial: AdminPractice | null; palette: MomentPalette; on
         </>
       )}
 
-      <label style={lab} htmlFor="pr-script">{type === 'carnet' ? 'Notes pour Dr Lô IA (jamais montrées aux personnes)' : 'Script de l\'audio (jamais montré aux personnes)'}</label>
-      <textarea id="pr-script" rows={4} value={script} onChange={e => setScript(e.target.value)} placeholder="Le texte de ce que tu dis. Il permet à Dr Lô IA de connaître l'exercice et de répondre aux questions dessus." className="drl-input" style={{ ...field, resize: 'vertical' }} />
+      <label style={lab} htmlFor="pr-script">{type === 'carnet' ? 'Notes pour le compagnon IA (jamais montrées aux personnes)' : 'Script de l\'audio (jamais montré aux personnes)'}</label>
+      <textarea id="pr-script" rows={4} value={script} onChange={e => setScript(e.target.value)} placeholder="Le texte de ce que tu dis. Il permet à le compagnon IA de connaître l'exercice et de répondre aux questions dessus." className="drl-input" style={{ ...field, resize: 'vertical' }} />
       <label style={lab} htmlFor="pr-source">Source (obligatoire, affichée)</label>
       <input id="pr-source" maxLength={300} value={source} onChange={e => setSource(e.target.value)} placeholder="Ex. Activation comportementale (Lewinsohn) ; pleine conscience (MBSR, Kabat-Zinn)" className="drl-input" style={field} />
       <label style={lab} htmlFor="pr-caut">Précautions (affichées avant de commencer)</label>

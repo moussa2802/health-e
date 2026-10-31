@@ -48,7 +48,7 @@ export const SOCIAL_PRESSURE_SEX: AssessmentScale = {
   ],
   interpretation: [
     { min: 14, max: 28, label: "Pression sociale faible",    severity: 'positive', description: "Tu sembles relativement libre des pressions sociales dans ta sexualité. C'est une vraie force.", referralRequired: false, recommendation: "Continue à cultiver une sexualité épanouie et en accord avec tes valeurs. Tu es sur le bon chemin." },
-    { min: 29, max: 49, label: "Pression sociale modérée",   severity: 'mild',     description: "Des pressions sociales influencent ta vie sexuelle de manière modérée. C'est très courant, surtout dans notre contexte.", referralRequired: false, recommendation: "Identifier ces pressions et comprendre comment elles t'affectent, c'est déjà un grand pas. Dr Lô peut t'aider à y voir plus clair." },
+    { min: 29, max: 49, label: "Pression sociale modérée",   severity: 'mild',     description: "Des pressions sociales influencent ta vie sexuelle de manière modérée. C'est très courant, surtout dans notre contexte.", referralRequired: false, recommendation: "Identifier ces pressions et comprendre comment elles t'affectent, c'est déjà un grand pas. Ton compagnon peut t'aider à y voir plus clair." },
     { min: 50, max: 70, label: "Pression sociale élevée",    severity: 'moderate', description: "Les pressions sociales pèsent lourd sur ta sexualité. Tu n'es pas {{seul|seule}} à vivre ça — beaucoup de personnes dans notre contexte traversent la même chose.", referralRequired: false, recommendation: "Un accompagnement par un professionnel sensible aux enjeux culturels peut vraiment t'aider à te libérer de ces pressions. N'hésite pas." },
   ],
 };

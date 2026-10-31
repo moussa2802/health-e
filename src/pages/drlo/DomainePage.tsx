@@ -1,15 +1,16 @@
 /**
- * DomainePage — détail d'un domaine de « Mon espace bien-être » (/espace/mental, /espace/social,
- * /espace/intime), dans le même thème que l'accueil : on ne « change plus de site » en touchant
- * un domaine. Chaque test : fait (repère + date) ou à faire, et une action avec Dr Lô.
+ * DomainePage — l'onglet « Tests » : /espace/mental, /espace/intime et /espace/bonus se choisissent d'un bouton
+ * en haut (la partie intime reste cachée tant qu'on ne l'affiche pas). /espace/social (compatibilité) reste
+ * accessible par « À deux ». Chaque test : fait (repère + date) ou à faire, et une action pour le faire.
  */
 import React, { useEffect, useState } from 'react';
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom';
-import { ArrowRight, ChevronDown, Heart, Lock, Sparkles, Users } from 'lucide-react';
+import { ArrowRight, ChevronDown, Eye, EyeOff, Heart, Lock, Users } from 'lucide-react';
 import DrLoShell, { DC, card, usePalette } from '../../components/accueil/DrLoShell';
 import { useAuth } from '../../contexts/AuthContext';
 import { getOnboardingProfile } from '../../utils/onboardingProfile';
 import { getProfileProgress } from '../../services/evaluationService';
+import { getTotemProgress, TOTEM_REQUIRED_SCALES } from '../../utils/totemAlgorithm';
 import { getAllGuestResults } from '../../utils/guestSession';
 import { BONUS_SCALES, MENTAL_HEALTH_SCALES, SEXUAL_HEALTH_SCALES } from '../../data/scales';
 import { getScaleMeta } from '../../utils/scaleMeta';
@@ -19,10 +20,12 @@ import { toDate } from '../../utils/drLoGuide';
 import { trackAccueil } from '../../utils/accueilTracking';
 import type { AssessmentScale, ScaleResult } from '../../types/assessment';
 
-type Domaine = 'mental' | 'social' | 'intime';
+type Domaine = 'mental' | 'social' | 'intime' | 'bonus';
+const SHOW_INTIME_KEY = 'he_espace_show_intime';
 
 const TITLES: Record<Domaine, { title: string; intro: string; color: string }> = {
   mental: { title: 'Mental', intro: 'Ce que tes tests disent de toi, pièce par pièce. Touche un test fait pour voir ton résultat, la flèche pour en savoir plus.', color: DC.sage },
+  bonus: { title: 'Bonus', intro: 'Pour aller plus loin : hypersensibilité, TDAH, jalousie, burnout… des tests qui parlent de toi autrement.', color: DC.gold },
   social: { title: 'Compatibilité', intro: 'Toi et l\'autre : partenaire, crush ou ami, découvrez ce qui vous rapproche et ce qui peut coincer.', color: DC.social },
   intime: { title: 'Intime', intro: 'Ta vie intime, en toute discrétion. Rien de cette partie n\'est jamais partagé sans ton accord.', color: DC.intime },
 };
@@ -61,7 +64,14 @@ const DomainePage: React.FC = () => {
   const [results, setResults] = useState<Record<string, ScaleResult>>({});
   const [loaded, setLoaded] = useState(false);
   const [open, setOpen] = useState<string | null>(null);
-  const d = (['mental', 'social', 'intime'].includes(domaine ?? '') ? domaine : null) as Domaine | null;
+  const d = (['mental', 'social', 'intime', 'bonus'].includes(domaine ?? '') ? domaine : null) as Domaine | null;
+  const [showIntime, setShowIntime] = useState(() => { try { return localStorage.getItem(SHOW_INTIME_KEY) === '1'; } catch { return false; } });
+  const toggleIntime = () => {
+    const v = !showIntime;
+    setShowIntime(v);
+    try { localStorage.setItem(SHOW_INTIME_KEY, v ? '1' : '0'); } catch { /* ignore */ }
+    if (!v && d === 'intime') navigate('/espace/mental', { replace: true });
+  };
 
   useEffect(() => {
     if (!d || !authReady) return;
@@ -84,7 +94,7 @@ const DomainePage: React.FC = () => {
 
   const startWithDrLo = (id: string) => {
     trackAccueil('go', { to: 'test', from: `espace_${d}` });
-    navigate('/', { state: { prescribe: id } });
+    navigate('/compagnon', { state: { prescribe: id } });
   };
   const startIntime = (id: string) => {
     trackAccueil('go', { to: 'test_intime', from: 'espace_intime' });
@@ -113,7 +123,7 @@ const DomainePage: React.FC = () => {
               {m.label}
             </span>
             <span style={{ display: 'block', fontSize: 13, marginTop: 2, color: r ? tone(r.interpretation?.severity) : DC.faint }}>
-              {r ? `${r.interpretation?.label ?? 'Fait'}${at ? ` · ${since(at)}` : ''}` : g ? 'Ne te concerne pas pour l\'instant' : 'À découvrir'}
+              {r ? `${r.interpretation?.label ?? 'Fait'}${at ? ` · ${since(at)}` : ''}` : g ? 'Ne te concerne pas pour l\'instant' : (TOTEM_REQUIRED_SCALES as readonly string[]).includes(s.id) ? 'Compte pour ton animal intérieur' : 'À découvrir'}
             </span>
           </span>
         </button>
@@ -132,7 +142,7 @@ const DomainePage: React.FC = () => {
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
               <button onClick={() => (intime ? startIntime(s.id) : startWithDrLo(s.id))} className="drl-btn"
                 style={{ minHeight: 44, padding: '0 16px', borderRadius: 999, border: 0, background: palette.primary, color: DC.ink, fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>
-                {r ? 'Le refaire' : intime ? 'Faire ce test' : 'Le faire avec Dr Lô'}
+                {r ? 'Le refaire' : 'Faire ce test'}
               </button>
               {r && (
                 <button onClick={() => navigate(`/espace/resultat/${s.id}`)} className="drl-btn"
@@ -156,47 +166,73 @@ const DomainePage: React.FC = () => {
   const doneOf = (scales: AssessmentScale[]) => scales.filter(s => !hidden.includes(s.id) && results[s.id]).length;
   const totalOf = (scales: AssessmentScale[]) => scales.filter(s => !hidden.includes(s.id)).length;
 
+  const totem = getTotemProgress(results);
+  const isTests = d !== 'social';
+  const segments: { id: Domaine; label: string; to: string }[] = [
+    { id: 'mental', label: 'Mental', to: '/espace/mental' },
+    { id: 'bonus', label: 'Bonus', to: '/espace/bonus' },
+    ...(showIntime || d === 'intime' ? [{ id: 'intime' as Domaine, label: 'Intime', to: '/espace/intime' }] : []),
+  ];
+
   return (
-    <DrLoShell back={{ to: '/espace', label: 'Retour à mon espace' }} genre={ob?.genre} palette={palette}>
+    <DrLoShell back={isTests ? { to: '/', label: 'Retour à l\'accueil' } : { to: '/espace/mental', label: 'Retour aux tests' }} genre={ob?.genre} palette={palette}>
       <div style={{ marginTop: 18 }}>
-        <p style={{ margin: 0, fontSize: 13, color: DC.faint }}>Mon espace bien-être</p>
-        <h1 style={{ margin: '4px 0 0', fontFamily: 'Fraunces, serif', fontSize: 28, lineHeight: 1.2, fontWeight: 600, color: DC.title }}>{meta.title}</h1>
-        <p style={{ margin: '8px 0 0', fontSize: 15, lineHeight: 1.55, color: DC.soft }}>{meta.intro}</p>
+        <h1 style={{ margin: 0, fontFamily: 'Fraunces, serif', fontSize: 30, lineHeight: 1.2, fontWeight: 600, color: DC.title }}>{isTests ? 'Tests' : meta.title}</h1>
+        {!isTests && <p style={{ margin: '8px 0 0', fontSize: 15, lineHeight: 1.55, color: DC.soft }}>{meta.intro}</p>}
       </div>
+
+      {isTests && loaded && (
+        <>
+          <Link to={totem.missing.length === 0 ? '/assessment/totem' : '#'} onClick={e => { if (totem.missing.length > 0) e.preventDefault(); }} className="drl-btn"
+            style={{ ...card, marginTop: 14, padding: 14, display: 'flex', flexDirection: 'column', gap: 8, textDecoration: 'none', color: DC.text, borderColor: 'rgba(242,182,109,.5)', background: 'rgba(242,182,109,.09)', cursor: totem.missing.length === 0 ? 'pointer' : 'default' }}>
+            <span style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
+              <b style={{ fontSize: 16, color: DC.title }}>Ton animal intérieur</b>
+              <span style={{ fontSize: 14, fontWeight: 700, color: DC.gold }}>{totem.missing.length === 0 ? 'Prêt : le découvrir' : `${totem.completed} tests sur ${totem.total}`}</span>
+            </span>
+            <span style={{ display: 'flex', gap: 5 }} role="img" aria-label={`${totem.completed} tests faits sur ${totem.total}`}>
+              {Array.from({ length: totem.total }, (_, i) => (
+                <span key={i} style={{ flex: 1, height: 6, borderRadius: 3, background: i < totem.completed ? DC.gold : 'rgba(255,255,255,.18)' }} />
+              ))}
+            </span>
+          </Link>
+
+          <div role="tablist" aria-label="Domaines" style={{ marginTop: 14, display: 'grid', gridTemplateColumns: `repeat(${segments.length}, minmax(0, 1fr))`, padding: 4, borderRadius: 999, border: `1px solid ${DC.line}`, gap: 4 }}>
+            {segments.map(sg => (
+              <button key={sg.id} type="button" role="tab" aria-selected={d === sg.id} onClick={() => { if (d !== sg.id) navigate(sg.to, { replace: true }); }} className="drl-btn"
+                style={{ minHeight: 44, borderRadius: 999, border: 0, cursor: 'pointer', fontSize: 15, fontFamily: 'inherit', fontWeight: d === sg.id ? 700 : 500, background: d === sg.id ? palette.primary : 'transparent', color: d === sg.id ? DC.ink : DC.soft }}>
+                {sg.label}
+              </button>
+            ))}
+          </div>
+        </>
+      )}
 
       {!loaded && <p style={{ marginTop: 20, color: DC.faint }}>…</p>}
 
       {loaded && d === 'mental' && (
-        <>
-          <section style={{ marginTop: 18 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
-              <h2 style={h2}>Ton portrait psychologique</h2>
-              <span style={{ fontSize: 13, color: DC.faint }}>{doneOf(MENTAL_HEALTH_SCALES)} / {totalOf(MENTAL_HEALTH_SCALES)}</span>
-            </div>
-            {list(MENTAL_HEALTH_SCALES)}
-          </section>
-          <section style={{ marginTop: 20 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
-              <h2 style={h2}>Pour aller plus loin</h2>
-              <span style={{ fontSize: 13, color: DC.faint }}>{doneOf(BONUS_SCALES)} / {totalOf(BONUS_SCALES)}</span>
-            </div>
-            {list(BONUS_SCALES)}
-          </section>
-          <Link to="/assessment/totem" className="drl-btn" style={{ ...card, marginTop: 16, display: 'flex', alignItems: 'center', gap: 12, color: DC.text, textDecoration: 'none' }}>
-            <Sparkles size={22} color={DC.gold} aria-hidden="true" />
-            <span style={{ flex: 1 }}>
-              <span style={{ display: 'block', fontSize: 15, fontWeight: 700 }}>Mon totem et l'analyse de Dr Lô</span>
-              <span style={{ display: 'block', fontSize: 13, color: DC.muted }}>La synthèse de tout ton portrait</span>
-            </span>
-            <ArrowRight size={18} color={DC.muted} aria-hidden="true" />
-          </Link>
-        </>
+        <section style={{ marginTop: 14 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+            <h2 style={h2}>Ton portrait psychologique</h2>
+            <span style={{ fontSize: 13, color: DC.faint }}>{doneOf(MENTAL_HEALTH_SCALES)} / {totalOf(MENTAL_HEALTH_SCALES)}</span>
+          </div>
+          {list(MENTAL_HEALTH_SCALES)}
+        </section>
+      )}
+
+      {loaded && d === 'bonus' && (
+        <section style={{ marginTop: 14 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+            <h2 style={h2}>Pour aller plus loin</h2>
+            <span style={{ fontSize: 13, color: DC.faint }}>{doneOf(BONUS_SCALES)} / {totalOf(BONUS_SCALES)}</span>
+          </div>
+          {list(BONUS_SCALES)}
+        </section>
       )}
 
       {loaded && d === 'social' && (
         <section style={{ marginTop: 18, display: 'flex', flexDirection: 'column', gap: 10 }}>
           {[
-            { icon: Users, title: 'Compatibilité', text: 'Partenaire, crush, ami : partage ton code, l\'autre fait ses tests, et Dr Lô compare vos profils.', cta: 'Ouvrir la compatibilité', to: '/assessment/compatibility', flow: 'compat' as const, extra: { label: 'La faire avec Dr Lô', flow: 'compat' as const } },
+            { icon: Users, title: 'Compatibilité', text: 'Partenaire, crush, ami : partage ton code, l\'autre fait ses tests, et vous obtenez une analyse croisée de vos profils.', cta: 'Ouvrir la compatibilité', to: '/assessment/compatibility', flow: 'compat' as const, extra: { label: 'La faire en discutant', flow: 'compat' as const } },
           ].map(c => (
             <div key={c.title} style={{ ...card, borderColor: `${DC.social}55`, background: `${DC.social}10` }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -205,12 +241,12 @@ const DomainePage: React.FC = () => {
               </div>
               <p style={{ margin: '8px 0 12px', fontSize: 14, lineHeight: 1.5, color: DC.soft }}>{c.text}</p>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                <button onClick={() => (uid ? navigate(c.to) : navigate('/', { state: { signup: true } }))} className="drl-btn"
+                <button onClick={() => (uid ? navigate(c.to) : navigate('/compagnon', { state: { signup: true } }))} className="drl-btn"
                   style={{ minHeight: 44, padding: '0 16px', borderRadius: 999, border: 0, background: palette.primary, color: DC.ink, fontSize: 14, fontWeight: 700, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
                   {uid ? c.cta : 'Créer mon espace d\'abord'} <ArrowRight size={16} aria-hidden="true" />
                 </button>
                 {uid && c.extra && (
-                  <button onClick={() => navigate('/', { state: { flow: c.extra!.flow } })} className="drl-btn"
+                  <button onClick={() => navigate('/compagnon', { state: { flow: c.extra!.flow } })} className="drl-btn"
                     style={{ minHeight: 44, padding: '0 16px', borderRadius: 999, border: `1px solid ${DC.line}`, background: DC.glass, color: DC.text, fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>
                     {c.extra.label}
                   </button>
@@ -239,12 +275,25 @@ const DomainePage: React.FC = () => {
             <p style={{ margin: '8px 0 12px', fontSize: 14, lineHeight: 1.5, color: DC.soft }}>
               Pour protéger ce qui est intime, ces tests se font dans ton espace. C'est gratuit et ça prend 10 secondes.
             </p>
-            <button onClick={() => navigate('/', { state: { signup: true } })} className="drl-btn"
+            <button onClick={() => navigate('/compagnon', { state: { signup: true } })} className="drl-btn"
               style={{ minHeight: 44, padding: '0 16px', borderRadius: 999, border: 0, background: palette.primary, color: DC.ink, fontSize: 14, fontWeight: 700, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
               <Heart size={16} aria-hidden="true" /> Créer mon espace
             </button>
           </section>
         )
+      )}
+
+      {isTests && loaded && (
+        <>
+          <Link to="/espace/social" className="drl-btn" style={{ minHeight: 48, marginTop: 16, display: 'flex', alignItems: 'center', gap: 8, fontSize: 15, color: DC.soft, textDecoration: 'none' }}>
+            <Users size={18} color={DC.social} aria-hidden="true" /> À deux : <b style={{ color: DC.gold }}>la compatibilité</b>
+          </Link>
+          <button type="button" onClick={toggleIntime} className="drl-btn"
+            style={{ minHeight: 44, border: 0, background: 'transparent', color: DC.muted, fontSize: 14, fontWeight: 600, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 8, padding: 0 }}>
+            {showIntime ? <EyeOff size={17} aria-hidden="true" /> : <Eye size={17} aria-hidden="true" />}
+            {showIntime ? 'Masquer la partie intime' : 'Afficher la partie intime'}
+          </button>
+        </>
       )}
 
       <p style={{ margin: '20px 0 0', textAlign: 'center', fontSize: 13, lineHeight: 1.5, color: DC.faint }}>

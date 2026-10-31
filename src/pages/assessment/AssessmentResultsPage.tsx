@@ -330,7 +330,7 @@ const AssessmentResultsPage: React.FC = () => {
     } catch { /* silencieux */ }
   };
 
-  const backTo = { to: '/', label: 'Retour à Dr Lô' };
+  const backTo = { to: '/', label: 'Retour à l\'accueil' };
   const errBox = (title: string, msg: string) => (
     <DrLoShell back={backTo} palette={palette}>
       <div style={{ marginTop: 40, borderRadius: 20, border: `1px solid ${DC.line}`, background: DC.glass, padding: 28, textAlign: 'center' }}>
@@ -694,7 +694,7 @@ const AssessmentResultsPage: React.FC = () => {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 14 }}>
             {fromAccueil && (
               <button onClick={() => navigate('/')} className="drl-btn" style={BTN1}>
-                Revenir à Dr Lô pour en parler <ArrowRight size={16} />
+                En parler avec mon compagnon <ArrowRight size={16} />
               </button>
             )}
             {!isGuestMode && (
@@ -716,7 +716,7 @@ const AssessmentResultsPage: React.FC = () => {
               <div style={{ flex: 1 }}>
                 <p style={{ margin: 0, fontSize: 14, fontWeight: 700, color: DC.title }}>En parler dans Mon espace</p>
                 <p style={{ margin: '2px 0 0', fontSize: 13, color: DC.muted }}>
-                  Dr Lô t'a préparé une invitation dans ton journal
+                  Une invitation t'attend dans ton journal
                 </p>
               </div>
               <ChevronRight size={16} style={{ opacity: 0.5 }} />

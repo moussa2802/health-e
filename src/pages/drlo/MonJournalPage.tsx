@@ -283,7 +283,7 @@ const Writer: React.FC<{ uid: string | null; existing: JournalItem | null; palet
         </button>
         <button onClick={() => navigate(existing ? `/journal/${existing.id}` : '/journal')} style={btn(false, palette.accent)}>Annuler</button>
       </div>
-      <p style={{ margin: '10px 0 0', fontSize: 13, color: DC.faint, display: 'flex', alignItems: 'center', gap: 6 }}><Lock size={12} aria-hidden="true" /> Visible par toi seul. Dr Lô ne lit que si tu le lui demandes.</p>
+      <p style={{ margin: '10px 0 0', fontSize: 13, color: DC.faint, display: 'flex', alignItems: 'center', gap: 6 }}><Lock size={12} aria-hidden="true" /> Visible par toi seul. Ton compagnon ne lit que si tu le lui demandes.</p>
     </div>
   );
 };
@@ -304,13 +304,13 @@ const Reader: React.FC<{ uid: string | null; it: JournalItem; palette: { accent:
     try { await removeConfidence(uid, it.id); onChanged(null); navigate('/journal', { replace: true }); } catch { setNote('Suppression impossible pour le moment.'); }
   };
   const ask = async () => {
-    if (!uid) { setNote('Crée ton espace pour demander l\'avis de Dr Lô.'); return; }
+    if (!uid) { setNote('Crée ton espace pour demander un avis.'); return; }
     setAsking(true); setNote('');
     const out = await askAdvice(uid, it.contenu, it.id);
     setAsking(false);
     if (out.ok) { refreshBalance(); onChanged({ ...it, drLo: out.text }); }
-    else if (out.reason === 'no_koris') openNoKorisModal('L\'avis de Dr Lô sur ta page', KORIS_COSTS.journal ?? 1);
-    else setNote('Dr Lô n\'arrive pas à répondre maintenant. Réessaie dans un moment.');
+    else if (out.reason === 'no_koris') openNoKorisModal('Un avis sur ta page', KORIS_COSTS.journal ?? 1);
+    else setNote('Je n\'arrive pas à répondre maintenant. Réessaie dans un moment.');
   };
 
   return (
@@ -327,7 +327,7 @@ const Reader: React.FC<{ uid: string | null; it: JournalItem; palette: { accent:
 
       {it.drLo && (
         <section style={{ ...card, marginTop: 14, borderColor: 'rgba(233,200,143,.4)', background: 'rgba(233,200,143,.06)' }}>
-          <p style={{ margin: 0, fontSize: 13, fontWeight: 800, color: '#E9C88F', display: 'flex', alignItems: 'center', gap: 6 }}><Sparkles size={14} aria-hidden="true" /> L'avis de Dr Lô</p>
+          <p style={{ margin: 0, fontSize: 13, fontWeight: 800, color: '#E9C88F', display: 'flex', alignItems: 'center', gap: 6 }}><Sparkles size={14} aria-hidden="true" /> Un avis sur ta page</p>
           <p style={{ margin: '8px 0 0', fontSize: 15, lineHeight: 1.6, color: DC.soft, whiteSpace: 'pre-wrap' }}>{it.drLo}</p>
         </section>
       )}
@@ -336,7 +336,7 @@ const Reader: React.FC<{ uid: string | null; it: JournalItem; palette: { accent:
         <Link to={`/journal/${it.id}/modifier`} style={{ ...btn(true, palette.primary), flex: 1 }}><Pencil size={16} aria-hidden="true" /> Modifier</Link>
         {!it.drLo && (
           <button onClick={() => void ask()} disabled={asking} style={{ ...btn(false, palette.accent), flex: 1, opacity: asking ? 0.6 : 1 }}>
-            <Sparkles size={16} aria-hidden="true" /> {asking ? 'Dr Lô lit…' : `L'avis de Dr Lô · ${credits(KORIS_COSTS.journal ?? 1)}`}
+            <Sparkles size={16} aria-hidden="true" /> {asking ? 'Je lis…' : `Un avis · ${credits(KORIS_COSTS.journal ?? 1)}`}
           </button>
         )}
       </div>
@@ -392,8 +392,8 @@ const MonJournalPage: React.FC = () => {
             <Link to="/journal/ecrire" className="drl-btn" style={{ ...btn(true, 'linear-gradient(180deg, #D8CAF0 0%, #B9A6D6 100%)'), width: '100%', boxSizing: 'border-box', marginTop: 16, minHeight: 54, fontSize: 16 }}>
               <Feather size={18} aria-hidden="true" /> Écrire aujourd'hui
             </Link>
-            <Link to="/" state={{ tab: 'confier' }} style={{ marginTop: 8, minHeight: 36, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, color: DC.muted, fontSize: 13, textDecoration: 'none' }}>
-              ou <b style={{ color: INK, margin: '0 3px' }}>te confier à Dr Lô</b> au fil de la journée <ChevronRight size={14} aria-hidden="true" />
+            <Link to="/compagnon" state={{ tab: 'confier' }} style={{ marginTop: 8, minHeight: 36, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, color: DC.muted, fontSize: 13, textDecoration: 'none' }}>
+              ou <b style={{ color: INK, margin: '0 3px' }}>te confier</b> au fil de la journée <ChevronRight size={14} aria-hidden="true" />
             </Link>
             {items === null ? <LoadingCards label="J'ouvre ton journal…" /> : items.length === 0 ? (
               <section style={{ ...card, marginTop: 16, textAlign: 'center' }}>

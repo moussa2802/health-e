@@ -2,7 +2,7 @@
  * _practices.js — « Pratiques » de Dr Lô : logique pure (testée dans _tests/practices.test.js).
  * Une pratique = un exercice guidé (audio), une technique à apprendre (étapes) ou un carnet à remplir chaque jour.
  * Prix en étincelles fixé par Dr Lô, payé UNE fois (déblocage), puis refaite / remplie sans repayer.
- * Le script de l'audio n'est jamais envoyé aux personnes : il sert seulement à Dr Lô IA.
+ * Le script de l'audio n'est jamais envoyé aux personnes : il sert seulement à le compagnon IA.
  */
 const TYPES = ['guided', 'technique', 'carnet'];
 const THEMES = ['stress', 'humeur', 'sommeil', 'emotions', 'estime', 'couple', 'sexualite', 'corps', 'autre'];
@@ -119,7 +119,7 @@ function validDay(day, now = Date.now()) {
   return diffDays > -1.6 && diffDays < 8.6; // marge pour les fuseaux
 }
 
-/** Ce que Dr Lô IA sait des pratiques publiées (une ligne chacune, script résumé). */
+/** Ce que le compagnon IA sait des pratiques publiées (une ligne chacune, script résumé). */
 function chatCatalog(list) {
   return list.filter((p) => p.status === 'published').slice(0, 30).map((p) => {
     const price = Number(p.price) > 0 ? `${p.price} étincelle${p.price > 1 ? 's' : ''}, une fois` : 'gratuite';
@@ -155,7 +155,7 @@ function routineDue(entries, today) {
 }
 
 /**
- * Les outils de la personne pour Dr Lô IA (une ligne chacun) : ceux qu'elle a (boîte à outils, apprentissage), puis quelques autres à lui proposer.
+ * Les outils de la personne pour le compagnon IA (une ligne chacun) : ceux qu'elle a (boîte à outils, apprentissage), puis quelques autres à lui proposer.
  * entries = [{ id, p, u? }] pour les pratiques publiées. → { text, ids } (ids = identifiants valides pour [[pratique:ID]], avec le titre).
  */
 function chatTools(entries) {

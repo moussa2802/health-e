@@ -1,5 +1,5 @@
 /**
- * programme.ts — « Mon programme Dr Lô » : logique pure (testée dans tests/unit/programme.test.ts).
+ * programme.ts — « Mon programme » : logique pure (testée dans tests/unit/programme.test.ts).
  *
  * Un programme dure 28 jours, porte sur un axe (stress, humeur, sommeil) et donne chaque jour
  * 3 engagements : mon humeur, mon action (un exercice de la bibliothèque), mon apprentissage.
@@ -31,7 +31,7 @@ export interface Programme {
   baseline: { scaleId: string; score: number; label: string; at: string } | null;
   /** Ordre des exercices de la semaine 1, choisi par Dr Lô parmi la bibliothèque */
   order1: string[];
-  /** Le mot de Dr Lô à la proposition */
+  /** Pour toi aujourd'hui à la proposition */
   intro: string;
   /** Résultat sensible au départ : orientation vers un professionnel d'abord, version légère */
   fragile?: boolean;
@@ -39,7 +39,7 @@ export interface Programme {
   checks: Record<string, EngKey[]>;
   /** Habitude du jour : la personne s'y est engagée le matin (on lui redemande le soir) */
   commits?: Record<string, boolean>;
-  /** Routines ajoutées (celles du totem, par exemple) : retirables à tout moment */
+  /** Routines ajoutées (celles de l'animal intérieur, par exemple) : retirables à tout moment */
   routines?: string[];
   /** Routines cochées, par jour */
   rchecks?: Record<string, string[]>;
@@ -385,7 +385,7 @@ export function streak(p: Programme, today: string, moods: MoodLike): number {
 export const dayComplete = (p: Programme, date: string, moods: MoodLike) =>
   (['mood', 'action', 'learn'] as EngKey[]).every(k => isDone(p, date, k, moods));
 
-/** Le mot de Dr Lô en haut de l'écran, chaque jour (textes écrits à l'avance, gratuits). */
+/** Pour toi aujourd'hui en haut de l'écran, chaque jour (textes écrits à l'avance, gratuits). */
 export function dailyLine(p: Programme, today: string, moods: MoodLike, prenom?: string): string {
   const day = Math.min(PROGRAMME_DAYS, dayNumber(p, today));
   const w = weekOf(day);

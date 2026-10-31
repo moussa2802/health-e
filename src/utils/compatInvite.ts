@@ -48,5 +48,5 @@ export function clearInvite(): void {
 
 /** Le message partagé (WhatsApp, SMS…). */
 export function inviteMessage(link: string): string {
-  return `Fais le test de compatibilité avec moi sur Health-e 💞 Touche le lien, dis ce qu'on est l'un pour l'autre (couple, crush, amis, famille…) et Dr Lô compare nos profils : ${link}`;
+  return `Fais le test de compatibilité avec moi sur Health-e 💞 Touche le lien, dis ce qu'on est l'un pour l'autre (couple, crush, amis, famille…) et on compare nos profils : ${link}`;
 }

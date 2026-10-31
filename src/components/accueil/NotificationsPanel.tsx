@@ -1,7 +1,7 @@
 /**
  * NotificationsPanel — la cloche de l'accueil : « Mes notifications » et « Mes rappels ».
  *  - En haut : ce qui attend maintenant (calculé sur place : programme, bilan, test, totem).
- *  - Ensuite : ce que Dr Lô a envoyé (réponse du vrai Dr Lô, défi, rappels…).
+ *  - Ensuite : ce que Dr Lô a envoyé (réponse de Dr Lô, défi, rappels…).
  *  - « Mes rappels » : activer sur ce téléphone, heure, types, silence la nuit.
  */
 import React, { useEffect, useState } from 'react';
@@ -88,9 +88,9 @@ const NotificationsPanel: React.FC<{
 
   const types: { key: keyof NotifPrefs; title: string; sub: string }[] = [
     { key: 'programme', title: 'Mon programme', sub: 'Si des engagements restent à faire' },
-    { key: 'drlo', title: 'Réponses du vrai Dr Lô', sub: 'Dès qu\'il t\'a répondu' },
+    { key: 'drlo', title: 'Réponses de Dr Lô', sub: 'Dès qu\'il t\'a répondu' },
     { key: 'social', title: 'Défi et compatibilité', sub: 'Quand un proche a joué' },
-    { key: 'totem', title: 'Mon totem et mes bilans', sub: 'Bilan prêt, défi de la semaine' },
+    { key: 'totem', title: 'Mon animal intérieur et mes bilans', sub: 'Bilan prêt, défi de la semaine' },
     { key: 'nudge', title: 'Prendre de mes nouvelles', sub: 'Si je ne passe pas pendant 4 jours, 1 fois par semaine au plus' },
   ];
 
@@ -128,7 +128,7 @@ const NotificationsPanel: React.FC<{
             {items === null ? (
               <p style={{ margin: 0, fontSize: 14, color: C.faint, padding: '0 4px' }}>Je regarde…</p>
             ) : items.length === 0 ? (
-              <p style={{ margin: 0, fontSize: 14, color: C.faint, padding: '0 4px' }}>Rien pour l'instant. Quand le vrai Dr Lô te répond ou qu'un proche joue à ton défi, c'est ici.</p>
+              <p style={{ margin: 0, fontSize: 14, color: C.faint, padding: '0 4px' }}>Rien pour l'instant. Quand Dr Lô te répond ou qu'un proche joue à ton défi, c'est ici.</p>
             ) : (
               <div style={card}>
                 {items.map((it, i) => (

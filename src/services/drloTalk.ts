@@ -16,6 +16,7 @@ import { authedFetch } from '../utils/authedFetch';
 import { spendKorisForUnlock } from './korisService';
 import { getScaleMeta } from '../utils/scaleMeta';
 
+import { getCompanionName } from '../utils/companion';
 export const DAILY_MESSAGE_LIMIT = 10;
 export const UNLOCK_MESSAGES = 5;
 export const MAX_DAILY_UNLOCKS = 3;
@@ -146,6 +147,7 @@ export async function buildFullContext(userId: string | null) {
     tests_compatibilite,
     journal_recent,
     totem_resume: buildTotemResume(totemAnimal, scaleResults),
+    companion: getCompanionName(),
   };
 }
 
@@ -252,7 +254,7 @@ export function rememberNow(history: TalkTurn[]): void {
   }).catch(() => {});
 }
 
-/** Banc d'essai (console du vrai Dr Lô) : une réponse sur son propre profil, sans rien compter ni retenir. */
+/** Banc d'essai (console de Dr Lô) : une réponse sur son propre profil, sans rien compter ni retenir. */
 export interface BenchOptions { history?: TalkTurn[]; rulesVersion?: 'v1' | 'v2'; rules?: string; model?: 'haiku' | 'sonnet' }
 export async function benchTalk(userId: string, text: string, withMemory: boolean, opts: BenchOptions = {}): Promise<{ ok: boolean; text: string; actions: TalkAction[]; ms: number }> {
   const t0 = Date.now();

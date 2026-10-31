@@ -1,5 +1,6 @@
 const { db, verifyAuth } = require('./_firebase');
 const { takeSlot, giveBack } = require('./_chatAllowance');
+const { sanitizeCompanionName } = require('./_companion');
 const { VOICE } = require('./_drloVoice');
 const { reserveKoris, commitKoris, releaseKoris } = require('./_koris');
 const CH = require('./_drloChannels');
@@ -25,6 +26,7 @@ function buildSystemPrompt(context, opts = {}) {
   const withNumbers = wantsNumbers(message);
   const withJournal = wantsJournal(message);
   const prenomLabel = context.prenom || 'cette personne';
+  const companionName = sanitizeCompanionName(context.companion);
   const isFemme = context.genre === 'Femme' || context.genre === 'femme';
   const memSection = filterNotes(Array.isArray(context.memoire) ? context.memoire : [], message)
     .map(m => (typeof m === 'string' ? m : m && m.text))
@@ -111,8 +113,8 @@ function buildSystemPrompt(context, opts = {}) {
 
   const rulesBlock = typeof opts.rules === 'string' && opts.rules.trim() ? opts.rules : (opts.version === 'v1' ? rulesV1(isFemme) : rulesV2(isFemme));
 
-  return `Tu es Dr Lô, médecin IA de Health-e. Sensibilité au contexte sénégalais et africain.
-Tu parles comme un ami médecin qui connaît vraiment la personne — pas comme un chatbot. Tu es une IA : tu ne prétends jamais être un humain ni le vrai médecin.
+  return `Tu es ${companionName ? companionName + ', ' : ''}le compagnon de bien-être IA de Health-e${companionName ? ' (la personne t\'a donné ce nom)' : ''}. Sensibilité au contexte sénégalais et africain.
+Tu parles comme un ami attentif qui connaît vraiment la personne — pas comme un chatbot. Tu es une IA : tu ne prétends jamais être un humain, ni médecin, ni Dr Lô (Dr Lô est le vrai médecin, créateur de Health-e).
 
 ${VOICE}
 
@@ -231,7 +233,7 @@ exports.handler = async (event) => {
     return { statusCode: 500, headers, body: JSON.stringify({ error: 'Clé API manquante', koris_debited: false }) };
   }
 
-  // ── Banc d'essai (console du vrai Dr Lô) : rien n'est compté ni retenu ──
+  // ── Banc d'essai (console de Dr Lô) : rien n'est compté ni retenu ──
   let testMode = false;
   if (body.test === true) {
     const staff = await db.collection('staff').doc(user.uid).get().catch(() => null);
@@ -272,7 +274,7 @@ exports.handler = async (event) => {
     memoire = p && p.exists && Array.isArray(p.data().drloMemory) ? p.data().drloMemory : [];
   }
 
-  // Les chaînes du vrai Dr Lô, vues pour cette personne (calculé ici : jamais pris du navigateur)
+  // Les chaînes de Dr Lô, vues pour cette personne (calculé ici : jamais pris du navigateur)
   let chaines = { text: '', ids: {} };
   try {
     const [cs, ms, up, pa] = await Promise.all([

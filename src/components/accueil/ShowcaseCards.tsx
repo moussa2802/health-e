@@ -33,7 +33,7 @@ export const ShowcaseCards: React.FC<{ onTotem: () => void; onCompat: () => void
           </span>
         ))}
       </span>
-      <Text title="Découvre ton animal-totem" sub="Lion, loup, hibou… 12 animaux. Lequel te ressemble vraiment ?" />
+      <Text title="Découvre ton animal intérieur" sub="Lion, loup, hibou… 12 animaux. Lequel te ressemble vraiment ?" />
       <Arrow />
     </button>
     <button type="button" onClick={onCompat} className="drl-btn" style={cardStyle}>

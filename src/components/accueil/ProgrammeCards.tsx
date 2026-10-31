@@ -1,5 +1,5 @@
 /**
- * ProgrammeCards — les cartes « Mon programme Dr Lô » dans la discussion :
+ * ProgrammeCards — les cartes « Mon programme » dans la discussion :
  * l'invitation (choisir l'axe, 3 étincelles), la proposition (j'accepte / adapter / pas maintenant)
  * et le raccourci vers les engagements du jour.
  */
@@ -38,7 +38,7 @@ export const ProgrammeInviteCard: React.FC<{ axes: ProgAxis[]; env: ProgCardEnv 
   const list = axes.length ? axes : PROG_AXES;
   return (
     <div className="drl-in" style={s.box}>
-      <p style={s.kicker}>Mon programme Dr Lô</p>
+      <p style={s.kicker}>Mon programme</p>
       <p style={{ margin: '6px 0 12px', fontSize: 14, lineHeight: 1.5, color: C.soft }}>
         28 jours, 3 petits engagements par jour. Je regarde ton profil et je te prépare le tien · {env.proposeCost}
       </p>
@@ -63,7 +63,7 @@ export const ProgrammeOfferCard: React.FC<{ axis: ProgAxis; intro: string; order
   if (env.activeAxis) return <ProgrammeDoneLine />;
   return (
     <div className="drl-in" style={s.box}>
-      <p style={s.kicker}>Proposition de Dr Lô</p>
+      <p style={s.kicker}>Ma proposition</p>
       <p style={{ margin: '6px 0 2px', fontFamily: 'Fraunces, serif', fontSize: 20, fontWeight: 600, color: C.title }}>{ax.name}</p>
       <p style={{ margin: 0, fontSize: 13, color: C.faint }}>28 jours · 3 engagements · {lite ? '5' : '10'} min par jour</p>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8, margin: '14px 0 16px' }}>

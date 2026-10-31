@@ -10,14 +10,14 @@ import { MENTAL_HEALTH_SCALES, SEXUAL_HEALTH_SCALES, BONUS_SCALES } from '../../
 import { getScaleMeta } from '../../utils/scaleMeta';
 
 const STEPS = [
-  { icon: MessageCircle, title: 'Tu parles à Dr Lô', text: 'Dis-lui comment tu vas et ce qui t\'amène. Pas de formulaire : une conversation.' },
+  { icon: MessageCircle, title: 'Tu parles à ton compagnon', text: 'Dis-lui comment tu vas et ce qui t\'amène. Pas de formulaire : une conversation.' },
   { icon: ClipboardList, title: 'Il te propose le bon test', text: 'Anxiété, humeur, personnalité, couple… Des outils reconnus en psychologie, adaptés au contexte africain.' },
-  { icon: Sparkles, title: 'Ton portrait se dessine', text: 'À chaque test, Dr Lô t\'explique ton résultat et ajoute une pièce à ton portrait : jusqu\'à ton animal-totem.' },
+  { icon: Sparkles, title: 'Ton portrait se dessine', text: 'À chaque test, ton compagnon t\'explique ton résultat et ajoute une pièce à ton portrait : jusqu\'à ton animal intérieur.' },
 ];
 
 const FAQ = [
-  { q: 'Health-e, c\'est gratuit ?', a: 'Oui pour commencer : la conversation avec Dr Lô est gratuite et tu peux faire 3 tests sans créer de compte. Certaines fonctions avancées utilisent des étincelles, les crédits du site.' },
-  { q: 'Dr Lô est-il un vrai médecin ?', a: 'Dr Lô est un compagnon de bien-être conçu par un médecin sénégalais. Il ne pose pas de diagnostic et ne remplace pas une consultation : il t\'aide à mieux te comprendre et t\'oriente vers un professionnel quand c\'est nécessaire.' },
+  { q: 'Health-e, c\'est gratuit ?', a: 'Oui pour commencer : la conversation avec ton compagnon est gratuite et tu peux faire 3 tests sans créer de compte. Certaines fonctions avancées utilisent des étincelles, les crédits du site.' },
+  { q: 'Qui est derrière Health-e ?', a: 'Health-e a été créé par Dr Lô, un médecin sénégalais. Ton compagnon est une intelligence artificielle de bien-être : il n\'est pas médecin, ne pose pas de diagnostic et ne remplace pas une consultation : il t\'aide à mieux te comprendre et t\'oriente vers un professionnel quand c\'est nécessaire.' },
   { q: 'Mes réponses sont-elles confidentielles ?', a: 'Sans compte, tes réponses restent dans ton navigateur. Avec un compte, elles sont enregistrées dans ton profil pour que tu les retrouves sur tous tes appareils.' },
   { q: 'Les tests sont-ils fiables ?', a: 'Ils s\'appuient sur des échelles utilisées en psychologie (anxiété, humeur, personnalité, attachement…), reformulées pour notre contexte. Ce sont des repères pour mieux te connaître, pas des diagnostics.' },
   { q: 'À qui s\'adresse Health-e ?', a: 'Aux adultes (18 ans et plus) qui veulent comprendre leurs émotions, leur personnalité, leur couple ou leur vie intime, au Sénégal et dans toute l\'Afrique francophone.' },
@@ -54,7 +54,7 @@ const AccueilSeoSections: React.FC = () => (
     <section>
       <p className="m-0 mb-1 text-[13px] font-semibold uppercase tracking-[0.08em] text-[#A79E90]">Health-e · santé mentale & vie intime</p>
       <h2 className="font-display m-0 mb-6 text-[clamp(1.4rem,4vw,2rem)] font-bold leading-tight text-[#FBF5EA]">
-        Comprends ce que tu ressens, <span className="text-[#F2B66D]">en parlant avec Dr Lô.</span>
+        Comprends ce que tu ressens, <span className="text-[#F2B66D]">en parlant avec ton compagnon.</span>
       </h2>
       <h2 className="font-display text-2xl font-bold text-[#F4EEE4] mb-5">Comment ça marche</h2>
       <ol className="m-0 p-0 list-none grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -86,7 +86,7 @@ const AccueilSeoSections: React.FC = () => (
       <h2 className="font-display text-xl font-bold text-[#F4EEE4] m-0 flex items-center gap-2"><Lock size={18} className="text-[#9DBFAF]" /> Confidentialité</h2>
       <p className="m-0 mt-2 text-[14px] text-[#CFC6B8] leading-relaxed">
         Santé mentale et vie intime sont des sujets sensibles. Sans compte, tes réponses restent sur ton téléphone.
-        Ton totem et ta compatibilité se partagent sans jamais exposer ce qui est intime.{' '}
+        Ton animal intérieur et ta compatibilité se partagent sans jamais exposer ce qui est intime.{' '}
         <Link to="/confidentialite" className="text-[#F2B66D] font-semibold">Notre politique de confidentialité</Link>
       </p>
     </section>

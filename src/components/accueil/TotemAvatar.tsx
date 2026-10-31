@@ -1,6 +1,6 @@
 /**
- * TotemAvatar — la photo de profil d'un commentaire : l'image du totem de la personne (s'il a été révélé),
- * sinon une silhouette neutre. Le totem ne dit rien d'intime : c'est l'animal qu'elle peut déjà partager.
+ * TotemAvatar — la photo de profil d'un commentaire : l'image de l'animal intérieur de la personne (s'il a été révélé),
+ * sinon une silhouette neutre. L'animal intérieur ne dit rien d'intime : c'est l'animal qu'elle peut déjà partager.
  */
 import React from 'react';
 import { User } from 'lucide-react';

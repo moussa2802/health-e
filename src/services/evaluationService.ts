@@ -435,7 +435,7 @@ export async function saveScaleResultToProfile(
 
 /**
  * Recalcule les résultats enregistrés avec une ancienne version d'une échelle, à partir des
- * réponses de la dernière session terminée. Met à jour le profil et la session ; si le totem change,
+ * réponses de la dernière session terminée. Met à jour le profil et la session ; si l'animal intérieur change,
  * il est proposé comme « évolution » (pendingAnimal), comme quand on refait un test.
  */
 export async function rescoreOutdatedResults(

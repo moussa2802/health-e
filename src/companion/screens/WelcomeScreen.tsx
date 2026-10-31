@@ -16,7 +16,7 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onStart }) => {
         Comprends enfin pourquoi tu te sens comme ça
       </h1>
       <p className="text-ink-soft mb-10 leading-relaxed">
-        Chaque jour, prends un instant pour toi. Dr Lô t'aide à comprendre tes
+        Chaque jour, prends un instant pour toi. On t'aide à comprendre tes
         émotions et à en parler, à ton rythme.
       </p>
       <button

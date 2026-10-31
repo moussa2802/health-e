@@ -97,7 +97,7 @@ const ConseilsCard: React.FC<ConseilsCardProps> = ({
         </div>
         <div className="flex-1 min-w-0">
           <p className="text-[15px] font-bold text-ink">Mes conseils personnalisés</p>
-          <p className="text-xs text-muted mt-0.5">Dr Lô analyse ton résultat pour te donner 3 conseils concrets</p>
+          <p className="text-xs text-muted mt-0.5">Ton compagnon analyse ton résultat pour te donner 3 conseils concrets</p>
         </div>
         <div className="flex flex-col items-center gap-1 flex-shrink-0">
           <span className={`text-xs font-bold text-white px-3.5 py-1.5 rounded-xl ${affordable ? 'bg-sage' : 'bg-muted'}`}>
@@ -128,7 +128,7 @@ const ConseilsCard: React.FC<ConseilsCardProps> = ({
         </div>
         <div className="bg-paper rounded-xl p-4">
           <p className="text-[13px] text-muted leading-relaxed">
-            Dr Lô analyse ton résultat et prépare 3 conseils personnalisés…
+            Ton compagnon analyse ton résultat et prépare 3 conseils personnalisés…
           </p>
         </div>
       </div>
@@ -162,7 +162,7 @@ const ConseilsCard: React.FC<ConseilsCardProps> = ({
           </div>
           <div className="flex-1">
             <p className="text-sm font-bold text-ink">Mes conseils personnalisés</p>
-            <p className="text-xs text-muted">Analyse Dr Lô · {niveau}</p>
+            <p className="text-xs text-muted">Ton analyse · {niveau}</p>
           </div>
           {data.fromCache && (
             <span className="bg-sage-soft text-ok text-[13px] font-bold px-2 py-1 rounded-lg flex-shrink-0 flex items-center gap-1">
@@ -203,7 +203,7 @@ const ConseilsCard: React.FC<ConseilsCardProps> = ({
         {data.avis_pro && (
           <div className="bg-accent-soft rounded-xl p-3.5 border border-accent/15 mb-4">
             <p className="text-[13px] font-bold text-accent uppercase tracking-wide mb-1 flex items-center gap-1.5">
-              <Stethoscope size={12} /> Avis du Dr Lô
+              <Stethoscope size={12} /> Conseils
             </p>
             <p className="text-[13px] text-accent leading-relaxed">{data.avis_pro}</p>
           </div>

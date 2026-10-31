@@ -15,6 +15,7 @@ import { getFirestore, doc, getDoc } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
 import { sanitizeReturnTo } from "../../utils/sanitizeReturnTo";
 
+import CompanionMark from '../../components/accueil/CompanionMark';
 type Step =
   | "enterPhone"
   | "verify"
@@ -579,11 +580,7 @@ const PatientAccess: React.FC = () => {
           {/* ── Dr. Lô avatar (compact) ── */}
           <div className="flex flex-col items-center mb-7">
             <div className="relative mb-4 w-20 h-20">
-              <img
-                src="/dr-lo.png"
-                alt="Dr. Lô"
-                className="w-full h-full rounded-full object-cover object-top border-4 border-accent-soft shadow-soft"
-              />
+              <CompanionMark size={80} ring="#F2B66D" />
               {/* Badge */}
               <div className="absolute -bottom-0.5 -right-0.5 w-[22px] h-[22px] rounded-full bg-accent border-2 border-card flex items-center justify-center">
                 <Heart className="h-3 w-3 text-white" />

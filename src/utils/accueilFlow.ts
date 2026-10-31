@@ -41,7 +41,7 @@ export type Card =
   | { type: 'result'; path: string }
   /** Carte du résultat à partager (WhatsApp, story) : affichée dans la conversation. */
   | { type: 'result_card'; scaleId: string }
-  /** Silhouette floue du totem + progression : « Plus que N tests ». */
+  /** Silhouette floue de l'animal intérieur + progression : « Plus que N tests ». */
   | { type: 'totem_teaser'; remaining: number; total: number }
   /** path / label : variante d'une destination (ex. une chaîne précise). */
   | { type: 'go'; to: GoTarget; path?: string; label?: string }
@@ -63,12 +63,12 @@ export type GoTarget = 'defi' | 'compat' | 'question_drlo' | 'totem' | 'catalogu
 export const GO: Record<GoTarget, { label: string; path?: string; needsAccount: boolean; intro: string }> = {
   defi: { label: 'Lancer mon Défi', path: '/defi', needsAccount: true, intro: 'Le Défi « Kan moo ma gën a xam ? » : tes proches devinent tes réponses, et tu découvres qui te connaît le mieux.' },
   compat: { label: 'Comparer nos profils', path: '/assessment/compatibility', needsAccount: true, intro: 'La compatibilité : tu partages un code, l\'autre personne fait ses tests, et je compare vos deux profils.' },
-  question_drlo: { label: 'Écrire au vrai Dr Lô', path: '/question', needsAccount: true, intro: 'Tu peux écrire au vrai Dr Lô : c\'est gratuit, une question à la fois.' },
-  totem: { label: 'Voir mon totem', path: '/assessment/totem', needsAccount: true, intro: 'Ton totem résume ta personnalité profonde.' },
+  question_drlo: { label: 'Écrire à Dr Lô', path: '/question', needsAccount: true, intro: 'Tu peux écrire à Dr Lô : c\'est gratuit, une question à la fois.' },
+  totem: { label: 'Voir mon animal intérieur', path: '/assessment/totem', needsAccount: true, intro: 'Ton animal intérieur résume ta personnalité profonde.' },
   catalogue: { label: 'Voir tous les tests', path: '/assessment', needsAccount: false, intro: 'Voici tous les tests, classés par thème.' },
-  chat: { label: 'Discuter avec Dr Lô', needsAccount: true, intro: 'On peut en parler tranquillement, toi et moi.' },
+  chat: { label: 'Discuter avec mon compagnon', needsAccount: true, intro: 'On peut en parler tranquillement, toi et moi.' },
   defi_list: { label: 'Voir mes défis', path: '/defi', needsAccount: true, intro: 'Tes défis en cours et qui a déjà joué.' },
-  chaines: { label: 'Voir les chaînes de Dr Lô', path: '/chaines', needsAccount: true, intro: 'Les chaînes du vrai Dr Lô : ses vocaux et ses textes, thème par thème.' },
+  chaines: { label: 'Voir les chaînes de Dr Lô', path: '/chaines', needsAccount: true, intro: 'Les chaînes de Dr Lô : ses vocaux et ses textes, thème par thème.' },
   outils: { label: 'Ouvrir ma boîte à outils', path: '/boite-a-outils', needsAccount: true, intro: 'Tes outils sont dans ta boîte à outils : un tap, et c\'est lancé.' },
   confier: { label: 'Écrire dans mon journal', needsAccount: false, intro: 'Écris comme ça vient : je lis, sans juger et sans t\'interrompre.' },
 };
@@ -149,7 +149,7 @@ export const NEED_TO_SCALE: Record<Need, string> = {
   decouvre: 'big_five',
 };
 
-/** Suite logique après le premier test : d'abord les pièces du totem. */
+/** Suite logique après le premier test : d'abord les pièces de l'animal intérieur. */
 export const NEXT_ORDER: Record<Need, string[]> = {
   stress: ['gad7', 'pss10', 'brs', 'big_five', 'rses', 'phq9', 'ecr_r'],
   mal: ['phq9', 'rses', 'brs', 'gad7', 'pss10', 'big_five', 'ecr_r'],
@@ -328,10 +328,10 @@ export function pickNextScale(need: Need, done: string[], exclude: string[] = []
   return NEXT_ORDER[need].find(id => !done.includes(id) && !exclude.includes(id) && (longOk || !LONG_SCALES.includes(id))) ?? null;
 }
 
-/** Les 7 tests du totem (même liste que TOTEM_REQUIRED_SCALES dans totemAlgorithm.ts, dupliquée ici pour rester testable sans bundler). */
+/** Les 7 tests de l'animal intérieur (même liste que TOTEM_REQUIRED_SCALES dans totemAlgorithm.ts, dupliquée ici pour rester testable sans bundler). */
 const TOTEM_REQUIRED_SCALES = ['big_five', 'rses', 'ecr_r', 'brs', 'gad7', 'pss10', 'phq9'];
 
-/** Combien de tests manquent avant de pouvoir révéler le totem (7 tests psy). */
+/** Combien de tests manquent avant de pouvoir révéler l'animal intérieur (7 tests psy). */
 export function totemRemaining(doneScaleIds: string[]): { remaining: number; total: number } {
   const total = TOTEM_REQUIRED_SCALES.length;
   return { remaining: TOTEM_REQUIRED_SCALES.filter(id => !doneScaleIds.includes(id)).length, total };
@@ -339,8 +339,8 @@ export function totemRemaining(doneScaleIds: string[]): { remaining: number; tot
 
 function totemLine(remaining: number): string {
   return remaining > 0
-    ? `Plus que ${remaining} test${remaining > 1 ? 's' : ''} pour découvrir ton animal-totem.`
-    : `Tu as tout ce qu'il faut : ton animal-totem est prêt à être révélé.`;
+    ? `Plus que ${remaining} test${remaining > 1 ? 's' : ''} pour découvrir ton animal intérieur.`
+    : `Tu as tout ce qu'il faut : ton animal intérieur est prêt à être révélé.`;
 }
 
 // ── Démarrage ─────────────────────────────────────────────────────────────────
@@ -352,7 +352,7 @@ export function startConversation(k: Known): AccueilState {
   };
   const hello = k.prenom
     ? `Bonjour ${firstName(k.prenom)} 👋\u00a0Comment tu vas aujourd'hui, et qu'est-ce qui t'amène ?`
-    : `Salut 👋\u00a0Moi c'est Dr Lô. Comment tu vas, et qu'est-ce qui t'amène ici ?`;
+    : `Salut 👋\u00a0Moi, je suis ton compagnon de bien-être, une IA. Comment tu vas, et qu'est-ce qui t'amène ici ?`;
   s = push(s, 'drlo', hello);
   if (!k.isAuthenticated) {
     s = push(s, 'drlo', `Ici, tu peux faire ${k.guestRemaining > 0 ? k.guestRemaining : 3} tests gratuits, sans créer de compte. Ce que tu me dis reste sur ton téléphone.`);
@@ -630,11 +630,11 @@ export function afterTest(state: AccueilState, o: TestOutcome, ctx: AfterTestCtx
   const next = pickNextScale(s.need ?? 'decouvre', done);
   const tt = totemRemaining(done);
 
-  // La carte du résultat à partager, puis la progression vers le totem (silhouette floue)
+  // La carte du résultat à partager, puis la progression vers l'animal intérieur (silhouette floue)
   s = push(s, 'drlo', 'Si tu veux, partage ton résultat : une carte prête pour WhatsApp ou une story.', { type: 'result_card', scaleId: o.scaleId });
 
   if (ctx.guestRemaining !== null && ctx.guestRemaining <= 0) {
-    s = push(s, 'drlo', `${totemLine(tt.remaining)} Tu as fait tes tests gratuits : crée ton compte pour garder ton résultat et continuer vers ton totem.`, { type: 'signup' });
+    s = push(s, 'drlo', `${totemLine(tt.remaining)} Tu as fait tes tests gratuits : crée ton compte pour garder ton résultat et continuer vers ton animal intérieur.`, { type: 'signup' });
     return { ...s, step: 'prescribed' };
   }
   if (tt.remaining === 0) {

@@ -49,7 +49,7 @@ export const SISE: AssessmentScale = {
     { key: 'acceptance',   label: "Acceptation de soi",          itemIds: [15,16],                           range: { min: 2, max: 10 } },
   ],
   interpretation: [
-    { min: 16, max: 40, label: "Identité sexuelle peu affirmée",    severity: 'moderate', description: "Tu sembles traverser des questionnements sur ton identité ou ton acceptation sexuelle. C'est courant et c'est pas grave — l'important c'est d'en parler.", referralRequired: false, recommendation: "Un espace de dialogue bienveillant peut t'aider à explorer qui tu es sexuellement, sans pression. Dr Lô est là pour ça." },
+    { min: 16, max: 40, label: "Identité sexuelle peu affirmée",    severity: 'moderate', description: "Tu sembles traverser des questionnements sur ton identité ou ton acceptation sexuelle. C'est courant et c'est pas grave — l'important c'est d'en parler.", referralRequired: false, recommendation: "Un espace de dialogue bienveillant peut t'aider à explorer qui tu es sexuellement, sans pression. Ton compagnon est là pour ça." },
     { min: 41, max: 60, label: "Identité sexuelle en construction", severity: 'mild',     description: "Tu es en chemin vers une meilleure connaissance de toi sur le plan sexuel. C'est un processus, et tu avances.", referralRequired: false, recommendation: "Continue à explorer qui tu es avec bienveillance envers toi-même. Chaque pas compte." },
     { min: 61, max: 80, label: "Identité sexuelle affirmée",        severity: 'positive', description: "Tu as une bonne clarté et une belle acceptation de ton identité sexuelle. Bravo !", referralRequired: false, recommendation: "Ton identité sexuelle semble bien intégrée. Continue à te respecter et à vivre ta sexualité en accord avec toi-même." },
   ],

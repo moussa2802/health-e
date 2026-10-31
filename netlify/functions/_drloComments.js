@@ -135,7 +135,7 @@ function presentEntry(e, seenBefore) {
 }
 
 const TOTEM_ANIMALS = ['lion', 'aigle', 'cheval', 'loup', 'dauphin', 'elephant', 'cerf', 'hibou', 'panthere', 'renard', 'tortue', 'ours'];
-/** Le totem affiché en photo de profil sous un commentaire : seulement s'il a été révélé (jamais un résultat de test). */
+/** L'animal intérieur affiché en photo de profil sous un commentaire : seulement s'il a été révélé (jamais un résultat de test). */
 function totemOf(profile) {
   const t = profile && profile.totem;
   return t && t.revealedAt && TOTEM_ANIMALS.includes(t.animal) ? t.animal : null;

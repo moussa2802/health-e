@@ -185,7 +185,7 @@ const ShareableCompatibilityCard: React.FC<Props> = ({
               background: '#F5E4DC', display: 'flex', alignItems: 'center', justifyContent: 'center',
               fontSize: 10, fontWeight: 700, color: '#C9603F',
             }}>DL</div>
-            <span style={{ fontSize: 12, fontWeight: 700, color: 'rgba(244,241,233,.6)' }}>Analyse du Dr Lô</span>
+            <span style={{ fontSize: 12, fontWeight: 700, color: 'rgba(244,241,233,.6)' }}>Analyse croisée</span>
           </div>
           <p style={{
             margin: 0, fontSize: 12, lineHeight: 1.7, fontWeight: 400,
