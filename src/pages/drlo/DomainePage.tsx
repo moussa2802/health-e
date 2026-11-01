@@ -5,7 +5,7 @@
  */
 import React, { useEffect, useState } from 'react';
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom';
-import { ArrowRight, ChevronDown, Eye, EyeOff, Heart, Lock, Users } from 'lucide-react';
+import { ArrowRight, Check, ChevronDown, Eye, EyeOff, Heart, Lock, Users } from 'lucide-react';
 import DrLoShell, { DC, card, usePalette } from '../../components/accueil/DrLoShell';
 import { useAuth } from '../../contexts/AuthContext';
 import { getOnboardingProfile } from '../../utils/onboardingProfile';
@@ -25,7 +25,7 @@ type Domaine = 'mental' | 'social' | 'intime' | 'bonus';
 const SHOW_INTIME_KEY = 'he_espace_show_intime';
 
 const TITLES: Record<Domaine, { title: string; intro: string; color: string }> = {
-  mental: { title: 'Mental', intro: 'Ce que tes tests disent de toi, pièce par pièce. Touche un test fait pour voir ton résultat, la flèche pour en savoir plus.', color: DC.sage },
+  mental: { title: 'Mental', intro: 'Ce que tes tests disent de toi, pièce par pièce. Déplie un test pour voir ton résultat ou le commencer.', color: DC.sage },
   bonus: { title: 'Bonus', intro: 'Pour aller plus loin : hypersensibilité, TDAH, jalousie, burnout… des tests qui parlent de toi autrement.', color: DC.gold },
   social: { title: 'Compatibilité', intro: 'Toi et l\'autre : partenaire, crush ou ami, découvrez ce qui vous rapproche et ce qui peut coincer.', color: DC.social },
   intime: { title: 'Intime', intro: 'Ta vie intime, en toute discrétion. Rien de cette partie n\'est jamais partagé sans ton accord.', color: DC.intime },
@@ -112,47 +112,59 @@ const DomainePage: React.FC = () => {
     const g = greyed[s.id];
     const isOpen = open === s.id;
     const Icon = m.icon;
+    const counts = (TOTEM_REQUIRED_SCALES as readonly string[]).includes(s.id);
+    const sev = r ? tone(r.interpretation?.severity) : meta.color;
+    const span = s.scoreRange.max - s.scoreRange.min;
+    const pct = r && span > 0 ? Math.max(4, Math.min(100, Math.round(((r.totalScore - s.scoreRange.min) / span) * 100))) : null;
+    const sub = r
+      ? `${r.interpretation?.label ?? 'Fait'}${at ? ` · ${since(at)}` : ''}`
+      : g ? 'Ne te concerne pas pour l\'instant' : `${s.items.length} questions · ${s.timeEstimateMinutes} min`;
     return (
-      <li key={s.id} style={{ ...card, padding: 0, overflow: 'hidden', opacity: g && !r ? 0.6 : 1 }}>
-        <div style={{ display: 'flex', alignItems: 'center' }}>
-        <button onClick={() => (r ? navigate(`/espace/resultat/${s.id}`) : setOpen(isOpen ? null : s.id))} aria-label={r ? `${m.label} : voir mon résultat` : undefined} className="drl-btn"
-          style={{ flex: 1, minWidth: 0, minHeight: 60, padding: '12px 4px 12px 14px', border: 0, background: 'transparent', color: DC.text, display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer', textAlign: 'left' }}>
-          <span style={{ width: 38, height: 38, borderRadius: 12, background: `${meta.color}22`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-            <Icon size={18} color={meta.color} aria-hidden="true" />
+      <li key={s.id} style={{ ...card, padding: 0, overflow: 'hidden', opacity: g && !r ? 0.6 : 1, borderLeft: `4px solid ${r ? sev : `${meta.color}66`}` }}>
+        <button onClick={() => setOpen(isOpen ? null : s.id)} aria-expanded={isOpen} aria-label={`${m.label} : ${isOpen ? 'replier' : 'déplier'}`} className="drl-btn"
+          style={{ width: '100%', minHeight: 72, padding: '12px 12px 12px 12px', border: 0, background: 'transparent', color: DC.text, display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer', textAlign: 'left', fontFamily: 'inherit' }}>
+          <span style={{ width: 44, height: 44, borderRadius: 14, background: `${meta.color}24`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <Icon size={21} color={meta.color} aria-hidden="true" />
           </span>
           <span style={{ flex: 1, minWidth: 0 }}>
-            <span style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 15, fontWeight: 700 }}>
-              {s.code && <span style={{ fontSize: 13, fontWeight: 700, color: meta.color, border: `1px solid ${meta.color}66`, borderRadius: 6, padding: '1px 6px', letterSpacing: '.03em' }}>{s.code}</span>}
-              {m.label}
-            </span>
-            <span style={{ display: 'block', fontSize: 13, marginTop: 2, color: r ? tone(r.interpretation?.severity) : DC.faint }}>
-              {r ? `${r.interpretation?.label ?? 'Fait'}${at ? ` · ${since(at)}` : ''}` : g ? 'Ne te concerne pas pour l\'instant' : (TOTEM_REQUIRED_SCALES as readonly string[]).includes(s.id) ? 'Compte pour ton animal intérieur' : 'À découvrir'}
-            </span>
+            <span style={{ display: 'block', fontSize: 16, fontWeight: 700, lineHeight: 1.25, color: DC.title }}>{m.label}</span>
+            <span style={{ display: 'block', marginTop: 3, fontSize: 14, lineHeight: 1.35, color: r ? sev : DC.faint, fontWeight: r ? 600 : 400 }}>{sub}</span>
+            {!r && counts && !g && <span style={{ display: 'inline-block', marginTop: 5, fontSize: 13, fontWeight: 700, letterSpacing: '.04em', color: DC.gold, border: `1px solid ${DC.gold}66`, borderRadius: 999, padding: '2px 8px' }}>Compte pour ton animal</span>}
           </span>
+          {r && <Check size={18} color={sev} strokeWidth={2.6} aria-label="Fait" style={{ flexShrink: 0 }} />}
+          <ChevronDown size={20} color={DC.muted} aria-hidden="true" style={{ flexShrink: 0, transform: isOpen ? 'rotate(180deg)' : 'none', transition: 'transform .2s' }} />
         </button>
-        <button onClick={() => setOpen(isOpen ? null : s.id)} aria-expanded={isOpen} aria-label={isOpen ? 'Replier' : 'Déplier'} className="drl-btn"
-          style={{ width: 48, minHeight: 60, flexShrink: 0, border: 0, background: 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <ChevronDown size={18} color={DC.muted} aria-hidden="true" style={{ transform: isOpen ? 'rotate(180deg)' : 'none', transition: 'transform .2s' }} />
-        </button>
-        </div>
         {isOpen && (
-          <div className="drl-in" style={{ padding: '0 14px 14px', display: 'flex', flexDirection: 'column', gap: 10 }}>
-            <p style={{ margin: 0, fontSize: 14, lineHeight: 1.5, color: DC.soft }}>{m.description}</p>
-            {r?.interpretation?.description && (
-              <p style={{ margin: 0, fontSize: 14, lineHeight: 1.5, color: DC.muted }}>{r.interpretation.description}</p>
+          <div className="drl-in" style={{ padding: '0 14px 14px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+            {r ? (
+              <div style={{ borderRadius: 16, padding: 14, background: `${sev}14`, border: `1px solid ${sev}55` }}>
+                <p style={{ margin: 0, fontSize: 13, fontWeight: 700, letterSpacing: '.1em', textTransform: 'uppercase', color: DC.faint }}>Ton résultat{at ? ` · ${since(at)}` : ''}</p>
+                <p style={{ margin: '6px 0 0', fontFamily: 'Fraunces, serif', fontSize: 22, lineHeight: 1.2, fontWeight: 600, color: sev }}>{r.interpretation?.label ?? 'Fait'}</p>
+                {pct !== null && (
+                  <div role="img" aria-label={`Score ${r.totalScore} sur ${s.scoreRange.max}`} style={{ marginTop: 10 }}>
+                    <div style={{ height: 8, borderRadius: 4, background: 'rgba(255,255,255,.12)', overflow: 'hidden' }}><div style={{ width: `${pct}%`, height: '100%', borderRadius: 4, background: sev }} /></div>
+                    <p style={{ margin: '5px 0 0', fontSize: 13, color: DC.faint }}>Score : {Math.round(r.totalScore * 10) / 10} sur {s.scoreRange.max}</p>
+                  </div>
+                )}
+                {r.interpretation?.description && <p style={{ margin: '10px 0 0', fontSize: 15, lineHeight: 1.5, color: DC.soft }}>{r.interpretation.description}</p>}
+              </div>
+            ) : (
+              <>
+                <p style={{ margin: 0, fontSize: 15, lineHeight: 1.5, color: DC.soft }}>{m.description}</p>
+                {g && <p style={{ margin: 0, fontSize: 13, color: DC.faint }}>{g.reason}.</p>}
+              </>
             )}
-            {g && !r && <p style={{ margin: 0, fontSize: 13, color: DC.faint }}>{g.reason}.</p>}
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-              <button onClick={() => (intime ? startIntime(s.id) : startWithDrLo(s.id))} className="drl-btn"
-                style={{ minHeight: 44, padding: '0 16px', borderRadius: 999, border: 0, background: palette.primary, color: DC.ink, fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>
-                {r ? 'Le refaire' : 'Faire ce test'}
-              </button>
               {r && (
                 <button onClick={() => navigate(`/espace/resultat/${s.id}`)} className="drl-btn"
-                  style={{ minHeight: 44, padding: '0 16px', borderRadius: 999, border: `1px solid ${DC.line}`, background: DC.glass, color: DC.text, fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>
+                  style={{ minHeight: 46, padding: '0 18px', borderRadius: 999, border: 0, background: palette.primary, color: DC.ink, fontSize: 15, fontWeight: 700, cursor: 'pointer' }}>
                   Détail et conseils
                 </button>
               )}
+              <button onClick={() => (intime ? startIntime(s.id) : startWithDrLo(s.id))} className="drl-btn"
+                style={{ minHeight: 46, padding: '0 18px', borderRadius: 999, border: r ? `1px solid ${DC.line}` : 0, background: r ? DC.glass : palette.primary, color: r ? DC.text : DC.ink, fontSize: 15, fontWeight: 700, cursor: 'pointer' }}>
+                {r ? 'Le refaire' : 'Faire ce test'}
+              </button>
             </div>
           </div>
         )}
@@ -161,7 +173,7 @@ const DomainePage: React.FC = () => {
   };
 
   const list = (scales: AssessmentScale[], intime = false) => (
-    <ul style={{ margin: 0, padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 8 }}>
+    <ul style={{ margin: 0, padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 10 }}>
       {scales.filter(s => !hidden.includes(s.id)).slice().sort(byCode).map(s => row(s, intime))}
     </ul>
   );

@@ -8,7 +8,6 @@ import React, { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { Bell, BellOff, Check, ChevronRight, Circle, Loader2, Lock, Search, Users, X } from 'lucide-react';
 import DrLoShell, { DC, card, usePalette } from '../../components/accueil/DrLoShell';
-import { RealDrLoPhoto } from '../../components/accueil/RealDrLoBadge';
 import LoadingCards from '../../components/accueil/LoadingCards';
 import ChannelFeed from '../../components/accueil/ChannelFeed';
 import ShareChannelButton from '../../components/accueil/ShareChannelButton';
@@ -208,7 +207,16 @@ const Detail: React.FC<{ id: string; palette: ReturnType<typeof usePalette> }> =
   return (
     <>
       <div style={{ ...card, padding: 0, overflow: 'hidden', marginTop: 16 }}>
-        <Cover c={c} h={150} />
+        <div style={{ position: 'relative' }}>
+          <Cover c={c} h={150} />
+          {c.member && (
+            <button type="button" onClick={toggleMute} disabled={busy} className="drl-btn" aria-pressed={c.muted}
+              aria-label={c.muted ? 'Réactiver les alertes de cette chaîne' : 'Couper les alertes de cette chaîne'}
+              style={{ position: 'absolute', top: 10, right: 10, width: 44, height: 44, borderRadius: 14, border: '1px solid rgba(255,255,255,.25)', background: 'rgba(20,14,10,.6)', backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)', color: c.muted ? DC.faint : palette.accent, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              {c.muted ? <BellOff size={20} aria-hidden="true" /> : <Bell size={20} aria-hidden="true" />}
+            </button>
+          )}
+        </div>
         <div style={{ padding: 16 }}>
           <h1 style={{ ...h1, margin: 0, fontSize: 25 }}>{c.name}</h1>
           <p style={{ margin: '8px 0 10px', fontSize: 15, color: DC.soft, lineHeight: 1.5 }}>{c.description}</p>
@@ -219,21 +227,10 @@ const Detail: React.FC<{ id: string; palette: ReturnType<typeof usePalette> }> =
 
       {c.member ? (
         <>
-          <section style={{ ...card, marginTop: 14, borderColor: palette.accent }} aria-label="Ma place dans la chaîne">
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <RealDrLoPhoto size={40} palette={palette} />
-              <div>
-                <p style={{ margin: 0, fontWeight: 700, color: DC.text, fontSize: 15 }}>{welcome ? 'Bienvenue dans la chaîne' : 'Tu fais partie de cette chaîne'}</p>
-                <p style={{ margin: '2px 0 0', fontSize: 13, color: DC.faint }}>Depuis le {monthYear(c.joinedAt)}</p>
-              </div>
-              <button type="button" onClick={toggleMute} disabled={busy} className="drl-btn" aria-pressed={c.muted}
-                aria-label={c.muted ? 'Réactiver les alertes de cette chaîne' : 'Couper les alertes de cette chaîne'}
-                style={{ marginLeft: 'auto', width: 44, height: 44, borderRadius: 12, border: `1px solid ${DC.line}`, background: DC.glass, color: c.muted ? DC.faint : palette.accent, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>
-                {c.muted ? <BellOff size={18} aria-hidden="true" /> : <Bell size={18} aria-hidden="true" />}
-              </button>
-            </div>
-            <p style={{ margin: '10px 0 0', fontSize: 13, color: DC.faint, lineHeight: 1.5 }}>{c.muted ? 'Alertes coupées : tu ne seras pas prévenu des nouvelles publications.' : 'Tu es prévenu à chaque nouvelle publication (jamais la nuit).'}</p>
-          </section>
+          <p style={{ margin: '12px 2px 0', fontSize: 13, color: DC.faint, lineHeight: 1.5 }}>
+            {welcome ? 'Bienvenue dans la chaîne. ' : `Dans la chaîne depuis ${monthYear(c.joinedAt)}. `}
+            {c.muted ? 'Alertes coupées : touche la cloche pour être prévenu des nouvelles publications.' : 'Tu es prévenu à chaque nouvelle publication (jamais la nuit) ; la cloche coupe les alertes.'}
+          </p>
           <ChannelFeed channelId={id} member palette={palette} />
           {!confirmLeave ? (
             <button type="button" onClick={() => setConfirmLeave(true)} style={{ marginTop: 14, background: 'none', border: 0, color: DC.faint, fontSize: 14, textDecoration: 'underline', cursor: 'pointer' }}>Quitter la chaîne</button>

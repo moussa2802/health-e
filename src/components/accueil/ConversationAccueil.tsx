@@ -10,7 +10,7 @@
  */
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { ArrowRight, Bell, Heart, Mail, PawPrint, Users, Check, ChevronDown, ChevronLeft, ClipboardCheck, Clock, CloudSun, Copy, EyeOff, ListChecks, Lock, MessagesSquare, Mic, Pencil, Phone, Plus, Send, Sparkles, Sprout, Trash2, Wind } from 'lucide-react';
+import { ArrowRight, Bell, Heart, Mail, PawPrint, Users, Check, ChevronDown, ChevronLeft, ClipboardCheck, Clock, CloudSun, Copy, EyeOff, ListChecks, Lock, MessagesSquare, Mic, Pencil, Phone, Plus, Send, Sparkles, Sprout, Wind } from 'lucide-react';
 import './accueil.css';
 import DrLoAvatar, { type DrLoState } from './DrLoAvatar';
 import DrLoIsland from './DrLoIsland';
@@ -85,12 +85,13 @@ import {
 import { RELATIONSHIP_CATEGORIES } from '../../utils/relationshipTypes';
 import { getTotemProgress, getTotemSignature, totemWords, type TotemAnimal } from '../../utils/totemAlgorithm';
 import {
-  convStorageKey, createConv, deleteConv, loadIndex, MAIN_ID, renameConv, saveIndex, sortedConvs, touchConv, type ConvIndex,
+  convStorageKey, createConv, deleteConv, loadIndex, MAIN_ID, renameConv, saveIndex, touchConv, type ConvIndex,
 } from '../../utils/conversations';
 import { KORIS_COSTS, isTestFreeRetake, isFirstTestFree } from '../../services/korisService';
 import ProgrammePanel from './ProgrammePanel';
 import CompanionNaming from './CompanionNaming';
-import { COMPANION_DEFAULT, companionAsked, getCompanionName, markCompanionAsked, saveCompanionName } from '../../utils/companion';
+import DiscussionList from './DiscussionList';
+import { COMPANION_DEFAULT, companionAsked, getCompanionColor, getCompanionName, markCompanionAsked, saveCompanionColor, saveCompanionIcon, saveCompanionName } from '../../utils/companion';
 import NotificationsPanel, { NotifOptinCard, type LiveItem } from './NotificationsPanel';
 import { loadInbox, type InboxItem } from '../../services/inboxService';
 import { canProposeReminders, loadPrefs, markSeen, noteProposed, permissionState, pushSupport } from '../../services/pushService';
@@ -271,6 +272,8 @@ const ConversationAccueil: React.FC = () => {
 
   const [results, setResults] = useState<Record<string, ScaleResult> | null>(null);
   const [companion, setCompanion] = useState(() => getCompanionName());
+  const [companionColor, setCompanionColor] = useState(() => getCompanionColor());
+  const [iconTick, setIconTick] = useState(0);
   const [naming, setNaming] = useState(false);
   const companionName = companion || COMPANION_DEFAULT;
   const toCompanion = companion || 'ton compagnon';
@@ -541,7 +544,7 @@ const ConversationAccueil: React.FC = () => {
     navigate('.', { replace: true, state: null }); // une seule fois, même après rechargement
     if (st.tab === 'confier') { setTab('confier'); setConfierView(st.journal ? 'journal' : 'write'); return; }
     if (st.talk) { setTimeout(() => talkRef.current?.(st.talk!.greeting ?? null, st.talk!.draft ?? null), 0); return; }
-    if (st.openMood) { setTab('discuter'); setMode('mood'); return; }
+    if (st.openMood) { setTab('discuter'); setInChat(true); setMode('mood'); return; }
     if (st.signup && !isAuthenticated) { setTimeout(() => openSignupRef.current?.('signup'), 0); return; }
     if (st.flow) { setTab('discuter'); setTimeout(() => startFlowRef.current?.(st.flow!), 0); return; }
     if (st.programme) { setTab('discuter'); setTimeout(() => programmeRef.current?.(), 0); return; }
@@ -565,8 +568,6 @@ const ConversationAccueil: React.FC = () => {
   /** Mode discussion (plein écran). À l'arrivée, l'accueil reste une page de salutation. */
   const [inChat, setInChat] = useState(false);
   const [showConvs, setShowConvs] = useState(false);
-  const [editingConv, setEditingConv] = useState<{ id: string; text: string } | null>(null);
-  const [confirmDel, setConfirmDel] = useState<string | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   // « Mon programme » (compte uniquement)
   const [prog, setProg] = useState<Programme | null>(null);
@@ -797,16 +798,7 @@ const ConversationAccueil: React.FC = () => {
     const b = a ? pickNextScale(need, [...done], [a]) : null;
     return [a, b].filter((x): x is string => !!x);
   })();
-  const homeTestLabel = state.activeTest ? getScaleMeta(state.activeTest.scaleId).label : state.prescribed ? getScaleMeta(state.prescribed).label : '';
-  const testing = state.step === 'testing' && !!state.activeTest;
   const progActive = !!prog && prog.status === 'active' && !prog.result;
-  /** La seule phrase sous la salutation : ce qui compte le plus maintenant. */
-  const focusLine = testing
-    ? `Ton test « ${homeTestLabel} » t'attend : on le reprend où tu t'étais arrêté${genreKnown === 'femme' ? 'e' : ''}.`
-    : progActive && progRemaining > 0
-      ? `${progRemaining} engagement${progRemaining > 1 ? 's t\'attendent' : ' t\'attend'} aujourd'hui. Ou dis-moi simplement comment tu vas.`
-      : 'Comment tu vas aujourd\'hui ? Écris-moi, je t\'écoute.';
-
   /** La cloche : ce qui attend maintenant (calculé sur place) + ce que Dr Lô a envoyé. */
   const liveItems: LiveItem[] = [];
   if (prog && progActive) {
@@ -1670,11 +1662,9 @@ const ConversationAccueil: React.FC = () => {
     trackAccueil('go', { to: 'new_conversation' });
   };
   const removeConversation = (id: string) => {
-    if (confirmDel !== id) { setConfirmDel(id); return; }
     try { localStorage.removeItem(convStorageKey(STORAGE_PREFIX, uidKey, id)); } catch { /* ignore */ }
     if (isAuthenticated) void deleteThread(id); // supprimée aussi du compte
     setConvIdx(i => deleteConv(i, id));
-    setConfirmDel(null);
   };
 
   const resetConversation = () => {
@@ -1965,44 +1955,8 @@ const ConversationAccueil: React.FC = () => {
           {tab === 'discuter' && showConvs ? (
             <div style={{ flex: 1, overflowY: 'auto', padding: '10px 14px 16px', display: 'flex', flexDirection: 'column', gap: 8 }}>
               <p style={{ margin: '0 0 2px', fontSize: 13, letterSpacing: '.08em', textTransform: 'uppercase', fontWeight: 700, color: palette.accent }}>Mes discussions</p>
-              {sortedConvs(convIdx).map(c => {
-                const current = c.id === convId;
-                const isEditing = editingConv?.id === c.id;
-                const d = new Date(c.updatedAt);
-                return (
-                  <div key={c.id} style={{ borderRadius: 14, border: `1px solid ${current ? 'rgba(242,182,109,.45)' : C.line}`, background: current ? 'rgba(242,182,109,.08)' : C.glass, padding: '10px 12px' }}>
-                    {isEditing ? (
-                      <form onSubmit={e => { e.preventDefault(); setConvIdx(i => renameConv(i, c.id, editingConv!.text)); setEditingConv(null); }} style={{ display: 'flex', gap: 8 }}>
-                        <input autoFocus value={editingConv!.text} maxLength={40} onChange={e => setEditingConv({ id: c.id, text: e.target.value })} aria-label="Nom de la discussion"
-                          className="drl-input" style={{ flex: 1, minWidth: 0, minHeight: 40, borderRadius: 10, border: `1px solid ${palette.accent}`, background: 'rgba(255,255,255,.06)', color: C.text, padding: '0 10px', fontSize: 15, fontFamily: 'inherit', outline: 'none' }} />
-                        <button type="submit" style={{ ...pill, border: 0, background: palette.primary, color: C.ink, cursor: 'pointer' }}>OK</button>
-                      </form>
-                    ) : (
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                        <button onClick={() => switchConversation(c.id)} style={{ flex: 1, minWidth: 0, border: 0, background: 'transparent', color: C.text, textAlign: 'left', cursor: 'pointer', padding: 0 }}>
-                          <span style={{ display: 'block', fontSize: 15, fontWeight: 700 }}>{c.title}{current ? ' · en cours' : ''}</span>
-                          <span style={{ display: 'block', fontSize: 13, color: C.faint, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                            {Number.isNaN(d.getTime()) ? '' : d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}{c.preview ? ` · « ${c.preview} »` : ''}
-                          </span>
-                        </button>
-                        <button onClick={() => setEditingConv({ id: c.id, text: c.title })} aria-label={`Renommer ${c.title}`} style={{ border: 0, background: 'transparent', color: C.muted, cursor: 'pointer', width: 34, height: 34, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                          <Pencil size={15} aria-hidden="true" />
-                        </button>
-                        {c.id !== MAIN_ID && (
-                          <button onClick={() => removeConversation(c.id)} aria-label={confirmDel === c.id ? 'Confirmer la suppression' : `Supprimer ${c.title}`}
-                            style={{ border: 0, background: 'transparent', color: confirmDel === c.id ? '#E8A0A0' : C.muted, cursor: 'pointer', minWidth: 34, height: 34, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, fontSize: 13, fontWeight: 700 }}>
-                            <Trash2 size={15} aria-hidden="true" />{confirmDel === c.id ? 'Supprimer ?' : ''}
-                          </button>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-              <button onClick={newConversation} className="drl-btn"
-                style={{ marginTop: 4, minHeight: 46, borderRadius: 14, border: `1px dashed ${C.line}`, background: 'transparent', color: C.text, fontSize: 14, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
-                <Plus size={16} aria-hidden="true" /> Nouvelle discussion
-              </button>
+              <DiscussionList idx={convIdx} currentId={convId} accent={palette.accent} onOpen={switchConversation} onNew={newConversation}
+                onRename={(id, t) => setConvIdx(i => renameConv(i, id, t))} onRemove={removeConversation} />
               <p style={{ margin: '6px 0 0', fontSize: 13, color: C.faint, textAlign: 'center' }}>{isAuthenticated ? 'Tes discussions sont gardées dans ton compte : tu les retrouves sur tous tes appareils.' : 'Tes discussions restent sur ce téléphone.'} Touche le crayon pour les renommer.</p>
             </div>
           ) : tab === 'confier' ? (
@@ -2103,6 +2057,28 @@ const ConversationAccueil: React.FC = () => {
     );
   }
 
+  const modeNav = (
+    <nav aria-label="Mode de conversation" style={{ marginTop: 14, display: 'inline-flex', padding: 4, borderRadius: 999, background: 'rgba(255,255,255,.06)', border: '1px solid rgba(255,255,255,.10)' }}>
+            {(['discuter', 'confier'] as const).map(t => (
+              <button key={t} onClick={() => {
+                  if (t === tab) return;
+                  setTab(t);
+                  setMode('home');
+                  if (t === 'confier') { setBreath(null); trackAccueil('confier_open', { guest: !isAuthenticated }); }
+                }}
+                aria-current={tab === t ? 'page' : undefined}
+                className="drl-btn"
+                style={{ minHeight: 38, padding: '0 16px', borderRadius: 999, border: 0, cursor: 'pointer', fontSize: 14, fontWeight: 700,
+                  background: tab === t ? (t === 'confier' ? 'rgba(201,184,228,.22)' : 'rgba(242,182,109,.20)') : 'transparent',
+                  color: tab === t ? (t === 'confier' ? CONFIER.accent : palette.accent) : C.muted }}>
+                {t === 'discuter' ? 'Discuter' : 'Me confier'}
+              </button>
+            ))}
+    </nav>
+  );
+
+  /** Première page du Compagnon : l'en-tête du compagnon et la liste de ses discussions (dès qu'il y a un compte ou une discussion). */
+  const hub = isAuthenticated || hasTalked;
   return (
     <section
       aria-label="Conversation avec ton compagnon"
@@ -2152,7 +2128,30 @@ const ConversationAccueil: React.FC = () => {
           </span>
         </header>
 
-        {/* Le compagnon */}
+        {hub && (
+          <div style={{ marginTop: 18 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+              <CompanionMark key={iconTick} size={64} color={companionColor.hex} />
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <h1 style={{ margin: 0, fontFamily: 'Fraunces, serif', fontSize: 26, lineHeight: 1.15, fontWeight: 600, color: C.title, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{companionName}</h1>
+                <p style={{ margin: '3px 0 0', fontSize: 14, color: C.muted }}>Ton compagnon IA</p>
+              </div>
+              {isAuthenticated && (
+                <button type="button" onClick={() => setNaming(v => !v)} aria-label={`Changer le nom et la couleur de ${companionName}`} className="drl-btn"
+                  style={{ width: 44, height: 44, borderRadius: 13, border: `1px solid ${C.line}`, background: C.glass, color: C.muted, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+                  <Pencil size={18} aria-hidden="true" />
+                </button>
+              )}
+            </div>
+            {isAuthenticated && (naming || (!companion && !companionAsked())) && (
+              <CompanionNaming current={companion} accent={palette.primary}
+                onSave={(n, colorId, iconId) => { setCompanion(saveCompanionName(n)); setCompanionColor(saveCompanionColor(colorId)); saveCompanionIcon(iconId); setIconTick(t => t + 1); markCompanionAsked(); setNaming(false); }}
+                onSkip={() => { markCompanionAsked(); setNaming(false); }} />
+            )}
+            <div style={{ display: 'flex', justifyContent: 'center' }}>{modeNav}</div>
+          </div>
+        )}
+        {!hub && (
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: 18 }}>
           <div style={{ position: 'relative', width: '100%', display: 'flex', justifyContent: 'center' }}>
             <DrLoAvatar state={avatarState} palette={palette} aura={isAuthenticated && !korisLoading ? balance / AURA_FULL : null} />
@@ -2173,66 +2172,25 @@ const ConversationAccueil: React.FC = () => {
           {isAuthenticated && (naming || (!companion && !companionAsked())) && (
             <div style={{ width: '100%' }}>
               <CompanionNaming current={companion} accent={palette.primary}
-                onSave={(n) => { setCompanion(saveCompanionName(n)); markCompanionAsked(); setNaming(false); }}
+                onSave={(n, colorId, iconId) => { setCompanion(saveCompanionName(n)); setCompanionColor(saveCompanionColor(colorId)); saveCompanionIcon(iconId); setIconTick(t => t + 1); markCompanionAsked(); setNaming(false); }}
                 onSkip={() => { markCompanionAsked(); setNaming(false); }} />
             </div>
           )}
-          <nav aria-label="Mode de conversation" style={{ marginTop: 14, display: 'inline-flex', padding: 4, borderRadius: 999, background: 'rgba(255,255,255,.06)', border: '1px solid rgba(255,255,255,.10)' }}>
-            {(['discuter', 'confier'] as const).map(t => (
-              <button key={t} onClick={() => {
-                  if (t === tab) return;
-                  setTab(t);
-                  setMode('home');
-                  if (t === 'confier') { setBreath(null); trackAccueil('confier_open', { guest: !isAuthenticated }); }
-                }}
-                aria-current={tab === t ? 'page' : undefined}
-                className="drl-btn"
-                style={{ minHeight: 38, padding: '0 16px', borderRadius: 999, border: 0, cursor: 'pointer', fontSize: 14, fontWeight: 700,
-                  background: tab === t ? (t === 'confier' ? 'rgba(201,184,228,.22)' : 'rgba(242,182,109,.20)') : 'transparent',
-                  color: tab === t ? (t === 'confier' ? CONFIER.accent : palette.accent) : C.muted }}>
-                {t === 'discuter' ? 'Discuter' : 'Me confier'}
-              </button>
-            ))}
-          </nav>
+          {modeNav}
         </div>
+        )}
 
         {tab === 'confier' ? (
           <ConfierPanel userId={isAuthenticated && currentUser ? currentUser.id : null} genre={state.genre} onStatus={onConfierStatus} onSignup={() => openSignup('signup')} view={confierView} onView={setConfierView} />
         ) : (<>
-        {hasTalked ? (<>
-        {/* 1. Bonjour, et la seule chose importante du moment */}
-        <div style={{ marginTop: 16, textAlign: 'center' }}>
-          <h1 style={{ margin: 0, fontFamily: 'Fraunces, serif', fontSize: 29, lineHeight: 1.18, fontWeight: 600, color: C.title }}>
-            {greetingFor(moment, prenom)}
-          </h1>
-          <p className="drl-in" aria-live="polite" style={{ margin: '10px 0 0', fontSize: 16, lineHeight: 1.5, color: C.soft }}>{focusLine}</p>
-        </div>
-
-        {/* 2. Parler à Dr Lô : l'action principale, tout de suite */}
-        <div style={{ marginTop: 16 }}>
-          {controls}
-          <div style={{ display: 'flex', justifyContent: 'center', flexWrap: 'wrap', gap: '2px 16px', marginTop: 6 }}>
-            <button onClick={() => setInChat(true)} style={{ ...linkBtn, fontSize: 13, color: C.muted, display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-              <MessagesSquare size={14} aria-hidden="true" />Reprendre ma discussion
-            </button>
-            {convIdx.list.length > 1 && (
-              <button onClick={() => { setInChat(true); setShowConvs(true); }} style={{ ...linkBtn, fontSize: 13, color: C.muted }}>
-                Toutes mes discussions ({convIdx.list.length})
-              </button>
-            )}
-          </div>
-          {noted && !revealing && (
-            <div className="drl-in" style={{ marginTop: 10, display: 'inline-flex', alignItems: 'center', gap: 8, fontSize: 13, fontWeight: 600, color: C.sage }}>
-              <Check size={14} strokeWidth={2.6} aria-hidden="true" />
-              <span style={{ textDecoration: noted.cancelled ? 'line-through' : 'none' }}>Noté dans ton humeur du jour</span>
-              {!noted.cancelled && (
-                <button onClick={cancelMood} style={{ ...linkBtn, color: C.muted, fontSize: 13, fontWeight: 700, padding: '0 6px' }}>Annuler</button>
-              )}
-            </div>
-          )}
-        </div>
-
-        </>) : (<>
+        {hub ? (
+          <section aria-label="Mes discussions" style={{ marginTop: 18, marginBottom: 8 }}>
+            <h2 style={{ margin: '0 0 10px', fontFamily: 'Fraunces, serif', fontSize: 20, fontWeight: 600, color: C.title }}>Mes discussions</h2>
+            <DiscussionList idx={convIdx} currentId={convId} accent={palette.accent} onOpen={switchConversation} onNew={newConversation}
+              onRename={(id, t) => setConvIdx(i => renameConv(i, id, t))} onRemove={removeConversation} />
+            <p style={{ margin: '12px 0 0', fontSize: 13, color: C.faint, textAlign: 'center', lineHeight: 1.5 }}>{isAuthenticated ? 'Tes discussions sont gardées dans ton compte : tu les retrouves sur tous tes appareils.' : 'Tes discussions restent sur ce téléphone.'}</p>
+          </section>
+        ) : (<>
         {/* Première visite : la conversation d'accueil, au centre */}
         <div style={{ marginTop: 16, textAlign: 'center' }}>
           <h1 style={{ margin: 0, fontFamily: 'Fraunces, serif', fontSize: 29, lineHeight: 1.18, fontWeight: 600, color: C.title }}>
@@ -2296,10 +2254,12 @@ const ConversationAccueil: React.FC = () => {
 
         <p style={{ margin: '14px 0 16px', textAlign: 'center', fontSize: 13, color: C.faint, lineHeight: 1.5 }}>
           Un espace d'écoute, sans jugement. Pas de diagnostic · 18 ans et plus · Urgence : <a href="tel:1515" style={{ fontWeight: 700 }}>1515</a>
-          <br />
-          <button onClick={resetConversation} style={{ ...linkBtn, fontSize: 13, fontWeight: 500 }}>
-            Effacer cette conversation
-          </button>
+          {!hub && (<>
+            <br />
+            <button onClick={resetConversation} style={{ ...linkBtn, fontSize: 13, fontWeight: 500 }}>
+              Effacer cette conversation
+            </button>
+          </>)}
         </p>
       </div>
 

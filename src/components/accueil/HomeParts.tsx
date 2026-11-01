@@ -20,7 +20,7 @@ export const SectionTitle: React.FC<{ children: React.ReactNode; aside?: React.R
 /** Une rangée qui défile sur le côté, jusqu'au bord de l'écran. */
 export const HScroll: React.FC<{ label: string; children: React.ReactNode }> = ({ label, children }) => (
   <div role="list" aria-label={label}
-    style={{ display: 'flex', gap: 10, overflowX: 'auto', margin: '0 -18px', padding: '2px 18px 6px', scrollSnapType: 'x proximity', WebkitOverflowScrolling: 'touch' }}>
+    style={{ display: 'flex', gap: 10, overflowX: 'auto', margin: '0 -18px', padding: '2px 18px 6px', scrollSnapType: 'x proximity', scrollPaddingLeft: 18, WebkitOverflowScrolling: 'touch' }}>
     {children}
   </div>
 );
