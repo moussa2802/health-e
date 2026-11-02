@@ -86,7 +86,7 @@ const InfosPage: React.FC = () => {
   );
 
   return (
-    <DrLoShell palette={palette} genre={f.genre || undefined}>
+    <DrLoShell palette={palette} genre={f.genre || undefined} back={{ to: '/espace', label: 'Retour à Mon espace' }}>
       <h1 style={h1}>Mes informations</h1>
       <p style={{ margin: '10px 0 0', fontSize: 15, color: DC.soft, lineHeight: 1.5 }}>
         Ce que le site sait de toi, pour adapter les questions et les conseils. Tu peux tout corriger quand tu veux. Rien de tout ça n'est visible par les autres.

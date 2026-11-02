@@ -159,6 +159,12 @@ const EspacePage: React.FC = () => {
         <h1 style={{ margin: '4px 0 0', fontFamily: 'Fraunces, serif', fontSize: 28, lineHeight: 1.2, fontWeight: 600, color: DC.title }}>Mon espace bien-être</h1>
       </div>
 
+      {uid && (
+        <Link to="/mes-informations" className="drl-btn" style={{ marginTop: 14, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, minHeight: 52, padding: '0 16px', borderRadius: 16, border: `1px solid ${DC.line}`, background: DC.glass, color: DC.text, textDecoration: 'none', fontSize: 15, fontWeight: 600 }}>
+          <span>Mes informations <span style={{ color: DC.faint, fontWeight: 500, fontSize: 13 }}>· prénom, genre, âge</span></span><span aria-hidden="true" style={{ color: DC.faint }}>›</span>
+        </Link>
+      )}
+
       {/* Pour toi aujourd'hui */}
       <section aria-label="Pour toi aujourd'hui" style={{ ...card, marginTop: 16, borderColor: 'rgba(242,182,109,.3)', background: 'rgba(242,182,109,.07)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -315,11 +321,6 @@ const EspacePage: React.FC = () => {
       {/* Ton chemin vers Dr Lô (paliers) */}
       {drlo && <PaliersCard status={drlo} palette={palette} />}
 
-      {uid && (
-        <Link to="/mes-informations" className="drl-btn" style={{ marginTop: 16, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, minHeight: 52, padding: '0 16px', borderRadius: 16, border: `1px solid ${DC.line}`, background: DC.glass, color: DC.text, textDecoration: 'none', fontSize: 15, fontWeight: 600 }}>
-          <span>Mes informations</span><span aria-hidden="true" style={{ color: DC.faint }}>›</span>
-        </Link>
-      )}
 
       <p style={{ margin: '18px 0 0', textAlign: 'center', fontSize: 13, lineHeight: 1.5, color: DC.faint }}>
         Des tendances, jamais des notes. Pas de diagnostic · Urgence : <a href="tel:1515" style={{ fontWeight: 700 }}>1515</a>
