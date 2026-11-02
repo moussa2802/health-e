@@ -31,9 +31,12 @@ const ms = (v) => (v && typeof v.toMillis === 'function' ? v.toMillis() : typeof
 const inc = (n) => admin.firestore.FieldValue.increment(n);
 const vid = (pid, uid) => `${pid}_${uid}`;
 
-async function isDrLo(uid) {
-  const s = await db.collection('staff').doc(uid).get();
-  return s.exists && s.data().drlo === true;
+const R = require('./_roles');
+/** La chaîne, si cette personne la gère (Dr Lô, ou le pro qui l'a créée) ; sinon null. */
+async function managedChannel(role, uid, channelId) {
+  if (!channelId) return null;
+  const cs = await db.collection('channels').doc(String(channelId)).get();
+  return cs.exists && R.canManageChannel(role, cs.data(), uid) ? cs : null;
 }
 async function signedUrl(path) {
   if (!path) return null;
@@ -80,9 +83,12 @@ exports.handler = async (event) => {
   try {
     // ───────── Dr Lô ─────────
     if (['comments_list', 'comment_hide', 'comment_pin', 'comment_close', 'comment_reply', 'comment_edit'].includes(action)) {
-      if (!(await isDrLo(uid))) return reply(403, { error: 'Réservé à Dr Lô' });
+      const role = await R.roleOf(uid);
+      if (!role.owner && !role.pro) return reply(403, { error: 'Réservé à l\'Espace pro' });
 
       if (action === 'comments_list') {
+        const ps = await db.collection('channelPosts').doc(String(body.postId || 'x')).get();
+        if (!ps.exists || !(await managedChannel(role, uid, ps.data().channelId))) return reply(404, { error: 'Publication introuvable' });
         const s = await db.collection('channelComments').where('postId', '==', String(body.postId || '')).get();
         const items = (await Promise.all(s.docs.slice(0, 300).map((d) => adminComment(d.id, d.data())))).sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0) || b.createdAt - a.createdAt);
         return reply(200, { items });
@@ -92,6 +98,8 @@ exports.handler = async (event) => {
       const snap = await ref.get();
       if (!snap.exists) return reply(404, { error: 'Commentaire introuvable' });
       const c = snap.data();
+      const managed = await managedChannel(role, uid, c.channelId);
+      if (!managed) return reply(404, { error: 'Commentaire introuvable' });
 
       if (action === 'comment_hide') { await ref.update({ hidden: body.hidden !== false }); return reply(200, { ok: true }); }
       if (action === 'comment_pin') { await ref.update({ pinned: body.pinned !== false }); return reply(200, { ok: true }); }
@@ -127,9 +135,9 @@ exports.handler = async (event) => {
       await ref.update({ thread });
       await dropFile(oldPath);
       if (!editing) { // notification neutre : jamais le texte de la réponse
-        const chs = await db.collection('channels').doc(c.channelId).get().catch(() => null);
-        const nm = String((chs && chs.exists && chs.data().name) || 'la chaîne').slice(0, 60);
-        await sendToUser(c.uid, { kind: 'broadcast', title: 'Dr Lô', body: `Dr Lô t'a répondu dans ${nm}.`, inboxTitle: `Dr Lô t'a répondu dans ${nm}`, inboxBody: 'Ouvre la chaîne pour lire sa réponse.', link: `/chaines/${c.channelId}` }).catch(() => {});
+        const nm = String(managed.data().name || 'la chaîne').slice(0, 60);
+        const host = R.hostOf(managed.data()).name;
+        await sendToUser(c.uid, { kind: 'broadcast', title: host, body: `${host} t'a répondu dans ${nm}.`, inboxTitle: `${host} t'a répondu dans ${nm}`, inboxBody: 'Ouvre la chaîne pour lire sa réponse.', link: `/chaines/${c.channelId}` }).catch(() => {});
       }
       return reply(200, { ok: true });
     }

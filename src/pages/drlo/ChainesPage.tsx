@@ -6,7 +6,7 @@
  */
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { Bell, BellOff, Check, ChevronRight, Circle, Loader2, Lock, Search, Users, X } from 'lucide-react';
+import { BadgeCheck, Bell, BellOff, Check, ChevronRight, Circle, Loader2, Lock, Search, Users, X } from 'lucide-react';
 import DrLoShell, { DC, card, usePalette } from '../../components/accueil/DrLoShell';
 import LoadingCards from '../../components/accueil/LoadingCards';
 import ChannelChat from '../../components/accueil/ChannelChat';
@@ -221,6 +221,12 @@ const Detail: React.FC<{ id: string; palette: ReturnType<typeof usePalette> }> =
         </div>
         <div style={{ padding: 16 }}>
           <h1 style={{ ...h1, margin: 0, fontSize: 25 }}>{c.name}</h1>
+          {c.host && (
+            <p style={{ margin: '6px 0 0', fontSize: 14, color: DC.soft, display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+              Animée par <b style={{ color: DC.text }}>{c.host.name}</b>{c.host.title ? ` · ${c.host.title}` : ''}
+              {c.host.pro && <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 13, fontWeight: 700, color: DC.sage }}><BadgeCheck size={14} aria-hidden="true" />vérifié par Dr Lô</span>}
+            </p>
+          )}
           <p style={{ margin: '8px 0 10px', fontSize: 15, color: DC.soft, lineHeight: 1.5 }}>{c.description}</p>
           <Pills c={c} />
           {!c.archived && <div style={{ marginTop: 12 }}><ShareChannelButton channel={c} /></div>}

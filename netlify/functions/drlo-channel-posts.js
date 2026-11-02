@@ -1,7 +1,7 @@
 /**
  * drlo-channel-posts — les publications des Chaînes de Dr Lô. POST { action, ... } avec le jeton Firebase.
  *
- * Espace Dr Lô (staff/{uid}.drlo === true) :
+ * Espace pro (Dr Lô : toutes les chaînes ; un pro vérifié : les siennes, voir _roles.js) :
  *   post_create { channelId, title?, text?, audio?, preview?, commentsOpen?, notify? } → publie (titre facultatif, texte et/ou vocal ≤ 5 min) ; notify (défaut oui) = prévenir les membres
  *   post_list   { channelId }                → les publications (de la plus ancienne à la plus récente) avec leurs chiffres et le lien d'écoute
  *   post_update { id, title?, text?, preview?, commentsOpen?, practiceIds? } (post_create accepte aussi practiceIds : 2 pratiques au plus, proposées sous l'épisode)
@@ -46,9 +46,12 @@ const FEED_LIMIT = 50;
 const vid = (pid, uid) => `${pid}_${uid}`;
 const mid = (cid, uid) => `${cid}_${uid}`;
 
-async function isDrLo(uid) {
-  const s = await db.collection('staff').doc(uid).get();
-  return s.exists && s.data().drlo === true;
+const R = require('./_roles');
+/** La chaîne, si cette personne la gère ; sinon null. */
+async function managedChannel(role, uid, channelId) {
+  if (!channelId) return null;
+  const cs = await db.collection('channels').doc(String(channelId)).get();
+  return cs.exists && R.canManageChannel(role, cs.data(), uid) ? cs : null;
 }
 async function signedUrl(path) {
   if (!path) return null;
@@ -132,12 +135,13 @@ exports.handler = async (event) => {
   try {
     // ───────── Dr Lô ─────────
     if (['post_create', 'post_list', 'post_update', 'post_delete', 'audience'].includes(action)) {
-      if (!(await isDrLo(uid))) return reply(403, { error: 'Réservé à Dr Lô' });
+      const role = await R.roleOf(uid);
+      if (!role.owner && !role.pro) return reply(403, { error: 'Réservé à l\'Espace pro' });
 
       if (action === 'post_create') {
         const channelId = String(body.channelId || '');
-        const cs = channelId ? await db.collection('channels').doc(channelId).get() : null;
-        if (!cs || !cs.exists) return reply(404, { error: 'Chaîne introuvable' });
+        const cs = await managedChannel(role, uid, channelId);
+        if (!cs) return reply(404, { error: 'Chaîne introuvable' });
         if (cs.data().status !== 'active') return reply(409, { error: 'Cette chaîne est archivée : réactive-la pour publier.' });
         const text = cleanText(body.text);
         if (text.length > MAX_POST_TEXT) return reply(400, { error: `Le texte est trop long (${MAX_POST_TEXT} caractères au plus).` });
@@ -173,6 +177,7 @@ exports.handler = async (event) => {
       if (action === 'post_list') {
         const channelId = String(body.channelId || '');
         if (!channelId) return reply(400, { error: 'Chaîne manquante' });
+        if (!(await managedChannel(role, uid, channelId))) return reply(404, { error: 'Chaîne introuvable' });
         const snap = await db.collection('channelPosts').where('channelId', '==', channelId).get();
         const items = await Promise.all(snap.docs.map((d) => adminPost(d.id, d.data())));
         items.sort((a, b) => b.createdAt - a.createdAt);
@@ -185,6 +190,7 @@ exports.handler = async (event) => {
         const s = ref ? await ref.get() : null;
         if (!s || !s.exists) return reply(404, { error: 'Publication introuvable' });
         const p = s.data();
+        if (!(await managedChannel(role, uid, p.channelId))) return reply(404, { error: 'Publication introuvable' });
         if (action === 'post_delete') {
           await ref.delete();
           await dropFile(p.audio && p.audio.path);
@@ -235,6 +241,7 @@ exports.handler = async (event) => {
       // audience : prénoms des membres, jamais de résultats
       const channelId = String(body.channelId || '');
       if (!channelId) return reply(400, { error: 'Chaîne manquante' });
+      if (!(await managedChannel(role, uid, channelId))) return reply(404, { error: 'Chaîne introuvable' });
       const kind = ['all', 'seen', 'listened', 'unseen'].includes(body.kind) ? body.kind : 'all';
       const postId = body.postId ? String(body.postId) : '';
       if (kind !== 'all' && !postId) return reply(400, { error: 'Publication manquante' });

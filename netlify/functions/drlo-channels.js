@@ -1,7 +1,7 @@
 /**
  * drlo-channels — « Chaînes » de Dr Lô. POST { action, ... } avec le jeton Firebase. Tout passe par le serveur.
  *
- * Espace Dr Lô (rôle staff/{uid}.drlo === true) :
+ * Espace pro (Dr Lô : toutes les chaînes ; un pro vérifié : seulement les siennes, voir _roles.js) :
  *   drlo_save { id?, name, description, price, framingText?, requireFramingAck?, rules, categories?, photo?, status? }
  *             → crée (sans id) ou modifie (avec id) une chaîne. photo = { data (base64), mime }.
  *   drlo_delete { id, confirmName } → supprime définitivement la chaîne, ses publications, commentaires, membres et fichiers
@@ -22,6 +22,7 @@ const { reserveKoris, commitKoris, releaseKoris } = require('./_koris');
 const CH = require('./_drloChannels');
 const { deleteChannel } = require('./_channelDelete');
 const C = require('./_drloComments');
+const R = require('./_roles');
 const BUCKET = process.env.FIREBASE_STORAGE_BUCKET || 'health-e-af2bf.firebasestorage.app';
 
 const headers = {
@@ -34,10 +35,6 @@ const ms = (v) => (v && typeof v.toMillis === 'function' ? v.toMillis() : typeof
 const inc = (n) => admin.firestore.FieldValue.increment(n);
 const memberId = (cid, uid) => `${cid}_${uid}`;
 
-async function isDrLo(uid) {
-  const s = await db.collection('staff').doc(uid).get();
-  return s.exists && s.data().drlo === true;
-}
 async function signedUrl(path) {
   if (!path) return null;
   try {
@@ -51,6 +48,7 @@ const dropFile = (path) => (path ? admin.storage().bucket(BUCKET).file(path).del
 const adminChannel = async (id, c) => ({
   id, name: c.name, description: c.description, price: c.price || 0, framingText: c.framingText || '', requireFramingAck: !!c.requireFramingAck,
   rules: c.rules || {}, categories: CH.sanitizeCategories(c.categories), status: c.status || 'active', memberCount: Number(c.memberCount) || 0, createdAt: ms(c.createdAt), photoUrl: await signedUrl(c.photoPath),
+  host: R.hostOf(c),
 });
 
 /** La chaîne telle que la voit une personne : seulement le nombre de membres, jamais la liste. */
@@ -58,7 +56,7 @@ async function userChannel(id, c, { profile, balance, member, withFraming }) {
   const elig = CH.eligibility(profile, balance, c);
   return {
     id, name: c.name, description: c.description, price: c.price || 0, rules: c.rules || {}, categories: CH.sanitizeCategories(c.categories), archived: c.status === 'archived',
-    memberCount: Number(c.memberCount) || 0, photoUrl: await signedUrl(c.photoPath),
+    memberCount: Number(c.memberCount) || 0, photoUrl: await signedUrl(c.photoPath), host: R.hostOf(c),
     member: !!member, joinedAt: member ? ms(member.joinedAt) : null, muted: !!(member && member.muted),
     eligible: elig.eligible, missing: member ? [] : elig.missing,
     requireFramingAck: !!c.requireFramingAck, hasFraming: !!c.framingText,
@@ -112,7 +110,9 @@ exports.handler = async (event) => {
   try {
     // ───────── Dr Lô ─────────
     if (action === 'drlo_save' || action === 'drlo_delete' || action === 'drlo_list' || action === 'drlo_activity' || action === 'drlo_seen') {
-      if (!(await isDrLo(uid))) return reply(403, { error: 'Réservé à Dr Lô' });
+      const role = await R.roleOf(uid);
+      if (!role.owner && !role.pro) return reply(403, { error: 'Réservé à l\'Espace pro' });
+      const manages = (c) => R.canManageChannel(role, c, uid);
 
       if (action === 'drlo_seen') {
         await db.collection('drloState').doc(uid).set({ channelsSeenAt: Date.now() }, { merge: true });
@@ -140,6 +140,12 @@ exports.handler = async (event) => {
           bump(c.channelId, 'comments');
         });
         if (fu) fu.docs.forEach((d) => { const c = d.data(); if (!counted.has(d.id) && !c.hidden && c.status === 'public') bump(c.channelId, 'replies'); });
+        if (!role.owner) { // un pro ne voit que l'activité de ses chaînes
+          const own = await db.collection('channels').where('ownerUid', '==', uid).get();
+          const mine = new Set(own.docs.map((d) => d.id));
+          for (const k of Object.keys(byChannel)) if (!mine.has(k)) delete byChannel[k];
+          distress = 0;
+        }
         const badge = Object.values(byChannel).reduce((n, x) => n + x.members + x.comments + x.replies, 0);
         return reply(200, { badge, distress, byChannel });
       }
@@ -148,15 +154,15 @@ exports.handler = async (event) => {
         const id = String(body.id || '');
         const ref = id ? db.collection('channels').doc(id) : null;
         const cs = ref ? await ref.get() : null;
-        if (!cs || !cs.exists) return reply(404, { error: 'Chaîne introuvable' });
+        if (!cs || !cs.exists || !manages(cs.data())) return reply(404, { error: 'Chaîne introuvable' });
         if (body.confirmName !== cs.data().name) return reply(400, { error: 'Écris le nom exact de la chaîne pour confirmer.' });
         const counts = await deleteChannel(db, admin.storage().bucket(BUCKET), id);
         return reply(200, { ok: true, deleted: counts });
       }
 
       if (action === 'drlo_list') {
-        const snap = await db.collection('channels').get();
-        const items = await Promise.all(snap.docs.map((d) => adminChannel(d.id, d.data())));
+        const snap = role.owner ? await db.collection('channels').get() : await db.collection('channels').where('ownerUid', '==', uid).get();
+        const items = await Promise.all(snap.docs.filter((d) => manages(d.data())).map((d) => adminChannel(d.id, d.data())));
         items.sort((a, b) => b.createdAt - a.createdAt);
         return reply(200, { items });
       }
@@ -167,7 +173,7 @@ exports.handler = async (event) => {
       else {
         ref = db.collection('channels').doc(String(body.id));
         const s = await ref.get();
-        if (!s.exists) return reply(404, { error: 'Chaîne introuvable' });
+        if (!s.exists || !manages(s.data())) return reply(404, { error: 'Chaîne introuvable' });
         old = s.data();
       }
       const v = CH.validateChannel(body, { partial: !isNew });
@@ -188,7 +194,8 @@ exports.handler = async (event) => {
         data.photoPath = path; newPhoto = path;
       }
       if (isNew) {
-        await ref.set({ ...data, status: data.status || 'active', memberCount: 0, createdAt: admin.firestore.FieldValue.serverTimestamp(), createdBy: uid });
+        const of = R.ownerFields(role, uid);
+        await ref.set({ ...data, ...(of.ownerUid ? of : {}), status: data.status || 'active', memberCount: 0, createdAt: admin.firestore.FieldValue.serverTimestamp(), createdBy: uid });
       } else {
         await ref.update({ ...data, updatedAt: admin.firestore.FieldValue.serverTimestamp() });
         if (old.photoPath && (newPhoto || body.removePhoto) && old.photoPath !== data.photoPath) await dropFile(old.photoPath);

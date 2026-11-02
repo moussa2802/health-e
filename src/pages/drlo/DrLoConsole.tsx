@@ -21,6 +21,9 @@ import ChannelsAdmin from '../../components/accueil/ChannelsAdmin';
 import BoxAdmin from '../../components/accueil/BoxAdmin';
 import HomeAdmin from '../../components/accueil/HomeAdmin';
 import PracticesAdmin from '../../components/accueil/PracticesAdmin';
+import ProsAdmin from '../../components/pro/ProsAdmin';
+import ProProfile from '../../components/pro/ProProfile';
+import { listPros } from '../../services/proService';
 import { useChannelsActivity } from '../../hooks/useChannelsActivity';
 import { getDrloActivity, markCommunitySeen } from '../../services/drloBroadcastService';
 import AudioPlayer from '../../components/accueil/AudioPlayer';
@@ -173,7 +176,8 @@ const QuestionCard: React.FC<{
 const DrLoConsole: React.FC = () => {
   const palette = usePalette();
   const { authReady, isAuthenticated, currentUser } = useAuth();
-  const [role, setRole] = useState<'unknown' | 'drlo' | 'none'>('unknown');
+  const [role, setRole] = useState<'unknown' | 'drlo' | 'pro' | 'none'>('unknown');
+  const [prosPending, setProsPending] = useState(0);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loginError, setLoginError] = useState('');
@@ -181,21 +185,26 @@ const DrLoConsole: React.FC = () => {
   const [week, setWeek] = useState<{ used: number; cap: number; queued: number } | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [tab, setTabRaw] = useState<'pending' | 'done' | 'bench' | 'community' | 'channels' | 'practices' | 'home' | 'box'>('pending');
+  const [tab, setTabRaw] = useState<'pending' | 'done' | 'bench' | 'community' | 'channels' | 'practices' | 'home' | 'box' | 'pros' | 'profile'>('pending');
   const [activity, setActivity] = useState<{ community: number; distress: number; byBroadcast: Record<string, number> }>({ community: 0, distress: 0, byBroadcast: {} });
-  const chBadge = useChannelsActivity(role === 'drlo', tab);
+  const chBadge = useChannelsActivity(role === 'drlo' || role === 'pro', tab);
   const loadActivity = () => { getDrloActivity().then(setActivity).catch(() => {}); };
   const setTab = (t: typeof tab) => {
     if (tab === 'community' && t !== 'community') markCommunitySeen().then(loadActivity).catch(() => {});
     setTabRaw(t);
   };
 
-  // Rôle Dr Lô (lu dans staff/{uid} ; le serveur revérifie à chaque action)
+  // Rôle (lu dans staff/{uid} ; le serveur revérifie à chaque action) : Dr Lô (tout) ou pro validé (ses chaînes)
   useEffect(() => {
     const fs = db;
     if (!isAuthenticated || !currentUser || !fs) { setRole('unknown'); return; }
     getDoc(doc(fs, 'staff', currentUser.id))
-      .then(s => setRole(s.exists() && s.data().drlo === true ? 'drlo' : 'none'))
+      .then(s => {
+        const d = s.exists() ? s.data() : {};
+        if (d.drlo === true || d.role === 'owner') setRole('drlo');
+        else if (d.role === 'pro' && d.verified === true && d.suspended !== true) { setRole('pro'); setTabRaw('channels'); }
+        else setRole('none');
+      })
       .catch(() => setRole('none'));
   }, [isAuthenticated, currentUser?.id]);
 
@@ -204,7 +213,7 @@ const DrLoConsole: React.FC = () => {
     adminListQuestions().then(r => { setItems(r.items); setWeek(r.week); setError(''); })
       .catch(e => setError(e.message)).finally(() => setLoading(false));
   };
-  useEffect(() => { if (role === 'drlo') load(); }, [role]);
+  useEffect(() => { if (role === 'drlo') { load(); listPros().then(r => setProsPending(r.pending)).catch(() => {}); } }, [role]);
   useEffect(() => {
     if (role !== 'drlo') return;
     loadActivity();
@@ -229,8 +238,8 @@ const DrLoConsole: React.FC = () => {
 
   const title = (
     <div style={{ marginTop: 18 }}>
-      <p style={{ margin: 0, fontSize: 13, letterSpacing: '.14em', textTransform: 'uppercase', color: palette.accent, fontWeight: 700 }}>Espace Dr Lô</p>
-      <h1 style={{ margin: '6px 0 0', fontFamily: 'Fraunces, serif', fontSize: 28, fontWeight: 600, color: DC.title }}>Tes échanges avec les utilisateurs</h1>
+      <p style={{ margin: 0, fontSize: 13, letterSpacing: '.14em', textTransform: 'uppercase', color: palette.accent, fontWeight: 700 }}>{role === 'drlo' ? 'Espace pro · Dr Lô' : 'Espace pro'}</p>
+      <h1 style={{ margin: '6px 0 0', fontFamily: 'Fraunces, serif', fontSize: 28, fontWeight: 600, color: DC.title }}>{role === 'pro' ? 'Tes chaînes et ta communauté' : 'Tes échanges avec les utilisateurs'}</h1>
     </div>
   );
 
@@ -241,7 +250,7 @@ const DrLoConsole: React.FC = () => {
       <DrLoShell back={{ to: '/', label: 'Accueil' }} palette={palette}>
         {title}
         <section style={{ ...card, marginTop: 16, display: 'flex', flexDirection: 'column', gap: 10 }}>
-          <p style={{ margin: 0, fontSize: 14, color: DC.muted }}>Connecte-toi avec ton compte Dr Lô. Cet espace est distinct de l'administration.</p>
+          <p style={{ margin: 0, fontSize: 14, color: DC.muted }}>Connecte-toi avec ton compte (Dr Lô ou professionnel validé). Cet espace est distinct de l'administration.</p>
           <button onClick={loginGoogle} className="drl-btn" style={{ minHeight: 50, borderRadius: 14, border: 0, background: '#FBF5EA', color: '#1F1A15', fontSize: 15, fontWeight: 700, cursor: 'pointer' }}>Continuer avec Google</button>
           <form onSubmit={loginEmail} style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="E-mail" aria-label="E-mail" autoComplete="email" style={field} className="drl-input" />
@@ -259,7 +268,7 @@ const DrLoConsole: React.FC = () => {
       <DrLoShell back={{ to: '/', label: 'Accueil' }} palette={palette}>
         {title}
         <section style={{ ...card, marginTop: 16 }}>
-          <p style={{ margin: 0, fontSize: 15, color: DC.soft, lineHeight: 1.5 }}>Ce compte n'a pas accès à l'espace Dr Lô.</p>
+          <p style={{ margin: 0, fontSize: 15, color: DC.soft, lineHeight: 1.5 }}>Ce compte n'a pas (encore) accès à l'Espace pro. Professionnel de santé ? <Link to="/espace-pro/rejoindre" style={{ color: palette.accent, fontWeight: 700 }}>Demande un accès</Link>.</p>
           <button onClick={() => signOut(auth)} className="drl-btn" style={{ marginTop: 12, minHeight: 44, padding: '0 16px', borderRadius: 999, border: `1px solid ${DC.line}`, background: DC.glass, color: DC.text, fontWeight: 600, cursor: 'pointer' }}>Changer de compte</button>
         </section>
       </DrLoShell>
@@ -270,15 +279,15 @@ const DrLoConsole: React.FC = () => {
   return (
     <DrLoShell back={{ to: '/', label: 'Accueil' }} palette={palette}>
       {title}
-      {week && (
+      {role === 'drlo' && week && (
         <p style={{ margin: '8px 0 0', fontSize: 14, color: DC.muted, lineHeight: 1.5 }}>
           Cette semaine : <b style={{ color: DC.text }}>{week.used} / {week.cap}</b> questions · {week.queued} en file d'attente. Réponse promise sous 7 jours.
         </p>
       )}
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 14, alignItems: 'center' }}>
-        {(['pending', 'done', 'community', 'channels', 'practices', 'home', 'box', 'bench'] as const).map(t => {
-          const n = t === 'pending' ? pendingCount : t === 'community' && tab !== 'community' ? activity.community : t === 'channels' ? chBadge : 0;
-          const label = t === 'pending' ? 'À répondre' : t === 'done' ? 'Répondues' : t === 'community' ? 'Ma communauté' : t === 'channels' ? 'Chaînes' : t === 'practices' ? 'Pratiques' : t === 'home' ? 'Accueil' : t === 'box' ? 'Boîte' : 'Banc d\'essai';
+        {(role === 'pro' ? (['channels', 'profile'] as const) : (['pending', 'done', 'community', 'channels', 'pros', 'practices', 'home', 'box', 'bench'] as const)).map(t => {
+          const n = t === 'pending' ? pendingCount : t === 'community' && tab !== 'community' ? activity.community : t === 'channels' ? chBadge : t === 'pros' ? prosPending : 0;
+          const label = t === 'pending' ? 'À répondre' : t === 'done' ? 'Répondues' : t === 'community' ? 'Ma communauté' : t === 'channels' ? 'Chaînes' : t === 'pros' ? 'Pros' : t === 'profile' ? 'Mon profil' : t === 'practices' ? 'Pratiques' : t === 'home' ? 'Accueil' : t === 'box' ? 'Boîte' : 'Banc d\'essai';
           return (
             <button key={t} onClick={() => setTab(t)} className="drl-btn" aria-label={n > 0 ? `${label} : ${n} nouveauté${n > 1 ? 's' : ''}` : label}
               style={{ position: 'relative', minHeight: 38, padding: '0 14px', borderRadius: 999, border: `1px solid ${tab === t ? palette.accent : DC.line}`, background: tab === t ? 'rgba(242,182,109,.15)' : DC.glass, color: tab === t ? palette.accent : DC.muted, fontWeight: 700, fontSize: 14, cursor: 'pointer' }}>
@@ -292,7 +301,7 @@ const DrLoConsole: React.FC = () => {
         </button>
       </div>
       {error && <p role="alert" style={{ color: '#F09A7A', fontSize: 14 }}>{error}</p>}
-      {tab === 'community' ? <CommunityPanel palette={palette} newByBroadcast={activity.byBroadcast} /> : tab === 'channels' ? <ChannelsAdmin palette={palette} /> : tab === 'practices' ? <PracticesAdmin palette={palette} /> : tab === 'home' ? <HomeAdmin palette={palette} /> : tab === 'box' ? <BoxAdmin palette={palette} /> : tab === 'bench' && currentUser ? <DrloBench uid={currentUser.id} palette={palette} /> : loading && items.length === 0 ? <Loader2 className="animate-spin" style={{ marginTop: 20 }} /> : (
+      {tab === 'pros' && role === 'drlo' ? <ProsAdmin palette={palette} onCount={setProsPending} /> : tab === 'profile' && role === 'pro' ? <ProProfile palette={palette} /> : tab === 'community' ? <CommunityPanel palette={palette} newByBroadcast={activity.byBroadcast} /> : tab === 'channels' ? <ChannelsAdmin palette={palette} /> : tab === 'practices' ? <PracticesAdmin palette={palette} /> : tab === 'home' ? <HomeAdmin palette={palette} /> : tab === 'box' ? <BoxAdmin palette={palette} /> : tab === 'bench' && currentUser ? <DrloBench uid={currentUser.id} palette={palette} /> : loading && items.length === 0 ? <Loader2 className="animate-spin" style={{ marginTop: 20 }} /> : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginTop: 14 }}>
           {list.length === 0 && <p style={{ color: DC.faint, fontSize: 14 }}>{tab === 'pending' ? 'Aucune question en attente. 🙏' : 'Pas encore de réponse envoyée.'}</p>}
           {list.map(q => (
@@ -302,7 +311,7 @@ const DrLoConsole: React.FC = () => {
         </div>
       )}
       <p style={{ margin: '18px 0 0', textAlign: 'center', fontSize: 13, color: DC.faint }}>
-        Les questions anonymes arrivent sans prénom. <Link to="/" style={{ color: palette.accent }}>Retour au site</Link>
+        {role === 'drlo' ? 'Les questions anonymes arrivent sans prénom. ' : 'Tu ne vois jamais les résultats de tests des membres. '} <Link to="/" style={{ color: palette.accent }}>Retour au site</Link>
       </p>
     </DrLoShell>
   );

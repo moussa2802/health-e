@@ -68,7 +68,7 @@ const ChannelChat: React.FC<{ channelId: string; palette: MomentPalette }> = ({ 
   if (items === null) return <LoadingCards label="Ouverture de la discussion…" count={1} />;
   const chip = (on: boolean): React.CSSProperties => ({ minHeight: 36, padding: '0 12px', borderRadius: 999, cursor: 'pointer', fontSize: 13, fontWeight: 600, border: `1px solid ${on ? palette.accent : DC.line}`, background: on ? 'rgba(242,182,109,.15)' : DC.glass, color: on ? palette.accent : DC.muted });
   const link: React.CSSProperties = { background: 'none', border: 0, color: DC.faint, fontSize: 13, cursor: 'pointer', minHeight: 32, padding: '0 6px' };
-  const asLabel = asDrLo ? 'Dr Lô' : mode === 'anon' ? 'Anonyme' : mode === 'prenom' ? 'ton prénom' : (pseudo.trim() || 'un pseudo');
+  const asLabel = asDrLo ? 'responsable de la chaîne' : mode === 'anon' ? 'Anonyme' : mode === 'prenom' ? 'ton prénom' : (pseudo.trim() || 'un pseudo');
 
   return (
     <section aria-label="Discussion de la chaîne" style={{ marginTop: 14 }}>
@@ -82,7 +82,7 @@ const ChannelChat: React.FC<{ channelId: string; palette: MomentPalette }> = ({ 
             {!m.mine && <TotemAvatar animal={m.totem} />}
             <div style={{ maxWidth: '82%', borderRadius: 16, padding: '8px 12px', background: m.mine ? 'rgba(242,182,109,.16)' : 'rgba(255,255,255,.07)', border: `1px solid ${m.official ? palette.accent : DC.line}` }}>
               <p style={{ margin: 0, fontSize: 13, color: DC.faint }}>
-                <b style={{ color: m.official ? palette.accent : DC.soft }}>{m.mine ? 'Toi' : m.name}</b>{m.official ? ' · le médecin' : ''} · {hhmm(m.at)}{m.hidden ? ' · masqué' : ''}
+                <b style={{ color: m.official ? palette.accent : DC.soft }}>{m.mine ? 'Toi' : m.name}</b>{m.official ? ' · responsable de la chaîne' : ''} · {hhmm(m.at)}{m.hidden ? ' · masqué' : ''}
               </p>
               <p style={{ margin: '4px 0 0', fontSize: 15, lineHeight: 1.5, color: DC.text, whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>{m.text}</p>
               <div style={{ textAlign: m.mine ? 'left' : 'right' }}>
@@ -113,7 +113,7 @@ const ChannelChat: React.FC<{ channelId: string; palette: MomentPalette }> = ({ 
         {idtOpen && (
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 4 }}>
             {MODES.map(m => <button key={m.id} type="button" onClick={() => { setAsDrLo(false); setIdentity({ mode: m.id, pseudo }); }} aria-pressed={!asDrLo && mode === m.id} style={chip(!asDrLo && mode === m.id)}>{m.label}</button>)}
-            {staff && <button type="button" onClick={() => setAsDrLo(true)} aria-pressed={asDrLo} style={chip(asDrLo)}>Dr Lô</button>}
+            {staff && <button type="button" onClick={() => setAsDrLo(true)} aria-pressed={asDrLo} style={chip(asDrLo)}>Responsable de la chaîne</button>}
             {!asDrLo && mode === 'pseudo' && <input aria-label="Ton pseudo" value={pseudo} maxLength={20} onChange={e => setIdentity({ mode, pseudo: e.target.value })} placeholder="Ton pseudo" className="drl-input" style={{ ...field, minHeight: 40, flexBasis: '100%' }} />}
           </div>
         )}

@@ -1,6 +1,6 @@
 /**
  * _channelPush.js — prévenir les membres d'une chaîne qu'une publication est en ligne.
- * Notification neutre : « Dr Lô a publié dans {nom de la chaîne} ». Pas de contenu, jamais le texte.
+ * Notification neutre : « {Dr Lô ou le pro de la chaîne} a publié dans {nom de la chaîne} ». Pas de contenu, jamais le texte.
  * sendToUser respecte déjà : rappels activés, préférence « Dr Lô », silence la nuit (22 h – 7 h).
  * Les membres qui ont coupé les alertes de la chaîne (muted) ne reçoivent rien.
  * L'envoi est repris par page (curseur sur la publication) : il peut se terminer dans la tâche planifiée.
@@ -21,6 +21,7 @@ async function deliverPostPush(postId, budgetMs = 8000) {
   const cs = await db.collection('channels').doc(post.channelId).get();
   if (!cs.exists || cs.data().status !== 'active') { await pRef.update({ pushDone: true }).catch(() => {}); return false; }
   const name = String(cs.data().name || 'une chaîne').slice(0, 60);
+  const host = require('./_roles').hostOf(cs.data()).name;
   const end = Date.now() + budgetMs;
   let cursor = post.pushCursor || null;
   let exhausted = false;
@@ -33,9 +34,9 @@ async function deliverPostPush(postId, budgetMs = 8000) {
     for (const group of chunk(members, 20)) {
       await Promise.all(group.map((m) => sendToUser(m.uid, {
         kind: 'broadcast',
-        title: 'Dr Lô',
-        body: `Dr Lô a publié dans ${name}.`,
-        inboxTitle: `Dr Lô a publié dans ${name}`,
+        title: host,
+        body: `${host} a publié dans ${name}.`,
+        inboxTitle: `${host} a publié dans ${name}`,
         inboxBody: 'Ouvre la chaîne quand tu veux.',
         link: `/chaines/${post.channelId}`,
       }).catch(() => null)));

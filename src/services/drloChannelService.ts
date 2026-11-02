@@ -17,11 +17,15 @@ export type Missing =
 
 export { CHANNEL_CATEGORIES, MAX_CHANNEL_CATEGORIES, categoryLabel } from '../utils/channelCategories';
 
+/** Qui anime la chaîne : Dr Lô, ou le professionnel qui l'a créée. */
+export interface ChannelHost { name: string; title: string; pro: boolean }
 export interface AdminChannel {
+  host?: ChannelHost;
   id: string; name: string; description: string; price: number; framingText: string; requireFramingAck: boolean;
   rules: ChannelRules; categories: string[]; status: 'active' | 'archived'; memberCount: number; createdAt: number; photoUrl: string | null;
 }
 export interface Channel {
+  host?: ChannelHost;
   id: string; name: string; description: string; price: number; rules: ChannelRules; categories: string[]; archived: boolean; memberCount: number; photoUrl: string | null;
   member: boolean; joinedAt: number | null; muted: boolean; eligible: boolean; missing: Missing[];
   requireFramingAck: boolean; hasFraming: boolean; framingText?: string;

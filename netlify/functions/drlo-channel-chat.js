@@ -1,6 +1,6 @@
 /**
  * drlo-channel-chat — la discussion entre les membres d'une chaîne. POST { action, ... } avec le jeton Firebase.
- * Réservé aux membres de la chaîne (et à Dr Lô). Identité au choix : prénom, anonyme ou pseudo (comme les commentaires).
+ * Réservé aux membres de la chaîne (et à qui la gère : Dr Lô ou le pro qui l'a créée). Identité au choix : prénom, anonyme ou pseudo (comme les commentaires).
  * Messages dans channels/{id}/chat. Un mot de détresse n'est jamais publié (message privé de soutien).
  *   list   { channelId }                      → derniers messages (les plus anciens d'abord)
  *   send   { channelId, text, mode, pseudo? }
@@ -17,10 +17,7 @@ const headers = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Head
 const reply = (statusCode, body) => ({ statusCode, headers, body: JSON.stringify(body) });
 const ms = (v) => (v && typeof v.toMillis === 'function' ? v.toMillis() : Number(v) || 0);
 
-async function isDrLo(uid) {
-  const s = await db.collection('staff').doc(uid).get();
-  return s.exists && s.data().drlo === true;
-}
+const R = require('./_roles');
 
 exports.handler = async (event) => {
   if (event.httpMethod === 'OPTIONS') return { statusCode: 200, headers, body: '' };
@@ -36,8 +33,10 @@ exports.handler = async (event) => {
   try {
     const chRef = db.collection('channels').doc(channelId);
     const memRef = db.collection('channelMembers').doc(`${channelId}_${uid}`);
-    const [ch, mem, staff] = await Promise.all([chRef.get(), memRef.get(), isDrLo(uid)]);
+    const [ch, mem, role] = await Promise.all([chRef.get(), memRef.get(), R.roleOf(uid)]);
     if (!ch.exists) return reply(404, { error: 'Chaîne introuvable' });
+    const staff = R.canManageChannel(role, ch.data(), uid); // Dr Lô, ou le pro de la chaîne
+    const hostName = R.hostOf(ch.data()).name;
     if (!mem.exists && !staff) return reply(403, { error: 'Rejoins la chaîne pour discuter avec les autres membres.' });
     const chat = chRef.collection('chat');
 
@@ -46,7 +45,7 @@ exports.handler = async (event) => {
       const items = s.docs.map((d) => ({ id: d.id, ...d.data(), createdAt: ms(d.data().createdAt) }))
         .filter((m) => K.shown(m) || staff)
         .reverse()
-        .map((m) => ({ id: m.id, name: m.official ? 'Dr Lô' : m.name || 'Anonyme', totem: m.official ? null : m.totem || null, official: !!m.official, text: m.text, at: m.createdAt, mine: m.uid === uid, hidden: !!m.hidden || Number(m.reports) >= C.REPORTS_TO_HIDE }));
+        .map((m) => ({ id: m.id, name: m.official ? (m.name || hostName) : m.name || 'Anonyme', totem: m.official ? null : m.totem || null, official: !!m.official, text: m.text, at: m.createdAt, mine: m.uid === uid, hidden: !!m.hidden || Number(m.reports) >= C.REPORTS_TO_HIDE }));
       return reply(200, { items, staff });
     }
 
@@ -64,7 +63,7 @@ exports.handler = async (event) => {
       const r = K.rate(mem.exists ? mem.data() : null, now);
       if (!r.ok) return reply(429, { error: r.error });
       const official = !!(staff && body.asDrLo);
-      await chat.add({ uid, name: p.name, mode: p.mode, totem: official ? null : C.totemOf(upd), official, text: p.text, hidden: false, reports: 0, reportedBy: [], createdAt: admin.firestore.FieldValue.serverTimestamp() });
+      await chat.add({ uid, name: official ? hostName : p.name, mode: p.mode, totem: official ? null : C.totemOf(upd), official, text: p.text, hidden: false, reports: 0, reportedBy: [], createdAt: admin.firestore.FieldValue.serverTimestamp() });
       if (mem.exists) await memRef.set(r.next, { merge: true }).catch(() => {});
       // Plafond : le compteur est sur la chaîne ; on nettoie par paquets, les plus anciens d'abord.
       const count = (Number(ch.data().chatCount) || 0) + 1;

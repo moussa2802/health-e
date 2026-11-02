@@ -1,16 +1,17 @@
 /**
- * EquipePage — /equipe : porte d'entrée discrète pour l'équipe (Dr Lô et administration).
+ * EquipePage — /equipe : porte d'entrée discrète pour l'équipe (Espace pro, administration, demande d'accès pro).
  * Rien de sensible ici : chaque espace demande sa propre connexion et revérifie le rôle côté serveur.
  */
 import React from "react";
 import { Link } from "react-router-dom";
-import { ChevronRight, Mail, ShieldCheck } from "lucide-react";
+import { BadgeCheck, ChevronRight, Mail, ShieldCheck } from "lucide-react";
 import DrLoShell, { DC, card, usePalette } from "../../components/accueil/DrLoShell";
 
 const EquipePage: React.FC = () => {
   const palette = usePalette();
   const items = [
-    { to: "/drlo", icon: Mail, title: "Espace Dr Lô", hint: "Questions, messages à ma communauté" },
+    { to: "/drlo", icon: Mail, title: "Espace pro", hint: "Dr Lô et les professionnels validés" },
+    { to: "/espace-pro/rejoindre", icon: BadgeCheck, title: "Professionnel de santé ?", hint: "Demander à rejoindre l'Espace pro" },
     { to: "/admin/login", icon: ShieldCheck, title: "Administration", hint: "Utilisateurs, paiements, statistiques" },
   ];
   return (
