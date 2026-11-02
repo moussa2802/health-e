@@ -9,6 +9,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { Bell, BellOff, Check, ChevronRight, Circle, Loader2, Lock, Search, Users, X } from 'lucide-react';
 import DrLoShell, { DC, card, usePalette } from '../../components/accueil/DrLoShell';
 import LoadingCards from '../../components/accueil/LoadingCards';
+import ChannelChat from '../../components/accueil/ChannelChat';
 import ChannelFeed from '../../components/accueil/ChannelFeed';
 import ShareChannelButton from '../../components/accueil/ShareChannelButton';
 import { useAuth } from '../../contexts/AuthContext';
@@ -154,6 +155,7 @@ const Detail: React.FC<{ id: string; palette: ReturnType<typeof usePalette> }> =
   const [actErr, setActErr] = useState('');
   const [confirmLeave, setConfirmLeave] = useState(false);
   const [welcome, setWelcome] = useState(false);
+  const [view, setView] = useState<'posts' | 'chat'>('posts');
   const load = () => getChannel(id).then(r => { setC(r.channel); setBalance(r.balance); setError(''); }).catch(e => setError(e instanceof Error ? e.message : 'Erreur'));
   useEffect(() => { load(); }, [id]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -231,7 +233,13 @@ const Detail: React.FC<{ id: string; palette: ReturnType<typeof usePalette> }> =
             {welcome ? 'Bienvenue dans la chaîne. ' : `Dans la chaîne depuis ${monthYear(c.joinedAt)}. `}
             {c.muted ? 'Alertes coupées : touche la cloche pour être prévenu des nouvelles publications.' : 'Tu es prévenu à chaque nouvelle publication (jamais la nuit) ; la cloche coupe les alertes.'}
           </p>
-          <ChannelFeed channelId={id} member palette={palette} />
+          <div role="tablist" aria-label="Dans la chaîne" style={{ marginTop: 12, display: 'grid', gridTemplateColumns: '1fr 1fr', padding: 4, borderRadius: 999, border: `1px solid ${DC.line}`, gap: 4 }}>
+            {([['posts', 'Publications'], ['chat', 'Discussion']] as const).map(([k, label]) => (
+              <button key={k} type="button" role="tab" aria-selected={view === k} onClick={() => setView(k)}
+                style={{ minHeight: 44, borderRadius: 999, border: 0, cursor: 'pointer', fontSize: 15, fontFamily: 'inherit', fontWeight: view === k ? 700 : 500, background: view === k ? palette.primary : 'transparent', color: view === k ? DC.ink : DC.soft }}>{label}</button>
+            ))}
+          </div>
+          {view === 'posts' ? <ChannelFeed channelId={id} member palette={palette} /> : <ChannelChat channelId={id} palette={palette} />}
           {!confirmLeave ? (
             <button type="button" onClick={() => setConfirmLeave(true)} style={{ marginTop: 14, background: 'none', border: 0, color: DC.faint, fontSize: 14, textDecoration: 'underline', cursor: 'pointer' }}>Quitter la chaîne</button>
           ) : (
@@ -273,7 +281,7 @@ const Detail: React.FC<{ id: string; palette: ReturnType<typeof usePalette> }> =
           )}
           <h2 style={{ margin: '20px 0 0', fontSize: 15, fontWeight: 700, color: DC.text }}>Dans cette chaîne</h2>
           <ChannelFeed channelId={id} member={false} palette={palette} />
-          <p style={{ margin: '14px 0 0', fontSize: 13, color: DC.faint, lineHeight: 1.5 }}>Les membres ne se voient pas entre eux : tu vois seulement leur nombre. Dr Lô ne voit jamais tes résultats de tests.</p>
+          <p style={{ margin: '14px 0 0', fontSize: 13, color: DC.faint, lineHeight: 1.5 }}>Avant d'entrer, tu vois seulement le nombre de membres ; une fois dedans, vous discutez entre vous, anonymement si tu veux. Dr Lô ne voit jamais tes résultats de tests.</p>
         </>
       )}
     </>

@@ -315,6 +315,12 @@ const EspacePage: React.FC = () => {
       {/* Ton chemin vers Dr Lô (paliers) */}
       {drlo && <PaliersCard status={drlo} palette={palette} />}
 
+      {uid && (
+        <Link to="/mes-informations" className="drl-btn" style={{ marginTop: 16, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, minHeight: 52, padding: '0 16px', borderRadius: 16, border: `1px solid ${DC.line}`, background: DC.glass, color: DC.text, textDecoration: 'none', fontSize: 15, fontWeight: 600 }}>
+          <span>Mes informations</span><span aria-hidden="true" style={{ color: DC.faint }}>›</span>
+        </Link>
+      )}
+
       <p style={{ margin: '18px 0 0', textAlign: 'center', fontSize: 13, lineHeight: 1.5, color: DC.faint }}>
         Des tendances, jamais des notes. Pas de diagnostic · Urgence : <a href="tel:1515" style={{ fontWeight: 700 }}>1515</a>
       </p>

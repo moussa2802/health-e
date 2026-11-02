@@ -6,7 +6,7 @@ import React, { useState } from 'react';
 import { Dices } from 'lucide-react';
 import { cleanCompanionName, COMPANION_COLORS, COMPANION_ICONS, COMPANION_MAX, COMPANION_NAME_IDEAS, getCompanionColor, getCompanionIcon } from '../../utils/companion';
 import { DC, card } from './DrLoShell';
-import CompanionMark, { ICON_PATHS } from './CompanionMark';
+import CompanionMark, { CompanionBody } from './CompanionMark';
 
 const SUGGESTIONS = ['Kora', 'Confident', 'Allié'];
 
@@ -54,12 +54,12 @@ const CompanionNaming: React.FC<{ current?: string; onSave: (name: string, color
       <input value={text} maxLength={COMPANION_MAX} onChange={e => { setText(e.target.value); setError(''); }} placeholder="Ou choisis ton propre nom" aria-label="Nom de ton compagnon"
         style={{ width: '100%', marginTop: 10, minHeight: 46, boxSizing: 'border-box', borderRadius: 14, border: `1px solid ${DC.line}`, background: 'rgba(255,255,255,.06)', padding: '0 14px', fontFamily: 'inherit', fontSize: 16, color: DC.text, outline: 'none' }} />
 
-      <p style={{ margin: '14px 0 8px', fontSize: 13, fontWeight: 700, color: DC.soft }}>Son emblème</p>
-      <div role="radiogroup" aria-label="Emblème du compagnon" style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
+      <p style={{ margin: '14px 0 8px', fontSize: 13, fontWeight: 700, color: DC.soft }}>Son petit signe sur la tête</p>
+      <div role="radiogroup" aria-label="Petit signe du compagnon" style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
         {COMPANION_ICONS.map(i => (
           <button key={i.id} type="button" role="radio" aria-checked={i.id === iconId} aria-label={i.label} onClick={() => setIconId(i.id)} className="drl-btn"
-            style={{ width: 48, height: 48, borderRadius: 16, border: i.id === iconId ? `2px solid ${color.hex}` : `1px solid ${DC.line}`, background: i.id === iconId ? `${color.hex}26` : DC.glass, cursor: 'pointer', boxSizing: 'border-box', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
-            <svg width={24} height={24} viewBox="0 0 24 24" fill="none" stroke={color.hex} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{ICON_PATHS[i.id]}</svg>
+            style={{ width: 52, height: 52, borderRadius: 16, border: i.id === iconId ? `2px solid ${color.hex}` : `1px solid ${DC.line}`, background: i.id === iconId ? `${color.hex}26` : DC.glass, cursor: 'pointer', boxSizing: 'border-box', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
+            <CompanionBody color={color.hex} icon={i.id} size={38} />
           </button>
         ))}
       </div>

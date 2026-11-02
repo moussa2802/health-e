@@ -142,3 +142,19 @@ export async function getPublicChannel(id: string): Promise<PublicChannel | null
 }
 /** Adresse à envoyer : elle ouvre la carte de la chaîne (et un bel aperçu dans WhatsApp). */
 export const channelInviteUrl = (id: string) => `${window.location.origin}/c/${id}`;
+
+// ───────── Discussion entre membres (fonction drlo-channel-chat) ─────────
+export interface ChatMessage { id: string; name: string; totem?: string | null; official: boolean; text: string; at: number; mine: boolean; hidden: boolean }
+async function callChat<T>(body: Record<string, unknown>): Promise<T> {
+  const res = await authedFetch('/.netlify/functions/drlo-channel-chat', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw Object.assign(new Error((data as { error?: string }).error ?? `Erreur ${res.status}`), { status: res.status });
+  return data as T;
+}
+export const listChatMessages = (channelId: string) => callChat<{ items: ChatMessage[]; staff: boolean }>({ action: 'list', channelId });
+export const sendChatMessage = (channelId: string, text: string, mode: IdentityMode, pseudo?: string, asDrLo?: boolean) =>
+  callChat<{ ok: boolean; published: boolean; support?: boolean }>({ action: 'send', channelId, text, mode, pseudo, asDrLo });
+export const reportChatMessage = (channelId: string, messageId: string) => callChat<{ ok: boolean }>({ action: 'report', channelId, messageId });
+export const deleteChatMessage = (channelId: string, messageId: string) => callChat<{ ok: boolean }>({ action: 'delete', channelId, messageId });

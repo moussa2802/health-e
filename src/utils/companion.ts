@@ -54,15 +54,13 @@ export const saveCompanionColor = (id: string): CompanionColor => {
   try { localStorage.setItem(COLOR_KEY, c.id); } catch { /* ignore */ }
   return c;
 };
-// ── Son emblème : le symbole qui le représente partout (sur l'appareil, comme le nom et la couleur) ──
+// ── Son petit signe : ce qu'il porte sur la tête (le bonhomme reste le même ; sur l'appareil, comme le nom et la couleur) ──
 export const COMPANION_ICONS = [
   { id: 'pousse', label: 'Pousse' },
   { id: 'etoile', label: 'Étoile' },
   { id: 'lune', label: 'Lune' },
-  { id: 'soleil', label: 'Soleil' },
   { id: 'flamme', label: 'Flamme' },
   { id: 'coeur', label: 'Cœur' },
-  { id: 'vague', label: 'Vague' },
   { id: 'feuille', label: 'Feuille' },
 ] as const;
 export type CompanionIconId = typeof COMPANION_ICONS[number]['id'];

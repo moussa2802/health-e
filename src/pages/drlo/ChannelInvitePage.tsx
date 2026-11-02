@@ -84,7 +84,7 @@ const ChannelInvitePage: React.FC = () => {
           {[
             { icon: <Headphones size={20} aria-hidden="true" />, title: 'Des vocaux et des textes', text: 'Dr Lô publie dans la durée. Tu écoutes quand tu veux, à ton rythme.' },
             { icon: <MessageCircle size={20} aria-hidden="true" />, title: 'Tu réagis, tu commentes', text: 'Sous ton prénom, un pseudo ou en anonyme : c\'est toi qui choisis.' },
-            { icon: <Lock size={20} aria-hidden="true" />, title: 'Ta vie privée reste à toi', text: 'Les membres ne se voient pas entre eux. Dr Lô ne voit jamais tes résultats de tests.' },
+            { icon: <Lock size={20} aria-hidden="true" />, title: 'Ta vie privée reste à toi', text: 'Dans la chaîne, tu choisis ton nom : prénom, pseudo ou anonyme. Dr Lô ne voit jamais tes résultats de tests.' },
           ].map(r => (
             <li key={r.title} style={{ display: 'flex', gap: 14, alignItems: 'flex-start' }}>
               <span style={{ width: 42, height: 42, flex: 'none', borderRadius: 12, background: 'rgba(233,200,143,.13)', color: COLOR.action, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{r.icon}</span>
