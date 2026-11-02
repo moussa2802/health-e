@@ -65,6 +65,7 @@ const ChannelInvitePage = lazy(() => import("./pages/drlo/ChannelInvitePage"));
 const PratiquePage = lazy(() => import("./pages/drlo/PratiquePage"));
 const RoutinePage = lazy(() => import("./pages/drlo/RoutinePage"));
 const BoiteOutilsPage = lazy(() => import("./pages/drlo/BoiteOutilsPage"));
+const PencPage = lazy(() => import("./pages/drlo/PencPage"));
 const ProApplyPage = lazy(() => import("./pages/drlo/ProApplyPage"));
 const InfosPage = lazy(() => import("./pages/drlo/InfosPage"));
 const BoitePage = lazy(() => import("./pages/drlo/BoitePage"));
@@ -151,6 +152,8 @@ const AppChrome: React.FC = () => {
             <Route path="/espace" element={<EspacePage />} />
             <Route path="/mes-informations" element={<InfosPage />} />
             <Route path="/espace-pro/rejoindre" element={<ProApplyPage />} />
+            <Route path="/penc" element={<PencPage />} />
+            <Route path="/penc/:id" element={<PencPage />} />
             <Route path="/espace/resultat/:scaleId" element={<ResultatPage />} />
             <Route path="/espace/:domaine" element={<DomainePage />} />
             <Route path="/humeur" element={<HumeurPage />} />

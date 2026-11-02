@@ -42,6 +42,7 @@ function prefsOf(p) {
 function allowed(prefs, kind, now = new Date()) {
   if (!prefs || !prefs.on) return false;
   if (kind === 'test') return true; // essai demandé par la personne elle-même, à l'instant
+  if (kind === 'penc') return true; // la personne s'est inscrite à ce Pénc : on la prévient même tard le soir
   const key = KIND_PREF[kind];
   if (key && prefs[key] === false) return false;
   if (kind === 'nudge' && prefs.nudge !== true) return false;

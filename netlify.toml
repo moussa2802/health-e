@@ -17,6 +17,10 @@
 [functions."channel-push-scheduled"]
   schedule = "@hourly"
 
+# Pénc mi : rappel « dans 10 minutes » aux inscrits
+[functions."penc-reminders"]
+  schedule = "*/5 * * * *"
+
 [[headers]]
   for = "/index.html"
   [headers.values]

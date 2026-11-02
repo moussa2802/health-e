@@ -13,6 +13,7 @@ import { loadProgramme } from '../services/programmeService';
 import type { MoodMap } from '../utils/moodLog';
 import HomeProgramme from '../components/accueil/HomeProgramme';
 import { MoodSheet } from '../components/accueil/HomeSheets';
+import HomePenc from '../components/penc/HomePenc';
 import { HScroll, SectionTitle, NewsCard, ChannelCard, WideLink, tintOf, type NewsItem } from '../components/accueil/HomeParts';
 import { RealDrLoPhoto } from '../components/accueil/RealDrLoBadge';
 import AccueilSeoSections from '../components/accueil/AccueilSeoSections';
@@ -235,6 +236,8 @@ const ConnectedHome: React.FC<{ feed: HomeFeed | null; palette: MomentPalette; u
       )}
 
       {featuredForYou && <FeaturedCard featured={featuredForYou} guest={false} palette={palette} />}
+
+      <HomePenc palette={palette} />
 
       {(lastMsg || chBadge > 0) && (
         <>

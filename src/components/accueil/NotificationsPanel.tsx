@@ -203,13 +203,14 @@ export default NotificationsPanel;
 
 /** Dans la discussion, juste après « J'accepte » le programme : « Je te fais signe chaque jour ? » */
 /** Pourquoi Dr Lô propose les rappels : le texte de la carte s'y adapte. */
-export type OptinReason = 'programme' | 'drlo_answer' | 'defi' | 'ask' | 'resume';
+export type OptinReason = 'programme' | 'drlo_answer' | 'defi' | 'ask' | 'resume' | 'penc';
 
 const OPTIN_TEXT: Record<OptinReason, { kicker: string; title: string; sub: string; yes: (h: number) => string; hours: boolean }> = {
   programme: { kicker: 'Mon rappel du jour', title: 'À quelle heure ?', sub: 'Un seul message par jour, et seulement s\'il te reste quelque chose à faire.', yes: h => `Oui, fais-moi signe à ${h} h`, hours: true },
   ask: { kicker: 'Mes rappels', title: 'À quelle heure ?', sub: 'Un seul message par jour au plus, et seulement s\'il te reste quelque chose à faire.', yes: h => `Activer · rappel à ${h} h`, hours: true },
   resume: { kicker: 'Mes rappels', title: 'On termine ?', sub: 'Un seul message par jour au plus, jamais de mot sensible sur l\'écran verrouillé.', yes: h => `Activer · rappel à ${h} h`, hours: true },
   drlo_answer: { kicker: 'Sa réponse', title: 'Je te préviens dès qu\'il répond ?', sub: 'Une notification discrète, sans le contenu de ta question.', yes: () => 'Oui, préviens-moi', hours: false },
+  penc: { kicker: 'Pénc mi', title: 'Je te préviens avant que ça commence ?', sub: 'Une notification 10 minutes avant, puis au début. Jamais le sujet sur l\'écran verrouillé.', yes: () => 'Oui, préviens-moi', hours: false },
   defi: { kicker: 'Ton défi', title: 'Je te préviens quand un proche a répondu ?', sub: 'Au plus une notification toutes les 2 heures.', yes: () => 'Oui, préviens-moi', hours: false },
 };
 
@@ -219,6 +220,7 @@ const DONE_TEXT: Record<OptinReason, (h: number) => string> = {
   resume: h => `C'est fait, tes rappels sont activés (vers ${h} h). Tu peux tout régler dans la cloche, en haut de l'accueil.`,
   drlo_answer: () => 'C\'est noté : je te préviens dès que Dr Lô t\'a répondu.',
   defi: () => 'C\'est noté : je te préviens quand un proche a répondu.',
+  penc: () => 'C\'est noté : je te préviens 10 minutes avant, puis au début.',
 };
 
 export const NotifOptinCard: React.FC<{ uid: string; palette: MomentPalette; onDone: (text: string) => void; reason?: OptinReason }> = ({ uid, palette, onDone, reason = 'programme' }) => {
