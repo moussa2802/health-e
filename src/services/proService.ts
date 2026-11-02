@@ -8,7 +8,7 @@ export type ProRole = 'owner' | 'pro' | 'none';
 export type ProStatus = 'pending' | 'approved' | 'rejected' | 'suspended';
 export interface ProApplication { status: ProStatus; rejectReason: string; fullName: string; profession: string; title: string; city: string; bio: string; license: string; createdAt: number }
 export interface ProMe { role: ProRole; suspended: boolean; profile: { fullName: string; title: string; city: string; bio: string } | null; application: ProApplication | null }
-export interface ProApplyInput { fullName: string; profession: string; title?: string; license: string; city: string; bio: string }
+export interface ProApplyInput { fullName: string; profession: string; title?: string; license?: string; city?: string; bio?: string }
 export interface ProRow extends ProApplication { uid: string; email: string }
 
 export const PROFESSIONS: { id: string; label: string }[] = [

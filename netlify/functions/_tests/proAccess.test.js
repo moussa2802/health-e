@@ -40,7 +40,7 @@ const chan = { name: 'Couple et famille', description: 'Parler du couple sans ta
 
 test('demande, validation par Dr Lô seulement, puis rôle pro', async () => {
   uid = 'awa';
-  assert.equal((await call(pro, { action: 'apply', ...app, bio: 'court' })).status, 400);
+  assert.equal((await call(pro, { action: 'apply', ...app, profession: '' })).status, 400); // la profession est obligatoire
   assert.equal((await call(pro, { action: 'apply', ...app })).status, 200);
   assert.equal((await call(pro, { action: 'apply', ...app })).status, 409); // déjà en attente
   assert.equal((await call(pro, { action: 'approve', uid: 'awa' })).status, 403); // pas Dr Lô

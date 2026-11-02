@@ -47,9 +47,6 @@ function cleanApplication(b) {
   const bio = String(b.bio || '').replace(/\n{3,}/g, '\n\n').trim().slice(0, 600);
   if (fullName.length < 3) return { error: 'Écris ton nom complet.' };
   if (!profession) return { error: 'Choisis ta profession.' };
-  if (license.length < 3) return { error: 'Indique ton numéro d\'inscription à l\'ordre ou ton diplôme, pour la vérification.' };
-  if (city.length < 2) return { error: 'Indique ta ville.' };
-  if (bio.length < 20) return { error: 'Présente-toi en quelques phrases (20 caractères au moins).' };
   return { data: { fullName, profession, title, license, city, bio } };
 }
 

@@ -43,8 +43,8 @@ const ProsAdmin: React.FC<{ palette: MomentPalette; onCount?: (n: number) => voi
                 <b style={{ fontSize: 16, color: DC.text }}>{p.fullName}</b>
                 <span style={{ fontSize: 13, fontWeight: 700, color: st.color }}>{st.label}</span>
               </div>
-              <p style={{ margin: 0, fontSize: 14, color: DC.soft, lineHeight: 1.5 }}>{p.title || profLabel(p.profession)} · {p.city}<br />Inscription ou diplôme : <b style={{ color: DC.text }}>{p.license}</b><br />{p.email}</p>
-              <p style={{ margin: 0, fontSize: 14, color: DC.muted, lineHeight: 1.5, whiteSpace: 'pre-wrap' }}>{p.bio}</p>
+              <p style={{ margin: 0, fontSize: 14, color: DC.soft, lineHeight: 1.5 }}>{p.title || profLabel(p.profession)}{p.city ? ` · ${p.city}` : ''}{p.license ? <><br />Inscription ou diplôme : <b style={{ color: DC.text }}>{p.license}</b></> : null}<br />{p.email}</p>
+              {p.bio ? <p style={{ margin: 0, fontSize: 14, color: DC.muted, lineHeight: 1.5, whiteSpace: 'pre-wrap' }}>{p.bio}</p> : null}
               {p.status === 'rejected' && p.rejectReason && <p style={{ margin: 0, fontSize: 13, color: DC.faint }}>Raison donnée : {p.rejectReason}</p>}
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
                 {(p.status === 'pending' || p.status === 'rejected') && <button type="button" disabled={busy === p.uid} onClick={() => act(p.uid, () => approvePro(p.uid))} style={btn(true)}>Valider</button>}
