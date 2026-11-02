@@ -1,14 +1,15 @@
 /**
- * PencAdmin — onglet « Pénc » de l'Espace pro : programmer, démarrer, terminer (avec les idées à retenir), annuler.
+ * PencAdmin — onglet « Pénc » de l'Espace pro : programmer, entrer dans la salle (démarrer), terminer (avec les idées à retenir), annuler.
  * Dr Lô voit tous les Pénc ; un pro, les siens. Aucune validation : un pro programme librement.
  */
 import React, { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { Loader2, Plus } from 'lucide-react';
 import { DC, card } from '../accueil/DrLoShell';
 import type { MomentPalette } from '../../utils/drloMoment';
 import { SCALE_META } from '../../utils/scaleMeta';
 import { listAdminChannels, type AdminChannel } from '../../services/drloChannelService';
-import { cancelPenc, DURATIONS, endPenc, managePencs, savePenc, startPenc, whenLabel, type Penc, type PencAccess } from '../../services/pencService';
+import { cancelPenc, DURATIONS, endPenc, managePencs, savePenc, whenLabel, type Penc, type PencAccess } from '../../services/pencService';
 
 const field: React.CSSProperties = { width: '100%', boxSizing: 'border-box', borderRadius: 14, border: `1px solid ${DC.line}`, background: 'rgba(255,255,255,.06)', padding: '12px 14px', fontFamily: 'inherit', fontSize: 16, color: DC.text, outline: 'none' };
 const lab: React.CSSProperties = { display: 'flex', flexDirection: 'column', gap: 6, fontSize: 13, fontWeight: 700, color: DC.soft };
@@ -114,7 +115,7 @@ const PencAdmin: React.FC<{ palette: MomentPalette }> = ({ palette }) => {
               </div>
             ) : p.status !== 'ended' && (
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 6 }}>
-                {p.status === 'scheduled' && <button type="button" disabled={busy} onClick={() => run(() => startPenc(p.id))} style={btn(true)}>Démarrer</button>}
+                <Link to={`/penc/${p.id}`} className="drl-btn" style={{ ...btn(true), display: 'inline-flex', alignItems: 'center', textDecoration: 'none' }}>{p.status === 'live' ? 'Ouvrir la salle' : 'Démarrer et entrer'}</Link>
                 <button type="button" onClick={() => setEnding(p.id)} style={btn(p.status === 'live')}>Terminer</button>
                 {p.status === 'scheduled' && <button type="button" onClick={() => setForm({ id: p.id, title: p.title, description: p.description, date: toDate(p.startAt), time: toTime(p.startAt), durationMin: p.durationMin, access: p.access, channelId: p.channelId ?? '', price: p.price || 10, testScaleId: p.testScaleId ?? '' })} style={btn(false)}>Modifier</button>}
                 {p.status === 'scheduled' && <button type="button" onClick={() => setConfirmCancel(p.id)} style={btn(false)}>Annuler</button>}

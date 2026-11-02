@@ -2,9 +2,9 @@
  * PencPage — « Pénc mi » : les discussions en direct.
  *   /penc       l'agenda : en direct, à venir (« Me rappeler »), terminés (ce qu'on retient + le test qui va avec)
  *   /penc/:id   un Pénc : sujet, animateur, accès, inscription
- * La salle d'écoute (audio) arrive à l'étape suivante.
+ * En direct : « Écouter maintenant » ouvre la salle d'écoute (PencRoom). L'hôte peut « Démarrer et entrer ».
  */
-import React, { useEffect, useState } from 'react';
+import React, { lazy, Suspense, useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { BadgeCheck, Bell, BellRing, Loader2, Lock, Radio } from 'lucide-react';
 import DrLoShell, { DC, card, usePalette } from '../../components/accueil/DrLoShell';
@@ -14,7 +14,11 @@ import { NotifOptinCard } from '../../components/accueil/NotificationsPanel';
 import { useAuth } from '../../contexts/AuthContext';
 import { SCALE_META } from '../../utils/scaleMeta';
 import { loadPrefs, pushSupport } from '../../services/pushService';
-import { getAgenda, getPenc, registerPenc, whenLabel, type Penc } from '../../services/pencService';
+import { getAgenda, getPenc, registerPenc, startPenc, whenLabel, type Penc } from '../../services/pencService';
+import { joinRoom, type RoomTicket } from '../../services/pencRoomService';
+import type { IdentityMode } from '../../services/drloBroadcastService';
+// La salle (et LiveKit, ~400 Ko) ne se charge qu'au moment d'entrer
+const PencRoom = lazy(() => import('../../components/penc/PencRoom'));
 
 const h1: React.CSSProperties = { margin: '6px 0 0', fontFamily: 'Fraunces, serif', fontSize: 30, lineHeight: 1.1, fontWeight: 600, color: DC.title };
 const kicker: React.CSSProperties = { margin: '22px 0 10px', fontSize: 13, letterSpacing: '.12em', fontWeight: 700, color: DC.muted };
@@ -107,18 +111,79 @@ const Agenda: React.FC = () => {
   );
 };
 
+const ID_KEY = 'he_comment_identity';
+const RULES_KEY = 'he_penc_rules';
+const loadIdt = (): { mode: IdentityMode; pseudo: string } => {
+  try { const v = JSON.parse(localStorage.getItem(ID_KEY) || '{}'); if (['anon', 'prenom', 'pseudo'].includes(v.mode)) return { mode: v.mode, pseudo: String(v.pseudo || '') }; } catch { /* ignore */ }
+  return { mode: 'anon', pseudo: '' };
+};
+
+/** Avant d'entrer : sous quel nom, et les règles (une seule fois). */
+const EnterSheet: React.FC<{ accent: string; primary: string; busy: boolean; host: boolean; onGo: (mode: IdentityMode, pseudo: string) => void; onCancel: () => void }> = ({ accent, primary, busy, host, onGo, onCancel }) => {
+  const [idt, setIdt] = useState(loadIdt);
+  const [rulesOk, setRulesOk] = useState(() => { try { return localStorage.getItem(RULES_KEY) === '1'; } catch { return false; } });
+  const chip = (on: boolean): React.CSSProperties => ({ minHeight: 42, padding: '0 14px', borderRadius: 999, cursor: 'pointer', fontSize: 14, fontWeight: on ? 700 : 600, border: `1px solid ${on ? accent : DC.line}`, background: on ? `${accent}26` : 'transparent', color: on ? accent : DC.text });
+  const go = () => {
+    try { localStorage.setItem(ID_KEY, JSON.stringify(idt)); localStorage.setItem(RULES_KEY, '1'); } catch { /* ignore */ }
+    onGo(idt.mode, idt.pseudo);
+  };
+  return (
+    <section role="dialog" aria-label="Entrer dans la salle" style={{ ...card, marginTop: 14, display: 'flex', flexDirection: 'column', gap: 12, borderColor: `${accent}88` }}>
+      {!host && (
+        <>
+          <b style={{ fontSize: 15, color: DC.title }}>Tu entres sous le nom</b>
+          <div role="radiogroup" aria-label="Ton nom dans la salle" style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+            {([['prenom', 'Mon prénom'], ['anon', 'Anonyme'], ['pseudo', 'Un pseudo']] as const).map(([k, l]) => <button key={k} type="button" role="radio" aria-checked={idt.mode === k} onClick={() => setIdt({ ...idt, mode: k })} style={chip(idt.mode === k)}>{l}</button>)}
+          </div>
+          {idt.mode === 'pseudo' && <input value={idt.pseudo} maxLength={20} onChange={e => setIdt({ ...idt, pseudo: e.target.value })} aria-label="Ton pseudo" placeholder="Ton pseudo" className="drl-input" style={{ minHeight: 46, boxSizing: 'border-box', borderRadius: 14, border: `1px solid ${DC.line}`, background: 'rgba(255,255,255,.06)', padding: '0 14px', fontFamily: 'inherit', fontSize: 16, color: DC.text }} />}
+        </>
+      )}
+      {!rulesOk && (
+        <div style={{ fontSize: 14, lineHeight: 1.55, color: DC.soft }}>
+          <b style={{ color: DC.text }}>Les règles du Pénc</b>
+          <ul style={{ margin: '6px 0 8px', paddingLeft: 18 }}>
+            <li>On s'écoute et on se respecte : pas de moquerie, pas d'insulte.</li>
+            <li>Ce qui est dit dans le Pénc reste dans le Pénc. Pas d'enregistrement.</li>
+            <li>Ne donne ni ton nom complet, ni ton numéro, ni de détail qui permet de te reconnaître.</li>
+            <li>Ce n'est pas une consultation. Urgence : 1515.</li>
+          </ul>
+          <label style={{ display: 'flex', alignItems: 'center', gap: 8, color: DC.text, cursor: 'pointer' }}><input type="checkbox" checked={rulesOk} onChange={e => setRulesOk(e.target.checked)} /> J'accepte les règles</label>
+        </div>
+      )}
+      <button type="button" disabled={busy || !rulesOk} onClick={go} className="drl-btn" style={{ minHeight: 50, borderRadius: 999, border: 0, background: primary, color: DC.ink, fontSize: 16, fontWeight: 700, cursor: 'pointer', opacity: busy || !rulesOk ? 0.5 : 1 }}>
+        {busy ? <Loader2 size={18} className="animate-spin" aria-label="Entrée" /> : host ? 'Entrer dans la salle' : 'Écouter maintenant'}
+      </button>
+      <button type="button" onClick={onCancel} style={{ minHeight: 42, borderRadius: 999, border: `1px solid ${DC.line}`, background: 'transparent', color: DC.muted, cursor: 'pointer' }}>Annuler</button>
+    </section>
+  );
+};
+
 const Detail: React.FC<{ id: string }> = ({ id }) => {
   const palette = usePalette();
   const { currentUser } = useAuth();
   const [p, setP] = useState<Penc | null>(null);
   const [error, setError] = useState('');
   const [confirmPay, setConfirmPay] = useState(false);
+  const [entering, setEntering] = useState(false);
+  const [ticket, setTicket] = useState<RoomTicket | null>(null);
+  const [joinBusy, setJoinBusy] = useState(false);
+  const [joinError, setJoinError] = useState('');
   const load = () => getPenc(id).then(r => { setP(r.penc); setError(''); }).catch(e => setError(e instanceof Error ? e.message : 'Erreur'));
   useEffect(() => { load(); }, [id]); // eslint-disable-line react-hooks/exhaustive-deps
   const remind = useRemind(currentUser?.id ?? null, load);
   if (error && !p) return <p role="alert" style={{ marginTop: 20, color: DC.muted }}>{error} <Link to="/penc" style={{ color: palette.accent }}>Voir Pénc mi</Link></p>;
   if (!p) return <LoadingCards label="Ouverture…" count={1} />;
   const primary: React.CSSProperties = { width: '100%', minHeight: 50, borderRadius: 999, border: 0, background: palette.primary, color: DC.ink, fontSize: 16, fontWeight: 700, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8 };
+  const canEnter = !p.locked && (p.access !== 'paid' || !!p.registered || !!p.mineAsHost);
+  const enter = async (mode: IdentityMode, pseudo: string) => {
+    setJoinBusy(true); setJoinError('');
+    try {
+      if (p.mineAsHost && p.status === 'scheduled') await startPenc(p.id);
+      setTicket(await joinRoom(p.id, mode, pseudo));
+      setEntering(false);
+    } catch (e) { setJoinError(e instanceof Error ? e.message : 'Erreur'); } finally { setJoinBusy(false); }
+  };
+  if (ticket) return <Suspense fallback={<LoadingCards label="Ouverture de la salle…" count={1} />}><PencRoom penc={p} ticket={ticket} palette={palette} onLeave={() => { setTicket(null); load(); }} /></Suspense>;
   const status = p.status === 'live' ? 'EN DIRECT' : p.status === 'ended' ? 'TERMINÉ' : 'À VENIR';
   return (
     <>
@@ -150,11 +215,10 @@ const Detail: React.FC<{ id: string }> = ({ id }) => {
         </>
       ) : p.locked ? (
         <Link to={`/chaines/${p.channelId}`} className="drl-btn" style={{ ...primary, marginTop: 14, textDecoration: 'none' }}><Lock size={17} aria-hidden="true" />Rejoindre la chaîne pour participer</Link>
-      ) : p.status === 'live' ? (
-        <div role="status" style={{ ...card, marginTop: 14, display: 'flex', gap: 10, alignItems: 'center' }}>
-          <Radio size={20} color={palette.accent} aria-hidden="true" />
-          <span style={{ fontSize: 15, lineHeight: 1.5, color: DC.text }}>C'est en direct. La salle d'écoute s'ouvre ici dans la prochaine mise à jour.</span>
-        </div>
+      ) : (p.status === 'live' || (p.mineAsHost && p.status === 'scheduled')) && canEnter ? (
+        entering
+          ? <EnterSheet accent={palette.accent} primary={palette.primary} busy={joinBusy} host={!!p.mineAsHost} onGo={enter} onCancel={() => setEntering(false)} />
+          : <button type="button" onClick={() => setEntering(true)} className="drl-btn" style={{ ...primary, marginTop: 14 }}><Radio size={18} aria-hidden="true" />{p.mineAsHost ? (p.status === 'live' ? 'Revenir dans ma salle' : 'Démarrer et entrer') : 'Écouter maintenant'}</button>
       ) : p.access === 'paid' && !p.registered ? (
         confirmPay ? (
           <section style={{ ...card, marginTop: 14 }}>
@@ -169,7 +233,7 @@ const Detail: React.FC<{ id: string }> = ({ id }) => {
           {p.registered ? <><BellRing size={18} aria-hidden="true" />Inscrit · on te prévient</> : <><Bell size={18} aria-hidden="true" />Me rappeler</>}
         </button>
       )}
-      {remind.error && <p role="alert" style={{ margin: '10px 2px 0', color: '#F09A7A', fontSize: 14 }}>{remind.error}</p>}
+      {(remind.error || joinError) && <p role="alert" style={{ margin: '10px 2px 0', color: '#F09A7A', fontSize: 14 }}>{joinError || remind.error}</p>}
       {remind.askNotif && currentUser && <NotifOptinCard uid={currentUser.id} palette={palette} reason="penc" onDone={() => {}} />}
       <p style={{ margin: '16px 2px 0', fontSize: 13, lineHeight: 1.5, color: DC.faint }}>{RULES} Ce n'est pas une consultation. Urgence : <a href="tel:1515" style={{ fontWeight: 700 }}>1515</a>.</p>
     </>

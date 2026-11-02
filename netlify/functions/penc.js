@@ -40,6 +40,16 @@ async function notifyRegistered(pid, msg) {
   return uids.length;
 }
 
+/** Fermer la salle audio (tout le monde est déconnecté). Sans configuration LiveKit, rien à faire. */
+async function closeRoom(pid) {
+  const { LIVEKIT_URL: u, LIVEKIT_API_KEY: k, LIVEKIT_API_SECRET: sec } = process.env;
+  if (!u || !k || !sec) return;
+  try {
+    const { RoomServiceClient } = require('livekit-server-sdk');
+    await new RoomServiceClient(u.replace(/^wss:/, 'https:').replace(/^ws:/, 'http:'), k, sec).deleteRoom(`penc_${pid}`);
+  } catch (e) { console.warn('penc closeRoom', e && e.message); }
+}
+
 exports.notifyRegistered = notifyRegistered;
 exports.handler = async (event) => {
   if (event.httpMethod === 'OPTIONS') return { statusCode: 200, headers, body: '' };
@@ -108,11 +118,13 @@ exports.handler = async (event) => {
       if (action === 'end') {
         if (p.status !== 'live' && p.status !== 'scheduled') return reply(409, { error: 'Ce Pénc est déjà terminé.' });
         await ref.update({ status: 'ended', endedAt: Date.now(), summary: P.cleanSummary(body.summary) });
+        await closeRoom(ref.id);
         return reply(200, { ok: true });
       }
       // cancel
       if (p.status === 'ended') return reply(409, { error: 'Ce Pénc est déjà terminé.' });
       await ref.update({ status: 'cancelled', cancelledAt: Date.now() });
+      await closeRoom(ref.id);
       await notifyRegistered(ref.id, { kind: 'penc', title: 'Pénc mi', body: 'Un Pénc auquel tu étais inscrit est annulé.', inboxTitle: 'Pénc annulé', inboxBody: `${p.title}${Number(p.price) > 0 ? ' · tes étincelles te sont rendues.' : ''}`, link: '/penc' });
       if (Number(p.price) > 0) { // les étincelles sont rendues si le Pénc est annulé
         const regs = await db.collection('pencRegs').where('pencId', '==', ref.id).get();
