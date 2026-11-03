@@ -42,13 +42,14 @@ const OpenPencNow: React.FC<{ palette: MomentPalette }> = ({ palette }) => {
 
   if (!open) {
     return (
-      <button type="button" onClick={() => setOpen(true)} className="drl-btn" style={{ marginTop: 16, width: '100%', minHeight: 54, borderRadius: 18, border: 0, background: palette.primary, color: DC.ink, fontSize: 16, fontWeight: 700, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
-        <Radio size={20} aria-hidden="true" />Ouvrir un Pénc maintenant
+      <button type="button" onClick={() => setOpen(true)} className="drl-btn" style={{ marginTop: 18, width: '100%', minHeight: 64, padding: '0 16px', borderRadius: 18, border: `1.5px dashed ${palette.accent}88`, background: `${palette.accent}0D`, color: DC.text, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 12, textAlign: 'left', fontFamily: 'inherit' }}>
+        <span aria-hidden="true" style={{ width: 40, height: 40, flex: 'none', borderRadius: 12, background: palette.primary, color: DC.ink, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Radio size={20} /></span>
+        <span style={{ flex: 1 }}><b style={{ display: 'block', fontSize: 16, color: DC.title }}>Ouvrir un Pénc maintenant</b><span style={{ display: 'block', fontSize: 13, color: DC.muted }}>Un sujet, et tu es en direct.</span></span>
       </button>
     );
   }
   return (
-    <form onSubmit={go} style={{ ...card, marginTop: 16, display: 'flex', flexDirection: 'column', gap: 12, borderColor: `${palette.accent}88` }}>
+    <form onSubmit={go} style={{ ...card, marginTop: 18, display: 'flex', flexDirection: 'column', gap: 12, borderColor: `${palette.accent}88` }}>
       <label style={{ display: 'flex', flexDirection: 'column', gap: 6, fontSize: 15, fontWeight: 700, color: DC.title }}>De quoi on parle ?
         <input value={title} maxLength={90} onChange={e => { setTitle(e.target.value); setError(''); }} placeholder="Ex. : La jalousie dans le couple" autoFocus className="drl-input" style={field} />
       </label>

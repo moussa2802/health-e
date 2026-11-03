@@ -8,6 +8,7 @@ export type PencStatus = 'scheduled' | 'live' | 'ended' | 'cancelled';
 export interface Penc {
   id: string; title: string; description: string; startAt: number; durationMin: number; access: PencAccess; channelId: string | null; channelName: string | null;
   price: number; testScaleId: string | null; status: PencStatus; host: { name: string; title: string; pro: boolean }; registeredCount: number; summary: string[];
+  listeners?: number | null;
   bucket?: 'live' | 'upcoming' | 'past'; registered?: boolean; locked?: boolean; mineAsHost?: boolean;
 }
 export interface PencInput { id?: string; title?: string; description?: string; startAt?: number; durationMin?: number; access?: PencAccess; channelId?: string; price?: number; testScaleId?: string }

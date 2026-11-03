@@ -158,7 +158,21 @@ const PencRoom: React.FC<{ penc: Penc; ticket: RoomTicket; palette: MomentPalett
           )}
 
           {status === 'ok' && (
-            <p style={{ margin: 0, fontSize: 14, color: DC.muted }}>Dans la salle : {listeners.length} personne{listeners.length > 1 ? 's' : ''}{hands.length ? ` · ${hands.length} main${hands.length > 1 ? 's' : ''} levée${hands.length > 1 ? 's' : ''}` : ''}</p>
+            <section aria-label="Dans la salle" style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <p style={{ margin: 0, fontSize: 13, fontWeight: 800, letterSpacing: '.12em', color: DC.muted }}>DANS LA SALLE · {listeners.length}{hands.length ? ` · ${hands.length} MAIN${hands.length > 1 ? 'S' : ''} LEVÉE${hands.length > 1 ? 'S' : ''}` : ''}</p>
+              {listeners.length === 0 ? <p style={{ margin: 0, fontSize: 14, color: DC.faint }}>Personne d'autre pour l'instant. Partage le Pénc !</p> : (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(62px, 1fr))', gap: 12 }}>
+                  {listeners.slice(0, 23).map(p => (
+                    <div key={p.identity} style={{ position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, minWidth: 0 }}>
+                      <Avatar p={p} size={44} accent={palette.accent} mine={p.identity === me?.identity} />
+                      {p.attributes.hand === '1' && <span aria-label="main levée" style={{ position: 'absolute', top: -4, right: 4, width: 22, height: 22, borderRadius: '50%', background: palette.primary, color: DC.ink, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Hand size={12} aria-hidden="true" /></span>}
+                      <span style={{ fontSize: 13, color: DC.soft, maxWidth: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.identity === me?.identity ? 'Toi' : p.name || 'Anonyme'}</span>
+                    </div>
+                  ))}
+                  {listeners.length > 23 && <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}><span style={{ width: 44, height: 44, borderRadius: '50%', background: 'rgba(255,255,255,.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 700, color: DC.soft }}>+{listeners.length - 23}</span></div>}
+                </div>
+              )}
+            </section>
           )}
 
           {ticket.isMod && status === 'ok' && (

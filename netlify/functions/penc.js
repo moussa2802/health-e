@@ -52,6 +52,23 @@ async function closeRoom(pid) {
   } catch (e) { console.warn('penc closeRoom', e && e.message); }
 }
 
+/** Combien de personnes sont dans la salle (Pénc en direct) : { id: nombre | null }. Jamais bloquant (2,5 s au plus). */
+async function liveCounts(ids) {
+  const { LIVEKIT_URL: u, LIVEKIT_API_KEY: k, LIVEKIT_API_SECRET: sec } = process.env;
+  if (!ids.length || !u || !k || !sec) return {};
+  try {
+    const { RoomServiceClient } = require('livekit-server-sdk');
+    const svc = new RoomServiceClient(u.replace(/^wss:/, 'https:').replace(/^ws:/, 'http:'), k, sec);
+    const pairs = await Promise.all(ids.slice(0, 10).map(async (id) => {
+      try {
+        const ps = await Promise.race([svc.listParticipants(`penc_${id}`), new Promise((_, rej) => setTimeout(() => rej(new Error('lent')), 2500))]);
+        return [id, ps.length];
+      } catch { return [id, null]; }
+    }));
+    return Object.fromEntries(pairs);
+  } catch { return {}; }
+}
+
 exports.notifyRegistered = notifyRegistered;
 exports.handler = async (event) => {
   if (event.httpMethod === 'OPTIONS') return { statusCode: 200, headers, body: '' };
@@ -186,7 +203,8 @@ exports.handler = async (event) => {
       ]);
       const memberOf = new Set(mems.filter((m) => m.exists).map((m) => m.id.slice(0, -(uid.length + 1))));
       const registered = new Set(regs.filter((x) => x.exists).map((x) => x.id.slice(0, -(uid.length + 1))));
-      const shape = (r) => ({ ...base(r.id, r.p), bucket: r.bucket, registered: registered.has(r.id), locked: r.p.access === 'channel' && !memberOf.has(r.p.channelId), mineAsHost: r.p.hostUid === uid });
+      const counts = await liveCounts(rows.filter((r) => r.p.status === 'live').map((r) => r.id));
+      const shape = (r) => ({ ...base(r.id, r.p), listeners: counts[r.id] ?? null, bucket: r.bucket, registered: registered.has(r.id), locked: r.p.access === 'channel' && !memberOf.has(r.p.channelId), mineAsHost: r.p.hostUid === uid });
       if (action === 'detail') return reply(200, { penc: shape(rows[0]) });
       const out = { live: [], upcoming: [], past: [] };
       rows.forEach((r) => out[r.bucket].push(shape(r)));

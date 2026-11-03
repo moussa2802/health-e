@@ -11,6 +11,7 @@ import DrLoShell, { DC, card, usePalette } from '../../components/accueil/DrLoSh
 import LoadingCards from '../../components/accueil/LoadingCards';
 import PencCard from '../../components/penc/PencCard';
 import OpenPencNow from '../../components/penc/OpenPencNow';
+import { Equalizer, HostAvatar, listenersLabel, PencLiveCard, PencMotif } from '../../components/penc/PencVisuals';
 import { NotifOptinCard } from '../../components/accueil/NotificationsPanel';
 import { useAuth } from '../../contexts/AuthContext';
 import { SCALE_META } from '../../utils/scaleMeta';
@@ -55,13 +56,15 @@ const TestLink: React.FC<{ scaleId: string; accent: string }> = ({ scaleId, acce
   );
 };
 
-const LiveCard: React.FC<{ p: Penc; accent: string }> = ({ p, accent }) => (
-  <Link to={`/penc/${p.id}`} className="drl-btn" style={{ ...card, display: 'flex', flexDirection: 'column', gap: 8, textDecoration: 'none', color: DC.text, borderColor: `${accent}99`, background: `${accent}1F` }}>
-    <span style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, fontWeight: 700, letterSpacing: '.08em', color: accent }}><span aria-hidden="true" style={{ width: 8, height: 8, borderRadius: '50%', background: '#F09A7A' }} />EN DIRECT</span>
-    <b style={{ fontFamily: 'Fraunces, serif', fontSize: 20, lineHeight: 1.2, color: DC.title }}>{p.title}</b>
-    <span style={{ fontSize: 14, color: DC.soft }}>{p.host.name}{p.host.title ? ` · ${p.host.title}` : ''}</span>
-  </Link>
-);
+/** « Aujourd'hui », « Demain », ou « Samedi 8 novembre » : les Pénc à venir sont rangés par jour. */
+function dayLabel(t: number) {
+  const d = new Date(t); const now = new Date();
+  const tomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+  if (d.toDateString() === now.toDateString()) return 'Aujourd\'hui';
+  if (d.toDateString() === tomorrow.toDateString()) return 'Demain';
+  const s = d.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
 
 const Agenda: React.FC = () => {
   const palette = usePalette();
@@ -72,43 +75,77 @@ const Agenda: React.FC = () => {
   const load = () => getAgenda().then(r => { setData(r); setError(''); }).catch(e => setError(e instanceof Error ? e.message : 'Erreur'));
   useEffect(() => { load(); }, []);
   const remind = useRemind(currentUser?.id ?? null, load);
-  if (error && !data) return <p role="alert" style={{ marginTop: 20, color: DC.muted }}>{error}</p>;
-  if (!data) return <LoadingCards label="Chargement de Pénc mi…" count={2} />;
   const keep = (p: Penc) => filter === 'all' || (filter === 'chaines' ? p.access === 'channel' && !p.locked : !!p.registered);
-  const live = data.live.filter(keep);
-  const upcoming = data.upcoming.filter(keep);
+  const live = (data?.live ?? []).filter(keep);
+  const upcoming = (data?.upcoming ?? []).filter(keep);
+  const days: { label: string; items: Penc[] }[] = [];
+  upcoming.forEach(p => { const l = dayLabel(p.startAt); const g = days.find(x => x.label === l); if (g) g.items.push(p); else days.push({ label: l, items: [p] }); });
+  const chip = (on: boolean): React.CSSProperties => ({ minHeight: 40, padding: '0 16px', borderRadius: 999, cursor: 'pointer', fontFamily: 'inherit', fontSize: 14, fontWeight: on ? 700 : 500, whiteSpace: 'nowrap',
+    border: `1px solid ${on ? palette.accent : DC.line}`, background: on ? `${palette.accent}22` : 'transparent', color: on ? palette.accent : DC.soft });
   return (
     <>
-      <h1 style={h1}>Pénc mi</h1>
-      <p style={{ margin: '8px 0 0', fontSize: 15, lineHeight: 1.55, color: DC.soft }}>On se retrouve pour parler, en direct. Tu écoutes, tu poses ta question, et si tu veux, tu prends la parole.</p>
-      <OpenPencNow palette={palette} />
-      <div role="tablist" aria-label="Filtrer" style={{ marginTop: 16, display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 4, padding: 4, borderRadius: 999, border: `1px solid ${DC.line}` }}>
-        {([['all', 'Tous'], ['chaines', 'Mes chaînes'], ['inscrit', 'Inscrit']] as const).map(([k, l]) => (
-          <button key={k} type="button" role="tab" aria-selected={filter === k} onClick={() => setFilter(k)}
-            style={{ minHeight: 42, borderRadius: 999, border: 0, cursor: 'pointer', fontFamily: 'inherit', fontSize: 14, fontWeight: filter === k ? 700 : 500, background: filter === k ? palette.primary : 'transparent', color: filter === k ? DC.ink : DC.soft }}>{l}</button>
+      <header style={{ position: 'relative', marginTop: 4, padding: '22px 18px 20px', borderRadius: 26, overflow: 'hidden', border: `1px solid ${palette.accent}33`,
+        background: `radial-gradient(90% 120% at 100% 0%, ${palette.accent}2E, transparent 60%), linear-gradient(170deg, rgba(255,255,255,.05), rgba(255,255,255,.01))` }}>
+        <div aria-hidden="true" style={{ position: 'absolute', right: -34, top: -22, opacity: 0.7 }}><PencMotif size={150} color={palette.accent} /></div>
+        <p style={{ position: 'relative', margin: 0, fontSize: 13, fontWeight: 800, letterSpacing: '.14em', color: palette.accent }}>LES DISCUSSIONS EN DIRECT</p>
+        <h1 style={{ ...h1, position: 'relative', margin: '6px 0 0', fontSize: 34 }}>Pénc mi</h1>
+        <p style={{ position: 'relative', margin: '8px 0 0', maxWidth: '68%', fontSize: 15, lineHeight: 1.5, color: DC.soft }}>La place où l'on se retrouve pour parler. Écoute, pose ta question, prends la parole si tu veux.</p>
+      </header>
+
+      <div role="tablist" aria-label="Filtrer" style={{ marginTop: 14, display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 2 }}>
+        {([['all', 'Tous'], ['chaines', 'Mes chaînes'], ['inscrit', 'Mes rappels']] as const).map(([k, l]) => (
+          <button key={k} type="button" role="tab" aria-selected={filter === k} onClick={() => setFilter(k)} style={chip(filter === k)}>{l}</button>
         ))}
       </div>
-      {live.length > 0 && <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 16 }}>{live.map(p => <LiveCard key={p.id} p={p} accent={palette.accent} />)}</div>}
-      <h2 style={kicker}>À VENIR</h2>
-      {upcoming.length === 0 && <p style={{ margin: 0, fontSize: 15, color: DC.muted }}>{filter === 'all' ? 'Aucun Pénc programmé pour l\'instant. Reviens bientôt.' : 'Rien ici pour l\'instant.'}</p>}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>{upcoming.map(p => <PencCard key={p.id} p={p} accent={palette.accent} onRemind={remind.toggle} busy={remind.busy === p.id} />)}</div>
-      {remind.error && <p role="alert" style={{ margin: '10px 2px 0', color: '#F09A7A', fontSize: 14 }}>{remind.error}</p>}
-      {remind.askNotif && currentUser && <NotifOptinCard uid={currentUser.id} palette={palette} reason="penc" onDone={() => {}} />}
-      {filter === 'all' && data.past.length > 0 && (
+
+      {error && !data && <p role="alert" style={{ marginTop: 20, color: DC.muted }}>{error}</p>}
+      {!data && !error && <LoadingCards label="Chargement de Pénc mi…" count={2} />}
+      {data && (
         <>
-          <h2 style={kicker}>CE QU'ON A RETENU</h2>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            {data.past.map(p => (
-              <Link key={p.id} to={`/penc/${p.id}`} className="drl-btn" style={{ ...card, textDecoration: 'none', color: DC.text }}>
-                <b style={{ display: 'block', fontSize: 16, color: DC.title }}>{p.title}</b>
-                <span style={{ display: 'block', marginTop: 2, fontSize: 13, color: DC.faint }}>{p.host.name} · {new Date(p.startAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })}</span>
-                {p.summary[0] && <span style={{ display: 'block', marginTop: 6, fontSize: 14, lineHeight: 1.5, color: DC.soft }}>« {p.summary[0]} »</span>}
-              </Link>
-            ))}
-          </div>
+          {live.length > 0 && (
+            <>
+              <h2 style={kicker}>EN DIRECT</h2>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>{live.map(p => <PencLiveCard key={p.id} p={p} palette={palette} />)}</div>
+            </>
+          )}
+
+          <OpenPencNow palette={palette} />
+
+          {days.map(g => (
+            <section key={g.label} aria-label={g.label}>
+              <h2 style={kicker}>{g.label.toUpperCase()}</h2>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>{g.items.map(p => <PencCard key={p.id} p={p} accent={palette.accent} onRemind={remind.toggle} busy={remind.busy === p.id} />)}</div>
+            </section>
+          ))}
+          {remind.error && <p role="alert" style={{ margin: '10px 2px 0', color: '#F09A7A', fontSize: 14 }}>{remind.error}</p>}
+          {remind.askNotif && currentUser && <NotifOptinCard uid={currentUser.id} palette={palette} reason="penc" onDone={() => {}} />}
+
+          {live.length === 0 && upcoming.length === 0 && (
+            <section style={{ ...card, marginTop: 18, textAlign: 'center', padding: '26px 18px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
+              <PencMotif size={84} color={DC.muted} />
+              <b style={{ fontFamily: 'Fraunces, serif', fontSize: 20, color: DC.title }}>{filter === 'all' ? 'La place est calme pour l\'instant' : 'Rien ici pour l\'instant'}</b>
+              <span style={{ fontSize: 15, lineHeight: 1.5, color: DC.muted, maxWidth: 340 }}>Les prochains Pénc s'affichent ici et sur l'accueil. Un sujet te tient à cœur ? Propose-le.</span>
+              <Link to="/boite-a-questions" className="drl-btn" style={{ marginTop: 6, minHeight: 46, padding: '0 18px', borderRadius: 999, border: `1px solid ${palette.accent}`, color: palette.accent, fontSize: 15, fontWeight: 700, display: 'inline-flex', alignItems: 'center', textDecoration: 'none' }}>Proposer un sujet</Link>
+            </section>
+          )}
+
+          {filter === 'all' && data.past.length > 0 && (
+            <>
+              <h2 style={kicker}>CE QU'ON A RETENU</h2>
+              <div style={{ display: 'flex', gap: 10, overflowX: 'auto', margin: '0 -18px', padding: '2px 18px 6px', scrollSnapType: 'x proximity' }}>
+                {data.past.map(p => (
+                  <Link key={p.id} to={`/penc/${p.id}`} className="drl-btn" style={{ ...card, flex: '0 0 250px', scrollSnapAlign: 'start', boxSizing: 'border-box', textDecoration: 'none', color: DC.text, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    <span style={{ fontSize: 13, color: DC.faint }}>{p.host.name} · {new Date(p.startAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })}</span>
+                    <b style={{ fontFamily: 'Fraunces, serif', fontSize: 17, lineHeight: 1.25, color: DC.title }}>{p.title}</b>
+                    {p.summary[0] && <span style={{ fontSize: 14, lineHeight: 1.5, color: DC.soft, display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>« {p.summary[0]} »</span>}
+                  </Link>
+                ))}
+              </div>
+            </>
+          )}
+          <p style={{ margin: '18px 2px 0', fontSize: 13, lineHeight: 1.5, color: DC.faint }}>{RULES}</p>
         </>
       )}
-      <p style={{ margin: '18px 2px 0', fontSize: 13, lineHeight: 1.5, color: DC.faint }}>{RULES}</p>
     </>
   );
 };
@@ -196,20 +233,27 @@ const Detail: React.FC<{ id: string }> = ({ id }) => {
   const status = p.status === 'live' ? 'EN DIRECT' : p.status === 'ended' ? 'TERMINÉ' : 'À VENIR';
   return (
     <>
-      <section style={{ ...card, marginTop: 16, display: 'flex', flexDirection: 'column', gap: 8, borderColor: p.status === 'live' ? `${palette.accent}99` : DC.line }}>
-        <span style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, fontWeight: 700, letterSpacing: '.1em', color: p.status === 'live' ? palette.accent : DC.muted }}>
-          {p.status === 'live' && <span aria-hidden="true" style={{ width: 8, height: 8, borderRadius: '50%', background: '#F09A7A' }} />}PÉNC MI · {status}
+      <section style={{ marginTop: 10, padding: '26px 18px 20px', borderRadius: 26, textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10,
+        border: `1px solid ${p.status === 'live' ? `${palette.accent}88` : DC.line}`,
+        background: p.status === 'live' ? `radial-gradient(90% 70% at 50% 0%, ${palette.accent}33, transparent 70%), linear-gradient(180deg, #2E1F14, #1A130D)` : 'rgba(255,255,255,.04)' }}>
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '6px 12px', borderRadius: 999, fontSize: 13, fontWeight: 800, letterSpacing: '.1em',
+          color: p.status === 'live' ? palette.accent : DC.muted, background: p.status === 'live' ? `${palette.accent}1F` : 'rgba(255,255,255,.06)' }}>
+          {p.status === 'live' && <Equalizer color={palette.accent} />}PÉNC MI · {status}
         </span>
-        <h1 style={{ ...h1, margin: 0, fontSize: 26 }}>{p.title}</h1>
-        <p style={{ margin: 0, fontSize: 15, color: DC.soft }}>{whenLabel(p.startAt)} · {p.durationMin} min</p>
-        <p style={{ margin: 0, fontSize: 15, color: DC.text, display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-          Animé par <b>{p.host.name}</b>{p.host.title ? ` · ${p.host.title}` : ''}
+        <div style={{ padding: 10 }}><HostAvatar host={p.host} size={84} palette={palette} live={p.status === 'live'} /></div>
+        <h1 style={{ ...h1, margin: 0, fontSize: 27, lineHeight: 1.2 }}>{p.title}</h1>
+        <p style={{ margin: 0, fontSize: 15, color: DC.text, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, flexWrap: 'wrap' }}>
+          <b>{p.host.name}</b>{p.host.title ? <span style={{ color: DC.muted }}>· {p.host.title}</span> : null}
           {p.host.pro && <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 13, fontWeight: 700, color: DC.sage }}><BadgeCheck size={14} aria-hidden="true" />vérifié par Dr Lô</span>}
         </p>
-        {p.description && <p style={{ margin: '4px 0 0', fontSize: 15, lineHeight: 1.55, color: DC.soft, whiteSpace: 'pre-wrap' }}>{p.description}</p>}
-        <p style={{ margin: '4px 0 0', fontSize: 13, color: DC.faint }}>
-          {p.access === 'channel' ? `Réservé aux membres de « ${p.channelName} »` : p.access === 'paid' ? `Entrée : ${p.price} étincelle${p.price > 1 ? 's' : ''}` : 'Ouvert à tous'} · {p.registeredCount} inscrit{p.registeredCount > 1 ? 's' : ''}
-        </p>
+        <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: 6, marginTop: 2 }}>
+          {[p.status === 'live' ? (listenersLabel(p.listeners) ?? 'En direct') : `${whenLabel(p.startAt)}`, `${p.durationMin} min`,
+            p.access === 'channel' ? `Membres de « ${p.channelName} »` : p.access === 'paid' ? `${p.price} étincelle${p.price > 1 ? 's' : ''}` : 'Ouvert à tous',
+            ...(p.status === 'scheduled' ? [`${p.registeredCount} inscrit${p.registeredCount > 1 ? 's' : ''}`] : [])].map(t => (
+            <span key={t} style={{ padding: '6px 10px', borderRadius: 999, fontSize: 13, color: DC.soft, border: `1px solid ${DC.line}`, background: 'rgba(255,255,255,.04)' }}>{t}</span>
+          ))}
+        </div>
+        {p.description && <p style={{ margin: '6px 0 0', fontSize: 15, lineHeight: 1.6, color: DC.soft, whiteSpace: 'pre-wrap', textAlign: 'left', alignSelf: 'stretch' }}>{p.description}</p>}
       </section>
 
       {p.status === 'ended' ? (

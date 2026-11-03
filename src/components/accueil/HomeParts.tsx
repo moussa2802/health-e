@@ -5,7 +5,7 @@
  */
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, ClipboardList, Headphones, MessageCircle, Radio, Sparkles, Wrench } from 'lucide-react';
 import { DC } from './DrLoShell';
 import { categoryLabel } from '../../services/drloChannelService';
 import type { HomeChannel } from '../../services/homeFeedService';
@@ -30,16 +30,33 @@ export const tintOf = (id: string) => TINTS[[...id].reduce((a, ch) => (a * 31 + 
 
 export interface NewsItem { key: string; kicker: string; title: string; meta: string; to: string; tint: string }
 
-/** Une nouveauté : une étiquette (vocal, texte, outil…), un titre, une ligne discrète. */
-export const NewsCard: React.FC<{ item: NewsItem }> = ({ item }) => (
+/** L'icône d'une nouveauté, d'après son étiquette (vocal, outil, test, chaîne…). */
+function newsIcon(kicker: string) {
+  const k = kicker.toLowerCase();
+  if (k.includes('vocal') || k.includes('épisode') || k.includes('audio')) return Headphones;
+  if (k.includes('outil') || k.includes('pratique') || k.includes('exercice')) return Wrench;
+  if (k.includes('test')) return ClipboardList;
+  if (k.includes('chaîne') || k.includes('pénc')) return Radio;
+  if (k.includes('message') || k.includes('question')) return MessageCircle;
+  return Sparkles;
+}
+
+/** Une nouveauté : une icône et une étiquette (vocal, texte, outil…), un titre, une ligne discrète. */
+export const NewsCard: React.FC<{ item: NewsItem }> = ({ item }) => {
+  const Icon = newsIcon(item.kicker);
+  return (
   <Link role="listitem" to={item.to} className="drl-btn"
-    style={{ flex: '0 0 220px', scrollSnapAlign: 'start', boxSizing: 'border-box', minHeight: 132, padding: 14, borderRadius: 18, textDecoration: 'none', color: DC.text,
-      border: `1px solid ${item.tint}55`, background: `linear-gradient(160deg, ${item.tint}26, rgba(255,255,255,.04))`, display: 'flex', flexDirection: 'column', gap: 6 }}>
-    <span style={{ fontSize: 13, fontWeight: 700, letterSpacing: '.1em', color: item.tint }}>{item.kicker}</span>
+    style={{ flex: '0 0 220px', scrollSnapAlign: 'start', boxSizing: 'border-box', minHeight: 150, padding: 14, borderRadius: 20, textDecoration: 'none', color: DC.text,
+      border: `1px solid ${item.tint}44`, background: `radial-gradient(120% 90% at 0% 0%, ${item.tint}30, transparent 60%), linear-gradient(170deg, rgba(255,255,255,.06), rgba(255,255,255,.02))`, display: 'flex', flexDirection: 'column', gap: 10 }}>
+    <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+      <span aria-hidden="true" style={{ width: 30, height: 30, flex: 'none', borderRadius: 10, background: `${item.tint}2E`, color: item.tint, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Icon size={16} /></span>
+      <span style={{ fontSize: 13, fontWeight: 700, letterSpacing: '.1em', color: item.tint, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.kicker}</span>
+    </span>
     <span style={{ fontFamily: 'Fraunces, serif', fontSize: 18, lineHeight: 1.25, fontWeight: 600, color: DC.title, display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{item.title}</span>
-    <span style={{ marginTop: 'auto', fontSize: 13, color: DC.muted }}>{item.meta}</span>
+    <span style={{ marginTop: 'auto', fontSize: 13, color: DC.muted, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{item.meta}</span>
   </Link>
-);
+  );
+};
 
 /** Une chaîne : son nom et ses thèmes, rien d'autre. */
 export const ChannelCard: React.FC<{ c: HomeChannel; to: string }> = ({ c, to }) => {
