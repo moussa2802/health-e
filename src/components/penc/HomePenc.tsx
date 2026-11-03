@@ -1,9 +1,10 @@
 /**
  * HomePenc — Pénc mi sur l'accueil (connecté) : la bande « EN DIRECT » quand un Pénc a lieu,
- * puis les 2 prochains Pénc de la semaine avec « Me rappeler ». Rien s'il n'y a rien.
+ * puis les 2 prochains Pénc de la semaine avec « Me rappeler ». Sans Pénc à venir : une entrée vers la page Pénc mi.
  */
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { ArrowRight, Radio } from 'lucide-react';
 import { DC } from '../accueil/DrLoShell';
 import { SectionTitle } from '../accueil/HomeParts';
 import PencCard from './PencCard';
@@ -20,7 +21,18 @@ const HomePenc: React.FC<{ palette: MomentPalette }> = ({ palette }) => {
   }).catch(() => {});
   useEffect(() => { load(); }, []);
   const remind = async (p: Penc) => { setBusy(p.id); try { await registerPenc(p.id, !p.registered); await load(); } catch { /* la page Pénc mi explique les erreurs */ } finally { setBusy(''); } };
-  if (!live.length && !next.length) return null;
+  if (!live.length && !next.length) {
+    return (
+      <Link to="/penc" className="drl-btn" style={{ marginTop: 14, display: 'flex', alignItems: 'center', gap: 12, padding: '14px 16px', borderRadius: 18, border: `1px solid ${palette.accent}55`, background: `${palette.accent}12`, color: DC.text, textDecoration: 'none' }}>
+        <span aria-hidden="true" style={{ width: 44, height: 44, flex: 'none', borderRadius: 14, background: `${palette.accent}26`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Radio size={20} color={palette.accent} /></span>
+        <span style={{ flex: 1, minWidth: 0 }}>
+          <b style={{ display: 'block', fontFamily: 'Fraunces, serif', fontSize: 18, color: DC.title }}>Pénc mi</b>
+          <span style={{ display: 'block', marginTop: 2, fontSize: 14, color: DC.muted }}>Les discussions en direct, pour écouter et parler.</span>
+        </span>
+        <ArrowRight size={18} color={DC.muted} aria-hidden="true" />
+      </Link>
+    );
+  }
   return (
     <>
       {live.map(p => (

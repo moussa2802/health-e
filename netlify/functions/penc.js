@@ -8,6 +8,8 @@
  *   start  { id }                    → « en direct » (les inscrits sont prévenus)
  *   end    { id, summary?[3] }       → terminé, avec les idées à retenir
  *   cancel { id }                    → annulé (les inscrits sont prévenus)
+ *   open_now { title, access?, channelId? } → ouvre un Pénc tout de suite (en direct, 1 h), sans programmation ;
+ *                                       s'il est réservé à une chaîne, ses membres sont prévenus
  * Personne connectée :
  *   agenda                → { live, upcoming, past } visibles (un Pénc de chaîne est montré verrouillé aux non-membres)
  *   detail   { id }
@@ -63,7 +65,7 @@ exports.handler = async (event) => {
 
   try {
     // ───────── Espace pro ─────────
-    if (['manage_list', 'save', 'start', 'end', 'cancel'].includes(action)) {
+    if (['manage_list', 'save', 'start', 'end', 'cancel', 'open_now'].includes(action)) {
       const role = await R.roleOf(uid);
       if (!role.owner && !role.pro) return reply(403, { error: 'Réservé à l\'Espace pro' });
       const mine = (p) => role.owner || p.hostUid === uid;
@@ -74,6 +76,32 @@ exports.handler = async (event) => {
           .filter((p) => p.status !== 'cancelled')
           .sort((a, b) => b.startAt - a.startAt).slice(0, 100);
         return reply(200, { items });
+      }
+
+      if (action === 'open_now') {
+        const now = Date.now();
+        const access = body.access === 'channel' ? 'channel' : 'all';
+        const v = P.validatePenc({ title: body.title, description: '', startAt: now, durationMin: 60, access, channelId: body.channelId }, now);
+        if (v.error) return reply(400, { error: v.error });
+        const data = { ...v.data };
+        let ch = null;
+        if (access === 'channel') {
+          const cs = await db.collection('channels').doc(data.channelId).get();
+          if (!cs.exists || !R.canManageChannel(role, cs.data(), uid)) return reply(400, { error: 'Choisis une de tes chaînes.' });
+          ch = cs.data();
+          data.channelName = String(ch.name || '').slice(0, 80);
+        } else data.channelName = null;
+        const h = role.owner ? { hostName: 'Dr Lô', hostTitle: 'Médecin', hostPro: false } : { hostName: role.staff.fullName || 'Professionnel', hostTitle: role.staff.title || '', hostPro: true };
+        const ref = db.collection('pencs').doc();
+        await ref.set({ ...data, ...h, hostUid: uid, status: 'live', startedAt: now, registeredCount: 0, remindSent: true, createdAt: admin.firestore.FieldValue.serverTimestamp() });
+        if (ch) { // les membres de la chaîne sont prévenus (sauf alertes coupées)
+          const mem = await db.collection('channelMembers').where('channelId', '==', data.channelId).get();
+          const uids = mem.docs.map((d) => d.data()).filter((m) => m.muted !== true && m.uid !== uid).map((m) => m.uid).slice(0, 2000);
+          const msg = { kind: 'penc', title: 'Pénc mi', body: `${h.hostName} a ouvert un Pénc dans ${data.channelName}. Viens écouter.`, inboxTitle: `Pénc en direct dans ${data.channelName}`, inboxBody: data.title, link: `/penc/${ref.id}` };
+          for (let i = 0; i < uids.length; i += 25) await Promise.all(uids.slice(i, i + 25).map((u) => sendToUser(u, msg).catch(() => null)));
+        }
+        const fresh = await ref.get();
+        return reply(200, { ok: true, penc: base(ref.id, fresh.data()) });
       }
 
       if (action === 'save') {

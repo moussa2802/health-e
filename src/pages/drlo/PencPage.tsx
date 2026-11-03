@@ -4,12 +4,13 @@
  *   /penc/:id   un Pénc : sujet, animateur, accès, inscription
  * En direct : « Écouter maintenant » ouvre la salle d'écoute (PencRoom). L'hôte peut « Démarrer et entrer ».
  */
-import React, { lazy, Suspense, useEffect, useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import React, { lazy, Suspense, useEffect, useRef, useState } from 'react';
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { BadgeCheck, Bell, BellRing, Loader2, Lock, Radio } from 'lucide-react';
 import DrLoShell, { DC, card, usePalette } from '../../components/accueil/DrLoShell';
 import LoadingCards from '../../components/accueil/LoadingCards';
 import PencCard from '../../components/penc/PencCard';
+import OpenPencNow from '../../components/penc/OpenPencNow';
 import { NotifOptinCard } from '../../components/accueil/NotificationsPanel';
 import { useAuth } from '../../contexts/AuthContext';
 import { SCALE_META } from '../../utils/scaleMeta';
@@ -80,6 +81,7 @@ const Agenda: React.FC = () => {
     <>
       <h1 style={h1}>Pénc mi</h1>
       <p style={{ margin: '8px 0 0', fontSize: 15, lineHeight: 1.55, color: DC.soft }}>On se retrouve pour parler, en direct. Tu écoutes, tu poses ta question, et si tu veux, tu prends la parole.</p>
+      <OpenPencNow palette={palette} />
       <div role="tablist" aria-label="Filtrer" style={{ marginTop: 16, display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 4, padding: 4, borderRadius: 999, border: `1px solid ${DC.line}` }}>
         {([['all', 'Tous'], ['chaines', 'Mes chaînes'], ['inscrit', 'Inscrit']] as const).map(([k, l]) => (
           <button key={k} type="button" role="tab" aria-selected={filter === k} onClick={() => setFilter(k)}
@@ -121,7 +123,7 @@ const loadIdt = (): { mode: IdentityMode; pseudo: string } => {
 /** Avant d'entrer : sous quel nom, et les règles (une seule fois). */
 const EnterSheet: React.FC<{ accent: string; primary: string; busy: boolean; host: boolean; onGo: (mode: IdentityMode, pseudo: string) => void; onCancel: () => void }> = ({ accent, primary, busy, host, onGo, onCancel }) => {
   const [idt, setIdt] = useState(loadIdt);
-  const [rulesOk, setRulesOk] = useState(() => { try { return localStorage.getItem(RULES_KEY) === '1'; } catch { return false; } });
+  const [rulesOk, setRulesOk] = useState(() => { if (host) return true; try { return localStorage.getItem(RULES_KEY) === '1'; } catch { return false; } });
   const chip = (on: boolean): React.CSSProperties => ({ minHeight: 42, padding: '0 14px', borderRadius: 999, cursor: 'pointer', fontSize: 14, fontWeight: on ? 700 : 600, border: `1px solid ${on ? accent : DC.line}`, background: on ? `${accent}26` : 'transparent', color: on ? accent : DC.text });
   const go = () => {
     try { localStorage.setItem(ID_KEY, JSON.stringify(idt)); localStorage.setItem(RULES_KEY, '1'); } catch { /* ignore */ }
@@ -168,14 +170,13 @@ const Detail: React.FC<{ id: string }> = ({ id }) => {
   const [ticket, setTicket] = useState<RoomTicket | null>(null);
   const [joinBusy, setJoinBusy] = useState(false);
   const [joinError, setJoinError] = useState('');
+  const autoEnter = !!(useLocation().state as { autoEnter?: boolean } | null)?.autoEnter;
+  const autoDone = useRef(false);
   const load = () => getPenc(id).then(r => { setP(r.penc); setError(''); }).catch(e => setError(e instanceof Error ? e.message : 'Erreur'));
   useEffect(() => { load(); }, [id]); // eslint-disable-line react-hooks/exhaustive-deps
   const remind = useRemind(currentUser?.id ?? null, load);
-  if (error && !p) return <p role="alert" style={{ marginTop: 20, color: DC.muted }}>{error} <Link to="/penc" style={{ color: palette.accent }}>Voir Pénc mi</Link></p>;
-  if (!p) return <LoadingCards label="Ouverture…" count={1} />;
-  const primary: React.CSSProperties = { width: '100%', minHeight: 50, borderRadius: 999, border: 0, background: palette.primary, color: DC.ink, fontSize: 16, fontWeight: 700, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8 };
-  const canEnter = !p.locked && (p.access !== 'paid' || !!p.registered || !!p.mineAsHost);
   const enter = async (mode: IdentityMode, pseudo: string) => {
+    if (!p) return;
     setJoinBusy(true); setJoinError('');
     try {
       if (p.mineAsHost && p.status === 'scheduled') await startPenc(p.id);
@@ -183,6 +184,14 @@ const Detail: React.FC<{ id: string }> = ({ id }) => {
       setEntering(false);
     } catch (e) { setJoinError(e instanceof Error ? e.message : 'Erreur'); } finally { setJoinBusy(false); }
   };
+  // Pénc ouvert à l'instant par son hôte : on entre directement dans la salle
+  useEffect(() => {
+    if (autoEnter && !autoDone.current && p && p.mineAsHost && p.status === 'live') { autoDone.current = true; void enter('anon', ''); }
+  }, [p]); // eslint-disable-line react-hooks/exhaustive-deps
+  if (error && !p) return <p role="alert" style={{ marginTop: 20, color: DC.muted }}>{error} <Link to="/penc" style={{ color: palette.accent }}>Voir Pénc mi</Link></p>;
+  if (!p) return <LoadingCards label="Ouverture…" count={1} />;
+  const primary: React.CSSProperties = { width: '100%', minHeight: 50, borderRadius: 999, border: 0, background: palette.primary, color: DC.ink, fontSize: 16, fontWeight: 700, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8 };
+  const canEnter = !p.locked && (p.access !== 'paid' || !!p.registered || !!p.mineAsHost);
   if (ticket) return <Suspense fallback={<LoadingCards label="Ouverture de la salle…" count={1} />}><PencRoom penc={p} ticket={ticket} palette={palette} onLeave={() => { setTicket(null); load(); }} /></Suspense>;
   const status = p.status === 'live' ? 'EN DIRECT' : p.status === 'ended' ? 'TERMINÉ' : 'À VENIR';
   return (

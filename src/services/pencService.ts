@@ -28,6 +28,7 @@ export const managePencs = () => call<{ items: Penc[] }>({ action: 'manage_list'
 export const savePenc = (p: PencInput) => call<{ ok: boolean; penc: Penc }>({ action: 'save', ...p });
 export const startPenc = (id: string) => call<{ ok: boolean }>({ action: 'start', id });
 export const endPenc = (id: string, summary: string[]) => call<{ ok: boolean }>({ action: 'end', id, summary });
+export const openPencNow = (title: string, access: 'all' | 'channel' = 'all', channelId?: string) => call<{ ok: boolean; penc: Penc }>({ action: 'open_now', title, access, channelId });
 export const cancelPenc = (id: string) => call<{ ok: boolean }>({ action: 'cancel', id });
 
 const DAYS = ['dim.', 'lun.', 'mar.', 'mer.', 'jeu.', 'ven.', 'sam.'];

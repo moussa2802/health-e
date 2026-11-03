@@ -6,7 +6,7 @@
  */
 import React, { useEffect, useRef, useState } from 'react';
 import { Room, RoomEvent, Track, type Participant } from 'livekit-client';
-import { ChevronDown, Hand, Heart, Loader2, Mic, MicOff, UserX, Volume2 } from 'lucide-react';
+import { ChevronLeft, Hand, Heart, Loader2, Mic, MicOff, UserX, Volume2 } from 'lucide-react';
 import { DC } from '../accueil/DrLoShell';
 import type { MomentPalette } from '../../utils/drloMoment';
 import type { Penc } from '../../services/pencService';
@@ -107,7 +107,7 @@ const PencRoom: React.FC<{ penc: Penc; ticket: RoomTicket; palette: MomentPalett
 
   if (status === 'ended') {
     return (
-      <section role="dialog" aria-label="Pénc terminé" className="drl-screen font-sans" style={{ position: 'fixed', inset: 0, zIndex: 45, background: palette.bg, color: DC.text, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
+      <section role="dialog" aria-label="Pénc terminé" className="drl-screen font-sans" style={{ position: 'fixed', inset: 0, zIndex: 70, background: palette.bg, color: DC.text, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
         <div style={{ maxWidth: 420, textAlign: 'center' }}>
           <p style={{ margin: 0, fontFamily: 'Fraunces, serif', fontSize: 24, color: DC.title }}>Le Pénc est terminé</p>
           <p style={{ margin: '8px 0 18px', fontSize: 15, color: DC.soft }}>Merci d'avoir été là.</p>
@@ -118,11 +118,11 @@ const PencRoom: React.FC<{ penc: Penc; ticket: RoomTicket; palette: MomentPalett
   }
 
   return (
-    <section aria-label={`Pénc mi : ${penc.title}`} className="drl-screen font-sans" style={{ position: 'fixed', inset: 0, zIndex: 45, background: palette.bg, color: DC.text, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+    <section aria-label={`Pénc mi : ${penc.title}`} className="drl-screen font-sans" style={{ position: 'fixed', inset: 0, zIndex: 70, background: palette.bg, color: DC.text, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
       <style>{'@keyframes pencUp{0%{opacity:0;transform:translateY(0) scale(.8)}15%{opacity:1}100%{opacity:0;transform:translateY(-160px) scale(1.2)}}@media (prefers-reduced-motion: reduce){.penc-heart{animation:none!important;opacity:0}}'}</style>
       <div className="drl-wrap-chat" style={{ width: '100%', margin: '0 auto', height: '100%', display: 'flex', flexDirection: 'column', boxSizing: 'border-box' }}>
         <header style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 16px' }}>
-          <button type="button" onClick={leave} aria-label="Quitter la salle" className="drl-btn" style={{ width: 44, height: 44, flex: 'none', borderRadius: 14, border: `1px solid ${DC.line}`, background: 'transparent', color: DC.text, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}><ChevronDown size={20} aria-hidden="true" /></button>
+          <button type="button" onClick={leave} aria-label="Quitter la salle et revenir" className="drl-btn" style={{ width: 44, height: 44, flex: 'none', borderRadius: 14, border: `1px solid ${DC.line}`, background: 'transparent', color: DC.text, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}><ChevronLeft size={22} aria-hidden="true" /></button>
           <span role="status" style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, fontWeight: 700, letterSpacing: '.08em', color: palette.accent }}>
             {status === 'ok' ? <><span aria-hidden="true" style={{ width: 8, height: 8, borderRadius: '50%', background: '#F09A7A' }} />EN DIRECT · {people.length} présent{people.length > 1 ? 's' : ''}</> : status === 'reconnecting' ? 'Reconnexion…' : status === 'error' ? 'Hors ligne' : 'Connexion…'}
           </span>

@@ -31,7 +31,7 @@ test('agenda et rappel', () => {
 });
 
 // ── Le handler, avec un faux Firestore ──
-const store = { staff: { owner1: { drlo: true }, awa: { role: 'pro', verified: true, fullName: 'Awa Ndiaye', title: 'Psychologue' } }, pencs: {}, pencRegs: {}, channels: { c1: { name: 'Couple', ownerUid: 'awa' }, c2: { name: 'Autre' } }, channelMembers: { c1_moussa: { uid: 'moussa' } }, patients: {} };
+const store = { staff: { owner1: { drlo: true }, awa: { role: 'pro', verified: true, fullName: 'Awa Ndiaye', title: 'Psychologue' } }, pencs: {}, pencRegs: {}, channels: { c1: { name: 'Couple', ownerUid: 'awa' }, c2: { name: 'Autre' } }, channelMembers: { c1_moussa: { uid: 'moussa', channelId: 'c1' } }, patients: {} };
 const pushes = []; let seq = 0; const holds = [];
 const apply = (cur, patch) => { const o = { ...cur }; for (const [k, v] of Object.entries(patch)) o[k] = v && v.__inc !== undefined ? (Number(o[k]) || 0) + v.__inc : v; return o; };
 const mkSnap = (col, id) => ({ id, exists: store[col][id] !== undefined, data: () => store[col][id], ref: docRef(col, id) });
@@ -96,4 +96,20 @@ test('Pénc payant : étincelles débitées à l\'inscription', async () => {
   assert.equal(reg.body.paid, 15);
   assert.deepEqual(holds.at(-1), ['moussa', 'penc', 15]);
   assert.equal((await call({ action: 'register', id: r.body.penc.id, on: false })).status, 409);
+});
+
+test('ouvrir un Pénc tout de suite : en direct, membres de la chaîne prévenus', async () => {
+  uid = 'moussa';
+  assert.equal((await call({ action: 'open_now', title: 'On parle de la jalousie' })).status, 403);
+  uid = 'awa';
+  assert.equal((await call({ action: 'open_now', title: 'court' })).status, 400);
+  const before = pushes.length;
+  const r = await call({ action: 'open_now', title: 'On parle de la jalousie', access: 'channel', channelId: 'c1' });
+  assert.equal(r.status, 200);
+  assert.equal(r.body.penc.status, 'live');
+  assert.equal(store.pencs[r.body.penc.id].hostUid, 'awa');
+  assert.equal(pushes.length, before + 1);
+  assert.equal(pushes.at(-1)[0], 'moussa');
+  const all = await call({ action: 'open_now', title: 'Ouvert à tous ce soir' });
+  assert.equal(all.body.penc.access, 'all');
 });
