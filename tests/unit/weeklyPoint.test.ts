@@ -39,3 +39,8 @@ test('un signal sérieux : il oriente vers une vraie personne en premier', () =>
   assert.equal(p.todos[0].kind, 'help');
   assert.equal(p.states[0].word, 'Pas assez notée');
 });
+
+test('un ancien résultat difficile n\'alarme pas chaque semaine', () => {
+  const p = buildWeeklyPoint({ today: '2026-11-04', moods: {}, labelOf, results: { phq9: { severity: 'severe', completedAt: new Date('2026-04-01') }, bonus_tdah: { severity: 'moderate', alertLevel: 2, completedAt: new Date('2026-05-01') } } });
+  assert.equal(p.care, false);
+});

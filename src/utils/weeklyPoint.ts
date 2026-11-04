@@ -19,6 +19,8 @@ export interface PointState { label: string; word: string; tone: Tone }
 export type PointTodo = { text: string; kind: 'test' | 'mood' | 'breath' | 'penc' | 'totem' | 'help'; ref?: string };
 export interface WeeklyPoint { week: string; range: string; days: (string | null)[]; states: PointState[]; changes: string[]; todos: PointTodo[]; question: string; care: boolean }
 
+/** Un résultat compte pour l'alerte pendant 60 jours. */
+const CARE_DAYS = 60;
 const MOOD_SCORE: Record<string, number> = { tres_bien: 5, plutot_bien: 4, bof: 3, pas_bien: 2, tres_dur: 1 };
 const DAY_NAMES = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'];
 const MONTHS = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'];
@@ -85,7 +87,10 @@ export function buildWeeklyPoint(inp: PointInput): WeeklyPoint {
   if (recent.length) changes.push(`Tu as fait ${recent.length > 1 ? `${recent.length} tests` : 'un test'} cette semaine : ${recent.slice(0, 3).map(l => `« ${l} »`).join(', ')}.`);
 
   // Un signal sérieux : on le dit avec douceur et on oriente
-  const care = Object.values(results).some(r => (r.alertLevel ?? 0) >= 2) || ['phq9', 'gad7'].some(id => results[id]?.severity === 'severe' || results[id]?.severity === 'alert')
+  // (seulement sur des résultats récents : un ancien résultat difficile ne doit pas alarmer chaque semaine)
+  const fresh = (r?: PointResult) => !!r?.completedAt && toDay(today).getTime() - r.completedAt.getTime() <= CARE_DAYS * 86400000;
+  const care = Object.values(results).some(r => fresh(r) && (r.alertLevel ?? 0) >= 2)
+    || ['phq9', 'gad7'].some(id => fresh(results[id]) && (results[id]?.severity === 'severe' || results[id]?.severity === 'alert'))
     || (notes >= 3 && avg! < 2);
 
   // Ce que je te propose (3 au plus)
