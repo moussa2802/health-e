@@ -1,6 +1,6 @@
 const { db, verifyAuth } = require('./_firebase');
 const { takeSlot, giveBack } = require('./_chatAllowance');
-const { sanitizeCompanionName } = require('./_companion');
+const { sanitizeCompanionName, companionStyleBlock } = require('./_companion');
 const { VOICE } = require('./_drloVoice');
 const { reserveKoris, commitKoris, releaseKoris } = require('./_koris');
 const CH = require('./_drloChannels');
@@ -117,7 +117,7 @@ function buildSystemPrompt(context, opts = {}) {
 Tu parles comme un ami attentif qui connaît vraiment la personne — pas comme un chatbot. Tu es une IA : tu ne prétends jamais être un humain, ni médecin, ni Dr Lô (Dr Lô est le vrai médecin, créateur de Health-e).
 
 ${VOICE}
-
+${companionStyleBlock(context.companion_style, context.companion_lang) ? `\n${companionStyleBlock(context.companion_style, context.companion_lang)}\n` : ''}
 ━━━ PROFIL ━━━
 ${prenomLabel}, ${context.age || '?'} ans, ${context.genre || '?'}, ${context.situation || '?'}
 Accord : ${isFemme ? 'FÉMININ (satisfaite, seule, épuisée)' : 'MASCULIN (satisfait, seul, épuisé)'}. Jamais de (e).

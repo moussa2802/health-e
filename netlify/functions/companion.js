@@ -1,7 +1,7 @@
 /**
  * companion — le compagnon de chaque personne, enregistré sur son compte (suit la personne d'un appareil à l'autre).
  *   POST { action: 'get' }                 → { name, color, icon, stage, seenStage } (le stade est recalculé ici, jamais en arrière)
- *   POST { action: 'save', name?, color?, icon? } → idem après enregistrement (nom vérifié : jamais « docteur », « Dr », « Lô »…)
+ *   POST { action: 'save', name?, color?, icon?, style?, lang? } → idem après enregistrement (nom vérifié : jamais « docteur », « Dr », « Lô »…)
  *   POST { action: 'seen' }                → la personne a vu « il a grandi » pour son stade actuel
  * Stocké dans userProfiles/{uid}.companion.
  */
@@ -13,7 +13,7 @@ const headers = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Head
 const reply = (statusCode, body) => ({ statusCode, headers, body: JSON.stringify(body) });
 
 function shape(c) {
-  return { name: c.name || '', color: c.color || null, icon: c.icon || null, stage: Number(c.stage) || 0, seenStage: Number(c.seenStage) || 0 };
+  return { name: c.name || '', color: c.color || null, icon: c.icon || null, style: c.style || null, lang: c.lang || null, stage: Number(c.stage) || 0, seenStage: Number(c.seenStage) || 0 };
 }
 
 exports.handler = async (event) => {
@@ -37,13 +37,15 @@ exports.handler = async (event) => {
       if (body.name !== undefined) next.name = sanitizeCompanionName(body.name);
       if (body.color !== undefined) next.color = S.cleanColor(body.color) || cur.color || null;
       if (body.icon !== undefined) next.icon = S.cleanIcon(body.icon) || cur.icon || null;
+      if (body.style !== undefined) next.style = S.cleanStyle(body.style) || cur.style || null;
+      if (body.lang !== undefined) next.lang = S.cleanLang(body.lang) || cur.lang || null;
     } else if (body.action === 'seen') {
       next.seenStage = stage;
     } else if (body.action !== 'get') {
       return reply(400, { error: 'Action inconnue' });
     }
 
-    const changed = ['name', 'color', 'icon', 'stage', 'seenStage'].some((k) => next[k] !== cur[k]);
+    const changed = ['name', 'color', 'icon', 'style', 'lang', 'stage', 'seenStage'].some((k) => next[k] !== cur[k]);
     if (changed) {
       await ref.set({ companion: { ...next, ...(next.stage !== cur.stage ? { grewAt: admin.firestore.FieldValue.serverTimestamp() } : {}) } }, { merge: true });
     }

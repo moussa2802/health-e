@@ -10,7 +10,7 @@
  */
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { ArrowRight, Bell, Heart, Mail, PawPrint, Users, Check, ChevronLeft, ClipboardCheck, Clock, CloudSun, Copy, EyeOff, ListChecks, Lock, MessagesSquare, Mic, Pencil, Phone, Plus, Send, Sparkles, Sprout, Wind, CalendarCheck } from 'lucide-react';
+import { ArrowRight, Bell, Heart, Mail, PawPrint, Users, Check, ChevronLeft, ClipboardCheck, Clock, CloudSun, Copy, EyeOff, ListChecks, Lock, MessagesSquare, Mic, Pencil, Phone, Plus, Send, Sparkles, Sprout, Wind, CalendarCheck, MoreHorizontal, Trash2 } from 'lucide-react';
 import './accueil.css';
 import DrLoAvatar, { auraMoodOf, type DrLoState } from './DrLoAvatar';
 import DrLoIsland from './DrLoIsland';
@@ -94,9 +94,9 @@ import {
 } from '../../utils/conversations';
 import { KORIS_COSTS, isTestFreeRetake, isFirstTestFree } from '../../services/korisService';
 import ProgrammePanel from './ProgrammePanel';
-import CompanionNaming from './CompanionNaming';
+import CompanionStudio from './CompanionStudio';
 import DiscussionList from './DiscussionList';
-import { COMPANION_DEFAULT, companionAsked, getCompanionColor, getCompanionName, markCompanionAsked, saveCompanionColor, saveCompanionIcon, saveCompanionName } from '../../utils/companion';
+import { COMPANION_DEFAULT, companionAsked, getCompanionColor, getCompanionName, markCompanionAsked, saveCompanionColor, saveCompanionLang, saveCompanionName, saveCompanionStyle } from '../../utils/companion';
 import NotificationsPanel, { NotifOptinCard, type LiveItem } from './NotificationsPanel';
 import { loadInbox, type InboxItem } from '../../services/inboxService';
 import { canProposeReminders, loadPrefs, markSeen, noteProposed, permissionState, pushSupport } from '../../services/pushService';
@@ -299,6 +299,7 @@ const ConversationAccueil: React.FC = () => {
   const [mode, setMode] = useState<'home' | 'mood'>('home');
   const [showHistory, setShowHistory] = useState(false);
   const [veiled, setVeiled] = useState(false);
+  const [moreOpen, setMoreOpen] = useState(false);
   const discret = useDiscretHint();
   const [noted, setNoted] = useState<{ day: string; cancelled: boolean } | null>(null);
   const [breath, setBreath] = useState<{ inhale: boolean } | null>(null);
@@ -1811,7 +1812,7 @@ const ConversationAccueil: React.FC = () => {
                   ))}
                 </div>
               )}
-              {isAuthenticated && chatModeNow && state.step !== 'testing' && (
+              {isAuthenticated && chatModeNow && state.step !== 'testing' && !korisLoading && balance < 5 && (
                 <p className="drl-in" style={{ margin: '0 0 2px', fontSize: 13, color: C.faint, textAlign: 'center' }}>
                   Chaque message coûte {credits(KORIS_COSTS.chat)}.
                 </p>
@@ -1824,8 +1825,8 @@ const ConversationAccueil: React.FC = () => {
                       { label: 'Respirer avec moi', hint: '1 min', icon: Wind, go: () => startBreathing() },
                       ...(isAuthenticated && launch.on('programme') ? [{ label: 'Mon programme', hint: prog && prog.status === 'active' && progRemaining ? `${progRemaining} à faire` : '', icon: ClipboardCheck, go: () => (prog ? setProgOpen(true) : offerProgramme(state, 'Mon programme')) }] : []),
                       { label: 'Mon animal intérieur', hint: '', icon: PawPrint, go: () => navigate('/assessment/totem') },
-                      { label: 'Compatibilité de couple', hint: '', icon: Heart, go: () => navigate('/assessment/compatibility') },
-                      { label: 'Défi : tes proches te connaissent ?', hint: '', icon: Users, go: () => navigate(isAuthenticated ? '/defi' : '/decouvre') },
+                      ...(launch.on('compat') ? [{ label: 'Compatibilité de couple', hint: '', icon: Heart, go: () => navigate('/assessment/compatibility') }] : []),
+                      ...(launch.on('defis') ? [{ label: 'Défi : tes proches te connaissent ?', hint: '', icon: Users, go: () => navigate(isAuthenticated ? '/defi' : '/decouvre') }] : []),
                       { label: 'Écrire à Dr Lô', hint: '', icon: Mail, go: () => navigate('/question') },
                       ...(isAuthenticated ? [{ label: 'Les messages de Dr Lô', hint: '', icon: MessagesSquare, go: () => navigate('/messages-dr-lo') }] : []),
                       { label: 'Tous les tests', hint: '', icon: ListChecks, go: () => navigate('/espace') },
@@ -1840,10 +1841,11 @@ const ConversationAccueil: React.FC = () => {
                     ))}
                   </div>
                 )}
-                <form onSubmit={onSend} style={{ display: 'flex', alignItems: 'center', gap: 8, position: 'relative' }}>
+                <form onSubmit={onSend} style={{ display: 'flex', alignItems: 'center', gap: chatModeNow ? 4 : 8, position: 'relative',
+                  ...(chatModeNow ? { padding: '5px 5px 5px 6px', borderRadius: 30, border: `1px solid ${listening ? companionColor.hex : 'rgba(255,255,255,.14)'}`, background: 'rgba(28,20,13,.72)', backdropFilter: 'blur(14px)', WebkitBackdropFilter: 'blur(14px)', boxShadow: listening ? `0 0 0 4px ${companionColor.hex}22` : '0 10px 30px rgba(0,0,0,.35)' } : {}) }}>
                   {chatModeNow && state.step !== 'testing' && (
                     <button type="button" onClick={() => setMenuOpen(v => !v)} aria-expanded={menuOpen} aria-label="Plus d'options" className="drl-btn"
-                      style={{ width: 44, height: 44, borderRadius: '50%', border: `1px solid ${menuOpen ? palette.accent : 'rgba(255,255,255,.18)'}`, background: menuOpen ? 'rgba(242,182,109,.14)' : 'rgba(255,255,255,.04)', color: menuOpen ? palette.accent : '#E9E1D4', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}>
+                      style={{ width: 44, height: 44, borderRadius: '50%', border: chatModeNow && !menuOpen ? '1px solid transparent' : `1px solid ${menuOpen ? palette.accent : 'rgba(255,255,255,.18)'}`, background: menuOpen ? 'rgba(242,182,109,.14)' : 'rgba(255,255,255,.04)', color: menuOpen ? palette.accent : '#E9E1D4', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}>
                       <Plus size={20} aria-hidden="true" style={{ transform: menuOpen ? 'rotate(45deg)' : 'none', transition: 'transform .2s' }} />
                     </button>
                   )}
@@ -1855,7 +1857,9 @@ const ConversationAccueil: React.FC = () => {
                     placeholder={dictation.listening ? 'Parle, je t\'écoute…' : state.step === 'testing' ? 'Si quelque chose te pèse, écris-le-moi…' : state.talk || !chatModeNow ? `Écris à ${toCompanion}…` : `Réponds à ${toCompanion}…`}
                     aria-label="Répondre"
                     className="drl-input"
-                    style={{
+                    style={chatModeNow ? {
+                      flex: 1, minWidth: 0, minHeight: 44, boxSizing: 'border-box', border: 0, background: 'transparent', padding: '0 8px', fontFamily: 'inherit', fontSize: 16, color: C.text, outline: 'none',
+                    } : {
                       flex: 1, minWidth: 0, minHeight: 54, boxSizing: 'border-box', borderRadius: 27,
                       border: `1.5px solid ${listening ? palette.accent : 'rgba(255,255,255,.18)'}`,
                       boxShadow: listening ? `0 0 0 4px ${palette.glow}` : 'none',
@@ -1865,12 +1869,12 @@ const ConversationAccueil: React.FC = () => {
                   {dictation.supported && (
                     <button type="button" onClick={onMic} aria-pressed={dictation.listening}
                       aria-label={dictation.listening ? 'Arrêter la dictée' : 'Dicter ma réponse'} className={`drl-btn${dictation.listening ? ' drl-halo' : ''}`}
-                      style={{ width: 50, height: 50, borderRadius: '50%', border: `1px solid ${dictation.listening ? palette.accent : 'rgba(255,255,255,.18)'}`, background: dictation.listening ? 'rgba(242,182,109,.16)' : 'rgba(255,255,255,.04)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0, color: dictation.listening ? palette.accent : '#E9E1D4' }}>
+                      style={{ width: chatModeNow ? 44 : 50, height: chatModeNow ? 44 : 50, borderRadius: '50%', border: chatModeNow && !dictation.listening ? '1px solid transparent' : `1px solid ${dictation.listening ? palette.accent : 'rgba(255,255,255,.18)'}`, background: dictation.listening ? 'rgba(242,182,109,.16)' : 'rgba(255,255,255,.04)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0, color: dictation.listening ? palette.accent : '#E9E1D4' }}>
                       <Mic size={20} aria-hidden="true" />
                     </button>
                   )}
                   <button type="submit" aria-label="Envoyer" className="drl-btn" disabled={!input.trim()}
-                    style={{ width: 50, height: 50, borderRadius: '50%', border: 0, background: palette.primary, boxShadow: `0 8px 24px ${palette.glow}`, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0, opacity: !input.trim() ? 0.55 : 1, color: C.ink }}>
+                    style={{ width: chatModeNow ? 44 : 50, height: chatModeNow ? 44 : 50, borderRadius: '50%', border: 0, background: chatModeNow ? companionColor.hex : palette.primary, boxShadow: chatModeNow ? 'none' : `0 8px 24px ${palette.glow}`, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0, opacity: !input.trim() ? 0.55 : 1, color: C.ink }}>
                     <Send size={19} aria-hidden="true" />
                   </button>
                 </form>
@@ -1944,10 +1948,13 @@ const ConversationAccueil: React.FC = () => {
     const shownMsgs = messages.slice(0, shown);
     return (
       <section aria-label="Conversation avec ton compagnon" aria-busy={revealing} className="drl-screen font-sans"
-        style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: hubChat ? 'calc(64px + env(safe-area-inset-bottom, 0px))' : 0, zIndex: 40, display: 'flex', flexDirection: 'column', overflow: 'hidden', background: palette.bg, color: C.text }}>
-        <div className="drl-wrap-chat" style={{ width: '100%', margin: '0 auto', height: '100%', display: 'flex', flexDirection: 'column' }}>
+        style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: hubChat ? 'calc(64px + env(safe-area-inset-bottom, 0px))' : 0, zIndex: 40, display: 'flex', flexDirection: 'column', overflow: 'hidden', background: '#120C07', color: C.text }}>
+        {/* La lumière du compagnon derrière la discussion : elle dérive très lentement */}
+        <div aria-hidden="true" className="drl-amb" style={{ position: 'absolute', inset: 0, pointerEvents: 'none',
+          background: `radial-gradient(75% 42% at 20% 2%, ${companionColor.hex}59, transparent 70%), radial-gradient(55% 32% at 98% 45%, ${companionColor.hex}24, transparent 70%), radial-gradient(60% 30% at 10% 100%, ${companionColor.hex}14, transparent 70%), linear-gradient(180deg, #1C130C, #100A06 70%)` }} />
+        <div className="drl-wrap-chat" style={{ position: 'relative', width: '100%', margin: '0 auto', height: '100%', display: 'flex', flexDirection: 'column' }}>
           {/* En-tête de discussion */}
-          <header style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 14px', borderBottom: '1px solid rgba(255,255,255,.08)', background: 'rgba(20,16,13,.6)' }}>
+          <header style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 14px 6px' }}>
             {!hubChat && (
               <button onClick={() => { setInChat(false); setMode('home'); setShowConvs(false); }} aria-label="Revenir à l'accueil" className="drl-btn"
                 style={{ width: 40, height: 40, borderRadius: 12, border: 0, background: 'transparent', color: C.text, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
@@ -1955,42 +1962,53 @@ const ConversationAccueil: React.FC = () => {
               </button>
             )}
             <div aria-hidden="true" style={{ width: 52, height: 52, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-              <CompanionMark size={52} live mood={auraMoodOf(avatarState)} ring={palette.accent} />
+              <CompanionMark size={52} live bare mood={auraMoodOf(avatarState)} />
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
               {isAuthenticated ? (
                 <button type="button" onClick={() => setNaming(v => !v)} aria-label={`${companionName} : changer son nom, sa couleur et son petit signe`} className="drl-btn"
-                  style={{ margin: 0, padding: 0, minHeight: 28, border: 0, background: 'transparent', color: C.text, fontSize: 16, fontWeight: 700, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 6, maxWidth: '100%' }}>
+                  style={{ margin: 0, padding: 0, minHeight: 28, border: 0, background: 'transparent', color: C.title, fontFamily: 'Fraunces, serif', fontSize: 20, fontWeight: 600, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 6, maxWidth: '100%' }}>
                   <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{companionName}</span><Pencil size={14} color={C.muted} aria-hidden="true" />
                 </button>
-              ) : <p style={{ margin: 0, fontSize: 16, fontWeight: 700 }}>{companionName}</p>}
-              <p role="status" style={{ margin: '1px 0 0', fontSize: 13, fontWeight: 600, color: online ? '#7FD1A0' : palette.accent, fontStyle: online ? 'normal' : 'italic' }}>{statusText}</p>
+              ) : <p style={{ margin: 0, fontFamily: 'Fraunces, serif', fontSize: 20, fontWeight: 600, color: C.title, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{companionName}</p>}
+              <p role="status" style={{ margin: '1px 0 0', fontSize: 13, fontWeight: 600, color: online ? `${companionColor.hex}` : palette.accent, fontStyle: online ? 'normal' : 'italic' }}>{statusText}</p>
             </div>
-            {isAuthenticated ? (!korisLoading && (
-              <Link to="/acheter-koris" aria-label={`Tes ${CREDIT.many} : ${balance}. Recharger`} className="drl-btn"
-                style={{ ...pill, border: '1px solid rgba(242,182,109,.45)', color: palette.accent }}>
-                <Sparkles size={13} aria-hidden="true" /> {balance}
-              </Link>
-            )) : (
+            {!isAuthenticated && (
               <button onClick={() => openSignup('login', 'Me connecter')} className="drl-btn" style={{ ...pill, border: `1px solid ${C.line}`, color: C.text, cursor: 'pointer' }}>Se connecter</button>
             )}
             {tab === 'discuter' && (
-              <button onClick={() => setShowConvs(v => !v)} aria-expanded={showConvs} aria-label="Mes discussions" className="drl-btn"
-                style={{ width: 40, height: 40, padding: 0, borderRadius: 12, border: `1px solid ${showConvs ? palette.accent : C.line}`, background: showConvs ? 'rgba(242,182,109,.12)' : 'transparent', color: showConvs ? palette.accent : C.muted, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+              <button onClick={() => { setShowConvs(v => !v); setMoreOpen(false); }} aria-expanded={showConvs} aria-label="Mes discussions" className="drl-btn"
+                style={{ width: 40, height: 40, padding: 0, borderRadius: '50%', border: 0, background: showConvs ? `${companionColor.hex}26` : 'rgba(255,255,255,.05)', color: showConvs ? companionColor.hex : C.muted, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
                 <MessagesSquare size={17} aria-hidden="true" />
               </button>
             )}
-            <button onClick={() => { discret.dismiss(); setVeiled(true); }} aria-label="Masquer l'écran" className="drl-btn"
-              style={{ width: 40, height: 40, padding: 0, borderRadius: 12, border: `1px solid ${C.line}`, background: 'transparent', color: C.muted, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: 13, fontWeight: 600 }}>
-              <EyeOff size={17} aria-hidden="true" />
+            <button onClick={() => setMoreOpen(v => !v)} aria-expanded={moreOpen} aria-label="Plus" className="drl-btn"
+              style={{ width: 40, height: 40, padding: 0, borderRadius: '50%', border: 0, background: moreOpen ? `${companionColor.hex}26` : 'rgba(255,255,255,.05)', color: moreOpen ? companionColor.hex : C.muted, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: 20, lineHeight: 1 }}>
+              <MoreHorizontal size={19} aria-hidden="true" />
             </button>
           </header>
-          {namingOpen && (
-            <div style={{ padding: '0 14px 10px', maxHeight: '62dvh', overflowY: 'auto' }}>
-              <CompanionNaming current={companion} accent={palette.primary}
-                onSave={(n, colorId, iconId) => { setCompanion(saveCompanionName(n)); setCompanionColor(saveCompanionColor(colorId)); saveCompanionIcon(iconId); setIconTick(t => t + 1); markCompanionAsked(); setNaming(false); if (isAuthenticated) pushCompanion(); }}
-                onSkip={() => { markCompanionAsked(); setNaming(false); }} />
+          {moreOpen && (
+            <div role="menu" className="drl-in" style={{ position: 'absolute', top: 62, right: 14, zIndex: 20, minWidth: 250, padding: 6, borderRadius: 18, background: '#221810', border: '1px solid rgba(255,255,255,.12)', boxShadow: '0 16px 40px rgba(0,0,0,.5)' }}>
+              {[
+                ...(isAuthenticated && !korisLoading ? [{ label: `${balance} ${balance > 1 ? CREDIT.many : CREDIT.one}`, hint: 'Recharger', icon: Sparkles, go: () => navigate('/acheter-koris') }] : []),
+                ...(isAuthenticated ? [{ label: `Personnaliser ${companionName}`, hint: '', icon: Pencil, go: () => setNaming(true) }] : []),
+                { label: 'Masquer l\'écran', hint: '', icon: EyeOff, go: () => { discret.dismiss(); setVeiled(true); } },
+                { label: 'Effacer cette discussion', hint: '', icon: Trash2, go: () => resetConversation() },
+              ].map(it => (
+                <button key={it.label} type="button" role="menuitem" onClick={() => { setMoreOpen(false); it.go(); }} className="drl-btn"
+                  style={{ width: '100%', minHeight: 46, padding: '0 12px', border: 0, borderRadius: 12, background: 'transparent', color: C.text, display: 'flex', alignItems: 'center', gap: 10, fontSize: 15, fontWeight: 600, cursor: 'pointer', textAlign: 'left', fontFamily: 'inherit' }}>
+                  <it.icon size={17} color={companionColor.hex} aria-hidden="true" />
+                  <span style={{ flex: 1 }}>{it.label}</span>
+                  {it.hint && <span style={{ fontSize: 13, color: companionColor.hex, fontWeight: 700 }}>{it.hint}</span>}
+                </button>
+              ))}
+              <p style={{ margin: '4px 12px 8px', fontSize: 13, lineHeight: 1.45, color: C.faint }}>Conseils de bien-être, pas de diagnostic. Urgence : <a href="tel:1515" style={{ fontWeight: 700, color: C.text }}>1515</a></p>
             </div>
+          )}
+          {namingOpen && (
+              <CompanionStudio current={companion} first={!companion}
+                onSave={(n, colorId, styleId, langId) => { setCompanion(saveCompanionName(n)); setCompanionColor(saveCompanionColor(colorId)); saveCompanionStyle(styleId); saveCompanionLang(langId); setIconTick(t => t + 1); markCompanionAsked(); setNaming(false); if (isAuthenticated) pushCompanion(); }}
+                onClose={() => { markCompanionAsked(); setNaming(false); }} />
           )}
 
           {/* Discuter / Me confier (Me confier : selon le lancement par vagues) */}
@@ -2057,34 +2075,30 @@ const ConversationAccueil: React.FC = () => {
                 <div key={m.id} className="drl-in">
                   {m.from === 'user' ? (
                     <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                      <div style={{ maxWidth: '80%', padding: '10px 14px', borderRadius: '18px 18px 4px 18px', background: palette.primary, color: C.ink, fontSize: 15, fontWeight: 600, lineHeight: 1.45 }}>{m.text}</div>
+                      <div style={{ maxWidth: '80%', padding: '10px 14px', borderRadius: '20px 20px 6px 20px', background: `${companionColor.hex}2E`, border: `1px solid ${companionColor.hex}59`, color: C.title, fontSize: 15, fontWeight: 500, lineHeight: 1.45 }}>{m.text}</div>
                     </div>
                   ) : !m.text ? null : (
-                    <div style={{ display: 'flex', alignItems: 'flex-end', gap: 8, maxWidth: '92%' }}>
-                      <CompanionMark size={28} style={{ opacity: shownMsgs[i + 1]?.from === 'drlo' ? 0 : 1 }} />
-                      <div style={{ padding: '11px 14px', borderRadius: '18px 18px 18px 4px', background: 'rgba(255,255,255,.07)', border: '1px solid rgba(255,255,255,.08)', fontSize: 15, lineHeight: 1.5, color: C.text }}><RichText text={m.text} /></div>
+                    <div style={{ maxWidth: '96%' }}>
+                      {shownMsgs[i - 1]?.from !== 'drlo' && (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2, fontSize: 13, fontWeight: 700, color: companionColor.hex }}>
+                          <CompanionMark size={24} bare /> {companionName}
+                        </div>
+                      )}
+                      <div style={{ fontSize: 16.5, lineHeight: 1.6, color: C.text }}><RichText text={m.text} /></div>
                     </div>
                   )}
-                  {m.card && <div style={{ marginLeft: 36, maxWidth: 340 }}>{renderCard(m)}</div>}
+                  {m.card && <div style={{ marginTop: 6, maxWidth: 360 }}>{renderCard(m)}</div>}
                 </div>
               ))}
               {partial !== null && (
-                <div style={{ display: 'flex', alignItems: 'flex-end', gap: 8, maxWidth: '92%' }}>
-                  <CompanionMark size={28} />
-                  <div style={{ padding: '11px 14px', borderRadius: '18px 18px 18px 4px', background: 'rgba(255,255,255,.07)', border: '1px solid rgba(255,255,255,.08)', fontSize: 15, lineHeight: 1.5, color: C.text }}><RichText text={partial} /></div>
-                </div>
+                <div style={{ maxWidth: '96%', fontSize: 16.5, lineHeight: 1.6, color: C.text }}><RichText text={partial} /></div>
               )}
               {(phase === 'thinking' || phase === 'reading' || routing || testBusy) && partial === null && (
-                <div role="status" aria-label="Ton compagnon écrit" style={{ display: 'flex', alignItems: 'flex-end', gap: 8 }}>
-                  <CompanionMark size={28} mood="pense" />
-                  <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '12px 14px', borderRadius: '18px 18px 18px 4px', background: 'rgba(255,255,255,.07)' }}>
-                    <span style={{ display: 'inline-flex', gap: 5 }}>
-                      {[0, 0.15, 0.3].map(d => <span key={d} className="drl-dot" style={{ width: 7, height: 7, borderRadius: '50%', background: C.muted, animationDelay: `${d}s` }} />)}
-                    </span>
-                    {typeof routing === 'string' && routing && (
-                      <span style={{ fontSize: 13, color: C.muted }}>{companionName} {routing.charAt(0).toLowerCase() + routing.slice(1)}…</span>
-                    )}
-                  </div>
+                <div role="status" aria-label="Ton compagnon écrit" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span className="drl-think" style={{ display: 'inline-flex' }}><CompanionMark size={30} bare mood="pense" /></span>
+                  <span style={{ fontSize: 14, color: C.muted, fontStyle: 'italic' }}>
+                    {typeof routing === 'string' && routing ? `${companionName} ${routing.charAt(0).toLowerCase() + routing.slice(1)}…` : `${companionName} réfléchit…`}
+                  </span>
                 </div>
               )}
               {noted && !revealing && (
@@ -2103,7 +2117,7 @@ const ConversationAccueil: React.FC = () => {
               {/* Les choix proposés par Dr Lô, dans la conversation, tous visibles */}
               {!revealing && !routing && visibleChips.length > 0 && (
                 <div className="drl-in" role="group" aria-label="Choisis une réponse"
-                  style={{ marginLeft: 36, display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                  style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
                   {visibleChips.map(c => (
                     <button key={c.label} onClick={() => onChip(c)} className="drl-btn"
                       style={{ minHeight: 44, padding: '0 16px', borderRadius: 999, cursor: 'pointer', fontSize: 15, fontWeight: 600, color: c.kind === 'breath' ? palette.accent : C.text,
@@ -2117,7 +2131,7 @@ const ConversationAccueil: React.FC = () => {
             </div>
 
             {/* Répondre */}
-            <div style={{ padding: '8px 14px 10px', borderTop: '1px solid rgba(255,255,255,.06)', background: 'rgba(20,16,13,.7)', maxHeight: '58svh', overflowY: 'auto' }}>
+            <div style={{ padding: '6px 12px 10px', maxHeight: '58svh', overflowY: 'auto' }}>
               {chipsHidden && chips.length > 0 && !revealing && !routing && !input.trim() && (
                 <button onClick={() => setShowIdeas(true)} className="drl-btn"
                   style={{ marginBottom: 8, minHeight: 34, padding: '0 12px', borderRadius: 999, border: '1px solid rgba(233,200,143,.4)', background: 'transparent', color: '#E9C88F', fontSize: 13, fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontFamily: 'inherit' }}>
@@ -2125,9 +2139,8 @@ const ConversationAccueil: React.FC = () => {
                 </button>
               )}
               {controls}
-              <p style={{ margin: '8px 0 0', textAlign: 'center', fontSize: 13, color: C.faint, lineHeight: 1.5 }}>
-                Conseils de bien-être, pas de diagnostic · Urgence : <a href="tel:1515" style={{ fontWeight: 700 }}>1515</a>
-                {' · '}<button onClick={resetConversation} style={{ ...linkBtn, fontSize: 13, fontWeight: 500, minHeight: 0, padding: 0 }}>Effacer</button>
+              <p style={{ margin: '6px 0 0', textAlign: 'center', fontSize: 13, color: C.faint, lineHeight: 1.4 }}>
+                Pas de diagnostic · Urgence : <a href="tel:1515" style={{ fontWeight: 700, color: C.muted }}>1515</a>
               </p>
             </div>
           </>)}
@@ -2234,9 +2247,9 @@ const ConversationAccueil: React.FC = () => {
               )}
             </div>
             {isAuthenticated && (naming || (!companion && !companionAsked())) && (
-              <CompanionNaming current={companion} accent={palette.primary}
-                onSave={(n, colorId, iconId) => { setCompanion(saveCompanionName(n)); setCompanionColor(saveCompanionColor(colorId)); saveCompanionIcon(iconId); setIconTick(t => t + 1); markCompanionAsked(); setNaming(false); if (isAuthenticated) pushCompanion(); }}
-                onSkip={() => { markCompanionAsked(); setNaming(false); }} />
+              <CompanionStudio current={companion} first={!companion}
+                onSave={(n, colorId, styleId, langId) => { setCompanion(saveCompanionName(n)); setCompanionColor(saveCompanionColor(colorId)); saveCompanionStyle(styleId); saveCompanionLang(langId); setIconTick(t => t + 1); markCompanionAsked(); setNaming(false); if (isAuthenticated) pushCompanion(); }}
+                onClose={() => { markCompanionAsked(); setNaming(false); }} />
             )}
             <div style={{ display: 'flex', justifyContent: 'center' }}>{modeNav}</div>
           </div>
@@ -2261,9 +2274,9 @@ const ConversationAccueil: React.FC = () => {
           )}
           {isAuthenticated && (naming || (!companion && !companionAsked())) && (
             <div style={{ width: '100%' }}>
-              <CompanionNaming current={companion} accent={palette.primary}
-                onSave={(n, colorId, iconId) => { setCompanion(saveCompanionName(n)); setCompanionColor(saveCompanionColor(colorId)); saveCompanionIcon(iconId); setIconTick(t => t + 1); markCompanionAsked(); setNaming(false); if (isAuthenticated) pushCompanion(); }}
-                onSkip={() => { markCompanionAsked(); setNaming(false); }} />
+              <CompanionStudio current={companion} first={!companion}
+                onSave={(n, colorId, styleId, langId) => { setCompanion(saveCompanionName(n)); setCompanionColor(saveCompanionColor(colorId)); saveCompanionStyle(styleId); saveCompanionLang(langId); setIconTick(t => t + 1); markCompanionAsked(); setNaming(false); if (isAuthenticated) pushCompanion(); }}
+                onClose={() => { markCompanionAsked(); setNaming(false); }} />
             </div>
           )}
           {modeNav}

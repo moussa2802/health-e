@@ -4,10 +4,10 @@
  * ensuite, le compte fait foi et chaque appareil s'aligne.
  */
 import { authedFetch } from '../utils/authedFetch';
-import { getCompanionColor, getCompanionIcon, getCompanionName, saveCompanionColor, saveCompanionIcon, saveCompanionName } from '../utils/companion';
+import { getCompanionColor, getCompanionIcon, getCompanionLang, getCompanionName, getCompanionStyle, saveCompanionColor, saveCompanionIcon, saveCompanionLang, saveCompanionName, saveCompanionStyle } from '../utils/companion';
 import { notifyCompanionChange, setCompanionStage } from '../utils/companionStage';
 
-export interface CompanionData { name: string; color: string | null; icon: string | null; stage: number; seenStage: number }
+export interface CompanionData { name: string; color: string | null; icon: string | null; style?: string | null; lang?: string | null; stage: number; seenStage: number }
 
 async function call(body: Record<string, unknown>): Promise<CompanionData> {
   const res = await authedFetch('/.netlify/functions/companion', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
@@ -20,6 +20,8 @@ function applyLocally(d: CompanionData): void {
   if (d.name) saveCompanionName(d.name);
   if (d.color) saveCompanionColor(d.color);
   if (d.icon) saveCompanionIcon(d.icon);
+  if (d.style) saveCompanionStyle(d.style);
+  if (d.lang) saveCompanionLang(d.lang);
   setCompanionStage(d.stage);
   notifyCompanionChange();
 }
@@ -44,7 +46,7 @@ export function syncCompanion(): Promise<CompanionData> {
 
 /** Après « Nommer ton compagnon » : on enregistre aussi sur le compte (sans bloquer l'écran). */
 export function pushCompanion(): void {
-  call({ action: 'save', name: getCompanionName(), color: getCompanionColor().id, icon: getCompanionIcon() })
+  call({ action: 'save', name: getCompanionName(), color: getCompanionColor().id, icon: getCompanionIcon(), style: getCompanionStyle(), lang: getCompanionLang() })
     .then(d => { pending = Promise.resolve(d); }).catch(() => { /* réessaiera au prochain passage */ });
   notifyCompanionChange();
 }

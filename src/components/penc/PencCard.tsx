@@ -9,9 +9,10 @@ import { dateParts, type Penc } from '../../services/pencService';
 
 const PencCard: React.FC<{ p: Penc; accent: string; onRemind?: (p: Penc) => void; busy?: boolean }> = ({ p, accent, onRemind, busy }) => {
   const d = dateParts(p.startAt);
-  const tint = p.access === 'channel' ? '#C9B8E4' : '#9DBFAF';
+  // Couleurs de la charte : or pour les rendez-vous ouverts à tous, lavande pour ceux d'une chaîne
+  const tint = p.access === 'channel' ? '#C9B8E4' : '#E9C88F';
   return (
-    <article style={{ ...card, display: 'flex', alignItems: 'center', gap: 12 }}>
+    <article style={{ ...card, display: 'flex', alignItems: 'center', gap: 12, borderColor: `${tint}55`, background: `linear-gradient(135deg, ${tint}1F, ${tint}06 70%)` }}>
       <span aria-hidden="true" style={{ width: 54, flex: 'none', borderRadius: 14, padding: '6px 0', display: 'flex', flexDirection: 'column', alignItems: 'center', lineHeight: 1.15, background: `${tint}22`, border: `1px solid ${tint}77` }}>
         <span style={{ fontSize: 13, fontWeight: 700, color: tint }}>{d.day}</span>
         <b style={{ fontSize: 20, color: DC.title }}>{d.num}</b>

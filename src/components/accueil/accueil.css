@@ -115,3 +115,10 @@
 .pc-ring:nth-child(2){animation-delay:1.2s}
 @keyframes pcRing{0%{transform:scale(1);opacity:.6}100%{transform:scale(1.7);opacity:0}}
 @media (prefers-reduced-motion: reduce){.pc-eq>span,.pc-ring{animation:none}.pc-eq>span{transform:scaleY(.7)}.pc-ring{opacity:.25}}
+
+/* Discussion : la lumière du compagnon qui dérive derrière le texte, et lui qui pulse quand il réfléchit */
+.drl-amb{animation:drlAmb 16s ease-in-out infinite alternate}
+@keyframes drlAmb{to{transform:translate3d(12px,18px,0) scale(1.06)}}
+.drl-think{animation:drlThink 1.4s ease-in-out infinite}
+@keyframes drlThink{50%{transform:scale(1.12);filter:brightness(1.25)}}
+@media (prefers-reduced-motion: reduce){.drl-amb,.drl-think{animation:none}}

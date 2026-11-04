@@ -36,14 +36,15 @@ export const companionAsked = () => { try { return localStorage.getItem(ASKED) =
 export const markCompanionAsked = () => { try { localStorage.setItem(ASKED, '1'); } catch { /* ignore */ } };
 
 // ── La couleur du compagnon : un choix pour s'y attacher (sur l'appareil, comme le nom) ──
-export interface CompanionColor { id: string; label: string; hex: string }
+/** Ses lumières, avec un nom d'ici (les identifiants restent les mêmes : ils sont enregistrés sur les comptes). */
+export interface CompanionColor { id: string; label: string; hex: string; word: string }
 export const COMPANION_COLORS: CompanionColor[] = [
-  { id: 'ambre', label: 'Ambre', hex: '#F2B66D' },
-  { id: 'sauge', label: 'Sauge', hex: '#9DBFAF' },
-  { id: 'lavande', label: 'Lavande', hex: '#C9B8E4' },
-  { id: 'corail', label: 'Corail', hex: '#F09A7A' },
-  { id: 'ciel', label: 'Ciel', hex: '#9FB4C8' },
-  { id: 'rose', label: 'Rose', hex: '#E8A0B8' },
+  { id: 'ambre', label: 'Feu de veillée', hex: '#F2B66D', word: 'chaud et posé' },
+  { id: 'rose', label: 'Bissap', hex: '#E8A0B8', word: 'tendre' },
+  { id: 'ciel', label: 'Atlantique', hex: '#8FC6E8', word: 'frais, apaisant' },
+  { id: 'sauge', label: 'Baobab', hex: '#9DBFAF', word: 'solide, calme' },
+  { id: 'lavande', label: 'Nuit calme', hex: '#C9B8E4', word: 'doux, rêveur' },
+  { id: 'corail', label: 'Coucher de soleil', hex: '#F09A7A', word: 'vif, joyeux' },
 ];
 const COLOR_KEY = 'he_companion_color';
 export const getCompanionColor = (): CompanionColor => {
@@ -75,3 +76,27 @@ export const saveCompanionIcon = (id: string): CompanionIconId => {
 };
 /** Des noms pour « Surprends-moi » : courts, chaleureux, jamais ceux d'un médecin. */
 export const COMPANION_NAME_IDEAS = ['Kora', 'Confident', 'Allié', 'Sama', 'Ndank', 'Baobab', 'Teranga', 'Lumi', 'Sora', 'Maam'];
+
+// ── Sa façon de te parler (change vraiment ses réponses : la consigne part avec chaque message) ──
+export const COMPANION_STYLES = [
+  { id: 'douce', label: 'Douce', sub: 'prend son temps, rassure', sample: '« Doucement, on y va ensemble. »' },
+  { id: 'franche', label: 'Franche', sub: 'va droit au but, sans détour', sample: '« Bon, on regarde ça en face ? »' },
+  { id: 'taquine', label: 'Taquine', sub: 'te taquine avec tendresse', sample: '« Toi alors… raconte-moi tout ! »' },
+] as const;
+export const COMPANION_LANGS = [
+  { id: 'fr', label: 'Plutôt en français' },
+  { id: 'mix', label: 'Français et wolof' },
+  { id: 'wo', label: 'Plus de wolof' },
+] as const;
+export type CompanionStyleId = typeof COMPANION_STYLES[number]['id'];
+export type CompanionLangId = typeof COMPANION_LANGS[number]['id'];
+const STYLE_KEY = 'he_companion_style';
+const LANG_KEY = 'he_companion_lang';
+export const getCompanionStyle = (): CompanionStyleId => {
+  try { const v = localStorage.getItem(STYLE_KEY); return (COMPANION_STYLES.find(x => x.id === v)?.id ?? 'douce') as CompanionStyleId; } catch { return 'douce'; }
+};
+export const getCompanionLang = (): CompanionLangId => {
+  try { const v = localStorage.getItem(LANG_KEY); return (COMPANION_LANGS.find(x => x.id === v)?.id ?? 'mix') as CompanionLangId; } catch { return 'mix'; }
+};
+export const saveCompanionStyle = (id: string) => { const v = COMPANION_STYLES.find(x => x.id === id)?.id ?? 'douce'; try { localStorage.setItem(STYLE_KEY, v); } catch { /* ignore */ } return v; };
+export const saveCompanionLang = (id: string) => { const v = COMPANION_LANGS.find(x => x.id === id)?.id ?? 'mix'; try { localStorage.setItem(LANG_KEY, v); } catch { /* ignore */ } return v; };

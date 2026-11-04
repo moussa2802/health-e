@@ -34,11 +34,21 @@ export const CompanionBody: React.FC<{ color: string; icon?: string; size: numbe
   <CompanionAura size={size} color={color} mood={mood} live={false} stage={3} sign={ICON_PATHS[icon ?? getCompanionIcon()] ?? ICON_PATHS.pousse} />
 );
 
-const CompanionMark: React.FC<{ size?: number; icon?: string; ring?: string; color?: string; mood?: AuraMood; live?: boolean; stage?: number; onTap?: () => void; className?: string; style?: React.CSSProperties }> = ({ size = 40, icon, ring, color, mood, live, stage, onTap, className, style }) => {
+const CompanionMark: React.FC<{ size?: number; icon?: string; ring?: string; color?: string; mood?: AuraMood; live?: boolean; stage?: number; bare?: boolean; onTap?: () => void; className?: string; style?: React.CSSProperties }> = ({ size = 40, icon, ring, color, mood, live, stage, bare, onTap, className, style }) => {
   useCompanionLook();
   const c = color ?? getCompanionColor().hex;
   // Le signe n'apparaît qu'à partir d'une taille où il se lit
-  const sign = size >= 44 ? ICON_PATHS[icon ?? getCompanionIcon()] ?? ICON_PATHS.pousse : undefined;
+  // La « petite lumière » sur sa tête est retirée (atelier du 5 nov. 2026) : elle ne voulait rien dire.
+  void icon;
+  const sign = undefined;
+  // bare : l'aura seule, sans le rond (posée directement sur le fond, comme dans la discussion)
+  if (bare) {
+    return (
+      <span aria-hidden="true" className={className} style={{ width: size, height: size, flexShrink: 0, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', ...style }}>
+        <CompanionAura size={Math.round(size * 1.5)} color={c} mood={mood} live={live} stage={stage ?? getCompanionStage()} onTap={onTap} />
+      </span>
+    );
+  }
   return (
     <span aria-hidden="true" className={className}
       style={{ width: size, height: size, flexShrink: 0, borderRadius: '50%', boxSizing: 'border-box', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden',

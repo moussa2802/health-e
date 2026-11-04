@@ -16,7 +16,7 @@ import { authedFetch } from '../utils/authedFetch';
 import { spendKorisForUnlock } from './korisService';
 import { getScaleMeta } from '../utils/scaleMeta';
 
-import { getCompanionName } from '../utils/companion';
+import { getCompanionLang, getCompanionName, getCompanionStyle } from '../utils/companion';
 export const DAILY_MESSAGE_LIMIT = 10;
 export const UNLOCK_MESSAGES = 5;
 export const MAX_DAILY_UNLOCKS = 3;
@@ -148,6 +148,8 @@ export async function buildFullContext(userId: string | null) {
     journal_recent,
     totem_resume: buildTotemResume(totemAnimal, scaleResults),
     companion: getCompanionName(),
+    companion_style: getCompanionStyle(),
+    companion_lang: getCompanionLang(),
   };
 }
 

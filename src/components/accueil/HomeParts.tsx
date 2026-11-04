@@ -83,7 +83,7 @@ export const ChannelCard: React.FC<{ c: HomeChannel; to: string }> = ({ c, to })
 /** Un lien plein de la largeur, avec flèche : pour « À deux », « Ton animal intérieur », etc. */
 export const WideLink: React.FC<{ to: string; state?: unknown; kicker?: string; title: string; sub?: string; tint?: string; icon?: React.ReactNode }> = ({ to, state, kicker, title, sub, tint = DC.gold, icon }) => (
   <Link to={to} state={state} className="drl-btn"
-    style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '14px 14px', minHeight: 64, borderRadius: 18, textDecoration: 'none', color: DC.text, border: `1px solid ${tint}55`, background: `${tint}12` }}>
+    style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '14px 14px', minHeight: 64, borderRadius: 18, textDecoration: 'none', color: DC.text, border: `1px solid ${tint}55`, background: `linear-gradient(135deg, ${tint}24, ${tint}07 70%)` }}>
     {icon}
     <span style={{ flex: 1, minWidth: 0 }}>
       {kicker && <span style={{ display: 'block', fontSize: 13, fontWeight: 700, letterSpacing: '.1em', color: tint }}>{kicker}</span>}

@@ -19,6 +19,7 @@ import { useLaunch } from '../hooks/useLaunch';
 import { HScroll, SectionTitle, NewsCard, ChannelCard, WideLink, tintOf, type NewsItem } from '../components/accueil/HomeParts';
 import { RealDrLoPhoto } from '../components/accueil/RealDrLoBadge';
 import CompanionMark from '../components/accueil/CompanionMark';
+import { getCompanionColor } from '../utils/companion';
 import { GrewCard } from '../components/accueil/CompanionGrowth';
 import AccueilSeoSections from '../components/accueil/AccueilSeoSections';
 import { useAuth } from '../contexts/AuthContext';
@@ -237,6 +238,8 @@ const ConnectedHome: React.FC<{ feed: HomeFeed | null; palette: MomentPalette; u
   const today = dayKey();
   const launch = useLaunch();
   const [pencLive, setPencLive] = useState(false);
+  // La lumière du compagnon colore la carte vedette (et le fond de la page)
+  const cc = getCompanionColor().hex;
 
   useEffect(() => {
     let off = false;
@@ -299,7 +302,7 @@ const ConnectedHome: React.FC<{ feed: HomeFeed | null; palette: MomentPalette; u
       <HomePenc palette={palette} full={launch.on('penc_page')} onLive={setPencLive} />
 
       {suite && !pencLive && (
-        <section aria-label="Ta suite" style={{ ...card, marginTop: 14, padding: 16, borderColor: 'rgba(242,182,109,.5)', background: 'linear-gradient(150deg, rgba(242,182,109,.2), rgba(255,255,255,.04))' }}>
+        <section aria-label="Ta suite" style={{ ...card, marginTop: 14, padding: 16, position: 'relative', overflow: 'hidden', borderColor: `${cc}80`, background: `radial-gradient(60% 80% at 100% 0%, ${cc}4D, transparent 70%), linear-gradient(140deg, ${cc}33, rgba(26,18,11,.9) 65%)` }}>
           <p style={{ margin: 0, fontSize: 13, fontWeight: 700, letterSpacing: '.12em', color: palette.accent }}>{suite.kicker}</p>
           <p style={{ margin: '6px 0 0', fontFamily: 'Fraunces, serif', fontSize: 21, lineHeight: 1.25, fontWeight: 600, color: DC.title }}>{suite.title}</p>
           <button onClick={suite.go} className="drl-btn"
@@ -341,8 +344,8 @@ const ConnectedHome: React.FC<{ feed: HomeFeed | null; palette: MomentPalette; u
 
       {moodDone === false && (
         <div style={{ marginTop: 14 }}>
-          <button onClick={() => setMoodOpen(true)} className="drl-btn" style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 12, padding: 14, minHeight: 64, borderRadius: 18, textAlign: 'left', color: DC.text, border: `1px solid ${DC.gold}55`, background: `${DC.gold}12`, cursor: 'pointer', fontFamily: 'inherit' }}>
-            <CloudSun size={22} color={DC.gold} aria-hidden="true" />
+          <button onClick={() => setMoodOpen(true)} className="drl-btn" style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 12, padding: 14, minHeight: 64, borderRadius: 18, textAlign: 'left', color: DC.text, border: `1px solid ${DC.sage}55`, background: `linear-gradient(135deg, ${DC.sage}26, ${DC.sage}07 70%)`, cursor: 'pointer', fontFamily: 'inherit' }}>
+            <CloudSun size={22} color={DC.sage} aria-hidden="true" />
             <span style={{ flex: 1 }}><span style={{ display: 'block', fontFamily: 'Fraunces, serif', fontSize: 18, fontWeight: 600, color: DC.title }}>Comment tu te sens ?</span><span style={{ display: 'block', marginTop: 2, fontSize: 14, color: DC.muted }}>Note ton humeur en 30 secondes.</span></span>
           </button>
         </div>
@@ -395,7 +398,7 @@ const AccueilPage: React.FC = () => {
   if (new URLSearchParams(location.search).get('ouvrir')) return <Navigate to={{ pathname: '/compagnon', search: location.search }} replace />;
 
   return (
-    <div className="drl-screen font-sans" style={{ minHeight: '100svh', background: palette.bg, color: DC.text, ['--he-action' as string]: palette.primary } as React.CSSProperties}>
+    <div className="drl-screen font-sans" style={{ minHeight: '100svh', background: isAuthenticated ? `radial-gradient(60% 28% at 85% 2%, ${getCompanionColor().hex}2B, transparent 70%), ${palette.bg}` : palette.bg, color: DC.text, ['--he-action' as string]: palette.primary } as React.CSSProperties}>
       <div className="drl-wrap" style={{ margin: '0 auto', padding: '16px 18px calc(92px + env(safe-area-inset-bottom, 0px))', boxSizing: 'border-box' }}>
         {authReady && (isAuthenticated && currentUser
           ? <ConnectedHome feed={feed} palette={palette} uid={currentUser.id} prenom={prenom} />

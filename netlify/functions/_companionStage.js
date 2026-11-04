@@ -11,6 +11,8 @@ const DAY = 86400000;
 const VEILLEE_DAYS = 30;
 const COLORS = ['ambre', 'sauge', 'lavande', 'corail', 'ciel', 'rose'];
 const ICONS = ['pousse', 'etoile', 'lune', 'flamme', 'coeur', 'feuille'];
+const STYLES = ['douce', 'franche', 'taquine'];
+const LANGS = ['fr', 'mix', 'wo'];
 
 const ms = (v) => (v && typeof v.toMillis === 'function' ? v.toMillis() : typeof v === 'number' ? v : v ? Date.parse(v) || 0 : 0);
 
@@ -35,5 +37,7 @@ function factsOf(profile, patient, now = Date.now()) {
 
 const cleanColor = (c) => (COLORS.includes(c) ? c : null);
 const cleanIcon = (i) => (ICONS.includes(i) ? i : null);
+const cleanStyle = (v) => (STYLES.includes(v) ? v : null);
+const cleanLang = (v) => (LANGS.includes(v) ? v : null);
 
-module.exports = { VEILLEE_DAYS, COLORS, ICONS, computeStage, keepGrowing, factsOf, cleanColor, cleanIcon };
+module.exports = { VEILLEE_DAYS, COLORS, ICONS, STYLES, LANGS, computeStage, keepGrowing, factsOf, cleanColor, cleanIcon, cleanStyle, cleanLang };
