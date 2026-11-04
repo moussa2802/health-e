@@ -160,6 +160,11 @@ const EspacePage: React.FC = () => {
 
       {/* Mon compagnon : son stade et ce qui le fera grandir */}
       {uid && <CompanionCard palette={palette} />}
+      {uid && (
+        <Link to="/point-de-la-semaine" className="drl-btn" style={{ marginTop: 10, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, minHeight: 52, padding: '0 16px', borderRadius: 16, border: '1px solid rgba(157,191,175,.4)', background: 'rgba(157,191,175,.07)', color: DC.text, textDecoration: 'none', fontSize: 15, fontWeight: 600 }}>
+          <span>Mon point de la semaine <span style={{ color: DC.faint, fontWeight: 500, fontSize: 13 }}>· par mon compagnon</span></span><span aria-hidden="true" style={{ color: DC.faint }}>›</span>
+        </Link>
+      )}
 
       {/* Météo intérieure */}
       <section aria-label="Ta météo intérieure" style={{ ...card, marginTop: 14 }}>

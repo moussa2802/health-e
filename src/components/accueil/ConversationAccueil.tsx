@@ -10,7 +10,7 @@
  */
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { ArrowRight, Bell, Heart, Mail, PawPrint, Users, Check, ChevronLeft, ClipboardCheck, Clock, CloudSun, Copy, EyeOff, ListChecks, Lock, MessagesSquare, Mic, Pencil, Phone, Plus, Send, Sparkles, Sprout, Wind } from 'lucide-react';
+import { ArrowRight, Bell, Heart, Mail, PawPrint, Users, Check, ChevronLeft, ClipboardCheck, Clock, CloudSun, Copy, EyeOff, ListChecks, Lock, MessagesSquare, Mic, Pencil, Phone, Plus, Send, Sparkles, Sprout, Wind, CalendarCheck } from 'lucide-react';
 import './accueil.css';
 import DrLoAvatar, { auraMoodOf, type DrLoState } from './DrLoAvatar';
 import DrLoIsland from './DrLoIsland';
@@ -68,8 +68,9 @@ import { getAllGuestResults, getGuestCount, GUEST_MAX_TESTS } from '../../utils/
 import { getProfileProgress, saveOnboardingToProfile } from '../../services/evaluationService';
 import { ALL_SCALES, getScaleById, MENTAL_HEALTH_SCALES, SEXUAL_HEALTH_SCALES } from '../../data/scales';
 import { getScaleMeta } from '../../utils/scaleMeta';
-import { pickHomeNext, sinceLabel } from '../../utils/homeNext';
-import { toDate } from '../../utils/drLoGuide';
+import { companionSuggestion } from '../../utils/companionSuggestion';
+import { weekKey } from '../../utils/weeklyPoint';
+import { pointSeenWeek } from '../../utils/pointSeen';
 import { STAGES, getCompanionStage } from '../../utils/companionStage';
 import { getCrisisResources } from '../../data/crisisResources';
 import { invalidateTalkContext, rememberNow, talk as talkToDrLo, type TalkAction } from '../../services/drloTalk';
@@ -814,20 +815,7 @@ const ConversationAccueil: React.FC = () => {
   const visibleChips = chipsHidden ? [] : chips;
 
   // « Ce que je te propose » : une seule proposition, la même logique que « ta suite » de l'accueil
-  const suggestion = (() => {
-    if (!isAuthenticated || !results || state.step === 'crisis' || state.step === 'testing' || state.step === 'minor') return null;
-    const prog = getTotemProgress(results);
-    if (prog.missing.length > 0) {
-      const id = prog.missing[0], n = prog.missing.length;
-      return { id, text: `Plus que ${n} test${n > 1 ? 's' : ''} pour découvrir ton animal intérieur. Le prochain : « ${getScaleMeta(id).label} ».`, cta: 'On le fait' };
-    }
-    if (!totemAnimal) return { id: '', text: 'Ton animal intérieur est prêt. Je te le montre ?', cta: 'Le découvrir' };
-    const dates = Object.fromEntries(Object.entries(results).map(([k, r]) => [k, toDate((r as { completedAt?: unknown }).completedAt)]));
-    const more = pickHomeNext(dates, Date.now());
-    if (more?.kind === 'new') return { id: more.id, text: `Un test que tu n'as pas encore fait : « ${getScaleMeta(more.id).label} ». Et toi, tu es comment ?`, cta: 'On le fait' };
-    if (more?.kind === 'retake') return { id: more.id, text: `Ton test « ${getScaleMeta(more.id).label} » date de ${sinceLabel(more.days)}. On refait le point ?`, cta: 'On le refait' };
-    return null;
-  })();
+  const suggestion = !isAuthenticated || state.step === 'crisis' || state.step === 'testing' || state.step === 'minor' ? null : companionSuggestion(results, !!totemAnimal);
   const suggestionShown = !!suggestion && suggestHidden !== today && tab === 'discuter' && !showConvs && !breathing && !input.trim() && !revealing
     && !messages.slice(-3).some(m => m.card?.type === 'test' && m.card.scaleId === suggestion.id);
   const takeSuggestion = () => {
@@ -841,6 +829,7 @@ const ConversationAccueil: React.FC = () => {
       card: { type: 'test', scaleId: suggestion.id },
     }]), prev);
   };
+  const pointReady = isAuthenticated && !!results && Object.keys(results).length > 0 && pointSeenWeek() !== weekKey(today) && state.step !== 'crisis';
   const hideSuggestion = () => { setSuggestHidden(today); try { localStorage.setItem('he_suggest_hidden', today); } catch { /* ignore */ } };
 
   // ── Mon programme ──
@@ -1950,7 +1939,7 @@ const ConversationAccueil: React.FC = () => {
   const chatMode = inChat;
   if (chatMode) {
     const namingOpen = isAuthenticated && (naming || (!companion && !companionAsked()));
-    const statusText = statusLabel ?? (listening ? 'Je t\'écoute…' : convMeta ? convMeta.title : isAuthenticated ? STAGES[getCompanionStage()].name : 'En ligne');
+    const statusText = statusLabel ?? (listening ? 'Je t\'écoute…' : convMeta && convId !== MAIN_ID ? convMeta.title : isAuthenticated ? STAGES[getCompanionStage()].name : 'En ligne');
     const online = !statusLabel && !listening;
     const shownMsgs = messages.slice(0, shown);
     return (
@@ -2015,6 +2004,19 @@ const ConversationAccueil: React.FC = () => {
               </button>
             ))}
           </nav>}
+
+          {/* Le point de la semaine : tant qu'il n'a pas été ouvert cette semaine */}
+          {pointReady && tab === 'discuter' && !showConvs && !input.trim() && (
+            <Link to="/point-de-la-semaine" className="drl-btn"
+              style={{ margin: '10px 14px 0', padding: '10px 12px', borderRadius: 16, border: '1px solid rgba(157,191,175,.45)', background: 'rgba(157,191,175,.08)', display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none', color: C.text }}>
+              <CalendarCheck size={20} color="#9DBFAF" aria-hidden="true" style={{ flexShrink: 0 }} />
+              <span style={{ flex: 1, minWidth: 0 }}>
+                <span style={{ display: 'block', fontSize: 14, fontWeight: 700, color: C.title }}>Ton point de la semaine est prêt</span>
+                <span style={{ display: 'block', fontSize: 13, color: C.muted }}>Où tu en es, ce qui a bougé, ce que je te propose</span>
+              </span>
+              <span style={{ fontSize: 14, fontWeight: 700, color: '#9DBFAF' }}>Lire</span>
+            </Link>
+          )}
 
           {/* Ce que je te propose : une seule proposition, qu'on peut écarter pour la journée */}
           {suggestionShown && suggestion && (

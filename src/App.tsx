@@ -68,6 +68,7 @@ const BoiteOutilsPage = lazy(() => import("./pages/drlo/BoiteOutilsPage"));
 const PencPage = lazy(() => import("./pages/drlo/PencPage"));
 const ProApplyPage = lazy(() => import("./pages/drlo/ProApplyPage"));
 const InfosPage = lazy(() => import("./pages/drlo/InfosPage"));
+const PointPage = lazy(() => import("./pages/drlo/PointPage"));
 const BoitePage = lazy(() => import("./pages/drlo/BoitePage"));
 const OutilsPage = lazy(() => import("./pages/drlo/OutilsPage"));
 const MonJournalPage = lazy(() => import("./pages/drlo/MonJournalPage"));
@@ -137,7 +138,7 @@ const AppChrome: React.FC = () => {
   const isChromeless = isAdminRoute || isAppRoute || isDefiJouer;
   // Accueil : le premier écran est Dr Lô en plein écran (pas d'en-tête ni de pied de page du site)
   // Écrans « Mon Dr Lô » (thème chaud sombre, plein écran) : pas d'en-tête ni de pied de page du site
-  const isHome = pathname === "/" || pathname === "/compagnon" || pathname === "/espace" || pathname.startsWith("/espace/") || pathname === "/humeur" || pathname === "/journal" || pathname.startsWith("/journal/") || pathname === "/question" || pathname === "/drlo" || pathname === "/equipe" || pathname === "/confidentialite" || pathname === "/conditions" || pathname === "/cgu" || pathname === "/ethique" || pathname === "/faq" || pathname === "/contact" || pathname === "/patient/access" || pathname === "/patient" || pathname === "/messages-dr-lo" || pathname.startsWith("/messages-dr-lo/") || pathname === "/chaines" || pathname.startsWith("/chaines/") || pathname.startsWith("/c/") || pathname.startsWith("/pratique/") || pathname === "/routine" || pathname === "/boite-a-outils" || pathname === "/outils" || pathname === "/boite-a-questions" || pathname === "/assessment/totem" || pathname.startsWith("/assessment/results/") || pathname === "/defi" || pathname.startsWith("/defi/") || pathname === "/decouvre" || pathname === "/assessment/compatibility" || pathname.startsWith("/compat/") || pathname === "/assessment" || pathname.startsWith("/assessment/") || pathname === "/acheter-koris" || pathname === "/penc" || pathname.startsWith("/penc/") || pathname === "/mes-informations" || pathname === "/espace-pro/rejoindre";
+  const isHome = pathname === "/" || pathname === "/compagnon" || pathname === "/espace" || pathname.startsWith("/espace/") || pathname === "/humeur" || pathname === "/journal" || pathname.startsWith("/journal/") || pathname === "/question" || pathname === "/drlo" || pathname === "/equipe" || pathname === "/confidentialite" || pathname === "/conditions" || pathname === "/cgu" || pathname === "/ethique" || pathname === "/faq" || pathname === "/contact" || pathname === "/patient/access" || pathname === "/patient" || pathname === "/messages-dr-lo" || pathname.startsWith("/messages-dr-lo/") || pathname === "/chaines" || pathname.startsWith("/chaines/") || pathname.startsWith("/c/") || pathname.startsWith("/pratique/") || pathname === "/routine" || pathname === "/boite-a-outils" || pathname === "/outils" || pathname === "/boite-a-questions" || pathname === "/assessment/totem" || pathname.startsWith("/assessment/results/") || pathname === "/defi" || pathname.startsWith("/defi/") || pathname === "/decouvre" || pathname === "/assessment/compatibility" || pathname.startsWith("/compat/") || pathname === "/assessment" || pathname.startsWith("/assessment/") || pathname === "/acheter-koris" || pathname === "/penc" || pathname.startsWith("/penc/") || pathname === "/mes-informations" || pathname === "/point-de-la-semaine" || pathname === "/espace-pro/rejoindre";
   const { currentUser } = useAuth();
   const userId = currentUser?.id ?? null;
 
@@ -151,6 +152,7 @@ const AppChrome: React.FC = () => {
             <Route path="/compagnon" element={<CompagnonPage />} />
             <Route path="/espace" element={<EspacePage />} />
             <Route path="/mes-informations" element={<InfosPage />} />
+            <Route path="/point-de-la-semaine" element={<PointPage />} />
             <Route path="/espace-pro/rejoindre" element={<ProApplyPage />} />
             <Route path="/penc" element={<PencPage />} />
             <Route path="/penc/:id" element={<PencPage />} />
