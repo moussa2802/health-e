@@ -4,9 +4,20 @@
  * (une petite lumière près de sa tête) et son humeur (mood). Ce n'est ni un visage humain ni un médecin.
  * La photo de Dr Lô n'apparaît que là où l'on reçoit ou envoie un message à lui (RealDrLoPhoto).
  */
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { getCompanionColor, getCompanionIcon } from '../../utils/companion';
 import CompanionAura, { type AuraMood } from './CompanionAura';
+import { COMPANION_EVENT, getCompanionStage } from '../../utils/companionStage';
+
+/** Se redessine quand la couleur, le signe ou le stade changent (sur ce téléphone ou après la synchro du compte). */
+function useCompanionLook() {
+  const [, setTick] = useState(0);
+  useEffect(() => {
+    const on = () => setTick(t => t + 1);
+    window.addEventListener(COMPANION_EVENT, on);
+    return () => window.removeEventListener(COMPANION_EVENT, on);
+  }, []);
+}
 
 /** Les petits signes (dessinés dans un carré de 24). */
 export const ICON_PATHS: Record<string, React.ReactNode> = {
@@ -20,10 +31,11 @@ export const ICON_PATHS: Record<string, React.ReactNode> = {
 
 /** L'aura seule (sans le rond), pour les aperçus (choix du signe). */
 export const CompanionBody: React.FC<{ color: string; icon?: string; size: number; mood?: AuraMood }> = ({ color, icon, size, mood }) => (
-  <CompanionAura size={size} color={color} mood={mood} live={false} sign={ICON_PATHS[icon ?? getCompanionIcon()] ?? ICON_PATHS.pousse} />
+  <CompanionAura size={size} color={color} mood={mood} live={false} stage={3} sign={ICON_PATHS[icon ?? getCompanionIcon()] ?? ICON_PATHS.pousse} />
 );
 
-const CompanionMark: React.FC<{ size?: number; icon?: string; ring?: string; color?: string; mood?: AuraMood; live?: boolean; onTap?: () => void; className?: string; style?: React.CSSProperties }> = ({ size = 40, icon, ring, color, mood, live, onTap, className, style }) => {
+const CompanionMark: React.FC<{ size?: number; icon?: string; ring?: string; color?: string; mood?: AuraMood; live?: boolean; stage?: number; onTap?: () => void; className?: string; style?: React.CSSProperties }> = ({ size = 40, icon, ring, color, mood, live, stage, onTap, className, style }) => {
+  useCompanionLook();
   const c = color ?? getCompanionColor().hex;
   // Le signe n'apparaît qu'à partir d'une taille où il se lit
   const sign = size >= 44 ? ICON_PATHS[icon ?? getCompanionIcon()] ?? ICON_PATHS.pousse : undefined;
@@ -31,7 +43,7 @@ const CompanionMark: React.FC<{ size?: number; icon?: string; ring?: string; col
     <span aria-hidden="true" className={className}
       style={{ width: size, height: size, flexShrink: 0, borderRadius: '50%', boxSizing: 'border-box', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden',
         background: 'radial-gradient(circle at 50% 60%, #2E2016, #17100A)', border: `${size >= 60 ? 3 : 2}px solid ${ring ?? `${c}73`}`, ...style }}>
-      <CompanionAura size={Math.round(size * 1.12)} color={c} mood={mood} live={live} sign={sign} onTap={onTap} />
+      <CompanionAura size={Math.round(size * 1.12)} color={c} mood={mood} live={live} sign={sign} stage={stage ?? getCompanionStage()} onTap={onTap} />
     </span>
   );
 };

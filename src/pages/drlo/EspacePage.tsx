@@ -31,6 +31,7 @@ import type { ScaleResult } from '../../types/assessment';
 
 import { useLaunch } from '../../hooks/useLaunch';
 import { WalletCard } from '../../components/koris/GiftCards';
+import { CompanionCard } from '../../components/accueil/CompanionGrowth';
 import { TOTEM_IMAGES } from '../../data/totemImages';
 const DAYS = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'];
 const MONTHS = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
@@ -156,6 +157,9 @@ const EspacePage: React.FC = () => {
           </span>
         </Link>
       ))}
+
+      {/* Mon compagnon : son stade et ce qui le fera grandir */}
+      {uid && <CompanionCard palette={palette} />}
 
       {/* Météo intérieure */}
       <section aria-label="Ta météo intérieure" style={{ ...card, marginTop: 14 }}>

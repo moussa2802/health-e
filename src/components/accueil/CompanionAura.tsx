@@ -9,6 +9,7 @@
  */
 import React, { useEffect, useId, useRef } from 'react';
 import { baseRadii, livePoints, shade, smoothPath, STILL_PATH } from '../../utils/auraShape';
+import { STAGE_SCALE } from '../../utils/companionStage';
 
 export type AuraMood = 'repos' | 'ecoute' | 'pense' | 'joie' | 'doux' | 'nuit';
 
@@ -53,7 +54,8 @@ function Eyes({ mood }: { mood: AuraMood }) {
   );
 }
 
-const CompanionAura: React.FC<{ size: number; color: string; mood?: AuraMood; live?: boolean; sign?: React.ReactNode; onTap?: () => void }> = ({ size, color, mood = 'repos', live, sign, onTap }) => {
+/** stage : 0 Étincelle · 1 Braise · 2 Flamme · 3 Feu de veillée (il grandit avec le parcours, jamais en arrière). */
+const CompanionAura: React.FC<{ size: number; color: string; mood?: AuraMood; live?: boolean; sign?: React.ReactNode; stage?: number; onTap?: () => void }> = ({ size, color, mood = 'repos', live, sign, stage = 3, onTap }) => {
   injectCss();
   const uid = useId().replace(/[^a-zA-Z0-9]/g, '');
   const bodyRef = useRef<SVGPathElement>(null);
@@ -86,6 +88,9 @@ const CompanionAura: React.FC<{ size: number; color: string; mood?: AuraMood; li
   const pal = mood === 'doux' ? LAVANDE : [shade(color, 0.82), shade(color, 0.12), shade(color, -0.22)];
   const haloOpacity = mood === 'joie' ? 0.95 : mood === 'doux' ? 0.45 : 0.7;
   const breatheCls = isLive ? '' : `ca-breathe${mood === 'doux' || mood === 'nuit' ? ' ca-slow' : mood === 'ecoute' ? ' ca-fast' : ''}`;
+  const st = Math.max(0, Math.min(3, Math.floor(stage)));
+  const grow = STAGE_SCALE[st];
+  const sparks = [0, 3, 5, 6][st];
   const tap = () => {
     const g = groupRef.current;
     if (g) { g.classList.remove('ca-pop'); void g.getBoundingClientRect(); g.classList.add('ca-pop'); }
@@ -107,18 +112,22 @@ const CompanionAura: React.FC<{ size: number; color: string; mood?: AuraMood; li
         <filter id={`${uid}g`} x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation={size >= 48 ? 14 : 9} /></filter>
         {size >= 48 && <filter id={`${uid}s`} x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation={2} /></filter>}
       </defs>
-      <g ref={groupRef}>
+      {st === 3 && (
+        // Feu de veillée : un lit de braises chaudes sous l'aura
+        <ellipse cx={100} cy={170} rx={58} ry={12} fill={pal[1]} opacity={0.35} filter={`url(#${uid}g)`} />
+      )}
+      <g transform={grow === 1 ? undefined : `translate(100 168) scale(${grow}) translate(-100 -168)`}><g ref={groupRef}>
         <g className={breatheCls}>
           <path ref={haloRef} d={STILL_PATH} fill={pal[1]} opacity={haloOpacity} filter={`url(#${uid}g)`} />
           <path ref={bodyRef} d={STILL_PATH} fill={`url(#${uid}b)`} filter={size >= 48 ? `url(#${uid}s)` : undefined} />
           <ellipse cx={100} cy={124} rx={34} ry={30} fill={`url(#${uid}c)`} opacity={0.7} />
           <Eyes mood={mood} />
         </g>
-      </g>
+      </g></g>
       {sign && <g transform="translate(138 38) scale(1.5)" fill="none" stroke={pal[0]} strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" opacity={0.9}>{sign}</g>}
-      {isLive && mood !== 'doux' && (
+      {isLive && mood !== 'doux' && sparks > 0 && (
         <g fill={pal[0]}>
-          {[0, 1, 2, 3, 4, 5].map(i => (
+          {Array.from({ length: sparks }, (_, i) => i).map(i => (
             <circle key={i} className="ca-p" r={1.4 + (i % 3) * 0.6} cx={70 + i * 12} cy={100 + (i % 2) * 30} style={{ animationDelay: `${i * 0.6}s`, animationDuration: `${3 + (i % 3)}s` }} />
           ))}
         </g>

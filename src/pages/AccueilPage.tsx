@@ -19,6 +19,7 @@ import { useLaunch } from '../hooks/useLaunch';
 import { HScroll, SectionTitle, NewsCard, ChannelCard, WideLink, tintOf, type NewsItem } from '../components/accueil/HomeParts';
 import { RealDrLoPhoto } from '../components/accueil/RealDrLoBadge';
 import CompanionMark from '../components/accueil/CompanionMark';
+import { GrewCard } from '../components/accueil/CompanionGrowth';
 import AccueilSeoSections from '../components/accueil/AccueilSeoSections';
 import { useAuth } from '../contexts/AuthContext';
 import { getOnboardingProfile } from '../utils/onboardingProfile';
@@ -290,6 +291,9 @@ const ConnectedHome: React.FC<{ feed: HomeFeed | null; palette: MomentPalette; u
           <CompanionMark size={56} live />
         </Link>
       </header>
+
+      {/* Il a grandi : une fois par stade */}
+      <GrewCard palette={palette} />
 
       {/* Une seule carte vedette : un Pénc en direct, sinon ta suite ; puis le test du moment, ton message, l'humeur */}
       <HomePenc palette={palette} full={launch.on('penc_page')} onLive={setPencLive} />

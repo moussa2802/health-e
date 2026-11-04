@@ -20,6 +20,7 @@ import SignupCard, { LinkAccountCard, SIGNUP_PENDING_KEY } from './SignupCard';
 import { migrateGuestData } from '../../services/guestMigration';
 import { recordMood, deleteMood, fetchMoods } from '../../services/moodService';
 import { captureReferral, registerReferralIfAny } from '../../services/drloQuestionService';
+import { pushCompanion, syncCompanion } from '../../services/companionService';
 import { AURA_FULL, CREDIT, LOW_CREDIT, credits } from '../../config/creditName';
 import { useAuth } from '../../contexts/AuthContext';
 import { useKoris } from '../../contexts/KorisContext';
@@ -536,13 +537,19 @@ const ConversationAccueil: React.FC = () => {
 
   // Lien d'invitation d'un proche (?ref=CODE) : gardé jusqu'à la création de l'espace
   useEffect(() => { captureReferral(location.search); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  // Le compagnon du compte (nom, couleur, signe, stade) : le même sur tous les appareils
   useEffect(() => {
-    const st = location.state as { prescribe?: string; openMood?: boolean; tab?: 'confier'; journal?: boolean; signup?: boolean; flow?: 'defi' | 'compat'; programme?: boolean; breath?: boolean; talk?: { greeting?: string | null; draft?: string | null } } | null;
+    if (!isAuthenticated) return;
+    syncCompanion().then(d => { if (d.name) setCompanion(d.name); setCompanionColor(getCompanionColor()); setIconTick(t => t + 1); }).catch(() => {});
+  }, [isAuthenticated]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    const st = location.state as { naming?: boolean; prescribe?: string; openMood?: boolean; tab?: 'confier'; journal?: boolean; signup?: boolean; flow?: 'defi' | 'compat'; programme?: boolean; breath?: boolean; talk?: { greeting?: string | null; draft?: string | null } } | null;
     if (!st || !state || !known || state.step === 'testing') return;
     const sig = JSON.stringify(st) + location.key;
     if (intentRef.current === sig) return;
     intentRef.current = sig;
     navigate('.', { replace: true, state: null }); // une seule fois, même après rechargement
+    if (st.naming && isAuthenticated) { setTab('discuter'); setInChat(true); setNaming(true); return; }
     if (st.tab === 'confier') { setTab('confier'); setConfierView(st.journal ? 'journal' : 'write'); return; }
     if (st.talk) { setTimeout(() => talkRef.current?.(st.talk!.greeting ?? null, st.talk!.draft ?? null), 0); return; }
     if (st.openMood) { setTab('discuter'); setInChat(true); setMode('mood'); return; }
@@ -1945,7 +1952,7 @@ const ConversationAccueil: React.FC = () => {
           {namingOpen && (
             <div style={{ padding: '0 14px 10px', maxHeight: '62dvh', overflowY: 'auto' }}>
               <CompanionNaming current={companion} accent={palette.primary}
-                onSave={(n, colorId, iconId) => { setCompanion(saveCompanionName(n)); setCompanionColor(saveCompanionColor(colorId)); saveCompanionIcon(iconId); setIconTick(t => t + 1); markCompanionAsked(); setNaming(false); }}
+                onSave={(n, colorId, iconId) => { setCompanion(saveCompanionName(n)); setCompanionColor(saveCompanionColor(colorId)); saveCompanionIcon(iconId); setIconTick(t => t + 1); markCompanionAsked(); setNaming(false); if (isAuthenticated) pushCompanion(); }}
                 onSkip={() => { markCompanionAsked(); setNaming(false); }} />
             </div>
           )}
@@ -2171,7 +2178,7 @@ const ConversationAccueil: React.FC = () => {
             </div>
             {isAuthenticated && (naming || (!companion && !companionAsked())) && (
               <CompanionNaming current={companion} accent={palette.primary}
-                onSave={(n, colorId, iconId) => { setCompanion(saveCompanionName(n)); setCompanionColor(saveCompanionColor(colorId)); saveCompanionIcon(iconId); setIconTick(t => t + 1); markCompanionAsked(); setNaming(false); }}
+                onSave={(n, colorId, iconId) => { setCompanion(saveCompanionName(n)); setCompanionColor(saveCompanionColor(colorId)); saveCompanionIcon(iconId); setIconTick(t => t + 1); markCompanionAsked(); setNaming(false); if (isAuthenticated) pushCompanion(); }}
                 onSkip={() => { markCompanionAsked(); setNaming(false); }} />
             )}
             <div style={{ display: 'flex', justifyContent: 'center' }}>{modeNav}</div>
@@ -2198,7 +2205,7 @@ const ConversationAccueil: React.FC = () => {
           {isAuthenticated && (naming || (!companion && !companionAsked())) && (
             <div style={{ width: '100%' }}>
               <CompanionNaming current={companion} accent={palette.primary}
-                onSave={(n, colorId, iconId) => { setCompanion(saveCompanionName(n)); setCompanionColor(saveCompanionColor(colorId)); saveCompanionIcon(iconId); setIconTick(t => t + 1); markCompanionAsked(); setNaming(false); }}
+                onSave={(n, colorId, iconId) => { setCompanion(saveCompanionName(n)); setCompanionColor(saveCompanionColor(colorId)); saveCompanionIcon(iconId); setIconTick(t => t + 1); markCompanionAsked(); setNaming(false); if (isAuthenticated) pushCompanion(); }}
                 onSkip={() => { markCompanionAsked(); setNaming(false); }} />
             </div>
           )}
