@@ -6,7 +6,7 @@
  */
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ArrowRight, BookOpen, Brain, CalendarCheck, CloudSun, Crown, Eye, EyeOff, Heart, Sparkles, Users, Wrench } from 'lucide-react';
+import { ArrowRight, BookOpen, CalendarCheck, Crown, Users, Wrench } from 'lucide-react';
 import { collection, getCountFromServer } from 'firebase/firestore';
 import DrLoShell, { DC, card, usePalette } from '../../components/accueil/DrLoShell';
 import MoodIcon from '../../components/accueil/MoodIcon';
@@ -17,12 +17,12 @@ import { getGenderHiddenIds } from '../../utils/scaleVisibility';
 import { getProfileProgress } from '../../services/evaluationService';
 import { getAllGuestResults, getGuestCount, GUEST_MAX_TESTS } from '../../utils/guestSession';
 import { MENTAL_HEALTH_SCALES, SEXUAL_HEALTH_SCALES } from '../../data/scales';
-import { computePortrait, pickGuideMessage, toDate, type LastTest } from '../../utils/drLoGuide';
+import { pickGuideMessage, toDate, type LastTest } from '../../utils/drLoGuide';
 import { pickNextScale } from '../../utils/accueilFlow';
 import { getScaleMeta } from '../../utils/scaleMeta';
 import { dayKey, moodById, type MoodMap } from '../../utils/moodLog';
 import { fetchMoods } from '../../services/moodService';
-import { lastDays, MOOD_SCORE, WEEKDAYS, weekdayIndex } from '../../utils/moodInsights';
+import { lastDays, WEEKDAYS, weekdayIndex } from '../../utils/moodInsights';
 import { addDays } from '../../utils/cycleCalc';
 import { getTotemProgress, getTotemSignature, totemMeaning, type TotemAnimal } from '../../utils/totemAlgorithm';
 import { trackAccueil } from '../../utils/accueilTracking';
@@ -36,7 +36,7 @@ import type { ScaleResult } from '../../types/assessment';
 import CompanionMark from '../../components/accueil/CompanionMark';
 import { useLaunch } from '../../hooks/useLaunch';
 import { WalletCard } from '../../components/koris/GiftCards';
-const SHOW_INTIME_KEY = 'he_espace_show_intime';
+import { TOTEM_IMAGES } from '../../data/totemImages';
 const DAYS = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'];
 const MONTHS = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
 
@@ -61,7 +61,6 @@ const EspacePage: React.FC = () => {
   const [loaded, setLoaded] = useState(false);
   const [drlo, setDrlo] = useState<DrloStatus | null>(null);
   const [mine, setMine] = useState<Mine | null>(null);
-  const [showIntime, setShowIntime] = useState(() => { try { return localStorage.getItem(SHOW_INTIME_KEY) === '1'; } catch { return false; } });
 
   useEffect(() => {
     let off = false;
@@ -99,7 +98,6 @@ const EspacePage: React.FC = () => {
   const doneMental = mentalScales.filter(s => results[s.id]).length;
   const doneSexual = sexualScales.filter(s => results[s.id]).length;
   const totalCore = mentalScales.length + sexualScales.length;
-  const portrait = computePortrait({ doneCore: doneMental + doneSexual, totalCore, journalCount: counts.journal, chatCount: counts.chats });
   const next = pickNextScale('decouvre', doneIds);
   const totemProgress = getTotemProgress(results);
   const totemRevealed = !!totem?.animal && !!totem.revealedAt;
@@ -132,16 +130,6 @@ const EspacePage: React.FC = () => {
 
   // Météo de la semaine
   const week = lastDays(today, 7);
-  const weekScores = week.map(d => (moods[d] ? MOOD_SCORE[moods[d].mood] : null)).filter((x): x is number => x !== null);
-  const weekAvg = weekScores.length ? weekScores.reduce((a, b) => a + b, 0) / weekScores.length : null;
-  const humeurWord = weekAvg === null ? 'À noter' : weekAvg >= 4 ? 'Éclaircies' : weekAvg >= 3 ? 'Variable' : 'Ciel chargé';
-
-  const toggleIntime = () => {
-    const v = !showIntime;
-    setShowIntime(v);
-    try { localStorage.setItem(SHOW_INTIME_KEY, v ? '1' : '0'); } catch { /* ignore */ }
-  };
-
   const d = new Date();
   const dateLabel = `${DAYS[d.getDay()]} ${d.getDate()} ${MONTHS[d.getMonth()]}`;
 
@@ -149,9 +137,8 @@ const EspacePage: React.FC = () => {
     ...card, padding: 14, display: 'flex', flexDirection: 'column', gap: 6, textDecoration: 'none', color: DC.text,
     borderColor: `${accent}55`, background: `${accent}12`, minHeight: 104, cursor: 'pointer',
   });
+  const hasTools = launch.on('confier') || launch.on('compat') || launch.on('defis') || (!!uid && launch.on('routine'));
   const domains = [
-    { key: 'mental', label: 'Mental', icon: Brain, color: DC.sage, word: doneMental ? `${doneMental} / ${mentalScales.length} tests` : 'À découvrir', to: '/espace/mental' },
-    { key: 'humeur', label: 'Humeur', icon: CloudSun, color: DC.gold, word: humeurWord, to: '/humeur' },
     { key: 'social', label: 'Compatibilité', icon: Users, color: DC.social, word: 'Toi et l\'autre', to: '/assessment/compatibility' },
   ];
 
@@ -168,6 +155,39 @@ const EspacePage: React.FC = () => {
         </Link>
       )}
 
+      {/* Qui je suis : mon animal intérieur (ou le portrait qui se dessine). Les résultats détaillés vivent dans l'onglet Tests. */}
+      {loaded && (totemRevealed ? (
+        <Link to="/assessment/totem" className="drl-btn" style={{ ...card, marginTop: 16, display: 'flex', alignItems: 'center', gap: 14, textDecoration: 'none', color: DC.text,
+          borderColor: `${DC.gold}55`, background: `radial-gradient(90% 80% at 100% 0%, ${DC.gold}22, transparent 70%), ${DC.glass}` }}>
+          <img src={TOTEM_IMAGES[totem!.animal as TotemAnimal]} alt="" width={76} height={76} style={{ width: 76, height: 76, flex: 'none', borderRadius: 20, objectFit: 'cover', border: `1px solid ${DC.gold}66` }} />
+          <span style={{ flex: 1, minWidth: 0 }}>
+            <span style={{ display: 'block', fontSize: 13, fontWeight: 700, letterSpacing: '.1em', color: DC.gold }}>MON ANIMAL INTÉRIEUR</span>
+            <span style={{ display: 'block', fontFamily: 'Fraunces, serif', fontSize: 24, fontWeight: 600, color: DC.title }}>{getTotemSignature(totem!.animal as TotemAnimal)?.label ?? totem!.animal}</span>
+            <span style={{ display: 'block', fontSize: 14, color: DC.muted, lineHeight: 1.4 }}>{totemMeaning(totem!.animal as TotemAnimal, genre === 'femme' ? 'femme' : 'homme')}</span>
+            {totem!.pending && totem!.pending !== totem!.animal && (
+              <span style={{ display: 'block', marginTop: 4, fontSize: 13, fontWeight: 700, color: DC.gold }}>Ton animal intérieur a évolué : viens découvrir le nouveau</span>
+            )}
+          </span>
+          <ArrowRight size={18} color={DC.muted} aria-hidden="true" style={{ flexShrink: 0 }} />
+        </Link>
+      ) : (
+        <section aria-label="Mon animal intérieur" style={{ ...card, marginTop: 16, borderColor: `${DC.gold}55` }}>
+          <p style={{ margin: 0, fontSize: 13, fontWeight: 700, letterSpacing: '.1em', color: DC.gold }}>MON ANIMAL INTÉRIEUR</p>
+          <p style={{ margin: '6px 0 0', fontFamily: 'Fraunces, serif', fontSize: 21, lineHeight: 1.25, fontWeight: 600, color: DC.title }}>
+            {totemProgress.missing.length === 0 ? 'Il est prêt : viens le découvrir' : `Il se dessine : encore ${totemProgress.missing.length} test${totemProgress.missing.length > 1 ? 's' : ''}`}
+          </p>
+          <div aria-hidden="true" style={{ display: 'flex', gap: 6, marginTop: 12 }}>
+            {Array.from({ length: totemProgress.total }, (_, i) => (
+              <span key={i} style={{ flex: 1, height: 6, borderRadius: 3, background: i < totemProgress.completed ? DC.gold : 'rgba(255,255,255,.14)' }} />
+            ))}
+          </div>
+          <button onClick={() => (totemProgress.missing.length === 0 ? navigate('/assessment/totem') : navigate('/compagnon', { state: { prescribe: totemProgress.missing[0] } }))} className="drl-btn"
+            style={{ marginTop: 12, minHeight: 46, padding: '0 18px', borderRadius: 999, border: `1px solid ${DC.gold}88`, background: 'transparent', color: DC.text, fontSize: 15, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>
+            {totemProgress.missing.length === 0 ? 'Le découvrir' : `Faire « ${getScaleMeta(totemProgress.missing[0]).label} »`}
+          </button>
+        </section>
+      ))}
+
       {/* Pour toi aujourd'hui */}
       <section aria-label="Pour toi aujourd'hui" style={{ ...card, marginTop: 16, borderColor: 'rgba(242,182,109,.3)', background: 'rgba(242,182,109,.07)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -175,35 +195,6 @@ const EspacePage: React.FC = () => {
           <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: palette.accent }}>Pour toi aujourd'hui</p>
         </div>
         <p style={{ margin: '10px 0 0', fontSize: 15, lineHeight: 1.55, color: DC.soft }}>{loaded ? guide.text : '…'}</p>
-        {/* Ton animal intérieur (ou, tant qu'il n'est pas révélé, le portrait qui se dessine) */}
-        {loaded && (totemRevealed ? (
-          <Link to="/assessment/totem" className="drl-btn" style={{ marginTop: 12, display: 'flex', alignItems: 'center', gap: 12, padding: '10px 12px', borderRadius: 14, background: 'rgba(233,200,143,.08)', border: '1px solid rgba(233,200,143,.25)', color: DC.text, textDecoration: 'none' }}>
-            <Sparkles size={20} color={DC.gold} aria-hidden="true" />
-            <span style={{ flex: 1, minWidth: 0 }}>
-              <span style={{ display: 'block', fontSize: 13, color: DC.faint }}>Ton animal intérieur</span>
-              <span style={{ display: 'block', fontFamily: 'Fraunces, serif', fontSize: 17, fontWeight: 600 }}>{getTotemSignature(totem!.animal as TotemAnimal)?.label ?? totem!.animal}</span>
-              <span style={{ display: 'block', fontSize: 13, color: DC.muted, lineHeight: 1.4 }}>{totemMeaning(totem!.animal as TotemAnimal, genre === 'femme' ? 'femme' : 'homme')}</span>
-              {totem!.pending && totem!.pending !== totem!.animal && (
-                <span style={{ display: 'block', marginTop: 4, fontSize: 13, fontWeight: 700, color: DC.gold }}>Ton animal intérieur a évolué : viens découvrir le nouveau</span>
-              )}
-            </span>
-            <ArrowRight size={16} color={DC.muted} aria-hidden="true" />
-          </Link>
-        ) : totemProgress.missing.length === 0 ? (
-          <Link to="/assessment/totem" className="drl-btn" style={{ marginTop: 12, display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderRadius: 14, background: 'rgba(233,200,143,.08)', border: '1px solid rgba(233,200,143,.25)', color: DC.text, textDecoration: 'none', fontSize: 14, fontWeight: 700 }}>
-            <Sparkles size={18} color={DC.gold} aria-hidden="true" /> Ton animal intérieur est prêt : viens le découvrir <ArrowRight size={16} aria-hidden="true" />
-          </Link>
-        ) : (
-          <div style={{ marginTop: 12 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, fontSize: 13, color: DC.muted }}>
-              <span>Ton portrait se dessine · encore {totemProgress.missing.length} test{totemProgress.missing.length > 1 ? 's' : ''} pour ton animal intérieur</span>
-              <b style={{ color: palette.accent, whiteSpace: 'nowrap' }}>{portrait} %</b>
-            </div>
-            <div role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={portrait} aria-label="Portrait" style={{ height: 6, borderRadius: 4, background: 'rgba(255,255,255,.08)', marginTop: 6, overflow: 'hidden' }}>
-              <div style={{ width: `${portrait}%`, height: '100%', background: palette.primary }} />
-            </div>
-          </div>
-        ))}
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 12 }}>
           <button onClick={onGuide} className="drl-btn"
             style={{ minHeight: 44, padding: '0 16px', borderRadius: 999, border: 0, background: palette.primary, color: DC.ink, fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>
@@ -217,43 +208,41 @@ const EspacePage: React.FC = () => {
         </div>
       </section>
 
-      {/* Ton équilibre */}
-      <section aria-label="Tes domaines" style={{ marginTop: 18 }}>
+      {/* Météo intérieure */}
+      <section aria-label="Ta météo intérieure" style={{ ...card, marginTop: 14 }}>
         <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between' }}>
-          <h2 style={h2}>Ton équilibre</h2>
-          <span style={{ fontSize: 13, color: DC.faint }}>Touche un domaine</span>
+          <h2 style={h2}>Ta météo intérieure</h2>
+          <Link to="/humeur" style={{ fontSize: 13, fontWeight: 700, color: palette.accent }}>Voir le mois</Link>
         </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, minmax(0, 1fr))', gap: 6, marginTop: 12 }}>
+          {week.map(day => {
+            const e = moods[day];
+            const def = e ? moodById(e.mood) : null;
+            return (
+              <div key={day} aria-label={`${day === today ? 'Aujourd\'hui' : day} : ${def ? def.label : 'pas noté'}`}
+                style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5 }}>
+                <div style={{ width: '100%', aspectRatio: '1', borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  border: def ? '1px solid rgba(255,255,255,.10)' : '1.5px dashed rgba(255,255,255,.16)', background: def ? 'rgba(255,255,255,.06)' : 'transparent' }}>
+                  {def ? <MoodIcon id={def.id} color={def.color} size={20} /> : <span style={{ color: DC.faint, fontSize: 16 }}>{day === today ? '+' : ''}</span>}
+                </div>
+                <span style={{ fontSize: 13, fontWeight: 700, color: day === today ? palette.accent : DC.faint }}>{day === today ? 'Auj.' : WEEKDAYS[weekdayIndex(day)]}</span>
+              </div>
+            );
+          })}
+        </div>
+        {!moods[today] && (
+          <button onClick={() => navigate('/compagnon', { state: { openMood: true } })} className="drl-btn"
+            style={{ marginTop: 12, width: '100%', minHeight: 46, borderRadius: 14, border: '1px solid rgba(242,182,109,.4)', background: 'rgba(242,182,109,.10)', color: DC.text, fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>
+            Comment tu te sens aujourd'hui ? · 30 s
+          </button>
+        )}
+      </section>
+
+      {/* Pour aller plus loin : uniquement ce que la vague du lancement a ouvert (Mental, Intime et les résultats vivent dans Tests, l'humeur dans la météo) */}
+      {hasTools && (
+      <section aria-label="Pour aller plus loin" style={{ marginTop: 18 }}>
+        <h2 style={h2}>Pour aller plus loin</h2>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 10, marginTop: 10 }}>
-          {domains.filter(dm => dm.key === 'mental').map(dm => (
-            <Link key={dm.key} to={dm.to} className="drl-btn" style={tile(dm.color)}>
-              <dm.icon size={20} color={dm.color} aria-hidden="true" />
-              <span style={{ fontSize: 15, fontWeight: 700 }}>{dm.label}</span>
-              <span style={{ fontSize: 13, color: DC.muted }}>{dm.word}</span>
-            </Link>
-          ))}
-          {/* Intime : toute la tuile s'ouvre ; l'œil ne fait que cacher le chiffre sur cet écran */}
-          <div style={{ position: 'relative' }}>
-            <Link to="/espace/intime" className="drl-btn" style={{ ...tile(DC.intime), height: '100%', boxSizing: 'border-box' }}>
-              <Heart size={20} color={DC.intime} aria-hidden="true" />
-              <span style={{ fontSize: 15, fontWeight: 700 }}>Intime</span>
-              <span style={{ fontSize: 13, color: showIntime ? DC.muted : DC.faint }}>
-                {!uid ? 'Avec un espace personnel' : !showIntime ? 'En toute discrétion' : doneSexual ? `${doneSexual} / ${sexualScales.length} tests` : 'À découvrir'}
-              </span>
-            </Link>
-            {uid && (
-              <button onClick={toggleIntime} aria-label={showIntime ? 'Cacher mon avancée intime sur cet écran' : 'Afficher mon avancée intime sur cet écran'} className="drl-btn"
-                style={{ position: 'absolute', top: 8, right: 8, width: 36, height: 36, borderRadius: 10, border: `1px solid ${DC.line}`, background: DC.glass, color: DC.muted, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
-                {showIntime ? <EyeOff size={16} aria-hidden="true" /> : <Eye size={16} aria-hidden="true" />}
-              </button>
-            )}
-          </div>
-          {domains.filter(dm => dm.key === 'humeur').map(dm => (
-            <Link key={dm.key} to={dm.to} className="drl-btn" style={tile(dm.color)}>
-              <dm.icon size={20} color={dm.color} aria-hidden="true" />
-              <span style={{ fontSize: 15, fontWeight: 700 }}>{dm.label}</span>
-              <span style={{ fontSize: 13, color: DC.muted }}>{dm.word}</span>
-            </Link>
-          ))}
           {launch.on('confier') && <button onClick={() => navigate('/journal')} className="drl-btn" style={{ ...tile(DC.confier), textAlign: 'left' }}>
             <BookOpen size={20} color={DC.confier} aria-hidden="true" />
             <span style={{ fontSize: 15, fontWeight: 700 }}>Journal</span>
@@ -286,43 +275,13 @@ const EspacePage: React.FC = () => {
             </Link>
           )}
         </div>
-
       </section>
+      )}
+
+      {uid && <DrloMemoryCard uid={uid} palette={palette} />}
 
       {/* Étincelles : solde, recharger, inviter un proche */}
       {uid && <WalletCard palette={palette} />}
-
-      {/* Météo intérieure */}
-      <section aria-label="Ta météo intérieure" style={{ ...card, marginTop: 14 }}>
-        <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between' }}>
-          <h2 style={h2}>Ta météo intérieure</h2>
-          <Link to="/humeur" style={{ fontSize: 13, fontWeight: 700, color: palette.accent }}>Voir le mois</Link>
-        </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, minmax(0, 1fr))', gap: 6, marginTop: 12 }}>
-          {week.map(day => {
-            const e = moods[day];
-            const def = e ? moodById(e.mood) : null;
-            return (
-              <div key={day} aria-label={`${day === today ? 'Aujourd\'hui' : day} : ${def ? def.label : 'pas noté'}`}
-                style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5 }}>
-                <div style={{ width: '100%', aspectRatio: '1', borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  border: def ? '1px solid rgba(255,255,255,.10)' : '1.5px dashed rgba(255,255,255,.16)', background: def ? 'rgba(255,255,255,.06)' : 'transparent' }}>
-                  {def ? <MoodIcon id={def.id} color={def.color} size={20} /> : <span style={{ color: DC.faint, fontSize: 16 }}>{day === today ? '+' : ''}</span>}
-                </div>
-                <span style={{ fontSize: 13, fontWeight: 700, color: day === today ? palette.accent : DC.faint }}>{day === today ? 'Auj.' : WEEKDAYS[weekdayIndex(day)]}</span>
-              </div>
-            );
-          })}
-        </div>
-        {!moods[today] && (
-          <button onClick={() => navigate('/compagnon', { state: { openMood: true } })} className="drl-btn"
-            style={{ marginTop: 12, width: '100%', minHeight: 46, borderRadius: 14, border: '1px solid rgba(242,182,109,.4)', background: 'rgba(242,182,109,.10)', color: DC.text, fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>
-            Comment tu te sens aujourd'hui ? · 30 s
-          </button>
-        )}
-      </section>
-
-      {uid && <DrloMemoryCard uid={uid} palette={palette} />}
 
       {/* Ton chemin vers Dr Lô (paliers) */}
       {drlo && launch.on('question') && <PaliersCard status={drlo} palette={palette} />}

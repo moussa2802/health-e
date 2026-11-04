@@ -98,24 +98,25 @@ const NeedChips: React.FC = () => {
 };
 
 /** Nouveautés : derniers contenus ouverts à tous, nouvelles chaînes et (pour les connectés) nouveaux outils, du plus récent au plus ancien. */
-function newsItems(feed: HomeFeed, connected: boolean): NewsItem[] {
+/** Les nouveautés suivent le lancement : publications et chaînes avec les chaînes (vague 3), outils avec la routine (vague 2). */
+function newsItems(feed: HomeFeed, connected: boolean, show: { channels: boolean; tools: boolean } = { channels: true, tools: true }): NewsItem[] {
   const now = Date.now();
   const out: (NewsItem & { at: number })[] = [];
-  feed.latest.forEach(p => out.push({
+  if (show.channels) feed.latest.forEach(p => out.push({
     key: `p${p.id}`, at: p.at, kicker: p.hasAudio ? 'VOCAL' : 'TEXTE', title: p.title, tint: p.hasAudio ? DC.gold : DC.sage,
     meta: `${p.channelName} · par Dr Lô · ${agoLabel(p.at, now)}`, to: connected ? `/chaines/${p.channelId}` : `/c/${p.channelId}`,
   }));
-  feed.channels.filter(c => c.at && now - c.at < 30 * 864e5).forEach(c => out.push({
+  if (show.channels) feed.channels.filter(c => c.at && now - c.at < 30 * 864e5).forEach(c => out.push({
     key: `c${c.id}`, at: c.at, kicker: 'NOUVELLE CHAÎNE', title: c.name, tint: tintOf(c.id), meta: agoLabel(c.at, now), to: connected ? `/chaines/${c.id}` : `/c/${c.id}`,
   }));
-  if (connected) feed.tools.filter(t => t.at && now - t.at < 60 * 864e5).forEach(t => out.push({
+  if (connected && show.tools) feed.tools.filter(t => t.at && now - t.at < 60 * 864e5).forEach(t => out.push({
     key: `t${t.id}`, at: t.at, kicker: 'OUTIL', title: t.title, tint: DC.intime, meta: t.minutes ? `${t.minutes} min · ${agoLabel(t.at, now)}` : agoLabel(t.at, now), to: `/pratique/${t.id}?from=/`,
   }));
   return out.sort((a, b) => b.at - a.at).slice(0, 8);
 }
 
-const Discover: React.FC<{ feed: HomeFeed | null; connected: boolean; channels?: boolean }> = ({ feed, connected, channels = true }) => {
-  const news = useMemo(() => (feed ? newsItems(feed, connected) : []), [feed, connected]);
+const Discover: React.FC<{ feed: HomeFeed | null; connected: boolean; channels?: boolean; tools?: boolean }> = ({ feed, connected, channels = true, tools = true }) => {
+  const news = useMemo(() => (feed ? newsItems(feed, connected, { channels, tools }) : []), [feed, connected, channels, tools]);
   return (
     <>
       {news.length > 0 && (
@@ -202,7 +203,7 @@ const VisitorHome: React.FC<{ feed: HomeFeed | null; palette: MomentPalette }> =
       <FeaturedCard featured={pickFeatured(feed)} guest palette={palette} />
       <SectionTitle>Ton animal intérieur</SectionTitle>
       <AnimalTeaser palette={palette} />
-      <Discover feed={feed} connected={false} channels={launch.on('chaines')} />
+      <Discover feed={feed} connected={false} channels={launch.on('chaines')} tools={false} />
       <NeedChips />
       {launch.on('compat') && (
         <>
@@ -352,7 +353,7 @@ const ConnectedHome: React.FC<{ feed: HomeFeed | null; palette: MomentPalette; u
       )}
 
 
-      <Discover feed={feed} connected channels={launch.on('chaines')} />
+      <Discover feed={feed} connected channels={launch.on('chaines')} tools={launch.on('routine')} />
 
       {drlo && launch.on('question') && (
         <>

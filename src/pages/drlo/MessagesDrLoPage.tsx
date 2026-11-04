@@ -14,6 +14,7 @@ import RealDrLoBadge, { RealDrLoPhoto } from '../../components/accueil/RealDrLoB
 import LoadingCards from '../../components/accueil/LoadingCards';
 import WriteDrLoCard from '../../components/accueil/WriteDrLoCard';
 import ChannelsLinkCard from '../../components/accueil/ChannelsLinkCard';
+import { useLaunch } from '../../hooks/useLaunch';
 import { useAuth } from '../../contexts/AuthContext';
 import { followUpQuestion, getMyThreads, markDrloAnswersSeen, type MyQuestion } from '../../services/drloQuestionService';
 import {
@@ -31,6 +32,7 @@ const SeenMarker: React.FC<{ onMount: () => void }> = ({ onMount }) => { useEffe
 
 const MessagesDrLoPage: React.FC = () => {
   const palette = usePalette();
+  const chainesOn = useLaunch().on('chaines');
   const { id, qid } = useParams<{ id: string; qid: string }>();
   const navigate = useNavigate();
   const { isAuthenticated, authReady } = useAuth();
@@ -156,7 +158,7 @@ const MessagesDrLoPage: React.FC = () => {
   return (
     <DrLoShell back={{ to: '/', label: 'Accueil' }} palette={palette}>
       <h1 style={{ ...h1, marginTop: 18 }}>Mes messages</h1>
-      <ChannelsLinkCard palette={palette} />
+      {chainesOn && <ChannelsLinkCard palette={palette} />}
       <WriteDrLoCard palette={palette} />
       {error && <p role="alert" style={{ marginTop: 16, color: DC.muted, fontSize: 15 }}>{error}</p>}
       {!items && !error && <LoadingCards label="Chargement des messages…" />}

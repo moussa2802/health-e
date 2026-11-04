@@ -14,6 +14,7 @@ import OpenPencNow from '../../components/penc/OpenPencNow';
 import { Equalizer, HostAvatar, listenersLabel, PencLiveCard, PencMotif } from '../../components/penc/PencVisuals';
 import { NotifOptinCard } from '../../components/accueil/NotificationsPanel';
 import { useAuth } from '../../contexts/AuthContext';
+import { useLaunch } from '../../hooks/useLaunch';
 import { SCALE_META } from '../../utils/scaleMeta';
 import { loadPrefs, pushSupport } from '../../services/pushService';
 import { getAgenda, getPenc, registerPenc, startPenc, whenLabel, type Penc } from '../../services/pencService';
@@ -72,6 +73,7 @@ const Agenda: React.FC = () => {
   const [data, setData] = useState<{ live: Penc[]; upcoming: Penc[]; past: Penc[] } | null>(null);
   const [error, setError] = useState('');
   const [filter, setFilter] = useState<'all' | 'chaines' | 'inscrit'>('all');
+  const chainesOn = useLaunch().on('chaines');
   const load = () => getAgenda().then(r => { setData(r); setError(''); }).catch(e => setError(e instanceof Error ? e.message : 'Erreur'));
   useEffect(() => { load(); }, []);
   const remind = useRemind(currentUser?.id ?? null, load);
@@ -93,7 +95,7 @@ const Agenda: React.FC = () => {
       </header>
 
       <div role="tablist" aria-label="Filtrer" style={{ marginTop: 14, display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 2 }}>
-        {([['all', 'Tous'], ['chaines', 'Mes chaînes'], ['inscrit', 'Mes rappels']] as const).map(([k, l]) => (
+        {([['all', 'Tous'], ['chaines', 'Mes chaînes'], ['inscrit', 'Mes rappels']] as const).filter(([k]) => k !== 'chaines' || chainesOn).map(([k, l]) => (
           <button key={k} type="button" role="tab" aria-selected={filter === k} onClick={() => setFilter(k)} style={chip(filter === k)}>{l}</button>
         ))}
       </div>
