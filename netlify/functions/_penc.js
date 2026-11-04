@@ -51,6 +51,7 @@ function validatePenc(b, now = Date.now(), { partial = false } = {}) {
     if (t && !SCALE_ID.test(t)) return { error: 'Test inconnu.' };
     d.testScaleId = t || null;
   }
+  if (has('repeatWeekly')) d.repeatWeekly = b.repeatWeekly === true;
   return { data: d };
 }
 
@@ -75,4 +76,17 @@ function agendaBucket(p, now = Date.now()) {
 /** Faut-il envoyer le rappel « dans 10 minutes » ? */
 const remindDue = (p, now = Date.now()) => p.status === 'scheduled' && !p.remindSent && Number(p.startAt) - now <= REMIND_BEFORE_MS && Number(p.startAt) - now > -5 * 60000;
 
-module.exports = { DURATIONS, ACCESS, REMIND_BEFORE_MS, validatePenc, cleanSummary, endsAt, agendaBucket, remindDue };
+const WEEK_MS = 7 * 86400000;
+/**
+ * Pénc « chaque semaine » : dès que l'heure d'une séance est passée (commencée, finie ou annulée),
+ * la séance suivante (même jour, même heure, + 7 jours) est créée. → startAt de la suivante, ou null.
+ */
+function nextWeekly(p, now = Date.now()) {
+  if (!p || p.repeatWeekly !== true || p.nextCreated) return null;
+  if (now < Number(p.startAt)) return null;
+  let next = Number(p.startAt) + WEEK_MS;
+  while (next <= now) next += WEEK_MS; // la tâche a été arrêtée longtemps : on ne crée pas de séance dans le passé
+  return next;
+}
+
+module.exports = { DURATIONS, ACCESS, REMIND_BEFORE_MS, WEEK_MS, nextWeekly, validatePenc, cleanSummary, endsAt, agendaBucket, remindDue };

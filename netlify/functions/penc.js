@@ -30,7 +30,7 @@ const host = (p) => ({ name: p.hostName || 'Dr Lô', title: p.hostTitle || '', p
 const base = (id, p) => ({
   id, title: p.title, description: p.description || '', startAt: Number(p.startAt), durationMin: Number(p.durationMin) || 60,
   access: p.access || 'all', channelId: p.channelId || null, channelName: p.channelName || null, price: Number(p.price) || 0,
-  testScaleId: p.testScaleId || null, status: p.status, host: host(p), registeredCount: Number(p.registeredCount) || 0,
+  testScaleId: p.testScaleId || null, repeatWeekly: p.repeatWeekly === true, status: p.status, host: host(p), registeredCount: Number(p.registeredCount) || 0,
   summary: p.status === 'ended' && Array.isArray(p.summary) ? p.summary : [],
 });
 

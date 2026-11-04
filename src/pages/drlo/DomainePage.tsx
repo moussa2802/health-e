@@ -1,12 +1,12 @@
 /**
  * DomainePage — l'onglet « Tests » : /espace/mental, /espace/intime et /espace/bonus se choisissent d'un bouton
- * en haut (la partie intime reste cachée tant qu'on ne l'affiche pas). /espace/social (compatibilité) reste
+ * en haut (Intime toujours visible, sa liste voilée à chaque arrivée). /espace/social (compatibilité) reste
  * accessible par « À deux ». Chaque test : fait (repère + date) ou à faire, et une action pour le faire.
  */
 import React, { useEffect, useState } from 'react';
 import { severityColor } from '../../design/charte';
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom';
-import { ArrowRight, Check, ChevronDown, Eye, EyeOff, Heart, Lock, Users } from 'lucide-react';
+import { ArrowRight, Check, ChevronDown, Eye, Heart, Lock, Users } from 'lucide-react';
 import DrLoShell, { DC, card, usePalette } from '../../components/accueil/DrLoShell';
 import { useAuth } from '../../contexts/AuthContext';
 import { getOnboardingProfile } from '../../utils/onboardingProfile';
@@ -23,7 +23,6 @@ import { useLaunch } from '../../hooks/useLaunch';
 import type { AssessmentScale, ScaleResult } from '../../types/assessment';
 
 type Domaine = 'mental' | 'social' | 'intime' | 'bonus';
-const SHOW_INTIME_KEY = 'he_espace_show_intime';
 
 const TITLES: Record<Domaine, { title: string; intro: string; color: string }> = {
   mental: { title: 'Mental', intro: 'Ce que tes tests disent de toi, pièce par pièce. Déplie un test pour voir ton résultat ou le commencer.', color: DC.sage },
@@ -66,13 +65,10 @@ const DomainePage: React.FC = () => {
   const [totemInfo, setTotemInfo] = useState<{ animal: string; revealedAt: unknown } | null>(null);
   const [open, setOpen] = useState<string | null>(null);
   const d = (['mental', 'social', 'intime', 'bonus'].includes(domaine ?? '') ? domaine : null) as Domaine | null;
-  const [showIntime, setShowIntime] = useState(() => { try { return localStorage.getItem(SHOW_INTIME_KEY) === '1'; } catch { return false; } });
-  const toggleIntime = () => {
-    const v = !showIntime;
-    setShowIntime(v);
-    try { localStorage.setItem(SHOW_INTIME_KEY, v ? '1' : '0'); } catch { /* ignore */ }
-    if (!v && d === 'intime') navigate('/espace/mental', { replace: true });
-  };
+  // Intime : l'onglet est toujours là, sa liste est voilée à chaque arrivée (regard par-dessus l'épaule)
+  const [unveiled, setUnveiled] = useState(false);
+  useEffect(() => { setUnveiled(false); }, [d]);
+
 
   useEffect(() => {
     if (!d || !authReady) return;
@@ -185,7 +181,7 @@ const DomainePage: React.FC = () => {
   const segments: { id: Domaine; label: string; to: string }[] = [
     { id: 'mental', label: 'Mental', to: '/espace/mental' },
     { id: 'bonus', label: 'Bonus', to: '/espace/bonus' },
-    ...(showIntime || d === 'intime' ? [{ id: 'intime' as Domaine, label: 'Intime', to: '/espace/intime' }] : []),
+    { id: 'intime', label: 'Intime', to: '/espace/intime' },
   ];
 
   return (
@@ -281,7 +277,17 @@ const DomainePage: React.FC = () => {
               <h2 style={h2}>Ta vie intime</h2>
               <span style={{ fontSize: 13, color: DC.faint }}>{doneOf(SEXUAL_HEALTH_SCALES)} / {totalOf(SEXUAL_HEALTH_SCALES)}</span>
             </div>
-            {list(SEXUAL_HEALTH_SCALES, true)}
+            {unveiled ? list(SEXUAL_HEALTH_SCALES, true) : (
+              <button type="button" onClick={() => setUnveiled(true)} className="drl-btn"
+                style={{ ...card, marginTop: 10, width: '100%', display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer', fontFamily: 'inherit', color: DC.text, borderColor: `${DC.intime}55`, background: `${DC.intime}10` }}>
+                <span aria-hidden="true" style={{ width: 44, height: 44, flex: 'none', borderRadius: 14, background: `${DC.intime}26`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Lock size={20} color={DC.intime} /></span>
+                <span style={{ flex: 1, lineHeight: 1.35 }}>
+                  <b style={{ display: 'block', fontSize: 15, color: DC.title }}>Touche pour afficher</b>
+                  <span style={{ fontSize: 14, color: DC.muted }}>Ta partie intime se recache dès que tu quittes cette page.</span>
+                </span>
+                <Eye size={18} color={DC.muted} aria-hidden="true" />
+              </button>
+            )}
           </section>
         ) : (
           <section style={{ ...card, marginTop: 18, borderColor: `${DC.intime}55`, background: `${DC.intime}10` }}>
@@ -305,11 +311,6 @@ const DomainePage: React.FC = () => {
           {compatOn && <Link to="/espace/social" className="drl-btn" style={{ minHeight: 48, marginTop: 16, display: 'flex', alignItems: 'center', gap: 8, fontSize: 15, color: DC.soft, textDecoration: 'none' }}>
             <Users size={18} color={DC.social} aria-hidden="true" /> À deux : <b style={{ color: DC.gold }}>la compatibilité</b>
           </Link>}
-          <button type="button" onClick={toggleIntime} className="drl-btn"
-            style={{ minHeight: 44, border: 0, background: 'transparent', color: DC.muted, fontSize: 14, fontWeight: 600, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 8, padding: 0 }}>
-            {showIntime ? <EyeOff size={17} aria-hidden="true" /> : <Eye size={17} aria-hidden="true" />}
-            {showIntime ? 'Masquer la partie intime' : 'Afficher la partie intime'}
-          </button>
         </>
       )}
 

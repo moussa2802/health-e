@@ -113,3 +113,15 @@ test('ouvrir un Pénc tout de suite : en direct, membres de la chaîne prévenus
   const all = await call({ action: 'open_now', title: 'Ouvert à tous ce soir' });
   assert.equal(all.body.penc.access, 'all');
 });
+
+test('Pénc chaque semaine : la séance suivante est créée une fois l\'heure passée, jamais dans le passé', () => {
+  const { nextWeekly, WEEK_MS, validatePenc } = require('../_penc.js');
+  const start = Date.UTC(2026, 10, 5, 21, 0); // jeudi 21 h Dakar
+  const p = { repeatWeekly: true, startAt: start };
+  assert.equal(nextWeekly(p, start - 60000), null);
+  assert.equal(nextWeekly(p, start + 60000), start + WEEK_MS);
+  assert.equal(nextWeekly({ ...p, nextCreated: 'x' }, start + 60000), null);
+  assert.equal(nextWeekly({ startAt: start }, start + 60000), null);
+  assert.equal(nextWeekly(p, start + 3 * WEEK_MS + 1), start + 4 * WEEK_MS);
+  assert.equal(validatePenc({ repeatWeekly: true }, Date.now(), { partial: true }).data.repeatWeekly, true);
+});

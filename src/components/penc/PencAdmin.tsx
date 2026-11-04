@@ -20,8 +20,8 @@ const toTime = (t: number) => { const d = new Date(t); return `${pad(d.getUTCHou
 const dakarToMs = (date: string, time: string) => { const [y, m, d] = date.split('-').map(Number); const [h, mi] = time.split(':').map(Number); return Date.UTC(y, (m || 1) - 1, d || 1, h || 0, mi || 0); };
 const SCALES = Object.entries(SCALE_META).map(([id, m]) => ({ id, label: m.label })).sort((a, b) => a.label.localeCompare(b.label, 'fr'));
 
-type Form = { id?: string; title: string; description: string; date: string; time: string; durationMin: number; access: PencAccess; channelId: string; price: number; testScaleId: string };
-const empty = (): Form => { const t = Date.now() + 2 * 86400000; return { title: '', description: '', date: toDate(t), time: '21:00', durationMin: 45, access: 'all', channelId: '', price: 10, testScaleId: '' }; };
+type Form = { id?: string; title: string; description: string; date: string; time: string; durationMin: number; access: PencAccess; channelId: string; price: number; testScaleId: string; repeatWeekly: boolean };
+const empty = (): Form => { const t = Date.now() + 2 * 86400000; return { title: '', description: '', date: toDate(t), time: '21:00', durationMin: 45, access: 'all', channelId: '', price: 10, testScaleId: '', repeatWeekly: false }; };
 
 const PencAdmin: React.FC<{ palette: MomentPalette }> = ({ palette }) => {
   const [items, setItems] = useState<Penc[] | null>(null);
@@ -43,7 +43,7 @@ const PencAdmin: React.FC<{ palette: MomentPalette }> = ({ palette }) => {
     e.preventDefault();
     if (!form) return;
     const startAt = dakarToMs(form.date, form.time);
-    const ok = await run(() => savePenc({ id: form.id, title: form.title, description: form.description, startAt, durationMin: form.durationMin, access: form.access, channelId: form.channelId, price: form.price, testScaleId: form.testScaleId }));
+    const ok = await run(() => savePenc({ id: form.id, title: form.title, description: form.description, startAt, durationMin: form.durationMin, access: form.access, channelId: form.channelId, price: form.price, testScaleId: form.testScaleId, repeatWeekly: form.repeatWeekly }));
     if (ok) setForm(null);
   };
   const btn = (primary: boolean): React.CSSProperties => ({ minHeight: 42, padding: '0 14px', borderRadius: 999, cursor: 'pointer', fontSize: 14, fontWeight: 700, border: primary ? 0 : `1px solid ${DC.line}`, background: primary ? palette.primary : DC.glass, color: primary ? DC.ink : DC.text });
@@ -76,6 +76,10 @@ const PencAdmin: React.FC<{ palette: MomentPalette }> = ({ palette }) => {
         )}
         {form.access === 'paid' && <label style={lab}>Prix en étincelles<input type="number" min={1} max={500} value={form.price} onChange={e => set('price', Number(e.target.value))} className="drl-input" style={field} /></label>}
         <label style={lab}>Test à proposer à la fin (facultatif)<select value={form.testScaleId} onChange={e => set('testScaleId', e.target.value)} style={{ ...field, minHeight: 48 }}><option value="">Aucun</option>{SCALES.map(s => <option key={s.id} value={s.id}>{s.label}</option>)}</select></label>
+        <label style={{ display: 'flex', alignItems: 'center', gap: 10, minHeight: 44, fontSize: 15, color: DC.text, cursor: 'pointer' }}>
+          <input type="checkbox" checked={form.repeatWeekly} onChange={e => set('repeatWeekly', e.target.checked)} style={{ width: 20, height: 20, accentColor: palette.accent }} />
+          <span>Chaque semaine, même jour, même heure<span style={{ display: 'block', fontSize: 13, color: DC.faint }}>La séance suivante se programme toute seule. Décoche pour arrêter.</span></span>
+        </label>
         <p style={{ margin: 0, fontSize: 13, color: DC.faint, lineHeight: 1.5 }}>Le Pénc paraît tout de suite dans l'agenda. Les inscrits sont prévenus 10 minutes avant et au démarrage.</p>
         {error && <p role="alert" style={{ margin: 0, color: '#F09A7A', fontSize: 14 }}>{error}</p>}
         <div style={{ display: 'flex', gap: 8 }}>
@@ -96,7 +100,7 @@ const PencAdmin: React.FC<{ palette: MomentPalette }> = ({ palette }) => {
           <article key={p.id} style={{ ...card, display: 'flex', flexDirection: 'column', gap: 6 }}>
             <span style={{ fontSize: 13, fontWeight: 700, letterSpacing: '.08em', color: p.status === 'live' ? palette.accent : DC.muted }}>{p.status === 'live' ? 'EN DIRECT' : p.status === 'ended' ? 'TERMINÉ' : 'PROGRAMMÉ'} · {p.registeredCount} inscrit{p.registeredCount > 1 ? 's' : ''}</span>
             <b style={{ fontSize: 16, color: DC.title }}>{p.title}</b>
-            <span style={{ fontSize: 14, color: DC.soft }}>{whenLabel(p.startAt)} · {p.durationMin} min · {p.access === 'channel' ? `membres de « ${p.channelName} »` : p.access === 'paid' ? `${p.price} étincelles` : 'ouvert à tous'}{p.host.name !== 'Dr Lô' ? ` · ${p.host.name}` : ''}</span>
+            <span style={{ fontSize: 14, color: DC.soft }}>{whenLabel(p.startAt)}{p.repeatWeekly ? ' · chaque semaine' : ''} · {p.durationMin} min · {p.access === 'channel' ? `membres de « ${p.channelName} »` : p.access === 'paid' ? `${p.price} étincelles` : 'ouvert à tous'}{p.host.name !== 'Dr Lô' ? ` · ${p.host.name}` : ''}</span>
             {p.status === 'ended' && p.summary.length > 0 && <span style={{ fontSize: 13, color: DC.faint }}>À retenir : {p.summary.join(' · ')}</span>}
             {ending === p.id ? (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 6 }}>
@@ -117,7 +121,7 @@ const PencAdmin: React.FC<{ palette: MomentPalette }> = ({ palette }) => {
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 6 }}>
                 <Link to={`/penc/${p.id}`} className="drl-btn" style={{ ...btn(true), display: 'inline-flex', alignItems: 'center', textDecoration: 'none' }}>{p.status === 'live' ? 'Ouvrir la salle' : 'Démarrer et entrer'}</Link>
                 <button type="button" onClick={() => setEnding(p.id)} style={btn(p.status === 'live')}>Terminer</button>
-                {p.status === 'scheduled' && <button type="button" onClick={() => setForm({ id: p.id, title: p.title, description: p.description, date: toDate(p.startAt), time: toTime(p.startAt), durationMin: p.durationMin, access: p.access, channelId: p.channelId ?? '', price: p.price || 10, testScaleId: p.testScaleId ?? '' })} style={btn(false)}>Modifier</button>}
+                {p.status === 'scheduled' && <button type="button" onClick={() => setForm({ id: p.id, title: p.title, description: p.description, date: toDate(p.startAt), time: toTime(p.startAt), durationMin: p.durationMin, access: p.access, channelId: p.channelId ?? '', price: p.price || 10, testScaleId: p.testScaleId ?? '', repeatWeekly: !!p.repeatWeekly })} style={btn(false)}>Modifier</button>}
                 {p.status === 'scheduled' && <button type="button" onClick={() => setConfirmCancel(p.id)} style={btn(false)}>Annuler</button>}
               </div>
             )}
