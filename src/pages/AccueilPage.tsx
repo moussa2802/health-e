@@ -18,6 +18,7 @@ import HomePenc from '../components/penc/HomePenc';
 import { useLaunch } from '../hooks/useLaunch';
 import { HScroll, SectionTitle, NewsCard, ChannelCard, WideLink, tintOf, type NewsItem } from '../components/accueil/HomeParts';
 import { RealDrLoPhoto } from '../components/accueil/RealDrLoBadge';
+import CompanionMark from '../components/accueil/CompanionMark';
 import AccueilSeoSections from '../components/accueil/AccueilSeoSections';
 import { useAuth } from '../contexts/AuthContext';
 import { getOnboardingProfile } from '../utils/onboardingProfile';
@@ -282,8 +283,12 @@ const ConnectedHome: React.FC<{ feed: HomeFeed | null; palette: MomentPalette; u
 
   return (
     <>
-      <header style={{ minHeight: 44, display: 'flex', alignItems: 'center' }}>
+      <header style={{ minHeight: 44, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
         <h1 style={{ margin: 0, fontFamily: 'Fraunces, serif', fontSize: 28, lineHeight: 1.2, fontWeight: 600, color: DC.title }}>{greetingFor(getMoment(), prenom)}</h1>
+        {/* Le compagnon vivant : il respire ici aussi, un tap ouvre la discussion */}
+        <Link to="/compagnon" aria-label="Parler à mon compagnon" className="drl-btn" style={{ flexShrink: 0, borderRadius: '50%' }}>
+          <CompanionMark size={56} live />
+        </Link>
       </header>
 
       {/* Une seule carte vedette : un Pénc en direct, sinon ta suite ; puis le test du moment, ton message, l'humeur */}

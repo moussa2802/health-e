@@ -7,11 +7,11 @@ import React, { useEffect, useState } from 'react';
 import CompanionMark from './CompanionMark';
 import { companionLabel } from '../../utils/companion';
 import { Sparkles } from 'lucide-react';
-import type { DrLoState } from './DrLoAvatar';
+import { auraMoodOf, type DrLoState } from './DrLoAvatar';
 import type { MomentPalette } from '../../utils/drloMoment';
 
-function PoseImage({ size }: { state: DrLoState; size: number }) {
-  return <CompanionMark size={size} style={{ display: 'block' }} />;
+function PoseImage({ state, size }: { state: DrLoState; size: number }) {
+  return <CompanionMark size={size} mood={auraMoodOf(state)} style={{ display: 'block' }} />;
 }
 
 const DrLoIsland: React.FC<{ state: DrLoState; label: string | null; palette: MomentPalette }> = ({ state, label, palette }) => {

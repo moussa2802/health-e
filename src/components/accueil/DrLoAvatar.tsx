@@ -7,9 +7,21 @@
  */
 import React from 'react';
 import CompanionMark from './CompanionMark';
+import type { AuraMood } from './CompanionAura';
 import type { MomentPalette } from '../../utils/drloMoment';
 
-export type DrLoState = 'idle' | 'listening' | 'reading' | 'thinking' | 'writing' | 'breathing' | 'joy';
+export type DrLoState = 'idle' | 'listening' | 'reading' | 'thinking' | 'writing' | 'breathing' | 'joy' | 'calm';
+
+/** Ce que fait le compagnon → l'humeur de son aura (calm = moment difficile : il se fait doux et calme). */
+export function auraMoodOf(state: DrLoState): AuraMood {
+  switch (state) {
+    case 'listening': return 'ecoute';
+    case 'reading': case 'thinking': case 'writing': return 'pense';
+    case 'joy': return 'joie';
+    case 'calm': return 'doux';
+    default: return 'repos';
+  }
+}
 
 /**
  * aura (0 → 1, facultatif) : l'aura-jauge des crédits autour de Dr Lô. Basse, elle s'atténue
@@ -41,7 +53,7 @@ const DrLoAvatar: React.FC<{ state: DrLoState; palette: MomentPalette; size?: nu
           <span style={{ position: 'absolute', right: '10%', bottom: '18%', width: 5, height: 5, borderRadius: '50%', background: palette.accent, opacity: 0.45 }} />
         </div>
       )}
-      <CompanionMark size={size} ring={joy ? '#F0C86E' : palette.accent} style={{ position: 'relative' }} />
+      <CompanionMark size={size} mood={auraMoodOf(state)} onTap={() => {}} ring={joy ? '#F0C86E' : palette.accent} style={{ position: 'relative' }} />
       <span aria-hidden="true" style={{ position: 'absolute', right: size * 0.14, bottom: size * 0.14, width: 16, height: 16, borderRadius: '50%', background: '#4CC37E', border: '3px solid #17130F' }} />
     </div>
   );

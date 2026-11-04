@@ -745,6 +745,7 @@ const ConversationAccueil: React.FC = () => {
   const listening = dictation.listening || (!!input.trim() && !revealing && !breathing);
   const avatarState: DrLoState = tab === 'confier' ? confierStatus.state
     : breathing ? 'breathing'
+    : state.step === 'crisis' ? 'calm'
     : joyUntil > Date.now() && !revealing ? 'joy'
     : testBusy === 'finishing' || phase === 'reading' ? 'reading'
     : testBusy === 'starting' || routing ? 'thinking'
@@ -2017,7 +2018,7 @@ const ConversationAccueil: React.FC = () => {
               )}
               {(phase === 'thinking' || phase === 'reading' || routing || testBusy) && partial === null && (
                 <div role="status" aria-label="Ton compagnon écrit" style={{ display: 'flex', alignItems: 'flex-end', gap: 8 }}>
-                  <CompanionMark size={28} />
+                  <CompanionMark size={28} mood="pense" />
                   <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '12px 14px', borderRadius: '18px 18px 18px 4px', background: 'rgba(255,255,255,.07)' }}>
                     <span style={{ display: 'inline-flex', gap: 5 }}>
                       {[0, 0.15, 0.3].map(d => <span key={d} className="drl-dot" style={{ width: 7, height: 7, borderRadius: '50%', background: C.muted, animationDelay: `${d}s` }} />)}

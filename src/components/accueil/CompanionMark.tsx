@@ -1,12 +1,14 @@
 /**
- * CompanionMark — le compagnon : un petit bonhomme rond et souriant, toujours le même, dans un rond chaud.
- * Seuls changent sa couleur et le petit signe qu'il porte sur la tête (pousse par défaut). Ce n'est ni un visage humain ni un médecin.
+ * CompanionMark — le compagnon dans son rond chaud : une aura de lumière vivante avec deux yeux de lumière
+ * (CompanionAura, choisie le 4 nov. 2026 à la place du petit bonhomme). Changent : sa couleur, son petit signe
+ * (une petite lumière près de sa tête) et son humeur (mood). Ce n'est ni un visage humain ni un médecin.
  * La photo de Dr Lô n'apparaît que là où l'on reçoit ou envoie un message à lui (RealDrLoPhoto).
  */
 import React from 'react';
 import { getCompanionColor, getCompanionIcon } from '../../utils/companion';
+import CompanionAura, { type AuraMood } from './CompanionAura';
 
-/** Les petits signes (dessinés dans un carré de 24, posés sur la tête du bonhomme). */
+/** Les petits signes (dessinés dans un carré de 24). */
 export const ICON_PATHS: Record<string, React.ReactNode> = {
   pousse: <><path d="M12 21v-8" /><path d="M12 13c0-3.6-2.4-6-6-6 0 3.6 2.4 6 6 6z" /><path d="M12 11c0-3 2-5.4 6-5.4 0 3-2 5.4-6 5.4z" /></>,
   etoile: <path d="M12 3.2l2.6 5.5 6 .8-4.4 4.2 1.1 6-5.3-2.9-5.3 2.9 1.1-6L3.4 9.5l6-.8z" />,
@@ -16,31 +18,21 @@ export const ICON_PATHS: Record<string, React.ReactNode> = {
   feuille: <path d="M5 19c0-8 5-13.5 14-14 .3 9-4.8 14-14 14z" />,
 };
 
-const INK = '#2A1D12';
-
-/** Le bonhomme seul (sans le rond), pour les aperçus. */
-export const CompanionBody: React.FC<{ color: string; icon?: string; size: number }> = ({ color, icon, size }) => (
-  <svg width={size} height={size} viewBox="0 0 40 40" aria-hidden="true">
-    <g transform="translate(13 0.5) scale(0.58)" fill={color} stroke={color} strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round">
-      {ICON_PATHS[icon ?? getCompanionIcon()] ?? ICON_PATHS.pousse}
-    </g>
-    <ellipse cx="14.5" cy="38" rx="3.2" ry="1.7" fill={color} />
-    <ellipse cx="25.5" cy="38" rx="3.2" ry="1.7" fill={color} />
-    <circle cx="20" cy="25" r="12.5" fill={color} />
-    <circle cx="15.6" cy="24" r="1.7" fill={INK} />
-    <circle cx="24.4" cy="24" r="1.7" fill={INK} />
-    <path d="M16.2 28.6c1.9 2.1 5.7 2.1 7.6 0" fill="none" stroke={INK} strokeWidth="1.7" strokeLinecap="round" />
-  </svg>
+/** L'aura seule (sans le rond), pour les aperçus (choix du signe). */
+export const CompanionBody: React.FC<{ color: string; icon?: string; size: number; mood?: AuraMood }> = ({ color, icon, size, mood }) => (
+  <CompanionAura size={size} color={color} mood={mood} live={false} sign={ICON_PATHS[icon ?? getCompanionIcon()] ?? ICON_PATHS.pousse} />
 );
 
-const CompanionMark: React.FC<{ size?: number; icon?: string; ring?: string; color?: string; className?: string; style?: React.CSSProperties }> = ({ size = 40, icon, ring, color, className, style }) => {
+const CompanionMark: React.FC<{ size?: number; icon?: string; ring?: string; color?: string; mood?: AuraMood; live?: boolean; onTap?: () => void; className?: string; style?: React.CSSProperties }> = ({ size = 40, icon, ring, color, mood, live, onTap, className, style }) => {
   const c = color ?? getCompanionColor().hex;
+  // Le signe n'apparaît qu'à partir d'une taille où il se lit
+  const sign = size >= 44 ? ICON_PATHS[icon ?? getCompanionIcon()] ?? ICON_PATHS.pousse : undefined;
   return (
-  <span aria-hidden="true" className={className}
-    style={{ width: size, height: size, flexShrink: 0, borderRadius: '50%', boxSizing: 'border-box', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden',
-      background: 'radial-gradient(circle at 30% 25%, #4A3523, #2A1D12)', border: `${size >= 60 ? 3 : 2}px solid ${ring ?? `${c}73`}`, ...style }}>
-    <CompanionBody color={c} icon={icon} size={Math.round(size * 0.74)} />
-  </span>
+    <span aria-hidden="true" className={className}
+      style={{ width: size, height: size, flexShrink: 0, borderRadius: '50%', boxSizing: 'border-box', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden',
+        background: 'radial-gradient(circle at 50% 60%, #2E2016, #17100A)', border: `${size >= 60 ? 3 : 2}px solid ${ring ?? `${c}73`}`, ...style }}>
+      <CompanionAura size={Math.round(size * 1.12)} color={c} mood={mood} live={live} sign={sign} onTap={onTap} />
+    </span>
   );
 };
 

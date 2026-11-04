@@ -54,7 +54,7 @@ export const saveCompanionColor = (id: string): CompanionColor => {
   try { localStorage.setItem(COLOR_KEY, c.id); } catch { /* ignore */ }
   return c;
 };
-// ── Son petit signe : ce qu'il porte sur la tête (le bonhomme reste le même ; sur l'appareil, comme le nom et la couleur) ──
+// ── Son petit signe : une petite lumière près de sa tête (l'aura reste la même ; sur l'appareil, comme le nom et la couleur) ──
 export const COMPANION_ICONS = [
   { id: 'pousse', label: 'Pousse' },
   { id: 'etoile', label: 'Étoile' },
