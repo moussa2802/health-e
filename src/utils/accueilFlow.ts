@@ -883,10 +883,11 @@ export function newDay(s: AccueilState, today: string, k: Known): AccueilState {
   if (s.day === today) return s;
   if (s.step === 'testing' || s.step === 'crisis' || s.step === 'minor') return { ...s, day: today, talk: undefined };
   // Déjà salué (ex. la même discussion ouverte sur un autre appareil) : pas de deuxième « Re-bonjour »
-  const lastDrlo = [...s.messages].reverse().find(m => m.from === 'drlo');
-  if (lastDrlo && /^Re-bonjour/.test(lastDrlo.text) && s.messages[s.messages.length - 1] === lastDrlo) return { ...s, day: today, talk: undefined, flow: undefined };
+  // On regarde toute la fin du fil restée sans réponse (salutation, puis « ton résultat… ? » par ex.)
+  const lastUser = s.messages.map(m => m.from).lastIndexOf('user');
+  if (s.messages.slice(lastUser + 1).some(m => m.from === 'drlo' && /^Re-bonjour/.test(m.text))) return { ...s, day: today, talk: undefined, flow: undefined };
   const p = firstName(s.prenom ?? k.prenom);
-  let out = push(s, 'drlo', p ? `Re-bonjour ${p} 👋\u00a0Content de te revoir. Comment tu vas aujourd'hui ?` : `Re-bonjour 👋\u00a0Content de te revoir. Comment tu vas aujourd'hui ?`);
+  let out = push(s, 'drlo', p ? `Re-bonjour ${p} 👋 Content de te revoir. Comment tu vas aujourd'hui ?` : `Re-bonjour 👋 Content de te revoir. Comment tu vas aujourd'hui ?`);
   if (s.prescribed && !k.doneScaleIds.includes(s.prescribed)) {
     out = push(out, 'drlo', `Le test « ${k.labelOf(s.prescribed)} » t'attend toujours, si tu veux.`, { type: 'test', scaleId: s.prescribed });
     return { ...out, day: today, step: 'prescribed', talk: undefined, flow: undefined };

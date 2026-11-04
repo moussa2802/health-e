@@ -28,6 +28,7 @@ import { KORIS_COSTS, spendKorisForTest, isTestFreeRetake } from '../../services
 import { useDefiFlag } from '../../hooks/useDefiFlag';
 import { isScaleEligible } from '../../config/defiConfig';
 import DrLoShell, { DC, usePalette } from '../../components/accueil/DrLoShell';
+import { useLaunch } from '../../hooks/useLaunch';
 
 const EMERGENCY_CONTACTS = getCrisisResources().map(r => ({
   label: r.label,
@@ -213,7 +214,10 @@ const AssessmentResultsPage: React.FC = () => {
   const isGuestMode = searchParams.get('guest') === 'true';
   const { currentUser, isAuthenticated } = useAuth();
   const { refreshBalance, openNoKorisModal } = useKoris();
-  const { defiEnabled } = useDefiFlag();
+  const { defiEnabled: defiFlag } = useDefiFlag();
+  const launchDefi = useLaunch().on('defis');
+  // Les défis entre proches arrivent avec la vague 2 du lancement
+  const defiEnabled = defiFlag && launchDefi;
   const location = useLocation();
   const responseQuality = (location.state as any)?.responseQuality;
 

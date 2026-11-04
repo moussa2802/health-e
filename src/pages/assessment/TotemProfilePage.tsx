@@ -36,6 +36,7 @@ import { TOTEM_IMAGES } from '../../data/totemImages';
 
 
 import CompanionMark from '../../components/accueil/CompanionMark';
+import { useLaunch } from '../../hooks/useLaunch';
 /** Icônes au trait (charte : pas d'emoji dans l'interface). */
 const GAUGE_ICONS: Record<string, React.ElementType> = {
   gad7: Wind, phq9: Sun, pss10: Leaf, rses: Gem,
@@ -139,7 +140,10 @@ const GaugeRow: React.FC<{ gauge: DimensionGauge; genre: 'homme' | 'femme' }> = 
 const TotemProfilePage: React.FC = () => {
   const navigate = useNavigate();
   const { currentUser, isAuthenticated } = useAuth();
-  const { defiEnabled } = useDefiFlag();
+  const { defiEnabled: defiFlag } = useDefiFlag();
+  const launchDefi = useLaunch().on('defis');
+  // Les défis entre proches arrivent avec la vague 2 du lancement
+  const defiEnabled = defiFlag && launchDefi;
   const cardRef = useRef<HTMLDivElement>(null);
   const palette = PALETTES[getMoment()];
 

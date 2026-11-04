@@ -20,6 +20,7 @@ import { getGenderHiddenIds, getGreyedScales } from '../../utils/scaleVisibility
 import { getSexualHealthFilter, isSexualFilterComplete } from '../../utils/sexualHealthFilter';
 import { toDate } from '../../utils/drLoGuide';
 import { trackAccueil } from '../../utils/accueilTracking';
+import { useLaunch } from '../../hooks/useLaunch';
 import type { AssessmentScale, ScaleResult } from '../../types/assessment';
 
 type Domaine = 'mental' | 'social' | 'intime' | 'bonus';
@@ -57,6 +58,7 @@ const DomainePage: React.FC = () => {
   const { domaine } = useParams<{ domaine: string }>();
   const navigate = useNavigate();
   const palette = usePalette();
+  const compatOn = useLaunch().on('compat');
   const { currentUser, isAuthenticated, authReady } = useAuth();
   const uid = isAuthenticated && currentUser ? currentUser.id : null;
   const ob = getOnboardingProfile();
@@ -310,9 +312,9 @@ const DomainePage: React.FC = () => {
 
       {isTests && loaded && (
         <>
-          <Link to="/espace/social" className="drl-btn" style={{ minHeight: 48, marginTop: 16, display: 'flex', alignItems: 'center', gap: 8, fontSize: 15, color: DC.soft, textDecoration: 'none' }}>
+          {compatOn && <Link to="/espace/social" className="drl-btn" style={{ minHeight: 48, marginTop: 16, display: 'flex', alignItems: 'center', gap: 8, fontSize: 15, color: DC.soft, textDecoration: 'none' }}>
             <Users size={18} color={DC.social} aria-hidden="true" /> À deux : <b style={{ color: DC.gold }}>la compatibilité</b>
-          </Link>
+          </Link>}
           <button type="button" onClick={toggleIntime} className="drl-btn"
             style={{ minHeight: 44, border: 0, background: 'transparent', color: DC.muted, fontSize: 14, fontWeight: 600, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 8, padding: 0 }}>
             {showIntime ? <EyeOff size={17} aria-hidden="true" /> : <Eye size={17} aria-hidden="true" />}

@@ -35,6 +35,7 @@ import type { ScaleResult } from '../../types/assessment';
 
 import CompanionMark from '../../components/accueil/CompanionMark';
 import { useLaunch } from '../../hooks/useLaunch';
+import { WalletCard } from '../../components/koris/GiftCards';
 const SHOW_INTIME_KEY = 'he_espace_show_intime';
 const DAYS = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'];
 const MONTHS = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
@@ -287,6 +288,9 @@ const EspacePage: React.FC = () => {
         </div>
 
       </section>
+
+      {/* Étincelles : solde, recharger, inviter un proche */}
+      {uid && <WalletCard palette={palette} />}
 
       {/* Météo intérieure */}
       <section aria-label="Ta météo intérieure" style={{ ...card, marginTop: 14 }}>

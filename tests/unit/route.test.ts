@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  startConversation, respond, routeDecision, newDay, firstName, welcomeAfterAuth, addExchange,
+  startConversation, respond, routeDecision, newDay, firstName, welcomeAfterAuth, addExchange, addOpener,
   type Known, type AccueilState, type RouteDecision,
 } from '../../src/utils/accueilFlow.ts';
 
@@ -111,4 +111,13 @@ test('« discuter » avec un compte → discussion dans le même fil ; invité �
 test('nouveau jour : la discussion approfondie se termine', () => {
   const s = { ...startConversation(member), day: '2026-10-23', talk: { conv: 'c', start: 1 } };
   assert.equal(newDay(s, '2026-10-24', member).talk, undefined);
+});
+
+test('nouveau jour : pas de deuxième « Re-bonjour » si le premier est resté sans réponse', () => {
+  const s0 = startConversation(member);
+  const s1 = newDay({ ...s0, day: '2026-10-23' }, '2026-10-24', member);
+  const s2 = addOpener(s1, 'Ton résultat au test « Anxiété » : « Anxiété légère ». Qu\'est-ce que tu aimerais en comprendre ?');
+  const s3 = newDay(s2, '2026-10-25', member);
+  assert.equal(s3.messages.filter(m => /^Re-bonjour/.test(m.text)).length, 1);
+  assert.equal(s3.day, '2026-10-25');
 });

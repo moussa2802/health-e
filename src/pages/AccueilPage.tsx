@@ -2,11 +2,12 @@
  * AccueilPage — la page d'accueil de Health-e (« / »).
  * Elle présente ce dont les gens ont besoin : un test à la une, les nouveautés (vocaux, textes, outils), les chaînes,
  * des portes d'entrée par situation. Le chat n'est plus ici : il vit dans l'onglet Compagnon (/compagnon).
- * Le nom de Dr Lô n'apparaît que sur un contenu qu'il a fait (« par Dr Lô », en petit) ou sur un message qu'il a envoyé.
+ * Le nom de Dr Lô n'apparaît que sur un contenu qu'il a fait (« par Dr Lô », en petit), sur un message qu'il a envoyé,
+ * et, pour un visiteur, dans la ligne « Créé par Dr Lô, médecin » : qui est derrière, la première question en arrivant d'une vidéo.
  */
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
-import { ArrowRight, CloudSun, Heart, Sparkles, Wind, PenLine, Wrench, MessageCircleQuestion } from 'lucide-react';
+import { ArrowRight, CloudSun, Heart, Wind, PenLine, Wrench, MessageCircleQuestion } from 'lucide-react';
 import { usePalette, DC, card } from '../components/accueil/DrLoShell';
 import { addDays, type Programme } from '../utils/programme';
 import { loadProgramme } from '../services/programmeService';
@@ -34,6 +35,13 @@ import { getDrloStatus, captureReferral, type DrloStatus } from '../services/drl
 import { myPractices, type Mine } from '../services/practiceService';
 import { agoLabel, DEFAULT_FEATURED, getHomeFeed, type Featured, type HomeFeed } from '../services/homeFeedService';
 import { trackAccueil } from '../utils/accueilTracking';
+import { pickHomeNext, sinceLabel } from '../utils/homeNext';
+import { toDate } from '../utils/drLoGuide';
+import { TOTEM_IMAGES } from '../data/totemImages';
+import { getTotemSignature, type TotemAnimal } from '../utils/totemAlgorithm';
+import { DailyGiftCard } from '../components/koris/GiftCards';
+import { claimReferralRewardOnce } from '../services/korisGiftService';
+import { useKoris } from '../contexts/KorisContext';
 import type { ScaleResult } from '../types/assessment';
 
 /** Les portes d'entrée par situation : chacune mène à un test ou à une action qui existe déjà. */
@@ -71,11 +79,14 @@ const FeaturedCard: React.FC<{ featured: Featured; guest: boolean; palette: Mome
 
 const NeedChips: React.FC = () => {
   const navigate = useNavigate();
+  const launch = useLaunch();
+  // Tant que la compatibilité n'est pas ouverte, « Mon couple coince » mène au test d'attachement (le couple, vu de soi)
+  const needs = NEEDS.map(n => (n.to === '/assessment/compatibility' && !launch.on('compat') ? { ...n, to: '/compagnon', state: { prescribe: 'ecr_r' } } : n));
   return (
     <>
       <SectionTitle>Qu'est-ce qui t'amène ?</SectionTitle>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-        {NEEDS.map(n => (
+        {needs.map(n => (
           <button key={n.label} onClick={() => { trackAccueil('go', { to: 'need', from: 'accueil' }); navigate(n.to, n.state ? { state: n.state } : undefined); }} className="drl-btn"
             style={{ minHeight: 44, padding: '0 16px', borderRadius: 999, border: `1px solid ${DC.line}`, background: DC.glass, color: DC.text, fontSize: 15, fontWeight: 600, cursor: 'pointer' }}>
             {n.label}
@@ -145,6 +156,33 @@ const WhenItRises: React.FC<{ confier?: boolean }> = ({ confier = true }) => {
   );
 };
 
+/** Le crochet de l'animal intérieur : de vraies images, pas une ligne de texte. */
+const TEASER: TotemAnimal[] = ['lion', 'cerf', 'dauphin', 'panthere', 'hibou'];
+const AnimalTeaser: React.FC<{ palette: MomentPalette }> = ({ palette }) => (
+  <Link to="/espace/mental" onClick={() => trackAccueil('go', { to: 'animal_teaser', from: 'accueil' })} className="drl-btn"
+    style={{ ...card, marginTop: 0, display: 'block', textDecoration: 'none', color: DC.text, borderColor: `${DC.gold}55`, background: `radial-gradient(90% 70% at 100% 0%, ${DC.gold}22, transparent 70%), ${DC.glass}` }}>
+    <div aria-hidden="true" style={{ display: 'flex' }}>
+      {TEASER.map((a, i) => (
+        <img key={a} src={TOTEM_IMAGES[a]} alt="" width={56} height={56} loading="lazy"
+          style={{ width: 56, height: 56, borderRadius: 16, objectFit: 'cover', marginLeft: i ? -12 : 0, border: '2px solid #1C150F', boxShadow: '0 6px 16px rgba(0,0,0,.35)' }} />
+      ))}
+    </div>
+    <p style={{ margin: '12px 0 0', fontFamily: 'Fraunces, serif', fontSize: 21, lineHeight: 1.25, fontWeight: 600, color: DC.title }}>12 animaux. Lequel es-tu, au fond ?</p>
+    <p style={{ margin: '4px 0 0', fontSize: 14, lineHeight: 1.45, color: DC.muted }}>7 tests courts, et ton animal intérieur se révèle : une carte à partager, sans rien dévoiler d'intime.</p>
+    <span style={{ marginTop: 10, display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 15, fontWeight: 700, color: palette.accent }}>Découvrir le mien <ArrowRight size={16} aria-hidden="true" /></span>
+  </Link>
+);
+
+/** Qui est derrière : la première question d'une personne qui arrive d'une vidéo. */
+const TrustRow: React.FC<{ palette: MomentPalette }> = ({ palette }) => (
+  <div style={{ marginTop: 14, display: 'flex', alignItems: 'center', gap: 12 }}>
+    <RealDrLoPhoto size={44} palette={palette} />
+    <p style={{ margin: 0, fontSize: 14, lineHeight: 1.4, color: DC.soft }}>
+      <b style={{ color: DC.title }}>Créé par Dr Lô, médecin.</b><br />Celui que tu suis sur TikTok et Instagram.
+    </p>
+  </div>
+);
+
 // ───────── Visiteur ─────────
 const VisitorHome: React.FC<{ feed: HomeFeed | null; palette: MomentPalette }> = ({ feed, palette }) => {
   const navigate = useNavigate();
@@ -159,12 +197,13 @@ const VisitorHome: React.FC<{ feed: HomeFeed | null; palette: MomentPalette }> =
         </button>
       </header>
       <h1 style={{ margin: '18px 0 0', fontFamily: 'Fraunces, serif', fontSize: 34, lineHeight: 1.15, fontWeight: 600, color: DC.title }}>Comprends ce que tu ressens.</h1>
-      <p style={{ margin: '10px 0 0', fontSize: 16, lineHeight: 1.5, color: DC.soft }}>Des tests, des vocaux et des outils pour ton bien-être. Privé, en wolof et en français.</p>
+      <p style={{ margin: '10px 0 0', fontSize: 16, lineHeight: 1.5, color: DC.soft }}>Des tests sérieux, expliqués simplement. Privé, gratuit pour commencer, en wolof et en français.</p>
+      <TrustRow palette={palette} />
       <FeaturedCard featured={pickFeatured(feed)} guest palette={palette} />
+      <SectionTitle>Ton animal intérieur</SectionTitle>
+      <AnimalTeaser palette={palette} />
       <Discover feed={feed} connected={false} channels={launch.on('chaines')} />
       <NeedChips />
-      <SectionTitle>Ton animal intérieur</SectionTitle>
-      <WideLink to="/espace/mental" kicker="7 TESTS, UN RÉSULTAT À PARTAGER" title="Quel animal es-tu vraiment ?" tint={DC.gold} icon={<Sparkles size={24} color={DC.gold} aria-hidden="true" />} />
       {launch.on('compat') && (
         <>
           <SectionTitle>À deux</SectionTitle>
@@ -182,6 +221,8 @@ const ConnectedHome: React.FC<{ feed: HomeFeed | null; palette: MomentPalette; u
   const navigate = useNavigate();
   const [results, setResults] = useState<Record<string, ScaleResult> | null>(null);
   const [totemRevealed, setTotemRevealed] = useState(false);
+  const [animal, setAnimal] = useState<TotemAnimal | null>(null);
+  const { refreshBalance } = useKoris();
   const [inbox, setInbox] = useState<InboxItem[]>([]);
   const [unread, setUnread] = useState(0);
   const [chBadge, setChBadge] = useState(0);
@@ -197,7 +238,7 @@ const ConnectedHome: React.FC<{ feed: HomeFeed | null; palette: MomentPalette; u
 
   useEffect(() => {
     let off = false;
-    getProfileProgress(uid).then(p => { if (!off) { setResults(p.scaleResults ?? {}); setTotemRevealed(!!p.totem?.animal && !!p.totem.revealedAt); } }).catch(() => { if (!off) setResults({}); });
+    getProfileProgress(uid).then(p => { if (!off) { setResults(p.scaleResults ?? {}); setTotemRevealed(!!p.totem?.animal && !!p.totem.revealedAt); setAnimal(p.totem?.revealedAt ? (p.totem.animal as TotemAnimal) : null); } }).catch(() => { if (!off) setResults({}); });
     getInbox().then(r => { if (!off) { setInbox(r.items); setUnread(r.unread); } }).catch(() => {});
     getChannelNews().then(r => { if (!off) setChBadge(r.badge); }).catch(() => {});
     myPractices().then(m => { if (!off) setMine(m); }).catch(() => {});
@@ -221,8 +262,19 @@ const ConnectedHome: React.FC<{ feed: HomeFeed | null; palette: MomentPalette; u
     if (!totemRevealed) return { kicker: 'TA SUITE', title: 'Ton animal intérieur est prêt', cta: 'Le découvrir', go: () => navigate('/assessment/totem') };
     const next = pickNextScale('decouvre', Object.keys(results));
     if (next) return { kicker: 'TA SUITE', title: `Ton prochain test : ${getScaleMeta(next).label}`, cta: 'Commencer', go: () => navigate('/compagnon', { state: { prescribe: next } }) };
+    // Les 7 sont faits : un test du moment, sinon refaire un test d'état ancien. L'accueil n'est jamais vide.
+    const dates = Object.fromEntries(Object.entries(results).map(([id, r]) => [id, toDate((r as { completedAt?: unknown }).completedAt)]));
+    const more = pickHomeNext(dates, Date.now());
+    if (more?.kind === 'new') return { kicker: 'LE TEST DU MOMENT', title: `${getScaleMeta(more.id).label} : et toi, tu es comment ?`, cta: 'Faire le test', go: () => navigate('/compagnon', { state: { prescribe: more.id } }) };
+    if (more?.kind === 'retake') return { kicker: 'ÇA A BOUGÉ ?', title: `Ton test « ${getScaleMeta(more.id).label} » date de ${sinceLabel(more.days)}. Et aujourd'hui ?`, cta: 'Refaire le point', go: () => navigate('/compagnon', { state: { prescribe: more.id } }) };
     return null;
   }, [results, totemRevealed, navigate]);
+
+  // Parrainage : la personne invitée a fait un test → elle et son parrain reçoivent des étincelles (une seule fois)
+  useEffect(() => {
+    if (!results || Object.keys(results).length === 0) return;
+    claimReferralRewardOnce().then(n => { if (n > 0) refreshBalance().catch(() => {}); }).catch(() => {});
+  }, [results, refreshBalance]);
 
   const lastMsg = inbox.find(i => !i.seen) ?? null;
   const learning = mine?.learning[0] ?? null;
@@ -247,6 +299,15 @@ const ConnectedHome: React.FC<{ feed: HomeFeed | null; palette: MomentPalette; u
       )}
 
       {featuredForYou && <FeaturedCard featured={featuredForYou} guest={false} palette={palette} />}
+
+      <DailyGiftCard palette={palette} />
+
+      {animal && (
+        <div style={{ marginTop: 14 }}>
+          <WideLink to="/assessment/totem" kicker="TON ANIMAL INTÉRIEUR" title={getTotemSignature(animal).label} sub="Tes forces, tes jauges, tes affinités"
+            tint={DC.gold} icon={<img src={TOTEM_IMAGES[animal]} alt="" width={48} height={48} style={{ width: 48, height: 48, borderRadius: 14, objectFit: 'cover', flexShrink: 0, border: `1px solid ${DC.gold}66` }} />} />
+        </div>
+      )}
 
       {(lastMsg || (chBadge > 0 && launch.on('chaines'))) && (
         <>
