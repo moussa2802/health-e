@@ -125,3 +125,10 @@ test('Pénc chaque semaine : la séance suivante est créée une fois l\'heure p
   assert.equal(nextWeekly(p, start + 3 * WEEK_MS + 1), start + 4 * WEEK_MS);
   assert.equal(validatePenc({ repeatWeekly: true }, Date.now(), { partial: true }).data.repeatWeekly, true);
 });
+
+test('un Pénc terminé retiré de l\'agenda n\'apparaît plus', () => {
+  const now = Date.UTC(2026, 10, 6);
+  const p = { status: 'ended', startAt: now - 86400000, durationMin: 60, endedAt: now - 82800000 };
+  assert.equal(P.agendaBucket(p, now), 'past');
+  assert.equal(P.agendaBucket({ ...p, hidden: true }, now), null);
+});

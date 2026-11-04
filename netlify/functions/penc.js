@@ -82,14 +82,14 @@ exports.handler = async (event) => {
 
   try {
     // ───────── Espace pro ─────────
-    if (['manage_list', 'save', 'start', 'end', 'cancel', 'open_now'].includes(action)) {
+    if (['manage_list', 'save', 'start', 'end', 'cancel', 'open_now', 'hide'].includes(action)) {
       const role = await R.roleOf(uid);
       if (!role.owner && !role.pro) return reply(403, { error: 'Réservé à l\'Espace pro' });
       const mine = (p) => role.owner || p.hostUid === uid;
 
       if (action === 'manage_list') {
         const snap = role.owner ? await db.collection('pencs').get() : await db.collection('pencs').where('hostUid', '==', uid).get();
-        const items = snap.docs.filter((d) => mine(d.data())).map((d) => base(d.id, d.data()))
+        const items = snap.docs.filter((d) => mine(d.data()) && d.data().hidden !== true).map((d) => base(d.id, d.data()))
           .filter((p) => p.status !== 'cancelled')
           .sort((a, b) => b.startAt - a.startAt).slice(0, 100);
         return reply(200, { items });
@@ -164,6 +164,11 @@ exports.handler = async (event) => {
         if (p.status !== 'live' && p.status !== 'scheduled') return reply(409, { error: 'Ce Pénc est déjà terminé.' });
         await ref.update({ status: 'ended', endedAt: Date.now(), summary: P.cleanSummary(body.summary) });
         await closeRoom(ref.id);
+        return reply(200, { ok: true });
+      }
+      if (action === 'hide') { // un Pénc terminé (un essai par ex.) disparaît de l'agenda et de « Ce qu'on a retenu »
+        if (p.status !== 'ended') return reply(409, { error: 'Seul un Pénc terminé peut être retiré.' });
+        await ref.update({ hidden: true });
         return reply(200, { ok: true });
       }
       // cancel

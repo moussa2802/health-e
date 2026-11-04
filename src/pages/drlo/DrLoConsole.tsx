@@ -174,6 +174,8 @@ const QuestionCard: React.FC<{
   );
 };
 
+const TAB_KEY = 'he_drlo_console_tab';
+
 const DrLoConsole: React.FC = () => {
   const palette = usePalette();
   const { authReady, isAuthenticated, currentUser } = useAuth();
@@ -186,7 +188,10 @@ const DrLoConsole: React.FC = () => {
   const [week, setWeek] = useState<{ used: number; cap: number; queued: number } | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [tab, setTabRaw] = useState<'pending' | 'done' | 'bench' | 'community' | 'channels' | 'practices' | 'home' | 'box' | 'pros' | 'profile' | 'penc'>('pending');
+  type Tab = 'pending' | 'done' | 'bench' | 'community' | 'channels' | 'practices' | 'home' | 'box' | 'pros' | 'profile' | 'penc';
+  // L'onglet survit à un rechargement de la page (la console se remonte quand la session se rafraîchit) : sinon retour sur « À répondre »
+  const [tab, setTabState] = useState<Tab>(() => { try { return (sessionStorage.getItem(TAB_KEY) as Tab) || 'pending'; } catch { return 'pending'; } });
+  const setTabRaw = (t: Tab) => { setTabState(t); try { sessionStorage.setItem(TAB_KEY, t); } catch { /* ignore */ } };
   const [activity, setActivity] = useState<{ community: number; distress: number; byBroadcast: Record<string, number> }>({ community: 0, distress: 0, byBroadcast: {} });
   const chBadge = useChannelsActivity(role === 'drlo' || role === 'pro', tab);
   const loadActivity = () => { getDrloActivity().then(setActivity).catch(() => {}); };
@@ -203,7 +208,7 @@ const DrLoConsole: React.FC = () => {
       .then(s => {
         const d = s.exists() ? s.data() : {};
         if (d.drlo === true || d.role === 'owner') setRole('drlo');
-        else if (d.role === 'pro' && d.verified === true && d.suspended !== true) { setRole('pro'); setTabRaw('channels'); }
+        else if (d.role === 'pro' && d.verified === true && d.suspended !== true) { setRole('pro'); setTabState(t => (['channels', 'penc', 'profile'].includes(t) ? t : 'channels')); }
         else setRole('none');
       })
       .catch(() => setRole('none'));

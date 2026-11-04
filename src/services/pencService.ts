@@ -31,6 +31,7 @@ export const startPenc = (id: string) => call<{ ok: boolean }>({ action: 'start'
 export const endPenc = (id: string, summary: string[]) => call<{ ok: boolean }>({ action: 'end', id, summary });
 export const openPencNow = (title: string, access: 'all' | 'channel' = 'all', channelId?: string) => call<{ ok: boolean; penc: Penc }>({ action: 'open_now', title, access, channelId });
 export const cancelPenc = (id: string) => call<{ ok: boolean }>({ action: 'cancel', id });
+export const hidePenc = (id: string) => call<{ ok: boolean }>({ action: 'hide', id });
 
 const DAYS = ['dim.', 'lun.', 'mar.', 'mer.', 'jeu.', 'ven.', 'sam.'];
 const MONTHS = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'];

@@ -303,7 +303,7 @@ const PencPage: React.FC = () => {
   useEffect(() => { if (authReady && !isAuthenticated) navigate(`/patient/access?returnTo=${encodeURIComponent(id ? `/penc/${id}` : '/penc')}`, { replace: true }); }, [authReady, isAuthenticated, navigate, id]);
   if (!authReady || !isAuthenticated) return null;
   return (
-    <DrLoShell back={id ? { to: '/penc', label: 'Pénc mi' } : undefined} palette={palette}>
+    <DrLoShell back={id ? { to: '/penc', label: 'Pénc mi' } : { to: '/', label: 'Accueil' }} palette={palette}>
       {id ? <Detail id={id} /> : <div style={{ marginTop: 16 }}><Agenda /></div>}
     </DrLoShell>
   );

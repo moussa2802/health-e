@@ -9,7 +9,7 @@ import { DC, card } from '../accueil/DrLoShell';
 import type { MomentPalette } from '../../utils/drloMoment';
 import { SCALE_META } from '../../utils/scaleMeta';
 import { listAdminChannels, type AdminChannel } from '../../services/drloChannelService';
-import { cancelPenc, DURATIONS, endPenc, managePencs, savePenc, whenLabel, type Penc, type PencAccess } from '../../services/pencService';
+import { cancelPenc, hidePenc, DURATIONS, endPenc, managePencs, savePenc, whenLabel, type Penc, type PencAccess } from '../../services/pencService';
 
 const field: React.CSSProperties = { width: '100%', boxSizing: 'border-box', borderRadius: 14, border: `1px solid ${DC.line}`, background: 'rgba(255,255,255,.06)', padding: '12px 14px', fontFamily: 'inherit', fontSize: 16, color: DC.text, outline: 'none' };
 const lab: React.CSSProperties = { display: 'flex', flexDirection: 'column', gap: 6, fontSize: 13, fontWeight: 700, color: DC.soft };
@@ -117,7 +117,11 @@ const PencAdmin: React.FC<{ palette: MomentPalette }> = ({ palette }) => {
                 <button type="button" disabled={busy} onClick={async () => { if (await run(() => cancelPenc(p.id))) setConfirmCancel(null); }} style={btn(true)}>Oui, annuler</button>
                 <button type="button" onClick={() => setConfirmCancel(null)} style={btn(false)}>Non</button>
               </div>
-            ) : p.status !== 'ended' && (
+            ) : p.status === 'ended' ? (
+              <div style={{ display: 'flex', gap: 8, marginTop: 6 }}>
+                <button type="button" disabled={busy} onClick={() => run(() => hidePenc(p.id))} style={btn(false)}>Retirer de l'agenda</button>
+              </div>
+            ) : (
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 6 }}>
                 <Link to={`/penc/${p.id}`} className="drl-btn" style={{ ...btn(true), display: 'inline-flex', alignItems: 'center', textDecoration: 'none' }}>{p.status === 'live' ? 'Ouvrir la salle' : 'Démarrer et entrer'}</Link>
                 <button type="button" onClick={() => setEnding(p.id)} style={btn(p.status === 'live')}>Terminer</button>

@@ -66,7 +66,7 @@ const endsAt = (p) => Number(p.startAt) + Number(p.durationMin || 60) * 60000;
 
 /** Dans l'agenda : à venir ou en direct (et pas fini depuis longtemps), ou terminé depuis moins de 14 jours (avec son résumé). */
 function agendaBucket(p, now = Date.now()) {
-  if (p.status === 'cancelled') return null;
+  if (p.status === 'cancelled' || p.hidden === true) return null;
   if (p.status === 'live') return 'live';
   if (p.status === 'ended') return now - Number(p.endedAt || endsAt(p)) < 14 * 86400000 ? 'past' : null;
   // programmé : on le garde jusqu'à 2 h après l'heure prévue (l'hôte peut être en retard)
