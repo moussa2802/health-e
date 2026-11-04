@@ -61,4 +61,16 @@ function latestTools(rows, limit = 4) {
     .slice(0, limit);
 }
 
-module.exports = { cleanFeatured, teaser, latestPosts, publicChannels, latestTools, MAX_LABEL };
+/** Les fonctionnalités qu'on peut ouvrir ou fermer pendant le lancement par vagues (voir src/utils/launch.ts). */
+const LAUNCH_KEYS = ['confier', 'programme', 'routine', 'synthese', 'defis', 'compat', 'chaines', 'penc_page', 'question'];
+/** Réglage du lancement : vague 1 à 4, et des exceptions (ouvert ou fermé quoi qu'il arrive). Sans réglage : vague 1. */
+function cleanLaunch(raw) {
+  const r = raw || {};
+  const wave = [1, 2, 3, 4].includes(Number(r.wave)) ? Number(r.wave) : 1;
+  const pick = (a) => [...new Set((Array.isArray(a) ? a : []).filter((k) => LAUNCH_KEYS.includes(k)))];
+  const open = pick(r.open);
+  const closed = pick(r.closed).filter((k) => !open.includes(k));
+  return { wave, open, closed };
+}
+
+module.exports = { LAUNCH_KEYS, cleanLaunch, cleanFeatured, teaser, latestPosts, publicChannels, latestTools, MAX_LABEL };

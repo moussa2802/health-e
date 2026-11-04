@@ -8,6 +8,7 @@ import { DC, card } from './DrLoShell';
 import type { MomentPalette } from '../../utils/drloMoment';
 import { ALL_SCALES } from '../../data/scales';
 import { getScaleMeta } from '../../utils/scaleMeta';
+import LaunchAdmin from './LaunchAdmin';
 import { DEFAULT_FEATURED, getHomeFeed, setFeatured, type Featured } from '../../services/homeFeedService';
 
 const MAX_LABEL = 60;
@@ -47,6 +48,7 @@ const HomeAdmin: React.FC<{ palette: MomentPalette }> = ({ palette }) => {
   if (loading) return <Loader2 className="animate-spin" style={{ marginTop: 20 }} />;
   const inChoices = CHOICES.some(c => c.id === scaleId);
   return (
+    <>
     <section style={{ ...card, marginTop: 14 }}>
       <h2 style={{ margin: 0, fontFamily: 'Fraunces, serif', fontSize: 20, fontWeight: 600, color: DC.title }}>Test à la une</h2>
       <p style={{ margin: '6px 0 0', fontSize: 14, lineHeight: 1.5, color: DC.muted }}>
@@ -81,6 +83,8 @@ const HomeAdmin: React.FC<{ palette: MomentPalette }> = ({ palette }) => {
       {msg && <p role="status" style={{ margin: '12px 0 0', display: 'flex', alignItems: 'center', gap: 6, fontSize: 14, color: DC.ok }}><Check size={15} aria-hidden="true" />{msg}</p>}
       {error && <p role="alert" style={{ margin: '12px 0 0', fontSize: 14, color: '#F09A7A' }}>{error}</p>}
     </section>
+    <LaunchAdmin palette={palette} />
+    </>
   );
 };
 

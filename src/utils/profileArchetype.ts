@@ -1,5 +1,6 @@
 import { getScaleById } from '../data/scales';
 import { getScaleMeta } from './scaleMeta';
+import { SEVERITY } from '../design/charte';
 import type { ScaleResult } from '../types/assessment';
 import { getBigFiveProfile, BAND_LABEL, type Band } from './bigFiveProfile';
 
@@ -19,15 +20,7 @@ export interface Archetype {
   description: string;
 }
 
-const SEVERITY_COLORS: Record<string, string> = {
-  positive: '#7FA98F',
-  none: '#7FA98F',
-  minimal: '#7FA98F',
-  mild: '#D9B26A',
-  moderate: '#E9A88C',
-  severe: '#C9603F',
-  alert: '#C9603F',
-};
+const SEVERITY_COLORS: Record<string, string> = SEVERITY;
 
 const MENTAL_DIMENSION_ORDER = [
   'rses', 'brs', 'big_five', 'bonus_eq', 'gad7', 'pss10',

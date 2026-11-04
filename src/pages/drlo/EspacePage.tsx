@@ -34,6 +34,7 @@ import { getDrloStatus, registerReferralIfAny, type DrloStatus } from '../../ser
 import type { ScaleResult } from '../../types/assessment';
 
 import CompanionMark from '../../components/accueil/CompanionMark';
+import { useLaunch } from '../../hooks/useLaunch';
 const SHOW_INTIME_KEY = 'he_espace_show_intime';
 const DAYS = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'];
 const MONTHS = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
@@ -44,6 +45,7 @@ const EspacePage: React.FC = () => {
   const navigate = useNavigate();
   const palette = usePalette();
   const { currentUser, isAuthenticated } = useAuth();
+  const launch = useLaunch();
   const uid = isAuthenticated && currentUser ? currentUser.id : null;
   const ob = getOnboardingProfile();
   const prenom = ob?.prenom || currentUser?.name?.split(' ')[0];
@@ -251,31 +253,31 @@ const EspacePage: React.FC = () => {
               <span style={{ fontSize: 13, color: DC.muted }}>{dm.word}</span>
             </Link>
           ))}
-          <button onClick={() => navigate('/journal')} className="drl-btn" style={{ ...tile(DC.confier), textAlign: 'left' }}>
+          {launch.on('confier') && <button onClick={() => navigate('/journal')} className="drl-btn" style={{ ...tile(DC.confier), textAlign: 'left' }}>
             <BookOpen size={20} color={DC.confier} aria-hidden="true" />
             <span style={{ fontSize: 15, fontWeight: 700 }}>Journal</span>
             <span style={{ fontSize: 13, color: DC.muted }}>{counts.journal ? `${counts.journal} page${counts.journal > 1 ? 's' : ''} · écrire, relire` : 'Écrire, te confier'}</span>
-          </button>
-          {domains.filter(dm => dm.key === 'social').map(dm => (
+          </button>}
+          {launch.on('compat') && domains.filter(dm => dm.key === 'social').map(dm => (
             <Link key={dm.key} to={dm.to} className="drl-btn" style={tile(dm.color)}>
               <dm.icon size={20} color={dm.color} aria-hidden="true" />
               <span style={{ fontSize: 15, fontWeight: 700 }}>{dm.label}</span>
               <span style={{ fontSize: 13, color: DC.muted }}>{dm.word}</span>
             </Link>
           ))}
-          <button onClick={() => (uid ? navigate('/defi') : navigate('/compagnon', { state: { signup: true } }))} className="drl-btn" style={{ ...tile(DC.gold), textAlign: 'left' }}>
+          {launch.on('defis') && <button onClick={() => (uid ? navigate('/defi') : navigate('/compagnon', { state: { signup: true } }))} className="drl-btn" style={{ ...tile(DC.gold), textAlign: 'left' }}>
             <Crown size={20} color={DC.gold} aria-hidden="true" />
             <span style={{ fontSize: 15, fontWeight: 700 }}>Défi</span>
             <span style={{ fontSize: 13, color: DC.muted }}>{defis ? `${defis} en cours` : 'Qui te connaît le mieux ?'}</span>
-          </button>
-          {uid && (
+          </button>}
+          {uid && launch.on('routine') && (
             <Link to="/routine" className="drl-btn" style={tile(DC.sage)}>
               <CalendarCheck size={20} color={DC.sage} aria-hidden="true" />
               <span style={{ fontSize: 15, fontWeight: 700 }}>Ma routine</span>
               <span style={{ fontSize: 13, color: DC.muted }}>{mine && mine.places.used > 0 ? `${mine.places.used} place${mine.places.used > 1 ? 's' : ''} sur ${PLACES_MAX}` : 'Apprendre un outil'}</span>
             </Link>
           )}
-          {uid && (
+          {uid && launch.on('routine') && (
             <Link to="/boite-a-outils" className="drl-btn" style={tile(DC.gold)}>
               <Wrench size={20} color={DC.gold} aria-hidden="true" />
               <span style={{ fontSize: 15, fontWeight: 700 }}>Boîte à outils</span>
@@ -319,7 +321,7 @@ const EspacePage: React.FC = () => {
       {uid && <DrloMemoryCard uid={uid} palette={palette} />}
 
       {/* Ton chemin vers Dr Lô (paliers) */}
-      {drlo && <PaliersCard status={drlo} palette={palette} />}
+      {drlo && launch.on('question') && <PaliersCard status={drlo} palette={palette} />}
 
 
       <p style={{ margin: '18px 0 0', textAlign: 'center', fontSize: 13, lineHeight: 1.5, color: DC.faint }}>

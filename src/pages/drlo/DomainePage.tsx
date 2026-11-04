@@ -4,6 +4,7 @@
  * accessible par « À deux ». Chaque test : fait (repère + date) ou à faire, et une action pour le faire.
  */
 import React, { useEffect, useState } from 'react';
+import { severityColor } from '../../design/charte';
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom';
 import { ArrowRight, Check, ChevronDown, Eye, EyeOff, Heart, Lock, Users } from 'lucide-react';
 import DrLoShell, { DC, card, usePalette } from '../../components/accueil/DrLoShell';
@@ -33,10 +34,7 @@ const TITLES: Record<Domaine, { title: string; intro: string; color: string }> =
 
 /** Couleur douce selon le repère (jamais de rouge vif : des tendances, pas des notes). */
 function tone(sev?: string): string {
-  if (sev === 'severe' || sev === 'alert') return '#E8A0A0';
-  if (sev === 'moderate') return DC.gold;
-  if (sev === 'mild') return '#E7D39A';
-  return DC.ok;
+  return severityColor(sev, DC.ok);
 }
 
 function since(d: Date | null): string {

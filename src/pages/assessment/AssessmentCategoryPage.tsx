@@ -1,5 +1,6 @@
 import '../../components/accueil/accueil.css';
 import React, { useState, useEffect, useRef } from 'react';
+import { SEVERITY } from '../../design/charte';
 import { useParams, useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { doc, onSnapshot } from 'firebase/firestore';
 import {
@@ -63,24 +64,18 @@ const LIGHT_ACCENT: Record<string, string> = { '#4A5D57': '#9DBFAF', '#B5522F': 
 const lightAccent = (c: string) => LIGHT_ACCENT[c.toUpperCase()] ?? c;
 
 // ── Design tokens (severity) ────────────────────────────────────────────────
-// ok=#3C7A5A · gold=#8F6A1F · accent=#B5522F · danger=#B23A3A
+// Repères : la palette SEVERITY de la charte (un état, jamais une note)
 
 function getSeverityColor(severity: string): string {
   switch (severity) {
-    case 'positive': case 'none': case 'minimal': return '#3C7A5A';
-    case 'mild': return '#8F6A1F';
-    case 'moderate': return '#B5522F';
-    case 'severe': case 'alert': return '#B23A3A';
+    case 'positive': case 'none': case 'minimal': case 'mild': case 'moderate': case 'severe': case 'alert': return SEVERITY[severity];
     default: return '#CFC6B8';
   }
 }
 
 function getSeverityText(severity: string): string {
   switch (severity) {
-    case 'positive': case 'none': case 'minimal': return '#7FD1A0';
-    case 'mild': return '#E9C88F';
-    case 'moderate': return '#F0A06F';
-    case 'severe': case 'alert': return '#F09A7A';
+    case 'positive': case 'none': case 'minimal': case 'mild': case 'moderate': case 'severe': case 'alert': return SEVERITY[severity];
     default: return '#CFC6B8';
   }
 }

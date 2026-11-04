@@ -4,6 +4,7 @@
  *        featured : { scaleId, label } ou null (choisi par Dr Lô) ; channels : nom + thèmes + photo ;
  *        latest : derniers contenus ouverts à tous ; tools : derniers outils publiés.
  *   POST { action: 'set_featured', scaleId|null, label? } (espace Dr Lô, rôle staff/{uid}.drlo) → change le test à la une.
+ *   POST { action: 'set_launch', wave, open?, closed? } (Dr Lô) → la vague du lancement et ses exceptions ; GET renvoie `launch`.
  */
 const { db, verifyAuth } = require('./_firebase');
 const H = require('./_homeFeed');
@@ -29,15 +30,20 @@ exports.handler = async (event) => {
       const tools = H.latestTools(prSnap.docs.map((d) => ({ id: d.id, p: d.data() })));
       const f = cfg.exists ? cfg.data().featured : null;
       const featured = f && f.scaleId ? { scaleId: String(f.scaleId), label: String(f.label || '') } : null;
-      return reply(200, { featured, channels, latest, tools }, { 'Cache-Control': 'public, max-age=60' });
+      return reply(200, { featured, channels, latest, tools, launch: H.cleanLaunch(cfg.exists ? cfg.data().launch : null) }, { 'Cache-Control': 'public, max-age=60' });
     }
     if (event.httpMethod !== 'POST') return reply(405, { error: 'Méthode non autorisée' });
     const user = await verifyAuth(event);
     if (!user) return reply(401, { error: 'Non authentifié' });
     const staff = await db.collection('staff').doc(user.uid).get();
-    if (!(staff.exists && staff.data().drlo === true)) return reply(403, { error: 'Réservé à Dr Lô.' });
+    if (!(staff.exists && (staff.data().drlo === true || staff.data().role === 'owner'))) return reply(403, { error: 'Réservé à Dr Lô.' });
     let body;
     try { body = JSON.parse(event.body || '{}'); } catch { return reply(400, { error: 'JSON invalide' }); }
+    if (body.action === 'set_launch') {
+      const launch = H.cleanLaunch(body);
+      await CONFIG().set({ launch, updatedAt: Date.now() }, { merge: true });
+      return reply(200, { ok: true, launch });
+    }
     if (body.action !== 'set_featured') return reply(400, { error: 'Action inconnue' });
     const r = H.cleanFeatured(body);
     if (r.error) return reply(400, { error: r.error });

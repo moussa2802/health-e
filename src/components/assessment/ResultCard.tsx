@@ -1,5 +1,6 @@
 import React from 'react';
 import { Upload } from 'lucide-react';
+import { SEVERITY } from '../../design/charte';
 import type { AssessmentScale, ScaleResult } from '../../types/assessment';
 import { getResultCardConfig } from '../../data/experiences';
 import { getBigFiveProfile, getBigFiveSummary, BAND_LABEL } from '../../utils/bigFiveProfile';
@@ -36,11 +37,8 @@ const HALO_FULL: Record<string, string> = {
 const ITALIC_CLR: Record<string, string> = { mental: '#A8C4B6', bonus: '#E5C88A', sexual: '#E9A88C' };
 const SIG_CLR: Record<string, string> = { mental: '#9FBCAF', bonus: '#E5C88A', sexual: '#E9A88C' };
 
-const GAUGE_CLR: Record<string, string> = {
-  none: '#7FA98F', minimal: '#7FA98F', positive: '#7FA98F',
-  mild: '#B78A2E', moderate: '#C9773F',
-  severe: '#B44A46', alert: '#B44A46',
-};
+/** Couleurs des repères : celles de la charte (un état, jamais une note). */
+const GAUGE_CLR: Record<string, string> = SEVERITY;
 
 const CAT_LABEL: Record<string, string> = {
   mental: 'Profil psychologique',

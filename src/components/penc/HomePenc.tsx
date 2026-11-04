@@ -14,18 +14,22 @@ import { PencLiveCard, PencMotif } from './PencVisuals';
 import type { MomentPalette } from '../../utils/drloMoment';
 import { getAgenda, registerPenc, type Penc } from '../../services/pencService';
 
-const HomePenc: React.FC<{ palette: MomentPalette }> = ({ palette }) => {
+/** full = Pénc mi « en continu » (vague 4) : agenda et entrée permanente ; sinon, seulement la carte quand un Pénc est en direct. */
+const HomePenc: React.FC<{ palette: MomentPalette; full?: boolean; onLive?: (live: boolean) => void }> = ({ palette, full = true, onLive }) => {
   const [live, setLive] = useState<Penc[]>([]);
   const [next, setNext] = useState<Penc[]>([]);
   const [loaded, setLoaded] = useState(false);
   const [busy, setBusy] = useState('');
   const load = () => getAgenda().then(r => {
-    setLive(r.live.filter(p => !p.locked).slice(0, 2));
+    const l = r.live.filter(p => !p.locked).slice(0, 2);
+    setLive(l);
+    onLive?.(l.length > 0);
     setNext(r.upcoming.filter(p => !p.locked && p.startAt - Date.now() < 7 * 86400000).slice(0, 2));
   }).catch(() => {}).finally(() => setLoaded(true));
   useEffect(() => { load(); }, []);
   const remind = async (p: Penc) => { setBusy(p.id); try { await registerPenc(p.id, !p.registered); await load(); } catch { /* la page Pénc mi explique les erreurs */ } finally { setBusy(''); } };
   if (!loaded) return null;
+  if (!full && !live.length) return null;
   const all = <Link to="/penc" style={{ fontSize: 14, fontWeight: 700, color: palette.accent, whiteSpace: 'nowrap' }}>Tout voir</Link>;
 
   if (!live.length && !next.length) {
@@ -44,11 +48,11 @@ const HomePenc: React.FC<{ palette: MomentPalette }> = ({ palette }) => {
     <>
       {live.length > 0 && (
         <>
-          <SectionTitle aside={all}>En direct maintenant</SectionTitle>
+          <SectionTitle aside={full ? all : undefined}>En direct maintenant</SectionTitle>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>{live.map(p => <PencLiveCard key={p.id} p={p} palette={palette} />)}</div>
         </>
       )}
-      {next.length > 0 && (
+      {full && next.length > 0 && (
         <>
           <SectionTitle aside={live.length ? undefined : all}>Pénc mi cette semaine</SectionTitle>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>{next.map(p => <PencCard key={p.id} p={p} accent={palette.accent} onRemind={remind} busy={busy === p.id} />)}</div>

@@ -55,11 +55,13 @@ function getGaugeTier(pct: number): GaugeTier {
   return 'low';
 }
 
+/** Un état, jamais une note : sauge « ça tient », ambre « à surveiller », lavande « à prendre soin » (pas de vert / rouge). */
 const TIER_RING_HEX: Record<GaugeTier, string> = {
-  force: COLOR.ok,
+  force: COLOR.univers.mental,
   medium: '#F2B66D',
-  low: COLOR.attention,
+  low: COLOR.univers.journal,
 };
+const TIER_WORD: Record<GaugeTier, string> = { force: 'ça tient', medium: 'à surveiller', low: 'à prendre soin' };
 
 const RING_SIZE = 52;
 const RING_STROKE = 4;
@@ -117,7 +119,7 @@ const GaugeRow: React.FC<{ gauge: DimensionGauge; genre: 'homme' | 'femme' }> = 
         <span style={{ flex: 1, minWidth: 0 }}>
           <span style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
             <span style={{ fontSize: 14, fontWeight: 700 }}>{RING_SHORT_LABELS[gauge.scaleId] ?? gauge.label}</span>
-            <span style={{ fontSize: 13, fontWeight: 700, color }}>{gauge.fillPercent}%</span>
+            <span style={{ fontSize: 13, fontWeight: 700, color }}>{TIER_WORD[tier]} · {gauge.fillPercent}%</span>
           </span>
           <span style={{ display: 'block', height: 6, borderRadius: 3, background: 'rgba(255,255,255,.08)', overflow: 'hidden' }}>
             <span style={{ display: 'block', height: '100%', width: `${gauge.fillPercent}%`, borderRadius: 3, background: color, transition: 'width .7s ease-out' }} />

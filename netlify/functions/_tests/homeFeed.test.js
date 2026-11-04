@@ -51,3 +51,10 @@ test('latestTools : publiés seulement, récents d\'abord, limités', () => {
   assert.deepEqual(H.latestTools(rows).map((t) => t.id), ['3', '1']);
   assert.equal(H.latestTools(rows, 1).length, 1);
 });
+
+test('lancement par vagues : vague 1 par défaut, exceptions nettoyées', () => {
+  const H = require('../_homeFeed');
+  assert.deepEqual(H.cleanLaunch(null), { wave: 1, open: [], closed: [] });
+  assert.deepEqual(H.cleanLaunch({ wave: 3, open: ['compat', 'inconnu', 'compat'], closed: ['compat', 'chaines'] }), { wave: 3, open: ['compat'], closed: ['chaines'] });
+  assert.equal(H.cleanLaunch({ wave: 9 }).wave, 1);
+});

@@ -113,6 +113,7 @@ import type { AssessmentScale, AnswerOption } from '../../types/assessment';
 import type { ScaleResult } from '../../types/assessment';
 
 import CompanionMark from './CompanionMark';
+import { useLaunch } from '../../hooks/useLaunch';
 const STORAGE_PREFIX = 'he_accueil_v1:';
 /** Les traces écrites des exercices du programme vont dans ce carnet du journal. */
 const PROGRAMME_CARNET = 'Programme';
@@ -567,6 +568,7 @@ const ConversationAccueil: React.FC = () => {
   /** Retour au premier écran (flèche) ; la conversation reprend en plein écran dès qu'on écrit. */
   /** Mode discussion (plein écran). À l'arrivée, l'accueil reste une page de salutation. */
   const [inChat, setInChat] = useState(false);
+  const launch = useLaunch(); // lancement par vagues : « Me confier » et « Mon programme » s'ouvrent avec la progression
   const [showConvs, setShowConvs] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   // « Mon programme » (compte uniquement)
@@ -1782,7 +1784,7 @@ const ConversationAccueil: React.FC = () => {
                     {[
                       ...(!moodToday ? [{ label: 'Noter mon humeur', hint: '30 s', icon: CloudSun, go: () => { trackAccueil('mood_open'); setMode('mood'); } }] : []),
                       { label: 'Respirer avec moi', hint: '1 min', icon: Wind, go: () => startBreathing() },
-                      ...(isAuthenticated ? [{ label: 'Mon programme', hint: prog && prog.status === 'active' && progRemaining ? `${progRemaining} à faire` : '', icon: ClipboardCheck, go: () => (prog ? setProgOpen(true) : offerProgramme(state, 'Mon programme')) }] : []),
+                      ...(isAuthenticated && launch.on('programme') ? [{ label: 'Mon programme', hint: prog && prog.status === 'active' && progRemaining ? `${progRemaining} à faire` : '', icon: ClipboardCheck, go: () => (prog ? setProgOpen(true) : offerProgramme(state, 'Mon programme')) }] : []),
                       { label: 'Mon animal intérieur', hint: '', icon: PawPrint, go: () => navigate('/assessment/totem') },
                       { label: 'Compatibilité de couple', hint: '', icon: Heart, go: () => navigate('/assessment/compatibility') },
                       { label: 'Défi : tes proches te connaissent ?', hint: '', icon: Users, go: () => navigate(isAuthenticated ? '/defi' : '/decouvre') },
@@ -1947,8 +1949,8 @@ const ConversationAccueil: React.FC = () => {
             </div>
           )}
 
-          {/* Discuter / Me confier */}
-          <nav aria-label="Mode de conversation" style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 4, margin: '10px 14px 0', padding: 4, borderRadius: 14, background: 'rgba(255,255,255,.05)' }}>
+          {/* Discuter / Me confier (Me confier : selon le lancement par vagues) */}
+          {launch.on('confier') && <nav aria-label="Mode de conversation" style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 4, margin: '10px 14px 0', padding: 4, borderRadius: 14, background: 'rgba(255,255,255,.05)' }}>
             {(['discuter', 'confier'] as const).map(t => (
               <button key={t} onClick={() => { if (t === tab) return; setTab(t); setMode('home'); if (t === 'confier') { setBreath(null); trackAccueil('confier_open', { guest: !isAuthenticated }); } }}
                 aria-current={tab === t ? 'page' : undefined} className="drl-btn"
@@ -1957,7 +1959,7 @@ const ConversationAccueil: React.FC = () => {
                 {t === 'confier' && <Lock size={13} aria-hidden="true" />}{t === 'discuter' ? 'Discuter' : 'Me confier'}
               </button>
             ))}
-          </nav>
+          </nav>}
 
           {/* La discussion en cours (principale ou secondaire) et l'accès à l'historique */}
           {tab === 'discuter' && (
@@ -2080,7 +2082,7 @@ const ConversationAccueil: React.FC = () => {
     );
   }
 
-  const modeNav = (
+  const modeNav = !launch.on('confier') ? null : (
     <nav aria-label="Mode de conversation" style={{ marginTop: 14, display: 'inline-flex', padding: 4, borderRadius: 999, background: 'rgba(255,255,255,.06)', border: '1px solid rgba(255,255,255,.10)' }}>
             {(['discuter', 'confier'] as const).map(t => (
               <button key={t} onClick={() => {

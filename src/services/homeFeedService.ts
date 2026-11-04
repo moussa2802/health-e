@@ -8,7 +8,7 @@ export interface HomeChannel { id: string; name: string; categories: string[]; m
 export interface HomePost { kind: 'post'; id: string; channelId: string; channelName: string; title: string; hasAudio: boolean; audioSec: number; at: number }
 export interface HomeTool { kind: 'tool'; id: string; title: string; minutes: number; at: number }
 export interface Featured { scaleId: string; label: string }
-export interface HomeFeed { featured: Featured | null; channels: HomeChannel[]; latest: HomePost[]; tools: HomeTool[] }
+export interface HomeFeed { featured: Featured | null; channels: HomeChannel[]; latest: HomePost[]; tools: HomeTool[]; launch?: { wave: number; open: string[]; closed: string[] } }
 
 /** Test mis à la une tant que Dr Lô n'en a pas choisi un : l'anxiété, le sujet qui parle au plus grand nombre. */
 export const DEFAULT_FEATURED: Featured = { scaleId: 'gad7', label: '' };
@@ -34,6 +34,17 @@ export async function setFeatured(scaleId: string | null, label: string): Promis
   if (!res.ok) throw new Error((data as { error?: string }).error ?? `Erreur ${res.status}`);
   cache = null;
   return (data as { featured: Featured | null }).featured;
+}
+
+/** Espace Dr Lô : la vague du lancement (1 à 4) et ses exceptions. */
+export async function setLaunch(wave: number, open: string[], closed: string[]): Promise<{ wave: number; open: string[]; closed: string[] }> {
+  const res = await authedFetch('/.netlify/functions/home-feed', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'set_launch', wave, open, closed }),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error((data as { error?: string }).error ?? `Erreur ${res.status}`);
+  cache = null;
+  return (data as { launch: { wave: number; open: string[]; closed: string[] } }).launch;
 }
 
 /** « il y a 2 jours », « hier »… pour les cartes de nouveautés. */

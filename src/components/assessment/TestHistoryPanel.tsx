@@ -1,5 +1,6 @@
 import React from 'react';
 import { TrendingUp, TrendingDown, Trash2, CheckCircle, Clock } from 'lucide-react';
+import { SEVERITY } from '../../design/charte';
 import { getBigFiveProfile, BAND_LABEL } from '../../utils/bigFiveProfile';
 import type { ScaleResult } from '../../types/assessment';
 
@@ -24,11 +25,7 @@ interface TestHistoryPanelProps {
   currentSubscaleScores?: Record<string, number>;
 }
 
-const severityColors: Record<string, string> = {
-  none: '#3C7A5A', minimal: '#3C7A5A', positive: '#3C7A5A',
-  mild: '#8F6A1F', moderate: '#B5522F',
-  severe: '#B23A3A', alert: '#B23A3A',
-};
+const severityColors: Record<string, string> = SEVERITY;
 
 function toDate(d: Date | string | any): Date {
   if (d && typeof d.toDate === 'function') return d.toDate();

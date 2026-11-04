@@ -5,8 +5,11 @@ Composants : `src/components/ui/Btn.tsx` (boutons), `Card.tsx` (cartes), `Fold.t
 Les anciennes pages à classes Tailwind claires sont habillées en sombre par `.drl-screen` / `.drl-page` (accueil.css) : le bouton `bg-gold` / `bg-accent` y prend le dégradé ambre du moment (`--he-action`).
 Garde-fou : `tests/unit/charte.test.ts` (texte < 13 px, Georgia seule ou police mono = test en échec).
 
-## Identité
-Thème sombre et chaud, palettes selon l'heure de la journée, Fraunces (titres) + Plus Jakarta Sans (texte).
+## Identité : « la veillée » (validée le 3 nov. 2026)
+Health-e, c'est la conversation du soir autour du feu avec quelqu'un qui s'y connaît et ne juge pas : nuit chaude pour l'intimité, une seule lumière ambre pour agir, le cercle comme signature (le compagnon rond, le médaillon de l'animal, le motif de Pénc mi).
+Thème sombre et chaud, palettes selon l'heure de la journée, Fraunces (titres, dès 20 px) + Plus Jakarta Sans (texte).
+Personnalité : grand frère / grande sœur médecin — chaleureux, franc, digne, d'ici. Jamais froid comme un hôpital, jamais enfantin, jamais racoleur.
+Une seule carte vedette par écran ; un seul bouton ambre par écran.
 L'IA Dr Lô = avatar dessiné. Le vrai Dr Lô = sa photo (initiale « L » si elle ne charge pas, jamais un cercle vide).
 
 ## Couleurs : un rôle par couleur
@@ -23,8 +26,13 @@ L'IA Dr Lô = avatar dessiné. Le vrai Dr Lô = sa photo (initiale « L » si el
 | Intime | #E8A0B8 | idem |
 | Social | #F09A7A | idem |
 | Journal | #C9B8E4 | idem |
-| Bien | #7FD1A0 | Jauges et scores rassurants |
-| Attention | #F08A7A | Alertes, suppression, crise |
+| Bien | #7FD1A0 | Confirmations (« Enregistré »), jamais un résultat |
+| Attention | #F08A7A | Alertes, suppression, crise — jamais un résultat |
+
+## Résultats et jauges : un état, jamais une note
+`SEVERITY` / `severityColor()` dans `charte.ts`, partout où un résultat est coloré :
+sauge #9DBFAF « ça tient » (minimal) → or #E9C88F (léger) → ambre #F2B66D « à surveiller » (modéré) → lavande #C9B8E4 « à prendre soin » (sévère).
+Pas de vert « bon » ni de rouge « mauvais » sur un résultat. Toujours un mot à côté de la couleur.
 
 Tailwind : `text-he-action`, `bg-he-action`, `text-he-muted`… (couleurs `he.*` dans tailwind.config.js).
 

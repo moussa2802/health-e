@@ -14,6 +14,7 @@ import type { MoodMap } from '../utils/moodLog';
 import HomeProgramme from '../components/accueil/HomeProgramme';
 import { MoodSheet } from '../components/accueil/HomeSheets';
 import HomePenc from '../components/penc/HomePenc';
+import { useLaunch } from '../hooks/useLaunch';
 import { HScroll, SectionTitle, NewsCard, ChannelCard, WideLink, tintOf, type NewsItem } from '../components/accueil/HomeParts';
 import { RealDrLoPhoto } from '../components/accueil/RealDrLoBadge';
 import AccueilSeoSections from '../components/accueil/AccueilSeoSections';
@@ -102,7 +103,7 @@ function newsItems(feed: HomeFeed, connected: boolean): NewsItem[] {
   return out.sort((a, b) => b.at - a.at).slice(0, 8);
 }
 
-const Discover: React.FC<{ feed: HomeFeed | null; connected: boolean }> = ({ feed, connected }) => {
+const Discover: React.FC<{ feed: HomeFeed | null; connected: boolean; channels?: boolean }> = ({ feed, connected, channels = true }) => {
   const news = useMemo(() => (feed ? newsItems(feed, connected) : []), [feed, connected]);
   return (
     <>
@@ -112,7 +113,7 @@ const Discover: React.FC<{ feed: HomeFeed | null; connected: boolean }> = ({ fee
           <HScroll label="Nouveautés">{news.map(n => <NewsCard key={n.key} item={n} />)}</HScroll>
         </>
       )}
-      {feed && feed.channels.length > 0 && (
+      {channels && feed && feed.channels.length > 0 && (
         <>
           <SectionTitle aside={connected ? <Link to="/chaines" style={{ fontSize: 14, fontWeight: 700, color: DC.gold, textDecoration: 'none', minHeight: 44, display: 'inline-flex', alignItems: 'center' }}>Tout voir</Link> : undefined}>Les chaînes</SectionTitle>
           <HScroll label="Les chaînes">{feed.channels.map(c => <ChannelCard key={c.id} c={c} to={connected ? `/chaines/${c.id}` : `/c/${c.id}`} />)}</HScroll>
@@ -130,7 +131,7 @@ const AskBox: React.FC = () => (
   </>
 );
 
-const WhenItRises: React.FC = () => {
+const WhenItRises: React.FC<{ confier?: boolean }> = ({ confier = true }) => {
   const navigate = useNavigate();
   const btn: React.CSSProperties = { flex: 1, minHeight: 56, borderRadius: 16, border: `1px solid ${DC.line}`, background: DC.glass, color: DC.text, fontSize: 15, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 };
   return (
@@ -138,7 +139,7 @@ const WhenItRises: React.FC = () => {
       <SectionTitle>Quand ça monte</SectionTitle>
       <div style={{ display: 'flex', gap: 10 }}>
         <button onClick={() => navigate('/compagnon', { state: { breath: true } })} className="drl-btn" style={btn}><Wind size={18} color={DC.sage} aria-hidden="true" /> Respirer 1 min</button>
-        <button onClick={() => navigate('/compagnon', { state: { tab: 'confier' } })} className="drl-btn" style={btn}><PenLine size={18} color={DC.confier} aria-hidden="true" /> Me confier</button>
+        {confier && <button onClick={() => navigate('/compagnon', { state: { tab: 'confier' } })} className="drl-btn" style={btn}><PenLine size={18} color={DC.confier} aria-hidden="true" /> Me confier</button>}
       </div>
     </>
   );
@@ -147,6 +148,7 @@ const WhenItRises: React.FC = () => {
 // ───────── Visiteur ─────────
 const VisitorHome: React.FC<{ feed: HomeFeed | null; palette: MomentPalette }> = ({ feed, palette }) => {
   const navigate = useNavigate();
+  const launch = useLaunch();
   return (
     <>
       <header style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', minHeight: 44 }}>
@@ -159,14 +161,18 @@ const VisitorHome: React.FC<{ feed: HomeFeed | null; palette: MomentPalette }> =
       <h1 style={{ margin: '18px 0 0', fontFamily: 'Fraunces, serif', fontSize: 34, lineHeight: 1.15, fontWeight: 600, color: DC.title }}>Comprends ce que tu ressens.</h1>
       <p style={{ margin: '10px 0 0', fontSize: 16, lineHeight: 1.5, color: DC.soft }}>Des tests, des vocaux et des outils pour ton bien-être. Privé, en wolof et en français.</p>
       <FeaturedCard featured={pickFeatured(feed)} guest palette={palette} />
-      <Discover feed={feed} connected={false} />
+      <Discover feed={feed} connected={false} channels={launch.on('chaines')} />
       <NeedChips />
       <SectionTitle>Ton animal intérieur</SectionTitle>
       <WideLink to="/espace/mental" kicker="7 TESTS, UN RÉSULTAT À PARTAGER" title="Quel animal es-tu vraiment ?" tint={DC.gold} icon={<Sparkles size={24} color={DC.gold} aria-hidden="true" />} />
-      <SectionTitle>À deux</SectionTitle>
-      <WideLink to="/assessment/compatibility" title="Comparez vos profils" sub="Partenaire, crush ou ami : un code à partager, une analyse croisée." tint={DC.social} icon={<Heart size={24} color={DC.social} aria-hidden="true" />} />
+      {launch.on('compat') && (
+        <>
+          <SectionTitle>À deux</SectionTitle>
+          <WideLink to="/assessment/compatibility" title="Comparez vos profils" sub="Partenaire, crush ou ami : un code à partager, une analyse croisée." tint={DC.social} icon={<Heart size={24} color={DC.social} aria-hidden="true" />} />
+        </>
+      )}
       <AskBox />
-      <WhenItRises />
+      <WhenItRises confier={false} />
     </>
   );
 };
@@ -186,6 +192,8 @@ const ConnectedHome: React.FC<{ feed: HomeFeed | null; palette: MomentPalette; u
   const [moodOpen, setMoodOpen] = useState(false);
   const [drlo, setDrlo] = useState<DrloStatus | null>(null);
   const today = dayKey();
+  const launch = useLaunch();
+  const [pencLive, setPencLive] = useState(false);
 
   useEffect(() => {
     let off = false;
@@ -226,7 +234,10 @@ const ConnectedHome: React.FC<{ feed: HomeFeed | null; palette: MomentPalette; u
         <h1 style={{ margin: 0, fontFamily: 'Fraunces, serif', fontSize: 28, lineHeight: 1.2, fontWeight: 600, color: DC.title }}>{greetingFor(getMoment(), prenom)}</h1>
       </header>
 
-      {suite && (
+      {/* Une seule carte vedette : un Pénc en direct, sinon ta suite ; puis le test du moment, ton message, l'humeur */}
+      <HomePenc palette={palette} full={launch.on('penc_page')} onLive={setPencLive} />
+
+      {suite && !pencLive && (
         <section aria-label="Ta suite" style={{ ...card, marginTop: 14, padding: 16, borderColor: 'rgba(242,182,109,.5)', background: 'linear-gradient(150deg, rgba(242,182,109,.2), rgba(255,255,255,.04))' }}>
           <p style={{ margin: 0, fontSize: 13, fontWeight: 700, letterSpacing: '.12em', color: palette.accent }}>{suite.kicker}</p>
           <p style={{ margin: '6px 0 0', fontFamily: 'Fraunces, serif', fontSize: 21, lineHeight: 1.25, fontWeight: 600, color: DC.title }}>{suite.title}</p>
@@ -237,9 +248,7 @@ const ConnectedHome: React.FC<{ feed: HomeFeed | null; palette: MomentPalette; u
 
       {featuredForYou && <FeaturedCard featured={featuredForYou} guest={false} palette={palette} />}
 
-      <HomePenc palette={palette} />
-
-      {(lastMsg || chBadge > 0) && (
+      {(lastMsg || (chBadge > 0 && launch.on('chaines'))) && (
         <>
           <SectionTitle>Nouveau pour toi</SectionTitle>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -253,22 +262,12 @@ const ConnectedHome: React.FC<{ feed: HomeFeed | null; palette: MomentPalette; u
                 <ArrowRight size={18} color={DC.muted} aria-hidden="true" />
               </Link>
             )}
-            {chBadge > 0 && (
+            {chBadge > 0 && launch.on('chaines') && (
               <WideLink to="/chaines" title={`${chBadge} nouveauté${chBadge > 1 ? 's' : ''} dans tes chaînes`} tint={DC.gold} />
             )}
           </div>
         </>
       )}
-
-      {learning && (
-        <>
-          <SectionTitle>Ta routine</SectionTitle>
-          <WideLink to="/routine" kicker={learning.learning ? `JOUR ${learning.learning.day} SUR ${learning.learning.of}` : undefined} title={learning.title}
-            sub={learning.learning?.ready ? 'À faire aujourd\'hui' : undefined} tint={DC.sage} icon={<Wrench size={22} color={DC.sage} aria-hidden="true" />} />
-        </>
-      )}
-
-      {prog && <HomeProgramme uid={uid} prog={prog} onProg={setProg} moods={moods} onMoods={setMoods} prenom={prenom} genre={getOnboardingProfile()?.genre ?? undefined} palette={palette} />}
 
       {moodDone === false && (
         <div style={{ marginTop: 14 }}>
@@ -281,16 +280,27 @@ const ConnectedHome: React.FC<{ feed: HomeFeed | null; palette: MomentPalette; u
 
       {moodOpen && <MoodSheet uid={uid} prenom={prenom} onNoted={() => { setMoodDone(true); setMoods(m => ({ ...m, [today]: { mood: 'bof', at: Date.now() } })); }} onClose={() => setMoodOpen(false)} />}
 
-      <Discover feed={feed} connected />
+      {prog && launch.on('programme') && <HomeProgramme uid={uid} prog={prog} onProg={setProg} moods={moods} onMoods={setMoods} prenom={prenom} genre={getOnboardingProfile()?.genre ?? undefined} palette={palette} />}
 
-      {drlo && (
+      {learning && launch.on('routine') && (
+        <>
+          <SectionTitle>Ta routine</SectionTitle>
+          <WideLink to="/routine" kicker={learning.learning ? `JOUR ${learning.learning.day} SUR ${learning.learning.of}` : undefined} title={learning.title}
+            sub={learning.learning?.ready ? 'À faire aujourd\'hui' : undefined} tint={DC.sage} icon={<Wrench size={22} color={DC.sage} aria-hidden="true" />} />
+        </>
+      )}
+
+
+      <Discover feed={feed} connected channels={launch.on('chaines')} />
+
+      {drlo && launch.on('question') && (
         <>
           <SectionTitle>Mon parcours</SectionTitle>
           <WideLink to="/question" kicker={`ÉTAPE ${Math.min(stepsDone + 1, drlo.paliers.steps.length)} SUR ${drlo.paliers.steps.length}`} title="Ta question privée au médecin" sub="Une réponse personnelle, au bout de ton parcours." tint={DC.gold} />
         </>
       )}
       <AskBox />
-      <WhenItRises />
+      <WhenItRises confier={launch.on('confier')} />
     </>
   );
 };

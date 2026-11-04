@@ -48,3 +48,15 @@ export const RADIUS = { sm: 12, card: 20, pill: 999 } as const;
 
 /** Hauteurs tactiles. */
 export const TAP = { primary: 52, secondary: 46, min: 44 } as const;
+
+/**
+ * Repères de résultat : un ÉTAT, jamais une note (charte du 3 nov. 2026).
+ * Pas de vert « bon » ni de rouge « mauvais » : sauge « ça tient » → or → ambre → lavande « à prendre soin ».
+ * Le rouge brique (COLOR.attention) reste réservé à la détresse et aux erreurs.
+ */
+export const SEVERITY: Record<string, string> = {
+  none: '#9DBFAF', minimal: '#9DBFAF', positive: '#9DBFAF',
+  mild: '#E9C88F', moderate: '#F2B66D',
+  severe: '#C9B8E4', alert: '#C9B8E4', high: '#C9B8E4',
+};
+export const severityColor = (sev?: string | null, fallback = '#E9C88F') => (sev && SEVERITY[sev]) || fallback;
