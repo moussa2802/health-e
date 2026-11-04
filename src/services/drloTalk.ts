@@ -250,10 +250,17 @@ export async function talk(userId: string, convId: string, text: string, history
 }
 
 /** Dr Lô met à jour ce qu'il retient de la personne (en arrière-plan ; compris dans le prix du message). */
-export function rememberNow(history: TalkTurn[]): void {
-  authedFetch('/.netlify/functions/drlo-memory', {
-    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ historique: history.slice(-14) }),
-  }).catch(() => {});
+/** Renvoie ce qu'il vient d'apprendre (0 à 2 notes), pour le montrer discrètement dans la discussion. */
+export async function rememberNow(history: TalkTurn[]): Promise<string[]> {
+  try {
+    const res = await authedFetch('/.netlify/functions/drlo-memory', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ historique: history.slice(-14) }),
+    });
+    const data = await res.json().catch(() => ({}));
+    return Array.isArray(data.added) ? data.added.filter((t: unknown): t is string => typeof t === 'string').slice(0, 2) : [];
+  } catch {
+    return [];
+  }
 }
 
 /** Banc d'essai (console de Dr Lô) : une réponse sur son propre profil, sans rien compter ni retenir. */

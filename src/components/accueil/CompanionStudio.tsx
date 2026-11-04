@@ -13,6 +13,8 @@ import {
   getCompanionColor, getCompanionLang, getCompanionStyle,
 } from '../../utils/companion';
 import { STAGES, getCompanionStage } from '../../utils/companionStage';
+import { useAuth } from '../../contexts/AuthContext';
+import { KNOW_STEPS, knowLevel, loadMemory } from '../../utils/companionMemory';
 
 type Tab = 'lumiere' | 'parler' | 'chemin';
 
@@ -32,6 +34,14 @@ const CompanionStudio: React.FC<{
   const inputRef = useRef<HTMLInputElement>(null);
   const color = COMPANION_COLORS.find(c => c.id === colorId) ?? COMPANION_COLORS[0];
   const stage = getCompanionStage();
+  const { currentUser } = useAuth();
+  const [known, setKnown] = useState<number | null>(null);
+  useEffect(() => {
+    if (!currentUser?.id) return;
+    let off = false;
+    loadMemory(currentUser.id).then(n => { if (!off) setKnown(n.length); }).catch(() => {});
+    return () => { off = true; };
+  }, [currentUser?.id]);
 
   useEffect(() => { if (editing) inputRef.current?.focus(); }, [editing]);
   useEffect(() => {
@@ -173,6 +183,15 @@ const CompanionStudio: React.FC<{
 
             {tab === 'chemin' && (
               <>
+                {known !== null && (
+                  <div style={{ borderRadius: 16, background: `${color.hex}14`, border: `1px solid ${color.hex}33`, padding: '12px 14px' }}>
+                    <p style={{ margin: 0, fontSize: 15, color: DC.title }}><b>{cleanCompanionName(name) || 'Il'}</b> {knowLevel(known).text}</p>
+                    <div aria-hidden="true" style={{ display: 'flex', gap: 4, margin: '8px 0 6px' }}>
+                      {Array.from({ length: KNOW_STEPS }, (_, i) => <span key={i} style={{ flex: 1, height: 5, borderRadius: 3, background: i < knowLevel(known).step ? color.hex : DC.line }} />)}
+                    </div>
+                    <p style={{ margin: 0, fontSize: 13, lineHeight: 1.45, color: DC.muted }}>Plus vous parlez, mieux il te connaît. Tu vois ce qu'il sait de toi dans Moi.</p>
+                  </div>
+                )}
                 <ol aria-label="Ses stades" style={{ margin: 0, padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 0 }}>
                   {STAGES.map((s, i) => {
                     const done = i <= stage;

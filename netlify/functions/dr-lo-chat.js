@@ -8,6 +8,7 @@ const PR = require('./_practices');
 const { rulesV2 } = require('./_drloChatRules');
 const { rulesV1 } = require('./_drloChatRulesV1');
 const { wantsJournal, wantsNumbers, filterNotes } = require('./_drloChatContext');
+const { shouldRemember, formatMemory } = require('./_drloMemory');
 
 const headers = {
   'Access-Control-Allow-Origin': '*',
@@ -28,12 +29,8 @@ function buildSystemPrompt(context, opts = {}) {
   const prenomLabel = context.prenom || 'cette personne';
   const companionName = sanitizeCompanionName(context.companion);
   const isFemme = context.genre === 'Femme' || context.genre === 'femme';
-  const memSection = filterNotes(Array.isArray(context.memoire) ? context.memoire : [], message)
-    .map(m => (typeof m === 'string' ? m : m && m.text))
-    .filter(Boolean)
-    .slice(0, 25)
-    .map(t => `• ${String(t).slice(0, 200)}`)
-    .join('\n') || 'Rien encore : c\'est peut-être votre première vraie discussion.';
+  const memSection = formatMemory(filterNotes(Array.isArray(context.memoire) ? context.memoire : [], message).slice(0, 30))
+    || 'Rien encore : c\'est peut-être votre première vraie discussion. Intéresse-toi à elle (une question à la fois), sans interrogatoire.';
   const testsDispo = (Array.isArray(context.tests_dispo) ? context.tests_dispo : [])
     .filter(t => t && /^[a-z0-9_]{2,40}$/i.test(String(t.id)))
     .slice(0, 60)
@@ -143,7 +140,9 @@ ${journalSection}
 ━━━ ANALYSES DR LÔ (arrière-plan : tu ne les cites pas) ━━━
 ${analyseSection}
 
-━━━ CE QUE TU RETIENS D'ELLE (arrière-plan : tu n'en parles que si ça aide CE message) ━━━
+━━━ CE QUE TU SAIS D'ELLE (ton carnet) ━━━
+Sers-t'en comme un ami qui se souvient : appelle ses proches par leur prénom, relie ce qu'elle dit à ce que tu sais déjà (« comme la dernière fois avec ton chef ? »), adapte-toi à sa façon d'aimer qu'on lui parle. Jamais de liste de ce que tu sais, jamais « j'ai noté » ni « d'après mes notes ». N'en parle que si ça aide CE message.
+Au début d'une discussion (peu ou pas d'échanges avant), si un point « À REPRENDRE » est d'actualité, prends-en des nouvelles en une phrase (un seul point), puis laisse-la mener.
 ${memSection}
 
 ━━━ RÈGLES ━━━
@@ -352,8 +351,8 @@ exports.handler = async (event) => {
         return { statusCode: 200, headers, body: JSON.stringify({
           response: text, actions, action: actions[0] || null,
           koris_debited: !!holdId,
-          // Toutes les 5 réponses : l'appli demande à Dr Lô de mettre à jour ce qu'il retient
-          remember: !testMode && slot.next && slot.next.count > 0 && slot.next.count % 5 === 0,
+          // Au 2e message du jour puis tous les 3 : l'appli demande au compagnon de mettre son carnet à jour
+          remember: !testMode && !!slot.next && shouldRemember(Number(slot.next.count)),
         }) };
       }
 

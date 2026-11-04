@@ -11,3 +11,17 @@ test('les notes de Dr Lô sont propres et limitées', () => {
   assert.equal(cleanNotes('pas de json'), null);
   assert.equal(cleanNotes(JSON.stringify(Array.from({ length: 30 }, (_, i) => `note ${i}`))).length, MAX_NOTES);
 });
+
+test('le carnet range les notes par thème et dit ce qui est nouveau', () => {
+  const { newNotes, shouldRemember } = require('../_drloMemory.js');
+  const now = new Date('2026-11-04T10:00:00Z');
+  const cur = ['Vit à Thiès'];
+  const out = cleanNotes('[{"t":"Vit à Thiès","c":"vie"},{"t":"Sa sœur Awa se marie en décembre","c":"proches"},{"t":"Entretien jeudi","c":"inconnu"}]', cur, now);
+  assert.deepEqual(out.map(n => n.cat), ['vie', 'proches', 'vie']);
+  assert.deepEqual(newNotes(out, cur).map(n => n.text), ['Sa sœur Awa se marie en décembre', 'Entretien jeudi']);
+  assert.equal(shouldRemember(1), false);
+  assert.equal(shouldRemember(2), true);
+  assert.equal(shouldRemember(3), true);
+  assert.equal(shouldRemember(4), false);
+  assert.equal(shouldRemember(6), true);
+});

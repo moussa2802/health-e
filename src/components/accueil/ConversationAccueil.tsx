@@ -302,6 +302,8 @@ const ConversationAccueil: React.FC = () => {
   const [moreOpen, setMoreOpen] = useState(false);
   const discret = useDiscretHint();
   const [noted, setNoted] = useState<{ day: string; cancelled: boolean } | null>(null);
+  /** Ce que le compagnon vient d'apprendre sur la personne (montré discrètement, jusqu'au message suivant). */
+  const [learned, setLearned] = useState<string | null>(null);
   const [breath, setBreath] = useState<{ inhale: boolean } | null>(null);
   const [reveal, setReveal] = useState({ nonce: 0, from: 0, hint: 'thinking' as Hint });
   const [testBusy, setTestBusy] = useState<null | 'starting' | 'finishing'>(null);
@@ -928,6 +930,7 @@ const ConversationAccueil: React.FC = () => {
     setInput('');
     setInChat(true);
     setMenuOpen(false);
+    setLearned(null);
     if (breathing) setBreath(null);
     // Défi / compatibilité en préparation : le nom ou le code s'écrivent ici
     if (flowWantsText(state.flow) && !detectCrisis(text)) { void onFlowText(text); return; }
@@ -1037,16 +1040,16 @@ const ConversationAccueil: React.FC = () => {
       case 'test': return getScaleById(a.scaleId) ? { type: 'test', scaleId: a.scaleId } : undefined;
       case 'respiration': return { type: 'quick', what: 'breath' };
       case 'humeur': return { type: 'quick', what: 'mood' };
-      case 'programme': return progRef.current ? { type: 'programme_open' } : { type: 'quick', what: 'programme' };
-      case 'journal': return { type: 'go', to: 'confier' };
-      case 'defi': return { type: 'go', to: 'defi' };
-      case 'compat': return { type: 'go', to: 'compat' };
-      case 'vrai_drlo': return { type: 'go', to: 'question_drlo' };
+      case 'programme': return !launch.on('programme') ? undefined : progRef.current ? { type: 'programme_open' } : { type: 'quick', what: 'programme' };
+      case 'journal': return launch.on('confier') ? { type: 'go', to: 'confier' } : undefined;
+      case 'defi': return launch.on('defis') ? { type: 'go', to: 'defi' } : undefined;
+      case 'compat': return launch.on('compat') ? { type: 'go', to: 'compat' } : undefined;
+      case 'vrai_drlo': return launch.on('question') ? { type: 'go', to: 'question_drlo' } : undefined;
       case 'totem': return totemAnimal ? { type: 'go', to: 'totem' } : undefined;
       case 'catalogue': return { type: 'go', to: 'catalogue' };
-      case 'chaines': return { type: 'go', to: 'chaines' };
-      case 'chaine': return { type: 'go', to: 'chaines', path: `/chaines/${a.id}`, label: a.name ? `Voir la chaîne « ${a.name} »` : 'Voir la chaîne' };
-      case 'pratique': return { type: 'go', to: 'outils', path: `/pratique/${a.id}?from=/espace`, label: a.name ? `Ouvrir « ${a.name} »` : 'Ouvrir l\'outil' };
+      case 'chaines': return launch.on('chaines') ? { type: 'go', to: 'chaines' } : undefined;
+      case 'chaine': return !launch.on('chaines') ? undefined : { type: 'go', to: 'chaines', path: `/chaines/${a.id}`, label: a.name ? `Voir la chaîne « ${a.name} »` : 'Voir la chaîne' };
+      case 'pratique': return !launch.on('routine') ? undefined : { type: 'go', to: 'outils', path: `/pratique/${a.id}?from=/espace`, label: a.name ? `Ouvrir « ${a.name} »` : 'Ouvrir l\'outil' };
       default: return undefined;
     }
   };
@@ -1688,7 +1691,10 @@ const ConversationAccueil: React.FC = () => {
       ? [{ text: out.text, card: cards[0] }, ...cards.slice(1).map(card => ({ text: '', card }))]
       : [out.text];
     apply(addExchange(cur, null, items), cur);
-    if (out.remember) rememberNow([...turns, { role: 'user', content: text }, { role: 'assistant', content: out.text }]);
+    if (out.remember) {
+      void rememberNow([...turns, { role: 'user', content: text }, { role: 'assistant', content: out.text }])
+        .then(added => { if (added[0]) setLearned(added[0]); });
+    }
   };
 
   // ── Discussions : changer, créer, renommer, supprimer ─────────────────────
@@ -1817,6 +1823,14 @@ const ConversationAccueil: React.FC = () => {
                   Chaque message coûte {credits(KORIS_COSTS.chat)}.
                 </p>
               )}
+              {learned && chatModeNow && state.step !== 'testing' && !routing && (
+                <button type="button" onClick={() => navigate('/espace')} className="drl-btn drl-in"
+                  aria-label={`${companionName} retient : ${learned}. Voir ce qu'il sait de toi`}
+                  style={{ alignSelf: 'center', maxWidth: '100%', minHeight: 36, padding: '6px 12px', borderRadius: 999, border: `1px solid ${companionColor.hex}44`, background: `${companionColor.hex}14`, color: C.soft, fontSize: 13, lineHeight: 1.35, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, textAlign: 'left', fontFamily: 'inherit' }}>
+                  <Sparkles size={14} color={companionColor.hex} aria-hidden="true" style={{ flexShrink: 0 }} />
+                  <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}><b style={{ color: C.title }}>{companionName} s'en souviendra</b> · {learned}</span>
+                </button>
+              )}
               {state.step !== 'minor' && (<>
                   {menuOpen && chatModeNow && (
                   <div role="menu" className="drl-in" style={{ marginBottom: 8, padding: 6, borderRadius: 16, background: '#221B16', border: '1px solid rgba(255,255,255,.12)', boxShadow: '0 12px 30px rgba(0,0,0,.45)' }}>
@@ -1827,10 +1841,9 @@ const ConversationAccueil: React.FC = () => {
                       { label: 'Mon animal intérieur', hint: '', icon: PawPrint, go: () => navigate('/assessment/totem') },
                       ...(launch.on('compat') ? [{ label: 'Compatibilité de couple', hint: '', icon: Heart, go: () => navigate('/assessment/compatibility') }] : []),
                       ...(launch.on('defis') ? [{ label: 'Défi : tes proches te connaissent ?', hint: '', icon: Users, go: () => navigate(isAuthenticated ? '/defi' : '/decouvre') }] : []),
-                      { label: 'Écrire à Dr Lô', hint: '', icon: Mail, go: () => navigate('/question') },
+                      ...(launch.on('question') ? [{ label: 'Écrire à Dr Lô', hint: '', icon: Mail, go: () => navigate('/question') }] : []),
                       ...(isAuthenticated ? [{ label: 'Les messages de Dr Lô', hint: '', icon: MessagesSquare, go: () => navigate('/messages-dr-lo') }] : []),
-                      { label: 'Tous les tests', hint: '', icon: ListChecks, go: () => navigate('/espace') },
-                      { label: isAuthenticated ? 'Mon espace bien-être' : 'Ce que propose Health-e', hint: '', icon: Sprout, go: () => navigate('/espace') },
+                      { label: 'Tous les tests', hint: '', icon: ListChecks, go: () => navigate('/espace/mental') },
                     ].map(it => (
                       <button key={it.label} type="button" role="menuitem" onClick={() => { setMenuOpen(false); it.go(); }} className="drl-btn"
                         style={{ width: '100%', minHeight: 46, padding: '0 12px', border: 0, borderRadius: 12, background: 'transparent', color: C.text, display: 'flex', alignItems: 'center', gap: 10, fontSize: 15, fontWeight: 600, cursor: 'pointer', textAlign: 'left' }}>

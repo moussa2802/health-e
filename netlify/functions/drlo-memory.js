@@ -1,13 +1,13 @@
 /**
  * drlo-memory — ce que Dr Lô retient de la personne, d'une discussion à l'autre.
- * Appelée par l'appli toutes les 5 réponses : on met à jour quelques notes courtes
+ * Appelée par l'appli au 2e message du jour puis tous les 3 : on met à jour le carnet (notes courtes par thème)
  * (patients/{uid}.drloMemory), que Dr Lô relit à chaque message. La personne les voit et
  * peut les effacer dans « Mon espace ». Pas facturée à part : elle est comprise dans le prix du message
  * (1 étincelle) ; pour éviter les abus, elle ne tourne que si la personne a écrit à Dr Lô aujourd'hui
  * et pas plus d'une fois par minute.
  */
 const { admin, db, verifyAuth } = require('./_firebase');
-const { cleanNotes, buildMemoryPrompt, MAX_NOTES } = require('./_drloMemory');
+const { cleanNotes, newNotes, buildMemoryPrompt, MAX_NOTES } = require('./_drloMemory');
 
 const headers = {
   'Access-Control-Allow-Origin': '*',
@@ -48,9 +48,9 @@ exports.handler = async (event) => {
       headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
       body: JSON.stringify({
         model: 'claude-haiku-4-5-20251001',
-        max_tokens: 700,
+        max_tokens: 1400,
         system: buildMemoryPrompt(),
-        messages: [{ role: 'user', content: JSON.stringify({ notes_actuelles: current.map(n => (typeof n === 'string' ? n : n.text)), echanges_recents: turns }) }],
+        messages: [{ role: 'user', content: JSON.stringify({ notes_actuelles: current.map(n => (typeof n === 'string' ? { t: n, c: 'vie' } : { t: n.text, c: n.cat || 'vie' })), echanges_recents: turns }) }],
       }),
     });
     if (!res.ok) return reply(502, { error: 'ia' });
@@ -59,7 +59,8 @@ exports.handler = async (event) => {
     const notes = cleanNotes(raw, current);
     if (!notes) return reply(200, { ok: true, notes: null });
     await ref.set({ drloMemory: notes, drloMemoryAt: admin.firestore.FieldValue.serverTimestamp() }, { merge: true });
-    return reply(200, { ok: true, count: notes.length, max: MAX_NOTES });
+    const added = newNotes(notes, current).slice(0, 2).map(n => n.text);
+    return reply(200, { ok: true, count: notes.length, max: MAX_NOTES, added });
   } catch (e) {
     console.error('drlo-memory', e && e.message);
     return reply(500, { error: 'serveur' });
