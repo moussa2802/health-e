@@ -23,7 +23,7 @@ const Badge: React.FC<{ children: React.ReactNode; bg: string }> = ({ children, 
   <span aria-hidden="true" style={{ width: 60, height: 60, borderRadius: 16, flexShrink: 0, background: bg, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{children}</span>
 );
 
-export const ShowcaseCards: React.FC<{ onTotem: () => void; onCompat: () => void; onDefi: () => void }> = ({ onTotem, onCompat, onDefi }) => (
+export const ShowcaseCards: React.FC<{ onTotem: () => void; onCompat?: () => void; onDefi?: () => void }> = ({ onTotem, onCompat, onDefi }) => (
   <section aria-label="Ce que tu peux découvrir" style={{ marginTop: 18, marginBottom: 14, display: 'flex', flexDirection: 'column', gap: 10 }}>
     <button type="button" onClick={onTotem} className="drl-btn" style={cardStyle}>
       <span aria-hidden="true" style={{ position: 'relative', width: 60, height: 60, flexShrink: 0 }}>
@@ -36,16 +36,16 @@ export const ShowcaseCards: React.FC<{ onTotem: () => void; onCompat: () => void
       <Text title="Découvre ton animal intérieur" sub="Lion, loup, hibou… 12 animaux. Lequel te ressemble vraiment ?" />
       <Arrow />
     </button>
-    <button type="button" onClick={onCompat} className="drl-btn" style={cardStyle}>
+    {onCompat && <button type="button" onClick={onCompat} className="drl-btn" style={cardStyle}>
       <Badge bg="rgba(232,102,79,.18)"><Heart size={26} color="#F09A7A" aria-hidden="true" /></Badge>
       <Text title="Teste ta compatibilité" sub="Avec ton ou ta partenaire, un crush ou un ami. Un code à partager, un score à deux." />
       <Arrow />
-    </button>
-    <button type="button" onClick={onDefi} className="drl-btn" style={cardStyle}>
+    </button>}
+    {onDefi && <button type="button" onClick={onDefi} className="drl-btn" style={cardStyle}>
       <Badge bg="rgba(242,182,109,.16)"><Users size={26} color={DC.gold} aria-hidden="true" /></Badge>
       <Text title="Tes proches te connaissent-ils ?" sub="Lance un défi à tes amis : qui te connaît le mieux ?" />
       <Arrow />
-    </button>
+    </button>}
   </section>
 );
 

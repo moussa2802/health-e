@@ -10,9 +10,9 @@
  */
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { ArrowRight, Bell, Heart, Mail, PawPrint, Users, Check, ChevronDown, ChevronLeft, ClipboardCheck, Clock, CloudSun, Copy, EyeOff, ListChecks, Lock, MessagesSquare, Mic, Pencil, Phone, Plus, Send, Sparkles, Sprout, Wind } from 'lucide-react';
+import { ArrowRight, Bell, Heart, Mail, PawPrint, Users, Check, ChevronLeft, ClipboardCheck, Clock, CloudSun, Copy, EyeOff, ListChecks, Lock, MessagesSquare, Mic, Pencil, Phone, Plus, Send, Sparkles, Sprout, Wind } from 'lucide-react';
 import './accueil.css';
-import DrLoAvatar, { type DrLoState } from './DrLoAvatar';
+import DrLoAvatar, { auraMoodOf, type DrLoState } from './DrLoAvatar';
 import DrLoIsland from './DrLoIsland';
 import MoodIcon from './MoodIcon';
 import ConfierPanel, { CONFIER } from './ConfierPanel';
@@ -68,6 +68,9 @@ import { getAllGuestResults, getGuestCount, GUEST_MAX_TESTS } from '../../utils/
 import { getProfileProgress, saveOnboardingToProfile } from '../../services/evaluationService';
 import { ALL_SCALES, getScaleById, MENTAL_HEALTH_SCALES, SEXUAL_HEALTH_SCALES } from '../../data/scales';
 import { getScaleMeta } from '../../utils/scaleMeta';
+import { pickHomeNext, sinceLabel } from '../../utils/homeNext';
+import { toDate } from '../../utils/drLoGuide';
+import { STAGES, getCompanionStage } from '../../utils/companionStage';
 import { getCrisisResources } from '../../data/crisisResources';
 import { invalidateTalkContext, rememberNow, talk as talkToDrLo, type TalkAction } from '../../services/drloTalk';
 
@@ -276,6 +279,8 @@ const ConversationAccueil: React.FC = () => {
   const [companion, setCompanion] = useState(() => getCompanionName());
   const [companionColor, setCompanionColor] = useState(() => getCompanionColor());
   const [iconTick, setIconTick] = useState(0);
+  const [showIdeas, setShowIdeas] = useState(false);
+  const [suggestHidden, setSuggestHidden] = useState(() => { try { return localStorage.getItem('he_suggest_hidden') ?? ''; } catch { return ''; } });
   const [naming, setNaming] = useState(false);
   const companionName = companion || COMPANION_DEFAULT;
   const toCompanion = companion || 'ton compagnon';
@@ -801,6 +806,42 @@ const ConversationAccueil: React.FC = () => {
     ...(breathing ? [{ label: 'Arrêter l\'exercice', kind: 'breath' as const }] : []),
   ];
   const chatModeNow = inChat;
+  // Les pastilles « Le stress me pèse / Je découvre… » : seulement au tout premier échange.
+  // Ensuite elles restent derrière « Idées » (elles encombraient la discussion à chaque retour).
+  const everTalked = messages.some(m => m.from === 'user');
+  const genericChips = state.step === 'need' && !state.flow && !breathing;
+  const chipsHidden = genericChips && everTalked && !showIdeas;
+  const visibleChips = chipsHidden ? [] : chips;
+
+  // « Ce que je te propose » : une seule proposition, la même logique que « ta suite » de l'accueil
+  const suggestion = (() => {
+    if (!isAuthenticated || !results || state.step === 'crisis' || state.step === 'testing' || state.step === 'minor') return null;
+    const prog = getTotemProgress(results);
+    if (prog.missing.length > 0) {
+      const id = prog.missing[0], n = prog.missing.length;
+      return { id, text: `Plus que ${n} test${n > 1 ? 's' : ''} pour découvrir ton animal intérieur. Le prochain : « ${getScaleMeta(id).label} ».`, cta: 'On le fait' };
+    }
+    if (!totemAnimal) return { id: '', text: 'Ton animal intérieur est prêt. Je te le montre ?', cta: 'Le découvrir' };
+    const dates = Object.fromEntries(Object.entries(results).map(([k, r]) => [k, toDate((r as { completedAt?: unknown }).completedAt)]));
+    const more = pickHomeNext(dates, Date.now());
+    if (more?.kind === 'new') return { id: more.id, text: `Un test que tu n'as pas encore fait : « ${getScaleMeta(more.id).label} ». Et toi, tu es comment ?`, cta: 'On le fait' };
+    if (more?.kind === 'retake') return { id: more.id, text: `Ton test « ${getScaleMeta(more.id).label} » date de ${sinceLabel(more.days)}. On refait le point ?`, cta: 'On le refait' };
+    return null;
+  })();
+  const suggestionShown = !!suggestion && suggestHidden !== today && tab === 'discuter' && !showConvs && !breathing && !input.trim() && !revealing
+    && !messages.slice(-3).some(m => m.card?.type === 'test' && m.card.scaleId === suggestion.id);
+  const takeSuggestion = () => {
+    if (!suggestion) return;
+    trackAccueil('go', { to: 'companion_suggestion', from: 'compagnon' });
+    if (!suggestion.id) { navigate('/assessment/totem'); return; }
+    const sc = getScaleById(suggestion.id);
+    const prev = state;
+    apply(addExchange(prev, null, [{
+      text: `Je te propose « ${getScaleMeta(suggestion.id).label} » : environ ${sc?.timeEstimateMinutes ?? 3} minutes, ici, avec moi.`,
+      card: { type: 'test', scaleId: suggestion.id },
+    }]), prev);
+  };
+  const hideSuggestion = () => { setSuggestHidden(today); try { localStorage.setItem('he_suggest_hidden', today); } catch { /* ignore */ } };
 
   // ── Mon programme ──
   const moodsNow = loadMoods(moodKey);
@@ -1909,7 +1950,7 @@ const ConversationAccueil: React.FC = () => {
   const chatMode = inChat;
   if (chatMode) {
     const namingOpen = isAuthenticated && (naming || (!companion && !companionAsked()));
-    const statusText = statusLabel ?? (listening ? 'Je t\'écoute…' : 'En ligne');
+    const statusText = statusLabel ?? (listening ? 'Je t\'écoute…' : convMeta ? convMeta.title : isAuthenticated ? STAGES[getCompanionStage()].name : 'En ligne');
     const online = !statusLabel && !listening;
     const shownMsgs = messages.slice(0, shown);
     return (
@@ -1924,8 +1965,8 @@ const ConversationAccueil: React.FC = () => {
                 <ChevronLeft size={22} aria-hidden="true" />
               </button>
             )}
-            <div aria-hidden="true" style={{ width: 46, height: 46, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-              <div style={{ transform: 'scale(.7)' }}><DrLoAvatar state={avatarState} palette={palette} size={38} /></div>
+            <div aria-hidden="true" style={{ width: 52, height: 52, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <CompanionMark size={52} live mood={auraMoodOf(avatarState)} ring={palette.accent} />
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
               {isAuthenticated ? (
@@ -1943,6 +1984,12 @@ const ConversationAccueil: React.FC = () => {
               </Link>
             )) : (
               <button onClick={() => openSignup('login', 'Me connecter')} className="drl-btn" style={{ ...pill, border: `1px solid ${C.line}`, color: C.text, cursor: 'pointer' }}>Se connecter</button>
+            )}
+            {tab === 'discuter' && (
+              <button onClick={() => setShowConvs(v => !v)} aria-expanded={showConvs} aria-label="Mes discussions" className="drl-btn"
+                style={{ width: 40, height: 40, padding: 0, borderRadius: 12, border: `1px solid ${showConvs ? palette.accent : C.line}`, background: showConvs ? 'rgba(242,182,109,.12)' : 'transparent', color: showConvs ? palette.accent : C.muted, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+                <MessagesSquare size={17} aria-hidden="true" />
+              </button>
             )}
             <button onClick={() => { discret.dismiss(); setVeiled(true); }} aria-label="Masquer l'écran" className="drl-btn"
               style={{ width: 40, height: 40, padding: 0, borderRadius: 12, border: `1px solid ${C.line}`, background: 'transparent', color: C.muted, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: 13, fontWeight: 600 }}>
@@ -1969,25 +2016,27 @@ const ConversationAccueil: React.FC = () => {
             ))}
           </nav>}
 
-          {/* La discussion en cours (principale ou secondaire) et l'accès à l'historique */}
-          {tab === 'discuter' && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, margin: '8px 14px 0' }}>
-              <button onClick={() => setShowConvs(v => !v)} aria-expanded={showConvs} className="drl-btn"
-                style={{ flex: 1, minWidth: 0, minHeight: 36, padding: '0 12px', borderRadius: 11, border: `1px solid ${C.line}`, background: showConvs ? 'rgba(242,182,109,.12)' : 'transparent', color: C.text, fontSize: 14, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
-                <MessagesSquare size={15} color={palette.accent} aria-hidden="true" />
-                <span style={{ flex: 1, textAlign: 'left', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{convMeta?.title ?? 'Discussion principale'}</span>
-                <ChevronDown size={15} aria-hidden="true" style={{ transform: showConvs ? 'rotate(180deg)' : 'none', transition: 'transform .2s' }} />
-              </button>
-              <button onClick={newConversation} aria-label="Nouvelle discussion" className="drl-btn"
-                style={{ minHeight: 36, padding: '0 12px', borderRadius: 11, border: `1px solid ${C.line}`, background: 'transparent', color: C.text, fontSize: 13, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 5, cursor: 'pointer', flexShrink: 0 }}>
-                <Plus size={14} aria-hidden="true" /> Nouvelle
-              </button>
+          {/* Ce que je te propose : une seule proposition, qu'on peut écarter pour la journée */}
+          {suggestionShown && suggestion && (
+            <div className="drl-in" style={{ margin: '10px 14px 0', padding: '10px 12px', borderRadius: 16, border: '1px solid rgba(242,182,109,.45)', background: 'linear-gradient(150deg, rgba(242,182,109,.16), rgba(255,255,255,.03))', display: 'flex', alignItems: 'center', gap: 10 }}>
+              <span style={{ flex: 1, minWidth: 0 }}>
+                <span style={{ display: 'block', fontSize: 13, fontWeight: 800, letterSpacing: '.1em', color: palette.accent }}>CE QUE JE TE PROPOSE</span>
+                <span style={{ display: 'block', fontSize: 14, lineHeight: 1.4, color: C.text }}>{suggestion.text}</span>
+              </span>
+              <button onClick={takeSuggestion} className="drl-btn" style={{ minHeight: 40, padding: '0 14px', borderRadius: 999, border: 0, background: palette.primary, color: C.ink, fontSize: 14, fontWeight: 700, cursor: 'pointer', flexShrink: 0, fontFamily: 'inherit' }}>{suggestion.cta}</button>
+              <button onClick={hideSuggestion} aria-label="Pas aujourd'hui" className="drl-btn" style={{ width: 32, height: 32, borderRadius: 10, border: 0, background: 'transparent', color: C.muted, fontSize: 18, cursor: 'pointer', flexShrink: 0 }}>×</button>
             </div>
           )}
 
           {tab === 'discuter' && showConvs ? (
             <div style={{ flex: 1, overflowY: 'auto', padding: '10px 14px 16px', display: 'flex', flexDirection: 'column', gap: 8 }}>
-              <p style={{ margin: '0 0 2px', fontSize: 13, letterSpacing: '.08em', textTransform: 'uppercase', fontWeight: 700, color: palette.accent }}>Mes discussions</p>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+                <p style={{ margin: 0, fontSize: 13, letterSpacing: '.08em', textTransform: 'uppercase', fontWeight: 700, color: palette.accent }}>Mes discussions</p>
+                <button onClick={() => { newConversation(); setShowConvs(false); }} className="drl-btn"
+                  style={{ minHeight: 36, padding: '0 12px', borderRadius: 11, border: `1px solid ${C.line}`, background: 'transparent', color: C.text, fontSize: 13, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 5, cursor: 'pointer' }}>
+                  <Plus size={14} aria-hidden="true" /> Nouvelle
+                </button>
+              </div>
               <DiscussionList idx={convIdx} currentId={convId} accent={palette.accent} onOpen={switchConversation} onNew={newConversation}
                 onRename={(id, t) => setConvIdx(i => renameConv(i, id, t))} onRemove={removeConversation} />
               <p style={{ margin: '6px 0 0', fontSize: 13, color: C.faint, textAlign: 'center' }}>{isAuthenticated ? 'Tes discussions sont gardées dans ton compte : tu les retrouves sur tous tes appareils.' : 'Tes discussions restent sur ce téléphone.'} Touche le crayon pour les renommer.</p>
@@ -2050,10 +2099,10 @@ const ConversationAccueil: React.FC = () => {
                 </div>
               )}
               {/* Les choix proposés par Dr Lô, dans la conversation, tous visibles */}
-              {!revealing && !routing && chips.length > 0 && (
+              {!revealing && !routing && visibleChips.length > 0 && (
                 <div className="drl-in" role="group" aria-label="Choisis une réponse"
                   style={{ marginLeft: 36, display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                  {chips.map(c => (
+                  {visibleChips.map(c => (
                     <button key={c.label} onClick={() => onChip(c)} className="drl-btn"
                       style={{ minHeight: 44, padding: '0 16px', borderRadius: 999, cursor: 'pointer', fontSize: 15, fontWeight: 600, color: c.kind === 'breath' ? palette.accent : C.text,
                         background: 'rgba(242,182,109,.10)', border: '1px solid rgba(242,182,109,.45)', textAlign: 'left' }}>
@@ -2067,6 +2116,12 @@ const ConversationAccueil: React.FC = () => {
 
             {/* Répondre */}
             <div style={{ padding: '8px 14px 10px', borderTop: '1px solid rgba(255,255,255,.06)', background: 'rgba(20,16,13,.7)', maxHeight: '58svh', overflowY: 'auto' }}>
+              {chipsHidden && chips.length > 0 && !revealing && !routing && !input.trim() && (
+                <button onClick={() => setShowIdeas(true)} className="drl-btn"
+                  style={{ marginBottom: 8, minHeight: 34, padding: '0 12px', borderRadius: 999, border: '1px solid rgba(233,200,143,.4)', background: 'transparent', color: '#E9C88F', fontSize: 13, fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontFamily: 'inherit' }}>
+                  <Sparkles size={14} aria-hidden="true" /> Des idées pour commencer
+                </button>
+              )}
               {controls}
               <p style={{ margin: '8px 0 0', textAlign: 'center', fontSize: 13, color: C.faint, lineHeight: 1.5 }}>
                 Conseils de bien-être, pas de diagnostic · Urgence : <a href="tel:1515" style={{ fontWeight: 700 }}>1515</a>
@@ -2275,8 +2330,8 @@ const ConversationAccueil: React.FC = () => {
         {!isAuthenticated ? (
           <ShowcaseCards
             onTotem={() => onChip({ label: 'Découvrir mon animal intérieur', kind: 'flow', q: { label: 'Découvrir mon animal intérieur', value: 'need:connaitre' } })}
-            onCompat={() => navigate('/assessment/compatibility')}
-            onDefi={() => navigate('/decouvre')}
+            onCompat={launch.on('compat') ? () => navigate('/assessment/compatibility') : undefined}
+            onDefi={launch.on('defis') ? () => navigate('/decouvre') : undefined}
           />
         ) : (
           <DiscoveryRow ids={nextDiscoveries} onStart={id => { setInChat(true); void startTest(id); }} />
