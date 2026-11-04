@@ -13,7 +13,7 @@ import { CREDIT, credits } from '../../config/creditName';
 import { claimDailyGift, getGiftStatus, inviteMessage, type GiftStatus } from '../../services/korisGiftService';
 import { trackAccueil } from '../../utils/accueilTracking';
 
-export const DailyGiftCard: React.FC<{ palette: MomentPalette }> = ({ palette }) => {
+export const DailyGiftCard: React.FC<{ palette?: MomentPalette }> = () => {
   const { refreshBalance } = useKoris();
   const [status, setStatus] = useState<GiftStatus | null>(null);
   const [state, setState] = useState<'idle' | 'busy' | 'done'>('idle');
@@ -55,7 +55,7 @@ export const DailyGiftCard: React.FC<{ palette: MomentPalette }> = ({ palette })
             <span style={{ fontSize: 14, color: DC.muted }}>+{credits(status.daily.amount)}, chaque jour où tu passes.</span>
           </span>
           <button onClick={claim} disabled={state === 'busy'} className="drl-btn"
-            style={{ minHeight: 44, padding: '0 16px', borderRadius: 999, border: 0, background: palette.primary, color: DC.ink, fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>
+            style={{ minHeight: 44, padding: '0 16px', borderRadius: 999, border: `1px solid ${DC.gold}99`, background: 'transparent', color: DC.text, fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>
             {state === 'busy' ? '…' : 'Ouvrir'}
           </button>
         </>

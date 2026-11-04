@@ -11,8 +11,7 @@ import DrLoShell, { DC, card, usePalette } from '../../components/accueil/DrLoSh
 import { useAuth } from '../../contexts/AuthContext';
 import { getOnboardingProfile } from '../../utils/onboardingProfile';
 import { getProfileProgress } from '../../services/evaluationService';
-import { getTotemProgress, getTotemSignature, TOTEM_REQUIRED_SCALES, type TotemAnimal } from '../../utils/totemAlgorithm';
-import { TOTEM_IMAGES } from '../../data/totemImages';
+import { getTotemProgress, TOTEM_REQUIRED_SCALES } from '../../utils/totemAlgorithm';
 import { getAllGuestResults } from '../../utils/guestSession';
 import { BONUS_SCALES, MENTAL_HEALTH_SCALES, SEXUAL_HEALTH_SCALES } from '../../data/scales';
 import { getScaleMeta } from '../../utils/scaleMeta';
@@ -198,17 +197,8 @@ const DomainePage: React.FC = () => {
 
       {isTests && loaded && (
         <>
-          {totemInfo?.animal && totemInfo.revealedAt ? (
-            <Link to="/assessment/totem" className="drl-btn"
-              style={{ ...card, marginTop: 14, padding: 12, display: 'flex', alignItems: 'center', gap: 12, textDecoration: 'none', color: DC.text, borderColor: 'rgba(242,182,109,.5)', background: 'rgba(242,182,109,.09)' }}>
-              <img src={TOTEM_IMAGES[totemInfo.animal as TotemAnimal]} alt="" aria-hidden="true" style={{ width: 52, height: 52, borderRadius: 14, objectFit: 'cover', flexShrink: 0 }} />
-              <span style={{ flex: 1, minWidth: 0 }}>
-                <span style={{ display: 'block', fontSize: 13, color: DC.faint }}>Ton animal intérieur</span>
-                <b style={{ display: 'block', fontFamily: 'Fraunces, serif', fontSize: 19, color: DC.title }}>{getTotemSignature(totemInfo.animal as TotemAnimal)?.label ?? totemInfo.animal}</b>
-              </span>
-              <span style={{ fontSize: 14, fontWeight: 700, color: DC.gold }}>Voir</span>
-            </Link>
-          ) : (
+          {/* La progression vers l'animal vit ici (ce sont ces tests) ; une fois révélé, l'animal vit dans « Moi » */}
+          {!(totemInfo?.animal && totemInfo.revealedAt) && (
           <Link to={totem.missing.length === 0 ? '/assessment/totem' : '#'} onClick={e => { if (totem.missing.length > 0) e.preventDefault(); }} className="drl-btn"
               style={{ ...card, marginTop: 14, padding: 14, display: 'flex', flexDirection: 'column', gap: 8, textDecoration: 'none', color: DC.text, borderColor: 'rgba(242,182,109,.5)', background: 'rgba(242,182,109,.09)', cursor: totem.missing.length === 0 ? 'pointer' : 'default' }}>
               <span style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>

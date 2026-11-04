@@ -1,10 +1,12 @@
 /**
- * EspacePage — « Mon espace bien-être » (/espace), un tap après le premier écran.
- * Pour toi aujourd'hui, les quatre domaines (Mental, Humeur, Social, Intime masqué par défaut),
- * le portrait, la météo de la semaine, l'animal intérieur et les raccourcis. Tout renvoie vers Dr Lô
- * ou vers les pages existantes (tests, journal, compatibilité, défis).
+ * EspacePage — l'onglet « Moi » (/espace) : qui je suis et comment je vais, jamais « quoi faire maintenant ».
+ * Partage des rôles (pas de doublon) :
+ *   Accueil = aujourd'hui (ta suite, cadeau du jour, humeur du jour, messages, question, respirer) ;
+ *   Tests   = les tests et leurs résultats (Mental, Bonus, Intime) ;
+ *   Moi     = mon animal intérieur, ma météo (historique), ce que mon compagnon retient, ce que la vague ouvre,
+ *             mes étincelles et l'invitation d'un proche, mes informations.
  */
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ArrowRight, BookOpen, CalendarCheck, Crown, Users, Wrench } from 'lucide-react';
 import { collection, getCountFromServer } from 'firebase/firestore';
@@ -13,27 +15,20 @@ import MoodIcon from '../../components/accueil/MoodIcon';
 import { useAuth } from '../../contexts/AuthContext';
 import { db } from '../../utils/firebase';
 import { getOnboardingProfile } from '../../utils/onboardingProfile';
-import { getGenderHiddenIds } from '../../utils/scaleVisibility';
 import { getProfileProgress } from '../../services/evaluationService';
-import { getAllGuestResults, getGuestCount, GUEST_MAX_TESTS } from '../../utils/guestSession';
-import { MENTAL_HEALTH_SCALES, SEXUAL_HEALTH_SCALES } from '../../data/scales';
-import { pickGuideMessage, toDate, type LastTest } from '../../utils/drLoGuide';
-import { pickNextScale } from '../../utils/accueilFlow';
-import { getScaleMeta } from '../../utils/scaleMeta';
+import { getAllGuestResults } from '../../utils/guestSession';
 import { dayKey, moodById, type MoodMap } from '../../utils/moodLog';
 import { fetchMoods } from '../../services/moodService';
 import { lastDays, WEEKDAYS, weekdayIndex } from '../../utils/moodInsights';
 import { addDays } from '../../utils/cycleCalc';
 import { getTotemProgress, getTotemSignature, totemMeaning, type TotemAnimal } from '../../utils/totemAlgorithm';
 import { trackAccueil } from '../../utils/accueilTracking';
-import { openDrLoChat } from '../../components/DrLoChat/drLoEvents';
 import PaliersCard from '../../components/accueil/PaliersCard';
 import DrloMemoryCard from '../../components/accueil/DrloMemoryCard';
 import { myPractices, PLACES_MAX, type Mine } from '../../services/practiceService';
 import { getDrloStatus, registerReferralIfAny, type DrloStatus } from '../../services/drloQuestionService';
 import type { ScaleResult } from '../../types/assessment';
 
-import CompanionMark from '../../components/accueil/CompanionMark';
 import { useLaunch } from '../../hooks/useLaunch';
 import { WalletCard } from '../../components/koris/GiftCards';
 import { TOTEM_IMAGES } from '../../data/totemImages';
@@ -49,7 +44,6 @@ const EspacePage: React.FC = () => {
   const launch = useLaunch();
   const uid = isAuthenticated && currentUser ? currentUser.id : null;
   const ob = getOnboardingProfile();
-  const prenom = ob?.prenom || currentUser?.name?.split(' ')[0];
   const genre = ob?.genre;
   const today = dayKey();
 
@@ -90,43 +84,8 @@ const EspacePage: React.FC = () => {
     return () => { off = true; };
   }, [uid, today]);
 
-  const doneIds = Object.keys(results);
-  // Mêmes listes que les pages Mental et Intime (tests masqués selon le genre exclus) : les compteurs concordent.
-  const hiddenIds = ob ? getGenderHiddenIds(ob) : [];
-  const mentalScales = MENTAL_HEALTH_SCALES.filter(s => !hiddenIds.includes(s.id));
-  const sexualScales = SEXUAL_HEALTH_SCALES.filter(s => !hiddenIds.includes(s.id));
-  const doneMental = mentalScales.filter(s => results[s.id]).length;
-  const doneSexual = sexualScales.filter(s => results[s.id]).length;
-  const totalCore = mentalScales.length + sexualScales.length;
-  const next = pickNextScale('decouvre', doneIds);
   const totemProgress = getTotemProgress(results);
   const totemRevealed = !!totem?.animal && !!totem.revealedAt;
-
-  const lastTest: LastTest | null = useMemo(() => {
-    let lt: LastTest | null = null;
-    for (const [scaleId, r] of Object.entries(results)) {
-      const at = toDate((r as { completedAt?: unknown }).completedAt);
-      if (at && (!lt || at > lt.completedAt)) lt = { scaleId, label: getScaleMeta(scaleId).label, completedAt: at };
-    }
-    return lt;
-  }, [results]);
-
-  const guide = pickGuideMessage({
-    isAuthenticated: !!uid, prenom, doneCore: doneMental + doneSexual, totalCore,
-    guestCount: getGuestCount(), guestMax: GUEST_MAX_TESTS,
-    totemMissing: totemProgress.missing.length, totemReady: totemProgress.missing.length === 0 && !totemRevealed, totemRevealed,
-    journalToday: uid ? !!moods[today] : null, lastTest, dismissedFollowUps: [], now: new Date(),
-  });
-
-  const onGuide = () => {
-    const a = guide.action;
-    // Un seul Dr Lô : la discussion s'ouvre dans la conversation de l'accueil
-    if (a.kind === 'chat') openDrLoChat({ greeting: a.greeting ?? undefined, source: 'espace' });
-    else if (a.kind === 'reveal_totem') navigate('/assessment/totem');
-    else if (a.kind === 'journal') navigate('/compagnon', { state: { openMood: true } });
-    else if (a.kind === 'signup') navigate('/compagnon', { state: { signup: true } });
-    else navigate('/compagnon', { state: next ? { prescribe: next } : undefined });
-  };
 
   // Météo de la semaine
   const week = lastDays(today, 7);
@@ -148,6 +107,14 @@ const EspacePage: React.FC = () => {
         <p style={{ margin: 0, fontSize: 13, color: DC.faint }}>{dateLabel.charAt(0).toUpperCase() + dateLabel.slice(1)}</p>
         <h1 style={{ margin: '4px 0 0', fontFamily: 'Fraunces, serif', fontSize: 28, lineHeight: 1.2, fontWeight: 600, color: DC.title }}>Mon espace bien-être</h1>
       </div>
+
+      {!uid && (
+        <section aria-label="Ton espace" style={{ ...card, marginTop: 14, borderColor: `${DC.gold}55` }}>
+          <p style={{ margin: 0, fontSize: 15, lineHeight: 1.5, color: DC.soft }}>Tes résultats restent sur ce téléphone. Crée ton espace pour les garder, découvrir ton animal intérieur et suivre ta météo.</p>
+          <button onClick={() => navigate('/compagnon', { state: { signup: true } })} className="drl-btn"
+            style={{ marginTop: 12, minHeight: 46, padding: '0 18px', borderRadius: 999, border: 0, background: palette.primary, color: DC.ink, fontSize: 15, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>Créer mon espace</button>
+        </section>
+      )}
 
       {uid && (
         <Link to="/mes-informations" className="drl-btn" style={{ marginTop: 14, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, minHeight: 52, padding: '0 16px', borderRadius: 16, border: `1px solid ${DC.line}`, background: DC.glass, color: DC.text, textDecoration: 'none', fontSize: 15, fontWeight: 600 }}>
@@ -171,42 +138,24 @@ const EspacePage: React.FC = () => {
           <ArrowRight size={18} color={DC.muted} aria-hidden="true" style={{ flexShrink: 0 }} />
         </Link>
       ) : (
-        <section aria-label="Mon animal intérieur" style={{ ...card, marginTop: 16, borderColor: `${DC.gold}55` }}>
+        <Link to={totemProgress.missing.length === 0 ? '/assessment/totem' : '/espace/mental'} aria-label="Mon animal intérieur" className="drl-btn" style={{ ...card, marginTop: 16, display: 'block', textDecoration: 'none', color: DC.text, borderColor: `${DC.gold}55` }}>
           <p style={{ margin: 0, fontSize: 13, fontWeight: 700, letterSpacing: '.1em', color: DC.gold }}>MON ANIMAL INTÉRIEUR</p>
           <p style={{ margin: '6px 0 0', fontFamily: 'Fraunces, serif', fontSize: 21, lineHeight: 1.25, fontWeight: 600, color: DC.title }}>
-            {totemProgress.missing.length === 0 ? 'Il est prêt : viens le découvrir' : `Il se dessine : encore ${totemProgress.missing.length} test${totemProgress.missing.length > 1 ? 's' : ''}`}
+            {totemProgress.missing.length === 0 ? 'Il est prêt : viens le découvrir' : `Lequel es-tu ? Encore ${totemProgress.missing.length} test${totemProgress.missing.length > 1 ? 's' : ''} pour le savoir`}
           </p>
-          <div aria-hidden="true" style={{ display: 'flex', gap: 6, marginTop: 12 }}>
-            {Array.from({ length: totemProgress.total }, (_, i) => (
-              <span key={i} style={{ flex: 1, height: 6, borderRadius: 3, background: i < totemProgress.completed ? DC.gold : 'rgba(255,255,255,.14)' }} />
+          {/* Un mystère, pas une barre : la barre de progression vit dans Tests */}
+          <div aria-hidden="true" style={{ display: 'flex', marginTop: 12 }}>
+            {(['lion', 'cerf', 'dauphin', 'hibou'] as TotemAnimal[]).map((a, i) => (
+              <img key={a} src={TOTEM_IMAGES[a]} alt="" width={48} height={48} loading="lazy"
+                style={{ width: 48, height: 48, borderRadius: 14, objectFit: 'cover', marginLeft: i ? -10 : 0, border: '2px solid #1C150F', filter: 'blur(1.5px) brightness(1.15)' }} />
             ))}
+            <span style={{ width: 48, height: 48, marginLeft: -10, borderRadius: 14, border: '2px solid #1C150F', boxSizing: 'border-box', background: DC.gold, color: DC.ink, fontFamily: 'Fraunces, serif', fontWeight: 600, fontSize: 22, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>?</span>
           </div>
-          <button onClick={() => (totemProgress.missing.length === 0 ? navigate('/assessment/totem') : navigate('/compagnon', { state: { prescribe: totemProgress.missing[0] } }))} className="drl-btn"
-            style={{ marginTop: 12, minHeight: 46, padding: '0 18px', borderRadius: 999, border: `1px solid ${DC.gold}88`, background: 'transparent', color: DC.text, fontSize: 15, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>
-            {totemProgress.missing.length === 0 ? 'Le découvrir' : `Faire « ${getScaleMeta(totemProgress.missing[0]).label} »`}
-          </button>
-        </section>
+          <span style={{ marginTop: 10, display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 14, fontWeight: 700, color: palette.accent }}>
+            {totemProgress.missing.length === 0 ? 'Le découvrir' : 'Voir mes tests'} <ArrowRight size={16} aria-hidden="true" />
+          </span>
+        </Link>
       ))}
-
-      {/* Pour toi aujourd'hui */}
-      <section aria-label="Pour toi aujourd'hui" style={{ ...card, marginTop: 16, borderColor: 'rgba(242,182,109,.3)', background: 'rgba(242,182,109,.07)' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <CompanionMark size={36} ring={palette.accent} />
-          <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: palette.accent }}>Pour toi aujourd'hui</p>
-        </div>
-        <p style={{ margin: '10px 0 0', fontSize: 15, lineHeight: 1.55, color: DC.soft }}>{loaded ? guide.text : '…'}</p>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 12 }}>
-          <button onClick={onGuide} className="drl-btn"
-            style={{ minHeight: 44, padding: '0 16px', borderRadius: 999, border: 0, background: palette.primary, color: DC.ink, fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>
-            {guide.cta}
-          </button>
-          {guide.action.kind !== 'chat' && (
-            <Link to="/" className="drl-btn" style={{ minHeight: 44, padding: '0 16px', borderRadius: 999, border: `1px solid ${DC.line}`, background: DC.glass, color: DC.text, fontSize: 14, fontWeight: 600, display: 'inline-flex', alignItems: 'center', textDecoration: 'none' }}>
-              Discuter avec mon compagnon
-            </Link>
-          )}
-        </div>
-      </section>
 
       {/* Météo intérieure */}
       <section aria-label="Ta météo intérieure" style={{ ...card, marginTop: 14 }}>
@@ -220,7 +169,10 @@ const EspacePage: React.FC = () => {
             const def = e ? moodById(e.mood) : null;
             return (
               <div key={day} aria-label={`${day === today ? 'Aujourd\'hui' : day} : ${def ? def.label : 'pas noté'}`}
-                style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5 }}>
+                role={day === today && !def ? 'button' : undefined} tabIndex={day === today && !def ? 0 : undefined}
+                onClick={day === today && !def ? () => navigate('/compagnon', { state: { openMood: true } }) : undefined}
+                onKeyDown={day === today && !def ? (ev) => { if (ev.key === 'Enter' || ev.key === ' ') navigate('/compagnon', { state: { openMood: true } }); } : undefined}
+                style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5, cursor: day === today && !def ? 'pointer' : 'default' }}>
                 <div style={{ width: '100%', aspectRatio: '1', borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center',
                   border: def ? '1px solid rgba(255,255,255,.10)' : '1.5px dashed rgba(255,255,255,.16)', background: def ? 'rgba(255,255,255,.06)' : 'transparent' }}>
                   {def ? <MoodIcon id={def.id} color={def.color} size={20} /> : <span style={{ color: DC.faint, fontSize: 16 }}>{day === today ? '+' : ''}</span>}
@@ -230,12 +182,6 @@ const EspacePage: React.FC = () => {
             );
           })}
         </div>
-        {!moods[today] && (
-          <button onClick={() => navigate('/compagnon', { state: { openMood: true } })} className="drl-btn"
-            style={{ marginTop: 12, width: '100%', minHeight: 46, borderRadius: 14, border: '1px solid rgba(242,182,109,.4)', background: 'rgba(242,182,109,.10)', color: DC.text, fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>
-            Comment tu te sens aujourd'hui ? · 30 s
-          </button>
-        )}
       </section>
 
       {/* Pour aller plus loin : uniquement ce que la vague du lancement a ouvert (Mental, Intime et les résultats vivent dans Tests, l'humeur dans la météo) */}

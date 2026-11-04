@@ -7,7 +7,7 @@
  */
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
-import { ArrowRight, CloudSun, Heart, Wind, PenLine, Wrench, MessageCircleQuestion } from 'lucide-react';
+import { ArrowRight, ClipboardList, CloudSun, Heart, Wind, PenLine, Wrench, MessageCircleQuestion } from 'lucide-react';
 import { usePalette, DC, card } from '../components/accueil/DrLoShell';
 import { addDays, type Programme } from '../utils/programme';
 import { loadProgramme } from '../services/programmeService';
@@ -24,7 +24,7 @@ import { getOnboardingProfile } from '../utils/onboardingProfile';
 import { getScaleById } from '../data/scales';
 import { getScaleMeta } from '../utils/scaleMeta';
 import { getMoment, greetingFor, type MomentPalette } from '../utils/drloMoment';
-import { pickNextScale } from '../utils/accueilFlow';
+import { pickNextScale, firstName } from '../utils/accueilFlow';
 import { getTotemProgress } from '../utils/totemAlgorithm';
 import { getProfileProgress } from '../services/evaluationService';
 import { fetchMoods } from '../services/moodService';
@@ -38,7 +38,7 @@ import { trackAccueil } from '../utils/accueilTracking';
 import { pickHomeNext, sinceLabel } from '../utils/homeNext';
 import { toDate } from '../utils/drLoGuide';
 import { TOTEM_IMAGES } from '../data/totemImages';
-import { getTotemSignature, type TotemAnimal } from '../utils/totemAlgorithm';
+import type { TotemAnimal } from '../utils/totemAlgorithm';
 import { DailyGiftCard } from '../components/koris/GiftCards';
 import { claimReferralRewardOnce } from '../services/korisGiftService';
 import { useKoris } from '../contexts/KorisContext';
@@ -222,7 +222,6 @@ const ConnectedHome: React.FC<{ feed: HomeFeed | null; palette: MomentPalette; u
   const navigate = useNavigate();
   const [results, setResults] = useState<Record<string, ScaleResult> | null>(null);
   const [totemRevealed, setTotemRevealed] = useState(false);
-  const [animal, setAnimal] = useState<TotemAnimal | null>(null);
   const { refreshBalance } = useKoris();
   const [inbox, setInbox] = useState<InboxItem[]>([]);
   const [unread, setUnread] = useState(0);
@@ -239,7 +238,7 @@ const ConnectedHome: React.FC<{ feed: HomeFeed | null; palette: MomentPalette; u
 
   useEffect(() => {
     let off = false;
-    getProfileProgress(uid).then(p => { if (!off) { setResults(p.scaleResults ?? {}); setTotemRevealed(!!p.totem?.animal && !!p.totem.revealedAt); setAnimal(p.totem?.revealedAt ? (p.totem.animal as TotemAnimal) : null); } }).catch(() => { if (!off) setResults({}); });
+    getProfileProgress(uid).then(p => { if (!off) { setResults(p.scaleResults ?? {}); setTotemRevealed(!!p.totem?.animal && !!p.totem.revealedAt); } }).catch(() => { if (!off) setResults({}); });
     getInbox().then(r => { if (!off) { setInbox(r.items); setUnread(r.unread); } }).catch(() => {});
     getChannelNews().then(r => { if (!off) setChBadge(r.badge); }).catch(() => {});
     myPractices().then(m => { if (!off) setMine(m); }).catch(() => {});
@@ -258,18 +257,18 @@ const ConnectedHome: React.FC<{ feed: HomeFeed | null; palette: MomentPalette; u
     const prog = getTotemProgress(results);
     if (prog.missing.length > 0) {
       const n = prog.missing.length;
-      return { kicker: 'TA SUITE', title: `Plus que ${n} test${n > 1 ? 's' : ''} pour découvrir ton animal intérieur`, cta: `Faire « ${getScaleMeta(prog.missing[0]).label} »`, go: () => navigate('/compagnon', { state: { prescribe: prog.missing[0] } }) };
+      return { kicker: 'TA SUITE', title: `Plus que ${n} test${n > 1 ? 's' : ''} pour découvrir ton animal intérieur`, cta: `Faire « ${getScaleMeta(prog.missing[0]).label} »`, go: () => navigate('/compagnon', { state: { prescribe: prog.missing[0] } }), id: prog.missing[0] };
     }
-    if (!totemRevealed) return { kicker: 'TA SUITE', title: 'Ton animal intérieur est prêt', cta: 'Le découvrir', go: () => navigate('/assessment/totem') };
+    if (!totemRevealed) return { kicker: 'TA SUITE', title: 'Ton animal intérieur est prêt', cta: 'Le découvrir', go: () => navigate('/assessment/totem'), id: '' };
     const next = pickNextScale('decouvre', Object.keys(results));
-    if (next) return { kicker: 'TA SUITE', title: `Ton prochain test : ${getScaleMeta(next).label}`, cta: 'Commencer', go: () => navigate('/compagnon', { state: { prescribe: next } }) };
+    if (next) return { kicker: 'TA SUITE', title: `Ton prochain test : ${getScaleMeta(next).label}`, cta: 'Commencer', go: () => navigate('/compagnon', { state: { prescribe: next } }), id: next };
     // Les 7 sont faits : un test du moment, sinon refaire un test d'état ancien. L'accueil n'est jamais vide.
     const dates = Object.fromEntries(Object.entries(results).map(([id, r]) => [id, toDate((r as { completedAt?: unknown }).completedAt)]));
-    const more = pickHomeNext(dates, Date.now());
-    if (more?.kind === 'new') return { kicker: 'LE TEST DU MOMENT', title: `${getScaleMeta(more.id).label} : et toi, tu es comment ?`, cta: 'Faire le test', go: () => navigate('/compagnon', { state: { prescribe: more.id } }) };
-    if (more?.kind === 'retake') return { kicker: 'ÇA A BOUGÉ ?', title: `Ton test « ${getScaleMeta(more.id).label} » date de ${sinceLabel(more.days)}. Et aujourd'hui ?`, cta: 'Refaire le point', go: () => navigate('/compagnon', { state: { prescribe: more.id } }) };
+    const more = pickHomeNext(dates, Date.now(), feed?.featured ? [feed.featured.scaleId] : []);
+    if (more?.kind === 'new') return { kicker: 'À DÉCOUVRIR', title: `${getScaleMeta(more.id).label} : et toi, tu es comment ?`, cta: 'Faire le test', go: () => navigate('/compagnon', { state: { prescribe: more.id } }), id: more.id };
+    if (more?.kind === 'retake') return { kicker: 'ÇA A BOUGÉ ?', title: `Ton test « ${getScaleMeta(more.id).label} » date de ${sinceLabel(more.days)}. Et aujourd'hui ?`, cta: 'Refaire le point', go: () => navigate('/compagnon', { state: { prescribe: more.id } }), id: more.id };
     return null;
-  }, [results, totemRevealed, navigate]);
+  }, [results, totemRevealed, navigate, feed]);
 
   // Parrainage : la personne invitée a fait un test → elle et son parrain reçoivent des étincelles (une seule fois)
   useEffect(() => {
@@ -299,16 +298,16 @@ const ConnectedHome: React.FC<{ feed: HomeFeed | null; palette: MomentPalette; u
         </section>
       )}
 
-      {featuredForYou && <FeaturedCard featured={featuredForYou} guest={false} palette={palette} />}
+      {featuredForYou && featuredForYou.scaleId !== suite?.id && (
+        <div style={{ marginTop: 14 }}>
+          <WideLink to="/compagnon" state={{ prescribe: featuredForYou.scaleId }} kicker={featuredForYou.label ? 'VU DANS LA VIDÉO' : 'LE TEST DU MOMENT'}
+            title={featuredForYou.label || getScaleMeta(featuredForYou.scaleId).label} tint={DC.sage}
+            icon={<span aria-hidden="true" style={{ width: 40, height: 40, flex: 'none', borderRadius: 12, background: `${DC.sage}38`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><ClipboardList size={20} color={DC.sage} /></span>} />
+        </div>
+      )}
 
       <DailyGiftCard palette={palette} />
 
-      {animal && (
-        <div style={{ marginTop: 14 }}>
-          <WideLink to="/assessment/totem" kicker="TON ANIMAL INTÉRIEUR" title={getTotemSignature(animal).label} sub="Tes forces, tes jauges, tes affinités"
-            tint={DC.gold} icon={<img src={TOTEM_IMAGES[animal]} alt="" width={48} height={48} style={{ width: 48, height: 48, borderRadius: 14, objectFit: 'cover', flexShrink: 0, border: `1px solid ${DC.gold}66` }} />} />
-        </div>
-      )}
 
       {(lastMsg || (chBadge > 0 && launch.on('chaines'))) && (
         <>
@@ -373,7 +372,7 @@ const AccueilPage: React.FC = () => {
   const { isAuthenticated, authReady, currentUser } = useAuth();
   const [feed, setFeed] = useState<HomeFeed | null>(null);
   const ob = getOnboardingProfile();
-  const prenom = ob?.prenom || currentUser?.name?.split(' ')[0];
+  const prenom = firstName(ob?.prenom || currentUser?.name);
 
   useEffect(() => { captureReferral(location.search); }, []); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => {
