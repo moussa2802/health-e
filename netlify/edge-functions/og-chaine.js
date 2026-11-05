@@ -1,5 +1,7 @@
 // Aperçu des liens d'invitation /c/:id (WhatsApp, Facebook, Telegram…) : titre, description et photo de la chaîne.
 const CRAWLER_RE = /facebookexternalhit|WhatsApp|Twitterbot|LinkedInBot|Googlebot|Slackbot|TelegramBot|Discordbot|Snapchat|Pinterest|SkypeUriPreview|iMessage|Applebot/i;
+// Le navigateur intégré de Snapchat s'annonce « Snapchat/x.y » avec AppleWebKit : c'est une vraie personne (pas un robot d'aperçu), elle doit recevoir l'appli.
+const isCrawler = (ua) => CRAWLER_RE.test(ua) && !(/Snapchat\/[\d.]+/i.test(ua) && /AppleWebKit|Android/i.test(ua));
 
 const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
@@ -7,7 +9,7 @@ export default async (request, context) => {
   const ua = request.headers.get('user-agent') || '';
   const url = new URL(request.url);
   const m = url.pathname.match(/^\/c\/([A-Za-z0-9_-]{1,60})\/?$/);
-  if (!m || !CRAWLER_RE.test(ua)) return context.next();
+  if (!m || !isCrawler(ua)) return context.next();
 
   let title = 'Une chaîne de Dr Lô — Health-e';
   let description = 'Rejoins la chaîne : des vocaux et des textes de Dr Lô, pour mieux te comprendre.';

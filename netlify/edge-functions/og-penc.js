@@ -1,5 +1,7 @@
 // Aperçu des liens de Pénc /p/:id (WhatsApp, Facebook, Telegram…) : sujet, date, animateur. Les vraies personnes passent à l'appli.
 const CRAWLER_RE = /facebookexternalhit|WhatsApp|Twitterbot|LinkedInBot|Googlebot|Slackbot|TelegramBot|Discordbot|Snapchat|Pinterest|SkypeUriPreview|iMessage|Applebot/i;
+// Le navigateur intégré de Snapchat s'annonce « Snapchat/x.y » avec AppleWebKit : c'est une vraie personne (pas un robot d'aperçu), elle doit recevoir l'appli.
+const isCrawler = (ua) => CRAWLER_RE.test(ua) && !(/Snapchat\/[\d.]+/i.test(ua) && /AppleWebKit|Android/i.test(ua));
 const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 const DAYS = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'];
 const MONTHS = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'];
@@ -14,7 +16,7 @@ export default async (request, context) => {
   const ua = request.headers.get('user-agent') || '';
   const url = new URL(request.url);
   const m = url.pathname.match(/^\/p\/([A-Za-z0-9_-]{1,60})\/?$/);
-  if (!m || !CRAWLER_RE.test(ua)) return context.next();
+  if (!m || !isCrawler(ua)) return context.next();
 
   let title = 'Pénc mi · Health-e';
   let description = 'Une discussion en direct pour parler de ce qui pèse. Écoute, commente, pose ta question, même en anonyme.';
