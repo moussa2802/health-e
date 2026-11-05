@@ -7,7 +7,7 @@
  *   accept  { pencId }                → j'accepte l'invitation : le micro m'est ouvert (6 personnes au plus sur scène)
  *   decline { pencId }                → je refuse l'invitation
  *   leave_stage { pencId }            → je redescends (micro fermé)
- * Hôte (et Dr Lô) :
+ * Hôte (et l'équipe) :
  *   invite { pencId, identity }       → invite quelqu'un à parler (il doit accepter)
  *   remove { pencId, identity }       → le fait redescendre
  *   mute   { pencId, identity, trackSid } → coupe son micro
@@ -73,7 +73,7 @@ exports.handler = async (event) => {
         }
       }
       let name;
-      if (isHost) name = p.hostName || 'Hôte';
+      if (isHost) name = require('./_pencLive').hostLabel(p).name;
       else {
         const up = await db.collection('userProfiles').doc(uid).get().catch(() => null);
         const prenom = (up && up.exists && up.data().onboardingProfile && up.data().onboardingProfile.prenom) || '';

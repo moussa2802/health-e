@@ -9,6 +9,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { ArrowRight, ClipboardList, CloudSun, Heart, Wind, PenLine, Wrench, MessageCircleQuestion } from 'lucide-react';
 import { usePalette, DC, card } from '../components/accueil/DrLoShell';
+import HealthLogo from '../components/brand/HealthLogo';
 import { addDays, type Programme } from '../utils/programme';
 import { loadProgramme } from '../services/programmeService';
 import type { MoodMap } from '../utils/moodLog';
@@ -142,7 +143,7 @@ const Discover: React.FC<{ feed: HomeFeed | null; connected: boolean; channels?:
 const AskBox: React.FC = () => (
   <>
     <SectionTitle>Une question ?</SectionTitle>
-    <WideLink to="/boite-a-questions" title="Dépose-la, en anonyme" sub="Dr Lô lit tout et répond à certaines : ici, ou dans une vidéo." tint={DC.confier} icon={<MessageCircleQuestion size={24} color={DC.confier} aria-hidden="true" />} />
+    <WideLink to="/boite-a-questions" title="Dépose-la, en anonyme" sub="L'équipe lit tout et répond à certaines : ici, ou dans une vidéo." tint={DC.confier} icon={<MessageCircleQuestion size={24} color={DC.confier} aria-hidden="true" />} />
   </>
 );
 
@@ -180,9 +181,9 @@ const AnimalTeaser: React.FC<{ palette: MomentPalette }> = ({ palette }) => (
 /** Qui est derrière : la première question d'une personne qui arrive d'une vidéo. */
 const TrustRow: React.FC<{ palette: MomentPalette }> = ({ palette }) => (
   <div style={{ marginTop: 14, display: 'flex', alignItems: 'center', gap: 12 }}>
-    <RealDrLoPhoto size={44} palette={palette} />
+    <span aria-hidden="true" style={{ width: 44, height: 44, flex: 'none', borderRadius: '50%', background: 'rgba(242,182,109,.12)', border: `1px solid ${palette.accent}55`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><HealthLogo variant="mark" height={16} /></span>
     <p style={{ margin: 0, fontSize: 14, lineHeight: 1.4, color: DC.soft }}>
-      <b style={{ color: DC.title }}>Créé par Dr Lô, médecin.</b><br />Celui que tu suis sur TikTok et Instagram.
+      <b style={{ color: DC.title }}>Pensé par une équipe de professionnels de santé.</b><br />Privé, sans jugement, en wolof et en français.
     </p>
   </div>
 );
@@ -194,7 +195,7 @@ const VisitorHome: React.FC<{ feed: HomeFeed | null; palette: MomentPalette }> =
   return (
     <>
       <header style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', minHeight: 44 }}>
-        <span style={{ fontFamily: 'Fraunces, serif', fontSize: 22, fontWeight: 600, color: DC.title }}>Health-e</span>
+        <HealthLogo height={24} />
         <button onClick={() => navigate('/compagnon', { state: { signup: true } })} className="drl-btn"
           style={{ minHeight: 44, padding: '0 16px', borderRadius: 999, border: `1px solid ${DC.line}`, background: 'transparent', color: DC.text, fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>
           Se connecter
@@ -287,6 +288,7 @@ const ConnectedHome: React.FC<{ feed: HomeFeed | null; palette: MomentPalette; u
 
   return (
     <>
+      <div style={{ display: 'flex', alignItems: 'center', minHeight: 36, marginBottom: 6 }}><HealthLogo height={20} /></div>
       <header style={{ minHeight: 44, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
         <h1 style={{ margin: 0, fontFamily: 'Fraunces, serif', fontSize: 28, lineHeight: 1.2, fontWeight: 600, color: DC.title }}>{greetingFor(getMoment(), prenom)}</h1>
         {/* Le compagnon vivant : il respire ici aussi, un tap ouvre la discussion */}

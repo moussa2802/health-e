@@ -250,7 +250,7 @@ exports.handler = async (event) => {
         invalid_keys: 'Clés de questions invalides',
         invalid_key_count: 'Il faut entre 6 et 8 questions',
         duplicate_keys: 'Clés de questions en double',
-        totem_in_keys: 'L'animal intérieur ne doit pas figurer dans les clés',
+        totem_in_keys: 'L\'animal intérieur ne doit pas figurer dans les clés',
         unknown_key: `Question inconnue : ${qResult.detail || ''}`,
         ineligible_key: `Question non éligible : ${qResult.detail || ''}`,
         too_many_big_five: 'Trop de questions Big Five (max 3)',

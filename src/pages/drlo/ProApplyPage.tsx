@@ -40,7 +40,7 @@ const ProApplyPage: React.FC = () => {
       <p style={{ margin: '18px 0 0', fontSize: 13, letterSpacing: '.14em', textTransform: 'uppercase', color: palette.accent, fontWeight: 700 }}>Espace pro</p>
       <h1 style={h1}>Rejoindre Health-e en tant que professionnel</h1>
       <p style={{ margin: '10px 0 0', fontSize: 15, color: DC.soft, lineHeight: 1.55 }}>
-        Psychologue, médecin, sage-femme, sexologue… Une fois ta demande validée par Dr Lô, tu crées tes chaînes et tu animes tes propres discussions avec la communauté. Tu ne vois jamais les résultats de tests des membres.
+        Psychologue, médecin, sage-femme, sexologue… Une fois ta demande validée par l'équipe Health-e, tu crées tes chaînes et tu animes tes propres discussions avec la communauté. Tu ne vois jamais les résultats de tests des membres.
       </p>
 
       {!me && !error && <Loader2 className="animate-spin" style={{ marginTop: 20 }} aria-label="Chargement" />}
@@ -50,7 +50,7 @@ const ProApplyPage: React.FC = () => {
           <Link to="/drlo" style={{ display: 'inline-flex', marginTop: 12, minHeight: 44, padding: '0 16px', alignItems: 'center', borderRadius: 999, background: palette.primary, color: DC.ink, fontWeight: 700, textDecoration: 'none' }}>Ouvrir l'Espace pro</Link>
         </section>
       )}
-      {me?.suspended && <section style={{ ...card, marginTop: 16 }}><p style={{ margin: 0, fontSize: 15, color: DC.text }}>Ton accès pro est suspendu. Écris à Dr Lô pour en parler.</p></section>}
+      {me?.suspended && <section style={{ ...card, marginTop: 16 }}><p style={{ margin: 0, fontSize: 15, color: DC.text }}>Ton accès pro est suspendu. Écris à l'équipe Health-e pour en parler.</p></section>}
       {app?.status === 'pending' && (
         <section style={{ ...card, marginTop: 16, borderColor: 'rgba(242,182,109,.5)' }}>
           <p style={{ margin: 0, fontSize: 15, color: DC.text, lineHeight: 1.5 }}>Ta demande est en cours de vérification. Tu recevras une notification dès qu'elle est validée.</p>
@@ -72,7 +72,7 @@ const ProApplyPage: React.FC = () => {
             </select>
           </label>
           <label style={lab}>Titre affiché (facultatif)<input value={f.title} maxLength={60} onChange={e => set('title', e.target.value)} placeholder="Ex. : Psychologue clinicienne" className="drl-input" style={field} /></label>
-          <p style={{ margin: 0, fontSize: 13, color: DC.faint, lineHeight: 1.5 }}>Dr Lô valide ta demande. Ton nom et ton titre seront visibles sur tes chaînes.</p>
+          <p style={{ margin: 0, fontSize: 13, color: DC.faint, lineHeight: 1.5 }}>L'équipe Health-e valide ta demande. Ton nom et ton titre seront visibles sur tes chaînes.</p>
           {error && <p role="alert" style={{ margin: 0, color: '#F09A7A', fontSize: 14 }}>{error}</p>}
           <button type="submit" disabled={busy} className="drl-btn" style={{ minHeight: 50, borderRadius: 999, border: 0, background: palette.primary, color: DC.ink, fontSize: 16, fontWeight: 700, cursor: 'pointer' }}>
             {busy ? <Loader2 size={18} className="animate-spin" aria-label="Envoi" /> : 'Envoyer ma demande'}

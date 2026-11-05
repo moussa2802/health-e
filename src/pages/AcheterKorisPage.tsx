@@ -79,7 +79,7 @@ const AcheterKorisPage: React.FC = () => {
   return (
     <DrLoShell back={{ to: '/espace', label: 'Retour' }} palette={palette}>
       <h1 style={{ margin: '18px 0 0', fontFamily: 'Fraunces, serif', fontSize: 28, lineHeight: 1.2, fontWeight: 600, color: DC.title }}>Recharger mes {CREDIT.many}</h1>
-      <p style={{ margin: '6px 0 0', fontSize: 15, lineHeight: 1.5, color: DC.soft }}>Pour discuter plus longtemps avec ton compagnon et recevoir les analyses de Dr Lô.</p>
+      <p style={{ margin: '6px 0 0', fontSize: 15, lineHeight: 1.5, color: DC.soft }}>Pour discuter plus longtemps avec ton compagnon et recevoir tes analyses détaillées.</p>
 
       {isSuccess && notice(DC.sage, <><Check size={18} color={DC.sage} aria-hidden="true" /><span style={{ fontSize: 15, color: DC.text }}><b>C'est fait !</b> Tes {CREDIT.many} sont sur ton solde.</span></>)}
       {isCancelled && notice(DC.gold, <span style={{ fontSize: 15, color: DC.soft }}>Paiement annulé. Tu peux réessayer quand tu veux.</span>)}
@@ -112,7 +112,7 @@ const AcheterKorisPage: React.FC = () => {
                   {bonus > 0 && <span style={{ fontSize: 13, fontWeight: 700, color: DC.sage }}>+{bonus} % offertes</span>}
                 </span>
                 <span style={{ display: 'block', marginTop: 3, fontSize: 13, lineHeight: 1.4, color: DC.muted }}>
-                  ≈ {p.koris} messages à ton compagnon ou {Math.floor(p.koris / 3)} analyses de Dr Lô
+                  ≈ {p.koris} messages à ton compagnon ou {Math.floor(p.koris / 3)} analyses détaillées
                 </span>
               </span>
               <b style={{ fontSize: 17, color: DC.gold, whiteSpace: 'nowrap' }}>{formatNumber(p.price)} F</b>

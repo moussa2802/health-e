@@ -45,3 +45,7 @@ h1, h2, h3, .font-display {
   transform: translateY(-3px);
 }
 
+
+/* ── Écrans sombres (charte « la veillée ») : clavier iOS, barre ^ v ✓ et contrôles natifs en sombre ── */
+html:has(.drl-screen) { color-scheme: dark; background: #17100A; }
+.drl-screen, .drl-screen input, .drl-screen textarea, .drl-screen select { color-scheme: dark; }

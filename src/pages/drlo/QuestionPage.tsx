@@ -81,7 +81,7 @@ const QuestionPage: React.FC = () => {
 
   const shareInvite = () => {
     if (!status) return;
-    const text = `Je fais des tests de bien-être avec Dr Lô sur Health-e. Fais le tien, c'est gratuit et privé : ${inviteLink(status.referral.code)}`;
+    const text = `Je fais des tests de bien-être sur Health-e. Fais le tien, c'est gratuit et privé : ${inviteLink(status.referral.code)}`;
     trackAccueil('invite_share');
     if (navigator.share) navigator.share({ text }).catch(() => {});
     else window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank', 'noopener');

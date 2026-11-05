@@ -6,7 +6,10 @@
  */
 import React, { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
-import { BadgeCheck, Bell, BellRing, Loader2, Lock, Radio } from 'lucide-react';
+import { BadgeCheck, Bell, BellRing, HelpCircle, ImagePlus, Loader2, Lock, Radio, Share2 } from 'lucide-react';
+import HealthLogo from '../../components/brand/HealthLogo';
+import { QuestionsSheet, SlidesManager } from '../../components/penc/PencLive';
+import { liveState, previewPenc, sharePenc, type LiveState, type PencPreview } from '../../services/pencLiveService';
 import DrLoShell, { DC, card, usePalette } from '../../components/accueil/DrLoShell';
 import LoadingCards from '../../components/accueil/LoadingCards';
 import PencCard from '../../components/penc/PencCard';
@@ -209,7 +212,15 @@ const Detail: React.FC<{ id: string }> = ({ id }) => {
   const [ticket, setTicket] = useState<RoomTicket | null>(null);
   const [joinBusy, setJoinBusy] = useState(false);
   const [joinError, setJoinError] = useState('');
-  const autoEnter = !!(useLocation().state as { autoEnter?: boolean } | null)?.autoEnter;
+  const loc = useLocation();
+  const autoEnter = !!(loc.state as { autoEnter?: boolean } | null)?.autoEnter;
+  const [live, setLive] = useState<LiveState | null>(null);
+  const [askOpen, setAskOpen] = useState(() => new URLSearchParams(loc.search).get('ask') === '1');
+  const [prep, setPrep] = useState(false);
+  const [shared, setShared] = useState('');
+  const loadLive = () => liveState(id).then(setLive).catch(() => {});
+  useEffect(() => { if (askOpen || prep) loadLive(); }, [askOpen, prep]); // eslint-disable-line react-hooks/exhaustive-deps
+  const share = () => { if (p) sharePenc(p.id, p.title).then(r => { if (r === 'copied') { setShared('Lien copié : colle-le dans WhatsApp.'); window.setTimeout(() => setShared(''), 3000); } }); };
   const autoDone = useRef(false);
   const load = () => getPenc(id).then(r => { setP(r.penc); setError(''); }).catch(e => setError(e instanceof Error ? e.message : 'Erreur'));
   useEffect(() => { load(); }, [id]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -246,7 +257,7 @@ const Detail: React.FC<{ id: string }> = ({ id }) => {
         <h1 style={{ ...h1, margin: 0, fontSize: 27, lineHeight: 1.2 }}>{p.title}</h1>
         <p style={{ margin: 0, fontSize: 15, color: DC.text, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, flexWrap: 'wrap' }}>
           <b>{p.host.name}</b>{p.host.title ? <span style={{ color: DC.muted }}>· {p.host.title}</span> : null}
-          {p.host.pro && <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 13, fontWeight: 700, color: DC.sage }}><BadgeCheck size={14} aria-hidden="true" />vérifié par Dr Lô</span>}
+          {p.host.pro && <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 13, fontWeight: 700, color: DC.sage }}><BadgeCheck size={14} aria-hidden="true" />vérifié par l'équipe</span>}
         </p>
         <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: 6, marginTop: 2 }}>
           {[p.status === 'live' ? (listenersLabel(p.listeners) ?? 'En direct') : `${whenLabel(p.startAt)}`, `${p.durationMin} min`,
@@ -288,10 +299,72 @@ const Detail: React.FC<{ id: string }> = ({ id }) => {
           {p.registered ? <><BellRing size={18} aria-hidden="true" />Inscrit · on te prévient</> : <><Bell size={18} aria-hidden="true" />Me rappeler</>}
         </button>
       )}
+      {p.status !== 'ended' && (
+        <div style={{ marginTop: 10, display: 'grid', gridTemplateColumns: p.locked ? '1fr' : 'repeat(2, minmax(0, 1fr))', gap: 8 }}>
+          <button type="button" onClick={share} className="drl-btn" style={{ minHeight: 46, borderRadius: 999, border: `1px solid ${DC.line}`, background: 'transparent', color: DC.text, fontFamily: 'inherit', fontSize: 15, fontWeight: 700, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}><Share2 size={17} aria-hidden="true" />Partager</button>
+          {!p.locked && <button type="button" onClick={() => setAskOpen(true)} className="drl-btn" style={{ minHeight: 46, borderRadius: 999, border: '1px solid rgba(201,184,228,.55)', background: 'rgba(201,184,228,.1)', color: '#E6DCF4', fontFamily: 'inherit', fontSize: 15, fontWeight: 700, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}><HelpCircle size={17} aria-hidden="true" />Poser une question</button>}
+        </div>
+      )}
+      {shared && <p role="status" style={{ margin: '8px 2px 0', fontSize: 14, color: DC.sage }}>{shared}</p>}
+      {p.mineAsHost && p.status !== 'ended' && (
+        prep ? (
+          <section aria-label="Préparer le Pénc" style={{ ...card, marginTop: 12, display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <b style={{ fontSize: 15, color: DC.title }}>Images de présentation</b>
+            <SlidesManager pencId={p.id} slides={live?.slides ?? []} current={live?.slideIndex ?? null} accent={palette.accent} onChanged={loadLive} />
+            {live && live.questions.length > 0 && <p style={{ margin: 0, fontSize: 14, color: DC.soft }}>{live.questions.filter(q => q.status === 'open').length} question(s) déjà reçue(s) : tu les verras dans la salle, onglet « Questions ».</p>}
+          </section>
+        ) : <button type="button" onClick={() => setPrep(true)} className="drl-btn" style={{ marginTop: 10, width: '100%', minHeight: 46, borderRadius: 999, border: `1px dashed ${palette.accent}`, background: 'transparent', color: palette.accent, fontFamily: 'inherit', fontSize: 15, fontWeight: 700, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}><ImagePlus size={17} aria-hidden="true" />Préparer les images et voir les questions</button>
+      )}
+      {askOpen && <QuestionsSheet pencId={p.id} questions={live?.questions ?? []} accent={palette.accent} canAsk={p.status !== 'ended'} onChanged={loadLive} onClose={() => setAskOpen(false)} />}
       {(remind.error || joinError) && <p role="alert" style={{ margin: '10px 2px 0', color: '#F09A7A', fontSize: 14 }}>{joinError || remind.error}</p>}
       {remind.askNotif && currentUser && <NotifOptinCard uid={currentUser.id} palette={palette} reason="penc" onDone={() => {}} />}
       <p style={{ margin: '16px 2px 0', fontSize: 13, lineHeight: 1.5, color: DC.faint }}>{RULES} Ce n'est pas une consultation. Urgence : <a href="tel:1515" style={{ fontWeight: 700 }}>1515</a>.</p>
     </>
+  );
+};
+
+/** Ouvert depuis le lien partagé, sans compte : le sujet, la date, et entrer (le compte se crée en 30 secondes). */
+const PublicPenc: React.FC<{ id: string }> = ({ id }) => {
+  const palette = usePalette();
+  const navigate = useNavigate();
+  const [p, setP] = useState<PencPreview | null>(null);
+  const [error, setError] = useState('');
+  useEffect(() => { previewPenc(id).then(setP).catch(e => setError(e instanceof Error ? e.message : 'Pénc introuvable')); }, [id]);
+  const go = (ask: boolean) => navigate(`/patient/access?returnTo=${encodeURIComponent(`/penc/${id}${ask ? '?ask=1' : ''}`)}`);
+  const when = p ? new Date(p.startAt) : null;
+  return (
+    <div className="drl-screen font-sans" style={{ minHeight: '100svh', background: `radial-gradient(circle at 50% 0%, #3A2616 0%, #1C130B 42%, #120C07 100%)`, color: DC.text }}>
+      <div className="drl-wrap" style={{ margin: '0 auto', padding: '18px 18px 32px', boxSizing: 'border-box', display: 'flex', flexDirection: 'column', gap: 16 }}>
+        <Link to="/" aria-label="Health-e, accueil" style={{ display: 'inline-flex', minHeight: 44, alignItems: 'center' }}><HealthLogo height={22} /></Link>
+        {error && <p role="alert" style={{ color: DC.muted }}>{error} <Link to="/" style={{ color: palette.accent }}>Découvrir Health-e</Link></p>}
+        {!p && !error && <LoadingCards label="Ouverture…" count={1} />}
+        {p && when && (
+          <>
+            <section style={{ padding: '20px 18px', borderRadius: 24, background: 'rgba(255,255,255,.05)', border: '1px solid rgba(233,200,143,.3)', display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <p style={{ margin: 0, display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, fontWeight: 700, letterSpacing: '.06em', color: '#E9C88F' }}>
+                {p.status === 'live' && <Equalizer color={palette.accent} />}PÉNC MI · {p.status === 'live' ? 'EN DIRECT' : p.status === 'ended' ? 'TERMINÉ' : 'À VENIR'}
+              </p>
+              <h1 style={{ ...h1, margin: 0, fontSize: 26, lineHeight: 1.2 }}>{p.title}</h1>
+              {p.description && <p style={{ margin: 0, fontSize: 15, lineHeight: 1.55, color: DC.soft, whiteSpace: 'pre-wrap' }}>{p.description}</p>}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 8, marginTop: 4 }}>
+                <div style={{ padding: '10px 12px', borderRadius: 14, background: 'rgba(255,255,255,.05)' }}><p style={{ margin: 0, fontSize: 13, color: DC.faint }}>Quand</p><p style={{ margin: '2px 0 0', fontSize: 15, fontWeight: 700 }}>{whenLabel(p.startAt)}</p></div>
+                <div style={{ padding: '10px 12px', borderRadius: 14, background: 'rgba(255,255,255,.05)' }}><p style={{ margin: 0, fontSize: 13, color: DC.faint }}>Animé par</p><p style={{ margin: '2px 0 0', fontSize: 15, fontWeight: 700 }}>{p.host.name}</p></div>
+              </div>
+              <p style={{ margin: '2px 0 0', fontSize: 13, color: DC.muted }}>
+                {p.registeredCount > 0 ? `${p.registeredCount} inscrit${p.registeredCount > 1 ? 's' : ''} · ` : ''}{p.access === 'paid' ? `${p.price} étincelle${p.price > 1 ? 's' : ''}` : p.access === 'channel' ? `Membres de « ${p.channelName} »` : 'Gratuit'}
+              </p>
+            </section>
+            {p.status !== 'ended' ? (
+              <>
+                <button type="button" onClick={() => go(false)} className="drl-btn" style={{ minHeight: 52, borderRadius: 999, border: 0, background: palette.primary, color: DC.ink, fontFamily: 'inherit', fontSize: 16, fontWeight: 800, cursor: 'pointer' }}>{p.status === 'live' ? 'Rejoindre le Pénc' : 'Me rappeler'}</button>
+                <button type="button" onClick={() => go(true)} className="drl-btn" style={{ minHeight: 48, borderRadius: 999, border: '1px solid rgba(201,184,228,.5)', background: 'transparent', color: '#E6DCF4', fontFamily: 'inherit', fontSize: 15, fontWeight: 700, cursor: 'pointer' }}>Laisser une question avant</button>
+                <p style={{ margin: 0, textAlign: 'center', fontSize: 13, lineHeight: 1.5, color: DC.faint }}>Pas encore de compte ? Tu le crées en 30 secondes, avec juste un pseudo si tu préfères. Dans le Pénc, tu peux rester anonyme.</p>
+              </>
+            ) : <Link to="/" className="drl-btn" style={{ minHeight: 52, borderRadius: 999, background: palette.primary, color: DC.ink, fontSize: 16, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', textDecoration: 'none' }}>Découvrir Health-e</Link>}
+          </>
+        )}
+      </div>
+    </div>
   );
 };
 
@@ -300,8 +373,9 @@ const PencPage: React.FC = () => {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
   const { authReady, isAuthenticated } = useAuth();
-  useEffect(() => { if (authReady && !isAuthenticated) navigate(`/patient/access?returnTo=${encodeURIComponent(id ? `/penc/${id}` : '/penc')}`, { replace: true }); }, [authReady, isAuthenticated, navigate, id]);
-  if (!authReady || !isAuthenticated) return null;
+  useEffect(() => { if (authReady && !isAuthenticated && !id) navigate(`/patient/access?returnTo=${encodeURIComponent('/penc')}`, { replace: true }); }, [authReady, isAuthenticated, navigate, id]);
+  if (!authReady) return null;
+  if (!isAuthenticated) return id ? <PublicPenc id={id} /> : null;
   return (
     <DrLoShell back={id ? { to: '/penc', label: 'Pénc mi' } : { to: '/', label: 'Accueil' }} palette={palette}>
       {id ? <Detail id={id} /> : <div style={{ marginTop: 16 }}><Agenda /></div>}

@@ -24,7 +24,7 @@ async function sendToUser(uid, msg, opts = {}) {
     await db.collection('notifications').add({
       userId: uid,
       type: `drlo_${msg.kind}`,
-      title: msg.inboxTitle || msg.title || 'Dr Lô',
+      title: msg.inboxTitle || msg.title || 'Health-e',
       content: msg.inboxBody || msg.body,
       link: msg.link || '/',
       sourceType: 'drlo',
@@ -39,7 +39,7 @@ async function sendToUser(uid, msg, opts = {}) {
   try {
     const res = await admin.messaging().sendEachForMulticast({
       tokens,
-      notification: { title: msg.title || 'Dr Lô', body: msg.body },
+      notification: { title: msg.title || 'Health-e', body: msg.body },
       data: { link: msg.link || '/', kind: msg.kind },
       webpush: {
         notification: { icon: '/icons/drlo-notif.png', badge: '/icons/badge-96.png', tag: `drlo-${msg.kind}` },

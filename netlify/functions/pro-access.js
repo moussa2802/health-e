@@ -51,7 +51,7 @@ exports.handler = async (event) => {
       if (r.owner || r.pro) return reply(409, { error: 'Tu as déjà accès à l\'Espace pro.' });
       const old = await appRef.get();
       if (old.exists && old.data().status === 'pending') return reply(409, { error: 'Ta demande est déjà en cours d\'examen.' });
-      if (old.exists && old.data().status === 'suspended') return reply(403, { error: 'Ton accès pro est suspendu. Écris à Dr Lô.' });
+      if (old.exists && old.data().status === 'suspended') return reply(403, { error: 'Ton accès pro est suspendu. Écris à l\'équipe Health-e.' });
       const v = R.cleanApplication(body);
       if (v.error) return reply(400, { error: v.error });
       await appRef.set({ uid, ...v.data, email: user.email || '', status: 'pending', rejectReason: '', createdAt: now(), updatedAt: now() });

@@ -24,7 +24,7 @@ const ProProfile: React.FC<{ palette: MomentPalette }> = ({ palette }) => {
   };
   return (
     <section aria-label="Mon profil" style={{ ...card, marginTop: 14, display: 'flex', flexDirection: 'column', gap: 12 }}>
-      <p style={{ margin: 0, fontSize: 15, color: DC.text }}><b>{p.fullName}</b> <span style={{ color: DC.faint, fontSize: 13 }}>(pour changer ton nom, écris à Dr Lô)</span></p>
+      <p style={{ margin: 0, fontSize: 15, color: DC.text }}><b>{p.fullName}</b> <span style={{ color: DC.faint, fontSize: 13 }}>(pour changer ton nom, écris à l'équipe Health-e)</span></p>
       <label style={lab}>Titre affiché sur tes chaînes<input value={p.title} maxLength={60} onChange={e => set('title', e.target.value)} className="drl-input" style={field} /></label>
       <label style={lab}>Ville<input value={p.city} maxLength={40} onChange={e => set('city', e.target.value)} className="drl-input" style={field} /></label>
       <label style={lab}>Présentation<textarea value={p.bio} maxLength={600} rows={4} onChange={e => set('bio', e.target.value)} className="drl-input" style={{ ...field, resize: 'vertical' }} /></label>

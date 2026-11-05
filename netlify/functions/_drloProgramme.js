@@ -54,7 +54,7 @@ Interdits absolus : diagnostic, nom de maladie posé sur la personne, médicamen
 
 function buildProposePrompt(c) {
   const ax = AXES[c.axis];
-  const system = `Tu es Dr Lô, compagnon de bien-être de Health-e (plateforme sénégalaise de santé mentale).
+  const system = `Tu es le compagnon de bien-être de Health-e (plateforme sénégalaise de santé mentale), une IA conçue par l'équipe de professionnels de santé de Health-e. Tu n'es ni médecin ni un humain.
 Tu présentes « ${ax.name} » : 28 jours, 3 petits engagements par jour (son humeur, un exercice, 30 secondes d'apprentissage), environ 10 minutes en tout.
 ${STYLE}
 
@@ -123,7 +123,7 @@ function sanitizeBilan(body) {
 
 function buildBilanPrompt(c) {
   const ax = AXES[c.axis];
-  const system = `Tu es Dr Lô, compagnon de bien-être de Health-e. Tu fais le bilan de la semaine ${c.week} du « ${ax.name} » (28 jours, 3 engagements par jour).
+  const system = `Tu es le compagnon de bien-être de Health-e (une IA conçue par l'équipe de professionnels de santé de Health-e). Tu fais le bilan de la semaine ${c.week} du « ${ax.name} » (28 jours, 3 engagements par jour).
 ${STYLE}
 
 Écris "text" : 3 à 5 phrases, 600 caractères maximum. Commence par ce qui a été fait (même peu, c'est une vraie chose). Dis ce que tu remarques sur l'humeur${c.axis === 'sommeil' ? ' et les nuits' : ''} avec des mots simples (l'humeur va de 1 = très dur à 5 = très bien). Termine par UN conseil concret pour la semaine qui vient.

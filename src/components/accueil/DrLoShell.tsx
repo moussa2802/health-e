@@ -9,6 +9,7 @@ import { ArrowLeft, EyeOff, Lock } from 'lucide-react';
 import './accueil.css';
 import { getMoment, PALETTES, type MomentPalette } from '../../utils/drloMoment';
 import { COLOR, RADIUS } from '../../design/charte';
+import HealthLogo from '../brand/HealthLogo';
 
 /** Couleurs du thème sombre — tirées de la charte (src/design/charte.ts), source unique. */
 export const DC = {
@@ -47,9 +48,12 @@ const DrLoShell: React.FC<{
               style={{ width: 44, height: 44, borderRadius: 13, border: `1px solid ${DC.line}`, background: DC.glass, display: 'flex', alignItems: 'center', justifyContent: 'center', color: DC.muted }}>
               <ArrowLeft size={20} aria-hidden="true" />
             </Link>
-          ) : <span aria-hidden="true" style={{ width: 44, height: 44 }} />}
-          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 7, fontSize: 13, fontWeight: 600, color: DC.muted }}>
-            <Lock size={14} aria-hidden="true" /> Visible par toi {seul}
+          ) : null}
+          <Link to="/" aria-label="Health-e, accueil" style={{ display: 'inline-flex', alignItems: 'center', minHeight: 44, marginRight: 'auto', marginLeft: back ? 4 : 0 }}>
+            <HealthLogo height={20} />
+          </Link>
+          <span title={`Visible par toi ${seul}`} style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 13, fontWeight: 600, color: DC.muted }}>
+            <Lock size={13} aria-hidden="true" /> Privé<span style={{ position: 'absolute', width: 1, height: 1, overflow: 'hidden', clip: 'rect(0 0 0 0)' }}> : visible par toi {seul}</span>
           </span>
           <button onClick={() => setVeiled(true)} aria-label="Masquer l'écran" className="drl-btn"
             style={{ width: 44, height: 44, borderRadius: 13, border: `1px solid ${DC.line}`, background: DC.glass, display: 'flex', alignItems: 'center', justifyContent: 'center', color: DC.muted, cursor: 'pointer' }}>

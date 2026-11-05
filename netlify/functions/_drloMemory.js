@@ -7,7 +7,7 @@ const MAX_NOTES = 30;
 const CATS = ['vie', 'proches', 'pese', 'aide', 'envies', 'parler', 'suivre'];
 
 function buildMemoryPrompt() {
-  return `Tu tiens le carnet du compagnon de Health-e (le compagnon de bien-être de Dr Lô). À partir des notes actuelles et des derniers échanges, renvoie le carnet À JOUR : ce que le compagnon doit savoir de cette personne pour la connaître de mieux en mieux, comme un ami attentif qui se souvient.
+  return `Tu tiens le carnet du compagnon de Health-e (le compagnon de bien-être de Health-e). À partir des notes actuelles et des derniers échanges, renvoie le carnet À JOUR : ce que le compagnon doit savoir de cette personne pour la connaître de mieux en mieux, comme un ami attentif qui se souvient.
 
 Thèmes (champ "c") :
 - vie : sa situation durable (travail, études, ville, couple, famille, rythme de vie)

@@ -75,9 +75,9 @@ function resolveIdentity(mode, { prenom, pseudo } = {}) {
 /** Message privé envoyé à la personne dont le commentaire montre une détresse (jamais publié). */
 const CRISIS_NOTIF = {
   kind: 'broadcast',
-  title: 'Dr Lô',
-  body: 'Dr Lô pense à toi. Ouvre ce message quand tu veux.',
-  inboxTitle: 'Dr Lô pense à toi',
+  title: 'Health-e',
+  body: 'On pense à toi. Ouvre ce message quand tu veux.',
+  inboxTitle: 'On pense à toi',
   inboxBody: 'Ce que tu as écrit compte. Si tu penses à te faire du mal ou si tu es en danger maintenant, appelle le SAMU au 1515 ou le CHU de Fann au +221 33 869 18 20. Parle à une vraie personne, tout de suite.',
   link: '/',
 };

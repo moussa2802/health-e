@@ -2,8 +2,8 @@
  * penc — « Pénc mi » : le programme des discussions en direct (étape 2 : programme, inscription, rappels ; la salle audio vient ensuite).
  * POST { action, ... } avec le jeton Firebase.
  *
- * Espace pro (Dr Lô : tous les Pénc ; un pro vérifié : les siens) :
- *   manage_list                      → mes Pénc (tous pour Dr Lô), avec le nombre d'inscrits
+ * Espace pro (l'équipe : tous les Pénc ; un pro vérifié : les siens) :
+ *   manage_list                      → mes Pénc (tous pour l'équipe), avec le nombre d'inscrits
  *   save   { id?, title, description?, startAt, durationMin, access, channelId?, price?, testScaleId? }
  *   start  { id }                    → « en direct » (les inscrits sont prévenus)
  *   end    { id, summary?[3] }       → terminé, avec les idées à retenir
@@ -26,7 +26,8 @@ const reply = (statusCode, body) => ({ statusCode, headers, body: JSON.stringify
 const inc = (n) => admin.firestore.FieldValue.increment(n);
 const regId = (pid, uid) => `${pid}_${uid}`;
 
-const host = (p) => ({ name: p.hostName || 'Dr Lô', title: p.hostTitle || '', pro: !!p.hostPro });
+const { hostLabel } = require('./_pencLive');
+const host = (p) => ({ ...hostLabel(p), pro: !!p.hostPro });
 const base = (id, p) => ({
   id, title: p.title, description: p.description || '', startAt: Number(p.startAt), durationMin: Number(p.durationMin) || 60,
   access: p.access || 'all', channelId: p.channelId || null, channelName: p.channelName || null, price: Number(p.price) || 0,

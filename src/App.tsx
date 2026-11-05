@@ -156,6 +156,7 @@ const AppChrome: React.FC = () => {
             <Route path="/espace-pro/rejoindre" element={<ProApplyPage />} />
             <Route path="/penc" element={<PencPage />} />
             <Route path="/penc/:id" element={<PencPage />} />
+            <Route path="/p/:id" element={<PencPage />} />
             <Route path="/espace/resultat/:scaleId" element={<ResultatPage />} />
             <Route path="/espace/:domaine" element={<DomainePage />} />
             <Route path="/humeur" element={<HumeurPage />} />

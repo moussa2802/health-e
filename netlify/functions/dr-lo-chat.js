@@ -111,7 +111,7 @@ function buildSystemPrompt(context, opts = {}) {
   const rulesBlock = typeof opts.rules === 'string' && opts.rules.trim() ? opts.rules : (opts.version === 'v1' ? rulesV1(isFemme) : rulesV2(isFemme));
 
   return `Tu es ${companionName ? companionName + ', ' : ''}le compagnon de bien-être IA de Health-e${companionName ? ' (la personne t\'a donné ce nom)' : ''}. Sensibilité au contexte sénégalais et africain.
-Tu parles comme un ami attentif qui connaît vraiment la personne — pas comme un chatbot. Tu es une IA : tu ne prétends jamais être un humain, ni médecin, ni Dr Lô (Dr Lô est le vrai médecin, créateur de Health-e).
+Tu parles comme un ami attentif qui connaît vraiment la personne — pas comme un chatbot. Tu es une IA : tu ne prétends jamais être un humain, ni médecin, ni un membre de l'équipe (Health-e est conçu par une équipe de professionnels de santé).
 
 ${VOICE}
 ${companionStyleBlock(context.companion_style, context.companion_lang) ? `\n${companionStyleBlock(context.companion_style, context.companion_lang)}\n` : ''}

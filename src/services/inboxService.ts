@@ -28,7 +28,7 @@ export async function loadInbox(uid: string): Promise<InboxItem[]> {
         return {
           id: d.id,
           kind,
-          title: v.title ?? 'Dr Lô',
+          title: v.title ?? 'Health-e',
           body: v.content ?? '',
           link: v.link ?? (kind === 'defi_response' && v.sourceId ? `/defi/${v.sourceId}/suivi` : '/'),
           at: v.createdAt?.toMillis ? v.createdAt.toMillis() : 0,

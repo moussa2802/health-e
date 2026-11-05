@@ -17,6 +17,6 @@ exports.handler = async (event) => {
   if (event.httpMethod !== 'POST') return { statusCode: 405, headers, body: '{}' };
   const user = await verifyAuth(event);
   if (!user) return { statusCode: 401, headers, body: JSON.stringify({ error: 'Non authentifié' }) };
-  const out = await sendToUser(user.uid, { kind: 'test', title: 'Dr Lô', body: 'C\'est bon, tes rappels marchent. À bientôt !', link: '/' }, { noInbox: true });
+  const out = await sendToUser(user.uid, { kind: 'test', title: 'Health-e', body: 'C\'est bon, tes rappels marchent. À bientôt !', link: '/' }, { noInbox: true });
   return { statusCode: 200, headers, body: JSON.stringify({ sent: out.sent }) };
 };

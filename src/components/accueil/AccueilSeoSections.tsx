@@ -17,7 +17,7 @@ const STEPS = [
 
 const FAQ = [
   { q: 'Health-e, c\'est gratuit ?', a: 'Oui pour commencer : la conversation avec ton compagnon est gratuite et tu peux faire 3 tests sans créer de compte. Certaines fonctions avancées utilisent des étincelles, les crédits du site.' },
-  { q: 'Qui est derrière Health-e ?', a: 'Health-e a été créé par Dr Lô, un médecin sénégalais. Ton compagnon est une intelligence artificielle de bien-être : il n\'est pas médecin, ne pose pas de diagnostic et ne remplace pas une consultation : il t\'aide à mieux te comprendre et t\'oriente vers un professionnel quand c\'est nécessaire.' },
+  { q: 'Qui est derrière Health-e ?', a: 'Health-e est conçu par une équipe de professionnels de santé, pour le Sénégal et l\'Afrique francophone. Ton compagnon est une intelligence artificielle de bien-être : il n\'est pas médecin, ne pose pas de diagnostic et ne remplace pas une consultation : il t\'aide à mieux te comprendre et t\'oriente vers un professionnel quand c\'est nécessaire.' },
   { q: 'Mes réponses sont-elles confidentielles ?', a: 'Sans compte, tes réponses restent dans ton navigateur. Avec un compte, elles sont enregistrées dans ton profil pour que tu les retrouves sur tous tes appareils.' },
   { q: 'Les tests sont-ils fiables ?', a: 'Ils s\'appuient sur des échelles utilisées en psychologie (anxiété, humeur, personnalité, attachement…), reformulées pour notre contexte. Ce sont des repères pour mieux te connaître, pas des diagnostics.' },
   { q: 'À qui s\'adresse Health-e ?', a: 'Aux adultes (18 ans et plus) qui veulent comprendre leurs émotions, leur personnalité, leur couple ou leur vie intime, au Sénégal et dans toute l\'Afrique francophone.' },

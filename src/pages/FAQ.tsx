@@ -11,10 +11,10 @@ import { COLOR, RADIUS } from '../design/charte';
 type QA = { q: string; a: React.ReactNode };
 const GROUPS: { title: string; items: QA[] }[] = [
   {
-    title: 'Health-e et Dr Lô',
+    title: 'Health-e et l\'équipe',
     items: [
       { q: "C'est quoi, Health-e ?", a: <>Un espace pour mieux te comprendre : des tests de psychologie et de vie intime, un journal, ton humeur au fil des jours, et un compagnon IA pour t'accompagner. C'est pensé pour le Sénégal et l'Afrique francophone.</> },
-      { q: 'Dr Lô, c\'est une vraie personne ?', a: <>Dr Lô est un vrai médecin : il publie dans les chaînes et répond lui-même aux questions qu'on lui écrit. Sa photo n'apparaît que sur ce qui vient vraiment de lui. Dans la conversation, tu parles à ton <b>compagnon</b>, une intelligence artificielle que tu peux nommer : il connaît tes résultats et t'aide à les comprendre.</> },
+      { q: 'Qui est derrière Health-e ?', a: <>Une équipe de professionnels de santé. Quand un professionnel publie lui-même (une chaîne, un message, une réponse à ta question, un Pénc), son nom et sa photo l'accompagnent ; partout ailleurs, c'est l'équipe Health-e. Dans la conversation, tu parles à ton <b>compagnon</b>, une intelligence artificielle que tu peux nommer : il connaît tes résultats et t'aide à les comprendre.</> },
       { q: 'Est-ce que ça remplace un médecin ou un psy ?', a: <>Non. Les tests et le compagnon IA t'aident à mettre des mots sur ce que tu vis, ils ne posent pas de diagnostic. Quand un résultat le demande, le compagnon t'oriente vers un professionnel.</> },
       { q: "Et si ça va vraiment mal, maintenant ?", a: <>Appelle le <b>1515</b> (SAMU), à toute heure. Health-e n'est pas un service d'urgence : personne ne surveille les messages en direct.</> },
     ],

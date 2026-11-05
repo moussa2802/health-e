@@ -107,6 +107,10 @@
   path = "/c/*"
   function = "og-chaine"
 
+[[edge_functions]]
+  path = "/p/*"
+  function = "og-penc"
+
 # Functions configuration
 [functions]
   directory = "netlify/functions"

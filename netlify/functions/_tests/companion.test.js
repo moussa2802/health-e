@@ -22,7 +22,7 @@ test('le prompt présente un compagnon IA, jamais Dr Lô ni un médecin', () => 
   const p = buildSystemPrompt({ prenom: 'Awa', companion: 'Kora' }, { message: 'bonjour' });
   assert.match(p, /Tu es Kora, le compagnon de bien-être IA/);
   assert.doesNotMatch(p, /Tu es Dr Lô/);
-  assert.match(p, /ni médecin, ni Dr Lô/);
+  assert.match(p, /ni médecin, ni un membre de l'équipe/);
   const q = buildSystemPrompt({ prenom: 'Awa', companion: 'Docteur' }, { message: 'bonjour' });
   assert.match(q, /Tu es le compagnon de bien-être IA/);
   assert.doesNotMatch(q, /Docteur/);

@@ -44,5 +44,5 @@ export async function claimReferralRewardOnce(): Promise<number> {
 
 /** Le message prêt à envoyer sur WhatsApp. */
 export function inviteMessage(link: string): string {
-  return `Je fais les tests de Health-e (Dr Lô) : anxiété, couple, personnalité… et à la fin tu découvres ton animal intérieur. C'est privé et en wolof-français. Essaie avec mon lien, on reçoit chacun des étincelles : ${link}`;
+  return `Je fais les tests de Health-e : anxiété, couple, personnalité… et à la fin tu découvres ton animal intérieur. C'est privé et en wolof-français. Essaie avec mon lien, on reçoit chacun des étincelles : ${link}`;
 }

@@ -79,7 +79,7 @@ test('détresse : jamais publié, message privé, signal sans identité pour Dr 
   uid = 'm2';
   const r = await call({ action: 'comment_add', postId: 'p1', text: 'je veux me suicider', mode: 'prenom' });
   assert.equal(r.status, 200); assert.equal(r.body.published, false); assert.equal(r.body.support, true);
-  assert.deepEqual(pushes, [['m2', 'Dr Lô pense à toi']]);
+  assert.deepEqual(pushes, [['m2', 'On pense à toi']]);
   assert.equal(store.channelPosts.p1.stats.comments, 3); // rien publié
   uid = 'm1';
   const l = await call({ action: 'comments', postId: 'p1' });

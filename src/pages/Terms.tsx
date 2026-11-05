@@ -20,7 +20,7 @@ const Terms: React.FC = () => (
 
     <InfoSection title="Ce que Health-e n'est pas">
       <InfoList items={[
-        <><B>Pas une consultation médicale.</B> Les tests et les réponses du compagnon IA ou de Dr Lô donnent des repères et des conseils de bien-être. Ils ne posent pas de diagnostic et ne prescrivent pas de traitement.</>,
+        <><B>Pas une consultation médicale.</B> Les tests et les réponses du compagnon IA ou des professionnels de l'équipe donnent des repères et des conseils de bien-être. Ils ne posent pas de diagnostic et ne prescrivent pas de traitement.</>,
         <><B>Pas un service d'urgence.</B> Personne ne surveille les messages en direct. En cas de danger, appelle le 1515 (SAMU).</>,
         <><B>Pas infaillible.</B> le compagnon IA peut se tromper. Pour une décision de santé, parle à un professionnel.</>,
       ]} />

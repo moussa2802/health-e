@@ -273,7 +273,7 @@ exports.handler = async (event) => {
       const pData = pSnap.exists ? pSnap.data() : {};
       const last = pData.lastDefiPushAt && pData.lastDefiPushAt.toMillis ? pData.lastDefiPushAt.toMillis() : 0;
       if (Date.now() - last > 2 * 3600 * 1000) {
-        const out = await sendToUser(creatorUid, { kind: 'defi_response', title: 'Dr Lô', body: 'Un proche vient de jouer à ton défi. Viens voir son score.', link: `/defi/${slug}/suivi` }, { noInbox: true, patient: pData });
+        const out = await sendToUser(creatorUid, { kind: 'defi_response', title: 'Health-e', body: 'Un proche vient de jouer à ton défi. Viens voir son score.', link: `/defi/${slug}/suivi` }, { noInbox: true, patient: pData });
         if (out.sent) await pRef.set({ lastDefiPushAt: admin.firestore.FieldValue.serverTimestamp() }, { merge: true });
       }
     } catch (notifErr) {

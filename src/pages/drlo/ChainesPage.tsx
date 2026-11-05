@@ -110,12 +110,12 @@ const List: React.FC<{ palette: ReturnType<typeof usePalette> }> = ({ palette })
   );
   return (
     <>
-      <p style={{ margin: '18px 0 0', fontSize: 13, letterSpacing: '.14em', textTransform: 'uppercase', color: palette.accent, fontWeight: 700 }}>Dr Lô</p>
+      <p style={{ margin: '18px 0 0', fontSize: 13, letterSpacing: '.14em', textTransform: 'uppercase', color: palette.accent, fontWeight: 700 }}>Health-e</p>
       <h1 style={h1}>Les chaînes</h1>
-      <p style={{ margin: '8px 0 0', fontSize: 15, color: DC.muted, lineHeight: 1.55 }}>Des espaces thématiques où Dr Lô publie des vocaux et des textes dans la durée. Tu entres une fois, tu restes aussi longtemps que tu veux.</p>
+      <p style={{ margin: '8px 0 0', fontSize: 15, color: DC.muted, lineHeight: 1.55 }}>Des espaces thématiques où les professionnels de l'équipe publient des vocaux et des textes dans la durée. Tu entres une fois, tu restes aussi longtemps que tu veux.</p>
       {error && <p role="alert" style={{ marginTop: 16, color: '#F09A7A', fontSize: 14 }}>{error}</p>}
       {!items && !error && <LoadingCards label="Chargement des chaînes…" />}
-      {items && items.length === 0 && <p style={{ marginTop: 16, color: DC.muted, fontSize: 15 }}>Pas encore de chaîne. Dr Lô en ouvrira bientôt.</p>}
+      {items && items.length === 0 && <p style={{ marginTop: 16, color: DC.muted, fontSize: 15 }}>Pas encore de chaîne. L'équipe en ouvrira bientôt.</p>}
       {items && items.length > 0 && (
         <div style={{ marginTop: 16 }}>
           <div style={{ position: 'relative' }}>
@@ -224,7 +224,7 @@ const Detail: React.FC<{ id: string; palette: ReturnType<typeof usePalette> }> =
           {c.host && (
             <p style={{ margin: '6px 0 0', fontSize: 14, color: DC.soft, display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
               Animée par <b style={{ color: DC.text }}>{c.host.name}</b>{c.host.title ? ` · ${c.host.title}` : ''}
-              {c.host.pro && <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 13, fontWeight: 700, color: DC.sage }}><BadgeCheck size={14} aria-hidden="true" />vérifié par Dr Lô</span>}
+              {c.host.pro && <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 13, fontWeight: 700, color: DC.sage }}><BadgeCheck size={14} aria-hidden="true" />vérifié par l'équipe</span>}
             </p>
           )}
           <p style={{ margin: '8px 0 10px', fontSize: 15, color: DC.soft, lineHeight: 1.5 }}>{c.description}</p>

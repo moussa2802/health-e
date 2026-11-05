@@ -61,7 +61,7 @@ export const PencLiveCard: React.FC<{ p: Penc; palette: MomentPalette }> = ({ p,
       <span style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
         <HostAvatar host={p.host} size={42} palette={palette} live />
         <span style={{ flex: 1, minWidth: 0, lineHeight: 1.3 }}>
-          <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 15, fontWeight: 700, color: DC.text }}>{p.host.name}{p.host.pro && <BadgeCheck size={15} color={DC.sage} aria-label="vérifié par Dr Lô" />}</span>
+          <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 15, fontWeight: 700, color: DC.text }}>{p.host.name}{p.host.pro && <BadgeCheck size={15} color={DC.sage} aria-label="vérifié par l'équipe Health-e" />}</span>
           <span style={{ display: 'block', fontSize: 13, color: DC.muted }}>{who ?? (p.host.title || 'Anime le Pénc')}</span>
         </span>
       </span>

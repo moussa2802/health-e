@@ -98,7 +98,7 @@ function decideDaily(p, ctx) {
     if (left > 0 && allowed(prefs, 'programme', now)) {
       return {
         kind: 'programme',
-        title: 'Dr Lô',
+        title: 'Health-e',
         body: left === 1
           ? 'Un petit engagement t\'attend aujourd\'hui. Quelques minutes, et ta journée est validée.'
           : `${left} petits engagements t'attendent aujourd'hui. Quelques minutes, et ta journée est validée.`,
@@ -108,7 +108,7 @@ function decideDaily(p, ctx) {
     const w = Math.min(4, Math.floor(Math.min(28, dayN) / 7));
     const bilanDone = (prog.bilans || []).some((b) => b.week === w);
     if (w >= 1 && dayN % 7 === 0 && !bilanDone && allowed(prefs, 'bilan', now)) {
-      return { kind: 'bilan', title: 'Dr Lô', body: 'Ton bilan de la semaine est prêt. Ouvre-le quand tu veux.', link: '/?ouvrir=programme' };
+      return { kind: 'bilan', title: 'Health-e', body: 'Ton bilan de la semaine est prêt. Ouvre-le quand tu veux.', link: '/?ouvrir=programme' };
     }
   }
 
@@ -117,7 +117,7 @@ function decideDaily(p, ctx) {
   if (due > 0 && allowed(prefs, 'routine', now)) {
     return {
       kind: 'routine',
-      title: 'Dr Lô',
+      title: 'Health-e',
       body: due === 1 ? 'Ton exercice du jour t\'attend. Quelques minutes, et c\'est fait.' : 'Tes exercices du jour t\'attendent. Quelques minutes, et c\'est fait.',
       link: '/routine',
     };
@@ -127,7 +127,7 @@ function decideDaily(p, ctx) {
   if (defi && defi.since) {
     const age = daysBetween(String(defi.since).slice(0, 10), today);
     if (age === 3 && allowed(prefs, 'totem', now)) {
-      return { kind: 'totem', title: 'Dr Lô', body: 'Ton défi de la semaine, tu en es où ? Encore quelques jours pour le relever.', link: '/assessment/totem' };
+      return { kind: 'totem', title: 'Health-e', body: 'Ton défi de la semaine, tu en es où ? Encore quelques jours pour le relever.', link: '/assessment/totem' };
     }
   }
 
@@ -136,7 +136,7 @@ function decideDaily(p, ctx) {
     const nudged = ms(p.lastNudgeAt);
     const t = now.getTime();
     if (seen && t - seen > 4 * 864e5 && (!nudged || t - nudged > 7 * 864e5)) {
-      return { kind: 'nudge', title: 'Dr Lô', body: 'Ça fait quelques jours. Comment tu vas ? Je suis là si tu veux en parler.', link: '/' };
+      return { kind: 'nudge', title: 'Health-e', body: 'Ça fait quelques jours. Comment tu vas ? Je suis là si tu veux en parler.', link: '/' };
     }
   }
   return null;
