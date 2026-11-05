@@ -30,7 +30,12 @@ function buildSystemPrompt(context, opts = {}) {
   const prenomLabel = context.prenom || 'cette personne';
   const companionName = sanitizeCompanionName(context.companion);
   const isFemme = context.genre === 'Femme' || context.genre === 'femme';
-  const memSection = formatMemory(filterNotes(Array.isArray(context.memoire) ? context.memoire : [], message).slice(0, 30))
+  // Le tiroir intime : passé au compagnon quand le message touche un sujet proche (sexualité, couple, stress, fatigue, sommeil, moral, confiance)
+  const allNotes = Array.isArray(context.memoire) ? context.memoire : [];
+  const isIntime = (n) => n && typeof n === 'object' && n.cat === 'intime';
+  const INTIME_TOPIC = /sex|érect|erect|bander|désir|desir|libido|plaisir|intim|couple|copine|copain|femme|mari|épou|epou|stress|fatigu|sommeil|dormir|moral|confiance|anxi|angoiss|travail|pression|mariage|jabar|jëkkër|sonn/i;
+  const intimeNotes = INTIME_TOPIC.test(message) ? allNotes.filter(isIntime) : [];
+  const memSection = formatMemory([...filterNotes(allNotes.filter((n) => !isIntime(n)), message), ...intimeNotes].slice(0, 34))
     || 'Rien encore : c\'est peut-être votre première vraie discussion. Intéresse-toi à elle (une question à la fois), sans interrogatoire.';
   const testsDispo = (Array.isArray(context.tests_dispo) ? context.tests_dispo : [])
     .filter(t => t && /^[a-z0-9_]{2,40}$/i.test(String(t.id)))
@@ -38,12 +43,22 @@ function buildSystemPrompt(context, opts = {}) {
     .map(t => `${t.id} = ${String(t.label || '').slice(0, 50)}`)
     .join(' ; ');
 
+  // Quand le test a été fait (pour ne pas reproposer un test fait hier) et son identifiant (pour les balises)
+  const ago = (v) => {
+    const c = v && v.completedAt;
+    const t = !c ? 0 : typeof c === 'string' ? Date.parse(c) : typeof c === 'number' ? c : c.seconds ? c.seconds * 1000 : c._seconds ? c._seconds * 1000 : 0;
+    if (!t) return '';
+    const d = Math.floor((Date.now() - t) / 86400000);
+    return d <= 0 ? ' · fait aujourd\'hui' : d === 1 ? ' · fait hier' : d < 60 ? ` · fait il y a ${d} jours` : ` · fait il y a ${Math.round(d / 30)} mois`;
+  };
+  const tag = (id, v) => `${v.scaleName} [${id}]`;
+
   // ── Évaluations psychologiques (compact: 1 ligne par test) ──
   const mentalSection = (() => {
     const entries = Object.entries(context.scores_mentaux || {});
     if (!entries.length) return 'Aucune évaluation complétée.';
-    return entries.map(([, v]) => {
-      let line = withNumbers ? `• ${v.scaleName} : ${v.label} (${v.score}/${v.scoreMax || '?'})` : `• ${v.scaleName} : ${v.label}`;
+    return entries.map(([id, v]) => {
+      let line = withNumbers ? `• ${tag(id, v)} : ${v.label} (${v.score}/${v.scoreMax || '?'})${ago(v)}` : `• ${tag(id, v)} : ${v.label}${ago(v)}`;
       if (withNumbers && v.subscaleScores && Object.keys(v.subscaleScores).length) {
         const subs = Object.entries(v.subscaleScores)
           .map(([k, s]) => `${k}:${typeof s === 'number' ? s.toFixed(1) : s}`)
@@ -58,8 +73,8 @@ function buildSystemPrompt(context, opts = {}) {
   const intimeSection = (() => {
     const entries = Object.entries(context.scores_intimes || {});
     if (!entries.length) return 'Aucune évaluation complétée.';
-    return entries.map(([, v]) => {
-      let line = withNumbers ? `• ${v.scaleName} : ${v.label} (${v.score}/${v.scoreMax || '?'})` : `• ${v.scaleName} : ${v.label}`;
+    return entries.map(([id, v]) => {
+      let line = withNumbers ? `• ${tag(id, v)} : ${v.label} (${v.score}/${v.scoreMax || '?'})${ago(v)}` : `• ${tag(id, v)} : ${v.label}${ago(v)}`;
       if (withNumbers && v.subscaleScores && Object.keys(v.subscaleScores).length) {
         const subs = Object.entries(v.subscaleScores)
           .map(([k, s]) => `${k}:${typeof s === 'number' ? s.toFixed(1) : s}`)
@@ -74,7 +89,7 @@ function buildSystemPrompt(context, opts = {}) {
   const bonusSection = (() => {
     const entries = Object.entries(context.tests_bonus || {});
     if (!entries.length) return 'Aucun test bonus complété.';
-    return entries.map(([, v]) => `• ${v.scaleName} : ${v.label}`).join('\n');
+    return entries.map(([id, v]) => `• ${tag(id, v)} : ${v.label}${ago(v)}`).join('\n');
   })();
 
   // ── Tests de compatibilité (compact) ──

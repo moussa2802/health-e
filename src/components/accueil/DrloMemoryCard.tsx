@@ -17,6 +17,8 @@ const DrloMemoryCard: React.FC<{ uid: string; palette: MomentPalette }> = ({ uid
   const [adding, setAdding] = useState(false);
   const [draft, setDraft] = useState('');
   const [confirmAll, setConfirmAll] = useState(false);
+  // L'intime reste voilé tant qu'on ne touche pas : quelqu'un peut regarder l'écran
+  const [intimeOpen, setIntimeOpen] = useState(false);
   const name = getCompanionName() || 'Ton compagnon';
   const hex = getCompanionColor().hex;
 
@@ -65,6 +67,15 @@ const DrloMemoryCard: React.FC<{ uid: string; palette: MomentPalette }> = ({ uid
           {MEMORY_CATS.map(c => {
             const list = notes.map((n, i) => ({ n, i })).filter(x => x.n.cat === c.id);
             if (!list.length) return null;
+            if (c.id === 'intime' && !intimeOpen) return (
+              <div key={c.id}>
+                <p style={{ margin: '0 0 4px', fontSize: 13, fontWeight: 700, letterSpacing: '.04em', textTransform: 'uppercase', color: hex }}>{c.label}</p>
+                <button type="button" onClick={() => setIntimeOpen(true)} className="drl-btn"
+                  style={{ width: '100%', minHeight: 44, borderRadius: 12, border: `1px dashed ${DC.line}`, background: 'rgba(255,255,255,.03)', color: DC.muted, fontFamily: 'inherit', fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>
+                  {list.length} note{list.length > 1 ? 's' : ''} · Touche pour afficher
+                </button>
+              </div>
+            );
             return (
               <div key={c.id}>
                 <p style={{ margin: '0 0 4px', fontSize: 13, fontWeight: 700, letterSpacing: '.04em', textTransform: 'uppercase', color: hex }}>{c.label}</p>

@@ -59,7 +59,8 @@ exports.handler = async (event) => {
     const notes = cleanNotes(raw, current);
     if (!notes) return reply(200, { ok: true, notes: null });
     await ref.set({ drloMemory: notes, drloMemoryAt: admin.firestore.FieldValue.serverTimestamp() }, { merge: true });
-    const added = newNotes(notes, current).slice(0, 2).map(n => n.text);
+    // L'intime n'est jamais affiché dans la discussion (« s'en souviendra ») : quelqu'un peut lire l'écran
+    const added = newNotes(notes, current).filter(n => n.cat !== 'intime').slice(0, 2).map(n => n.text);
     return reply(200, { ok: true, count: notes.length, max: MAX_NOTES, added });
   } catch (e) {
     console.error('drlo-memory', e && e.message);

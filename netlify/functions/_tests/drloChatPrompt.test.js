@@ -21,7 +21,7 @@ test('v2 : le principe « répondre d\'abord » et les fiches par type sont dans
 
 test('aucun chiffre de score tant que la personne n\'en demande pas', () => {
   const sans = build(ctx, { message: 'Est-ce que je suis anxieuse ?' });
-  assert.ok(sans.includes('Anxiété : légère'));
+  assert.ok(sans.includes('Anxiété [gad7] : légère'));
   assert.ok(!sans.includes('8/21'));
   const avec = build(ctx, { message: 'Quel est mon score d\'anxiété ?' });
   assert.ok(avec.includes('8/21'));

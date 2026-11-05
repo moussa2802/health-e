@@ -41,3 +41,9 @@ test('le carnet ne parle pas d\'une fonction fermée', () => {
   const out = LA.filterNotesByLaunch([{ text: 'A commencé un programme de 28 jours sur le sommeil' }, { text: 'Travaille dans la banque' }, 'Aime écrire dans son journal'], open);
   assert.deepEqual(out.map((n) => (typeof n === 'string' ? n : n.text)), ['Travaille dans la banque']);
 });
+
+test('vouloir un médecin n\'est pas une urgence', () => {
+  const t = LA.drloHuman(LA.openFeatures({ wave: 1 }, {}));
+  assert.match(t, /PAS une urgence/);
+  assert.doesNotMatch(t, /urgent ou dangereux, \[\[crise\]\]/);
+});

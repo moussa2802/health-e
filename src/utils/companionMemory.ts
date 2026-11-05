@@ -6,7 +6,7 @@
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { db } from './firebase';
 
-export type MemoryCat = 'vie' | 'proches' | 'pese' | 'aide' | 'envies' | 'parler' | 'suivre';
+export type MemoryCat = 'vie' | 'proches' | 'pese' | 'aide' | 'envies' | 'parler' | 'suivre' | 'intime';
 export interface MemoryNote { text: string; cat: MemoryCat; at?: string }
 
 export const MEMORY_MAX = 30;
@@ -18,6 +18,7 @@ export const MEMORY_CATS: { id: MemoryCat; label: string }[] = [
   { id: 'envies', label: 'Tes envies' },
   { id: 'parler', label: 'Comment te parler' },
   { id: 'suivre', label: 'Il te demandera des nouvelles' },
+  { id: 'intime', label: 'Ta vie intime' },
 ];
 const IDS = MEMORY_CATS.map(c => c.id) as string[];
 

@@ -25,3 +25,10 @@ test('le carnet range les notes par thème et dit ce qui est nouveau', () => {
   assert.equal(shouldRemember(4), false);
   assert.equal(shouldRemember(6), true);
 });
+
+test('le tiroir intime est gardé à part et jamais annoncé', () => {
+  const out = cleanNotes('[{"t":"Parle de difficultés d\'érection qu\'il relie au stress","c":"intime"},{"t":"Travaille de nuit","c":"vie"}]', []);
+  assert.deepEqual(out.map(n => n.cat), ['intime', 'vie']);
+  const { formatMemory } = require('../_drloMemory.js');
+  assert.match(formatMemory(out), /INTIME \(discret/);
+});

@@ -58,7 +58,7 @@ function drloHuman(open) {
   const c = 'publie dans les chaînes';
   if (open.question && open.chaines) return `${q} et ${c} : n'en parle que pour ces deux cas.`;
   if (open.question) return `${q} : n'en parle que pour ce cas.`;
-  const alt = 'Elle veut parler à un vrai professionnel : il n\'y a PAS encore de messagerie avec un médecin sur le site, ne la propose jamais. Encourage une consultation (médecin généraliste, psychologue ou psychiatre, sage-femme ou gynécologue selon le sujet) et, si c\'est urgent ou dangereux, [[crise]].';
+  const alt = 'Elle veut parler à un vrai professionnel : il n\'y a PAS encore de messagerie avec un médecin sur le site, ne la propose jamais. Encourage une consultation (médecin généraliste, psychologue ou psychiatre, sage-femme ou gynécologue selon le sujet), sans alarmer. Vouloir voir un médecin n\'est PAS une urgence : n\'utilise [[crise]] que si elle parle elle-même d\'idées de mort, de se faire du mal ou d\'un danger immédiat.';
   return open.chaines ? `Dr Lô, médecin de l'équipe, ${c} : n'en parle que pour ce cas. ${alt}` : alt;
 }
 
