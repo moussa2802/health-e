@@ -68,7 +68,7 @@ const ChannelChat: React.FC<{ channelId: string; palette: MomentPalette }> = ({ 
   if (items === null) return <LoadingCards label="Ouverture de la discussion…" count={1} />;
   const chip = (on: boolean): React.CSSProperties => ({ minHeight: 36, padding: '0 12px', borderRadius: 999, cursor: 'pointer', fontSize: 13, fontWeight: 600, border: `1px solid ${on ? palette.accent : DC.line}`, background: on ? 'rgba(242,182,109,.15)' : DC.glass, color: on ? palette.accent : DC.muted });
   const link: React.CSSProperties = { background: 'none', border: 0, color: DC.faint, fontSize: 13, cursor: 'pointer', minHeight: 32, padding: '0 6px' };
-  const asLabel = asDrLo ? 'responsable de la chaîne' : mode === 'anon' ? 'Anonyme' : mode === 'prenom' ? 'ton prénom' : (pseudo.trim() || 'un pseudo');
+  const asLabel = asDrLo ? 'responsable de la chaîne' : mode === 'anon' ? 'un nom au hasard' : mode === 'prenom' ? 'ton prénom' : (pseudo.trim() || 'un pseudo');
 
   return (
     <section aria-label="Discussion de la chaîne" style={{ marginTop: 14 }}>

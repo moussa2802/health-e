@@ -28,7 +28,7 @@ const PencRoom = lazy(() => import('../../components/penc/PencRoom'));
 
 const h1: React.CSSProperties = { margin: '6px 0 0', fontFamily: 'Fraunces, serif', fontSize: 30, lineHeight: 1.1, fontWeight: 600, color: DC.title };
 const kicker: React.CSSProperties = { margin: '22px 0 10px', fontSize: 13, letterSpacing: '.12em', fontWeight: 700, color: DC.muted };
-const RULES = 'Rien n\'est enregistré. Tu entres micro coupé, sous ton prénom, un pseudo ou en anonyme.';
+const RULES = 'Rien n\'est enregistré. Tu entres micro coupé, sous ton prénom, un pseudo ou en anonyme (avec un nom au hasard).';
 
 /** « Me rappeler » : inscription, puis proposition d'activer les notifications si elles sont coupées. */
 function useRemind(uid: string | null, onChanged: () => void) {
@@ -179,6 +179,7 @@ const EnterSheet: React.FC<{ accent: string; primary: string; busy: boolean; hos
           <div role="radiogroup" aria-label="Ton nom dans la salle" style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
             {([['prenom', 'Mon prénom'], ['anon', 'Anonyme'], ['pseudo', 'Un pseudo']] as const).map(([k, l]) => <button key={k} type="button" role="radio" aria-checked={idt.mode === k} onClick={() => setIdt({ ...idt, mode: k })} style={chip(idt.mode === k)}>{l}</button>)}
           </div>
+          {idt.mode === 'anon' && <p style={{ margin: 0, fontSize: 14, lineHeight: 1.5, color: DC.soft }}>Tu reçois un nom au hasard (comme « Baobab_Zen » ou « Awa_21 »). Personne ne peut savoir que c'est un nom inventé.</p>}
           {idt.mode === 'pseudo' && <input value={idt.pseudo} maxLength={20} onChange={e => setIdt({ ...idt, pseudo: e.target.value })} aria-label="Ton pseudo" placeholder="Ton pseudo" className="drl-input" style={{ minHeight: 46, boxSizing: 'border-box', borderRadius: 14, border: `1px solid ${DC.line}`, background: 'rgba(255,255,255,.06)', padding: '0 14px', fontFamily: 'inherit', fontSize: 16, color: DC.text }} />}
         </>
       )}

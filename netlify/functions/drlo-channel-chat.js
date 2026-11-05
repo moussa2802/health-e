@@ -53,7 +53,7 @@ exports.handler = async (event) => {
       const up = await db.collection('userProfiles').doc(uid).get().catch(() => null);
       const upd = up && up.exists ? up.data() : null;
       const prenom = (upd && upd.onboardingProfile && upd.onboardingProfile.prenom) || '';
-      const p = K.prepare(body.text, staff && body.asDrLo ? 'anon' : body.mode, { prenom, pseudo: body.pseudo });
+      const p = K.prepare(body.text, staff && body.asDrLo ? 'anon' : body.mode, { prenom, pseudo: body.pseudo, seed: staff && body.asDrLo ? null : `ch:${channelId}:${uid}` });
       if (p.error) return reply(400, { error: p.error });
       if (p.crisis) {
         await sendToUser(uid, C.CRISIS_NOTIF).catch(() => {});

@@ -12,10 +12,10 @@ const SLACK = 50; // on ne nettoie que par paquets (à KEEP + SLACK), pas à cha
 const SHOWN = 80; // derniers messages affichés
 
 /** { text, name, mode, crisis } | { error } */
-function prepare(rawText, mode, { prenom, pseudo } = {}) {
+function prepare(rawText, mode, { prenom, pseudo, seed } = {}) {
   const v = C.validateComment(rawText, MAX_CHAT);
   if (v.error) return { error: v.error };
-  const idt = C.resolveIdentity(mode, { prenom, pseudo });
+  const idt = C.resolveIdentity(mode, { prenom, pseudo, seed });
   if (idt.error) return { error: idt.error };
   const mod = C.moderate(v.text);
   if (!mod.ok && mod.reason === 'crisis') return { text: v.text, name: idt.name, mode: idt.mode, crisis: true };

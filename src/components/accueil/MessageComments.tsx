@@ -135,7 +135,7 @@ const MessageComments: React.FC<{ messageId: string; palette: MomentPalette }> =
           <p style={{ margin: '8px 4px 0', fontSize: 13, color: DC.faint, lineHeight: 1.5 }}>
             Tu apparais comme{' '}
             <button type="button" onClick={() => setIdtOpen(o => !o)} aria-expanded={idtOpen} style={{ background: 'none', border: 0, padding: 0, minHeight: 28, color: palette.accent, fontWeight: 700, fontSize: 13, cursor: 'pointer', textDecoration: 'underline' }}>
-              {mode === 'anon' ? 'Anonyme' : mode === 'prenom' ? 'ton prénom' : (pseudo.trim() || 'un pseudo')}
+              {mode === 'anon' ? 'un nom au hasard' : mode === 'prenom' ? 'ton prénom' : (pseudo.trim() || 'un pseudo')}
             </button>
           </p>
           {idtOpen && (

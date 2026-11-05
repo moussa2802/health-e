@@ -69,7 +69,7 @@ test('réservé aux membres ; prénom par défaut ; modération ; limite de 3 ; 
   assert.equal(store.channelComments[cid].postId, 'p1');
   assert.equal(store.channelPosts.p1.stats.comments, 1);
   r = await call({ action: 'comment_add', postId: 'p1', text: 'Un autre', mode: 'anon' });
-  assert.equal(store.channelComments[r.body.id].name, 'Anonyme');
+  { const n = store.channelComments[r.body.id].name; assert.notEqual(n, 'Anonyme'); assert.notEqual(n, 'Awa'); } // anonyme : un nom au hasard
   r = await call({ action: 'comment_add', postId: 'p1', text: 'Encore un', mode: 'pseudo', pseudo: 'Kaw' });
   assert.equal(store.channelComments[r.body.id].name, 'Kaw');
   assert.equal((await call({ action: 'comment_add', postId: 'p1', text: 'Un quatrième', mode: 'prenom' })).status, 400);
@@ -176,6 +176,6 @@ test('photo de profil : le totem révélé (même anonyme), jamais un totem non 
   r = await call({ action: 'comments', postId: 'p9' });
   const anon = r.body.items.find((c) => c.text === 'Je me reconnais là-dedans.');
   const other = r.body.items.find((c) => c.text === 'Moi aussi, merci.');
-  assert.equal(anon.totem, 'cerf'); assert.equal(anon.name, 'Anonyme');
+  assert.equal(anon.totem, 'cerf'); assert.notEqual(anon.name, 'Anonyme');
   assert.equal(other.totem, null);
 });

@@ -147,7 +147,7 @@ export const QuestionsSheet: React.FC<{ pencId: string; questions: PencQuestion[
             </div>
             {idt.mode === 'pseudo' && <input value={idt.pseudo} maxLength={20} onChange={e => setIdt({ ...idt, pseudo: e.target.value })} aria-label="Ton pseudo" placeholder="Ton pseudo" className="drl-input"
               style={{ marginTop: 8, width: '100%', minHeight: 46, boxSizing: 'border-box', borderRadius: 12, border: `1px solid ${DC.line}`, background: 'rgba(255,255,255,.06)', padding: '0 14px', fontFamily: 'inherit', fontSize: 16, color: DC.text }} />}
-            <p style={{ margin: '8px 0 0', fontSize: 13, lineHeight: 1.45, color: DC.faint }}>{idt.mode === 'anon' ? 'Anonyme : personne dans le Pénc ne voit qui tu es.' : 'Ne donne ni ton nom complet, ni ton numéro.'}</p>
+            <p style={{ margin: '8px 0 0', fontSize: 13, lineHeight: 1.45, color: DC.faint }}>{idt.mode === 'anon' ? 'Anonyme : tu reçois un nom au hasard. Personne ne peut savoir que c\'est un nom inventé.' : 'Ne donne ni ton nom complet, ni ton numéro.'}</p>
           </fieldset>
           <button type="button" disabled={busy || text.trim().length < 2} onClick={send} className="drl-btn"
             style={{ minHeight: 50, borderRadius: 999, border: 0, background: accent, color: DC.ink, fontFamily: 'inherit', fontSize: 16, fontWeight: 800, cursor: 'pointer', opacity: busy || text.trim().length < 2 ? 0.55 : 1 }}>

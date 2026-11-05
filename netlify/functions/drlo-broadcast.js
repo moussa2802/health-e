@@ -470,7 +470,7 @@ exports.handler = async (event) => {
       const upd = up && up.exists ? up.data() : null;
       const prenom = body.mode === 'prenom' ? ((upd && upd.onboardingProfile && upd.onboardingProfile.prenom) || '') : '';
       const totem = C.totemOf(upd); // photo de profil : l'animal intérieur (révélé), jamais un résultat
-      const idt = C.resolveIdentity(body.mode, { prenom, pseudo: body.pseudo });
+      const idt = C.resolveIdentity(body.mode, { prenom, pseudo: body.pseudo, seed: `msg:${bid}:${uid}` });
       if (idt.error) return reply(400, { error: idt.error });
 
       if (!mod.ok && mod.reason === 'crisis') {

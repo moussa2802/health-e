@@ -27,6 +27,14 @@ test('validateComment : taille', () => {
 });
 test('identité : anonyme par défaut, prénom, pseudo contrôlé', () => {
   assert.deepStrictEqual(C.resolveIdentity('anon'), { name: 'Anonyme', mode: 'anon' });
+  // avec un lieu : un nom au hasard, le même à chaque fois dans ce lieu, différent ailleurs
+  const a1 = C.resolveIdentity('anon', { seed: 'penc:p1:u1' }).name;
+  assert.notEqual(a1, 'Anonyme');
+  assert.equal(C.resolveIdentity('anon', { seed: 'penc:p1:u1' }).name, a1);
+  assert.equal(C.resolveIdentity('prenom', { seed: 'penc:p1:u1' }).name, a1); // pas de prénom : nom au hasard aussi
+  const names = new Set(Array.from({ length: 40 }, (_, i) => C.resolveIdentity('anon', { seed: `penc:p1:u${i}` }).name));
+  assert.ok(names.size > 30);
+  assert.ok([...names].every((n) => n.length >= 2 && n.length <= 20 && /^[\p{L}\p{N}_ .'-]+$/u.test(n)));
   assert.strictEqual(C.resolveIdentity('prenom', { prenom: 'Awa' }).name, 'Awa');
   assert.strictEqual(C.resolveIdentity('prenom', {}).name, 'Anonyme');
   assert.strictEqual(C.resolveIdentity('pseudo', { pseudo: 'Étoile_26' }).name, 'Étoile_26');

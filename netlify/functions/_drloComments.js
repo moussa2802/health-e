@@ -57,10 +57,12 @@ function validateComment(text, max = MAX_COMMENT) {
 }
 
 /** Identité affichée : { name } ou { error }. mode : 'anon' | 'prenom' | 'pseudo'. */
-function resolveIdentity(mode, { prenom, pseudo } = {}) {
+function resolveIdentity(mode, { prenom, pseudo, seed } = {}) {
+  // Anonyme : un nom au hasard (stable dans un même lieu), pour qu'on ne distingue pas un anonyme d'un pseudo ou d'un prénom
+  const anon = () => ({ name: seed ? require('./_anonNames').anonName(seed) : 'Anonyme', mode: 'anon' });
   if (mode === 'prenom') {
     const p = String(prenom || '').trim().slice(0, 20);
-    if (!p) return { name: 'Anonyme', mode: 'anon' };
+    if (!p) return anon();
     return { name: p, mode: 'prenom' };
   }
   if (mode === 'pseudo') {
@@ -69,7 +71,7 @@ function resolveIdentity(mode, { prenom, pseudo } = {}) {
     if (!moderate(ps).ok) return { error: 'Ce pseudo n\'est pas accepté. Choisis-en un autre.' };
     return { name: ps, mode: 'pseudo' };
   }
-  return { name: 'Anonyme', mode: 'anon' };
+  return anon();
 }
 
 /** Message privé envoyé à la personne dont le commentaire montre une détresse (jamais publié). */

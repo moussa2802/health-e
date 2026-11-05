@@ -112,7 +112,7 @@ exports.handler = async (event) => {
       if (t.error) return reply(400, { error: t.error });
       const up = await db.collection('userProfiles').doc(uid).get().catch(() => null);
       const prenom = (up && up.exists && up.data().onboardingProfile && up.data().onboardingProfile.prenom) || '';
-      const idt = C.resolveIdentity(body.mode, { prenom, pseudo: body.pseudo });
+      const idt = C.resolveIdentity(body.mode, { prenom, pseudo: body.pseudo, seed: `penc:${pid}:${uid}` });
       if (idt.error) return reply(400, { error: idt.error });
       const mine = await qCol.where('uid', '==', uid).where('status', '==', 'open').get();
       if (mine.size >= L.MAX_OPEN_PER_PERSON) return reply(409, { error: `Tu as déjà ${L.MAX_OPEN_PER_PERSON} questions en attente dans ce Pénc.` });

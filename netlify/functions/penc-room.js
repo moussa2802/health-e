@@ -77,7 +77,7 @@ exports.handler = async (event) => {
       else {
         const up = await db.collection('userProfiles').doc(uid).get().catch(() => null);
         const prenom = (up && up.exists && up.data().onboardingProfile && up.data().onboardingProfile.prenom) || '';
-        const idt = C.resolveIdentity(body.mode, { prenom, pseudo: body.pseudo });
+        const idt = C.resolveIdentity(body.mode, { prenom, pseudo: body.pseudo, seed: `penc:${pid}:${uid}` });
         if (idt.error) return reply(400, { error: idt.error });
         name = idt.name;
       }

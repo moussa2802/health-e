@@ -184,7 +184,7 @@ const PencRoom: React.FC<{ penc: Penc; ticket: RoomTicket; palette: MomentPalett
               {stage.map(p => (
                 <div key={p.identity} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, minWidth: 0 }}>
                   <Avatar p={p} size={68} accent={palette.accent} mine={p.identity === me?.identity} />
-                  <b style={{ fontSize: 14, color: DC.title, maxWidth: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.identity === me?.identity ? 'Toi' : p.name || 'Anonyme'}</b>
+                  <b style={{ fontSize: 14, color: DC.title, maxWidth: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.identity === me?.identity ? `${p.name || 'Toi'} (toi)` : p.name || 'Anonyme'}</b>
                   <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 13, color: p.attributes.role === 'host' ? palette.accent : DC.muted, fontWeight: p.attributes.role === 'host' ? 700 : 500 }}>
                     {!micOn(p) && <MicOff size={13} aria-hidden="true" />}{p.attributes.role === 'host' ? 'Hôte' : micOn(p) ? 'Intervenant' : 'Micro coupé'}
                   </span>
@@ -209,7 +209,7 @@ const PencRoom: React.FC<{ penc: Penc; ticket: RoomTicket; palette: MomentPalett
                     <div key={p.identity} style={{ position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, minWidth: 0 }}>
                       <Avatar p={p} size={44} accent={palette.accent} mine={p.identity === me?.identity} />
                       {p.attributes.hand === '1' && <span aria-label="main levée" style={{ position: 'absolute', top: -4, right: 4, width: 22, height: 22, borderRadius: '50%', background: palette.primary, color: DC.ink, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Hand size={12} aria-hidden="true" /></span>}
-                      <span style={{ fontSize: 13, color: DC.soft, maxWidth: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.identity === me?.identity ? 'Toi' : p.name || 'Anonyme'}</span>
+                      <span style={{ fontSize: 13, color: DC.soft, maxWidth: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.identity === me?.identity ? `${p.name || 'Toi'} (toi)` : p.name || 'Anonyme'}</span>
                     </div>
                   ))}
                   {listeners.length > 23 && <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}><span style={{ width: 44, height: 44, borderRadius: '50%', background: 'rgba(255,255,255,.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 700, color: DC.soft }}>+{listeners.length - 23}</span></div>}
