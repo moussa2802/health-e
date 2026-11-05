@@ -316,7 +316,13 @@ const ConversationAccueil: React.FC = () => {
   const cheer = () => { setJoyUntil(Date.now() + 2600); window.setTimeout(() => setJoyUntil(0), 2700); };
   const initKeyRef = useRef<string | null>(null);
   const startedRef = useRef(false);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
+  // Le champ grandit avec le texte (jusqu'à ~5 lignes) pour qu'on relise ce qu'on écrit.
+  useEffect(() => {
+    const el = inputRef.current; if (!el) return;
+    el.style.height = 'auto';
+    el.style.height = `${Math.min(el.scrollHeight, 132)}px`;
+  }, [input]);
   const stateRef = useRef<AccueilState | null>(null);
   stateRef.current = state;
 
@@ -1854,7 +1860,7 @@ const ConversationAccueil: React.FC = () => {
                     ))}
                   </div>
                 )}
-                <form onSubmit={onSend} style={{ display: 'flex', alignItems: 'center', gap: chatModeNow ? 4 : 8, position: 'relative',
+                <form onSubmit={onSend} style={{ display: 'flex', alignItems: 'flex-end', gap: chatModeNow ? 4 : 8, position: 'relative',
                   ...(chatModeNow ? { padding: '5px 5px 5px 6px', borderRadius: 30, border: `1px solid ${listening ? companionColor.hex : 'rgba(255,255,255,.14)'}`, background: 'rgba(28,20,13,.72)', backdropFilter: 'blur(14px)', WebkitBackdropFilter: 'blur(14px)', boxShadow: listening ? `0 0 0 4px ${companionColor.hex}22` : '0 10px 30px rgba(0,0,0,.35)' } : {}) }}>
                   {chatModeNow && state.step !== 'testing' && (
                     <button type="button" onClick={() => setMenuOpen(v => !v)} aria-expanded={menuOpen} aria-label="Plus d'options" className="drl-btn"
@@ -1862,21 +1868,29 @@ const ConversationAccueil: React.FC = () => {
                       <Plus size={20} aria-hidden="true" style={{ transform: menuOpen ? 'rotate(45deg)' : 'none', transition: 'transform .2s' }} />
                     </button>
                   )}
-                  <input
+                  <textarea
                     ref={inputRef}
+                    rows={1}
                     value={input}
                     onChange={e => setInput(e.target.value)}
+                    onKeyDown={e => {
+                      // Ordinateur : Entrée envoie, Maj+Entrée = ligne. Téléphone : Entrée = nouvelle ligne (le bouton envoie).
+                      if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing && typeof window !== 'undefined' && window.matchMedia?.('(pointer: fine)').matches) {
+                        e.preventDefault();
+                        if (input.trim()) e.currentTarget.form?.requestSubmit();
+                      }
+                    }}
                     maxLength={500}
                     placeholder={dictation.listening ? 'Parle, je t\'écoute…' : state.step === 'testing' ? 'Si quelque chose te pèse, écris-le-moi…' : state.talk || !chatModeNow ? `Écris à ${toCompanion}…` : `Réponds à ${toCompanion}…`}
                     aria-label="Répondre"
                     className="drl-input"
                     style={chatModeNow ? {
-                      flex: 1, minWidth: 0, minHeight: 44, boxSizing: 'border-box', border: 0, background: 'transparent', padding: '0 8px', fontFamily: 'inherit', fontSize: 16, color: C.text, outline: 'none',
+                      flex: 1, minWidth: 0, minHeight: 44, maxHeight: 132, boxSizing: 'border-box', border: 0, background: 'transparent', padding: '10px 8px', lineHeight: '24px', resize: 'none', overflowY: 'auto', fontFamily: 'inherit', fontSize: 16, color: C.text, outline: 'none',
                     } : {
-                      flex: 1, minWidth: 0, minHeight: 54, boxSizing: 'border-box', borderRadius: 27,
+                      flex: 1, minWidth: 0, minHeight: 54, maxHeight: 132, boxSizing: 'border-box', borderRadius: 27, resize: 'none', overflowY: 'auto', lineHeight: '24px',
                       border: `1.5px solid ${listening ? palette.accent : 'rgba(255,255,255,.18)'}`,
                       boxShadow: listening ? `0 0 0 4px ${palette.glow}` : 'none',
-                      background: 'rgba(255,255,255,.06)', padding: '0 18px', fontFamily: 'inherit', fontSize: 16, color: C.text, outline: 'none',
+                      background: 'rgba(255,255,255,.06)', padding: '15px 18px', fontFamily: 'inherit', fontSize: 16, color: C.text, outline: 'none',
                     }}
                   />
                   {dictation.supported && (
@@ -1988,6 +2002,12 @@ const ConversationAccueil: React.FC = () => {
             </div>
             {!isAuthenticated && (
               <button onClick={() => openSignup('login', 'Me connecter')} className="drl-btn" style={{ ...pill, border: `1px solid ${C.line}`, color: C.text, cursor: 'pointer' }}>Se connecter</button>
+            )}
+            {isAuthenticated && !korisLoading && (
+              <Link to="/acheter-koris" aria-label={`Tes ${CREDIT.many} : ${balance}. Recharger`} className="drl-btn"
+                style={{ ...pill, border: '1px solid rgba(242,182,109,.45)', color: palette.accent }}>
+                <Sparkles size={14} aria-hidden="true" /> {balance}
+              </Link>
             )}
             {tab === 'discuter' && (
               <button onClick={() => { setShowConvs(v => !v); setMoreOpen(false); }} aria-expanded={showConvs} aria-label="Mes discussions" className="drl-btn"
