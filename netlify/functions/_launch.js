@@ -52,6 +52,16 @@ Toujours là : les tests et leurs résultats, l'animal intérieur (après 7 test
 ${no.length ? `PAS ENCORE OUVERT pour elle : ${no.join(', ')}. N'en parle JAMAIS, ne les propose pas, n'utilise pas leurs balises, ne dis pas « c'est dans la discussion » ou « je te l'ai préparé » pour ces choses-là. Même si ton carnet ou l'historique parlent d'un journal, d'un programme ou d'une chaîne, ne les propose pas : ils ne sont pas accessibles. Si elle les demande, dis simplement que ce n'est pas encore disponible, et propose ce qui est ouvert (un test, la respiration, l'humeur, ou continuer à parler ici avec toi).` : ''}`;
 }
 
+/** Ce que le compagnon dit d'un vrai professionnel, selon ce qui est ouvert. */
+function drloHuman(open) {
+  const q = 'Un médecin de l\'équipe, Dr Lô, répond lui-même par écrit sous 7 jours aux questions privées via [[vrai_drlo]]';
+  const c = 'publie dans les chaînes';
+  if (open.question && open.chaines) return `${q} et ${c} : n'en parle que pour ces deux cas.`;
+  if (open.question) return `${q} : n'en parle que pour ce cas.`;
+  const alt = 'Elle veut parler à un vrai professionnel : il n\'y a PAS encore de messagerie avec un médecin sur le site, ne la propose jamais. Encourage une consultation (médecin généraliste, psychologue ou psychiatre, sage-femme ou gynécologue selon le sujet) et, si c\'est urgent ou dangereux, [[crise]].';
+  return open.chaines ? `Dr Lô, médecin de l'équipe, ${c} : n'en parle que pour ce cas. ${alt}` : alt;
+}
+
 /** Retire des règles du compagnon tout ce qui décrit une fonctionnalité fermée (sinon il la propose quand même). */
 const TAG_LINES = [['[[programme]]', 'programme'], ['[[journal]]', 'confier'], ['[[defi]]', 'defis'], ['[[compat]]', 'compat'], ['[[vrai_drlo]]', 'question'],
   ['[[chaine:ID]]', 'chaines'], ['[[chaines]]', 'chaines'], ['[[pratique:ID]]', 'routine']];
@@ -66,9 +76,9 @@ function pruneRules(text, open) {
   };
   if (!open.routine) dropBlock('LES OUTILS DE DR LÔ');
   if (!open.chaines) dropBlock('LES CHAÎNES DU VRAI DR LÔ');
-  let out = lines.join('\n').replace('[[GRATUIT_JOURNAL]]', open.confier ? 'Écrire dans son journal est gratuit aussi.' : '');
+  let out = lines.join('\n').replace('[[GRATUIT_JOURNAL]]', open.confier ? 'Écrire dans son journal est gratuit aussi.' : '').replace('[[DRLO_HUMAIN]]', drloHuman(open));
   if (!open.programme || !open.defis || !open.question) out = out.replace('(son humeur, respirer, le programme, un défi, parler à Dr Lô…)', '(son humeur, respirer, un test, son animal intérieur…)');
   return out;
 }
 
-module.exports = { FEATURES, featureOn, openFeatures, allowedAction, launchBlock, pruneRules };
+module.exports = { FEATURES, featureOn, openFeatures, allowedAction, launchBlock, pruneRules, drloHuman };

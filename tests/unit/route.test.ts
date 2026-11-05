@@ -93,9 +93,13 @@ test('prénom : premier mot seulement ; nouveau jour → nouvelle salutation', (
   const s1 = newDay(s0, '2026-10-23', member);
   assert.equal(s1.day, '2026-10-23');
   assert.equal(s1.messages.length, s0.messages.length);
+  // La salutation n'a pas eu de réponse : pas de nouvelle salutation le lendemain
   const s2 = newDay(s1, '2026-10-24', member);
-  assert.match(s2.messages.at(-1)!.text, /^Re-bonjour Papa/);
-  assert.equal(s2.step, 'need');
+  assert.equal(s2.messages.length, s0.messages.length);
+  // Après un message de la personne, le jour suivant salue bien
+  const s2b = newDay(withUser(s1, 'ça va'), '2026-10-25', member);
+  assert.match(s2b.messages.at(-1)!.text, /^Re-bonjour Papa/);
+  assert.equal(s2b.step, 'need');
   const t = newDay({ ...testing(), day: '2026-10-23' }, '2026-10-24', member);
   assert.equal(t.step, 'testing');
 });
@@ -118,6 +122,6 @@ test('nouveau jour : pas de deuxième « Re-bonjour » si le premier est resté 
   const s1 = newDay({ ...s0, day: '2026-10-23' }, '2026-10-24', member);
   const s2 = addOpener(s1, 'Ton résultat au test « Anxiété » : « Anxiété légère ». Qu\'est-ce que tu aimerais en comprendre ?');
   const s3 = newDay(s2, '2026-10-25', member);
-  assert.equal(s3.messages.filter(m => /^Re-bonjour/.test(m.text)).length, 1);
+  assert.equal(s3.messages.filter(m => /^(Re-)?bonjour/i.test(m.text)).length, 1);
   assert.equal(s3.day, '2026-10-25');
 });

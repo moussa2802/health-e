@@ -1,4 +1,5 @@
 import React from 'react';
+import HealthLogo from '../brand/HealthLogo';
 import { Upload } from 'lucide-react';
 import { SEVERITY } from '../../design/charte';
 import type { AssessmentScale, ScaleResult } from '../../types/assessment';
@@ -289,12 +290,7 @@ const ResultCard = React.forwardRef<HTMLDivElement, ResultCardProps>(({ scale, r
   const renderBrandRow = () => (
     <div style={{ ...z2, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-        <div style={{
-          width: 26, height: 26, borderRadius: 9, background: '#F1ECE1', color: '#1B1C1A',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontFamily: "'Fraunces',Georgia,serif", fontWeight: 600, fontSize: 14,
-        }}>h</div>
-        <b style={{ fontSize: 13, fontWeight: 700, letterSpacing: '-0.01em' }}>Health-e</b>
+        <HealthLogo height={20} />
       </div>
       <span style={{
         fontFamily: "'Plus Jakarta Sans', sans-serif",

@@ -1,6 +1,6 @@
 /**
- * DrLoIsland — la « bulle d'activité » du compagnon : pendant qu'il travaille, une capsule flotte en haut
- * de la discussion avec son image et ce qu'il fait précisément (« Lit ton message », « Compare vos profils »…).
+ * DrLoIsland — la « bulle d'activité » du compagnon : pendant qu'il travaille, une petite capsule en bas
+ * de la discussion (au-dessus du champ, sans cacher les messages) avec son image et ce qu'il fait précisément (« Lit ton message », « Compare vos profils »…).
  * Elle disparaît quand il a fini.
  */
 import React, { useEffect, useState } from 'react';
@@ -32,23 +32,21 @@ const DrLoIsland: React.FC<{ state: DrLoState; label: string | null; palette: Mo
     : shown.state === 'reading' ? 'drl-sweep'
     : shown.state === 'listening' ? 'drl-listen'
     : joy ? 'drl-joy-glow' : 'drl-halo';
+  // Une petite capsule en BAS de la discussion (juste au-dessus du champ) : elle ne cache plus les messages
   return (
     <div role="status" aria-live="polite" aria-label={`${companionLabel()} : ${shown.label}`}
       className={leaving ? 'drl-island-out' : 'drl-island-in'}
-      style={{ position: 'absolute', left: '50%', top: 8, transform: 'translateX(-50%)', zIndex: 4, pointerEvents: 'none', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-      <div style={{ position: 'relative', width: 66, height: 66, marginBottom: -14, zIndex: 1 }}>
-        <div className={anim} aria-hidden="true"
-          style={{ position: 'absolute', inset: -4, borderRadius: '50%', border: `2px solid ${ring}66`, borderTopColor: ring }} />
-        <div style={{ position: 'relative', borderRadius: '50%', border: `2px solid ${ring}`, overflow: 'hidden', background: '#EDE7DF' }}>
-          <PoseImage state={shown.state} size={62} />
-        </div>
-      </div>
-      <div style={{ padding: '18px 18px 10px', minWidth: 170, borderRadius: 20, background: 'rgba(30,25,21,.92)', border: '1px solid rgba(255,255,255,.12)', boxShadow: '0 10px 30px rgba(0,0,0,.45)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', textAlign: 'center' }}>
-        <p style={{ margin: 0, fontSize: 15, fontWeight: 700, color: '#F4EEE4' }}>{companionLabel()}</p>
-        <p style={{ margin: '2px 0 0', fontSize: 14, fontWeight: 600, color: '#DCD3C5', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-          <Sparkles size={14} color={ring} aria-hidden="true" /> {shown.label}
-        </p>
-      </div>
+      style={{ position: 'absolute', left: '50%', bottom: 10, transform: 'translateX(-50%)', zIndex: 4, pointerEvents: 'none',
+        display: 'flex', alignItems: 'center', gap: 8, padding: '5px 14px 5px 5px', borderRadius: 999, background: 'rgba(30,25,21,.94)',
+        border: `1px solid ${ring}55`, boxShadow: '0 8px 24px rgba(0,0,0,.4)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', whiteSpace: 'nowrap' }}>
+      <span style={{ position: 'relative', width: 30, height: 30, flex: 'none' }}>
+        <span className={anim} aria-hidden="true" style={{ position: 'absolute', inset: -2, borderRadius: '50%', border: `2px solid ${ring}55`, borderTopColor: ring }} />
+        <PoseImage state={shown.state} size={30} />
+      </span>
+      <span style={{ fontSize: 14, fontWeight: 600, color: '#DCD3C5', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+        <b style={{ color: '#F4EEE4' }}>{companionLabel()}</b>
+        <Sparkles size={13} color={ring} aria-hidden="true" />{shown.label}
+      </span>
     </div>
   );
 };

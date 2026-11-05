@@ -24,3 +24,14 @@ test('vague 2 : le programme s\'ouvre après 3 tests, les défis après l\'anima
   assert.equal(more.defis, true);
   assert.equal(more.chaines, false);
 });
+
+test('règles taillées : pas de messagerie médecin ni de journal quand c\'est fermé', () => {
+  const { rulesV2 } = require('../_drloChatRules.js');
+  const closed = LA.openFeatures({ wave: 1 }, {});
+  const r = LA.pruneRules(rulesV2(false), closed);
+  assert.doesNotMatch(r, /\[\[vrai_drlo\]\]|\[\[journal\]\]|\[\[programme\]\]|\[\[DRLO_HUMAIN\]\]|\[\[GRATUIT_JOURNAL\]\]/);
+  assert.match(r, /PAS encore de messagerie avec un médecin/);
+  const all = LA.pruneRules(rulesV2(false), Object.fromEntries(Object.keys(LA.FEATURES).map((k) => [k, true])));
+  assert.match(all, /\[\[vrai_drlo\]\]/);
+  assert.match(all, /journal est gratuit/);
+});

@@ -885,7 +885,7 @@ export function newDay(s: AccueilState, today: string, k: Known): AccueilState {
   // Déjà salué (ex. la même discussion ouverte sur un autre appareil) : pas de deuxième « Re-bonjour »
   // On regarde toute la fin du fil restée sans réponse (salutation, puis « ton résultat… ? » par ex.)
   const lastUser = s.messages.map(m => m.from).lastIndexOf('user');
-  if (s.messages.slice(lastUser + 1).some(m => m.from === 'drlo' && /^Re-bonjour/.test(m.text))) return { ...s, day: today, talk: undefined, flow: undefined };
+  if (s.messages.slice(lastUser + 1).some(m => m.from === 'drlo' && /^(Re-)?bonjour|Content de te (revoir|retrouver)/i.test(m.text))) return { ...s, day: today, talk: undefined, flow: undefined };
   const p = firstName(s.prenom ?? k.prenom);
   let out = push(s, 'drlo', p ? `Re-bonjour ${p} 👋 Content de te revoir. Comment tu vas aujourd'hui ?` : `Re-bonjour 👋 Content de te revoir. Comment tu vas aujourd'hui ?`);
   if (s.prescribed && !k.doneScaleIds.includes(s.prescribed)) {

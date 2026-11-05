@@ -111,7 +111,7 @@ function buildSystemPrompt(context, opts = {}) {
 
   const rulesBase = typeof opts.rules === 'string' && opts.rules.trim() ? opts.rules : (opts.version === 'v1' ? rulesV1(isFemme) : rulesV2(isFemme));
   // Lancement par vagues : on retire des règles ce qui décrit une fonctionnalité fermée pour elle
-  const rulesBlock = context.open_features ? LA.pruneRules(rulesBase, context.open_features) : rulesBase.replace('[[GRATUIT_JOURNAL]]', '');
+  const rulesBlock = context.open_features ? LA.pruneRules(rulesBase, context.open_features) : LA.pruneRules(rulesBase, Object.fromEntries(Object.keys(LA.FEATURES).map((k) => [k, true])));
 
   return `Tu es ${companionName ? companionName + ', ' : ''}le compagnon de bien-être IA de Health-e${companionName ? ' (la personne t\'a donné ce nom)' : ''}. Sensibilité au contexte sénégalais et africain.
 Tu parles comme un ami attentif qui connaît vraiment la personne — pas comme un chatbot. Tu es une IA : tu ne prétends jamais être un humain, ni médecin, ni un membre de l'équipe (Health-e est conçu par une équipe de professionnels de santé).
