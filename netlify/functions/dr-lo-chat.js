@@ -109,7 +109,9 @@ function buildSystemPrompt(context, opts = {}) {
   // ── Totem & profil 7 aspects ──
   const totemSection = context.totem_resume || 'Pas encore attribué.';
 
-  const rulesBlock = typeof opts.rules === 'string' && opts.rules.trim() ? opts.rules : (opts.version === 'v1' ? rulesV1(isFemme) : rulesV2(isFemme));
+  const rulesBase = typeof opts.rules === 'string' && opts.rules.trim() ? opts.rules : (opts.version === 'v1' ? rulesV1(isFemme) : rulesV2(isFemme));
+  // Lancement par vagues : on retire des règles ce qui décrit une fonctionnalité fermée pour elle
+  const rulesBlock = context.open_features ? LA.pruneRules(rulesBase, context.open_features) : rulesBase.replace('[[GRATUIT_JOURNAL]]', '');
 
   return `Tu es ${companionName ? companionName + ', ' : ''}le compagnon de bien-être IA de Health-e${companionName ? ' (la personne t\'a donné ce nom)' : ''}. Sensibilité au contexte sénégalais et africain.
 Tu parles comme un ami attentif qui connaît vraiment la personne — pas comme un chatbot. Tu es une IA : tu ne prétends jamais être un humain, ni médecin, ni un membre de l'équipe (Health-e est conçu par une équipe de professionnels de santé).
@@ -146,8 +148,6 @@ Sers-t'en comme un ami qui se souvient : appelle ses proches par leur prénom, r
 Au début d'une discussion (peu ou pas d'échanges avant), si un point « À REPRENDRE » est d'actualité, prends-en des nouvelles en une phrase (un seul point), puis laisse-la mener.
 ${memSection}
 
-${context.launch_txt || ''}
-
 ━━━ RÈGLES ━━━
 
 ${rulesBlock}
@@ -159,7 +159,7 @@ Outils de Dr Lô (ID, ce qu'elle en connaît) :
 ${context.outils_txt || 'Aucun pour le moment.'}
 
 Tests disponibles (ID = nom) :
-${testsDispo || 'Aucun.'}`;
+${testsDispo || 'Aucun.'}${context.launch_txt ? `\n\n${context.launch_txt}` : ''}`;
 }
 
 // ── Action proposée par Dr Lô (balise en dernière ligne) ─────────────────────
@@ -317,7 +317,7 @@ exports.handler = async (event) => {
     if (typeof body.rules === 'string' && body.rules.trim()) promptOpts.rules = body.rules.slice(0, 40000);
     if (body.model === 'sonnet') model0 = 'claude-sonnet-4-5-20250929';
   }
-  const systemPrompt = buildSystemPrompt({ ...context, memoire, chaines_txt: open.chaines ? chaines.text : 'Pas encore ouvert : n\'en parle pas.', outils_txt: open.routine ? outils.text : 'Pas encore ouvert : n\'en parle pas.', launch_txt: LA.launchBlock(open) }, promptOpts);
+  const systemPrompt = buildSystemPrompt({ ...context, memoire, chaines_txt: open.chaines ? chaines.text : 'Pas encore ouvert : n\'en parle pas.', outils_txt: open.routine ? outils.text : 'Pas encore ouvert : n\'en parle pas.', launch_txt: LA.launchBlock(open), open_features: open }, promptOpts);
 
   // Conversation history: the last 12 messages of the thread
   const trimmedHistory = (Array.isArray(historique) ? historique : [])

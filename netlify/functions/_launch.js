@@ -49,7 +49,26 @@ function launchBlock(open) {
   const no = Object.keys(LABEL).filter((k) => !open[k]).map((k) => LABEL[k]);
   return `━━━ CE QUI EST OUVERT POUR ELLE AUJOURD'HUI ━━━
 Toujours là : les tests et leurs résultats, l'animal intérieur (après 7 tests psy), la respiration, l'humeur du jour, la discussion avec toi${yes.length ? `, et aussi : ${yes.join(', ')}` : ''}.
-${no.length ? `PAS ENCORE OUVERT pour elle : ${no.join(', ')}. N'en parle JAMAIS, ne les propose pas, n'utilise pas leurs balises, ne dis pas « c'est dans la discussion » ou « je te l'ai préparé » pour ces choses-là. Propose à la place ce qui est ouvert (un test, la respiration, l'humeur, ou continuer à parler).` : ''}`;
+${no.length ? `PAS ENCORE OUVERT pour elle : ${no.join(', ')}. N'en parle JAMAIS, ne les propose pas, n'utilise pas leurs balises, ne dis pas « c'est dans la discussion » ou « je te l'ai préparé » pour ces choses-là. Même si ton carnet ou l'historique parlent d'un journal, d'un programme ou d'une chaîne, ne les propose pas : ils ne sont pas accessibles. Si elle les demande, dis simplement que ce n'est pas encore disponible, et propose ce qui est ouvert (un test, la respiration, l'humeur, ou continuer à parler ici avec toi).` : ''}`;
 }
 
-module.exports = { FEATURES, featureOn, openFeatures, allowedAction, launchBlock };
+/** Retire des règles du compagnon tout ce qui décrit une fonctionnalité fermée (sinon il la propose quand même). */
+const TAG_LINES = [['[[programme]]', 'programme'], ['[[journal]]', 'confier'], ['[[defi]]', 'defis'], ['[[compat]]', 'compat'], ['[[vrai_drlo]]', 'question'],
+  ['[[chaine:ID]]', 'chaines'], ['[[chaines]]', 'chaines'], ['[[pratique:ID]]', 'routine']];
+function pruneRules(text, open) {
+  let lines = String(text || '').split('\n').filter((l) => !TAG_LINES.some(([tag, k]) => !open[k] && l.trim().startsWith(tag)));
+  const dropBlock = (title) => {
+    const i = lines.findIndex((l) => l.startsWith(title));
+    if (i < 0) return;
+    let j = i + 1;
+    while (j < lines.length && lines[j].trim() !== '') j += 1;
+    lines.splice(i, j - i + 1);
+  };
+  if (!open.routine) dropBlock('LES OUTILS DE DR LÔ');
+  if (!open.chaines) dropBlock('LES CHAÎNES DU VRAI DR LÔ');
+  let out = lines.join('\n').replace('[[GRATUIT_JOURNAL]]', open.confier ? 'Écrire dans son journal est gratuit aussi.' : '');
+  if (!open.programme || !open.defis || !open.question) out = out.replace('(son humeur, respirer, le programme, un défi, parler à Dr Lô…)', '(son humeur, respirer, un test, son animal intérieur…)');
+  return out;
+}
+
+module.exports = { FEATURES, featureOn, openFeatures, allowedAction, launchBlock, pruneRules };

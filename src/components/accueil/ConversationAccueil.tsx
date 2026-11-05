@@ -551,7 +551,10 @@ const ConversationAccueil: React.FC = () => {
     const k = `he_low_credit_said:${dayKey()}`;
     try { if (localStorage.getItem(k)) return; localStorage.setItem(k, '1'); } catch { return; }
     const prev = state;
-    apply(addExchange(prev, null, [CREDIT.low]), prev, 'thinking', false);
+    // Jamais « c'est gratuit » pour la discussion (chaque message coûte une étincelle) ; le journal seulement s'il est ouvert
+    const n = Math.max(0, Math.floor(balance));
+    const free = launch.on('confier') ? 'Noter ton humeur, respirer avec moi et écrire dans ton journal restent gratuits.' : 'Noter ton humeur et respirer avec moi restent gratuits.';
+    apply(addExchange(prev, null, [`Il te reste ${n} ${n > 1 ? CREDIT.many : CREDIT.one}. Chaque message que je t'écris en coûte une, et l'accueil t'en offre un peu chaque jour. ${free}`]), prev, 'thinking', false);
   }, [isAuthenticated, korisLoading, balance, !!state, !!known]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Lien d'invitation d'un proche (?ref=CODE) : gardé jusqu'à la création de l'espace
