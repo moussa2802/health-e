@@ -7,11 +7,12 @@
  *   accept  { pencId }                → j'accepte l'invitation : le micro m'est ouvert (6 personnes au plus sur scène)
  *   decline { pencId }                → je refuse l'invitation
  *   leave_stage { pencId }            → je redescends (micro fermé)
- * Hôte (et l'équipe) :
+ * Hôte, l'équipe et les modérateurs nommés par l'hôte (un modérateur invite, fait descendre et coupe les micros ; seul l'hôte exclut et nomme) :
  *   invite { pencId, identity }       → invite quelqu'un à parler (il doit accepter)
  *   remove { pencId, identity }       → le fait redescendre
  *   mute   { pencId, identity, trackSid } → coupe son micro
  *   kick   { pencId, identity }       → l'exclut de ce Pénc (il ne peut plus revenir)
+ *   set_mod { pencId, identity, on }  → (hôte seulement) nommer / retirer un modérateur
  * L'identité LiveKit n'est JAMAIS l'identifiant du compte : c'est une empreinte propre à ce Pénc (anonymat entre Pénc).
  * Rien n'est enregistré.
  */
@@ -29,8 +30,9 @@ const roomName = (pid) => `penc_${pid}`;
 /** Empreinte stable pour (compte, Pénc) : la même à chaque reconnexion, différente d'un Pénc à l'autre. */
 const identityOf = (uid, pid, secret) => `p_${crypto.createHmac('sha256', secret || 'penc').update(`${uid}:${pid}`).digest('hex').slice(0, 20)}`;
 const httpUrl = (u) => u.replace(/^wss:/, 'https:').replace(/^ws:/, 'http:');
-const LISTENER = { canSubscribe: true, canPublish: false, canPublishData: true, canPublishSources: [] };
-const SPEAKER = { canSubscribe: true, canPublish: true, canPublishData: true, canPublishSources: [TrackSource.MICROPHONE] };
+// canUpdateMetadata : sans lui, après être descendu de scène, lever la main échoue (« does not have permission to update own metadata »)
+const LISTENER = { canSubscribe: true, canPublish: false, canPublishData: true, canPublishSources: [], canUpdateMetadata: true };
+const SPEAKER = { canSubscribe: true, canPublish: true, canPublishData: true, canPublishSources: [TrackSource.MICROPHONE], canUpdateMetadata: true };
 
 exports.identityOf = identityOf;
 exports.handler = async (event) => {
@@ -53,8 +55,9 @@ exports.handler = async (event) => {
     const p = s.data();
     const role = await R.roleOf(uid);
     const isHost = p.hostUid === uid;
-    const isMod = isHost || role.owner;
     const me = identityOf(uid, pid, E.secret);
+    const mods = Array.isArray(p.mods) ? p.mods : [];
+    const isMod = isHost || role.owner || mods.includes(me);
     const room = roomName(pid);
     const svc = new RoomServiceClient(httpUrl(E.url), E.key, E.secret);
     const banned = Array.isArray(p.banned) ? p.banned : [];
@@ -106,11 +109,21 @@ exports.handler = async (event) => {
     }
 
     // ───────── Hôte ─────────
-    if (!['invite', 'remove', 'mute', 'kick'].includes(action)) return reply(400, { error: 'Action inconnue' });
-    if (!isMod) return reply(403, { error: 'Réservé à l\'hôte' });
+    if (!['invite', 'remove', 'mute', 'kick', 'set_mod'].includes(action)) return reply(400, { error: 'Action inconnue' });
+    if (!isMod) return reply(403, { error: 'Réservé à l\'hôte et aux modérateurs' });
     const target = String(body.identity || '');
     if (!/^p_[a-f0-9]{20}$/.test(target)) return reply(400, { error: 'Participant inconnu' });
     if (target === identityOf(p.hostUid, pid, E.secret) && !role.owner) return reply(400, { error: 'C\'est l\'hôte.' });
+    // Un modérateur fait monter, descendre et coupe les micros ; seul l'hôte exclut et nomme les modérateurs
+    if (!isHost && !role.owner && (mods.includes(target) || action === 'set_mod' || action === 'kick')) return reply(403, { error: 'Réservé à l\'hôte' });
+
+    if (action === 'set_mod') {
+      const on = body.on !== false;
+      const next = on ? [...new Set([...mods, target])].slice(-20) : mods.filter((x) => x !== target);
+      await ref.update({ mods: next });
+      await svc.updateParticipant(room, target, { attributes: { role: on ? 'mod' : 'listener' } }).catch(() => {});
+      return reply(200, { ok: true });
+    }
 
     if (action === 'invite') {
       await svc.updateParticipant(room, target, { attributes: { invited: '1' } });

@@ -8,12 +8,12 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Room, RoomEvent, Track, type Participant } from 'livekit-client';
 import { ChevronLeft, Hand, Heart, HelpCircle, Loader2, Mic, MicOff, Send, Share2, UserX, Volume2 } from 'lucide-react';
 import { ChatFlux, ChatSheet, HostQuestions, ImageViewer, PinnedQuestion, QuestionsSheet, SlideCard, SlidesManager } from './PencLive';
-import { hideChat, liveState, sendChat, sharePenc, type ChatMessage, type LiveState } from '../../services/pencLiveService';
+import { hideChat, liveState, sendChat, sharePenc, showSlide, type ChatMessage, type LiveState } from '../../services/pencLiveService';
 import { DC } from '../accueil/DrLoShell';
 import type { MomentPalette } from '../../utils/drloMoment';
 import type { Penc } from '../../services/pencService';
 import { endPenc } from '../../services/pencService';
-import { acceptStage, declineStage, inviteToStage, kickFromPenc, leaveStage, muteSpeaker, removeFromStage, type RoomTicket } from '../../services/pencRoomService';
+import { acceptStage, declineStage, inviteToStage, kickFromPenc, leaveStage, muteSpeaker, removeFromStage, setModerator, type RoomTicket } from '../../services/pencRoomService';
 
 const COLORS = ['#9DBFAF', '#C9B8E4', '#F09A7A', '#9FB4C8', '#E8A0B8', '#E9C88F'];
 const colorOf = (s: string) => COLORS[[...s].reduce((n, c) => n + c.charCodeAt(0), 0) % COLORS.length];
@@ -25,10 +25,14 @@ const micOn = (p: Participant) => { const m = micPub(p); return !!m && !m.isMute
 const Avatar: React.FC<{ p: Participant; size: number; accent: string; mine: boolean }> = ({ p, size, accent, mine }) => {
   const host = p.attributes.role === 'host';
   const name = p.name || 'Anonyme';
+  const speaking = p.isSpeaking && micOn(p);
   return (
-    <span aria-hidden="true" style={{ width: size, height: size, flex: 'none', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Fraunces, serif', fontWeight: 600, fontSize: size * 0.38, color: DC.ink,
-      background: name === 'Anonyme' ? 'rgba(243,233,220,.18)' : colorOf(name), boxShadow: p.isSpeaking ? `0 0 0 3px #17100A, 0 0 0 6px ${accent}` : host ? `0 0 0 2px ${accent}88` : 'none', outline: mine ? `2px dashed ${accent}` : 'none', outlineOffset: 3, transition: 'box-shadow .15s' }}>
+    <span aria-hidden="true" style={{ position: 'relative', width: size, height: size, flex: 'none', display: 'inline-flex' }}>
+    {speaking && [0, 1, 2].map(i => <span key={i} className="penc-wave" style={{ position: 'absolute', inset: 0, borderRadius: '50%', border: `2px solid ${accent}`, animationDelay: `${i * 0.45}s` }} />)}
+    <span style={{ position: 'relative', width: size, height: size, flex: 'none', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Fraunces, serif', fontWeight: 600, fontSize: size * 0.38, color: DC.ink,
+      background: name === 'Anonyme' ? 'rgba(243,233,220,.18)' : colorOf(name), boxShadow: speaking ? `0 0 0 3px #17100A, 0 0 0 5px ${accent}, 0 0 22px ${accent}88` : host ? `0 0 0 2px ${accent}88` : 'none', outline: mine ? `2px dashed ${accent}` : 'none', outlineOffset: 3, transition: 'box-shadow .15s' }}>
       {name === 'Anonyme' ? <span style={{ color: DC.soft, fontSize: size * 0.32 }}>?</span> : initial(name)}
+    </span>
     </span>
   );
 };
@@ -42,7 +46,8 @@ const PencRoom: React.FC<{ penc: Penc; ticket: RoomTicket; palette: MomentPalett
   const [error, setError] = useState('');
   const [busy, setBusy] = useState('');
   const [hearts, setHearts] = useState<number[]>([]);
-  const [hostTab, setHostTab] = useState<'questions' | 'images' | 'hands' | 'stage' | 'room'>('questions');
+  const [hostTab, setHostTab] = useState<'questions' | 'images' | 'people'>('questions');
+  const [menuId, setMenuId] = useState<string | null>(null);
   const [live, setLive] = useState<LiveState | null>(null);
   const [chat, setChat] = useState<ChatMessage[]>([]);
   const [sheet, setSheet] = useState<'chat' | 'questions' | null>(null);
@@ -108,6 +113,11 @@ const PencRoom: React.FC<{ penc: Penc; ticket: RoomTicket; palette: MomentPalett
   const iSpeak = !!me && onStage(me);
   const invited = !!me && !iSpeak && me.attributes.invited === '1';
   const handUp = !!me && me.attributes.hand === '1';
+  // Modérateur nommé en cours de route : il reçoit les outils tout de suite
+  const isModNow = ticket.isMod || me?.attributes.role === 'mod';
+  const canAdmin = ticket.isHost;
+  const others = people.filter(p => p.identity !== me?.identity && p.attributes.role !== 'host')
+    .sort((a, b) => (Number(b.attributes.hand === '1' && !onStage(b)) - Number(a.attributes.hand === '1' && !onStage(a))) || (Number(onStage(b)) - Number(onStage(a))));
 
   const act = async (key: string, f: () => Promise<unknown>) => {
     setBusy(key); setError('');
@@ -153,7 +163,7 @@ const PencRoom: React.FC<{ penc: Penc; ticket: RoomTicket; palette: MomentPalett
 
   return (
     <section aria-label={`Pénc mi : ${penc.title}`} className="drl-screen font-sans" style={{ position: 'fixed', inset: 0, zIndex: 70, background: palette.bg, color: DC.text, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-      <style>{'@keyframes pencUp{0%{opacity:0;transform:translateY(0) scale(.8)}15%{opacity:1}100%{opacity:0;transform:translateY(-160px) scale(1.2)}}@media (prefers-reduced-motion: reduce){.penc-heart{animation:none!important;opacity:0}}'}</style>
+      <style>{'@keyframes pencUp{0%{opacity:0;transform:translateY(0) scale(.8)}15%{opacity:1}100%{opacity:0;transform:translateY(-160px) scale(1.2)}}@keyframes pencWave{0%{transform:scale(1);opacity:.75}100%{transform:scale(1.6);opacity:0}}.penc-wave{animation:pencWave 1.35s ease-out infinite}@media (prefers-reduced-motion: reduce){.penc-heart{animation:none!important;opacity:0}.penc-wave{animation:none;opacity:.5}}'}</style>
       <div className="drl-wrap-chat" style={{ width: '100%', margin: '0 auto', height: '100%', display: 'flex', flexDirection: 'column', boxSizing: 'border-box' }}>
         <header style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 16px' }}>
           <button type="button" onClick={leave} aria-label="Quitter la salle et revenir" className="drl-btn" style={{ width: 44, height: 44, flex: 'none', borderRadius: 14, border: `1px solid ${DC.line}`, background: 'transparent', color: DC.text, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}><ChevronLeft size={22} aria-hidden="true" /></button>
@@ -161,7 +171,7 @@ const PencRoom: React.FC<{ penc: Penc; ticket: RoomTicket; palette: MomentPalett
             {status === 'ok' ? <><span aria-hidden="true" style={{ width: 8, height: 8, borderRadius: '50%', background: '#F09A7A' }} />EN DIRECT · {people.length} présent{people.length > 1 ? 's' : ''}</> : status === 'reconnecting' ? 'Reconnexion…' : status === 'error' ? 'Hors ligne' : 'Connexion…'}
           </span>
           <button type="button" onClick={share} aria-label="Partager le lien du Pénc" className="drl-btn" style={{ width: 44, height: 44, flex: 'none', borderRadius: 14, border: `1px solid ${DC.line}`, background: 'transparent', color: DC.text, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}><Share2 size={18} aria-hidden="true" /></button>
-          {ticket.isMod
+          {ticket.isHost
             ? <button type="button" onClick={() => setEnding(true)} style={{ ...btn(false), borderColor: 'rgba(240,154,122,.7)' }}>Terminer</button>
             : <button type="button" onClick={leave} style={{ ...btn(false), borderColor: 'rgba(240,154,122,.6)' }}>Quitter</button>}
         </header>
@@ -170,7 +180,7 @@ const PencRoom: React.FC<{ penc: Penc; ticket: RoomTicket; palette: MomentPalett
         <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: `0 16px ${chat.length ? 200 : 16}px`, display: 'flex', flexDirection: 'column', gap: 14 }}>
           <div>
             <h1 style={{ margin: 0, fontFamily: 'Fraunces, serif', fontSize: 24, lineHeight: 1.15, fontWeight: 600, color: DC.title }}>{penc.title}</h1>
-            <p style={{ margin: '4px 0 0', fontSize: 14, color: DC.muted }}>Animé par {penc.host.name} · rien n'est enregistré</p>
+            <p style={{ margin: '4px 0 0', fontSize: 14, color: DC.muted }}>Hôte : {penc.host.name} · rien n'est enregistré</p>
           </div>
           {status === 'connecting' && <div style={{ display: 'flex', justifyContent: 'center', padding: 30 }}><Loader2 className="animate-spin" aria-label="Connexion à la salle" /></div>}
           {audioBlocked && status === 'ok' && (
@@ -193,51 +203,54 @@ const PencRoom: React.FC<{ penc: Penc; ticket: RoomTicket; palette: MomentPalett
             </section>
           )}
 
-          {slideUrl && live && live.slideIndex !== null && <SlideCard url={slideUrl} index={live.slideIndex} total={live.slides.length} onOpen={() => setViewer(slideUrl)} />}
+          {slideUrl && live && live.slideIndex !== null && (
+            <SlideCard url={slideUrl} index={live.slideIndex} total={live.slides.length} onOpen={() => setViewer(slideUrl)}
+              host={isModNow ? { busy: busy === 'slide', onPrev: () => act('slide', async () => { await showSlide(penc.id, live.slideIndex! - 1); refresh(); }), onNext: () => act('slide', async () => { await showSlide(penc.id, live.slideIndex! + 1); refresh(); }), onHide: () => act('slide', async () => { await showSlide(penc.id, null); refresh(); }) } : undefined} />
+          )}
           {live?.pinned && <PinnedQuestion q={live.pinned} />}
-          {status === 'ok' && !ticket.isMod && (
+          {status === 'ok' && !isModNow && (
             <button type="button" onClick={() => setSheet('questions')} className="drl-btn" style={{ alignSelf: 'flex-start', minHeight: 40, padding: '0 14px', borderRadius: 999, border: '1px solid rgba(201,184,228,.5)', background: 'rgba(201,184,228,.1)', color: '#E6DCF4', fontFamily: 'inherit', fontSize: 14, fontWeight: 700, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
               <HelpCircle size={16} aria-hidden="true" />Questions{live && live.questions.filter(q => q.status === 'open').length ? ` · ${live.questions.filter(q => q.status === 'open').length}` : ''}
             </button>
           )}
-          {status === 'ok' && ticket.isMod && hostTab === 'room' && (
-            <section aria-label="Dans la salle" style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              <p style={{ margin: 0, fontSize: 13, fontWeight: 800, letterSpacing: '.12em', color: DC.muted }}>DANS LA SALLE · {listeners.length}{hands.length ? ` · ${hands.length} MAIN${hands.length > 1 ? 'S' : ''} LEVÉE${hands.length > 1 ? 'S' : ''}` : ''}</p>
-              {listeners.length === 0 ? <p style={{ margin: 0, fontSize: 14, color: DC.faint }}>Personne d'autre pour l'instant. Partage le Pénc !</p> : (
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(62px, 1fr))', gap: 12 }}>
-                  {listeners.slice(0, 23).map(p => (
-                    <div key={p.identity} style={{ position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, minWidth: 0 }}>
-                      <Avatar p={p} size={44} accent={palette.accent} mine={p.identity === me?.identity} />
-                      {p.attributes.hand === '1' && <span aria-label="main levée" style={{ position: 'absolute', top: -4, right: 4, width: 22, height: 22, borderRadius: '50%', background: palette.primary, color: DC.ink, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Hand size={12} aria-hidden="true" /></span>}
-                      <span style={{ fontSize: 13, color: DC.soft, maxWidth: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.identity === me?.identity ? `${p.name || 'Toi'} (toi)` : p.name || 'Anonyme'}</span>
-                    </div>
-                  ))}
-                  {listeners.length > 23 && <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}><span style={{ width: 44, height: 44, borderRadius: '50%', background: 'rgba(255,255,255,.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 700, color: DC.soft }}>+{listeners.length - 23}</span></div>}
-                </div>
-              )}
-            </section>
-          )}
-
-          {ticket.isMod && status === 'ok' && (
+          {isModNow && status === 'ok' && (
             <section aria-label="Gérer la salle" style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               <div role="tablist" aria-label="Gérer" style={{ display: 'flex', gap: 4, padding: 4, borderRadius: 16, border: `1px solid ${DC.line}`, overflowX: 'auto' }}>
-                {([['questions', `Questions · ${live ? live.questions.filter(q => q.status === 'open').length : 0}`], ['images', `Images · ${live?.slides.length ?? 0}`], ['hands', `Mains · ${hands.length}`], ['stage', `Scène · ${stage.length}`], ['room', `Salle · ${listeners.length}`]] as const).map(([k, l]) => (
+                {([['questions', `Questions · ${live ? live.questions.filter(q => q.status === 'open').length : 0}`], ['images', `Images · ${live?.slides.length ?? 0}`], ['people', `Participants · ${others.length}${hands.length ? ` · ✋${hands.length}` : ''}`]] as const).map(([k, l]) => (
                   <button key={k} type="button" role="tab" aria-selected={hostTab === k} onClick={() => setHostTab(k)} style={{ flex: '1 0 auto', minHeight: 40, padding: '0 12px', borderRadius: 12, border: 0, cursor: 'pointer', fontFamily: 'inherit', fontSize: 14, whiteSpace: 'nowrap', fontWeight: hostTab === k ? 700 : 500, background: hostTab === k ? palette.primary : 'transparent', color: hostTab === k ? DC.ink : DC.soft }}>{l}</button>
                 ))}
               </div>
               {hostTab === 'questions' && <HostQuestions pencId={penc.id} questions={live?.questions ?? []} accent={palette.accent} onChanged={refresh} />}
               {hostTab === 'images' && <SlidesManager pencId={penc.id} slides={live?.slides ?? []} current={live?.slideIndex ?? null} accent={palette.accent} onChanged={refresh} />}
-              {(hostTab === 'hands' ? hands : hostTab === 'stage' ? stage.filter(p => p.attributes.role !== 'host') : hostTab === 'room' ? listeners : []).map(p => (
-                <div key={p.identity} style={row}>
-                  <Avatar p={p} size={36} accent={palette.accent} mine={false} />
-                  <span style={{ flex: 1, minWidth: 0, fontSize: 15, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.name || 'Anonyme'}{p.attributes.invited === '1' ? <span style={{ fontSize: 13, color: DC.muted, fontWeight: 500 }}> · invité</span> : null}</span>
-                  {hostTab !== 'stage' && p.attributes.invited !== '1' && <button type="button" disabled={!!busy} onClick={() => act(`inv${p.identity}`, () => inviteToStage(penc.id, p.identity))} style={btn(true)}>Inviter</button>}
-                  {hostTab === 'stage' && micOn(p) && <button type="button" disabled={!!busy} aria-label={`Couper le micro de ${p.name}`} onClick={() => { const m = micPub(p); if (m) act(`mute${p.identity}`, () => muteSpeaker(penc.id, p.identity, m.trackSid)); }} style={btn(false)}><MicOff size={15} aria-hidden="true" /></button>}
-                  {hostTab === 'stage' && <button type="button" disabled={!!busy} onClick={() => act(`rm${p.identity}`, () => removeFromStage(penc.id, p.identity))} style={btn(false)}>Descendre</button>}
-                  <button type="button" aria-label={`Exclure ${p.name || 'cette personne'}`} onClick={() => setKickId(p.identity)} style={{ ...btn(false), padding: '0 10px' }}><UserX size={15} aria-hidden="true" /></button>
-                </div>
-              ))}
-              {hostTab === 'hands' && hands.length === 0 && <p style={{ margin: 0, fontSize: 14, color: DC.faint }}>Aucune main levée pour l'instant.</p>}
+              {hostTab === 'people' && others.length === 0 && <p style={{ margin: 0, fontSize: 14, color: DC.faint }}>Personne d'autre pour l'instant. Partage le Pénc !</p>}
+              {hostTab === 'people' && others.map(p => {
+                const up = onStage(p);
+                const isModP = p.attributes.role === 'mod';
+                const tags = [up ? 'Sur scène' : null, p.attributes.hand === '1' && !up ? 'Main levée' : null, p.attributes.invited === '1' && !up ? 'Invité, en attente' : null, isModP ? 'Modérateur' : null].filter(Boolean).join(' · ');
+                return (
+                  <div key={p.identity} style={{ ...row, flexDirection: 'column', alignItems: 'stretch', gap: 8, borderColor: p.attributes.hand === '1' && !up ? `${palette.accent}88` : DC.line }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                      <Avatar p={p} size={36} accent={palette.accent} mine={false} />
+                      <span style={{ flex: 1, minWidth: 0 }}>
+                        <b style={{ display: 'block', fontSize: 15, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.name || 'Anonyme'}</b>
+                        {tags && <span style={{ fontSize: 13, color: p.attributes.hand === '1' && !up ? palette.accent : DC.muted }}>{tags}</span>}
+                      </span>
+                      {up && micOn(p) && <button type="button" disabled={!!busy} aria-label={`Couper le micro de ${p.name}`} onClick={() => { const m = micPub(p); if (m) act(`mute${p.identity}`, () => muteSpeaker(penc.id, p.identity, m.trackSid)); }} style={{ ...btn(false), padding: '0 10px' }}><MicOff size={15} aria-hidden="true" /></button>}
+                      {up
+                        ? <button type="button" disabled={!!busy} onClick={() => act(`rm${p.identity}`, () => removeFromStage(penc.id, p.identity))} style={btn(false)}>Faire descendre</button>
+                        : p.attributes.invited !== '1' && <button type="button" disabled={!!busy || stage.length >= 7} onClick={() => act(`inv${p.identity}`, () => inviteToStage(penc.id, p.identity))} style={btn(p.attributes.hand === '1')}>Faire monter</button>}
+                      {canAdmin && <button type="button" aria-expanded={menuId === p.identity} aria-label={`Plus d'options pour ${p.name || 'cette personne'}`} onClick={() => setMenuId(menuId === p.identity ? null : p.identity)} style={{ ...btn(false), padding: '0 10px' }}>⋯</button>}
+                    </div>
+                    {canAdmin && menuId === p.identity && (
+                      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                        <button type="button" disabled={!!busy} onClick={() => { setMenuId(null); act(`mod${p.identity}`, () => setModerator(penc.id, p.identity, !isModP)); }} style={{ ...btn(false), flex: 1 }}>{isModP ? 'Retirer modérateur' : 'Nommer modérateur'}</button>
+                        <button type="button" onClick={() => { setMenuId(null); setKickId(p.identity); }} style={{ ...btn(false), flex: 1, borderColor: 'rgba(240,154,122,.6)', color: '#F09A7A', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}><UserX size={15} aria-hidden="true" />Exclure</button>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+              {hostTab === 'people' && canAdmin && others.length > 0 && <p style={{ margin: 0, fontSize: 13, lineHeight: 1.5, color: DC.faint }}>Un modérateur peut faire monter, faire descendre et couper les micros. Seul l'hôte exclut.</p>}
               {kickId && (
                 <div role="alertdialog" aria-label="Exclure" style={{ ...row, flexWrap: 'wrap', borderColor: 'rgba(240,154,122,.6)' }}>
                   <span style={{ flex: '1 1 100%', fontSize: 14 }}>Exclure cette personne de ce Pénc ? Elle ne pourra plus revenir.</span>
@@ -263,17 +276,17 @@ const PencRoom: React.FC<{ penc: Penc; ticket: RoomTicket; palette: MomentPalett
         </div>
         {chat.length > 0 && (
           <div style={{ position: 'absolute', left: 0, right: 0, bottom: 0, padding: '28px 72px 8px 16px', background: 'linear-gradient(to top, rgba(18,12,7,.92) 35%, rgba(18,12,7,0))', pointerEvents: 'none' }}>
-            <div style={{ pointerEvents: 'auto' }}><ChatFlux items={chat} onOpen={() => setSheet('chat')} /></div>
+            <div style={{ pointerEvents: 'auto' }}><ChatFlux items={chat} meId={ticket.identity} onOpen={() => setSheet('chat')} /></div>
           </div>
         )}
         </div>
 
         {invited && (
           <section role="dialog" aria-label="Invitation à parler" style={{ margin: '0 16px 10px', padding: 16, borderRadius: 20, border: `1px solid ${palette.accent}88`, background: '#241911', display: 'flex', flexDirection: 'column', gap: 10 }}>
-            <b style={{ fontFamily: 'Fraunces, serif', fontSize: 20, color: DC.title }}>{penc.host.name} t'invite à prendre la parole</b>
+            <b style={{ fontFamily: 'Fraunces, serif', fontSize: 20, color: DC.title }}>On t'invite à monter sur scène</b>
             <span style={{ fontSize: 14, lineHeight: 1.5, color: DC.soft }}>Ta voix sera entendue par les {people.length} personnes présentes, sous le nom « {me?.name || 'Anonyme'} ». Rien n'est enregistré. Ne donne ni ton nom complet, ni ton numéro.</span>
             <div style={{ display: 'flex', gap: 8 }}>
-              <button type="button" disabled={!!busy} onClick={accept} style={{ ...btn(true), flex: 1, minHeight: 46 }}>Prendre la parole</button>
+              <button type="button" disabled={!!busy} onClick={accept} style={{ ...btn(true), flex: 1, minHeight: 46 }}>Accepter de monter</button>
               <button type="button" disabled={!!busy} onClick={decline} style={{ ...btn(false), minHeight: 46 }}>Non merci</button>
             </div>
           </section>
@@ -313,7 +326,7 @@ const PencRoom: React.FC<{ penc: Penc; ticket: RoomTicket; palette: MomentPalett
           )}
           <button type="button" onClick={react} disabled={status !== 'ok'} aria-label="Envoyer un cœur" style={{ width: 46, height: 46, flex: 'none', borderRadius: '50%', border: 0, background: 'rgba(240,154,122,.16)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}><Heart size={20} color="#F09A7A" fill="#F09A7A" aria-hidden="true" /></button>
         </footer>
-        {sheet === 'chat' && <ChatSheet items={chat} isMod={ticket.isMod} onHide={cid => { setChat(c => c.filter(x => x.cid !== cid)); hideChat(penc.id, cid).catch(() => {}); }} onClose={() => setSheet(null)} />}
+        {sheet === 'chat' && <ChatSheet items={chat} meId={ticket.identity} isMod={isModNow} onHide={cid => { setChat(c => c.filter(x => x.cid !== cid)); hideChat(penc.id, cid).catch(() => {}); }} onClose={() => setSheet(null)} />}
         {sheet === 'questions' && <QuestionsSheet pencId={penc.id} questions={live?.questions ?? []} accent={palette.accent} onChanged={refresh} onClose={() => setSheet(null)} />}
         {viewer && <ImageViewer url={viewer} onClose={() => setViewer(null)} />}
       </div>

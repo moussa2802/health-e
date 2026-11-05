@@ -3,9 +3,9 @@
  *   ChatFlux / ChatSheet      les commentaires qui défilent par-dessus le Pénc (et la liste complète)
  *   PinnedQuestion            la question « à l'antenne », vue par tous
  *   QuestionsSheet            la boîte à questions (Anonyme / pseudo / prénom) + « moi aussi »
- *   HostQuestions             côté animateur : afficher à tous, répondue, masquer
+ *   HostQuestions             côté hôte : afficher à tous, répondue, masquer
  *   SlideCard / ImageViewer   l'image de présentation, et son agrandissement (pincer, double-tap, boutons)
- *   SlidesManager             côté animateur : ajouter, montrer, retirer des images
+ *   SlidesManager             côté hôte : ajouter, montrer, retirer des images
  */
 import React, { useEffect, useRef, useState } from 'react';
 import { Check, EyeOff, HelpCircle, ImagePlus, Loader2, Minus, Plus, X, ZoomIn } from 'lucide-react';
@@ -29,7 +29,9 @@ const Dot: React.FC<{ name: string; size: number }> = ({ name, size }) => (
 
 // ───────── Commentaires ─────────
 /** Les 5 derniers commentaires, par-dessus le Pénc : les plus anciens s'effacent en remontant. Toucher ouvre la liste. */
-export const ChatFlux: React.FC<{ items: ChatMessage[]; onOpen: () => void }> = ({ items, onOpen }) => {
+const who = (m: ChatMessage, meId?: string) => `${m.n}${m.h ? ' · hôte' : ''}${meId && m.who === meId ? ' (toi)' : ''}`;
+
+export const ChatFlux: React.FC<{ items: ChatMessage[]; meId?: string; onOpen: () => void }> = ({ items, meId, onOpen }) => {
   const last = items.slice(-5);
   if (!last.length) return null;
   const fade = [0.3, 0.5, 0.7, 0.88, 1];
@@ -40,7 +42,7 @@ export const ChatFlux: React.FC<{ items: ChatMessage[]; onOpen: () => void }> = 
         <span key={m.cid} className="penc-msg" style={{ display: 'flex', gap: 8, alignItems: 'flex-start', opacity: fade[fade.length - last.length + i] }}>
           <Dot name={m.n} size={26} />
           <span style={{ padding: '6px 11px', borderRadius: 16, background: 'rgba(18,12,7,.62)', fontSize: 14, lineHeight: 1.35, color: DC.text, maxWidth: '100%', overflowWrap: 'anywhere' }}>
-            <b style={{ color: anon(m.n) ? DC.muted : colorOf(m.n) }}>{m.h ? `${m.n} · animateur` : m.n}</b> {m.t}
+            <b style={{ color: anon(m.n) ? DC.muted : colorOf(m.n) }}>{who(m, meId)}</b> {m.t}
           </span>
         </span>
       ))}
@@ -48,8 +50,8 @@ export const ChatFlux: React.FC<{ items: ChatMessage[]; onOpen: () => void }> = 
   );
 };
 
-/** Tous les commentaires (depuis ton arrivée) ; l'animateur peut en masquer un pour tout le monde. */
-export const ChatSheet: React.FC<{ items: ChatMessage[]; isMod: boolean; onHide: (cid: string) => void; onClose: () => void }> = ({ items, isMod, onHide, onClose }) => {
+/** Tous les commentaires (depuis ton arrivée) ; l'hôte peut en masquer un pour tout le monde. */
+export const ChatSheet: React.FC<{ items: ChatMessage[]; meId?: string; isMod: boolean; onHide: (cid: string) => void; onClose: () => void }> = ({ items, meId, isMod, onHide, onClose }) => {
   const end = useRef<HTMLDivElement>(null);
   useEffect(() => { end.current?.scrollIntoView(); }, [items.length]);
   return (
@@ -60,7 +62,7 @@ export const ChatSheet: React.FC<{ items: ChatMessage[]; isMod: boolean; onHide:
             <div key={m.cid} style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
               <Dot name={m.n} size={32} />
               <div style={{ flex: 1, minWidth: 0 }}>
-                <p style={{ margin: 0, fontSize: 13, color: DC.faint }}><b style={{ color: anon(m.n) ? DC.muted : colorOf(m.n) }}>{m.n}</b>{m.h ? ' · animateur' : ''} · {new Date(m.at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</p>
+                <p style={{ margin: 0, fontSize: 13, color: DC.faint }}><b style={{ color: anon(m.n) ? DC.muted : colorOf(m.n) }}>{who(m, meId)}</b> · {new Date(m.at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</p>
                 <p style={{ margin: '2px 0 0', fontSize: 15, lineHeight: 1.4, overflowWrap: 'anywhere' }}>{m.t}</p>
               </div>
               {isMod && !m.h && <button type="button" onClick={() => onHide(m.cid)} aria-label={`Masquer pour tous le commentaire de ${m.n}`} className="drl-btn" style={iconBtn}><EyeOff size={16} aria-hidden="true" /></button>}
@@ -191,7 +193,7 @@ export const QuestionsSheet: React.FC<{ pencId: string; questions: PencQuestion[
   );
 };
 
-/** Côté animateur : les questions triées par « moi aussi ». */
+/** Côté hôte : les questions triées par « moi aussi ». */
 export const HostQuestions: React.FC<{ pencId: string; questions: PencQuestion[]; accent: string; onChanged: () => void }> = ({ pencId, questions, accent, onChanged }) => {
   const [busy, setBusy] = useState('');
   const run = (k: string, f: () => Promise<unknown>) => { setBusy(k); f().then(onChanged).catch(() => {}).finally(() => setBusy('')); };
@@ -220,72 +222,112 @@ export const HostQuestions: React.FC<{ pencId: string; questions: PencQuestion[]
 };
 
 // ───────── Images ─────────
-export const SlideCard: React.FC<{ url: string; index: number; total: number; onOpen: () => void }> = ({ url, index, total, onOpen }) => (
-  <button type="button" onClick={onOpen} aria-label={`Image ${index + 1} sur ${total} : toucher pour agrandir`} className="drl-btn"
-    style={{ position: 'relative', width: '100%', padding: 0, border: `1px solid ${DC.line}`, borderRadius: 18, overflow: 'hidden', background: '#0B0704', cursor: 'zoom-in', display: 'block' }}>
-    <img src={url} alt="" style={{ display: 'block', width: '100%', maxHeight: '34svh', objectFit: 'contain' }} />
-    <span style={{ position: 'absolute', right: 8, bottom: 8, display: 'inline-flex', alignItems: 'center', gap: 5, padding: '5px 9px', borderRadius: 999, background: 'rgba(18,12,7,.75)', fontSize: 13, color: DC.text }}>
-      <ZoomIn size={14} aria-hidden="true" />{index + 1}/{total}
-    </span>
-  </button>
-);
+export const SlideCard: React.FC<{ url: string; index: number; total: number; onOpen: () => void; host?: { onPrev: () => void; onNext: () => void; onHide: () => void; busy?: boolean } }> = ({ url, index, total, onOpen, host }) => {
+  const nav: React.CSSProperties = { minWidth: 44, minHeight: 44, padding: '0 12px', borderRadius: 12, border: `1px solid ${DC.line}`, background: 'rgba(255,255,255,.05)', color: DC.title, fontFamily: 'inherit', fontSize: 14, fontWeight: 700, cursor: 'pointer' };
+  return (
+    <section aria-label="Image de présentation" style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+      <button type="button" onClick={onOpen} aria-label={`Image ${index + 1} sur ${total} : toucher pour agrandir`} className="drl-btn"
+        style={{ position: 'relative', width: '100%', height: 'clamp(240px, 46svh, 520px)', padding: 0, border: `1px solid ${DC.line}`, borderRadius: 18, overflow: 'hidden', background: '#0B0704', cursor: 'zoom-in', display: 'block' }}>
+        <img src={url} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'contain' }} />
+        <span style={{ position: 'absolute', right: 8, bottom: 8, display: 'inline-flex', alignItems: 'center', gap: 6, padding: '7px 11px', borderRadius: 999, background: 'rgba(18,12,7,.8)', fontSize: 13, fontWeight: 700, color: DC.text }}>
+          <ZoomIn size={15} aria-hidden="true" />Agrandir · {index + 1}/{total}
+        </span>
+      </button>
+      {host && (
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button type="button" disabled={host.busy || index === 0} onClick={host.onPrev} aria-label="Image précédente" style={{ ...nav, opacity: index === 0 ? 0.4 : 1 }}>‹</button>
+          <button type="button" disabled={host.busy || index >= total - 1} onClick={host.onNext} aria-label="Image suivante" style={{ ...nav, opacity: index >= total - 1 ? 0.4 : 1 }}>›</button>
+          <button type="button" disabled={host.busy} onClick={host.onHide} style={{ ...nav, flex: 1 }}>Cacher l'image pour tous</button>
+        </div>
+      )}
+    </section>
+  );
+};
 
-/** Plein écran : pincer pour zoomer, glisser pour se déplacer, double-tap pour 1× / 2,5×. */
+/** Plein écran : pincer pour zoomer, glisser pour se déplacer, double-tap ou boutons + / −. */
 export const ImageViewer: React.FC<{ url: string; onClose: () => void }> = ({ url, onClose }) => {
-  const [v, setV] = useState({ s: 1, x: 0, y: 0 });
-  const pts = useRef(new Map<number, { x: number; y: number }>());
-  const start = useRef<{ d: number; s: number; x: number; y: number; px: number; py: number } | null>(null);
-  const lastTap = useRef(0);
-  const clamp = (s: number) => Math.min(5, Math.max(1, s));
+  const [scale, setScale] = useState(1);
+  const [failed, setFailed] = useState(false);
+  const box = useRef<HTMLDivElement>(null);
+  const scaleRef = useRef(1);
+  const clamp = (x: number) => Math.min(5, Math.max(1, x));
+  /** Change le zoom en gardant le même point au centre (ou sous les doigts). */
+  const zoomTo = (next: number, cx?: number, cy?: number) => {
+    const el = box.current;
+    const prev = scaleRef.current;
+    const n = clamp(next);
+    if (!el || n === prev) return;
+    const px = cx ?? el.clientWidth / 2;
+    const py = cy ?? el.clientHeight / 2;
+    const fx = (el.scrollLeft + px) / prev;
+    const fy = (el.scrollTop + py) / prev;
+    scaleRef.current = n;
+    setScale(n);
+    requestAnimationFrame(() => { el.scrollLeft = fx * n - px; el.scrollTop = fy * n - py; });
+  };
   useEffect(() => {
     const k = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
     window.addEventListener('keydown', k);
     return () => window.removeEventListener('keydown', k);
   }, [onClose]);
-  const dist = () => { const [a, b] = [...pts.current.values()]; return Math.hypot(a.x - b.x, a.y - b.y); };
-  const onDown = (e: React.PointerEvent) => {
-    (e.target as Element).setPointerCapture?.(e.pointerId);
-    pts.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
-    start.current = { d: pts.current.size === 2 ? dist() : 0, s: v.s, x: v.x, y: v.y, px: e.clientX, py: e.clientY };
-    if (pts.current.size === 1) {
-      const now = Date.now();
-      if (now - lastTap.current < 300) setV(cur => (cur.s > 1 ? { s: 1, x: 0, y: 0 } : { s: 2.5, x: 0, y: 0 }));
-      lastTap.current = now;
-    }
-  };
-  const onMove = (e: React.PointerEvent) => {
-    if (!pts.current.has(e.pointerId) || !start.current) return;
-    pts.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
-    const st = start.current;
-    if (pts.current.size === 2 && st.d > 0) setV(cur => ({ ...cur, s: clamp(st.s * (dist() / st.d)) }));
-    else if (pts.current.size === 1 && v.s > 1) setV(cur => ({ ...cur, x: st.x + (e.clientX - st.px), y: st.y + (e.clientY - st.py) }));
-  };
-  const onUp = (e: React.PointerEvent) => {
-    pts.current.delete(e.pointerId);
-    start.current = pts.current.size ? { d: pts.current.size === 2 ? dist() : 0, s: v.s, x: v.x, y: v.y, px: [...pts.current.values()][0].x, py: [...pts.current.values()][0].y } : null;
-    if (v.s <= 1.02) setV({ s: 1, x: 0, y: 0 });
-  };
-  const zoom = (k: number) => setV(cur => { const s = clamp(cur.s * k); return s === 1 ? { s: 1, x: 0, y: 0 } : { ...cur, s }; });
-  const round: React.CSSProperties = { width: 48, height: 48, borderRadius: '50%', border: 0, background: 'rgba(255,255,255,.12)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' };
+  useEffect(() => {
+    const el = box.current;
+    if (!el) return;
+    let start: { d: number; s: number } | null = null;
+    let lastTap = 0;
+    const d = (t: TouchList) => Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY);
+    const mid = (t: TouchList) => { const r = el.getBoundingClientRect(); return [(t[0].clientX + t[1].clientX) / 2 - r.left, (t[0].clientY + t[1].clientY) / 2 - r.top]; };
+    const onStart = (e: TouchEvent) => {
+      if (e.touches.length === 2) { start = { d: d(e.touches), s: scaleRef.current }; e.preventDefault(); return; }
+      if (e.touches.length === 1) {
+        const now = Date.now();
+        if (now - lastTap < 280) {
+          e.preventDefault();
+          const r = el.getBoundingClientRect();
+          zoomTo(scaleRef.current > 1.2 ? 1 : 2.5, e.touches[0].clientX - r.left, e.touches[0].clientY - r.top);
+          lastTap = 0;
+        } else lastTap = now;
+      }
+    };
+    const onMove = (e: TouchEvent) => {
+      if (e.touches.length === 2 && start) { e.preventDefault(); const [cx, cy] = mid(e.touches); zoomTo(start.s * (d(e.touches) / start.d), cx, cy); }
+    };
+    const onEnd = (e: TouchEvent) => { if (e.touches.length < 2) start = null; };
+    // Safari (iPhone) : ses propres gestes de zoom de page sont bloqués ici
+    const block = (e: Event) => e.preventDefault();
+    el.addEventListener('touchstart', onStart, { passive: false });
+    el.addEventListener('touchmove', onMove, { passive: false });
+    el.addEventListener('touchend', onEnd);
+    el.addEventListener('gesturestart', block as EventListener);
+    el.addEventListener('gesturechange', block as EventListener);
+    return () => {
+      el.removeEventListener('touchstart', onStart); el.removeEventListener('touchmove', onMove); el.removeEventListener('touchend', onEnd);
+      el.removeEventListener('gesturestart', block as EventListener); el.removeEventListener('gesturechange', block as EventListener);
+    };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  const round: React.CSSProperties = { width: 48, height: 48, borderRadius: '50%', border: 0, background: 'rgba(255,255,255,.14)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' };
   return (
-    <div role="dialog" aria-label="Image agrandie" className="drl-screen" style={{ position: 'fixed', inset: 0, zIndex: 90, background: '#000', touchAction: 'none', overflow: 'hidden' }}
-      onPointerDown={onDown} onPointerMove={onMove} onPointerUp={onUp} onPointerCancel={onUp}>
-      <img src={url} alt="Image de présentation" draggable={false}
-        style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'contain', transform: `translate(${v.x}px, ${v.y}px) scale(${v.s})`, transition: pts.current.size ? 'none' : 'transform .15s ease', userSelect: 'none' }} />
-      <div style={{ position: 'absolute', top: 'calc(12px + env(safe-area-inset-top, 0px))', right: 12 }} onPointerDown={e => e.stopPropagation()}>
-        <button type="button" onClick={onClose} aria-label="Fermer l'image" style={round}><X size={22} aria-hidden="true" /></button>
+    <div role="dialog" aria-label="Image agrandie" className="drl-screen" style={{ position: 'fixed', inset: 0, zIndex: 90, background: '#000' }}>
+      <div ref={box} onDoubleClick={e => { const r = box.current!.getBoundingClientRect(); zoomTo(scaleRef.current > 1.2 ? 1 : 2.5, e.clientX - r.left, e.clientY - r.top); }}
+        style={{ position: 'absolute', inset: 0, overflow: 'auto', touchAction: 'pan-x pan-y', WebkitOverflowScrolling: 'touch', overscrollBehavior: 'contain' }}>
+        <div style={{ width: `${scale * 100}%`, height: `${scale * 100}%`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          {failed
+            ? <p style={{ color: '#fff', fontSize: 15, padding: 24, textAlign: 'center' }}>L'image n'a pas pu s'afficher. Ferme et réessaie dans un instant.</p>
+            : <img src={url} alt="Image de présentation" draggable={false} onError={() => setFailed(true)} style={{ maxWidth: '100%', maxHeight: '100%', width: '100%', height: '100%', objectFit: 'contain', userSelect: 'none', WebkitUserSelect: 'none' }} />}
+        </div>
       </div>
-      <div style={{ position: 'absolute', bottom: 'calc(20px + env(safe-area-inset-bottom, 0px))', left: 0, right: 0, display: 'flex', justifyContent: 'center', gap: 12 }} onPointerDown={e => e.stopPropagation()}>
-        <button type="button" onClick={() => zoom(1 / 1.5)} aria-label="Dézoomer" style={round}><Minus size={20} aria-hidden="true" /></button>
-        <span style={{ minWidth: 56, alignSelf: 'center', textAlign: 'center', color: '#fff', fontSize: 14 }}>{Math.round(v.s * 100)} %</span>
-        <button type="button" onClick={() => zoom(1.5)} aria-label="Zoomer" style={round}><Plus size={20} aria-hidden="true" /></button>
+      <button type="button" onClick={onClose} aria-label="Fermer l'image" style={{ ...round, position: 'absolute', top: 'calc(12px + env(safe-area-inset-top, 0px))', right: 12 }}><X size={22} aria-hidden="true" /></button>
+      <div style={{ position: 'absolute', bottom: 'calc(20px + env(safe-area-inset-bottom, 0px))', left: 0, right: 0, display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 12, pointerEvents: 'none' }}>
+        <button type="button" onClick={() => zoomTo(scaleRef.current / 1.5)} aria-label="Dézoomer" style={{ ...round, pointerEvents: 'auto' }}><Minus size={20} aria-hidden="true" /></button>
+        <span style={{ minWidth: 60, textAlign: 'center', color: '#fff', fontSize: 14, fontWeight: 700, padding: '6px 10px', borderRadius: 999, background: 'rgba(0,0,0,.5)' }}>{Math.round(scale * 100)} %</span>
+        <button type="button" onClick={() => zoomTo(scaleRef.current * 1.5)} aria-label="Zoomer" style={{ ...round, pointerEvents: 'auto' }}><Plus size={20} aria-hidden="true" /></button>
       </div>
-      <p style={{ ...srOnly }}>Pince avec deux doigts pour zoomer, ou touche deux fois.</p>
+      <p style={srOnly}>Pince avec deux doigts pour zoomer, touche deux fois, ou utilise les boutons.</p>
     </div>
   );
 };
 
-/** Côté animateur : préparer et montrer les images (photos, captures, schémas). */
+/** Côté hôte : préparer et montrer les images (photos, captures, schémas). */
 export const SlidesManager: React.FC<{ pencId: string; slides: (string | null)[]; current: number | null; accent: string; onChanged: () => void }> = ({ pencId, slides, current, accent, onChanged }) => {
   const [busy, setBusy] = useState('');
   const [error, setError] = useState('');

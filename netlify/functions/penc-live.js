@@ -81,10 +81,11 @@ exports.handler = async (event) => {
     const p = s.data();
     if (p.status === 'cancelled') return reply(404, { error: 'Pénc introuvable' });
     const role = await R.roleOf(uid);
-    const isMod = p.hostUid === uid || role.owner;
+    const E0 = lk();
+    const isMod = p.hostUid === uid || role.owner || (Array.isArray(p.mods) && !!E0.secret && p.mods.includes(identityOf(uid, pid, E0.secret)));
     const qCol = ref.collection('questions');
 
-    // Accès : chaîne (membres) et payant (inscrits) ; l'animateur passe toujours
+    // Accès : chaîne (membres) et payant (inscrits) ; l'hôte passe toujours
     if (!isMod) {
       if (p.access === 'channel') {
         const m = await db.collection('channelMembers').doc(`${p.channelId}_${uid}`).get();
@@ -154,7 +155,7 @@ exports.handler = async (event) => {
     }
 
     // ───────── Animateur ─────────
-    if (!isMod) return reply(403, { error: 'Réservé à l\'animateur' });
+    if (!isMod) return reply(403, { error: 'Réservé à l\'hôte et aux modérateurs' });
 
     if (action === 'pin') {
       const qid = body.qid ? String(body.qid) : null;

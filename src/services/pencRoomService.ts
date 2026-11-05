@@ -22,3 +22,4 @@ export const inviteToStage = (pencId: string, identity: string) => call<{ ok: bo
 export const removeFromStage = (pencId: string, identity: string) => call<{ ok: boolean }>({ action: 'remove', pencId, identity });
 export const muteSpeaker = (pencId: string, identity: string, trackSid: string) => call<{ ok: boolean }>({ action: 'mute', pencId, identity, trackSid });
 export const kickFromPenc = (pencId: string, identity: string) => call<{ ok: boolean }>({ action: 'kick', pencId, identity });
+export const setModerator = (pencId: string, identity: string, on: boolean) => call<{ ok: boolean }>({ action: 'set_mod', pencId, identity, on });
