@@ -907,7 +907,8 @@ const ConversationAccueil: React.FC = () => {
     if (c.kind === 'mood') { trackAccueil('mood_open'); setMode('mood'); return; }
     if (c.kind === 'home') {
       const v = c.q!.value;
-      if (v === 'home:couple') { navigate('/assessment/compatibility'); return; }
+      // Compatibilité pas encore ouverte : « Mon couple » mène au test du style d'attachement
+    if (v === 'home:couple') { if (launch.on('compat')) { navigate('/assessment/compatibility'); return; } setInChat(true); void startTest('ecr_r'); return; }
       setInChat(true);
       if (v.startsWith('home:test:')) void startTest(v.slice(10));
       if (v === 'home:programme') offerProgramme(state, 'Mon programme');

@@ -141,7 +141,10 @@ const TotemProfilePage: React.FC = () => {
   const navigate = useNavigate();
   const { currentUser, isAuthenticated } = useAuth();
   const { defiEnabled: defiFlag } = useDefiFlag();
-  const launchDefi = useLaunch().on('defis');
+  const launch = useLaunch();
+  const launchDefi = launch.on('defis');
+  const compatOn = launch.on('compat');
+  const progOn = launch.on('programme');
   // Les défis entre proches arrivent avec la vague 2 du lancement
   const defiEnabled = defiFlag && launchDefi;
   const cardRef = useRef<HTMLDivElement>(null);
@@ -403,7 +406,7 @@ const TotemProfilePage: React.FC = () => {
                   Ta jauge « {RING_SHORT_LABELS[lowest.scaleId] ?? lowest.label} » est la plus basse ({lowest.fillPercent} %). C'est elle qui ferait le plus briller {w.ton}. Quand tu refais le test et que ça a bougé, il rayonne davantage.
                 </p>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                  {lowAxis && <Btn variant="secondary" onClick={() => navigate('/compagnon', { state: { programme: true } })}>{progActive ? 'Voir mon programme' : 'Un programme pour ça'}</Btn>}
+                  {lowAxis && progOn && <Btn variant="secondary" onClick={() => navigate('/compagnon', { state: { programme: true } })}>{progActive ? 'Voir mon programme' : 'Un programme pour ça'}</Btn>}
                   <Btn variant="secondary" onClick={() => navigate('/compagnon', { state: { prescribe: lowest.scaleId } })}>Refaire ce test</Btn>
                 </div>
               </div>
@@ -411,7 +414,7 @@ const TotemProfilePage: React.FC = () => {
           </Fold>
         )}
 
-        <Fold title={`Les routines ${w.du}`} summary={`${TOTEM_ROUTINES[animal].length} habitudes à ajouter à ton programme`} icon={<ClipboardCheck size={18} color={palette.accent} />}>
+        <Fold title={`Les routines ${w.du}`} summary={progOn ? `${TOTEM_ROUTINES[animal].length} habitudes à ajouter à ton programme` : `${TOTEM_ROUTINES[animal].length} habitudes pour ton quotidien`} icon={<ClipboardCheck size={18} color={palette.accent} />}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10, margin: '0 0 12px' }}>
             {TOTEM_ROUTINES[animal].map(r => (
               <div key={r.id} style={{ display: 'flex', gap: 10 }}>
@@ -420,8 +423,10 @@ const TotemProfilePage: React.FC = () => {
               </div>
             ))}
           </div>
-          <Btn variant="secondary" onClick={() => navigate('/compagnon', { state: { programme: true } })}>Les ajouter à mon programme</Btn>
-          <p style={{ margin: '8px 0 0', fontSize: 13, color: C.faint }}>Tu choisis lesquelles garder, et tu peux les retirer à tout moment.</p>
+          {progOn && <>
+            <Btn variant="secondary" onClick={() => navigate('/compagnon', { state: { programme: true } })}>Les ajouter à mon programme</Btn>
+            <p style={{ margin: '8px 0 0', fontSize: 13, color: C.faint }}>Tu choisis lesquelles garder, et tu peux les retirer à tout moment.</p>
+          </>}
         </Fold>
 
         <Fold title="En amour" summary={`Tu t'accordes le mieux avec ${love.best.map(m => totemWords(m.animal).un).join(' et ')}`} icon={<Heart size={18} color={C.intime} />}>
@@ -442,8 +447,12 @@ const TotemProfilePage: React.FC = () => {
               Avec {totemWords(love.effort.animal).un}, l'amour demande plus d'efforts : {love.effort.reasons.join(', ')}. Pas impossible, il faut juste en parler.
             </span>
           </div>
-          <p style={{ margin: '12px 0 12px', fontSize: 14, color: C.muted }}>C'est une tendance d'après les tempéraments, pas une règle. La vraie réponse, c'est le test de compatibilité avec la personne.</p>
-          <Btn variant="secondary" to="/assessment/compatibility">Tester avec la personne</Btn>
+          {compatOn ? <>
+            <p style={{ margin: '12px 0 12px', fontSize: 14, color: C.muted }}>C'est une tendance d'après les tempéraments, pas une règle. La vraie réponse, c'est le test de compatibilité avec la personne.</p>
+            <Btn variant="secondary" to="/assessment/compatibility">Tester avec la personne</Btn>
+          </> : (
+            <p style={{ margin: '12px 0 0', fontSize: 14, color: C.muted }}>C'est une tendance d'après les tempéraments, pas une règle : chaque couple s'écrit à deux.</p>
+          )}
         </Fold>
 
         <Fold title="Tes totems proches" summary={`${near.map(a => getTotemSignature(a).label).join(' et ')} : tes jumeaux de tempérament`} icon={<Users size={18} color={C.sage} />}>

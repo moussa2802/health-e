@@ -1,5 +1,6 @@
 import '../../components/accueil/accueil.css';
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useLaunch } from '../../hooks/useLaunch';
 import DrLoShell, { usePalette } from '../../components/accueil/DrLoShell';
 import Btn from '../../components/ui/Btn';
 import Fold from '../../components/ui/Fold';
@@ -637,6 +638,8 @@ const CompatibilityCodeCard: React.FC<CodeCardProps> = ({
 
 // ── Page principale ───────────────────────────────────────────────────────────
 const AssessmentProfilePage: React.FC = () => {
+  // Compatibilité pas encore ouverte : pas de code ni de bouton « Partager avec partenaire »
+  const compatOn = useLaunch().on('compat');
   const palette = usePalette();
   const navigate = useNavigate();
   const { currentUser, isAuthenticated, loading: authLoading } = useAuth();
@@ -938,7 +941,7 @@ const AssessmentProfilePage: React.FC = () => {
                 <MentalProfileCard
                   archetype={archetype}
                   drLoMentalAnalysis={drLoMentalAnalysis}
-                  compatibilityIdMental={compatibilityIdMental}
+                  compatibilityIdMental={compatOn ? compatibilityIdMental : null}
                   copiedMental={copiedMental}
                   onCopyMental={handleCopyMental}
                   updating={updatingMental}
@@ -954,7 +957,7 @@ const AssessmentProfilePage: React.FC = () => {
                 <IntimatePrivateCard
                   intimateTraits={intimateTraits}
                   drLoSexualAnalysis={drLoSexualAnalysis}
-                  compatibilityIdSexual={compatibilityIdSexual}
+                  compatibilityIdSexual={compatOn ? compatibilityIdSexual : null}
                   copiedSexual={copiedSexual}
                   onCopySexual={handleCopySexual}
                   updating={updatingSexual}
@@ -1016,7 +1019,7 @@ const AssessmentProfilePage: React.FC = () => {
         </div>
 
         {/* ── Codes de compatibilité (repliés : le test de compatibilité a son lien) ── */}
-        <div className="mb-3">
+        {compatOn && <div className="mb-3">
         <Fold title="Mes codes de compatibilité" summary="Ou envoie un lien depuis le test de compatibilité" icon={<Key size={18} color="#E9C88F" />}>
         <div className="flex flex-col gap-3.5">
           <CompatibilityCodeCard
@@ -1041,7 +1044,7 @@ const AssessmentProfilePage: React.FC = () => {
           />
         </div>
         </Fold>
-        </div>
+        </div>}
 
         {/* ── Disclaimer ────────────────────────────────────────────── */}
         <div className="mt-6 flex items-start gap-2.5 rounded-xl border border-gold/25 bg-gold-soft px-4 py-3.5">

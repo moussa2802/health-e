@@ -487,18 +487,24 @@ function loveScore(a: number[], b: number[]): number {
   return 0.35 * sim + 0.25 * secure + 0.2 * stable + 0.1 * warm + 0.1 * energy;
 }
 
-function goodReasons(a: number[], b: number[]): string[] {
-  const r: string[] = [];
-  if (Math.abs(a[2] - b[2]) <= 0.15 && b[2] >= 0.55) r.push('la même douceur avec les autres');
-  if (Math.abs(a[3] - b[3]) <= 0.15) r.push('le même sérieux dans les engagements');
-  if (Math.abs(a[1] - b[1]) <= 0.15) r.push('la même curiosité pour la vie');
-  if (b[5] >= 0.75) r.push('sa sécurité affective t\'apaise');
-  if (b[4] <= 0.2 && a[4] >= 0.4) r.push('son calme équilibre tes émotions');
-  if (Math.abs(a[0] - b[0]) >= 0.4) r.push('l\'un ouvre au monde, l\'autre ramène au calme');
-  if (a[0] >= 0.7 && b[0] >= 0.7) r.push('la même énergie, le même goût de l\'action');
-  if (Math.abs(a[0] - b[0]) <= 0.15 && a[0] < 0.7) r.push('le même besoin de calme et d\'intimité');
-  if (!r.length) r.push('vos forces se complètent');
-  return r.slice(0, 2);
+/** Raisons d'un bon accord, chacune avec deux façons de le dire (pour ne pas répéter la même phrase sur les deux totems). */
+function goodReasons(a: number[], b: number[]): [string, string][] {
+  const r: [string, string][] = [];
+  if (Math.abs(a[2] - b[2]) <= 0.15 && b[2] >= 0.55) r.push(['la même douceur avec les autres', 'vous prenez soin l\'un de l\'autre']);
+  if (Math.abs(a[3] - b[3]) <= 0.15) r.push(['le même sérieux dans les engagements', 'quand vous promettez, vous tenez parole']);
+  if (Math.abs(a[1] - b[1]) <= 0.15) r.push(['la même curiosité pour la vie', 'vous aimez découvrir des choses ensemble']);
+  if (b[5] >= 0.75) r.push(['sa sécurité affective t\'apaise', 'à ses côtés, tu te sens en sécurité']);
+  if (b[4] <= 0.2 && a[4] >= 0.4) r.push(['son calme équilibre tes émotions', 'quand tu t\'agites, sa sérénité te pose']);
+  if (Math.abs(a[0] - b[0]) >= 0.4) r.push(['l\'un ouvre au monde, l\'autre ramène au calme', 'vous vous équilibrez : sortir et se poser']);
+  if (a[0] >= 0.7 && b[0] >= 0.7) r.push(['la même énergie, le même goût de l\'action', 'à deux, vous ne tenez pas en place']);
+  if (Math.abs(a[0] - b[0]) <= 0.15 && a[0] < 0.7) r.push(['le même besoin de calme et d\'intimité', 'vous aimez les moments simples, juste à deux']);
+  if (!r.length) r.push(['vos forces se complètent', 'ce qui manque à l\'un, l\'autre l\'apporte']);
+  return r;
+}
+
+/** Deux raisons au plus ; pour le 2e totem, une phrase déjà dite au 1er passe à sa variante. */
+function pickReasons(list: [string, string][], used: Set<string>): string[] {
+  return list.slice(0, 2).map(([x, y]) => (used.has(x) ? y : x));
 }
 
 function effortReasons(a: number[], b: number[]): string[] {
@@ -524,7 +530,12 @@ export function loveMatches(animal: TotemAnimal): { best: LoveMatch[]; effort: L
   const all = SIGNATURES.filter(s => s.animal !== animal)
     .map(s => ({ animal: s.animal, score: loveScore(me, s.vector) - 0.7 * avgOf(s.vector), v: s.vector }))
     .sort((x, y) => y.score - x.score);
-  const best = all.slice(0, 2).map(x => ({ animal: x.animal, score: x.score, reasons: goodReasons(me, x.v) }));
+  const used = new Set<string>();
+  const best = all.slice(0, 2).map(x => {
+    const reasons = pickReasons(goodReasons(me, x.v), used);
+    reasons.forEach(t => used.add(t));
+    return { animal: x.animal, score: x.score, reasons };
+  });
   const low = all[all.length - 1];
   return { best, effort: { animal: low.animal, score: low.score, reasons: effortReasons(me, low.v) } };
 }
