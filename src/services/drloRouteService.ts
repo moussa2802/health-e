@@ -17,6 +17,8 @@ export interface RoutePayload {
   lastDrlo?: string;
   /** Ce que Dr Lô sait déjà de la personne (sans l'intime), pour un ton personnel. */
   profil?: string;
+  /** Destinations pas encore ouvertes pour elle (lancement par vagues). */
+  closed?: string[];
 }
 
 const ACTIONS = new Set(['test', 'defi', 'compat', 'mood', 'confier', 'programme', 'rappels', 'breath', 'chat', 'question_drlo', 'totem',

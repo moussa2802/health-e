@@ -119,6 +119,7 @@ import type { ScaleResult } from '../../types/assessment';
 
 import CompanionMark from './CompanionMark';
 import { useLaunch } from '../../hooks/useLaunch';
+import type { FeatureKey } from '../../utils/launch';
 const STORAGE_PREFIX = 'he_accueil_v1:';
 /** Les traces écrites des exercices du programme vont dans ce carnet du journal. */
 const PROGRAMME_CARNET = 'Programme';
@@ -145,6 +146,9 @@ const BREATH_MS = 4000;
 const BREATH_TOTAL_MS = 60000;
 
 // Couleurs du thème chaud sombre (maquettes « Mon Dr Lô »)
+/** Destination de l'aiguillage → fonctionnalité du lancement par vagues qui doit être ouverte. */
+const CLOSED_IF: Partial<Record<string, FeatureKey>> = { defi: 'defis', compat: 'compat', confier: 'confier', programme: 'programme', question_drlo: 'question' };
+
 const C = {
   text: '#F4EEE4', soft: '#DCD3C5', muted: '#CFC6B8', faint: '#A79E90', title: '#FBF5EA',
   sage: '#9DBFAF', line: 'rgba(255,255,255,.14)', glass: 'rgba(255,255,255,.05)', ink: '#1C140D',
@@ -591,6 +595,8 @@ const ConversationAccueil: React.FC = () => {
   /** Mode discussion (plein écran). À l'arrivée, l'accueil reste une page de salutation. */
   const [inChat, setInChat] = useState(false);
   const launch = useLaunch(); // lancement par vagues : « Me confier » et « Mon programme » s'ouvrent avec la progression
+  /** Destinations de l'aiguillage qui ne sont pas encore ouvertes pour cette personne. */
+  const closedRoutes = () => Object.entries(CLOSED_IF).filter(([, k]) => !launch.on(k!)).map(([a]) => a);
   const [showConvs, setShowConvs] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   // « Mon programme » (compte uniquement)
@@ -985,6 +991,7 @@ const ConversationAccueil: React.FC = () => {
       } : null,
       lastDrlo,
       profil: isAuthenticated ? routeProfile() : undefined,
+      closed: closedRoutes(),
     });
     setRouting(false);
     // La personne a fait autre chose pendant ce temps (pastille, réponse au test) : on n'écrase rien
@@ -995,6 +1002,12 @@ const ConversationAccueil: React.FC = () => {
       trackAccueil('route', { action: 'fallback', step: state.step });
       return;
     }
+    // Destination pas encore ouverte (lancement par vagues) : on discute à la place, sans parler de ce qui n'existe pas
+    if (d && (CLOSED_IF[d.action] && !launch.on(CLOSED_IF[d.action]!))) {
+      d.action = isAuthenticated ? 'chat' : 'reply';
+      d.reply = isAuthenticated ? 'Je regarde ça avec toi.' : 'Je t\'écoute. Dis-m\'en un peu plus.';
+    }
+    if (d && d.then && CLOSED_IF[d.then] && !launch.on(CLOSED_IF[d.then]!)) d.then = null;
     const r = routeDecision(base, d, known, item && p && sc ? {
       currentQuestion: { itemId: item.id, text: questionText(item, p.done, p.total, sc.instructions) },
       doneCount: p.done,

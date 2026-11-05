@@ -9,6 +9,7 @@ const { rulesV2 } = require('./_drloChatRules');
 const { rulesV1 } = require('./_drloChatRulesV1');
 const { wantsJournal, wantsNumbers, filterNotes } = require('./_drloChatContext');
 const { shouldRemember, formatMemory } = require('./_drloMemory');
+const LA = require('./_launch');
 
 const headers = {
   'Access-Control-Allow-Origin': '*',
@@ -145,6 +146,8 @@ Sers-t'en comme un ami qui se souvient : appelle ses proches par leur prénom, r
 Au début d'une discussion (peu ou pas d'échanges avant), si un point « À REPRENDRE » est d'actualité, prends-en des nouvelles en une phrase (un seul point), puis laisse-la mener.
 ${memSection}
 
+${context.launch_txt || ''}
+
 ━━━ RÈGLES ━━━
 
 ${rulesBlock}
@@ -273,9 +276,16 @@ exports.handler = async (event) => {
     memoire = p && p.exists && Array.isArray(p.data().drloMemory) ? p.data().drloMemory : [];
   }
 
+  // Lancement par vagues : ce qui est ouvert pour CETTE personne (le compagnon ne propose rien d'autre)
+  let open = Object.fromEntries(Object.keys(LA.FEATURES).map((k) => [k, false]));
+  try {
+    const [cfg, upl] = await Promise.all([db.collection('siteConfig').doc('home').get(), db.collection('userProfiles').doc(user.uid).get()]);
+    open = LA.openFeatures(cfg.exists ? cfg.data().launch : null, upl.exists ? upl.data() : {});
+  } catch (e) { console.warn('dr-lo-chat launch', e.message); }
+
   // Les chaînes de Dr Lô, vues pour cette personne (calculé ici : jamais pris du navigateur)
   let chaines = { text: '', ids: {} };
-  try {
+  if (open.chaines) try {
     const [cs, ms, up, pa] = await Promise.all([
       db.collection('channels').where('status', '==', 'active').limit(20).get(),
       db.collection('channelMembers').where('uid', '==', user.uid).limit(50).get(),
@@ -289,7 +299,7 @@ exports.handler = async (event) => {
 
   // Les outils de Dr Lô (pratiques publiées) et ce que la personne en connaît
   let outils = { text: '', ids: {} };
-  try {
+  if (open.routine) try {
     const [ps, us] = await Promise.all([
       db.collection('practices').where('status', '==', 'published').limit(40).get(),
       db.collection('practiceUnlocks').where('uid', '==', user.uid).get(),
@@ -307,7 +317,7 @@ exports.handler = async (event) => {
     if (typeof body.rules === 'string' && body.rules.trim()) promptOpts.rules = body.rules.slice(0, 40000);
     if (body.model === 'sonnet') model0 = 'claude-sonnet-4-5-20250929';
   }
-  const systemPrompt = buildSystemPrompt({ ...context, memoire, chaines_txt: chaines.text, outils_txt: outils.text }, promptOpts);
+  const systemPrompt = buildSystemPrompt({ ...context, memoire, chaines_txt: open.chaines ? chaines.text : 'Pas encore ouvert : n\'en parle pas.', outils_txt: open.routine ? outils.text : 'Pas encore ouvert : n\'en parle pas.', launch_txt: LA.launchBlock(open) }, promptOpts);
 
   // Conversation history: the last 12 messages of the thread
   const trimmedHistory = (Array.isArray(historique) ? historique : [])
@@ -343,7 +353,9 @@ exports.handler = async (event) => {
 
       if (response.ok) {
         const data = await response.json();
-        const { text, actions } = splitActions(data?.content?.[0]?.text ?? '', chaines.ids, outils.ids);
+        const split = splitActions(data?.content?.[0]?.text ?? '', chaines.ids, outils.ids);
+        const text = split.text;
+        const actions = split.actions.filter((a) => LA.allowedAction(a, open));
         await commit();
         const cached = data?.usage?.cache_read_input_tokens || 0;
         const total = data?.usage?.input_tokens || 0;

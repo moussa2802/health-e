@@ -54,6 +54,8 @@ function sanitizeContext(body) {
     lastDrlo: clean(body.lastDrlo, 400),
     // Ce que Dr Lô sait déjà de la personne (résumé fait par l'appli, sans l'intime) : pour le ton seulement
     profil: clean(body.profil, 900),
+    // Destinations pas encore ouvertes pour elle (lancement par vagues) : jamais proposées
+    closed: (Array.isArray(body.closed) ? body.closed : []).filter((a) => ACTIONS.includes(a)).slice(0, 10),
   };
 }
 
@@ -116,7 +118,8 @@ function buildUserPrompt(ctx) {
     if (ctx.activeTest.options.length) lines.push(`Réponses possibles : ${ctx.activeTest.options.join(' / ')}`);
   }
   if (ctx.profil) lines.push(`Ce que tu sais d'elle (pour le ton, ne cite ni test ni score) : ${ctx.profil}`);
-  if (ctx.lastDrlo) lines.push(`Dernier message de Dr Lô : ${ctx.lastDrlo}`);
+  if (ctx.lastDrlo) lines.push(`Ton dernier message : ${ctx.lastDrlo}`);
+  if (ctx.closed && ctx.closed.length) lines.push(`PAS ENCORE OUVERT pour elle (ne choisis jamais ces destinations et n'en parle pas dans ta phrase) : ${ctx.closed.join(', ')}. À la place : "chat" si elle est connectée, sinon un "test" adapté.`);
   lines.push('');
   lines.push(`Message de la personne : """${ctx.text}"""`);
   return lines.join('\n');
