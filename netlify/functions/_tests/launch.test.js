@@ -35,3 +35,9 @@ test('règles taillées : pas de messagerie médecin ni de journal quand c\'est 
   assert.match(all, /\[\[vrai_drlo\]\]/);
   assert.match(all, /journal est gratuit/);
 });
+
+test('le carnet ne parle pas d\'une fonction fermée', () => {
+  const open = LA.openFeatures({ wave: 1 }, {});
+  const out = LA.filterNotesByLaunch([{ text: 'A commencé un programme de 28 jours sur le sommeil' }, { text: 'Travaille dans la banque' }, 'Aime écrire dans son journal'], open);
+  assert.deepEqual(out.map((n) => (typeof n === 'string' ? n : n.text)), ['Travaille dans la banque']);
+});

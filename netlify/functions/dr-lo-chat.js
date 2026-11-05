@@ -317,7 +317,9 @@ exports.handler = async (event) => {
     if (typeof body.rules === 'string' && body.rules.trim()) promptOpts.rules = body.rules.slice(0, 40000);
     if (body.model === 'sonnet') model0 = 'claude-sonnet-4-5-20250929';
   }
-  const systemPrompt = buildSystemPrompt({ ...context, memoire, chaines_txt: open.chaines ? chaines.text : 'Pas encore ouvert : n\'en parle pas.', outils_txt: open.routine ? outils.text : 'Pas encore ouvert : n\'en parle pas.', launch_txt: LA.launchBlock(open), open_features: open }, promptOpts);
+  // Carnet : une note qui parle d'une fonction fermée (« a commencé un programme ») ferait croire qu'elle existe
+  const memoireVue = LA.filterNotesByLaunch(memoire, open);
+  const systemPrompt = buildSystemPrompt({ ...context, memoire: memoireVue, chaines_txt: open.chaines ? chaines.text : 'Pas encore ouvert : n\'en parle pas.', outils_txt: open.routine ? outils.text : 'Pas encore ouvert : n\'en parle pas.', launch_txt: LA.launchBlock(open), open_features: open }, promptOpts);
 
   // Conversation history: the last 12 messages of the thread
   const trimmedHistory = (Array.isArray(historique) ? historique : [])

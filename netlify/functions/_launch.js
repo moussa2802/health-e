@@ -49,7 +49,7 @@ function launchBlock(open) {
   const no = Object.keys(LABEL).filter((k) => !open[k]).map((k) => LABEL[k]);
   return `━━━ CE QUI EST OUVERT POUR ELLE AUJOURD'HUI ━━━
 Toujours là : les tests et leurs résultats, l'animal intérieur (après 7 tests psy), la respiration, l'humeur du jour, la discussion avec toi${yes.length ? `, et aussi : ${yes.join(', ')}` : ''}.
-${no.length ? `PAS ENCORE OUVERT pour elle : ${no.join(', ')}. N'en parle JAMAIS, ne les propose pas, n'utilise pas leurs balises, ne dis pas « c'est dans la discussion » ou « je te l'ai préparé » pour ces choses-là. Même si ton carnet ou l'historique parlent d'un journal, d'un programme ou d'une chaîne, ne les propose pas : ils ne sont pas accessibles. Si elle les demande, dis simplement que ce n'est pas encore disponible, et propose ce qui est ouvert (un test, la respiration, l'humeur, ou continuer à parler ici avec toi).` : ''}`;
+${no.length ? `PAS ENCORE OUVERT pour elle : ${no.join(', ')}. N'en parle JAMAIS, ne les propose pas, n'utilise pas leurs balises, ne dis pas « c'est dans la discussion » ou « je te l'ai préparé » pour ces choses-là. Même si ton carnet ou tes réponses PRÉCÉDENTES dans cette discussion ont parlé d'un journal, d'un programme, d'une chaîne ou d'écrire à Dr Lô, c'était une erreur : ne le répète pas, ne dis pas qu'elle l'a commencé, et corrige-toi simplement si elle en reparle. Si elle les demande, dis simplement que ce n'est pas encore disponible, et propose ce qui est ouvert (un test, la respiration, l'humeur, ou continuer à parler ici avec toi).` : ''}`;
 }
 
 /** Ce que le compagnon dit d'un vrai professionnel, selon ce qui est ouvert. */
@@ -81,4 +81,13 @@ function pruneRules(text, open) {
   return out;
 }
 
-module.exports = { FEATURES, featureOn, openFeatures, allowedAction, launchBlock, pruneRules, drloHuman };
+/** Retire du carnet les notes qui parlent d'une fonction fermée pour elle. */
+const NOTE_WORDS = { programme: /programme/i, confier: /journal|me confier/i, chaines: /chaîne|chaine/i, routine: /boîte à outils|pratique|outil/i, defis: /défi|defi/i, compat: /compatibilit/i, question: /question (privée|à dr)|écrit à dr lô/i };
+function filterNotesByLaunch(notes, open) {
+  return (Array.isArray(notes) ? notes : []).filter((n) => {
+    const t = typeof n === 'string' ? n : (n && n.text) || '';
+    return !Object.entries(NOTE_WORDS).some(([k, re]) => !open[k] && re.test(t));
+  });
+}
+
+module.exports = { filterNotesByLaunch, FEATURES, featureOn, openFeatures, allowedAction, launchBlock, pruneRules, drloHuman };
