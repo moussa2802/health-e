@@ -5,7 +5,7 @@
  * Rien n'est enregistré. Le serveur seul ouvre les micros (penc-room).
  */
 import React, { useEffect, useRef, useState } from 'react';
-import { Room, RoomEvent, Track, type Participant } from 'livekit-client';
+import { DisconnectReason, Room, RoomEvent, Track, type Participant } from 'livekit-client';
 import { ChevronLeft, Hand, Heart, HelpCircle, Loader2, Mic, MicOff, Send, Share2, UserX, Volume2 } from 'lucide-react';
 import { ChatFlux, ChatSheet, HostQuestions, ImageViewer, PinnedQuestion, QuestionsSheet, SlideCard, SlidesManager } from './PencLive';
 import { hideChat, liveState, sendChat, sharePenc, showSlide, type ChatMessage, type LiveState } from '../../services/pencLiveService';
@@ -61,11 +61,17 @@ const PencRoom: React.FC<{ penc: Penc; ticket: RoomTicket; palette: MomentPalett
   const [summary, setSummary] = useState(['', '', '']);
   const [kickId, setKickId] = useState<string | null>(null);
   const wantMic = useRef(ticket.isHost);
+  const status0 = useRef<string>('connecting');
+  const leftRef = useRef(false); // on est parti volontairement (ou le Pénc est fini) : pas de reconnexion
+  const audioEls = useRef<HTMLMediaElement[]>([]);
 
   useEffect(() => {
     const room = new Room({ adaptiveStream: true, dynacast: true, audioCaptureDefaults: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } });
     roomRef.current = room;
-    const els: HTMLMediaElement[] = [];
+    const els: HTMLMediaElement[] = audioEls.current = [];
+    let cancelled = false;
+    let retryTimer = 0;
+    let tries = 0;
     const tryMic = () => {
       if (wantMic.current && room.localParticipant.permissions?.canPublish) {
         wantMic.current = false;
@@ -79,7 +85,13 @@ const PencRoom: React.FC<{ penc: Penc; ticket: RoomTicket; palette: MomentPalett
       .on(RoomEvent.ParticipantPermissionsChanged, () => { tryMic(); bump(); })
       .on(RoomEvent.Reconnecting, () => setStatus('reconnecting'))
       .on(RoomEvent.Reconnected, () => setStatus('ok'))
-      .on(RoomEvent.Disconnected, () => setStatus(s => (s === 'error' ? s : 'ended')))
+      .on(RoomEvent.Disconnected, (reason) => {
+        // Fin voulue (départ, Pénc terminé, exclusion) : écran de fin. Sinon (téléphone verrouillé, réseau coupé) : on se reconnecte.
+        const final = leftRef.current || reason === DisconnectReason.CLIENT_INITIATED || reason === DisconnectReason.ROOM_DELETED
+          || reason === DisconnectReason.PARTICIPANT_REMOVED || reason === DisconnectReason.DUPLICATE_IDENTITY;
+        if (final) { setStatus(s => (s === 'error' ? s : 'ended')); return; }
+        setStatus('reconnecting'); retry();
+      })
       .on(RoomEvent.DataReceived, (payload, from, _k, topic) => {
         if (topic === 'react') { pop(); return; }
         // « live » : seulement ce qu'envoie le serveur (jamais un participant), donc déjà modéré
@@ -93,17 +105,72 @@ const PencRoom: React.FC<{ penc: Penc; ticket: RoomTicket; palette: MomentPalett
     [RoomEvent.ParticipantConnected, RoomEvent.ParticipantDisconnected, RoomEvent.ParticipantAttributesChanged, RoomEvent.ActiveSpeakersChanged,
       RoomEvent.TrackMuted, RoomEvent.TrackUnmuted, RoomEvent.TrackPublished, RoomEvent.TrackUnpublished, RoomEvent.LocalTrackPublished, RoomEvent.LocalTrackUnpublished]
       .forEach(ev => room.on(ev, bump));
+    const onConnected = () => { tries = 0; setStatus('ok'); setAudioBlocked(!room.canPlaybackAudio); room.startAudio().catch(() => {}); els.forEach(e => { e.play?.().catch(() => {}); }); tryMic(); bump(); };
+    // Reconnexion après une coupure (verrouillage, changement d'appli, réseau) : on réessaie quelques fois
+    function retry() {
+      if (cancelled || leftRef.current || room.state !== 'disconnected' || retryTimer) return;
+      retryTimer = window.setTimeout(() => {
+        retryTimer = 0;
+        if (cancelled || leftRef.current || room.state !== 'disconnected') return;
+        room.connect(ticket.url, ticket.token).then(onConnected).catch(() => {
+          if (document.visibilityState === 'visible' && ++tries >= 8) { setStatus('error'); setError('Connexion perdue. Recharge la page pour revenir dans le Pénc.'); } else retry();
+        });
+      }, tries === 0 ? 300 : 3000);
+    }
+    // De retour dans la page (ou le réseau revient) : on rebranche tout de suite et on relance le son
+    const wake = () => {
+      if (document.visibilityState === 'hidden') return;
+      if (room.state === 'disconnected' && status0.current !== 'connecting') { tries = 0; setStatus('reconnecting'); retry(); }
+      else { room.startAudio().catch(() => {}); els.forEach(e => { if (e.paused) e.play?.().catch(() => {}); }); }
+    };
+    document.addEventListener('visibilitychange', wake);
+    window.addEventListener('online', wake);
     room.connect(ticket.url, ticket.token)
-      .then(() => { setStatus('ok'); setAudioBlocked(!room.canPlaybackAudio); room.startAudio().catch(() => {}); tryMic(); bump(); })
+      .then(onConnected)
       .catch(() => { setStatus('error'); setError('Impossible de rejoindre la salle. Vérifie ta connexion et réessaie.'); });
-    return () => { room.disconnect(); els.forEach(e => e.remove()); };
+    return () => {
+      cancelled = true; window.clearTimeout(retryTimer);
+      document.removeEventListener('visibilitychange', wake); window.removeEventListener('online', wake);
+      room.disconnect(); els.forEach(e => e.remove());
+    };
   }, [ticket.token]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Écoute « de poche » : écran gardé allumé, commandes sur l'écran verrouillé, titre dans le centre de contrôle.
+  useEffect(() => {
+    if (status !== 'ok') return;
+    let lock: { release: () => Promise<void> } | null = null;
+    let off = false;
+    const grab = async () => {
+      try {
+        const wl = (navigator as unknown as { wakeLock?: { request: (t: 'screen') => Promise<{ release: () => Promise<void> }> } }).wakeLock;
+        if (wl && document.visibilityState === 'visible' && !lock) { const l = await wl.request('screen'); if (off) { l.release().catch(() => {}); return; } lock = l; (l as unknown as EventTarget).addEventListener?.('release', () => { lock = null; }); }
+      } catch { /* refusé (économie d'énergie) : sans importance */ }
+    };
+    void grab();
+    const onVis = () => { if (document.visibilityState === 'visible') void grab(); };
+    document.addEventListener('visibilitychange', onVis);
+    const ms = (navigator as unknown as { mediaSession?: MediaSession }).mediaSession;
+    if (ms && typeof MediaMetadata !== 'undefined') {
+      try {
+        ms.metadata = new MediaMetadata({ title: penc.title, artist: 'Pénc mi · Health-e', album: 'En direct', artwork: [{ src: '/icons/icon-512.png', sizes: '512x512', type: 'image/png' }] });
+        ms.playbackState = 'playing';
+        ms.setActionHandler('play', () => { roomRef.current?.startAudio().catch(() => {}); audioEls.current.forEach(e => { e.play?.().catch(() => {}); }); ms.playbackState = 'playing'; });
+        ms.setActionHandler('pause', () => { audioEls.current.forEach(e => e.pause?.()); ms.playbackState = 'paused'; });
+      } catch { /* non pris en charge */ }
+    }
+    return () => {
+      off = true; document.removeEventListener('visibilitychange', onVis);
+      lock?.release().catch(() => {});
+      if (ms) { try { ms.setActionHandler('play', null); ms.setActionHandler('pause', null); ms.playbackState = 'none'; ms.metadata = null; } catch { /* ignore */ } }
+    };
+  }, [status, penc.title]);
 
   const pop = () => {
     const id = Date.now() + Math.random();
     setHearts(h => [...h.slice(-12), id]);
     window.setTimeout(() => setHearts(h => h.filter(x => x !== id)), 1600);
   };
+  status0.current = status;
   const room = roomRef.current;
   const me = room?.localParticipant;
   const people: Participant[] = room ? [room.localParticipant, ...room.remoteParticipants.values()] : [];
@@ -129,8 +196,8 @@ const PencRoom: React.FC<{ penc: Penc; ticket: RoomTicket; palette: MomentPalett
   const decline = () => act('decline', () => declineStage(penc.id));
   const goDown = () => me && act('down', async () => { await me.setMicrophoneEnabled(false).catch(() => {}); await leaveStage(penc.id); });
   const react = () => { pop(); me?.publishData(new TextEncoder().encode('heart'), { reliable: false, topic: 'react' }).catch(() => {}); };
-  const finish = () => act('end', async () => { await endPenc(penc.id, summary); room?.disconnect(); onLeave(true); });
-  const leave = () => { room?.disconnect(); onLeave(false); };
+  const finish = () => act('end', async () => { await endPenc(penc.id, summary); leftRef.current = true; room?.disconnect(); onLeave(true); });
+  const leave = () => { leftRef.current = true; room?.disconnect(); onLeave(false); };
   const share = () => { sharePenc(penc.id, penc.title).then(r => { if (r === 'copied') { setChatNote({ kind: 'ok', text: 'Lien copié : colle-le dans WhatsApp.' }); window.setTimeout(() => setChatNote(null), 2500); } }); };
   const send = async (e: React.FormEvent) => {
     e.preventDefault();
