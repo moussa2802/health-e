@@ -79,3 +79,13 @@ test('wantsNumbers', () => {
   assert.equal(wantsNumbers('quel est mon score ?'), true);
   assert.equal(wantsNumbers('est-ce que je suis jaloux ?'), false);
 });
+
+test('discrétion intime : pas de rappel spontané hors sujet, notes intimes seulement si le sujet s\'en approche', () => {
+  const c = { ...ctx, memoire: [{ text: 'Parle de difficultés d\'érection qu\'il relie au stress', cat: 'intime' }] };
+  const off = build(c, { message: 'Je voudrais parler à un vrai médecin' });
+  assert.ok(off.includes('DISCRÉTION'));
+  assert.ok(!off.includes('érection qu\'il relie'));
+  const on = build(c, { message: 'Le stress au travail me tue' });
+  assert.ok(!on.includes('DISCRÉTION'));
+  assert.ok(on.includes('érection qu\'il relie'));
+});

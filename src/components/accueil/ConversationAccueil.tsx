@@ -27,6 +27,7 @@ import { useKoris } from '../../contexts/KorisContext';
 import {
   addExchange, addOpener,
   enterCrisis,
+  leaveCrisisIfCalm,
   afterTest,
   pickNextScale,
   alertDuringTest,
@@ -1694,9 +1695,9 @@ const ConversationAccueil: React.FC = () => {
     if (!out.ok) {
       if (out.reason === 'no_koris') {
         openNoKorisModal('Un message au compagnon', KORIS_COSTS.chat);
-        apply(addExchange(cur, null, ['Il te manque une étincelle pour ce message. En attendant, écrire dans ton journal et noter ton humeur restent gratuits.']), cur);
+        apply(addExchange(cur, null, [launch.on('confier') ? 'Il te manque une étincelle pour ce message. En attendant, écrire dans ton journal et noter ton humeur restent gratuits.' : 'Il te manque une étincelle pour ce message. En attendant, noter ton humeur et respirer restent gratuits.']), cur);
       } else if (out.reason === 'limit') {
-        apply(addExchange(cur, null, ['On a beaucoup parlé aujourd\'hui, on reprend demain. En attendant, tu peux écrire dans ton journal : je le garde pour toi.']), cur);
+        apply(addExchange(cur, null, [launch.on('confier') ? 'On a beaucoup parlé aujourd\'hui, on reprend demain. En attendant, tu peux écrire dans ton journal : je le garde pour toi.' : 'On a beaucoup parlé aujourd\'hui, on reprend demain. En attendant, tu peux noter ton humeur ou prendre un moment pour respirer.']), cur);
       } else {
         apply(addExchange(cur, null, ['Je n\'arrive pas à te répondre maintenant (connexion instable). Réessaie dans un instant.']), cur);
       }
@@ -1712,7 +1713,8 @@ const ConversationAccueil: React.FC = () => {
     const items: (string | { text: string; card?: Card })[] = cards.length
       ? [{ text: out.text, card: cards[0] }, ...cards.slice(1).map(card => ({ text: '', card }))]
       : [out.text];
-    apply(addExchange(cur, null, items), cur);
+    // Après une alerte, deux échanges calmes (sans signal d'urgence) suffisent pour sortir du mode crise
+    apply(leaveCrisisIfCalm(addExchange(cur, null, items)), cur);
     if (out.remember) {
       void rememberNow([...turns, { role: 'user', content: text }, { role: 'assistant', content: out.text }])
         .then(added => { if (added[0]) setLearned(added[0]); });

@@ -21,16 +21,18 @@ export const MEMORY_CATS: { id: MemoryCat; label: string }[] = [
   { id: 'intime', label: 'Ta vie intime' },
 ];
 const IDS = MEMORY_CATS.map(c => c.id) as string[];
+/** Même règle que le serveur : tout ce qui touche la sexualité est rangé (et voilé) dans « Ta vie intime ». */
+const INTIME_RE = /[ée]rect|bander|sexu|libido|d[ée]sir sexuel|[ée]jacul|vagin|p[ée]nis|orgasm|rapports? (sexuel|intime)|vie intime|impuissan|lubrifi|dyspareun|frigid/i;
 
 export function normalizeNotes(raw: unknown): MemoryNote[] {
   if (!Array.isArray(raw)) return [];
   return raw.map((n): MemoryNote | null => {
-    if (typeof n === 'string') return n.trim() ? { text: n, cat: 'vie' } : null;
+    if (typeof n === 'string') return n.trim() ? { text: n, cat: INTIME_RE.test(n) ? 'intime' : 'vie' } : null;
     if (!n || typeof n !== 'object') return null;
     const o = n as { text?: unknown; cat?: unknown; at?: unknown };
     const text = typeof o.text === 'string' ? o.text : '';
     if (!text.trim()) return null;
-    return { text, cat: IDS.includes(String(o.cat)) ? (o.cat as MemoryCat) : 'vie', at: typeof o.at === 'string' ? o.at : undefined };
+    return { text, cat: INTIME_RE.test(text) ? 'intime' : IDS.includes(String(o.cat)) ? (o.cat as MemoryCat) : 'vie', at: typeof o.at === 'string' ? o.at : undefined };
   }).filter((n): n is MemoryNote => !!n);
 }
 

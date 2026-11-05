@@ -17,7 +17,7 @@ Thèmes (champ "c") :
 - envies : ses projets, objectifs, rêves, ce qu'elle aime
 - parler : comment elle aime qu'on lui parle (ex. « préfère qu'on aille droit au but », « aime l'humour »)
 - suivre : un événement à venir ou en cours dont il faudra prendre des nouvelles, avec la date si elle est dite (« entretien d'embauche jeudi 12 novembre », « attend les résultats de son concours »). Retire-le quand la personne a donné des nouvelles et note plutôt l'issue dans un autre thème.
-- intime : sa santé et sa vie intimes, en mots sobres, seulement ce qu'elle a dit et ce qui aide à mieux l'accompagner (« parle de difficultés d'érection depuis quelques semaines, qu'il relie au stress », « désir en baisse depuis la naissance de son enfant », « vit mal la pression autour du mariage »). JAMAIS ailleurs que dans ce thème.
+- intime : sa santé et sa vie intimes, en mots sobres, seulement ce qu'elle a dit et ce qui aide à mieux l'accompagner (« parle de difficultés d'érection depuis quelques semaines, qu'il relie au stress », « désir en baisse depuis la naissance de son enfant », « vit mal la pression autour du mariage »). JAMAIS ailleurs que dans ce thème : même une chose à reprendre ou un projet de consultation qui touche la sexualité va ici (« veut consulter pour ses difficultés d'érection » → intime ; dans « suivre », écris seulement « veut consulter un médecin pour son sommeil »).
 
 Ne garde PAS : diagnostics ou étiquettes médicales, médicaments, scores de tests, la sexualité HORS du thème « intime », les détails sexuels crus ou les pratiques, le nom ou tout détail permettant de reconnaître un partenaire, propos violents détaillés, données d'identité (adresse, numéros), démarches administratives ou juridiques (papiers, immigration, régularisation, avocat, justice), dettes. Une période de grande détresse se note sobrement (« a traversé un moment très difficile en octobre, a été orientée vers une aide »), sans détail.
 
@@ -27,6 +27,10 @@ Réponds UNIQUEMENT avec un tableau JSON d'objets {"t": "la note", "c": "thème"
 
 const textOf = (n) => (typeof n === 'string' ? n : (n && (n.text || n.t)) || '');
 const keyOf = (t) => String(t).toLowerCase().replace(/\s+/g, ' ').trim();
+
+/** Tout ce qui touche la sexualité va dans le tiroir intime, quel que soit le thème choisi par l'IA. */
+const INTIME_RE = /[ée]rect|bander|sexu|libido|d[ée]sir sexuel|[ée]jacul|vagin|p[ée]nis|orgasm|rapports? (sexuel|intime)|vie intime|impuissan|lubrifi|dyspareun|frigid/i;
+const catOf = (text, c) => (INTIME_RE.test(String(text || '')) ? 'intime' : (CATS.includes(c) ? c : 'vie'));
 
 /** Lit la réponse de l'IA ; null si inutilisable (on garde alors les anciennes notes). */
 function cleanNotes(raw, current = [], now = new Date()) {
@@ -42,7 +46,7 @@ function cleanNotes(raw, current = [], now = new Date()) {
     const t = String(textOf(x)).replace(/[\u0000-\u001f]/g, ' ').trim().slice(0, 200);
     if (!t || seen.has(keyOf(t))) continue;
     seen.add(keyOf(t));
-    const c = x && typeof x === 'object' && CATS.includes(x.c || x.cat) ? (x.c || x.cat) : 'vie';
+    const c = catOf(t, x && typeof x === 'object' ? (x.c || x.cat) : null);
     out.push({ text: t, cat: c, at: prev.get(keyOf(t)) || now.toISOString() });
     if (out.length >= MAX_NOTES) break;
   }
@@ -66,11 +70,11 @@ function formatMemory(notes) {
   for (const n of notes || []) {
     const t = String(textOf(n)).slice(0, 200);
     if (!t) continue;
-    const c = n && typeof n === 'object' && CATS.includes(n.cat) ? n.cat : 'vie';
+    const c = catOf(t, n && typeof n === 'object' ? n.cat : null);
     if (!groups.has(c)) groups.set(c, []);
     groups.get(c).push(`• ${t}`);
   }
   return CATS.filter(c => groups.has(c)).map(c => `${CAT_TITLE[c]} :\n${groups.get(c).join('\n')}`).join('\n');
 }
 
-module.exports = { MAX_NOTES, CATS, buildMemoryPrompt, cleanNotes, newNotes, shouldRemember, formatMemory };
+module.exports = { MAX_NOTES, CATS, INTIME_RE, catOf, buildMemoryPrompt, cleanNotes, newNotes, shouldRemember, formatMemory };

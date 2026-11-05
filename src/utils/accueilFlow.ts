@@ -434,6 +434,21 @@ export function enterCrisis(s: AccueilState): AccueilState {
   return { ...out, step: 'crisis', resumeStep };
 }
 
+/**
+ * Sortie douce du mode crise : après deux messages calmes de la personne depuis l'alerte
+ * (et sans nouveau signal), on revient à la discussion normale. Les numéros restent plus haut dans le fil.
+ * Pendant un test, on attend qu'elle le dise elle-même (pastille « Je suis en sécurité »).
+ */
+export function leaveCrisisIfCalm(s: AccueilState): AccueilState {
+  if (s.step !== 'crisis' || s.resumeStep === 'testing') return s;
+  const last = s.messages.map(m => m.card?.type === 'crisis').lastIndexOf(true);
+  if (last < 0) return { ...s, step: s.resumeStep ?? 'need', resumeStep: undefined };
+  const calm = s.messages.slice(last + 1).filter(m => m.from === 'user').length;
+  if (calm < 2) return s;
+  const back = s.resumeStep && s.resumeStep !== 'need' && s.resumeStep !== 'need_clarify' ? s.resumeStep : 'prescribed';
+  return { ...s, step: back, resumeStep: undefined };
+}
+
 export interface Input {
   /** Valeur d'une pastille (ex. 'need:stress'). */
   value?: string;
@@ -881,7 +896,13 @@ export function firstName(p?: string | null): string | undefined {
 export function newDay(s: AccueilState, today: string, k: Known): AccueilState {
   if (!s.day) return { ...s, day: today };
   if (s.day === today) return s;
-  if (s.step === 'testing' || s.step === 'crisis' || s.step === 'minor') return { ...s, day: today, talk: undefined };
+  if (s.step === 'testing' || s.step === 'minor') return { ...s, day: today, talk: undefined };
+  // Le lendemain d'une alerte : on prend des nouvelles avec douceur, et on sort du mode crise
+  if (s.step === 'crisis') {
+    const p = firstName(s.prenom ?? k.prenom);
+    const out = push(s, 'drlo', `${p ? `Re-bonjour ${p}` : 'Re-bonjour'}. Je pensais à toi. Comment tu te sens aujourd'hui ? Si c'est encore dur, les numéros d'aide sont toujours plus haut, et je suis là.`);
+    return { ...out, day: today, step: 'need', resumeStep: undefined, talk: undefined, flow: undefined };
+  }
   // Déjà salué (ex. la même discussion ouverte sur un autre appareil) : pas de deuxième « Re-bonjour »
   // On regarde toute la fin du fil restée sans réponse (salutation, puis « ton résultat… ? » par ex.)
   const lastUser = s.messages.map(m => m.from).lastIndexOf('user');

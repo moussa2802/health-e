@@ -32,3 +32,11 @@ test('le tiroir intime est gardé à part et jamais annoncé', () => {
   const { formatMemory } = require('../_drloMemory.js');
   assert.match(formatMemory(out), /INTIME \(discret/);
 });
+
+test('tiroir intime : la sexualité est rangée dans « intime » même si l\'IA choisit un autre thème', () => {
+  const { cleanNotes, catOf } = require('../_drloMemory');
+  const out = cleanNotes('[{"t":"Souhaite consulter un vrai médecin pour le sommeil et les difficultés érectiles","c":"suivre"},{"t":"Dort mal","c":"pese"}]');
+  assert.equal(out[0].cat, 'intime');
+  assert.equal(out[1].cat, 'pese');
+  assert.equal(catOf('Parle de sa libido', 'vie'), 'intime');
+});

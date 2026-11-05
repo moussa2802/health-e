@@ -8,7 +8,7 @@ const PR = require('./_practices');
 const { rulesV2 } = require('./_drloChatRules');
 const { rulesV1 } = require('./_drloChatRulesV1');
 const { wantsJournal, wantsNumbers, filterNotes } = require('./_drloChatContext');
-const { shouldRemember, formatMemory } = require('./_drloMemory');
+const { shouldRemember, formatMemory, catOf } = require('./_drloMemory');
 const LA = require('./_launch');
 
 const headers = {
@@ -32,7 +32,7 @@ function buildSystemPrompt(context, opts = {}) {
   const isFemme = context.genre === 'Femme' || context.genre === 'femme';
   // Le tiroir intime : passé au compagnon quand le message touche un sujet proche (sexualité, couple, stress, fatigue, sommeil, moral, confiance)
   const allNotes = Array.isArray(context.memoire) ? context.memoire : [];
-  const isIntime = (n) => n && typeof n === 'object' && n.cat === 'intime';
+  const isIntime = (n) => catOf(typeof n === 'string' ? n : (n && n.text), n && n.cat) === 'intime';
   const INTIME_TOPIC = /sex|érect|erect|bander|désir|desir|libido|plaisir|intim|couple|copine|copain|femme|mari|épou|epou|stress|fatigu|sommeil|dormir|moral|confiance|anxi|angoiss|travail|pression|mariage|jabar|jëkkër|sonn/i;
   const intimeNotes = INTIME_TOPIC.test(message) ? allNotes.filter(isIntime) : [];
   const memSection = formatMemory([...filterNotes(allNotes.filter((n) => !isIntime(n)), message), ...intimeNotes].slice(0, 34))
@@ -174,7 +174,9 @@ Outils de Dr Lô (ID, ce qu'elle en connaît) :
 ${context.outils_txt || 'Aucun pour le moment.'}
 
 Tests disponibles (ID = nom) :
-${testsDispo || 'Aucun.'}${context.launch_txt ? `\n\n${context.launch_txt}` : ''}`;
+${testsDispo || 'Aucun.'}${context.launch_txt ? `\n\n${context.launch_txt}` : ''}${INTIME_TOPIC.test(message) ? '' : '\n\nDISCRÉTION : son dernier message ne parle pas de sexualité ni de vie intime. N\'en parle pas de toi-même, même si le sujet est venu plus tôt dans la discussion (ex. ne cite pas l\'érection ou le désir dans une liste). Si tu résumes ce qu\'elle vit, reste général (« ce que tu traverses »).'}
+
+FRANÇAIS : phrases correctes et simples (« ce que tu vis », jamais « ce que tu vivre »).`;
 }
 
 // ── Action proposée par Dr Lô (balise en dernière ligne) ─────────────────────

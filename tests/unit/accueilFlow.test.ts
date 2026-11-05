@@ -3,7 +3,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   startConversation, respond, afterTest, pickNextScale, getQuickReplies, detectCrisis, classifyNeed,
-  parsePrenom, parseAge, type Known, type AccueilState,
+  parsePrenom, parseAge, enterCrisis, leaveCrisisIfCalm, newDay, addExchange, type Known, type AccueilState,
 } from '../../src/utils/accueilFlow.ts';
 
 const LABELS: Record<string, string> = { gad7: 'Anxiété', phq9: 'Humeur & Dépression', big_five: 'Personnalité', ecr_r: "Style d'attachement", pss10: 'Stress', pg13: 'Deuil & Pertes', brs: 'Résilience', rses: 'Estime de soi' };
@@ -183,4 +183,20 @@ test('moins de 18 ans : « je me suis trompé d\'âge » demande une confirmatio
   assert.equal(stay.step, 'minor');
   const ok = respond(s, { value: 'minor:confirm', label: 'x' }, k);
   assert.equal(ok.step, 'age');
+});
+
+test('crise : sortie douce après deux échanges calmes, et le lendemain', () => {
+  let s = enterCrisis(guestToPrescription('need:stress'));
+  assert.equal(s.step, 'crisis');
+  s = leaveCrisisIfCalm(addExchange(s, 'je veux parler à un médecin', ['Bonne idée.']));
+  assert.equal(s.step, 'crisis');
+  assert.equal(getQuickReplies(s, guest)[0]?.value, 'crisis:safe');
+  s = leaveCrisisIfCalm(addExchange(s, 'merci', ['Avec plaisir.']));
+  assert.equal(s.step, 'prescribed');
+  assert.equal(getQuickReplies(s, guest).length, 0);
+  // Le lendemain : on prend des nouvelles et on sort du mode crise
+  let c = { ...enterCrisis(guestToPrescription('need:stress')), day: '2026-11-01' };
+  c = newDay(c, '2026-11-02', guest);
+  assert.equal(c.step, 'need');
+  assert.match(last(c).text, /Comment tu te sens aujourd'hui/);
 });
