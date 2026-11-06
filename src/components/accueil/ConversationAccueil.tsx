@@ -10,7 +10,7 @@
  */
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { ArrowRight, Bell, Heart, Mail, PawPrint, Users, Check, ChevronLeft, ClipboardCheck, Clock, CloudSun, Copy, EyeOff, ListChecks, Lock, MessagesSquare, Mic, Pencil, Phone, Plus, Send, Sparkles, Sprout, Wind, Volume2, VolumeX, CalendarCheck, MoreHorizontal, Trash2 } from 'lucide-react';
+import { ArrowRight, Bell, Heart, Mail, Users, Check, ChevronLeft, ClipboardCheck, Clock, CloudSun, Copy, EyeOff, ListChecks, Lock, MessagesSquare, Mic, Pencil, Phone, Plus, Send, Sparkles, Sprout, Wind, Volume2, VolumeX, CalendarCheck, MoreHorizontal, Trash2 } from 'lucide-react';
 import './accueil.css';
 import DrLoAvatar, { auraMoodOf, type DrLoState } from './DrLoAvatar';
 import DrLoIsland from './DrLoIsland';
@@ -26,8 +26,8 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useKoris } from '../../contexts/KorisContext';
 import { useBreathVoice } from '../../hooks/useBreathVoice';
 import { useGuidedExercise } from '../../hooks/useGuidedExercise';
-import { EXERCISES, type ExerciseId } from '../../data/guidedExercises';
-import { ExerciseCard, ExerciseListCard, GuidedRunScreen, VocalCard } from './GuidedExercise';
+import { EXERCISES, EXERCISE_IDS, type ExerciseId } from '../../data/guidedExercises';
+import { EXERCISE_ICON, ExerciseCard, ExerciseListCard, GuidedRunScreen, VocalCard } from './GuidedExercise';
 import {
   addExchange, addOpener,
   enterCrisis,
@@ -900,10 +900,6 @@ const ConversationAccueil: React.FC = () => {
     if (breathing) setBreath(null);
     trackAccueil('exercise', { id });
     guided.start(id);
-  };
-  const offerExercises = () => {
-    const cur = stateRef.current ?? state;
-    apply(addExchange(cur, 'Exercices guidés', [{ text: 'Choisis ce qui te ferait du bien maintenant. Tout est guidé en vocal, et c\'est gratuit.', card: { type: 'exercises' } }]), cur);
   };
 
   const startBreathing = () => {
@@ -1891,13 +1887,13 @@ const ConversationAccueil: React.FC = () => {
                   <div role="menu" className="drl-in" style={{ marginBottom: 8, padding: 6, borderRadius: 16, background: '#221B16', border: '1px solid rgba(255,255,255,.12)', boxShadow: '0 12px 30px rgba(0,0,0,.45)' }}>
                     {[
                       ...(!moodToday ? [{ label: 'Noter mon humeur', hint: '30 s', icon: CloudSun, go: () => { trackAccueil('mood_open'); setMode('mood'); } }] : []),
-                      { label: 'Exercices guidés', hint: 'en vocal', icon: Wind, go: () => offerExercises() },
+                      // Les exercices guidés, directement (en vocal, gratuits)
+                      { label: 'Respirer', hint: '1 min', icon: Wind, go: () => startBreathing() },
+                      ...EXERCISE_IDS.map(id => ({ label: EXERCISES[id].label, hint: `${EXERCISES[id].minutes} min`, icon: EXERCISE_ICON[id], go: () => startExercise(id) })),
                       ...(isAuthenticated && launch.on('programme') ? [{ label: 'Mon programme', hint: prog && prog.status === 'active' && progRemaining ? `${progRemaining} à faire` : '', icon: ClipboardCheck, go: () => (prog ? setProgOpen(true) : offerProgramme(state, 'Mon programme')) }] : []),
-                      { label: 'Mon animal intérieur', hint: '', icon: PawPrint, go: () => navigate('/assessment/totem') },
                       ...(launch.on('compat') ? [{ label: 'Compatibilité de couple', hint: '', icon: Heart, go: () => navigate('/assessment/compatibility') }] : []),
                       ...(launch.on('defis') ? [{ label: 'Défi : tes proches te connaissent ?', hint: '', icon: Users, go: () => navigate(isAuthenticated ? '/defi' : '/decouvre') }] : []),
                       ...(launch.on('question') ? [{ label: 'Écrire à Dr Lô', hint: '', icon: Mail, go: () => navigate('/question') }] : []),
-                      ...(isAuthenticated ? [{ label: 'Mes messages', hint: '', icon: MessagesSquare, go: () => navigate('/messages-dr-lo') }] : []),
                     ].map(it => (
                       <button key={it.label} type="button" role="menuitem" onClick={() => { setMenuOpen(false); it.go(); }} className="drl-btn"
                         style={{ width: '100%', minHeight: 46, padding: '0 12px', border: 0, borderRadius: 12, background: 'transparent', color: C.text, display: 'flex', alignItems: 'center', gap: 10, fontSize: 15, fontWeight: 600, cursor: 'pointer', textAlign: 'left' }}>

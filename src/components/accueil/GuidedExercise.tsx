@@ -12,7 +12,7 @@ import AudioPlayer from './AudioPlayer';
 import { EXERCISES, EXERCISE_IDS, VOCALS, type ExerciseId, type VocalId } from '../../data/guidedExercises';
 import type { GuidedState } from '../../hooks/useGuidedExercise';
 
-const ICON: Record<ExerciseId, LucideIcon> = {
+export const EXERCISE_ICON: Record<ExerciseId, LucideIcon> = {
   coherence: HeartPulse, ancrage: Anchor, sommeil: Moon, relacher: Waves,
 };
 const TXT = { text: '#F3ECE2', soft: '#D8CFC3', muted: '#B5AA9C', faint: '#948A7E', ink: '#1A120B' };
@@ -30,7 +30,7 @@ export const ExerciseListCard: React.FC<{ accent: string; onBreath: () => void; 
       <span style={{ fontSize: 13, color: TXT.faint }}>1 min</span>
     </button>
     {EXERCISE_IDS.map(id => {
-      const e = EXERCISES[id]; const I = ICON[id];
+      const e = EXERCISES[id]; const I = EXERCISE_ICON[id];
       return (
         <button key={id} type="button" onClick={() => onPick(id)} className="drl-btn" style={rowBtn}>
           <I size={20} color={accent} aria-hidden={true} />
@@ -44,7 +44,7 @@ export const ExerciseListCard: React.FC<{ accent: string; onBreath: () => void; 
 );
 
 export const ExerciseCard: React.FC<{ id: ExerciseId; accent: string; onPick: (id: ExerciseId) => void }> = ({ id, accent, onPick }) => {
-  const e = EXERCISES[id]; const I = ICON[id];
+  const e = EXERCISES[id]; const I = EXERCISE_ICON[id];
   return (
     <button type="button" onClick={() => onPick(id)} className="drl-btn drl-in"
       style={{ marginTop: 10, minHeight: 48, padding: '0 16px', borderRadius: 12, border: 0, background: accent, color: TXT.ink, fontSize: 14, fontWeight: 700, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 8, fontFamily: 'inherit' }}>
