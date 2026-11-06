@@ -21,6 +21,8 @@ function history(tx, uid, amount, feature, details, before) {
   });
 }
 
+const LEDGER = db.collection('korisReferrals');
+
 async function ensureCode(uid, profile) {
   if (profile.referralCode) return profile.referralCode;
   const code = Q.makeReferralCode();
@@ -73,31 +75,42 @@ exports.handler = async (event) => {
       const profile = prof.exists ? prof.data() : {};
       const state = G.referralState(profile, now);
       if (state !== 'ok') return reply(200, { ok: false, reason: state });
-      const refSnap = await db.collection('userProfiles').where('referralCode', '==', profile.referredBy).limit(1).get();
-      const referrerUid = refSnap.empty ? null : refSnap.docs[0].id;
+      // userProfiles est modifiable par son propriétaire : un code copié par un autre profil ne doit pas détourner la récompense
+      const refSnap = await db.collection('userProfiles').where('referralCode', '==', profile.referredBy).limit(2).get();
+      const referrerUid = refSnap.size === 1 ? refSnap.docs[0].id : null;
       if (referrerUid === uid) return reply(200, { ok: false, reason: 'self' });
 
       const out = await db.runTransaction(async (tx) => {
         const p = await tx.get(profileRef);
         if (G.referralState(p.exists ? p.data() : {}, now) !== 'ok') return { ok: false, reason: 'done' };
+        // Registre tenu par le serveur seul (korisReferrals, illisible et non modifiable depuis le navigateur) :
+        // effacer « referralRewardedAt » de son profil ne permet plus de toucher la récompense une 2e fois.
+        const mineRef = LEDGER.doc(uid);
+        const mine = await tx.get(mineRef);
+        if (mine.exists && mine.data().rewardedAt) return { ok: false, reason: 'done' };
         const pat = await tx.get(patientRef);
-        let refProfile = null; let refPat = null;
+        let refProfile = null; let refPat = null; let refLedger = null;
         if (referrerUid) {
           refProfile = await tx.get(db.collection('userProfiles').doc(referrerUid));
           refPat = await tx.get(db.collection('patients').doc(referrerUid));
+          refLedger = await tx.get(LEDGER.doc(referrerUid));
         }
         const reward = G.REFERRAL_REWARD;
         tx.set(profileRef, { referralRewardedAt: admin.firestore.FieldValue.serverTimestamp() }, { merge: true });
+        tx.set(mineRef, { rewardedAt: admin.firestore.FieldValue.serverTimestamp(), referrer: referrerUid || null }, { merge: true });
         if (pat.exists && pat.data().korisWallet) {
           const before = pat.data().korisWallet.balance || 0;
           tx.update(patientRef, { 'korisWallet.balance': inc(reward) });
           history(tx, uid, reward, 'referral', 'Bienvenue : tu as été invité par un proche', before);
         }
-        const referrerEarns = referrerUid && refPat && refPat.exists && refPat.data().korisWallet && G.referrerCanEarn(refProfile && refProfile.data());
+        // Plafond du parrain : on garde le plus grand des deux compteurs (celui du profil peut être remis à zéro par son propriétaire)
+        const earned = Math.max((refLedger && refLedger.exists && refLedger.data().earnedCount) || 0, (refProfile && refProfile.exists && refProfile.data().referralRewardCount) || 0);
+        const referrerEarns = referrerUid && refPat && refPat.exists && refPat.data().korisWallet && G.referrerCanEarn({ referralRewardCount: earned });
         if (referrerEarns) {
           const before = refPat.data().korisWallet.balance || 0;
           tx.update(refPat.ref, { 'korisWallet.balance': inc(reward) });
-          tx.set(refProfile.ref, { referralRewardCount: inc(1) }, { merge: true });
+          tx.set(refProfile.ref, { referralRewardCount: earned + 1 }, { merge: true });
+          tx.set(refLedger.ref, { earnedCount: earned + 1 }, { merge: true });
           history(tx, referrerUid, reward, 'referral', 'Un proche que tu as invité a fait son premier test', before);
         }
         tx.set(db.collection('stats').doc('koris'), { totalRefilled: inc(reward + (referrerEarns ? reward : 0)), referrals: inc(1) }, { merge: true });

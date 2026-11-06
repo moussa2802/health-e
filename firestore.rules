@@ -76,7 +76,8 @@ service cloud.firestore {
     // ─── PATIENTS ─────────────────────────────────────────────────────────────
     match /patients/{patientId} {
       allow read: if isOwner(patientId);
-      allow create: if isOwner(patientId);
+      // Le portefeuille d'étincelles n'est jamais créé par le navigateur (sinon : solde choisi à la création)
+      allow create: if isOwner(patientId) && !('korisWallet' in request.resource.data);
       allow update: if isOwner(patientId)
         && (!('korisWallet' in request.resource.data) ||
             request.resource.data.korisWallet == resource.data.korisWallet);
@@ -109,10 +110,9 @@ service cloud.firestore {
     }
 
     // collectionGroup query (used by professionals to list records)
+    // Un professionnel ne lit que les dossiers qu'il a écrits (avant : TOUS les dossiers de tous les patients)
     match /{path=**}/medicalRecords/{recordId} {
-      allow read: if request.auth != null &&
-        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.type == 'professional';
+      allow read: if request.auth != null && resource.data.professionalId == request.auth.uid;
     }
 
     // ─── BOOKINGS ─────────────────────────────────────────────────────────────
@@ -243,9 +243,11 @@ service cloud.firestore {
     }
 
     // ─── MAIL (Trigger Email extension — Cloud Functions write via Admin SDK) ──
+    // Le navigateur ne relit jamais ces e-mails : plus de lecture (avant : tout compte lisait tous les e-mails).
+    // La création reste ouverte tant que les notifications passent par le navigateur (à déplacer côté serveur).
     match /mail/{mailId} {
-      allow read: if request.auth != null;
-      allow write: if request.auth != null;
+      allow read, update, delete: if false;
+      allow create: if request.auth != null;
     }
 
     // ─── GROUP THERAPY ────────────────────────────────────────────────────────
