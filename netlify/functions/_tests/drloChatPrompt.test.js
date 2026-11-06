@@ -89,3 +89,10 @@ test('discrétion intime : pas de rappel spontané hors sujet, notes intimes seu
   assert.ok(!on.includes('DISCRÉTION'));
   assert.ok(on.includes('érection qu\'il relie'));
 });
+
+test('balises exercices guidés et vocaux de soutien', () => {
+  assert.deepEqual(split('Je te propose 2 minutes.\n[[exercice:ancrage]]').actions, [{ kind: 'exercice', id: 'ancrage' }]);
+  assert.deepEqual(split('Écoute ça.\n[[vocal:journee]]').actions, [{ kind: 'vocal', id: 'journee' }]);
+  assert.deepEqual(split('x [[exercice:inconnu]]').actions, []);
+  assert.ok(rulesV2(false).includes('[[exercice:coherence]]'));
+});

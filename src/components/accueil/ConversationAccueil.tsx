@@ -25,6 +25,9 @@ import { AURA_FULL, CREDIT, LOW_CREDIT, credits } from '../../config/creditName'
 import { useAuth } from '../../contexts/AuthContext';
 import { useKoris } from '../../contexts/KorisContext';
 import { useBreathVoice } from '../../hooks/useBreathVoice';
+import { useGuidedExercise } from '../../hooks/useGuidedExercise';
+import { EXERCISES, type ExerciseId } from '../../data/guidedExercises';
+import { ExerciseCard, ExerciseListCard, GuidedRunScreen, VocalCard } from './GuidedExercise';
 import {
   addExchange, addOpener,
   enterCrisis,
@@ -313,6 +316,13 @@ const ConversationAccueil: React.FC = () => {
   const [breath, setBreath] = useState<{ inhale: boolean } | null>(null);
   // La voix qui guide la respiration (inspire… expire…), coupable
   const breathVoice = useBreathVoice(breath);
+  // Exercices guidés en vocal (cohérence cardiaque, ancrage, sommeil, relâcher), en plein écran
+  const guided = useGuidedExercise((id, completed) => {
+    trackAccueil('exercise_done', { id, completed });
+    const cur = stateRef.current;
+    if (!cur) return;
+    apply(addExchange(cur, null, [completed ? EXERCISES[id].done : 'D\'accord, on s\'arrête là. Même quelques minutes, ça compte.']), cur);
+  });
   const [reveal, setReveal] = useState({ nonce: 0, from: 0, hint: 'thinking' as Hint });
   const [testBusy, setTestBusy] = useState<null | 'starting' | 'finishing'>(null);
   /** Dr Lô lit un message libre (appel à drlo-route en cours). */
@@ -884,6 +894,18 @@ const ConversationAccueil: React.FC = () => {
 
   // ── Actions ────────────────────────────────────────────────────────────────
 
+  /** Dans le toucher : c'est ce qui autorise la voix sur iPhone. */
+  const startExercise = (id: ExerciseId) => {
+    setMenuOpen(false);
+    if (breathing) setBreath(null);
+    trackAccueil('exercise', { id });
+    guided.start(id);
+  };
+  const offerExercises = () => {
+    const cur = stateRef.current ?? state;
+    apply(addExchange(cur, 'Exercices guidés', [{ text: 'Choisis ce qui te ferait du bien maintenant. Tout est guidé en vocal, et c\'est gratuit.', card: { type: 'exercises' } }]), cur);
+  };
+
   const startBreathing = () => {
     if (breathing) { stopBreathing(false); return; }
     breathVoice.prime(); // dans le toucher : sinon l'iPhone bloque le son
@@ -1067,6 +1089,8 @@ const ConversationAccueil: React.FC = () => {
     switch (a.kind) {
       case 'test': return getScaleById(a.scaleId) ? { type: 'test', scaleId: a.scaleId } : undefined;
       case 'respiration': return { type: 'quick', what: 'breath' };
+      case 'exercice': return { type: 'exercise', id: a.id };
+      case 'vocal': return { type: 'vocal', id: a.id };
       case 'humeur': return { type: 'quick', what: 'mood' };
       case 'programme': return !launch.on('programme') ? undefined : progRef.current ? { type: 'programme_open' } : { type: 'quick', what: 'programme' };
       case 'journal': return launch.on('confier') ? { type: 'go', to: 'confier' } : undefined;
@@ -1789,6 +1813,8 @@ const ConversationAccueil: React.FC = () => {
                     onLinked={() => { const cur = stateRef.current ?? state; apply(addExchange(cur, null, ['Parfait. Ton espace est en sécurité.']), cur); }}
                     onGo={onGo}
                     onQuick={onQuick}
+                    onExercise={startExercise}
+                    onBreathNow={() => { if (!breathing) startBreathing(); }}
                     prog={progEnv}
                     notif={currentUser ? { uid: currentUser.id, onDone: (text: string) => {
                       const cur = stateRef.current ?? state;
@@ -1865,7 +1891,7 @@ const ConversationAccueil: React.FC = () => {
                   <div role="menu" className="drl-in" style={{ marginBottom: 8, padding: 6, borderRadius: 16, background: '#221B16', border: '1px solid rgba(255,255,255,.12)', boxShadow: '0 12px 30px rgba(0,0,0,.45)' }}>
                     {[
                       ...(!moodToday ? [{ label: 'Noter mon humeur', hint: '30 s', icon: CloudSun, go: () => { trackAccueil('mood_open'); setMode('mood'); } }] : []),
-                      { label: 'Respirer avec moi', hint: '1 min', icon: Wind, go: () => startBreathing() },
+                      { label: 'Exercices guidés', hint: 'en vocal', icon: Wind, go: () => offerExercises() },
                       ...(isAuthenticated && launch.on('programme') ? [{ label: 'Mon programme', hint: prog && prog.status === 'active' && progRemaining ? `${progRemaining} à faire` : '', icon: ClipboardCheck, go: () => (prog ? setProgOpen(true) : offerProgramme(state, 'Mon programme')) }] : []),
                       { label: 'Mon animal intérieur', hint: '', icon: PawPrint, go: () => navigate('/assessment/totem') },
                       ...(launch.on('compat') ? [{ label: 'Compatibilité de couple', hint: '', icon: Heart, go: () => navigate('/assessment/compatibility') }] : []),
@@ -2162,6 +2188,9 @@ const ConversationAccueil: React.FC = () => {
                   <span style={{ textDecoration: noted.cancelled ? 'line-through' : 'none' }}>Noté dans ton humeur du jour</span>
                   {!noted.cancelled && <button onClick={cancelMood} style={{ ...linkBtn, color: C.muted, fontSize: 13, fontWeight: 700, padding: '0 6px' }}>Annuler</button>}
                 </div>
+              )}
+              {guided.run && (
+                <GuidedRunScreen run={guided.run} accent={palette.accent} soundOn={guided.soundOn} onToggleSound={guided.toggleSound} onStop={() => guided.stop(false)} />
               )}
               {breathing && (
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, padding: '12px 0' }}>
@@ -2473,8 +2502,13 @@ const ChatCard: React.FC<{
   prog?: ProgCardEnv;
   notif?: { uid: string; onDone: (text: string) => void; onSettings: () => void };
   onQuick?: (what: 'breath' | 'mood' | 'programme') => void;
+  onExercise?: (id: ExerciseId) => void;
+  onBreathNow?: () => void;
   results?: Record<string, ScaleResult> | null;
-}> = ({ card, palette, busy, costLabel, onStart, onOpen, prenom, genre, onLinked, onGo, prog, notif, onQuick, results }) => {
+}> = ({ card, palette, busy, costLabel, onStart, onOpen, prenom, genre, onLinked, onGo, prog, notif, onQuick, onExercise, onBreathNow, results }) => {
+  if (card.type === 'exercises') return onExercise && onBreathNow ? <ExerciseListCard accent={palette.accent} onBreath={onBreathNow} onPick={onExercise} /> : null;
+  if (card.type === 'exercise') return onExercise ? <ExerciseCard id={card.id} accent={palette.primary} onPick={onExercise} /> : null;
+  if (card.type === 'vocal') return <VocalCard id={card.id} accent={palette.accent} onPlay={() => trackAccueil('vocal_play', { id: card.id })} />;
   if (card.type === 'quick') {
     const QL = { breath: 'Respirer 1 minute avec moi', mood: 'Noter mon humeur', programme: 'Voir le programme qui me conviendrait' } as const;
     return onQuick ? (

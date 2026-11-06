@@ -4,6 +4,7 @@
  * (dr-lo-chat), même contexte (profil, tests, journal récent, compatibilités). Chaque réponse coûte 1 étincelle.
  */
 import { collection, query, orderBy, getDocs, doc, setDoc, getDoc, limit } from 'firebase/firestore';
+import { isExerciseId, isVocalId, type ExerciseId, type VocalId } from '../data/guidedExercises';
 import { db } from '../utils/firebase';
 import { getOnboardingProfile } from '../utils/onboardingProfile';
 import { getProfileProgress } from './evaluationService';
@@ -190,6 +191,8 @@ export type TalkAction =
   | { kind: 'test'; scaleId: string }
   | { kind: 'chaine'; id: string; name?: string }
   | { kind: 'pratique'; id: string; name?: string }
+  | { kind: 'exercice'; id: ExerciseId }
+  | { kind: 'vocal'; id: VocalId }
   | { kind: 'respiration' | 'humeur' | 'programme' | 'journal' | 'defi' | 'compat' | 'vrai_drlo' | 'totem' | 'catalogue' | 'chaines' | 'crise' };
 
 export type TalkOutcome =
@@ -203,6 +206,8 @@ function cleanAction(a: unknown): TalkAction | null {
   const x = a as { kind?: string; scaleId?: string; id?: string; name?: string };
   if (x.kind === 'chaine') return typeof x.id === 'string' && /^[A-Za-z0-9]{4,40}$/.test(x.id) ? { kind: 'chaine', id: x.id, ...(typeof x.name === 'string' ? { name: x.name.slice(0, 60) } : {}) } : null;
   if (x.kind === 'pratique') return typeof x.id === 'string' && /^[A-Za-z0-9]{4,40}$/.test(x.id) ? { kind: 'pratique', id: x.id, ...(typeof x.name === 'string' ? { name: x.name.slice(0, 60) } : {}) } : null;
+  if (x.kind === 'exercice') return isExerciseId(x.id) ? { kind: 'exercice', id: x.id } : null;
+  if (x.kind === 'vocal') return isVocalId(x.id) ? { kind: 'vocal', id: x.id } : null;
   if (x.kind === 'test') return typeof x.scaleId === 'string' && SCALE_MAP.has(x.scaleId) ? { kind: 'test', scaleId: x.scaleId } : null;
   return x.kind && TALK_ACTIONS.has(x.kind) ? ({ kind: x.kind } as TalkAction) : null;
 }

@@ -13,6 +13,7 @@
  */
 
 import type { ActiveTest } from './chatTest';
+import type { ExerciseId, VocalId } from '../data/guidedExercises';
 import type { SocialFlow } from './socialFlow.ts';
 import type { ProgAxis } from '../data/programmeLibrary.ts';
 
@@ -55,7 +56,11 @@ export type Card =
   | { type: 'notif_optin'; reason?: 'programme' | 'drlo_answer' | 'defi' | 'ask' | 'resume' }
   | { type: 'notif_settings' }
   /** Bouton proposé par Dr Lô dans la discussion : respirer, noter son humeur, son programme. */
-  | { type: 'quick'; what: 'breath' | 'mood' | 'programme' };
+  | { type: 'quick'; what: 'breath' | 'mood' | 'programme' }
+  /** Exercices guidés en vocal : la liste, un exercice proposé, un vocal de soutien. */
+  | { type: 'exercises' }
+  | { type: 'exercise'; id: ExerciseId }
+  | { type: 'vocal'; id: VocalId };
 
 /** Destinations hors conversation que Dr Lô peut proposer. */
 export type GoTarget = 'defi' | 'compat' | 'question_drlo' | 'totem' | 'catalogue' | 'chat' | 'confier' | 'defi_list' | 'chaines' | 'outils';

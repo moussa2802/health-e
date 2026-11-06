@@ -181,7 +181,7 @@ FRANÇAIS : phrases correctes et simples (« ce que tu vis », jamais « ce que 
 
 // ── Action proposée par Dr Lô (balise en dernière ligne) ─────────────────────
 
-const TAG = /\[\[(test:[a-z0-9_]{2,40}|chaine:[A-Za-z0-9]{4,40}|pratique:[A-Za-z0-9]{4,40}|chaines|respiration|humeur|programme|journal|defi|compat|vrai_drlo|totem|catalogue|crise)\]\]/gi;
+const TAG = /\[\[(test:[a-z0-9_]{2,40}|chaine:[A-Za-z0-9]{4,40}|pratique:[A-Za-z0-9]{4,40}|exercice:(?:coherence|ancrage|sommeil|relacher)|vocal:(?:journee|pensees|avant)|chaines|respiration|humeur|programme|journal|defi|compat|vrai_drlo|totem|catalogue|crise)\]\]/gi;
 
 /**
  * Sépare le texte et les boutons proposés (balises n'importe où, retirées du texte).
@@ -197,6 +197,8 @@ function splitActions(raw, channels = {}, tools = {}) {
   const tests = [...new Set(tags.filter(t => t.startsWith('test:')).map(t => t.slice(5)))].slice(0, 3);
   if (tests.length) return { text, actions: tests.map(scaleId => ({ kind: 'test', scaleId })) };
   const other = tags.find(t => !t.startsWith('test:') && (!t.startsWith('chaine:') || Object.prototype.hasOwnProperty.call(channels, t.slice(7))) && (!t.startsWith('pratique:') || Object.prototype.hasOwnProperty.call(tools, t.slice(9))));
+  if (other && other.startsWith('exercice:')) return { text, actions: [{ kind: 'exercice', id: other.slice(9) }] };
+  if (other && other.startsWith('vocal:')) return { text, actions: [{ kind: 'vocal', id: other.slice(6) }] };
   if (other && other.startsWith('pratique:')) return { text, actions: [{ kind: 'pratique', id: other.slice(9), name: tools[other.slice(9)] }] };
   if (other && other.startsWith('chaine:')) return { text, actions: [{ kind: 'chaine', id: other.slice(7), name: channels[other.slice(7)] }] };
   return { text, actions: other ? [{ kind: other }] : [] };

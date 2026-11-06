@@ -48,7 +48,7 @@ function launchBlock(open) {
   const yes = Object.keys(LABEL).filter((k) => open[k]).map((k) => LABEL[k]);
   const no = Object.keys(LABEL).filter((k) => !open[k]).map((k) => LABEL[k]);
   return `━━━ CE QUI EST OUVERT POUR ELLE AUJOURD'HUI ━━━
-Toujours là : les tests et leurs résultats, l'animal intérieur (après 7 tests psy), la respiration, l'humeur du jour, la discussion avec toi${yes.length ? `, et aussi : ${yes.join(', ')}` : ''}.
+Toujours là : les tests et leurs résultats, l'animal intérieur (après 7 tests psy), la respiration et les exercices guidés en vocal (cohérence cardiaque, ancrage, sommeil, relâcher les tensions, vocaux de soutien), l'humeur du jour, la discussion avec toi${yes.length ? `, et aussi : ${yes.join(', ')}` : ''}.
 ${no.length ? `PAS ENCORE OUVERT pour elle : ${no.join(', ')}. N'en parle JAMAIS, ne les propose pas, n'utilise pas leurs balises, ne dis pas « c'est dans la discussion » ou « je te l'ai préparé » pour ces choses-là. Même si ton carnet ou tes réponses PRÉCÉDENTES dans cette discussion ont parlé d'un journal, d'un programme, d'une chaîne ou d'écrire à Dr Lô, c'était une erreur : ne le répète pas, ne dis pas qu'elle l'a commencé, et corrige-toi simplement si elle en reparle. Si elle les demande, dis simplement que ce n'est pas encore disponible, et propose ce qui est ouvert (un test, la respiration, l'humeur, ou continuer à parler ici avec toi).` : ''}`;
 }
 
