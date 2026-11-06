@@ -317,10 +317,14 @@ const ConversationAccueil: React.FC = () => {
   // La voix qui guide la respiration (inspire… expire…), coupable
   const breathVoice = useBreathVoice(breath);
   // Exercices guidés en vocal (cohérence cardiaque, ancrage, sommeil, relâcher), en plein écran
-  const guided = useGuidedExercise((id, completed) => {
-    trackAccueil('exercise_done', { id, completed });
+  const guided = useGuidedExercise((id, completed, feeling) => {
+    trackAccueil('exercise_done', { id, completed, feeling: feeling ?? '' });
     const cur = stateRef.current;
     if (!cur) return;
+    // Le ressenti s'écrit dans le fil comme une réponse de la personne : le compagnon le lit ensuite
+    if (feeling === 'mieux') { apply(addExchange(cur, 'Je me sens mieux', [EXERCISES[id].done]), cur); return; }
+    if (feeling === 'pareil') { apply(addExchange(cur, 'Pareil', [{ text: 'Ça arrive. Ces exercices marchent surtout avec la régularité. Tu veux en essayer un autre ?', card: { type: 'exercises' } }]), cur); return; }
+    if (feeling === 'moins') { apply(addExchange(cur, 'Moins bien', ['Merci de me le dire. Tu veux m\'en parler ? Écris-moi ce qui se passe, je suis là.']), cur); return; }
     apply(addExchange(cur, null, [completed ? EXERCISES[id].done : 'D\'accord, on s\'arrête là. Même quelques minutes, ça compte.']), cur);
   });
   const [reveal, setReveal] = useState({ nonce: 0, from: 0, hint: 'thinking' as Hint });
@@ -899,7 +903,7 @@ const ConversationAccueil: React.FC = () => {
     setMenuOpen(false);
     if (breathing) setBreath(null);
     trackAccueil('exercise', { id });
-    guided.start(id);
+    guided.open(id);
   };
 
   const startBreathing = () => {
@@ -2186,7 +2190,7 @@ const ConversationAccueil: React.FC = () => {
                 </div>
               )}
               {guided.run && (
-                <GuidedRunScreen run={guided.run} accent={palette.accent} soundOn={guided.soundOn} onToggleSound={guided.toggleSound} onStop={() => guided.stop(false)} />
+                <GuidedRunScreen g={guided} accent={palette.accent} />
               )}
               {breathing && (
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, padding: '12px 0' }}>

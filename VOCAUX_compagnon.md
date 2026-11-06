@@ -1,6 +1,6 @@
-# Vocaux du compagnon — textes à valider
+# Vocaux du compagnon
 
-Voix : celle du compte ElevenLabs du dossier promo (`ELEVENLABS_VOICE_ID`). Français uniquement. Tutoiement, sans accord masculin/féminin (« tu as ce qu'il faut » plutôt que « tu es prêt »).
+Voix : **au choix de la personne**, femme (par défaut) ou homme : deux voix créées avec ElevenLabs Voice Design (« Compagnon femme A » et « Compagnon homme A », voir VOIX_compagnon.md). ID dans promo/.env : `ELEVENLABS_VOICE_ID_COMPAGNON` et `ELEVENLABS_VOICE_ID_COMPAGNON_HOMME`. Fichiers : `public/audio/<exercice>/` (femme) et `public/audio/homme/<exercice>/` (homme). Le choix se fait dans l'écran « Installe-toi » et en bas de la liste des exercices, gardé sur l'appareil (`he_voice`). Réglages : multilingual v2, stability 0,65, style 0,1, débit 0,9 (sommeil : 0,75 / 0 / 0,8). Puis `promo/scripts/audio_post.ts` : silences coupés, volume harmonisé (−20 LUFS). Français uniquement. Tutoiement, sans accord masculin/féminin (« tu as ce qu'il faut » plutôt que « tu es prêt »).
 Tout est **gratuit** (comme « Respirer 1 min »), ouvert à tous, et jamais proposé **à la place** des numéros d'urgence.
 
 Comment ça marche dans la discussion : chaque exercice est découpé en **étapes**. Une étape = une phrase enregistrée + une durée fixe. La phrase part au début de l'étape, puis silence jusqu'à l'étape suivante. Le rythme reste donc exact, quelle que soit la vitesse de la voix. Le texte de l'étape s'affiche à l'écran (pour ceux qui n'ont pas d'écouteurs). Bouton « Couper la voix » et « Arrêter ».
@@ -15,14 +15,14 @@ Cercle : 4 s inspire / 4 s expire. Une consigne par phase (moins de 3,6 s chacun
 
 | Fichier | Texte |
 |---|---|
-| intro | On respire ensemble. On inspire… |
+| intro | Allez, on inspire… |
 | inspire_1 | On inspire, par le nez. |
 | expire_1 | On expire, doucement. |
 | inspire_2 | On inspire… |
 | expire_2 | Et on expire, tout doucement. |
 | inspire_3 | On inspire, le ventre se gonfle. |
-| expire_3 | On expire, on relâche les épaules. |
-| milieu | C'est bien, continue. On inspire… |
+| expire_3 | On expire, on relâche. |
+| milieu | C'est bien. On inspire… |
 | fin | Bien joué. Une minute pour toi, ça compte. |
 
 ---
@@ -33,12 +33,12 @@ Cercle : 5 s inspire / 5 s expire (6 respirations par minute), 30 cycles. Un **s
 
 | Moment | Fichier | Texte |
 |---|---|---|
-| Avant (20 s) | coh_intro | Cinq minutes pour calmer ton cœur et ton stress. Assieds-toi, le dos droit, les pieds au sol. Inspire quand le cercle grandit, expire quand il se resserre, cinq secondes chacun. Un son doux va te guider. |
+| Avant (19 s) | coh_intro | Quelques minutes pour ton cœur et ton stress. Tu peux fermer les yeux : la vague te guide. Elle monte, tu inspires. Elle redescend, tu expires. |
 | Cycles 1 et 2 | coh_inspire / coh_expire | On inspire… / Et on expire… |
 | Cycle 7 (≈ 1 min) | coh_1min | C'est bien. Continue, tranquillement. |
 | Cycle 16 (moitié) | coh_moitie | Tu es à la moitié. |
 | Cycle 25 | coh_derniere | Encore une minute. |
-| Fin | coh_fin | Bien joué. Le mieux, c'est trois fois par jour : le matin, avant le repas de midi, et en fin d'après-midi. |
+| Fin | coh_fin | Bien joué. Le mieux, c'est trois fois par jour. L'effet dure quelques heures. |
 
 Sons : `son_inspire` (montant, doux, ≈ 1 s) et `son_expire` (descendant, ≈ 1 s).
 
@@ -50,13 +50,13 @@ Pour quand l'angoisse monte : ramène au moment présent par les sens.
 
 | Étape | Durée | Texte |
 |---|---|---|
-| anc_1 | 12 s | Quand l'angoisse monte, on revient ici, maintenant. Pose tes pieds bien à plat, et respire une fois, tranquillement. |
+| anc_1 | 15 s | Quand l'angoisse monte, on revient ici, maintenant. Pose tes pieds bien à plat, et respire une fois, tranquillement. |
 | anc_2 | 20 s | Regarde autour de toi. Trouve cinq choses que tu vois. Nomme-les dans ta tête, une par une. |
 | anc_3 | 18 s | Maintenant, quatre choses que tu peux toucher. Tes mains, le tissu de tes vêtements, le sol sous tes pieds… |
 | anc_4 | 16 s | Trois sons que tu entends. Proches ou lointains. Juste écouter. |
 | anc_5 | 14 s | Deux odeurs. Si tu n'en sens aucune, pense à deux odeurs que tu aimes. |
 | anc_6 | 12 s | Et une chose que tu peux goûter. Une gorgée d'eau, si tu en as. |
-| anc_7 | 14 s | Maintenant, inspire lentement… et expire, plus longtemps. Tu es ici. Ce que tu ressens va redescendre. |
+| anc_7 | 16 s | Maintenant, inspire lentement… et expire, plus longtemps. Tu es ici. Ce que tu ressens va redescendre. |
 | anc_8 | 10 s | Bien. Tu peux refaire cet exercice chaque fois que ça monte. |
 
 ---
@@ -87,7 +87,7 @@ Contracter puis relâcher, partie par partie.
 
 | Étape | Durée | Texte |
 |---|---|---|
-| rel_1 | 14 s | Installe-toi confortablement, sur une chaise ou sur ton lit. On va serrer puis relâcher chaque partie du corps. Sans forcer : si une zone te fait mal, passe-la. |
+| rel_1 | 18 s | Installe-toi confortablement, sur une chaise ou sur ton lit. On va serrer puis relâcher chaque partie du corps. Sans forcer : si une zone te fait mal, passe-la. |
 | rel_mains_a | 7 s | Serre les poings, fort… |
 | rel_mains_b | 12 s | Relâche. Sens la chaleur qui revient dans tes mains. |
 | rel_bras_a | 7 s | Plie les bras et serre-les contre toi… |

@@ -2,13 +2,19 @@
  * useBreathVoice — la voix qui guide « Respirer avec moi » (inspire… expire…).
  * Un petit fichier par consigne, joué à chaque changement de phase : la voix tombe toujours
  * pile sur le cercle (4 s pour inspirer, 4 s pour expirer), sans dériver.
- * Fichiers : public/audio/respirer/*.mp3 (voir scripts/genBreathAudio.mjs). S'ils manquent, rien ne casse :
+ * Fichiers : public/audio/respirer/*.mp3 (ou homme/respirer/ : la voix choisie par la personne) (voir scripts/genBreathAudio.mjs). S'ils manquent, rien ne casse :
  * l'exercice reste visuel, et le bouton son ne s'affiche pas.
  * Le son ne part que parce que la personne a lancé l'exercice ; elle peut le couper (choix gardé sur l'appareil).
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-const BASE = '/audio/respirer/';
+/** Même choix de voix que les exercices guidés (voiceUrl dans data/guidedExercises : clé he_voice). */
+const cueUrl = (name: string) => {
+  let homme = false;
+  try { homme = localStorage.getItem('he_voice') === 'homme'; } catch { /* navigation privée */ }
+  return `/audio/${homme ? 'homme/' : ''}respirer/${name}.mp3`;
+};
+
 const INHALE = ['inspire_1', 'inspire_2', 'inspire_3'];
 const EXHALE = ['expire_1', 'expire_2', 'expire_3'];
 const KEY = 'he_breath_sound';
@@ -36,7 +42,7 @@ export function useBreathVoice(breath: { inhale: boolean } | null) {
     if (!audio.current) {
       const a = new Audio();
       a.preload = 'auto';
-      a.onerror = () => { if (a.src.endsWith('intro.mp3')) setAvailable(false); };
+      a.onerror = () => { if (a.src.endsWith('/intro.mp3')) setAvailable(false); };
       audio.current = a;
     }
     return audio.current;
@@ -45,7 +51,7 @@ export function useBreathVoice(breath: { inhale: boolean } | null) {
   const play = useCallback((name: string) => {
     const a = audio.current;
     if (!a || !soundOn || !available) return;
-    a.src = `${BASE}${name}.mp3`;
+    a.src = cueUrl(name);
     a.currentTime = 0;
     a.play().catch(() => { /* bloqué par le téléphone (pas de geste) : l'exercice reste visuel */ });
   }, [soundOn, available]);
@@ -76,7 +82,7 @@ export function useBreathVoice(breath: { inhale: boolean } | null) {
   const prime = useCallback(() => {
     if (!soundOn || !available) return;
     const a = ensure();
-    a.src = `${BASE}intro.mp3`;
+    a.src = cueUrl('intro');
     primed.current = true;
     a.play().catch(() => { /* l'exercice reste visuel */ });
   }, [soundOn, available]); // eslint-disable-line react-hooks/exhaustive-deps
