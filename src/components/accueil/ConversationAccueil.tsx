@@ -10,7 +10,7 @@
  */
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { ArrowRight, Bell, Heart, Mail, PawPrint, Users, Check, ChevronLeft, ClipboardCheck, Clock, CloudSun, Copy, EyeOff, ListChecks, Lock, MessagesSquare, Mic, Pencil, Phone, Plus, Send, Sparkles, Sprout, Wind, CalendarCheck, MoreHorizontal, Trash2 } from 'lucide-react';
+import { ArrowRight, Bell, Heart, Mail, PawPrint, Users, Check, ChevronLeft, ClipboardCheck, Clock, CloudSun, Copy, EyeOff, ListChecks, Lock, MessagesSquare, Mic, Pencil, Phone, Plus, Send, Sparkles, Sprout, Wind, Volume2, VolumeX, CalendarCheck, MoreHorizontal, Trash2 } from 'lucide-react';
 import './accueil.css';
 import DrLoAvatar, { auraMoodOf, type DrLoState } from './DrLoAvatar';
 import DrLoIsland from './DrLoIsland';
@@ -24,6 +24,7 @@ import { pushCompanion, syncCompanion } from '../../services/companionService';
 import { AURA_FULL, CREDIT, LOW_CREDIT, credits } from '../../config/creditName';
 import { useAuth } from '../../contexts/AuthContext';
 import { useKoris } from '../../contexts/KorisContext';
+import { useBreathVoice } from '../../hooks/useBreathVoice';
 import {
   addExchange, addOpener,
   enterCrisis,
@@ -310,6 +311,8 @@ const ConversationAccueil: React.FC = () => {
   /** Ce que le compagnon vient d'apprendre sur la personne (montré discrètement, jusqu'au message suivant). */
   const [learned, setLearned] = useState<string | null>(null);
   const [breath, setBreath] = useState<{ inhale: boolean } | null>(null);
+  // La voix qui guide la respiration (inspire… expire…), coupable
+  const breathVoice = useBreathVoice(breath);
   const [reveal, setReveal] = useState({ nonce: 0, from: 0, hint: 'thinking' as Hint });
   const [testBusy, setTestBusy] = useState<null | 'starting' | 'finishing'>(null);
   /** Dr Lô lit un message libre (appel à drlo-route en cours). */
@@ -883,6 +886,7 @@ const ConversationAccueil: React.FC = () => {
 
   const startBreathing = () => {
     if (breathing) { stopBreathing(false); return; }
+    breathVoice.prime(); // dans le toucher : sinon l'iPhone bloque le son
     trackAccueil('breath');
     apply(addExchange(state, 'Respirer avec moi', [
       'Suis le cercle autour de moi : il grandit, tu inspires ; il se resserre, tu expires. Une minute, rien de plus.',
@@ -1867,8 +1871,7 @@ const ConversationAccueil: React.FC = () => {
                       ...(launch.on('compat') ? [{ label: 'Compatibilité de couple', hint: '', icon: Heart, go: () => navigate('/assessment/compatibility') }] : []),
                       ...(launch.on('defis') ? [{ label: 'Défi : tes proches te connaissent ?', hint: '', icon: Users, go: () => navigate(isAuthenticated ? '/defi' : '/decouvre') }] : []),
                       ...(launch.on('question') ? [{ label: 'Écrire à Dr Lô', hint: '', icon: Mail, go: () => navigate('/question') }] : []),
-                      ...(isAuthenticated ? [{ label: 'Les messages de Dr Lô', hint: '', icon: MessagesSquare, go: () => navigate('/messages-dr-lo') }] : []),
-                      { label: 'Tous les tests', hint: '', icon: ListChecks, go: () => navigate('/espace/mental') },
+                      ...(isAuthenticated ? [{ label: 'Mes messages', hint: '', icon: MessagesSquare, go: () => navigate('/messages-dr-lo') }] : []),
                     ].map(it => (
                       <button key={it.label} type="button" role="menuitem" onClick={() => { setMenuOpen(false); it.go(); }} className="drl-btn"
                         style={{ width: '100%', minHeight: 46, padding: '0 12px', border: 0, borderRadius: 12, background: 'transparent', color: C.text, display: 'flex', alignItems: 'center', gap: 10, fontSize: 15, fontWeight: 600, cursor: 'pointer', textAlign: 'left' }}>
@@ -2164,6 +2167,13 @@ const ConversationAccueil: React.FC = () => {
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, padding: '12px 0' }}>
                   <DrLoAvatar state="breathing" palette={palette} size={96} />
                   <p style={{ margin: 0, fontFamily: 'Fraunces, serif', fontSize: 22, color: palette.accent, fontWeight: 600 }}>{breath!.inhale ? 'Inspire…' : 'Expire…'}</p>
+                  {breathVoice.available && (
+                    <button type="button" onClick={breathVoice.toggle} aria-pressed={breathVoice.soundOn} className="drl-btn"
+                      style={{ minHeight: 40, padding: '0 14px', borderRadius: 999, border: '1px solid rgba(255,255,255,.14)', background: 'transparent', color: C.muted, fontSize: 13, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, fontFamily: 'inherit' }}>
+                      {breathVoice.soundOn ? <Volume2 size={15} aria-hidden="true" /> : <VolumeX size={15} aria-hidden="true" />}
+                      {breathVoice.soundOn ? 'Couper la voix' : 'Remettre la voix'}
+                    </button>
+                  )}
                 </div>
               )}
               {/* Les choix proposés par Dr Lô, dans la conversation, tous visibles */}
