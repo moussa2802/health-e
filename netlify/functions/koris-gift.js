@@ -1,7 +1,8 @@
 /**
  * koris-gift — les étincelles offertes (connecté).
- *   POST { action: 'status' }          → { daily: { available, amount }, referral: { code, link, joined, rewarded, reward, cap } }
- *   POST { action: 'daily' }           → { ok, credited, balance } : le cadeau du jour, une fois par jour
+ *   POST { action: 'status' }          → { daily: { available, amount, streak, needed, lost, claimedToday }, referral: {…} }
+ *                                         (compte aussi la présence du jour : la série de jours d'affilée)
+ *   POST { action: 'daily' }           → { ok, credited, balance, streak } : le cadeau du jour, une fois par jour, après 3 jours d'affilée
  *   POST { action: 'referral_reward' } → { ok, credited } : la personne invitée a fait son premier test →
  *                                         elle et son parrain reçoivent chacun REFERRAL_REWARD (parrain plafonné)
  * Tout se décide côté serveur, dans une transaction : jamais deux fois le même cadeau.
@@ -47,11 +48,14 @@ exports.handler = async (event) => {
     if (body.action === 'status') {
       const [pat, prof] = await Promise.all([patientRef.get(), profileRef.get()]);
       const wallet = pat.exists ? pat.data().korisWallet : null;
+      // La présence du jour (une écriture par jour au plus) : c'est elle qui fait la série
+      const v = wallet ? G.visit(wallet, day) : null;
+      if (v) await patientRef.update({ 'korisWallet.visitDay': v.visitDay, 'korisWallet.visitStreak': v.visitStreak, 'korisWallet.streakLostOn': v.streakLostOn }).catch(() => {});
       const profile = prof.exists ? prof.data() : {};
       const code = await ensureCode(uid, profile);
       const joined = await db.collection('userProfiles').where('referredBy', '==', code).count().get().then((c) => c.data().count).catch(() => 0);
       return reply(200, {
-        daily: { available: G.canClaimDaily(wallet, day), amount: G.DAILY_GIFT },
+        daily: { available: G.canClaimDaily(wallet, day), amount: G.DAILY_GIFT, ...(wallet ? G.streakInfo(wallet, day) : { streak: 0, needed: G.STREAK_NEEDED, lost: false, claimedToday: false }) },
         referral: { code, link: `https://health-e.sn/?ref=${code}`, joined, rewarded: profile.referralRewardCount || 0, reward: G.REFERRAL_REWARD, cap: G.REFERRER_CAP },
       });
     }
@@ -60,12 +64,16 @@ exports.handler = async (event) => {
       const out = await db.runTransaction(async (tx) => {
         const pat = await tx.get(patientRef);
         const wallet = pat.exists ? pat.data().korisWallet : null;
-        if (!G.canClaimDaily(wallet, day)) return { ok: false, balance: wallet ? wallet.balance : 0 };
+        if (!G.canClaimDaily(wallet, day)) return { ok: false, balance: wallet ? wallet.balance : 0, ...(wallet ? G.streakInfo(wallet, day) : {}) };
         const before = wallet.balance || 0;
-        tx.update(patientRef, { 'korisWallet.balance': inc(G.DAILY_GIFT), 'korisWallet.lastDailyGift': day });
+        const v = G.visit(wallet, day) || {};
+        tx.update(patientRef, {
+          'korisWallet.balance': inc(G.DAILY_GIFT), 'korisWallet.lastDailyGift': day,
+          ...(v.visitDay ? { 'korisWallet.visitDay': v.visitDay, 'korisWallet.visitStreak': v.visitStreak, 'korisWallet.streakLostOn': v.streakLostOn } : {}),
+        });
         history(tx, uid, G.DAILY_GIFT, 'daily_gift', 'Cadeau du jour', before);
         tx.set(db.collection('stats').doc('koris'), { totalRefilled: inc(G.DAILY_GIFT), totalDailyGift: inc(G.DAILY_GIFT) }, { merge: true });
-        return { ok: true, credited: G.DAILY_GIFT, balance: before + G.DAILY_GIFT };
+        return { ok: true, credited: G.DAILY_GIFT, balance: before + G.DAILY_GIFT, streak: G.streakInfo(wallet, day).streak };
       });
       return reply(200, out);
     }

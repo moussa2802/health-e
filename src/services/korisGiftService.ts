@@ -4,7 +4,8 @@
 import { authedFetch } from '../utils/authedFetch';
 
 export interface GiftStatus {
-  daily: { available: boolean; amount: number };
+  /** streak : jours d'affilée (aujourd'hui compris) ; needed : jours pour débloquer ; lost : la série vient de s'arrêter. */
+  daily: { available: boolean; amount: number; streak?: number; needed?: number; lost?: boolean; claimedToday?: boolean };
   referral: { code: string; link: string; joined: number; rewarded: number; reward: number; cap: number };
 }
 
@@ -27,7 +28,7 @@ export function getGiftStatus(fresh = false): Promise<GiftStatus> {
   return p;
 }
 
-export async function claimDailyGift(): Promise<{ ok: boolean; credited?: number; balance?: number }> {
+export async function claimDailyGift(): Promise<{ ok: boolean; credited?: number; balance?: number; streak?: number }> {
   cache = null;
   return call('daily');
 }

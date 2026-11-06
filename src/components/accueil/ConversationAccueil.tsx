@@ -1958,9 +1958,19 @@ const ConversationAccueil: React.FC = () => {
                 <p role="alert" style={{ margin: 0, fontSize: 13, color: C.muted, textAlign: 'center' }}>{dictation.error}</p>
               )}
               {dictation.listening && (
-                <p style={{ margin: 0, fontSize: 13, color: C.faint, textAlign: 'center' }}>
-                  Tu relis avant d'envoyer. Aucun audio n'est gardé par Health-e.
-                </p>
+                <div role="status" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: C.muted }}>
+                    {/* Petites barres qui bougent quand on entend une voix */}
+                    <span aria-hidden="true" style={{ display: 'inline-flex', alignItems: 'center', gap: 3, height: 16 }}>
+                      {[0, 1, 2, 3, 4].map(i => (
+                        <span key={i} style={{ width: 3, borderRadius: 2, background: companionColor.hex, height: dictation.hearing ? 16 : 4, opacity: dictation.hearing ? 1 : 0.5,
+                          animation: dictation.hearing ? `drlDot .9s ${i * 0.12}s ease-in-out infinite` : 'none', transition: 'height .2s' }} />
+                      ))}
+                    </span>
+                    {dictation.hearing ? 'Je t\'écoute…' : 'Parle quand tu veux, tu peux faire des pauses'}
+                  </span>
+                  <span style={{ fontSize: 13, color: C.faint }}>Touche le micro pour finir · tu relis avant d'envoyer · aucun audio gardé</span>
+                </div>
               )}
             </div>
           )}

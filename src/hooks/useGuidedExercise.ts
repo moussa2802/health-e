@@ -35,7 +35,7 @@ export interface GuidedState {
   count?: number; // décompte 3-2-1
 }
 
-const VOL = { souffle: 0.55, ambient: 0.2 };
+const VOL = { souffle: 0.55, ambient: 0.28, preview: 0.4 };
 type WakeLockLike = { release: () => Promise<void> };
 
 export function useGuidedExercise(onEnd: (id: ExerciseId, completed: boolean, feeling?: Feeling) => void) {
@@ -63,6 +63,8 @@ export function useGuidedExercise(onEnd: (id: ExerciseId, completed: boolean, fe
     if (!ctx.current) {
       const C = window.AudioContext || (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
       if (!C) return null;
+      // iPhone : sans ça, le bouton « silencieux » coupe les sons Web Audio (souffle, fond) mais pas la voix
+      try { const n = navigator as Navigator & { audioSession?: { type: string } }; if (n.audioSession) n.audioSession.type = 'playback'; } catch { /* ancien iOS */ }
       ctx.current = new C();
     }
     return ctx.current;
@@ -99,19 +101,29 @@ export function useGuidedExercise(onEnd: (id: ExerciseId, completed: boolean, fe
     const src = a.src; window.setTimeout(() => { try { src.stop(); } catch { /* déjà arrêté */ } }, fadeMs + 50);
     amb.current = null;
   };
-  const startAmbient = (which: Ambient) => {
-    stopAmbient(600);
-    const c = ctx.current;
+  const ambToken = useRef(0);
+  /** Lance le fond sonore en boucle. preview : un extrait de 4 s quand on le choisit sur l'écran d'entrée. */
+  const startAmbient = (which: Ambient, preview = false) => {
+    stopAmbient(preview ? 300 : 600);
+    const token = ++ambToken.current;
+    const c = preview ? audioCtx() : ctx.current;
     if (!c || which === 'none') return;
+    c.resume().catch(() => {});
     void load(`ambiance/fond_${which}`).then(buf => {
-      if (!buf || ambientRef.current !== which || !runRef.current) return;
+      // Un autre choix a été fait entre-temps : on ne superpose pas deux fonds
+      if (!buf || token !== ambToken.current || ambientRef.current !== which || !runRef.current) return;
       const src = c.createBufferSource(); const g = c.createGain();
-      src.buffer = buf; src.loop = true; g.gain.value = 0;
+      src.buffer = buf; src.loop = true;
       // Les MP3 ont un petit silence au début et à la fin : on boucle sur le milieu (pas de « clic »)
       if (buf.duration > 2) { src.loopStart = 0.06; src.loopEnd = buf.duration - 0.06; }
-      src.connect(g).connect(c.destination); src.start();
-      g.gain.linearRampToValueAtTime(VOL.ambient, c.currentTime + 3);
+      src.connect(g).connect(c.destination);
+      const t = c.currentTime;
+      // setValueAtTime d'abord : sans lui, Safari ignore la montée progressive
+      g.gain.setValueAtTime(0, t);
+      g.gain.linearRampToValueAtTime(preview ? VOL.preview : VOL.ambient, t + (preview ? 0.6 : 3));
+      src.start(t, buf.duration > 2 ? 0.06 : 0);
       amb.current = { src, gain: g };
+      if (preview) ambTimer.current = window.setTimeout(() => { if (token === ambToken.current) stopAmbient(1200); }, 3500);
     });
   };
 
@@ -240,7 +252,9 @@ export function useGuidedExercise(onEnd: (id: ExerciseId, completed: boolean, fe
     ambientRef.current = a;
     const cur = runRef.current;
     if (cur) set(`${AMB_KEY}_${cur.id}`, a);
-    if (cur && cur.stage !== 'setup') startAmbient(a);
+    // Sur l'écran d'entrée : un extrait de 4 s pour entendre le fond choisi (et ça débloque le son sur iPhone)
+    if (cur) startAmbient(a, cur.stage === 'setup');
+    if (a === 'none') stopAmbient(300);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => () => { clearTimer(); release(); stopAmbient(0); voice.current?.pause(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
