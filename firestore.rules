@@ -20,7 +20,7 @@ service cloud.firestore {
       // depuis le navigateur : sinon n'importe qui pourrait se déclarer admin.
       allow read, delete: if isOwner(userId);
       allow create: if isOwner(userId)
-        && (!('type' in request.resource.data) || request.resource.data.type in ['patient', 'professional']);
+        && (!('type' in request.resource.data) || request.resource.data.type == 'patient');
       allow update: if isOwner(userId)
         && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['type']);
 
@@ -60,19 +60,6 @@ service cloud.firestore {
       }
     }
 
-    // ─── PROFESSIONALS ────────────────────────────────────────────────────────
-    match /professionals/{professionalId} {
-      allow read;
-      allow write: if request.auth != null &&
-        (request.auth.uid == professionalId || isAdmin());
-    }
-
-    // ─── PROFESSIONALS PUBLIC (homepage) ──────────────────────────────────────
-    match /professionals_public/{professionalId} {
-      allow read: if true;
-      allow write: if isAdmin();
-    }
-
     // ─── PATIENTS ─────────────────────────────────────────────────────────────
     match /patients/{patientId} {
       allow read: if isOwner(patientId);
@@ -99,62 +86,18 @@ service cloud.firestore {
       allow read: if isOwner(patientId);
     }
 
-    // ─── MEDICAL RECORDS ──────────────────────────────────────────────────────
-    match /patients/{patientId}/medicalRecords/{recordId} {
-      allow read: if request.auth != null &&
-        (isOwner(patientId) || request.auth.uid == resource.data.professionalId);
-      allow create: if request.auth != null &&
-        request.resource.data.professionalId == request.auth.uid;
-      allow update: if request.auth != null &&
-        request.auth.uid == resource.data.professionalId;
-    }
-
-    // collectionGroup query (used by professionals to list records)
-    // Un professionnel ne lit que les dossiers qu'il a écrits (avant : TOUS les dossiers de tous les patients)
-    match /{path=**}/medicalRecords/{recordId} {
-      allow read: if request.auth != null && resource.data.professionalId == request.auth.uid;
-    }
-
-    // ─── BOOKINGS ─────────────────────────────────────────────────────────────
-    // IPN updates via Admin SDK (bypasses rules). Client-side: owner only.
-    match /bookings/{bookingId} {
-      allow read: if request.auth != null &&
-        (resource.data.patientId == request.auth.uid ||
-         resource.data.professionalId == request.auth.uid);
-
-      allow create: if request.auth != null &&
-        request.resource.data.patientId == request.auth.uid;
-
-      allow update: if request.auth != null &&
-        (resource.data.patientId == request.auth.uid ||
-         resource.data.professionalId == request.auth.uid);
-
-      allow delete: if false;
-    }
-
-    // ─── TEMP REDIRECTS (created by IPN via Admin SDK) ────────────────────────
-    match /temp_redirects/{tempId} {
-      allow read: if request.auth != null;
-    }
-
-    // ─── ROOM LINKS (created by Cloud Functions via Admin SDK) ────────────────
-    match /roomLinks/{token} {
-      allow read: if request.auth != null;
-    }
-
-    // ─── CONVERSATIONS ─────────────────────────────────────────────────────────
+    // ─── ANCIENNE DIRECTION (téléconsultation, réservations, messagerie avec les pros) ──
+    // Plus aucune page ne s'en sert : fermé au navigateur. Les données restent lisibles par les admins
+    // (règle générale plus bas) et les fonctions serveur (Admin SDK) ne sont pas concernées.
+    match /professionals/{id} { allow read, write: if false; }
+    match /professionals_public/{id} { allow read, write: if false; }
+    match /{path=**}/medicalRecords/{recordId} { allow read, write: if false; }
+    match /bookings/{id} { allow read, write: if false; }
+    match /temp_redirects/{id} { allow read, write: if false; }
+    match /roomLinks/{id} { allow read, write: if false; }
     match /conversations/{conversationId} {
-      allow read, write: if request.auth != null &&
-        request.auth.uid in resource.data.participants;
-
-      allow create: if request.auth != null &&
-        request.auth.uid in request.resource.data.participants;
-    }
-
-    match /conversations/{conversationId}/messages/{messageId} {
-      allow read, write: if request.auth != null &&
-        request.auth.uid in
-          get(/databases/$(database)/documents/conversations/$(conversationId)).data.participants;
+      allow read, write: if false;
+      match /messages/{messageId} { allow read, write: if false; }
     }
 
     // ─── CONTENT (FAQ, Terms, etc.) ───────────────────────────────────────────
@@ -163,150 +106,28 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
-    // ─── CALENDAR EVENTS ──────────────────────────────────────────────────────
-    match /calendar_events/{eventId} {
-      allow read: if request.auth != null;
-      allow create: if request.auth != null &&
-        request.resource.data.professionalId == request.auth.uid;
-      allow update, delete: if request.auth != null &&
-        resource.data.professionalId == request.auth.uid;
-    }
-
-    // ─── NOTIFICATIONS ────────────────────────────────────────────────────────
+    // ─── NOTIFICATIONS (cloche) ──────────────────────────────────────────────
+    // Créées par le serveur seulement ; la personne lit les siennes et les marque lues.
     match /notifications/{notificationId} {
-      allow read: if request.auth != null &&
-        request.auth.uid == resource.data.userId;
-      allow create: if request.auth != null;
-      allow update: if request.auth != null &&
-        request.auth.uid == resource.data.userId;
+      allow read: if request.auth != null && request.auth.uid == resource.data.userId;
+      allow update: if request.auth != null && request.auth.uid == resource.data.userId
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read', 'readAt']);
+      allow create, delete: if false;
     }
 
-    // ─── SUPPORT TICKETS ──────────────────────────────────────────────────────
-    match /supportTickets/{ticketId} {
-      allow read: if request.auth != null &&
-        resource.data.userId == request.auth.uid;
-      allow create: if request.auth != null;
-      allow update: if request.auth != null &&
-        resource.data.userId == request.auth.uid;
-    }
-
-    match /supportMessages/{messageId} {
-      allow read: if request.auth != null &&
-        exists(/databases/$(database)/documents/supportTickets/$(resource.data.ticketId)) &&
-        get(/databases/$(database)/documents/supportTickets/$(resource.data.ticketId)).data.userId == request.auth.uid;
-
-      allow create: if request.auth != null &&
-        exists(/databases/$(database)/documents/supportTickets/$(resource.data.ticketId)) &&
-        (get(/databases/$(database)/documents/supportTickets/$(resource.data.ticketId)).data.userId == request.auth.uid ||
-         isAdmin());
-    }
-
-    // ─── REVENUE & WITHDRAWALS ────────────────────────────────────────────────
-    // Written by Netlify functions (Admin SDK). Client: read-only for owner.
-    match /revenue_transactions/{transactionId} {
-      allow read: if request.auth != null &&
-        resource.data.professionalId == request.auth.uid;
-    }
-
-    match /withdrawals/{withdrawalId} {
-      allow read: if request.auth != null &&
-        resource.data.professionalId == request.auth.uid;
-    }
-
-    match /withdrawalRequests/{requestId} {
-      allow create: if request.auth != null &&
-        request.resource.data.professionalId == request.auth.uid &&
-        request.resource.data.status == "pending";
-
-      allow read: if request.auth != null &&
-        resource.data.professionalId == request.auth.uid;
-
-      allow update: if request.auth != null &&
-        resource.data.professionalId == request.auth.uid &&
-        request.resource.data.amount == resource.data.amount &&
-        request.resource.data.method == resource.data.method &&
-        request.resource.data.professionalId == resource.data.professionalId;
-    }
-
-    // ─── PROFESSIONAL PATIENTS ────────────────────────────────────────────────
-    match /professional_patients/{document} {
-      allow read: if request.auth != null &&
-        resource.data.professionalId == request.auth.uid;
-
-      allow write: if request.auth != null &&
-        request.auth.uid == resource.data.professionalId;
-
-      allow create: if request.auth != null &&
-        request.auth.uid == request.resource.data.professionalId &&
-        request.resource.data.patientId is string &&
-        request.resource.data.professionalId is string;
-    }
-
-    // ─── MAIL (Trigger Email extension — Cloud Functions write via Admin SDK) ──
-    // Le navigateur ne relit jamais ces e-mails : plus de lecture (avant : tout compte lisait tous les e-mails).
-    // La création reste ouverte tant que les notifications passent par le navigateur (à déplacer côté serveur).
-    match /mail/{mailId} {
-      allow read, update, delete: if false;
-      allow create: if request.auth != null;
-    }
-
-    // ─── GROUP THERAPY ────────────────────────────────────────────────────────
+    // ─── ANCIENNE DIRECTION (suite) : fermé au navigateur ─────────────────────
+    match /calendar_events/{id} { allow read, write: if false; }
+    match /supportTickets/{id} { allow read, write: if false; }
+    match /supportMessages/{id} { allow read, write: if false; }
+    match /revenue_transactions/{id} { allow read, write: if false; }
+    match /withdrawals/{id} { allow read, write: if false; }
+    match /withdrawalRequests/{id} { allow read, write: if false; }
+    match /professional_patients/{id} { allow read, write: if false; }
+    // E-mails : plus envoyés depuis le navigateur (lecture de tous les e-mails par n'importe quel compte avant)
+    match /mail/{mailId} { allow read, write: if false; }
     match /group_therapy_sessions/{sessionId} {
-      allow read: if true;
-
-      allow create: if isAdmin();
-
-      allow update: if request.auth != null && (
-        isAdmin() ||
-        (exists(/databases/$(database)/documents/group_therapy_sessions/$(sessionId)) &&
-         (get(/databases/$(database)/documents/group_therapy_sessions/$(sessionId)).data.primaryHostId == request.auth.uid ||
-          (get(/databases/$(database)/documents/group_therapy_sessions/$(sessionId)).data.secondaryHostIds != null &&
-           request.auth.uid in get(/databases/$(database)/documents/group_therapy_sessions/$(sessionId)).data.secondaryHostIds)) &&
-         request.resource.data.diff(resource.data).changedKeys().hasOnly(['meetingStatus', 'openedBy', 'openedAt', 'meetingLink', 'updatedAt'])) ||
-        request.resource.data.diff(resource.data).changedKeys().hasOnly(['registrationsCount', 'updatedAt'])
-      );
-
-      allow delete: if isAdmin();
-
-      match /private/meeting {
-        allow read: if request.auth != null && (
-          isAdmin() ||
-          (exists(/databases/$(database)/documents/group_therapy_sessions/$(sessionId)) &&
-           (get(/databases/$(database)/documents/group_therapy_sessions/$(sessionId)).data.primaryHostId == request.auth.uid ||
-            (get(/databases/$(database)/documents/group_therapy_sessions/$(sessionId)).data.secondaryHostIds != null &&
-             request.auth.uid in get(/databases/$(database)/documents/group_therapy_sessions/$(sessionId)).data.secondaryHostIds))) ||
-          exists(/databases/$(database)/documents/group_therapy_sessions/$(sessionId)/registrations/$(request.auth.uid))
-        );
-
-        allow create, update: if request.auth != null && (
-          isAdmin() ||
-          (exists(/databases/$(database)/documents/group_therapy_sessions/$(sessionId)) &&
-           (get(/databases/$(database)/documents/group_therapy_sessions/$(sessionId)).data.primaryHostId == request.auth.uid ||
-            (get(/databases/$(database)/documents/group_therapy_sessions/$(sessionId)).data.secondaryHostIds != null &&
-             request.auth.uid in get(/databases/$(database)/documents/group_therapy_sessions/$(sessionId)).data.secondaryHostIds)))
-        ) &&
-        request.resource.data.diff(resource.data).changedKeys().hasOnly(['meetingStatus', 'meetingLink', 'openedBy', 'openedAt', 'updatedAt']);
-
-        allow delete: if isAdmin();
-      }
-    }
-
-    match /group_therapy_sessions/{sessionId}/registrations/{userId} {
-      allow read: if request.auth != null && (
-        isOwner(userId) ||
-        isAdmin() ||
-        (exists(/databases/$(database)/documents/group_therapy_sessions/$(sessionId)) &&
-         (get(/databases/$(database)/documents/group_therapy_sessions/$(sessionId)).data.primaryHostId == request.auth.uid ||
-          (get(/databases/$(database)/documents/group_therapy_sessions/$(sessionId)).data.secondaryHostIds != null &&
-           request.auth.uid in get(/databases/$(database)/documents/group_therapy_sessions/$(sessionId)).data.secondaryHostIds)))
-      );
-
-      allow create: if request.auth != null &&
-        userId == request.auth.uid &&
-        request.resource.data.userId == request.auth.uid;
-
-      allow delete: if request.auth != null &&
-        (userId == request.auth.uid || isAdmin());
+      allow read, write: if false;
+      match /{rest=**} { allow read, write: if false; }
     }
 
     // ─── ADMIN CATCHALL ───────────────────────────────────────────────────────

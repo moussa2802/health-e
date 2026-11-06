@@ -1,0 +1,36 @@
+rules_version = '2';
+
+// Règles de Firebase Storage (déployées avec : firebase deploy --only storage).
+// Les images des Pénc (pencs/{id}/slides) sont écrites par le serveur et lues par liens signés : pas de règle navigateur.
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    function isAdmin() {
+      return request.auth != null
+        && firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.type == 'admin';
+    }
+
+    // Photos de profil : chacun écrit dans son dossier (image de 5 Mo au plus) ; lecture par les comptes connectés
+    match /profile-images/{userId}/{allPaths=**} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && request.auth.uid == userId
+        && (request.resource == null || (request.resource.size < 5 * 1024 * 1024 && request.resource.contentType.matches('image/.*')));
+    }
+
+    // Contenus publics du site (images, vidéos, miniatures) : lecture par tous, écriture par les admins seulement
+    // (avant : n'importe quel compte connecté pouvait remplacer une image ou une vidéo publique)
+    match /content/{allPaths=**} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Ancienne direction (signatures et cachets des ordonnances) : fermé
+    match /signature-images/{allPaths=**} { allow read, write: if false; }
+    match /stamp-images/{allPaths=**} { allow read, write: if false; }
+
+    // Tout le reste : admins seulement
+    match /{allPaths=**} {
+      allow read, write: if isAdmin();
+    }
+  }
+}
