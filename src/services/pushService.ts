@@ -21,6 +21,8 @@ export interface NotifPrefs {
   social: boolean;
   totem: boolean;
   nudge: boolean;
+  /** « Ton mot du jour t'attend » (activé par défaut). */
+  mot?: boolean;
   quiet: boolean;
   /** Guide d'activation affiché (date) et la situation du téléphone à ce moment-là : pour reprendre ailleurs. */
   setupPending?: string | null;
@@ -33,7 +35,7 @@ export const defaultPrefs = (): NotifPrefs => ({
   on: false,
   hour: 19,
   tz: (() => { try { return Intl.DateTimeFormat().resolvedOptions().timeZone || 'Africa/Dakar'; } catch { return 'Africa/Dakar'; } })(),
-  programme: true, drlo: true, social: true, totem: true, nudge: false, quiet: true,
+  programme: true, drlo: true, social: true, totem: true, nudge: false, mot: true, quiet: true,
 });
 
 export type PushSupport = 'ok' | 'ios_install' | 'denied' | 'unsupported' | 'in_app';

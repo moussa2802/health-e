@@ -91,6 +91,7 @@ const NotificationsPanel: React.FC<{
     { key: 'drlo', title: 'Réponses de Dr Lô', sub: 'Dès qu\'il t\'a répondu' },
     { key: 'social', title: 'Défi et compatibilité', sub: 'Quand un proche a joué' },
     { key: 'totem', title: 'Mon animal intérieur et mes bilans', sub: 'Bilan prêt, défi de la semaine' },
+    { key: 'mot', title: 'Mon mot du jour', sub: 'Quand rien d\'autre ne t\'attend : « Ton mot du jour t\'attend »' },
     { key: 'nudge', title: 'Prendre de mes nouvelles', sub: 'Si je ne passe pas pendant 4 jours, 1 fois par semaine au plus' },
   ];
 
@@ -180,7 +181,8 @@ const NotificationsPanel: React.FC<{
                   <span style={{ display: 'block', fontSize: 14, fontWeight: 700 }}>{t.title}</span>
                   <span style={{ display: 'block', fontSize: 13, color: C.faint, marginTop: 2 }}>{t.sub}</span>
                 </span>
-                {sw(!!prefs[t.key], () => update({ [t.key]: !prefs[t.key] } as Partial<NotifPrefs>), t.title)}
+                {/* « mot » n'existait pas avant : absent = activé (comme côté serveur) */}
+                {(() => { const on = t.key === 'mot' ? prefs.mot !== false : !!prefs[t.key]; return sw(on, () => update({ [t.key]: !on } as Partial<NotifPrefs>), t.title); })()}
               </div>
             ))}
           </div>
@@ -203,7 +205,7 @@ export default NotificationsPanel;
 
 /** Dans la discussion, juste après « J'accepte » le programme : « Je te fais signe chaque jour ? » */
 /** Pourquoi Dr Lô propose les rappels : le texte de la carte s'y adapte. */
-export type OptinReason = 'programme' | 'drlo_answer' | 'defi' | 'ask' | 'resume' | 'penc';
+export type OptinReason = 'programme' | 'drlo_answer' | 'defi' | 'ask' | 'resume' | 'penc' | 'mot';
 
 const OPTIN_TEXT: Record<OptinReason, { kicker: string; title: string; sub: string; yes: (h: number) => string; hours: boolean }> = {
   programme: { kicker: 'Mon rappel du jour', title: 'À quelle heure ?', sub: 'Un seul message par jour, et seulement s\'il te reste quelque chose à faire.', yes: h => `Oui, fais-moi signe à ${h} h`, hours: true },
@@ -211,6 +213,7 @@ const OPTIN_TEXT: Record<OptinReason, { kicker: string; title: string; sub: stri
   resume: { kicker: 'Mes rappels', title: 'On termine ?', sub: 'Un seul message par jour au plus, jamais de mot sensible sur l\'écran verrouillé.', yes: h => `Activer · rappel à ${h} h`, hours: true },
   drlo_answer: { kicker: 'Sa réponse', title: 'Je te préviens dès qu\'il répond ?', sub: 'Une notification discrète, sans le contenu de ta question.', yes: () => 'Oui, préviens-moi', hours: false },
   penc: { kicker: 'Pénc mi', title: 'Je te préviens avant que ça commence ?', sub: 'Une notification 10 minutes avant, puis au début. Jamais le sujet sur l\'écran verrouillé.', yes: () => 'Oui, préviens-moi', hours: false },
+  mot: { kicker: 'Ton mot du jour', title: 'À quelle heure je te le laisse ?', sub: 'Un seul message par jour. Sur l\'écran verrouillé, seulement « Ton mot du jour t\'attend » : le mot reste dans l\'appli.', yes: h => `Oui, chaque jour à ${h} h`, hours: true },
   defi: { kicker: 'Ton défi', title: 'Je te préviens quand un proche a répondu ?', sub: 'Au plus une notification toutes les 2 heures.', yes: () => 'Oui, préviens-moi', hours: false },
 };
 
@@ -220,6 +223,7 @@ const DONE_TEXT: Record<OptinReason, (h: number) => string> = {
   resume: h => `C'est fait, tes rappels sont activés (vers ${h} h). Tu peux tout régler dans la cloche, en haut de l'accueil.`,
   drlo_answer: () => 'C\'est noté : je te préviens dès que Dr Lô t\'a répondu.',
   defi: () => 'C\'est noté : je te préviens quand un proche a répondu.',
+  mot: h => `C'est noté : chaque jour vers ${h} h, je te préviens que ton mot t'attend. Tu peux le régler dans la cloche, en haut de l'accueil.`,
   penc: () => 'C\'est noté : je te préviens 10 minutes avant, puis au début.',
 };
 

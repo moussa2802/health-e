@@ -14,21 +14,47 @@ import { PencLiveCard, PencMotif } from './PencVisuals';
 import type { MomentPalette } from '../../utils/drloMoment';
 import { getAgenda, registerPenc, type Penc } from '../../services/pencService';
 
+/**
+ * L'agenda gardé sur ce téléphone : la section s'affiche tout de suite (avant, elle arrivait en dernier,
+ * le temps que le serveur réponde), puis se met à jour. Un « en direct » de plus de 15 min n'est pas repris.
+ */
+const CACHE = 'he_penc_agenda_v1';
+type Agenda = { live: Penc[]; upcoming: Penc[] };
+function readCache(): Agenda | null {
+  try {
+    const c = JSON.parse(localStorage.getItem(CACHE) || 'null') as { at: number; a: Agenda } | null;
+    if (!c || Date.now() - c.at > 3 * 86400000) return null;
+    const now = Date.now();
+    return {
+      live: Date.now() - c.at < 15 * 60000 ? c.a.live : [],
+      upcoming: c.a.upcoming.filter(p => p.startAt > now - 30 * 60000),
+    };
+  } catch { return null; }
+}
+const writeCache = (a: Agenda) => { try { localStorage.setItem(CACHE, JSON.stringify({ at: Date.now(), a })); } catch { /* ignore */ } };
+
 /** full = Pénc mi « en continu » (vague 4) : agenda et entrée permanente ; sinon, seulement la carte quand un Pénc est en direct. */
 const HomePenc: React.FC<{ palette: MomentPalette; full?: boolean; onLive?: (live: boolean) => void }> = ({ palette, full = true, onLive }) => {
-  const [live, setLive] = useState<Penc[]>([]);
-  const [next, setNext] = useState<Penc[]>([]);
-  const [loaded, setLoaded] = useState(false);
+  const cached = useState(readCache)[0];
+  const pick = (a: Agenda) => ({
+    live: a.live.filter(p => !p.locked).slice(0, 2),
+    next: a.upcoming.filter(p => !p.locked && p.startAt - Date.now() < 7 * 86400000).slice(0, 2),
+  });
+  const [live, setLive] = useState<Penc[]>(() => (cached ? pick(cached).live : []));
+  const [next, setNext] = useState<Penc[]>(() => (cached ? pick(cached).next : []));
+  const [loaded, setLoaded] = useState(!!cached);
   const [busy, setBusy] = useState('');
   const load = () => getAgenda().then(r => {
-    const l = r.live.filter(p => !p.locked).slice(0, 2);
-    setLive(l);
-    onLive?.(l.length > 0);
-    setNext(r.upcoming.filter(p => !p.locked && p.startAt - Date.now() < 7 * 86400000).slice(0, 2));
+    writeCache({ live: r.live, upcoming: r.upcoming });
+    const x = pick(r);
+    setLive(x.live);
+    onLive?.(x.live.length > 0);
+    setNext(x.next);
   }).catch(() => {}).finally(() => setLoaded(true));
-  useEffect(() => { load(); }, []);
+  useEffect(() => { if (cached) onLive?.(pick(cached).live.length > 0); load(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
   const remind = async (p: Penc) => { setBusy(p.id); try { await registerPenc(p.id, !p.registered); await load(); } catch { /* la page Pénc mi explique les erreurs */ } finally { setBusy(''); } };
-  if (!loaded) return null;
+  // Première visite (rien en mémoire) : une place réservée, pour que l'accueil ne saute pas quand ça arrive
+  if (!loaded) return full ? <div aria-hidden="true" style={{ marginTop: 14, height: 88, borderRadius: 20, background: 'rgba(255,255,255,.03)', border: `1px solid ${DC.line}` }} /> : null;
   if (!full && !live.length) return null;
   const all = <Link to="/penc" style={{ fontSize: 14, fontWeight: 700, color: palette.accent, whiteSpace: 'nowrap' }}>Tout voir</Link>;
 

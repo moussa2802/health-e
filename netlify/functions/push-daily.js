@@ -36,7 +36,7 @@ exports.handler = async () => {
       const msg = decideDaily(p, { now, moodToday: !!(moodSnap && moodSnap.exists), routineDue: await routineDueFor(doc.id, day) });
       if (!msg) continue;
       // Programme et bilan sont déjà visibles en direct dans la cloche : pas de doublon dans « Récemment »
-      const out = await sendToUser(doc.id, msg, { patient: p, noInbox: msg.kind === 'programme' || msg.kind === 'bilan' });
+      const out = await sendToUser(doc.id, msg, { patient: p, noInbox: msg.kind === 'programme' || msg.kind === 'bilan' || msg.kind === 'mot' });
       const update = { lastPushDay: day };
       if (msg.kind === 'nudge') update.lastNudgeAt = admin.firestore.FieldValue.serverTimestamp();
       await doc.ref.update(update).catch(() => {});

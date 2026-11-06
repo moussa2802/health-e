@@ -16,6 +16,8 @@ import type { MoodMap } from '../utils/moodLog';
 import HomeProgramme from '../components/accueil/HomeProgramme';
 import { MoodSheet } from '../components/accueil/HomeSheets';
 import HomePenc from '../components/penc/HomePenc';
+import MotDuJour from '../components/accueil/MotDuJour';
+import { readResultsCache, writeResultsCache } from '../utils/resultsCache';
 import { useLaunch } from '../hooks/useLaunch';
 import { HScroll, SectionTitle, NewsCard, ChannelCard, WideLink, tintOf, type NewsItem } from '../components/accueil/HomeParts';
 import { RealDrLoPhoto } from '../components/accueil/RealDrLoBadge';
@@ -244,7 +246,15 @@ const ConnectedHome: React.FC<{ feed: HomeFeed | null; palette: MomentPalette; u
 
   useEffect(() => {
     let off = false;
-    getProfileProgress(uid).then(p => { if (!off) { setResults(p.scaleResults ?? {}); setTotemRevealed(!!p.totem?.animal && !!p.totem.revealedAt); } }).catch(() => { if (!off) setResults({}); });
+    // Les résultats gardés sur ce téléphone d'abord (« Ta suite » s'affiche tout de suite), puis ceux du compte
+    const cached = readResultsCache(uid);
+    if (cached) { setResults(cached.results); if (cached.totem) setTotemRevealed(true); }
+    getProfileProgress(uid).then(p => {
+      if (off) return;
+      const totem = p.totem?.animal && p.totem.revealedAt ? p.totem.animal : null;
+      writeResultsCache(uid, p.scaleResults ?? {}, totem);
+      setResults(p.scaleResults ?? {}); setTotemRevealed(!!totem);
+    }).catch(() => { if (!off && !cached) setResults({}); });
     getInbox().then(r => { if (!off) { setInbox(r.items); setUnread(r.unread); } }).catch(() => {});
     getChannelNews().then(r => { if (!off) setChBadge(r.badge); }).catch(() => {});
     myPractices().then(m => { if (!off) setMine(m); }).catch(() => {});
@@ -299,6 +309,9 @@ const ConnectedHome: React.FC<{ feed: HomeFeed | null; palette: MomentPalette; u
 
       {/* Il a grandi : une fois par stade */}
       <GrewCard palette={palette} />
+
+      {/* Le petit mot du compagnon, comme un post-it sur le miroir (un nouveau chaque jour) */}
+      <MotDuJour uid={uid} palette={palette} focus={new URLSearchParams(window.location.search).has('mot')} />
 
       {/* Une seule carte vedette : un Pénc en direct, sinon ta suite ; puis le test du moment, ton message, l'humeur */}
       <HomePenc palette={palette} full={launch.on('penc_page')} onLive={setPencLive} />

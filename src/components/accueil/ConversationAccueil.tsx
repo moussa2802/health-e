@@ -25,6 +25,7 @@ import { AURA_FULL, CREDIT, LOW_CREDIT, credits } from '../../config/creditName'
 import { useAuth } from '../../contexts/AuthContext';
 import { useKoris } from '../../contexts/KorisContext';
 import { useBreathVoice } from '../../hooks/useBreathVoice';
+import { readResultsCache, writeResultsCache } from '../../utils/resultsCache';
 import { useGuidedExercise } from '../../hooks/useGuidedExercise';
 import { EXERCISES, EXERCISE_IDS, type ExerciseId } from '../../data/guidedExercises';
 import { EXERCISE_ICON, ExerciseCard, ExerciseListCard, GuidedRunScreen, VocalCard } from './GuidedExercise';
@@ -148,6 +149,8 @@ function programmeInvite(sig: AxisSignal) {
 }
 const TOTAL_CORE = MENTAL_HEALTH_SCALES.length + SEXUAL_HEALTH_SCALES.length;
 const BREATH_MS = 4000;
+
+
 const BREATH_TOTAL_MS = 60000;
 
 // Couleurs du thème chaud sombre (maquettes « Mon Dr Lô »)
@@ -317,15 +320,32 @@ const ConversationAccueil: React.FC = () => {
   // La voix qui guide la respiration (inspire… expire…), coupable
   const breathVoice = useBreathVoice(breath);
   // Exercices guidés en vocal (cohérence cardiaque, ancrage, sommeil, relâcher), en plein écran
-  const guided = useGuidedExercise((id, completed, feeling) => {
-    trackAccueil('exercise_done', { id, completed, feeling: feeling ?? '' });
+  const guided = useGuidedExercise((id, completed, feeling, elapsedMs = 0) => {
+    trackAccueil('exercise_done', { id, completed, feeling: feeling ?? '', sec: Math.round(elapsedMs / 1000) });
     const cur = stateRef.current;
     if (!cur) return;
+    // Arrêté tout de suite (3-2-1 ou moins de 30 s) : on n'écrit rien, la personne a juste changé d'avis
+    if (!completed && !feeling && elapsedMs < 30000) return;
+    const say = (user: string | null, items: Parameters<typeof addExchange>[2]) => {
+      // Jamais deux fois de suite la même phrase du compagnon
+      const recent = cur.messages.slice(-4).filter(m => m.from === 'drlo').map(m => m.text);
+      const fresh = items.filter(x => { const t = typeof x === 'string' ? x : x.text; return !t || !recent.includes(t); });
+      if (!fresh.length && !user) return;
+      apply(addExchange(cur, user, fresh), cur);
+    };
+    const pick = (xs: string[]) => xs[Math.floor(Math.random() * xs.length)];
     // Le ressenti s'écrit dans le fil comme une réponse de la personne : le compagnon le lit ensuite
-    if (feeling === 'mieux') { apply(addExchange(cur, 'Je me sens mieux', [EXERCISES[id].done]), cur); return; }
-    if (feeling === 'pareil') { apply(addExchange(cur, 'Pareil', [{ text: 'Ça arrive. Ces exercices marchent surtout avec la régularité. Tu veux en essayer un autre ?', card: { type: 'exercises' } }]), cur); return; }
-    if (feeling === 'moins') { apply(addExchange(cur, 'Moins bien', ['Merci de me le dire. Tu veux m\'en parler ? Écris-moi ce qui se passe, je suis là.']), cur); return; }
-    apply(addExchange(cur, null, [completed ? EXERCISES[id].done : 'D\'accord, on s\'arrête là. Même quelques minutes, ça compte.']), cur);
+    if (feeling === 'mieux') { say('Je me sens mieux', [EXERCISES[id].done]); return; }
+    if (feeling === 'pareil') { say('Pareil', [{ text: pick(['Ça arrive. Ces exercices marchent surtout avec la régularité. Tu veux en essayer un autre ?', 'D\'accord. Parfois il faut deux ou trois fois avant de sentir la différence. On en essaie un autre ?']), card: { type: 'exercises' } }]); return; }
+    if (feeling === 'moins') { say('Moins bien', ['Merci de me le dire. Tu veux m\'en parler ? Écris-moi ce qui se passe, je suis là.']); return; }
+    if (completed) { say(null, [EXERCISES[id].done]); return; }
+    const min = Math.max(1, Math.round(elapsedMs / 60000));
+    const lbl = EXERCISES[id].label.toLowerCase();
+    say(null, [pick([
+      `D'accord, on s'arrête là. ${min} minute${min > 1 ? 's' : ''} de ${lbl}, c'est déjà ça.`,
+      'On s\'arrête là, pas de souci. Tu pourras le reprendre quand tu veux.',
+      `C'est noté. Même ${min} minute${min > 1 ? 's' : ''}, ça compte.`,
+    ])]);
   });
   const [reveal, setReveal] = useState({ nonce: 0, from: 0, hint: 'thinking' as Hint });
   const [testBusy, setTestBusy] = useState<null | 'starting' | 'finishing'>(null);
@@ -360,10 +380,14 @@ const ConversationAccueil: React.FC = () => {
       setResults(getAllGuestResults());
       return;
     }
-    setResults(null); // pas de résultats d'invité mélangés à ceux du compte pendant le chargement
+    // Copie gardée sur ce téléphone : la discussion s'affiche tout de suite, la version du compte suit
+    const cachedRes = readResultsCache(currentUser.id);
+    setResults(cachedRes ? cachedRes.results : null); // jamais de résultats d'invité mélangés à ceux du compte
+    if (cachedRes) setTotemAnimal(cachedRes.totem as TotemAnimal | null);
     getProfileProgress(currentUser.id)
       .then(p => {
         if (cancelled) return;
+        writeResultsCache(currentUser.id, p.scaleResults ?? {}, p.totem?.revealedAt && p.totem.animal ? p.totem.animal : null);
         // Prénom, genre, âge : le compte fait foi (nouveau téléphone, icône de l'iPhone, autre navigateur)
         accountOnboardingRef.current = !!p.onboardingProfile;
         if (p.onboardingProfile) saveOnboardingProfile(p.onboardingProfile as unknown as Parameters<typeof saveOnboardingProfile>[0]);
@@ -408,12 +432,26 @@ const ConversationAccueil: React.FC = () => {
     const key = storageKey;
     let done = false;
     const finish = () => { if (!done) { done = true; setHydrated(key); } };
-    // Réseau lent : on n'attend pas plus de 6 s (et on ne renverra rien par-dessus le compte)
+    // La copie de ce téléphone s'affiche tout de suite ; celle du compte est lue en même temps.
+    // Sans copie locale (nouveau téléphone) : on attend le compte, 6 s au plus.
+    const local = loadState(key);
+    const localUsers = local ? local.messages.filter(m => m.from === 'user').length : 0;
+    if (local) finish();
     const timer = window.setTimeout(finish, 6000);
     pullThread<AccueilState>(convId).then(r => {
-      if (!r || done) return;
+      if (!r) return;
       const remote = r.thread && r.thread.v === 1 && Array.isArray(r.thread.messages) ? r.thread : null;
-      if (remote && pickNewer(loadState(key), remote) === 'remote') saveRaw(key, remote);
+      if (remote && pickNewer(loadState(key), remote) === 'remote') {
+        saveRaw(key, remote);
+        // Déjà affichée depuis ce téléphone, mais l'autre téléphone est plus récent : on recharge,
+        // seulement si la personne n'a encore rien écrit ici
+        const cur = stateRef.current;
+        if (local && cur && stateKeyRef.current === key && cur.messages.filter(m => m.from === 'user').length === localUsers) {
+          initKeyRef.current = null;
+          setHydrated(null);
+          window.setTimeout(() => setHydrated(key), 0);
+        }
+      }
       if (r.index) setConvIdx(i => mergeIndex(i, r.index));
       syncOkRef.current.add(key);
     }).finally(() => { window.clearTimeout(timer); finish(); });
@@ -759,10 +797,18 @@ const ConversationAccueil: React.FC = () => {
     }), prev);
   };
 
+  const breathStart = useRef(0);
   const stopBreathing = useCallback((completed: boolean) => {
     setBreath(null);
     const prev = stateRef.current;
     if (!prev) return;
+    // Arrêtée au bout de quelques secondes : rien à dire (on a juste changé d'avis)
+    if (!completed && Date.now() - breathStart.current < 15000) return;
+    const last = [...prev.messages].reverse().find(m => m.from === 'drlo')?.text;
+    const msg = completed
+      ? 'Bien joué. Une minute pour toi, ça compte. Je suis là quand tu veux en parler.'
+      : 'D\'accord, on s\'arrête là. Même quelques respirations, ça compte.';
+    if (last === msg) return;
     apply(addExchange(prev, null, [completed
       ? 'Bien joué. Une minute pour toi, ça compte. Je suis là quand tu veux en parler.'
       : 'D\'accord, on s\'arrête là. Même quelques respirations, ça compte.']), prev);
@@ -775,6 +821,7 @@ const ConversationAccueil: React.FC = () => {
   const breathing = breath !== null;
   useEffect(() => {
     if (!breathing) return;
+    breathStart.current = Date.now();
     const iv = window.setInterval(() => setBreath(b => (b ? { inhale: !b.inhale } : b)), BREATH_MS);
     const end = window.setTimeout(() => stopBreathing(true), BREATH_TOTAL_MS);
     return () => { window.clearInterval(iv); window.clearTimeout(end); };

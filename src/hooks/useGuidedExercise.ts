@@ -38,7 +38,8 @@ export interface GuidedState {
 const VOL = { souffle: 0.55, ambient: 0.28, preview: 0.4 };
 type WakeLockLike = { release: () => Promise<void> };
 
-export function useGuidedExercise(onEnd: (id: ExerciseId, completed: boolean, feeling?: Feeling) => void) {
+/** elapsedMs : temps d'exercice déjà fait (0 si on arrête pendant le 3-2-1). */
+export function useGuidedExercise(onEnd: (id: ExerciseId, completed: boolean, feeling?: Feeling, elapsedMs?: number) => void) {
   const [run, setRunState] = useState<GuidedState | null>(null);
   const runRef = useRef<GuidedState | null>(null);
   const setRun = (r: GuidedState | null) => { runRef.current = r; setRunState(r); };
@@ -167,7 +168,7 @@ export function useGuidedExercise(onEnd: (id: ExerciseId, completed: boolean, fe
     const cur = runRef.current;
     clearTimer(); release(); stopAmbient(); voice.current?.pause();
     setRun(null);
-    if (cur && cur.stage !== 'setup') endRef.current(cur.id, false);
+    if (cur && cur.stage !== 'setup') endRef.current(cur.id, false, undefined, cur.stage === 'run' ? cur.elapsedMs : 0);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Commencer : dans le toucher ─────────────────────────────────────────────

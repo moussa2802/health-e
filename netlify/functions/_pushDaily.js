@@ -6,7 +6,8 @@
  *  - jamais de mot sensible sur l'écran verrouillé (pas d'« anxiété », d'« humeur », de résultat) ;
  *  - rien la nuit (22 h – 7 h) si « silence la nuit » est actif (par défaut) ;
  *  - rien pendant une pause du programme (la pause est aussi déclenchée par une crise) ;
- *  - « prendre de tes nouvelles » seulement si la personne l'a activé, 1 fois par semaine au plus.
+ *  - « prendre de tes nouvelles » seulement si la personne l'a activé, 1 fois par semaine au plus ;
+ *  - sinon, « Ton mot du jour t'attend » (réglage « mot », activé par défaut) : le mot lui-même n'est jamais sur l'écran verrouillé.
  */
 
 /** Réglage qui commande chaque type de notification. */
@@ -20,9 +21,10 @@ const KIND_PREF = {
   broadcast: 'drlo',
   defi_response: 'social',
   nudge: 'nudge',
+  mot: 'mot',
 };
 
-const DEFAULT_PREFS = { on: false, hour: 19, tz: 'Africa/Dakar', programme: true, drlo: true, social: true, totem: true, nudge: false, quiet: true };
+const DEFAULT_PREFS = { on: false, hour: 19, tz: 'Africa/Dakar', programme: true, drlo: true, social: true, totem: true, nudge: false, mot: true, quiet: true };
 
 function localParts(tz, d = new Date()) {
   try {
@@ -138,6 +140,10 @@ function decideDaily(p, ctx) {
     if (seen && t - seen > 4 * 864e5 && (!nudged || t - nudged > 7 * 864e5)) {
       return { kind: 'nudge', title: 'Health-e', body: 'Ça fait quelques jours. Comment tu vas ? Je suis là si tu veux en parler.', link: '/' };
     }
+  }
+  // Rien d'autre aujourd'hui : le mot du jour (le texte reste dans l'appli, l'écran verrouillé ne montre rien de personnel)
+  if (allowed(prefs, 'mot', now)) {
+    return { kind: 'mot', title: 'Health-e', body: 'Ton mot du jour t\'attend.', link: '/?mot=1' };
   }
   return null;
 }

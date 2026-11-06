@@ -4,7 +4,7 @@ const P = require('../_pushDaily');
 
 // 24 oct. 2026, 19 h à Dakar (UTC+0)
 const at19 = new Date(Date.UTC(2026, 9, 24, 19, 5));
-const base = (o = {}) => ({ notifPrefs: { on: true, hour: 19, tz: 'Africa/Dakar' }, ...o });
+const base = (o = {}) => ({ notifPrefs: { mot: false, on: true, hour: 19, tz: 'Africa/Dakar' }, ...o });
 const prog = (o = {}) => ({ v: 1, startDay: '2026-10-22', status: 'active', checks: {}, bilans: [], ...o });
 
 test('rappel du programme : à l\'heure choisie, seulement s\'il reste quelque chose', () => {
@@ -23,12 +23,12 @@ test('un seul message par jour, rien pendant une pause', () => {
 });
 
 test('réglages : type coupé, silence la nuit, fuseau de la personne', () => {
-  assert.equal(P.decideDaily(base({ notifPrefs: { on: true, hour: 19, programme: false }, programme: prog() }), { now: at19 }), null);
+  assert.equal(P.decideDaily(base({ notifPrefs: { mot: false, on: true, hour: 19, programme: false }, programme: prog() }), { now: at19 }), null);
   const prefs = { on: true, hour: 23, quiet: true, tz: 'Africa/Dakar' };
   assert.equal(P.allowed(prefs, 'programme', new Date(Date.UTC(2026, 9, 24, 23))), false);
   assert.equal(P.allowed({ ...prefs, quiet: false }, 'programme', new Date(Date.UTC(2026, 9, 24, 23))), true);
   // Québec (UTC-4 en octobre) : 19 h locale = 23 h UTC
-  const qc = base({ notifPrefs: { on: true, hour: 19, tz: 'America/Toronto' }, programme: prog() });
+  const qc = base({ notifPrefs: { mot: false, on: true, hour: 19, tz: 'America/Toronto' }, programme: prog() });
   assert.equal(P.decideDaily(qc, { now: new Date(Date.UTC(2026, 9, 24, 23, 2)) }).kind, 'programme');
 });
 
@@ -42,8 +42,8 @@ test('défi du totem au 3e jour, nouvelles seulement si activé', () => {
   assert.equal(P.decideDaily(base({ totemDefi: { since: '2026-10-21T10:00:00Z' } }), { now: at19 }).kind, 'totem');
   const away = { lastSeenAt: '2026-10-18T10:00:00Z' };
   assert.equal(P.decideDaily(base(away), { now: at19 }), null);
-  assert.equal(P.decideDaily(base({ ...away, notifPrefs: { on: true, hour: 19, nudge: true } }), { now: at19 }).kind, 'nudge');
-  assert.equal(P.decideDaily(base({ ...away, lastNudgeAt: '2026-10-20T10:00:00Z', notifPrefs: { on: true, hour: 19, nudge: true } }), { now: at19 }), null);
+  assert.equal(P.decideDaily(base({ ...away, notifPrefs: { mot: false, on: true, hour: 19, nudge: true } }), { now: at19 }).kind, 'nudge');
+  assert.equal(P.decideDaily(base({ ...away, lastNudgeAt: '2026-10-20T10:00:00Z', notifPrefs: { mot: false, on: true, hour: 19, nudge: true } }), { now: at19 }), null);
 });
 
 test('routines comptées, jetons morts repérés', () => {
@@ -66,6 +66,19 @@ test('routine : un seul message par jour, le programme passe d\'abord, silence e
   assert.equal(P.decideDaily(base({ programme: fait }), { now: at19, moodToday: true, routineDue: 1 }).kind, 'routine');
   assert.equal(P.decideDaily(base({ programme: prog({ status: 'paused', pausedDay: '2026-10-23' }) }), { now: at19, routineDue: 1 }), null);
   assert.equal(P.decideDaily(base({ lastPushDay: '2026-10-24' }), { now: at19, routineDue: 1 }), null);
-  assert.equal(P.decideDaily({ notifPrefs: { on: true, hour: 19, tz: 'Africa/Dakar', programme: false } }, { now: at19, routineDue: 1 }), null);
+  assert.equal(P.decideDaily({ notifPrefs: { mot: false, on: true, hour: 19, tz: 'Africa/Dakar', programme: false } }, { now: at19, routineDue: 1 }), null);
   assert.equal(P.decideDaily({ notifPrefs: { on: false, hour: 19 } }, { now: at19, routineDue: 1 }), null);
+});
+
+test('mot du jour : quand il n\'y a rien d\'autre, à l\'heure choisie, sans rien de personnel sur l\'écran verrouillé', () => {
+  const at19 = new Date('2026-11-05T19:10:00Z');
+  const m = P.decideDaily({ notifPrefs: { on: true, hour: 19, tz: 'Africa/Dakar' } }, { now: at19 });
+  assert.equal(m.kind, 'mot');
+  assert.equal(m.body, 'Ton mot du jour t\'attend.');
+  assert.equal(m.link, '/?mot=1');
+  // Coupé dans les réglages, ou déjà un message aujourd'hui : rien
+  assert.equal(P.decideDaily({ notifPrefs: { on: true, hour: 19, mot: false } }, { now: at19 }), null);
+  assert.equal(P.decideDaily({ notifPrefs: { on: true, hour: 19 }, lastPushDay: '2026-11-05' }, { now: at19 }), null);
+  // Le programme passe d'abord
+  assert.equal(P.decideDaily({ notifPrefs: { on: true, hour: 19 } }, { now: at19, routineDue: 1 }).kind, 'routine');
 });
