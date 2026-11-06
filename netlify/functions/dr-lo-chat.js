@@ -1,4 +1,5 @@
-const { db, verifyAuth } = require('./_firebase');
+const { admin, db, verifyAuth } = require('./_firebase');
+const ST = require('./_stats');
 const { takeSlot, giveBack } = require('./_chatAllowance');
 const { sanitizeCompanionName, companionStyleBlock } = require('./_companion');
 const { VOICE } = require('./_drloVoice');
@@ -378,6 +379,7 @@ exports.handler = async (event) => {
         const text = split.text;
         const actions = split.actions.filter((a) => LA.allowedAction(a, open));
         await commit();
+        if (!testMode) await ST.bump(db, admin, { uid: user.uid, counts: { ev_chat_message: 1 }, features: ['compagnon'] });
         const cached = data?.usage?.cache_read_input_tokens || 0;
         const total = data?.usage?.input_tokens || 0;
         console.log(`dr-lo-chat OK model=${model} input=${total} cached=${cached} output=${data?.usage?.output_tokens || 0}`);

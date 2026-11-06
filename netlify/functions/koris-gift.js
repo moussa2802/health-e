@@ -9,6 +9,7 @@
  */
 const { admin, db, verifyAuth } = require('./_firebase');
 const G = require('./_korisGift');
+const ST = require('./_stats');
 const Q = require('./_drloQuestions');
 
 const headers = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'Content-Type, Authorization', 'Content-Type': 'application/json' };
@@ -75,6 +76,7 @@ exports.handler = async (event) => {
         tx.set(db.collection('stats').doc('koris'), { totalRefilled: inc(G.DAILY_GIFT), totalDailyGift: inc(G.DAILY_GIFT) }, { merge: true });
         return { ok: true, credited: G.DAILY_GIFT, balance: before + G.DAILY_GIFT, streak: G.streakInfo(wallet, day).streak };
       });
+      if (out.ok) await ST.bump(db, admin, { uid, counts: { ev_gift_claim: 1 }, features: ['cadeau'] });
       return reply(200, out);
     }
 

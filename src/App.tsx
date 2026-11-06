@@ -38,6 +38,8 @@ import BottomTabs from "./components/layout/BottomTabs";
 import { noteLocation } from "./utils/navTrail";
 
 import { useAuth } from "./contexts/AuthContext";
+import { trackPage } from "./utils/accueilTracking";
+import { sectionOf } from "./utils/pageSection";
 import { cleanupAllProfessionalsListeners } from "./hooks/useProfessionals";
 import { cleanupAllBookingListeners } from "./hooks/useBookings";
 import {
@@ -88,6 +90,7 @@ const AdminNotifications = lazy(
 const AdminEvaluations = lazy(
   () => import("./pages/admin/AdminEvaluations")
 );
+const AdminStats = lazy(() => import("./pages/admin/AdminStats"));
 const AdminKorisCredit = lazy(
   () => import("./pages/admin/AdminKorisCredit")
 );
@@ -131,7 +134,7 @@ const PageLoader = () => (
 // Wrapper component that decides whether to show header/footer based on route
 const AppChrome: React.FC = () => {
   const { pathname } = useLocation();
-  useEffect(() => { noteLocation(pathname); }, [pathname]);
+  useEffect(() => { noteLocation(pathname); trackPage(sectionOf(pathname)); }, [pathname]);
   const isAdminRoute = pathname.startsWith("/admin");
   const isAppRoute = pathname.startsWith("/app");
   const isDefiJouer = pathname.startsWith("/d/") || pathname.startsWith("/api/d/");
@@ -250,6 +253,14 @@ const AppChrome: React.FC = () => {
               element={
                 <ProtectedRoute userType="admin">
                   <AdminEvaluations />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/stats"
+              element={
+                <ProtectedRoute userType="admin">
+                  <AdminStats />
                 </ProtectedRoute>
               }
             />

@@ -8,6 +8,7 @@ import {
   Bell,
   ClipboardCheck,
   Coins,
+  BarChart3,
 } from "lucide-react";
 import { useLanguage } from "../../contexts/LanguageContext";
 
@@ -36,6 +37,11 @@ const AdminSidebar = () => {
           path: "/admin/dashboard",
           icon: LayoutDashboard,
           label: language === "fr" ? "Tableau de bord" : "Dashboard",
+        },
+        {
+          path: "/admin/stats",
+          icon: BarChart3,
+          label: language === "fr" ? "Statistiques" : "Statistics",
         },
         {
           path: "/admin/notifications",

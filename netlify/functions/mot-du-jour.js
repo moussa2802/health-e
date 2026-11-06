@@ -8,6 +8,7 @@
 const { admin, db, verifyAuth } = require('./_firebase');
 const M = require('./_motDuJour');
 const G = require('./_korisGift');
+const ST = require('./_stats');
 
 const headers = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'Content-Type, Authorization', 'Content-Type': 'application/json' };
 const reply = (statusCode, body) => ({ statusCode, headers, body: JSON.stringify(body) });
@@ -46,6 +47,7 @@ exports.handler = async (event) => {
       const pat = await patRef.get();
       const kept = (pat.exists && Array.isArray(pat.data().motsGardes) ? pat.data().motsGardes : []).filter((m) => m && m.text !== text);
       await patRef.set({ motsGardes: [{ text, day }, ...kept].slice(0, 30) }, { merge: true });
+      await ST.bump(db, admin, { uid, counts: { ev_mot_keep: 1 }, features: ['mot_du_jour'] });
       return reply(200, { ok: true });
     }
 
@@ -71,6 +73,7 @@ exports.handler = async (event) => {
     const text = (apiKey && (await generate(apiKey, prompt))) || M.fallbackFor(day, genre);
     const history = [text, ...(Array.isArray(pd.motHistory) ? pd.motHistory : [])].slice(0, 14);
     await patRef.set({ motDuJour: { day, text, kind: prompt.kind, at: admin.firestore.FieldValue.serverTimestamp() }, motHistory: history }, { merge: true });
+    await ST.bump(db, admin, { uid, counts: { ev_mot: 1 }, features: ['mot_du_jour'] });
     return reply(200, { day, text, kind: prompt.kind, kept: false });
   } catch (err) {
     console.error('mot-du-jour error:', err);
