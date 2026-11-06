@@ -110,11 +110,14 @@ export default defineConfig(({ mode }) => {
         },
       },
       chunkSizeWarningLimit: 1000,
-      // Source maps activés pour Sentry (supprimés après upload en prod)
-      sourcemap: mode === 'production',
+      // Source maps : seulement si Sentry les reçoit (le plugin les supprime ensuite de dist/).
+      // Sans jeton Sentry, jamais de .map publics : le code source ne doit pas être lisible par tous.
+      sourcemap: mode === 'production' && !!env.SENTRY_AUTH_TOKEN,
       target: 'es2015',
       minify: 'esbuild',
     },
+    // En production, plus de console.log/info/debug (adresses e-mail, identifiants) chez les visiteurs ; error et warn restent.
+    esbuild: mode === 'production' ? { pure: ['console.log', 'console.info', 'console.debug'] } : undefined,
     server: {
       hmr: { overlay: true },
       watch: { usePolling: true, interval: 1000 },

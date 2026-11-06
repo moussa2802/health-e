@@ -18,6 +18,7 @@ import {
 import { getDatabase, ref, onValue, off } from "firebase/database";
 import {
   sendEmail,
+  escapeHtml,
   sendAppointmentConfirmationEmail,
   sendAppointmentReminderEmail,
   sendNewMessageEmail,
@@ -221,13 +222,11 @@ async function sendNotificationEmail(
           html: `
             <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
               <h2 style="color: #0d9488;">Nouvelle notification</h2>
-              <p>Bonjour ${userName},</p>
+              <p>Bonjour ${escapeHtml(userName)},</p>
               <p>Vous avez reçu une nouvelle notification sur Health-e.</p>
               <div style="background-color: #f0f9ff; padding: 20px; border-radius: 8px; margin: 20px 0;">
-                <p><strong>Type :</strong> ${type}</p>
-                <p><strong>Contenu :</strong> ${
-                  data.content || "Notification"
-                }</p>
+                <p><strong>Type :</strong> ${escapeHtml(type)}</p>
+                <p><strong>Contenu :</strong> ${escapeHtml(data.content || "Notification")}</p>
               </div>
               <p><a href="https://health-e.sn/notifications" style="background-color: #0d9488; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Voir la notification</a></p>
               <p>Merci,<br>L'équipe Health-e</p>

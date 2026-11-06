@@ -132,14 +132,27 @@ const EMAIL_TEMPLATES: Record<string, EmailTemplate> = {
 };
 
 // Fonction pour remplacer les variables dans les templates
+/** Échappe &, <, >, " et ' avant d'insérer une valeur dans un modèle HTML (un nom ne peut plus injecter de HTML ou de lien piégé). */
+export function escapeHtml(value: unknown): string {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
 function replaceTemplateVariables(
   template: string,
-  data: Record<string, any>
+  data: Record<string, any>,
+  html = false
 ): string {
   let result = template;
   for (const [key, value] of Object.entries(data)) {
     const regex = new RegExp(`{{${key}}}`, "g");
-    result = result.replace(regex, String(value || ""));
+    const text = String(value || "");
+    // split/join : la valeur est insérée telle quelle (pas d'interprétation de « $& » dans replace)
+    result = result.replace(regex, () => (html ? escapeHtml(text) : text));
   }
   return result;
 }
@@ -162,7 +175,7 @@ export async function sendEmail(emailData: EmailData): Promise<string> {
 
       finalMessage = {
         subject: replaceTemplateVariables(template.subject, templateData),
-        html: replaceTemplateVariables(template.html, templateData),
+        html: replaceTemplateVariables(template.html, templateData, true),
         text: replaceTemplateVariables(template.text, templateData),
       };
     }

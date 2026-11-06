@@ -1,6 +1,6 @@
 [build]
   publish = "dist"
-  command = "npm run build"
+  command = "npm run build && find dist -name '*.map' -delete"
 
 [build.environment]
   NODE_VERSION = "20"
@@ -20,6 +20,16 @@
 # Pénc mi : rappel « dans 10 minutes » aux inscrits
 [functions."penc-reminders"]
   schedule = "*/5 * * * *"
+
+# En-têtes de sécurité du navigateur (la CSP viendra ensuite, d'abord en mode « report only »)
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Content-Type-Options = "nosniff"
+    X-Frame-Options = "SAMEORIGIN"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Permissions-Policy = "camera=(self \"https://meet.health-e.sn\"), microphone=(self \"https://meet.health-e.sn\"), geolocation=()"
+    Cross-Origin-Opener-Policy = "same-origin-allow-popups"
 
 [[headers]]
   for = "/index.html"
