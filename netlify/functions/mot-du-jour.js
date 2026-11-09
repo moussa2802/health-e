@@ -9,6 +9,7 @@ const { admin, db, verifyAuth } = require('./_firebase');
 const M = require('./_motDuJour');
 const G = require('./_korisGift');
 const ST = require('./_stats');
+const { modelFrom, textOf, NO_THINKING } = require('./_aiModel');
 
 const headers = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'Content-Type, Authorization', 'Content-Type': 'application/json' };
 const reply = (statusCode, body) => ({ statusCode, headers, body: JSON.stringify(body) });
@@ -21,11 +22,12 @@ async function generate(apiKey, prompt) {
       method: 'POST',
       signal: ctrl.signal,
       headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
-      body: JSON.stringify({ model: 'claude-haiku-4-5-20251001', max_tokens: 160, system: prompt.system, messages: [{ role: 'user', content: prompt.user }] }),
+      // Réglable dans Netlify (MOT_DU_JOUR_MODEL) ; retour en arrière : claude-haiku-4-5-20251001
+      body: JSON.stringify({ model: modelFrom('MOT_DU_JOUR_MODEL'), max_tokens: 160, thinking: NO_THINKING, system: prompt.system, messages: [{ role: 'user', content: prompt.user }] }),
     });
     if (!res.ok) return null;
     const data = await res.json();
-    return M.cleanMot(data && data.content && data.content[0] ? data.content[0].text : '');
+    return M.cleanMot(textOf(data));
   } catch { return null; } finally { clearTimeout(t); }
 }
 

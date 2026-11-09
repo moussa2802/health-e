@@ -8,6 +8,7 @@
  */
 const { admin, db, verifyAuth } = require('./_firebase');
 const { cleanNotes, newNotes, buildMemoryPrompt, MAX_NOTES } = require('./_drloMemory');
+const { modelFrom, textOf, NO_THINKING } = require('./_aiModel');
 
 const headers = {
   'Access-Control-Allow-Origin': '*',
@@ -47,15 +48,17 @@ exports.handler = async (event) => {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
       body: JSON.stringify({
-        model: 'claude-haiku-4-5-20251001',
+        // Réglable dans Netlify (DRLO_MEMORY_MODEL) ; retour en arrière : claude-haiku-4-5-20251001
+        model: modelFrom('DRLO_MEMORY_MODEL'),
         max_tokens: 1400,
+        thinking: NO_THINKING,
         system: buildMemoryPrompt(),
         messages: [{ role: 'user', content: JSON.stringify({ notes_actuelles: current.map(n => (typeof n === 'string' ? { t: n, c: 'vie' } : { t: n.text, c: n.cat || 'vie' })), echanges_recents: turns }) }],
       }),
     });
     if (!res.ok) return reply(502, { error: 'ia' });
     const data = await res.json();
-    const raw = data?.content?.[0]?.text ?? '';
+    const raw = textOf(data);
     const notes = cleanNotes(raw, current);
     if (!notes) return reply(200, { ok: true, notes: null });
     await ref.set({ drloMemory: notes, drloMemoryAt: admin.firestore.FieldValue.serverTimestamp() }, { merge: true });
