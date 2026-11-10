@@ -117,7 +117,8 @@ exports.handler = async (event) => {
       if (idt.error) return reply(400, { error: idt.error });
       const mine = await qCol.where('uid', '==', uid).where('status', '==', 'open').get();
       if (mine.size >= L.MAX_OPEN_PER_PERSON) return reply(409, { error: `Tu as déjà ${L.MAX_OPEN_PER_PERSON} questions en attente dans ce Pénc.` });
-      await qCol.doc().set({ text: t.text, name: idt.name, uid, at: Date.now(), votes: 0, voters: [], status: 'open' });
+      const animal = up && up.exists ? C.totemOf(up.data()) : null; // photo de profil : l'animal intérieur révélé
+      await qCol.doc().set({ text: t.text, name: idt.name, uid, at: Date.now(), votes: 0, voters: [], status: 'open', ...(animal ? { animal } : {}) });
       await signal(pid, { k: 'q' });
       return reply(200, { ok: true });
     }
@@ -150,7 +151,8 @@ exports.handler = async (event) => {
       const pi = await svc.getParticipant(`penc_${pid}`, me).catch(() => null);
       if (!pi) return reply(409, { error: 'Entre dans la salle pour écrire.' });
       const cid = crypto.randomBytes(6).toString('hex');
-      await signal(pid, { k: 'chat', cid, who: me, n: pi.name || 'Anonyme', t: t.text, h: isMod ? 1 : 0, at: Date.now() });
+      const a = pi.attributes && pi.attributes.animal ? String(pi.attributes.animal) : undefined;
+      await signal(pid, { k: 'chat', cid, who: me, n: pi.name || 'Anonyme', t: t.text, h: isMod ? 1 : 0, at: Date.now(), ...(a ? { a } : {}) });
       return reply(200, { ok: true, cid });
     }
 

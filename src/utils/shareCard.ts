@@ -20,12 +20,28 @@ async function inlineImages(element: HTMLElement): Promise<() => void> {
       } catch {
         // leave original src
       }
+      // Attendre que l'image soit vraiment prête : sinon (iPhone surtout) la carte part sans l'animal
+      try { await img.decode(); } catch { /* image déjà prête, ou décodage impossible */ }
     })
   );
 
   return () => {
     originals.forEach(({ img, src }) => { img.src = src; });
   };
+}
+
+/**
+ * La carte en PNG. Safari (iPhone, iPad, Mac) dessine souvent la carte SANS ses images au premier passage
+ * (défaut connu de html-to-image) : on la dessine plusieurs fois et on garde le dernier rendu.
+ */
+const isWebKit = () => typeof navigator !== 'undefined' && /AppleWebKit/.test(navigator.userAgent) && !/Chrome|CriOS|Android/.test(navigator.userAgent)
+  || (typeof navigator !== 'undefined' && /iPhone|iPad|iPod/.test(navigator.userAgent));
+async function renderPng(element: HTMLElement, opts: { pixelRatio: number; backgroundColor: string }): Promise<string> {
+  const o = { ...opts, cacheBust: true };
+  let dataUrl = await toPng(element, o);
+  const passes = isWebKit() ? 2 : 0;
+  for (let i = 0; i < passes; i++) dataUrl = await toPng(element, o);
+  return dataUrl;
 }
 
 export async function shareResultCard(
@@ -35,11 +51,7 @@ export async function shareResultCard(
   const restore = await inlineImages(element);
 
   try {
-    const dataUrl = await toPng(element, {
-      pixelRatio: 2,
-      backgroundColor: '#1B1C1A',
-      cacheBust: true,
-    });
+    const dataUrl = await renderPng(element, { pixelRatio: 2, backgroundColor: '#1B1C1A' });
 
     const fileName = `health-e-${scaleName}.png`;
 
@@ -81,11 +93,7 @@ export async function shareCardImage(
 ): Promise<'shared' | 'downloaded' | 'cancelled'> {
   const restore = await inlineImages(element);
   try {
-    const dataUrl = await toPng(element, {
-      pixelRatio: opts.pixelRatio ?? 2,
-      backgroundColor: opts.backgroundColor ?? '#1B1C1A',
-      cacheBust: true,
-    });
+    const dataUrl = await renderPng(element, { pixelRatio: opts.pixelRatio ?? 2, backgroundColor: opts.backgroundColor ?? '#1B1C1A' });
     const blob = await (await fetch(dataUrl)).blob();
     const file = new File([blob], fileName, { type: 'image/png' });
     if (navigator.share && navigator.canShare?.({ files: [file] })) {

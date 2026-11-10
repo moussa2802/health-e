@@ -441,12 +441,14 @@ const ConversationAccueil: React.FC = () => {
     pullThread<AccueilState>(convId).then(r => {
       if (!r) return;
       const remote = r.thread && r.thread.v === 1 && Array.isArray(r.thread.messages) ? r.thread : null;
-      if (remote && pickNewer(loadState(key), remote) === 'remote') {
+      // On compare avec la copie du téléphone AVANT l'affichage : sinon le « Re-bonjour » ajouté entre-temps
+      // la rendait « plus récente » et la vieille copie écrasait la discussion faite sur un autre appareil.
+      if (remote && pickNewer(local, remote) === 'remote') {
         saveRaw(key, remote);
-        // Déjà affichée depuis ce téléphone, mais l'autre téléphone est plus récent : on recharge,
+        // Déjà affichée (copie du téléphone, ou discussion neuve après 6 s d'attente) : on recharge celle du compte,
         // seulement si la personne n'a encore rien écrit ici
         const cur = stateRef.current;
-        if (local && cur && stateKeyRef.current === key && cur.messages.filter(m => m.from === 'user').length === localUsers) {
+        if (cur && stateKeyRef.current === key && cur.messages.filter(m => m.from === 'user').length === localUsers) {
           initKeyRef.current = null;
           setHydrated(null);
           window.setTimeout(() => setHydrated(key), 0);
@@ -574,7 +576,17 @@ const ConversationAccueil: React.FC = () => {
     pendingPushRef.current = null;
     if (!p) return;
     const cur = loadState(p.key);
-    if (cur) void pushThread(p.id, trimForCloud(cur), cur.savedAt ?? new Date().toISOString());
+    if (!cur) return;
+    void pushThread(p.id, trimForCloud(cur), cur.savedAt ?? new Date().toISOString()).then(r => {
+      // Le compte avait une version plus complète (autre appareil) : on reprend la version réunie
+      if (!r.state) return;
+      try {
+        const s2 = JSON.parse(r.state) as AccueilState;
+        if (!s2 || s2.v !== 1 || !Array.isArray(s2.messages)) return;
+        saveRaw(p.key, s2);
+        if (stateKeyRef.current === p.key) setState(s2);
+      } catch { /* ignore */ }
+    });
   }, []);
   useEffect(() => {
     if (!state || !isAuthenticated || !currentUser || !syncOkRef.current.has(storageKey) || stateKeyRef.current !== storageKey) return;

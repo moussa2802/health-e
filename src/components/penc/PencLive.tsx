@@ -8,6 +8,8 @@
  *   SlidesManager             côté hôte : ajouter, montrer, retirer des images
  */
 import React, { useEffect, useRef, useState } from 'react';
+import { TOTEM_IMAGES } from '../../data/totemImages';
+import type { TotemAnimal } from '../../utils/totemAlgorithm';
 import { Check, EyeOff, HelpCircle, ImagePlus, Loader2, Minus, Plus, X, ZoomIn } from 'lucide-react';
 import { DC } from '../accueil/DrLoShell';
 import type { IdentityMode } from '../../services/drloBroadcastService';
@@ -22,7 +24,10 @@ export const colorOf = (s: string) => COLORS[[...s].reduce((n, c) => n + c.charC
 const anon = (n: string) => !n || n === 'Anonyme';
 const srOnly: React.CSSProperties = { position: 'absolute', width: 1, height: 1, overflow: 'hidden', clip: 'rect(0 0 0 0)', whiteSpace: 'nowrap' };
 
-const Dot: React.FC<{ name: string; size: number }> = ({ name, size }) => (
+/** La photo de profil : l'animal intérieur s'il est révélé, sinon l'initiale. */
+const Dot: React.FC<{ name: string; size: number; animal?: string }> = ({ name, size, animal }) => (animal && animal in TOTEM_IMAGES)
+  ? <img src={TOTEM_IMAGES[animal as TotemAnimal]} alt="" aria-hidden="true" style={{ width: size, height: size, flex: 'none', borderRadius: '50%', objectFit: 'cover' }} />
+  : (
   <span aria-hidden="true" style={{ width: size, height: size, flex: 'none', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: size * 0.46, fontWeight: 700,
     background: anon(name) ? 'rgba(243,233,220,.16)' : colorOf(name), color: anon(name) ? DC.soft : DC.ink }}>{anon(name) ? '?' : name.trim()[0].toUpperCase()}</span>
 );
@@ -40,7 +45,7 @@ export const ChatFlux: React.FC<{ items: ChatMessage[]; meId?: string; onOpen: (
       style={{ width: '100%', border: 0, background: 'transparent', padding: 0, cursor: 'pointer', textAlign: 'left', display: 'flex', flexDirection: 'column', gap: 6, fontFamily: 'inherit' }}>
       {last.map((m, i) => (
         <span key={m.cid} className="penc-msg" style={{ display: 'flex', gap: 8, alignItems: 'flex-start', opacity: fade[fade.length - last.length + i] }}>
-          <Dot name={m.n} size={26} />
+          <Dot name={m.n} size={26} animal={m.a} />
           <span style={{ padding: '6px 11px', borderRadius: 16, background: 'rgba(18,12,7,.62)', fontSize: 14, lineHeight: 1.35, color: DC.text, maxWidth: '100%', overflowWrap: 'anywhere' }}>
             <b style={{ color: anon(m.n) ? DC.muted : colorOf(m.n) }}>{who(m, meId)}</b> {m.t}
           </span>
@@ -60,7 +65,7 @@ export const ChatSheet: React.FC<{ items: ChatMessage[]; meId?: string; isMod: b
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           {items.map(m => (
             <div key={m.cid} style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
-              <Dot name={m.n} size={32} />
+              <Dot name={m.n} size={32} animal={m.a} />
               <div style={{ flex: 1, minWidth: 0 }}>
                 <p style={{ margin: 0, fontSize: 13, color: DC.faint }}><b style={{ color: anon(m.n) ? DC.muted : colorOf(m.n) }}>{who(m, meId)}</b> · {new Date(m.at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</p>
                 <p style={{ margin: '2px 0 0', fontSize: 15, lineHeight: 1.4, overflowWrap: 'anywhere' }}>{m.t}</p>
@@ -103,7 +108,7 @@ export const PinnedQuestion: React.FC<{ q: PencQuestion }> = ({ q }) => (
   <section aria-label="Question à l'antenne" aria-live="polite" style={{ padding: 14, borderRadius: 18, background: 'rgba(201,184,228,.12)', border: `1px solid ${LAV}73` }}>
     <p style={{ margin: '0 0 6px', display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, fontWeight: 700, color: LAV }}><HelpCircle size={15} aria-hidden="true" />Question à l'antenne</p>
     <p style={{ margin: 0, fontSize: 15, lineHeight: 1.45, color: DC.title }}>{q.text}</p>
-    <p style={{ margin: '6px 0 0', fontSize: 13, color: DC.muted }}>{q.name}{q.votes > 0 ? ` · ${q.votes} personne${q.votes > 1 ? 's' : ''} se la pose${q.votes > 1 ? 'nt' : ''} aussi` : ''}</p>
+    <p style={{ margin: '6px 0 0', fontSize: 13, color: DC.muted, display: 'flex', alignItems: 'center', gap: 6 }}>{q.animal && <Dot name={q.name} size={20} animal={q.animal} />}{q.name}{q.votes > 0 ? ` · ${q.votes} personne${q.votes > 1 ? 's' : ''} se la pose${q.votes > 1 ? 'nt' : ''} aussi` : ''}</p>
   </section>
 );
 
@@ -174,7 +179,7 @@ export const QuestionsSheet: React.FC<{ pencId: string; questions: PencQuestion[
                 {q.pinned && <p style={{ margin: '0 0 4px', fontSize: 13, fontWeight: 700, letterSpacing: '.05em', color: LAV }}>À L'ANTENNE</p>}
                 <p style={{ margin: 0, fontSize: 15, lineHeight: 1.4, color: q.status === 'answered' ? DC.muted : DC.text, overflowWrap: 'anywhere' }}>{q.text}</p>
                 <p style={{ margin: '4px 0 0', fontSize: 13, color: q.status === 'answered' ? DC.sage : DC.faint, display: 'flex', alignItems: 'center', gap: 4 }}>
-                  {q.status === 'answered' && <Check size={14} aria-hidden="true" />}{q.status === 'answered' ? 'Répondue · ' : ''}{q.mine ? `${q.name} (toi)` : q.name}
+                  {q.status === 'answered' && <Check size={14} aria-hidden="true" />}{q.status === 'answered' ? 'Répondue · ' : ''}{q.animal && <Dot name={q.name} size={18} animal={q.animal} />}{q.mine ? `${q.name} (toi)` : q.name}
                 </p>
               </div>
               {q.status === 'open' && !q.mine && (
@@ -207,7 +212,7 @@ export const HostQuestions: React.FC<{ pencId: string; questions: PencQuestion[]
         <div key={q.id} style={{ padding: 14, borderRadius: 18, background: q.pinned ? 'rgba(201,184,228,.1)' : 'rgba(255,255,255,.05)', border: q.pinned ? `1px solid ${LAV}73` : '1px solid transparent' }}>
           {q.pinned && <p style={{ margin: '0 0 4px', fontSize: 13, fontWeight: 700, letterSpacing: '.05em', color: LAV }}>À L'ANTENNE · TOUT LE MONDE LA VOIT</p>}
           <p style={{ margin: 0, fontSize: 15, lineHeight: 1.4, overflowWrap: 'anywhere' }}>{q.text}</p>
-          <p style={{ margin: '6px 0 10px', fontSize: 13, color: DC.faint }}>{q.name} · {q.votes} moi aussi</p>
+          <p style={{ margin: '6px 0 10px', fontSize: 13, color: DC.faint, display: 'flex', alignItems: 'center', gap: 6 }}>{q.animal && <Dot name={q.name} size={20} animal={q.animal} />}{q.name} · {q.votes} moi aussi</p>
           <div style={{ display: 'flex', gap: 8 }}>
             {q.pinned
               ? <button type="button" disabled={!!busy} onClick={() => run(`a${q.id}`, () => answerQuestion(pencId, q.id))} style={{ ...b(false), flex: 1, background: DC.sage, color: DC.ink, border: 0 }}>Marquer répondue</button>

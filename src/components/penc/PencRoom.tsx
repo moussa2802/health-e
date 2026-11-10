@@ -5,6 +5,8 @@
  * Rien n'est enregistré. Le serveur seul ouvre les micros (penc-room).
  */
 import React, { useEffect, useRef, useState } from 'react';
+import { TOTEM_IMAGES } from '../../data/totemImages';
+import type { TotemAnimal } from '../../utils/totemAlgorithm';
 import { DisconnectReason, Room, RoomEvent, Track, type Participant } from 'livekit-client';
 import { ChevronLeft, Hand, Heart, HelpCircle, Loader2, Mic, MicOff, Send, Share2, UserX, Volume2 } from 'lucide-react';
 import { ChatFlux, ChatSheet, HostQuestions, ImageViewer, PinnedQuestion, QuestionsSheet, SlideCard, SlidesManager } from './PencLive';
@@ -26,12 +28,15 @@ const Avatar: React.FC<{ p: Participant; size: number; accent: string; mine: boo
   const host = p.attributes.role === 'host';
   const name = p.name || 'Anonyme';
   const speaking = p.isSpeaking && micOn(p);
+  // L'animal intérieur révélé sert de photo de profil
+  const animal = p.attributes.animal && p.attributes.animal in TOTEM_IMAGES ? TOTEM_IMAGES[p.attributes.animal as TotemAnimal] : null;
   return (
     <span aria-hidden="true" style={{ position: 'relative', width: size, height: size, flex: 'none', display: 'inline-flex' }}>
     {speaking && [0, 1, 2].map(i => <span key={i} className="penc-wave" style={{ position: 'absolute', inset: 0, borderRadius: '50%', border: `2px solid ${accent}`, animationDelay: `${i * 0.45}s` }} />)}
     <span style={{ position: 'relative', width: size, height: size, flex: 'none', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Fraunces, serif', fontWeight: 600, fontSize: size * 0.38, color: DC.ink,
       background: name === 'Anonyme' ? 'rgba(243,233,220,.18)' : colorOf(name), boxShadow: speaking ? `0 0 0 3px #17100A, 0 0 0 5px ${accent}, 0 0 22px ${accent}88` : host ? `0 0 0 2px ${accent}88` : 'none', outline: mine ? `2px dashed ${accent}` : 'none', outlineOffset: 3, transition: 'box-shadow .15s' }}>
-      {name === 'Anonyme' ? <span style={{ color: DC.soft, fontSize: size * 0.32 }}>?</span> : initial(name)}
+      {animal ? <img src={animal} alt="" style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} />
+        : name === 'Anonyme' ? <span style={{ color: DC.soft, fontSize: size * 0.32 }}>?</span> : initial(name)}
     </span>
     </span>
   );

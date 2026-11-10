@@ -2,12 +2,14 @@
  * drlo-threads — les discussions avec Dr Lô gardées dans le compte, pour les retrouver sur
  * n'importe quel téléphone ou navigateur (users/{uid}/accueil_threads).
  *   pull  { convId }                    → { index, thread }
- *   push  { convId, state, savedAt }    → { ok }
+ *   push  { convId, state, savedAt }    → { ok, merged?, state? } : si la copie envoyée ne prolonge pas celle du compte
+ *                                         (deux appareils), les deux sont réunies et la version réunie est renvoyée
  *   index { index }                     → { ok }
  *   delete { convId }                   → { ok } (discussion supprimée par la personne)
  * Seule la personne connectée lit et écrit ses propres discussions.
  */
 const { admin, db, verifyAuth } = require('./_firebase');
+const { mergeThreads } = require('./_threadMerge');
 
 const headers = {
   'Access-Control-Allow-Origin': '*',
@@ -58,8 +60,23 @@ exports.handler = async (event) => {
       const state = typeof body.state === 'string' ? body.state : '';
       if (!CONV_ID.test(convId) || !state) return reply(400, { error: 'convId/state' });
       if (Buffer.byteLength(state, 'utf8') > MAX_STATE) return reply(413, { error: 'trop long' });
-      await col.doc(convId).set({ state, savedAt: String(body.savedAt ?? '').slice(0, 30), updatedAt: now });
-      return reply(200, { ok: true });
+      const savedAt = String(body.savedAt ?? '').slice(0, 30);
+      // Jamais de discussion perdue : on réunit si la copie envoyée ne prolonge pas celle du compte
+      const out = await db.runTransaction(async (tx) => {
+        const cur = await tx.get(col.doc(convId));
+        let existing = null; let incoming = null;
+        try { existing = cur.exists && cur.data().state ? JSON.parse(cur.data().state) : null; } catch { existing = null; }
+        try { incoming = JSON.parse(state); } catch { incoming = null; }
+        if (!incoming) return { ok: false };
+        const m = mergeThreads(existing, incoming);
+        if (m.state === existing) return { ok: true, kept: true, state: cur.data().state };
+        const json = m.merged ? JSON.stringify({ ...m.state, savedAt }) : state;
+        if (Buffer.byteLength(json, 'utf8') > MAX_STATE) return { ok: false, tooLong: true };
+        tx.set(col.doc(convId), { state: json, savedAt, updatedAt: now });
+        return m.merged ? { ok: true, merged: true, state: json } : { ok: true };
+      });
+      if (!out.ok) return reply(out.tooLong ? 413 : 400, { error: 'state' });
+      return reply(200, out);
     }
     if (body.action === 'delete') {
       const convId = String(body.convId ?? '');

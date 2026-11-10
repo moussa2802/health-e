@@ -8,9 +8,9 @@ export interface PencPreview {
   id: string; title: string; description: string; startAt: number; durationMin: number; status: 'scheduled' | 'live' | 'ended';
   access: 'all' | 'channel' | 'paid'; price: number; channelName: string | null; host: { name: string; title: string }; registeredCount: number;
 }
-export interface PencQuestion { id: string; text: string; name: string; votes: number; at: number; status: 'open' | 'answered'; pinned: boolean; voted: boolean; mine: boolean }
+export interface PencQuestion { id: string; text: string; name: string; votes: number; at: number; status: 'open' | 'answered'; pinned: boolean; voted: boolean; mine: boolean; animal?: string }
 export interface LiveState { questions: PencQuestion[]; pinned: PencQuestion | null; slides: (string | null)[]; slideIndex: number | null; isMod: boolean }
-export interface ChatMessage { cid: string; who: string; n: string; t: string; h: number; at: number }
+export interface ChatMessage { cid: string; who: string; n: string; t: string; h: number; at: number; /** animal intérieur (photo de profil) */ a?: string }
 
 const FN = '/.netlify/functions/penc-live';
 

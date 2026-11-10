@@ -27,6 +27,7 @@ import LoadingSpinner from "./components/ui/LoadingSpinner";
 import ErrorBoundary from "./components/ui/ErrorBoundary";
 import ScrollToTop from "./components/utils/ScrollToTop";
 import FloatingChat from "./components/DrLoChat/FloatingChat";
+import InstallPrompt from "./components/InstallPrompt";
 import CompatInviteResume from "./components/CompatInviteResume";
 import UpdateBanner from "./components/ui/UpdateBanner";
 import WelcomeFlow from "./components/Onboarding/WelcomeFlow";
@@ -314,6 +315,7 @@ const AppChrome: React.FC = () => {
       </main>
       {!isChromeless && !isHome && <Footer />}
       {!isChromeless && <FloatingChat userId={userId} />}
+      {!isChromeless && <InstallPrompt />}
       <CompatInviteResume />
       {!isChromeless && <BottomTabs />}
       {!isChromeless && !isHome && !!currentUser && <FloatingKori />}

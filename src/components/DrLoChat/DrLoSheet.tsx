@@ -105,7 +105,13 @@ const DrLoSheet: React.FC<Props> = ({ open, greeting, draft, onClose }) => {
     const savedAt = new Date().toISOString();
     const withDate = { ...s, savedAt };
     try { localStorage.setItem(storage, JSON.stringify(withDate)); } catch { /* stockage indisponible */ }
-    void pushThread(conv, trimForCloud(withDate), savedAt);
+    void pushThread(conv, trimForCloud(withDate), savedAt).then(r => {
+      if (!r.state) return;
+      try {
+        const s2 = JSON.parse(r.state) as AccueilState;
+        if (s2 && s2.v === 1 && Array.isArray(s2.messages)) { localStorage.setItem(storage, r.state); setState(s2); }
+      } catch { /* ignore */ }
+    });
   };
 
   const send = async () => {

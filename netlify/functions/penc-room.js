@@ -76,15 +76,18 @@ exports.handler = async (event) => {
         }
       }
       let name;
+      let animal = null;
       if (isHost) name = require('./_pencLive').hostLabel(p).name;
       else {
         const up = await db.collection('userProfiles').doc(uid).get().catch(() => null);
+        // L'animal intérieur (révélé) sert de photo de profil dans la salle
+        animal = up && up.exists ? C.totemOf(up.data()) : null;
         const prenom = (up && up.exists && up.data().onboardingProfile && up.data().onboardingProfile.prenom) || '';
         const idt = C.resolveIdentity(body.mode, { prenom, pseudo: body.pseudo, seed: `penc:${pid}:${uid}` });
         if (idt.error) return reply(400, { error: idt.error });
         name = idt.name;
       }
-      const at = new AccessToken(E.key, E.secret, { identity: me, name, ttl: '4h', attributes: { role: isHost ? 'host' : isMod ? 'mod' : 'listener' } });
+      const at = new AccessToken(E.key, E.secret, { identity: me, name, ttl: '4h', attributes: { role: isHost ? 'host' : isMod ? 'mod' : 'listener', ...(animal ? { animal } : {}) } });
       at.addGrant({ room, roomJoin: true, ...(isHost ? SPEAKER : LISTENER), canUpdateOwnMetadata: true });
       return reply(200, { url: E.url, token: await at.toJwt(), identity: me, isHost, isMod, name });
     }

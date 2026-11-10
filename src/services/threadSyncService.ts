@@ -35,8 +35,14 @@ export async function pullThread<S>(convId: string): Promise<Pulled<S> | null> {
   return { index: out.index ?? null, thread };
 }
 
-export async function pushThread(convId: string, state: unknown, savedAt: string): Promise<boolean> {
-  return !!(await call({ action: 'push', convId, state: JSON.stringify(state), savedAt }));
+/**
+ * ok : la copie est dans le compte. state : la version à reprendre sur ce téléphone, quand le compte
+ * avait une discussion plus complète (réunie avec celle-ci, ou gardée telle quelle).
+ */
+export async function pushThread(convId: string, state: unknown, savedAt: string): Promise<{ ok: boolean; state?: string }> {
+  const out = await call<{ ok: boolean; merged?: boolean; kept?: boolean; state?: string }>({ action: 'push', convId, state: JSON.stringify(state), savedAt });
+  if (!out) return { ok: false };
+  return { ok: !!out.ok, ...((out.merged || out.kept) && typeof out.state === 'string' ? { state: out.state } : {}) };
 }
 
 export async function pushIndex(index: ConvIndex): Promise<boolean> {

@@ -36,6 +36,7 @@ function presentQuestions(rows, uid, pinnedId) {
       id: r.id, text: r.d.text, name: r.d.name || 'Anonyme', votes: Number(r.d.votes) || 0, at: Number(r.d.at) || 0,
       status: r.d.status === 'answered' ? 'answered' : 'open', pinned: r.id === pinnedId,
       voted: Array.isArray(r.d.voters) && r.d.voters.includes(uid), mine: r.d.uid === uid,
+      ...(r.d.animal ? { animal: String(r.d.animal) } : {}),
     }))
     .sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0)
       || (a.status === 'answered' ? 1 : 0) - (b.status === 'answered' ? 1 : 0)
