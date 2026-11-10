@@ -27,15 +27,15 @@ const CasDuSoirCard: React.FC<{ accent: string }> = ({ accent }) => {
   }, []);
   const h = etat?.visible ? etat.histoire : undefined;
   if (!h) return null;
-  const ep = Math.max(1, h.parus);
+  // L'accueil présente le Cas du soir lui-même (image générique + ce que c'est) ; les cas se découvrent à l'intérieur
   return (
     <>
       <SectionTitle>Le cas du soir</SectionTitle>
-      {/* L'image du cas du moment (sa couverture) ; l'image générique seulement s'il n'en a pas */}
-      <ImageCard to={`/cas-du-soir/${h.id}`} image={h.image || IMAGES.casDuSoir} tint={accent} fallback={<Moon size={40} color={accent} strokeWidth={1.4} />}
-        kicker={`${h.parus ? `Épisode ${ep} sur ${h.total}` : 'Bientôt'}${etat?.apercu ? ' · aperçu' : ''}`}
-        title={h.titre} line={h.accroche}
-        footer={<Link to={`/cas-du-soir/${h.id}`} className="drl-btn" style={{ minHeight: 44, display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 15, fontWeight: 700, color: accent, textDecoration: 'none' }}>{h.audio ? `Écouter (${h.minutes} min)` : `Lire (${h.minutes} min)`} <ArrowRight size={16} aria-hidden="true" /></Link>} />
+      <ImageCard to="/cas-du-soir" image={IMAGES.casDuSoir} tint={accent} fallback={<Moon size={40} color={accent} strokeWidth={1.4} />}
+        kicker={`Une histoire, un épisode chaque soir${etat?.apercu ? ' · aperçu' : ''}`}
+        title="Qu'aurais-tu fait à sa place ?"
+        line="Des histoires de couple et de famille, en cinq épisodes. À chaque épisode, tu votes. À la fin, Dr Lô t'explique ce qui se jouait."
+        footer={<Link to="/cas-du-soir" className="drl-btn" style={{ minHeight: 44, display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 15, fontWeight: 700, color: accent, textDecoration: 'none' }}>Voir les cas <ArrowRight size={16} aria-hidden="true" /></Link>} />
     </>
   );
 };
