@@ -487,7 +487,7 @@ module.exports = {
     ]
   },
   "vu-de-minuit-ep3": {
-    "duree": 150.82,
+    "duree": 151.78,
     "lignes": [
       {
         "t0": 4.48,
@@ -605,43 +605,43 @@ module.exports = {
       },
       {
         "t0": 102.37,
-        "t1": 107.49,
+        "t1": 108.45,
         "qui": "Coumba",
-        "texte": "Waaw, xoolal ko ! (Oui, regarde-le !) Maintenant ou jamais. Tu dormiras mieux après."
+        "texte": "Waaw, xooleu ko ! (Oui, regarde-le !) Maintenant ou jamais. Tu dormiras mieux après."
       },
       {
-        "t0": 107.84,
-        "t1": 110.56,
+        "t0": 108.8,
+        "t1": 111.52,
         "qui": "Narrateur",
         "texte": "Diarra prend le téléphone. Il est encore tiède."
       },
       {
-        "t0": 110.91,
-        "t1": 112.99,
+        "t0": 111.87,
+        "t1": 113.95,
         "qui": "Narrateur",
         "texte": "Son pouce est juste au-dessus de l'écran."
       },
       {
-        "t0": 116.34,
-        "t1": 121.86,
+        "t0": 117.3,
+        "t1": 122.82,
         "qui": "Narrateur",
         "texte": "Dehors, elle entend Iba tousser sur la terrasse. Dans sa poitrine, la main serre plus fort que jamais."
       },
       {
-        "t0": 122.21,
-        "t1": 130.45,
+        "t0": 123.17,
+        "t1": 131.41,
         "qui": "Diarra",
         "texte": "Si je regarde, je saurai. Si je ne regarde pas, je ne dormirai pas. Ou peut-être que c'est l'inverse."
       },
       {
-        "t0": 132.3,
-        "t1": 139.9,
+        "t0": 133.26,
+        "t1": 140.86,
         "qui": "Narrateur",
         "texte": "Ce soir, c'est toi qui décides. Le choix le plus voté sera la suite de l'histoire. À sa place, qu'est-ce que tu fais ? Vote, juste en dessous."
       },
       {
-        "t0": 144.73,
-        "t1": 148.97,
+        "t0": 145.69,
+        "t1": 149.93,
         "qui": "Narrateur",
         "texte": "La suite dépend de vous. Rendez-vous demain soir, à vingt heures."
       }
@@ -672,15 +672,15 @@ module.exports = {
         "image": "cas-vu-de-minuit-ep3-coumba.webp"
       },
       {
-        "t": 107.84,
+        "t": 108.8,
         "image": "cas-vu-de-minuit-ep3.webp"
       },
       {
-        "t": 110.91,
+        "t": 111.87,
         "image": "cas-vu-de-minuit-ep3-pouce.webp"
       },
       {
-        "t": 132.3,
+        "t": 133.26,
         "image": "cas-vu-de-minuit-couverture.webp"
       }
     ]
