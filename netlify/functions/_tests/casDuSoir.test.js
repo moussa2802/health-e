@@ -289,3 +289,23 @@ test('règles Firestore : les collections du cas du soir sont fermées au naviga
     assert.match(rules, new RegExp(`match /${c}/\\{id\\} \\{ allow read, write: if false; \\}`), c);
   }
 });
+
+test('images et audios : chemins attendus, publics pour les images, la vue d\'épisode porte son image', () => {
+  assert.equal(H.image, '/images/cas-du-soir/cas-vu-de-minuit-couverture.webp');
+  const attendus = { 1: 'ep1', 2: 'ep2', 3: 'ep3' };
+  H.episodes.forEach((e, i) => {
+    const vs = e.A ? [['A', e.A], ['B', e.B]] : [['', e]];
+    for (const [b, v] of vs) {
+      const k = attendus[i + 1] || `ep${i + 1}${b}`;
+      assert.equal(v.image, `/images/cas-du-soir/cas-vu-de-minuit-${k}.webp`);
+      assert.equal(v.audio, `casDuSoir/vu-de-minuit/${k}.mp3`);
+    }
+  });
+  assert.equal(H.fin.audio, 'casDuSoir/vu-de-minuit/lecon.mp3');
+  assert.equal(K.vueEpisode(H, 4, H.episodes[3].B).image, H.episodes[3].B.image);
+  assert.equal(K.vueHistoire(H, 0, { parus: 0, connecte: true }).image, H.image);
+  const casse = JSON.parse(JSON.stringify(H));
+  casse.episodes[0].image = 'https://ailleurs/x.png';
+  assert.ok(K.verifierHistoire(casse).some((e) => /image/.test(e)));
+  // Les fichiers attendus existent ou non : rien ne casse (l'appli affiche un dégradé, le serveur ne donne pas de lien audio)
+});

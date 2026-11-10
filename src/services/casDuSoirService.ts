@@ -5,7 +5,7 @@
 import { auth } from '../utils/firebase';
 
 export interface CdsChoix { id: string; label: string }
-export interface CdsEpisode { n: number; titre: string; texte: string; minutes: number; question: string; choix: CdsChoix[]; embranchement: boolean }
+export interface CdsEpisode { n: number; titre: string; texte: string; image: string | null; minutes: number; question: string; choix: CdsChoix[]; embranchement: boolean }
 export interface CdsResultats {
   total: number;
   /** null tant qu'il y a moins de « seuil » votes */
@@ -16,7 +16,7 @@ export interface CdsResultats {
   parAnimal?: { animal: string; groupe: string; total: number; parChoix: Record<string, number> }[];
 }
 export interface CdsHistoire {
-  id: string; titre: string; accroche: string; avertissement: string; total: number; parus: number; prochain: number | null; lisibles: number[]; testLie: string | null;
+  id: string; titre: string; image: string | null; accroche: string; avertissement: string; total: number; parus: number; prochain: number | null; lisibles: number[]; testLie: string | null;
   testAussi: string | null; minutes: number; audio: boolean; autreFin: { mention: string } | null;
 }
 export interface CdsEtat { visible: boolean; histoire?: CdsHistoire; prix?: { suite: number; bonus: number; autreFin: number }; autreFin?: { achetee: boolean; possible: boolean }; decision?: number | null; connecte?: boolean; bonus?: boolean; apercu?: boolean; animal?: string | null; proprio?: boolean }

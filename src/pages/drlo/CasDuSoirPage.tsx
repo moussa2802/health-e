@@ -9,6 +9,7 @@ import { Link, Navigate, useNavigate } from 'react-router-dom';
 import { Check, ChevronRight, Loader2, MessageCircle, Moon } from 'lucide-react';
 import DrLoShell, { DC, card, usePalette } from '../../components/accueil/DrLoShell';
 import LecteurAudio from '../../components/casdusoir/LecteurAudio';
+import Illustration from '../../components/accueil/Illustration';
 import { useKoris } from '../../contexts/KorisContext';
 import { openDrLoChat } from '../../components/DrLoChat/drLoEvents';
 import { getScaleMeta } from '../../utils/scaleMeta';
@@ -157,6 +158,7 @@ const CasDuSoirPage: React.FC = () => {
     <DrLoShell back={{ to: '/', label: 'Retour à l\'accueil' }} palette={palette}>
       <p style={{ margin: '18px 0 0', fontSize: 13, fontWeight: 700, letterSpacing: '.1em', color: palette.accent }}><Moon size={14} aria-hidden="true" style={{ verticalAlign: 'middle', marginRight: 6 }} />LE CAS DU SOIR</p>
       <h1 style={{ margin: '6px 0 0', fontFamily: 'Fraunces, serif', fontSize: 28, lineHeight: 1.15, color: DC.title }}>{h.titre}</h1>
+      <Illustration src={h.image} ratio="16 / 9" tint={palette.accent} style={{ marginTop: 12 }} fallback={<Moon size={40} color={palette.accent} strokeWidth={1.4} />} />
 
       {/* Aperçu du propriétaire : simuler le jour 1 à 5 avant la date de départ */}
       {etat.proprio && (
@@ -188,6 +190,7 @@ const CasDuSoirPage: React.FC = () => {
 
       {ep && (
         <article style={{ ...card, marginTop: 14 }}>
+          <Illustration src={ep.episode.image} ratio="4 / 3" tint={palette.accent} radius={12} style={{ marginBottom: 12 }} fallback={<Moon size={32} color={palette.accent} strokeWidth={1.4} />} />
           <p style={{ margin: 0, fontSize: 13, color: DC.muted }}>{ep.autre ? 'L\'autre fin · ' : ''}Épisode {ep.episode.n} sur {h.total} · {ep.episode.minutes} min</p>
           <h2 style={{ margin: '4px 0 0', fontFamily: 'Fraunces, serif', fontSize: 22, color: DC.title }}>{ep.episode.titre}</h2>
           <LecteurAudio src={ep.audioUrl} accent={palette.accent} label="Écouter l'épisode" />

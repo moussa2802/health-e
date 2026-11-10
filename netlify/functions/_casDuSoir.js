@@ -136,7 +136,7 @@ function detailParAnimal(contenu, parAnimal = {}) {
 /** Ce qu'on montre d'un épisode (jamais les autres versions). */
 function vueEpisode(h, n, contenu) {
   return {
-    n, titre: contenu.titre, texte: contenu.texte, minutes: Number(contenu.minutes) || 2, question: contenu.question,
+    n, titre: contenu.titre, texte: contenu.texte, image: contenu.image || null, minutes: Number(contenu.minutes) || 2, question: contenu.question,
     choix: contenu.choix.map((c) => ({ id: c.id, label: c.label })), embranchement: h.embranchement === n,
   };
 }
@@ -148,7 +148,7 @@ const aUnAudio = (e) => !!e && (!!e.audio || (!!e.A && !!e.A.audio) || (!!e.B &&
 function vueHistoire(h, now, { parus, debloques = [], connecte }) {
   const cur = Math.max(1, parus);
   return {
-    id: h.id, titre: h.titre, accroche: (h.accroches && h.accroches[String(cur)]) || h.accroche, avertissement: h.avertissement, total: h.episodes.length, parus,
+    id: h.id, titre: h.titre, image: h.image || null, accroche: (h.accroches && h.accroches[String(cur)]) || h.accroche, avertissement: h.avertissement, total: h.episodes.length, parus,
     prochain: h.programmee === false && !parus ? null : parus < h.episodes.length ? publication(h, parus + 1) : null,
     lisibles: Array.from({ length: h.episodes.length }, (_, i) => i + 1).filter((n) => peutLire({ n, parus, connecte, debloques })),
     minutes: Number((h.episodes[cur - 1] && (h.episodes[cur - 1].minutes || (h.episodes[cur - 1].A || {}).minutes)) || 2),
@@ -167,11 +167,14 @@ function verifierHistoire(h) {
   if (!/^[a-z0-9-]{2,40}$/.test(h.id)) err.push('id');
   if (!/^\d{4}-\d{2}-\d{2}$/.test(h.depart) || !/^\d{2}:\d{2}$/.test(h.heure)) err.push('date');
   if (h.episodes.length !== 5) err.push('5 épisodes');
+  const imageOk = (src) => src == null || /^\/images\/[a-z0-9/-]+\/[A-Za-z0-9-]+\.webp$/.test(src);
+  if (!imageOk(h.image)) err.push('image de couverture : /images/…/nom.webp');
   h.episodes.forEach((e, i) => {
     const n = i + 1;
     const versions = aDesVersions(h, n) ? ['A', 'B'].map((b) => e[b]) : [e];
     for (const v of versions) {
       if (!v || !v.titre || !v.texte || !v.question) { err.push(`épisode ${n} incomplet`); continue; }
+      if (!imageOk(v.image)) err.push(`épisode ${n} : image /images/…/nom.webp`);
       const attendu = h.embranchement === n ? 2 : 3;
       if (!Array.isArray(v.choix) || v.choix.length !== attendu) err.push(`épisode ${n} : ${attendu} choix`);
       else if (v.choix.some((c) => !c.id || !c.label || !c.echo)) err.push(`épisode ${n} : choix incomplet`);

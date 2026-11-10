@@ -35,6 +35,12 @@ const RES = () => db.collection('casDuSoirResultats');
 const ACCES = () => db.collection('casDuSoirAcces');
 const sha = (s) => crypto.createHash('sha256').update(`cds|${s}`).digest('hex');
 
+/** Le fichier audio est-il déposé ? (la carte dit alors « Écouter », sinon « Lire ») */
+async function audioExiste(path) {
+  if (!path) return false;
+  try { const [exists] = await admin.storage().bucket(BUCKET).file(path).exists(); return !!exists; } catch { return false; }
+}
+
 async function audioUrl(path) {
   if (!path) return null;
   try {
@@ -110,8 +116,11 @@ exports.handler = async (event) => {
 
     if (action === 'etat') {
       const finie = K.peutLire({ n: h.episodes.length, parus, connecte, debloques });
+      const vue = K.vueHistoire(h, now, { parus, debloques, connecte });
+      const e = h.episodes[Math.max(1, parus) - 1];
+      vue.audio = await audioExiste(e && (e.audio || (e.A && e.A.audio)));
       return reply(200, {
-        visible: true, histoire: K.vueHistoire(h, now, { parus, debloques, connecte }), prix: K.PRIX, connecte, bonus: acces.bonus, apercu, animal, proprio: owner,
+        visible: true, histoire: vue, prix: K.PRIX, connecte, bonus: acces.bonus, apercu, animal, proprio: owner,
         autreFin: { achetee: acces.autreFin, possible: connecte && finie && !!h.embranchement },
         // Pour le vote de l'embranchement : quand la majorité décide (la parution de l'épisode suivant)
         decision: h.embranchement && (h.programmee !== false || apercu) ? K.publication(h, h.embranchement + 1) : null,

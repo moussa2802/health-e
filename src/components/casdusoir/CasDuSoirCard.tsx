@@ -6,6 +6,8 @@ import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, Moon } from 'lucide-react';
 import { DC } from '../accueil/DrLoShell';
+import Illustration from '../accueil/Illustration';
+import { IMAGES } from '../../config/images';
 import { getEtat, type CdsEtat } from '../../services/casDuSoirService';
 
 // Réponse gardée sur le téléphone : 10 minutes si visible, 6 heures si masqué (pour ne pas interroger le serveur à chaque accueil)
@@ -28,15 +30,17 @@ const CasDuSoirCard: React.FC<{ accent: string }> = ({ accent }) => {
   if (!h) return null;
   const ep = Math.max(1, h.parus);
   return (
-    <Link to="/cas-du-soir" className="drl-btn" style={{ marginTop: 14, display: 'flex', alignItems: 'center', gap: 14, padding: 16, borderRadius: 20, textDecoration: 'none', border: `1px solid ${accent}55`, background: `linear-gradient(135deg, ${accent}22, rgba(20,14,10,.6) 70%)` }}>
-      <Moon size={28} color={accent} aria-hidden="true" />
-      <span style={{ flex: 1, minWidth: 0 }}>
-        <span style={{ display: 'block', fontSize: 13, fontWeight: 700, color: accent }}>Le cas du soir · {h.parus ? `Épisode ${ep} sur ${h.total}` : 'bientôt'}{etat?.apercu ? ' · aperçu' : ''}</span>
-        <b style={{ display: 'block', marginTop: 4, fontFamily: 'Fraunces, serif', fontSize: 19, color: DC.title }}>{h.titre}</b>
-        <span style={{ display: 'block', marginTop: 2, fontSize: 14, lineHeight: 1.4, color: DC.muted }}>{h.accroche}</span>
-        <span style={{ display: 'inline-block', marginTop: 8, fontSize: 14, fontWeight: 700, color: accent }}>{h.audio ? `Écouter (${h.minutes} min)` : `Lire (${h.minutes} min)`}</span>
+    <Link to="/cas-du-soir" className="drl-btn" style={{ marginTop: 14, display: 'block', overflow: 'hidden', borderRadius: 20, textDecoration: 'none', border: `1px solid ${accent}55`, background: `linear-gradient(160deg, ${accent}1F, rgba(20,14,10,.6) 70%)` }}>
+      <Illustration src={IMAGES.casDuSoir} tint={accent} radius={0} fallback={<Moon size={40} color={accent} strokeWidth={1.4} />} />
+      <span style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px 14px' }}>
+        <span style={{ flex: 1, minWidth: 0 }}>
+          <span style={{ display: 'block', fontSize: 13, fontWeight: 700, color: accent }}>Le cas du soir · {h.parus ? `Épisode ${ep} sur ${h.total}` : 'bientôt'}{etat?.apercu ? ' · aperçu' : ''}</span>
+          <b style={{ display: 'block', marginTop: 4, fontFamily: 'Fraunces, serif', fontSize: 19, color: DC.title }}>{h.titre}</b>
+          <span style={{ display: 'block', marginTop: 2, fontSize: 14, lineHeight: 1.4, color: DC.muted }}>{h.accroche}</span>
+          <span style={{ display: 'inline-block', marginTop: 8, fontSize: 14, fontWeight: 700, color: accent }}>{h.audio ? `Écouter (${h.minutes} min)` : `Lire (${h.minutes} min)`}</span>
+        </span>
+        <ArrowRight size={18} color={DC.muted} aria-hidden="true" />
       </span>
-      <ArrowRight size={18} color={DC.muted} aria-hidden="true" />
     </Link>
   );
 };

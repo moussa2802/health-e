@@ -11,6 +11,8 @@ import { DC } from '../accueil/DrLoShell';
 import { SectionTitle } from '../accueil/HomeParts';
 import PencCard from './PencCard';
 import { PencLiveCard, PencMotif } from './PencVisuals';
+import Illustration from '../accueil/Illustration';
+import { IMAGES } from '../../config/images';
 import type { MomentPalette } from '../../utils/drloMoment';
 import { getAgenda, registerPenc, type Penc } from '../../services/pencService';
 
@@ -60,13 +62,15 @@ const HomePenc: React.FC<{ palette: MomentPalette; full?: boolean; onLive?: (liv
 
   if (!live.length && !next.length) {
     return (
-      <Link to="/penc" className="drl-btn" style={{ marginTop: 14, display: 'flex', alignItems: 'center', gap: 14, padding: '12px 16px 12px 10px', borderRadius: 20, border: `1px solid ${palette.accent}44`, background: `radial-gradient(90% 140% at 0% 50%, ${palette.accent}22, transparent 70%), rgba(255,255,255,.03)`, color: DC.text, textDecoration: 'none' }}>
-        <PencMotif size={64} color={palette.accent} />
-        <span style={{ flex: 1, minWidth: 0 }}>
-          <b style={{ display: 'block', fontFamily: 'Fraunces, serif', fontSize: 19, color: DC.title }}>Pénc mi</b>
-          <span style={{ display: 'block', marginTop: 2, fontSize: 14, lineHeight: 1.4, color: DC.muted }}>On se retrouve pour parler, en direct. Écoute, pose ta question, prends la parole si tu veux.</span>
+      <Link to="/penc" className="drl-btn" style={{ marginTop: 14, display: 'block', overflow: 'hidden', borderRadius: 20, textDecoration: 'none', border: `1px solid ${palette.accent}44`, background: `linear-gradient(160deg, ${palette.accent}1A, rgba(20,14,10,.55) 70%)` }}>
+        <Illustration src={IMAGES.penc} tint={palette.accent} radius={0} fallback={<PencMotif size={84} color={palette.accent} />} />
+        <span style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px 14px' }}>
+          <span style={{ flex: 1, minWidth: 0 }}>
+            <b style={{ display: 'block', fontFamily: 'Fraunces, serif', fontSize: 19, color: DC.title }}>Pénc mi</b>
+            <span style={{ display: 'block', marginTop: 2, fontSize: 14, lineHeight: 1.4, color: DC.muted }}>On se retrouve pour parler, en direct. Écoute, pose ta question, prends la parole si tu veux.</span>
+          </span>
+          <ArrowRight size={18} color={DC.muted} aria-hidden="true" />
         </span>
-        <ArrowRight size={18} color={DC.muted} aria-hidden="true" />
       </Link>
     );
   }
@@ -81,6 +85,7 @@ const HomePenc: React.FC<{ palette: MomentPalette; full?: boolean; onLive?: (liv
       {full && next.length > 0 && (
         <>
           <SectionTitle aside={live.length ? undefined : all}>Pénc mi cette semaine</SectionTitle>
+          {!live.length && <Link to="/penc" aria-label="Voir Pénc mi" style={{ display: 'block', marginBottom: 10 }}><Illustration src={IMAGES.penc} tint={palette.accent} fallback={<PencMotif size={72} color={palette.accent} />} /></Link>}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>{next.map(p => <PencCard key={p.id} p={p} accent={palette.accent} onRemind={remind} busy={busy === p.id} />)}</div>
         </>
       )}

@@ -17,6 +17,8 @@ import HomeProgramme from '../components/accueil/HomeProgramme';
 import { MoodSheet } from '../components/accueil/HomeSheets';
 import HomePenc from '../components/penc/HomePenc';
 import CasDuSoirCard from '../components/casdusoir/CasDuSoirCard';
+import Illustration from '../components/accueil/Illustration';
+import { IMAGES } from '../config/images';
 import { CAS_DU_SOIR_CARTE_VISITEURS } from '../config/contenusPayants';
 import MotDuJour from '../components/accueil/MotDuJour';
 import { readResultsCache, writeResultsCache } from '../utils/resultsCache';
@@ -72,7 +74,8 @@ const FeaturedCard: React.FC<{ featured: Featured; guest: boolean; palette: Mome
   const minutes = getScaleById(featured.scaleId)?.timeEstimateMinutes ?? 3;
   const title = featured.label || meta.label;
   return (
-    <section aria-label="À la une" style={{ ...card, marginTop: 18, padding: 18, borderColor: 'rgba(242,182,109,.5)', background: 'linear-gradient(150deg, rgba(242,182,109,.2), rgba(255,255,255,.04))' }}>
+    <section aria-label="À la une" style={{ ...card, marginTop: 18, padding: 18, overflow: 'hidden', borderColor: 'rgba(242,182,109,.5)', background: 'linear-gradient(150deg, rgba(242,182,109,.2), rgba(255,255,255,.04))' }}>
+      <Illustration src={IMAGES.compagnon} tint={palette.accent} radius={0} style={{ margin: '-18px -18px 14px', width: 'calc(100% + 36px)' }} fallback={<CompanionMark size={72} />} />
       <p style={{ margin: 0, fontSize: 13, fontWeight: 700, letterSpacing: '.12em', color: palette.accent }}>{featured.label ? 'VU DANS LA VIDÉO' : 'COMMENCE ICI'}</p>
       <h2 style={{ margin: '8px 0 0', fontFamily: 'Fraunces, serif', fontSize: 26, lineHeight: 1.2, fontWeight: 600, color: DC.title }}>{title}</h2>
       <p style={{ margin: '8px 0 0', fontSize: 15, lineHeight: 1.5, color: DC.soft }}>{meta.description}</p>
@@ -316,13 +319,12 @@ const ConnectedHome: React.FC<{ feed: HomeFeed | null; palette: MomentPalette; u
       {/* Le petit mot du compagnon, comme un post-it sur le miroir (un nouveau chaque jour) */}
       <MotDuJour uid={uid} palette={palette} focus={new URLSearchParams(window.location.search).has('mot')} />
 
-      {/* Une seule carte vedette : un Pénc en direct, sinon ta suite ; puis le test du moment, ton message, l'humeur */}
-      <HomePenc palette={palette} full={launch.on('penc_page')} onLive={setPencLive} />
-      {/* Le cas du soir : la carte n'apparaît que si le serveur la dit visible (aujourd'hui : le propriétaire seulement) */}
-      <CasDuSoirCard accent={palette.accent} />
+      {/* Une seule carte vedette : un Pénc en direct, sinon ta suite (le compagnon et les tests) ; puis Pénc mi, le cas du soir, ton message, l'humeur */}
+      {pencLive && <HomePenc palette={palette} full={launch.on('penc_page')} onLive={setPencLive} />}
 
       {suite && !pencLive && (
         <section aria-label="Ta suite" style={{ ...card, marginTop: 14, padding: 16, position: 'relative', overflow: 'hidden', borderColor: `${cc}80`, background: `radial-gradient(60% 80% at 100% 0%, ${cc}4D, transparent 70%), linear-gradient(140deg, ${cc}33, rgba(26,18,11,.9) 65%)` }}>
+          <Illustration src={IMAGES.compagnon} tint={cc} radius={0} style={{ margin: '-16px -16px 14px', width: 'calc(100% + 32px)' }} fallback={<CompanionMark size={64} />} />
           <p style={{ margin: 0, fontSize: 13, fontWeight: 700, letterSpacing: '.12em', color: palette.accent }}>{suite.kicker}</p>
           <p style={{ margin: '6px 0 0', fontFamily: 'Fraunces, serif', fontSize: 21, lineHeight: 1.25, fontWeight: 600, color: DC.title }}>{suite.title}</p>
           <button onClick={suite.go} className="drl-btn"
@@ -337,6 +339,10 @@ const ConnectedHome: React.FC<{ feed: HomeFeed | null; palette: MomentPalette; u
             icon={<span aria-hidden="true" style={{ width: 40, height: 40, flex: 'none', borderRadius: 12, background: `${DC.sage}38`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><ClipboardList size={20} color={DC.sage} /></span>} />
         </div>
       )}
+
+      {/* Pénc mi (quand il n'est pas en direct), puis le cas du soir (visible seulement si le serveur le dit : aujourd'hui, le propriétaire) */}
+      {!pencLive && <HomePenc palette={palette} full={launch.on('penc_page')} onLive={setPencLive} />}
+      <CasDuSoirCard accent={palette.accent} />
 
       <DailyGiftCard palette={palette} />
 
