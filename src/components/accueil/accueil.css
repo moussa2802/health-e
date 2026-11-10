@@ -125,3 +125,8 @@
 
 /* Accueil : une colonne de 480 px au plus, centrée, même sur ordinateur (les images restent à taille de téléphone) */
 .drl-wrap.drl-wrap-home{max-width:480px}
+
+/* Cas du soir : léger mouvement lent de l'image pendant l'écoute (désactivé si l'appareil demande moins d'animations) */
+@keyframes cds-kb{from{transform:scale(1) translate(0,0)}to{transform:scale(1.08) translate(-1.5%,-1%)}}
+.cds-kb{animation:cds-kb 16s ease-in-out infinite alternate;transform-origin:center}
+@media (prefers-reduced-motion: reduce){.cds-kb{animation:none}}

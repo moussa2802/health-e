@@ -7,8 +7,7 @@ import React, { useEffect, useState } from 'react';
 import { Link, Navigate, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { ChevronRight, Loader2, Moon } from 'lucide-react';
 import DrLoShell, { DC, card, usePalette } from '../../components/accueil/DrLoShell';
-import Illustration from '../../components/accueil/Illustration';
-import LecteurAudio from '../../components/casdusoir/LecteurAudio';
+import AudioSynchro from '../../components/casdusoir/AudioSynchro';
 import { PiedCas, Resultats, etoiles, Maj } from '../../components/casdusoir/CdsParts';
 import { useKoris } from '../../contexts/KorisContext';
 import { CAS_DU_SOIR_PRIX } from '../../config/contenusPayants';
@@ -72,11 +71,12 @@ const CasDuSoirEpisodePage: React.FC = () => {
 
       {ep && (
         <article style={{ ...card, marginTop: 10 }}>
-          <Illustration src={ep.episode.image} ratio="4 / 3" tint={palette.accent} radius={12} style={{ marginBottom: 12 }} fallback={<Moon size={32} color={palette.accent} strokeWidth={1.4} />} />
-          <p style={{ margin: 0, fontSize: 13, color: DC.muted }}>Épisode {ep.episode.n} sur {h.total} · {ep.episode.minutes} min</p>
-          <h1 style={{ margin: '4px 0 0', fontFamily: 'Fraunces, serif', fontSize: 24, lineHeight: 1.2, color: DC.title }}>{ep.episode.titre}</h1>
-          <LecteurAudio src={ep.audioUrl} accent={palette.accent} label="Écouter l'épisode" />
-          {ep.episode.texte.split(/\n{2,}/).map((p, i) => <p key={i} style={{ margin: '12px 0 0', fontSize: 16, lineHeight: 1.65, color: DC.text, whiteSpace: 'pre-line' }}>{p}</p>)}
+          <p style={{ margin: '0 0 10px', fontSize: 13, color: DC.muted }}>Épisode {ep.episode.n} sur {h.total} · {ep.episode.minutes} min</p>
+          <h1 style={{ margin: '0 0 12px', fontFamily: 'Fraunces, serif', fontSize: 24, lineHeight: 1.2, color: DC.title }}>{ep.episode.titre}</h1>
+          {/* L'image, le lecteur et le texte : surligné et images qui changent pendant l'écoute s'il y a un minutage */}
+          <AudioSynchro src={ep.audioUrl} minutage={ep.episode.minutage} label="Écouter l'épisode" accent={palette.accent}
+            image={{ src: ep.episode.image, ratio: '4 / 3', fallback: <Moon size={32} color={palette.accent} strokeWidth={1.4} /> }}
+            texte={ep.episode.texte.split(/\n{2,}/).map((p, i) => <p key={i} style={{ margin: '12px 0 0', fontSize: 16, lineHeight: 1.65, color: DC.text, whiteSpace: 'pre-line' }}>{p}</p>)} />
 
           {!ep.autre && <>
             <p style={{ margin: '20px 0 0', fontSize: 13, fontWeight: 700, letterSpacing: '.08em', color: palette.accent }}>QU'AURAIS-TU FAIT ?</p>

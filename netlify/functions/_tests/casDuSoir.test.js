@@ -34,7 +34,7 @@ test('« Le vu de minuit » est branché, sans date publique ; la mention et les
   assert.equal(H.testLie, 'ecr_r');
   assert.equal(H.testAussi, 'bonus_jalousie');
   assert.equal(H.avertissement, 'Histoire inventée. Toute ressemblance avec des personnes réelles serait une coïncidence. Si elle te touche de près, le compagnon est là pour en parler.');
-  assert.deepEqual(H.episodes.map((e) => e.titre || `${e.A.titre} / ${e.B.titre}`), ['Le vu de minuit', 'Six appels', 'Le code', 'Discrets / La terrasse', 'Le cercle / Le faire-part']);
+  assert.deepEqual(H.episodes.map((e) => e.titre || `${e.A.titre} / ${e.B.titre}`), ['Quatre mots', 'Six appels', 'Le code', 'Discrets / La terrasse', 'Le cercle / Le faire-part']);
   assert.ok(H.episodes[0].texte.startsWith('Il est presque minuit aux Parcelles Assainies.'));
   assert.ok(H.episodes[0].texte.includes('IBA : Nanga def, sama soxna ? (Comment vas-tu, ma femme ?)'));
   assert.ok(!/NARRATRICE|\*/.test(JSON.stringify(H.episodes)) && !JSON.stringify(H.fin).includes('*'));
@@ -317,6 +317,44 @@ test('liste des cas et liste des épisodes : masquées aux autres, états, versi
   assert.equal((await call({ action: 'etat', histoire: H.id })).body.histoire.id, H.id);
 });
 
+test('intrigue : un audio public par cas, et le titre ne se change qu\'à un seul endroit', () => {
+  assert.equal(H.intrigue, '/audio/cas-du-soir/vu-de-minuit-intrigue.mp3');
+  assert.equal(K.vueHistoire(H, 0, { parus: 0, connecte: false }).intrigue, H.intrigue);
+  const casse = JSON.parse(JSON.stringify(H));
+  casse.intrigue = '/audio/ailleurs.mp3';
+  assert.ok(K.verifierHistoire(casse).some((e) => /intrigue/.test(e)));
+  // Changer le titre ne touche ni l'id, ni les adresses, ni les images, ni les audios
+  assert.equal(H.id, 'vu-de-minuit');
+  const t = { ...JSON.parse(JSON.stringify(H)), titre: 'Un autre titre' };
+  assert.deepEqual(K.verifierHistoire(t), []);
+  // Aucun fichier de l'appli ni du serveur ne recopie le titre en dur (seulement les données)
+  const walk = (dir) => fs.readdirSync(dir, { withFileTypes: true }).flatMap((d) => (d.isDirectory() ? walk(path.join(dir, d.name)) : [path.join(dir, d.name)]));
+  const root = path.join(__dirname, '..', '..', '..');
+  const files = [...walk(path.join(root, 'src')), ...walk(path.join(root, 'netlify', 'functions')).filter((f) => !f.includes('_tests') && !f.endsWith('_casDuSoirHistoires.js') && !f.endsWith('_casDuSoirMinutages.js'))]
+    .filter((f) => /\.(ts|tsx|js)$/.test(f));
+  const hits = files.filter((f) => fs.readFileSync(f, 'utf8').includes(H.titre));
+  assert.deepEqual(hits, []);
+});
+
+test('minutage : envoyé avec l\'épisode 1 et l\'intrigue, jamais en public pour un épisode payant ; audio public seulement pour l\'épisode 1', async () => {
+  const M = require('../_casDuSoirMinutages');
+  const ep1 = K.vueEpisode(H, 1, H.episodes[0]);
+  assert.equal(ep1.minutage, M['vu-de-minuit-ep1']);
+  assert.ok(ep1.minutage.lignes.length > 10 && ep1.minutage.images.length >= 1);
+  assert.equal(K.vueHistoire(H, 0, { parus: 0 }).intrigueMinutage, M['vu-de-minuit-intrigue']);
+  assert.equal(K.vueEpisode(H, 2, H.episodes[1]).minutage, null);
+  const casse = JSON.parse(JSON.stringify(H));
+  casse.episodes[1].audio = '/audio/cas-du-soir/vu-de-minuit-ep2.mp3';
+  casse.episodes[2].minutage = 'inconnu';
+  const err = K.verifierHistoire(casse);
+  assert.ok(err.some((e) => /épisode 2 : audio payant/.test(e)) && err.some((e) => /épisode 3 : minutage/.test(e)));
+  // Le serveur donne le chemin public tel quel (pas de lien signé) et le minutage avec l'épisode
+  uid = 'papa';
+  const r = await call({ action: 'episode', n: 1, jour: 1 });
+  assert.equal(r.body.audioUrl, '/audio/cas-du-soir/vu-de-minuit-ep1.mp3');
+  assert.equal(r.body.episode.minutage.duree, M['vu-de-minuit-ep1'].duree);
+});
+
 test('règles Firestore : les collections du cas du soir sont fermées au navigateur', () => {
   const rules = fs.readFileSync(path.join(__dirname, '..', '..', '..', 'firestore.rules'), 'utf8');
   for (const c of ['casDuSoirVotes', 'casDuSoirResultats', 'casDuSoirAcces']) {
@@ -332,7 +370,8 @@ test('images et audios : chemins attendus, publics pour les images, la vue d\'é
     for (const [b, v] of vs) {
       const k = attendus[i + 1] || `ep${i + 1}${b}`;
       assert.equal(v.image, `/images/cas-du-soir/cas-vu-de-minuit-${k}.webp`);
-      assert.equal(v.audio, `casDuSoir/vu-de-minuit/${k}.mp3`);
+      // L'épisode 1 (gratuit pour tous) est un fichier public ; les autres passent par Storage (liens signés)
+      assert.equal(v.audio, k === 'ep1' ? '/audio/cas-du-soir/vu-de-minuit-ep1.mp3' : `casDuSoir/vu-de-minuit/${k}.mp3`);
     }
   });
   assert.equal(H.fin.audio, 'casDuSoir/vu-de-minuit/lecon.mp3');

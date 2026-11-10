@@ -3,6 +3,10 @@
  * Publication par date, droits de lecture, embranchement décidé par la majorité, résultats des votes.
  */
 const { HISTOIRES } = require('./_casDuSoirHistoires');
+const MINUTAGES = require('./_casDuSoirMinutages');
+
+/** Le minutage d'un audio (ou null). */
+const minutage = (cle) => (cle && MINUTAGES[cle]) || null;
 
 /**
  * Visible pour tout le monde ? false tant que Papa Moussa n'a pas validé : seul le propriétaire (Dr Lô) le voit.
@@ -138,7 +142,7 @@ function detailParAnimal(contenu, parAnimal = {}) {
 /** Ce qu'on montre d'un épisode (jamais les autres versions). */
 function vueEpisode(h, n, contenu) {
   return {
-    n, titre: contenu.titre, texte: contenu.texte, image: contenu.image || null, minutes: Number(contenu.minutes) || 2, question: contenu.question,
+    n, titre: contenu.titre, texte: contenu.texte, image: contenu.image || null, minutage: minutage(contenu.minutage), minutes: Number(contenu.minutes) || 2, question: contenu.question,
     choix: contenu.choix.map((c) => ({ id: c.id, label: c.label })), embranchement: h.embranchement === n,
   };
 }
@@ -150,7 +154,7 @@ const aUnAudio = (e) => !!e && (!!e.audio || (!!e.A && !!e.A.audio) || (!!e.B &&
 function vueHistoire(h, now, { parus, debloques = [], connecte }) {
   const cur = Math.max(1, parus);
   return {
-    id: h.id, titre: h.titre, image: h.image || null, accroche: (h.accroches && h.accroches[String(cur)]) || h.accroche, avertissement: h.avertissement, total: h.episodes.length, parus,
+    id: h.id, titre: h.titre, image: h.image || null, intrigue: h.intrigue || null, intrigueMinutage: minutage(h.intrigueMinutage), accroche: (h.accroches && h.accroches[String(cur)]) || h.accroche, avertissement: h.avertissement, total: h.episodes.length, parus,
     prochain: h.programmee === false && !parus ? null : parus < h.episodes.length ? publication(h, parus + 1) : null,
     lisibles: Array.from({ length: h.episodes.length }, (_, i) => i + 1).filter((n) => peutLire({ n, parus, connecte, debloques })),
     minutes: Number((h.episodes[cur - 1] && (h.episodes[cur - 1].minutes || (h.episodes[cur - 1].A || {}).minutes)) || 2),
@@ -177,12 +181,22 @@ function verifierHistoire(h) {
   if (h.episodes.length !== 5) err.push('5 épisodes');
   const imageOk = (src) => src == null || /^\/images\/[a-z0-9/-]+\/[A-Za-z0-9-]+\.webp$/.test(src);
   if (!imageOk(h.image)) err.push('image de couverture : /images/…/nom.webp');
+  if (h.intrigue != null && h.intrigue !== `/audio/cas-du-soir/${h.id}-intrigue.mp3`) err.push(`intrigue : /audio/cas-du-soir/${h.id}-intrigue.mp3`);
+  const minutageOk = (cle) => {
+    if (cle == null) return true;
+    const m = MINUTAGES[cle];
+    return !!m && Array.isArray(m.lignes) && m.lignes.every((l) => l.t1 > l.t0 && l.texte) && (m.images || []).every((x) => /^[A-Za-z0-9-]+\.webp$/.test(x.image));
+  };
+  if (!minutageOk(h.intrigueMinutage)) err.push('minutage de l\'intrigue');
   h.episodes.forEach((e, i) => {
     const n = i + 1;
     const versions = aDesVersions(h, n) ? ['A', 'B'].map((b) => e[b]) : [e];
     for (const v of versions) {
       if (!v || !v.titre || !v.texte || !v.question) { err.push(`épisode ${n} incomplet`); continue; }
       if (!imageOk(v.image)) err.push(`épisode ${n} : image /images/…/nom.webp`);
+      if (!minutageOk(v.minutage)) err.push(`épisode ${n} : minutage`);
+      // Audio public seulement pour un épisode ouvert à tous (le 1) : les autres passent par Storage (liens signés)
+      if (v.audio && v.audio.startsWith('/') && n !== 1) err.push(`épisode ${n} : audio payant, pas dans public/`);
       const attendu = h.embranchement === n ? 2 : 3;
       if (!Array.isArray(v.choix) || v.choix.length !== attendu) err.push(`épisode ${n} : ${attendu} choix`);
       else if (v.choix.some((c) => !c.id || !c.label || !c.echo)) err.push(`épisode ${n} : choix incomplet`);
@@ -196,6 +210,6 @@ function verifierHistoire(h) {
 
 module.exports = {
   CAS_DU_SOIR_PUBLIC, PRIX, SEUIL_POURCENTAGES, ANIMAUX, ANIMAL_PLURIEL, HISTOIRES, histoireById, histoireDuMoment, publication, episodesParus, aDesVersions,
-  majorite, statut, autreBranche, aUnAudio, episodeContenu, peutLire, peutAvancer, choixValide, votant, pourcentages, choixDeLAnimal, detailParAnimal, vueEpisode, vueHistoire,
+  minutage, majorite, statut, autreBranche, aUnAudio, episodeContenu, peutLire, peutAvancer, choixValide, votant, pourcentages, choixDeLAnimal, detailParAnimal, vueEpisode, vueHistoire,
   verifierHistoire,
 };

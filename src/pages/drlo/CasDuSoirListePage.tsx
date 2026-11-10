@@ -9,6 +9,7 @@ import { Moon } from 'lucide-react';
 import DrLoShell, { DC, usePalette } from '../../components/accueil/DrLoShell';
 import { ImageCard, Stack } from '../../components/accueil/HomeParts';
 import { PiedCas } from '../../components/casdusoir/CdsParts';
+import LecteurAudio from '../../components/casdusoir/LecteurAudio';
 import { IMAGES } from '../../config/images';
 import { getListe, setHistoire } from '../../services/casDuSoirService';
 
@@ -34,7 +35,8 @@ const CasDuSoirListePage: React.FC = () => {
         {hs.map(h => (
           <ImageCard key={h.id} to={`/cas-du-soir/${h.id}`} image={h.image || IMAGES.casDuSoir} tint={palette.accent}
             fallback={<Moon size={40} color={palette.accent} strokeWidth={1.4} />}
-            kicker={statutLabel(h.statut, h.parus, h.total)} title={h.titre} line={h.accroche} />
+            kicker={statutLabel(h.statut, h.parus, h.total)} title={h.titre} line={h.accroche}
+            footer={h.intrigue ? <LecteurAudio compact src={h.intrigue} accent={palette.accent} label="Écouter l'intrigue" style={{ marginTop: 0 }} /> : undefined} />
         ))}
       </Stack>
       <PiedCas avertissement={hs[0]?.avertissement} />

@@ -6,7 +6,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Check, ChevronRight, MessageCircle } from 'lucide-react';
 import { DC, card } from '../accueil/DrLoShell';
-import LecteurAudio from './LecteurAudio';
+import AudioSynchro from './AudioSynchro';
 import { openDrLoChat } from '../DrLoChat/drLoEvents';
 import { getScaleMeta } from '../../utils/scaleMeta';
 import { getJourApercu, setJourApercu, type CdsEpisodeReponse, type CdsFin, type CdsResultats } from '../../services/casDuSoirService';
@@ -57,8 +57,8 @@ export const Fin: React.FC<{ fin: CdsFin; accent: string }> = ({ fin, accent }) 
   return (
     <section style={{ ...card, marginTop: 16 }}>
       <h2 style={{ margin: 0, fontFamily: 'Fraunces, serif', fontSize: 22, color: DC.title }}>{fin.titre}</h2>
-      <LecteurAudio src={fin.audioUrl} accent={accent} label="Écouter la leçon" />
-      {fin.texte.split(/\n{2,}/).map((p, i) => <p key={i} style={{ margin: '12px 0 0', fontSize: 15, lineHeight: 1.6, color: DC.text, whiteSpace: 'pre-line' }}>{p}</p>)}
+      <AudioSynchro src={fin.audioUrl} minutage={fin.minutage} label="Écouter la leçon" accent={accent}
+        texte={fin.texte.split(/\n{2,}/).map((p, i) => <p key={i} style={{ margin: '12px 0 0', fontSize: 15, lineHeight: 1.6, color: DC.text, whiteSpace: 'pre-line' }}>{p}</p>)} />
       <h3 style={{ margin: '20px 0 0', fontSize: 16, color: DC.title }}>Le quiz : 3 questions</h3>
       {fin.quiz.map((q, i) => (
         <div key={i} style={{ marginTop: 12 }}>

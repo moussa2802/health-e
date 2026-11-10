@@ -4,7 +4,8 @@
  *
  * FORMAT D'UNE HISTOIRE
  * {
- *   id, titre,                          identifiant (lettres, chiffres, tirets) et titre
+ *   id, titre,                          identifiant (lettres, chiffres, tirets) et titre. L'id ne change JAMAIS (adresses, votes,
+ *                                       achats enregistrés) ; le titre se change ici, et seulement ici (aucun autre fichier ne le recopie)
  *   accroche, accroches: { '1': … },    la ligne de la carte de l'accueil (par épisode paru, sinon « accroche »)
  *   depart: 'AAAA-MM-JJ', heure: 'HH:MM' l'épisode n paraît le jour n à cette heure (heure de Dakar = UTC)
  *   programmee: true|false              false : aucune date publique (rien ne paraît), seul l'aperçu du propriétaire fonctionne
@@ -12,14 +13,19 @@
  *   egalite: 'B', minVotes: 30          égalité, ou moins de minVotes votes à l'embranchement : cette suite-là
  *   testLie, testAussi                  tests proposés à la fin (identifiants du catalogue)
  *   image,                              la couverture (16:9), un fichier public de public/images/cas-du-soir/ (webp, 150 Ko au plus)
+ *   intrigue,                           la bande-annonce audio (40 à 60 s, gratuite, publique) : public/audio/cas-du-soir/{id}-intrigue.mp3
+ *                                       (environ 0,5 Mo) ; tant que le fichier n'y est pas, le lecteur ne s'affiche pas
+ *   intrigueMinutage,                   la clé du minutage de l'intrigue (_casDuSoirMinutages.js)
  *   avertissement,                      la mention toujours visible en bas
  *   autreFin: { mention },              bonus après la fin : l'autre chemin (prix PRIX.autreFin)
  *   episodes: [                         5 épisodes ; après l'embranchement, deux versions { A: {...}, B: {...} }
  *     { titre, voix, texte, image, audio, minutes, question, choix: [{ id, label, echo }] }
  *       image : l'image en tête de l'épisode (4:3), publique, dans public/images/cas-du-soir/ ; absente : fond dégradé
  *       voix : indications pour l'enregistrement (jamais affichées) ; texte : paragraphes séparés par une ligne vide,
- *       une réplique par ligne ; audio : chemin dans Firebase Storage, casDuSoir/{id}/ep1.mp3 … (tant que le fichier n'y est pas,
- *       le serveur ne donne pas de lien : le lecteur se masque et le texte s'affiche seul)
+ *       une réplique par ligne ; audio : chemin dans Firebase Storage, casDuSoir/{id}/ep2.mp3 … pour un épisode payant (lien
+ *       signé, donné seulement à qui y a droit) ; ou un fichier public « /audio/cas-du-soir/{id}-ep1.mp3 » pour un épisode
+ *       gratuit pour tous (l'épisode 1). Fichier absent : le lecteur se masque et le texte s'affiche seul.
+ *       minutage : la clé d'un minutage de _casDuSoirMinutages.js (texte surligné pendant l'écoute, images qui changent)
  *       choix : 3 réponses (2 à l'embranchement) ; echo : la phrase montrée après ce choix
  *   ],
  *   fin: { titre, texte, audio, quiz: [{ question, reponses: [3], bonne: index, explication }], apresQuiz }
@@ -33,8 +39,10 @@
 
 const VU_DE_MINUIT = {
   "id": "vu-de-minuit",
-  "titre": "Le vu de minuit",
+  "titre": "Le message de minuit",
   "image": "/images/cas-du-soir/cas-vu-de-minuit-couverture.webp",
+  "intrigue": "/audio/cas-du-soir/vu-de-minuit-intrigue.mp3",
+  "intrigueMinutage": "vu-de-minuit-intrigue",
   "accroche": "Un message s'allume sur le téléphone d'Iba. Diarra n'a lu que quatre mots.",
   "accroches": {
     "1": "Un message s'allume sur le téléphone d'Iba. Diarra n'a lu que quatre mots.",
@@ -55,11 +63,12 @@ const VU_DE_MINUIT = {
   },
   "episodes": [
     {
-      "titre": "Le vu de minuit",
+      "titre": "Quatre mots",
       "voix": "narratrice calme, voix de veillée, avec des pauses. Diarra fatiguée, puis tendue. Iba fatigué mais doux. Monter la tension au moment de l'écran qui s'allume, puis ralentir.",
       "texte": "Il est presque minuit aux Parcelles Assainies. Le salon de Diarra a fermé à 21 heures, mais ses doigts sentent encore le karité. Trois tresses aujourd'hui, une cliente en retard, les pieds qui brûlent. Elle est fatiguée. Mais elle ne dort pas. Elle attend.\n\nIba rentre à 23 h 40. Il répare des antennes pour un opérateur téléphonique : quand une antenne tombe en panne à Keur Massar, c'est lui qu'on appelle. Il pose son casque, son sac, et son téléphone sur la table basse, l'écran vers le haut.\n\nIBA : Nanga def, sama soxna ? (Comment vas-tu, ma femme ?)\nDIARRA : Maa ngi fi. (Je suis là.) Tu as mangé ?\nIBA : Un peu, avec l'équipe. Je prends une douche.\n\nIl disparaît dans le couloir. Le téléphone reste là. Diarra ne le regarde pas. Elle n'est pas comme ça. Elle se le répète.\n\nEt puis l'écran s'allume.\n\nUn message. Juste l'aperçu, quatre mots, et un nom : « Aïcha : Tu n'as pas changé », avec un petit sourire.\n\nDiarra connaît ce nom. Toute la famille d'Iba connaît ce nom. Aïcha, la fiancée d'avant. Celle qui était partie en Italie il y a huit ans. Celle que Yaay Fatou, la mère d'Iba, appelle encore « la fille polie ».\n\nQuelque chose se serre dans la poitrine de Diarra. Comme une main. Son cœur bat dans ses oreilles. Depuis quand ? Pourquoi elle lui écrit à minuit ? Pourquoi il ne m'a rien dit ?\n\nL'écran s'éteint. La douche coule toujours.\n\nQuand Iba revient, il voit tout de suite son visage.\n\nIBA : Lu xew ? (Qu'est-ce qui se passe ?)\nDIARRA : Rien. Je suis fatiguée.\n\nElle se tourne vers le mur. Lui soupire, prend son téléphone, tape quelque chose avec un demi-sourire, et éteint la lumière.\n\nDiarra garde les yeux ouverts dans le noir. Elle compte les respirations de son mari. Elle se demande ce qu'il a répondu.\n\nQuatre mots. Il a suffi de quatre mots pour que la nuit change de couleur.",
       "image": "/images/cas-du-soir/cas-vu-de-minuit-ep1.webp",
-      "audio": "casDuSoir/vu-de-minuit/ep1.mp3",
+      "audio": "/audio/cas-du-soir/vu-de-minuit-ep1.mp3",
+      "minutage": "vu-de-minuit-ep1",
       "minutes": 2,
       "question": "Ce soir-là, à la place de Diarra, qu'aurais-tu fait ?",
       "choix": [

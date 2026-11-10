@@ -8,9 +8,9 @@ import React, { useEffect, useState } from 'react';
 import { Link, Navigate, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { Hourglass, Loader2, Lock, Moon } from 'lucide-react';
 import DrLoShell, { DC, card, usePalette } from '../../components/accueil/DrLoShell';
-import Illustration from '../../components/accueil/Illustration';
 import { ImageCard, SectionTitle, Stack, CompactRow } from '../../components/accueil/HomeParts';
 import { BandeauApercu, Fin, PiedCas, etoiles, Maj } from '../../components/casdusoir/CdsParts';
+import AudioSynchro from '../../components/casdusoir/AudioSynchro';
 import { useKoris } from '../../contexts/KorisContext';
 import { CAS_DU_SOIR_PRIX } from '../../config/contenusPayants';
 import {
@@ -85,7 +85,11 @@ const CasDuSoirCasPage: React.FC = () => {
 
   return (
     <DrLoShell narrow back={{ to: '/cas-du-soir', label: 'Retour aux cas' }} palette={palette}>
-      <Illustration src={h.image} ratio="16 / 9" tint={palette.accent} radius={20} style={{ marginTop: 16 }} fallback={<Moon size={44} color={palette.accent} strokeWidth={1.4} />} />
+      {/* La couverture et l'intrigue : images et phrases synchronisées s'il y a un minutage (les phrases apparaissent à l'écoute) */}
+      <div style={{ marginTop: 16 }}>
+        <AudioSynchro compact parolesApresLecture src={h.intrigue} minutage={h.intrigueMinutage} label="Écouter l'intrigue" accent={palette.accent}
+          image={{ src: h.image, ratio: '16 / 9', radius: 20, fallback: <Moon size={44} color={palette.accent} strokeWidth={1.4} /> }} />
+      </div>
       <p style={{ margin: '14px 0 0', fontSize: 13, fontWeight: 700, color: palette.accent }}>Le cas du soir</p>
       <h1 style={{ margin: '4px 0 0', fontFamily: 'Fraunces, serif', fontSize: 28, lineHeight: 1.15, color: DC.title }}>{h.titre}</h1>
       <p style={{ margin: '6px 0 0', fontSize: 15, lineHeight: 1.5, color: DC.soft }}>{h.accroche}</p>

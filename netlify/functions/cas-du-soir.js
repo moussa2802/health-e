@@ -41,11 +41,13 @@ const sha = (s) => crypto.createHash('sha256').update(`cds|${s}`).digest('hex');
 /** Le fichier audio est-il déposé ? (la carte dit alors « Écouter », sinon « Lire ») */
 async function audioExiste(path) {
   if (!path) return false;
+  if (path.startsWith('/')) return true; // fichier public (épisode gratuit pour tous) : déclaré dans le dépôt
   try { const [exists] = await admin.storage().bucket(BUCKET).file(path).exists(); return !!exists; } catch { return false; }
 }
 
 async function audioUrl(path) {
   if (!path) return null;
+  if (path.startsWith('/')) return path; // fichier public : pas de lien signé
   try {
     const file = admin.storage().bucket(BUCKET).file(path);
     const [exists] = await file.exists();
@@ -257,7 +259,7 @@ exports.handler = async (event) => {
     if (action === 'fin') {
       if (!K.peutLire({ n: h.episodes.length, parus, connecte, debloques })) return reply(403, { error: 'La fin n\'est pas encore ouverte.' });
       const f = h.fin;
-      return reply(200, { titre: f.titre, texte: f.texte, audioUrl: await audioUrl(f.audio), quiz: f.quiz, apresQuiz: f.apresQuiz || '', testLie: h.testLie || null, testAussi: h.testAussi || null });
+      return reply(200, { titre: f.titre, texte: f.texte, audioUrl: await audioUrl(f.audio), minutage: K.minutage(f.minutage), quiz: f.quiz, apresQuiz: f.apresQuiz || '', testLie: h.testLie || null, testAussi: h.testAussi || null });
     }
 
     return reply(400, { error: 'Action inconnue' });
