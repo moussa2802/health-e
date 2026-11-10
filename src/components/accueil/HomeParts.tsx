@@ -128,21 +128,29 @@ export const Stack: React.FC<{ children: React.ReactNode }> = ({ children }) => 
  * une ligne, et en bas un bouton (« footer ») ou une flèche. Sans fichier image : un dégradé avec le motif « fallback ».
  */
 export const ImageCard: React.FC<{
-  to: string; image: string | null; tint: string; fallback?: React.ReactNode; kicker?: React.ReactNode; title: React.ReactNode; line?: React.ReactNode;
+  /** Absent : la carte n'est pas un lien (ex. un épisode pas encore ouvert) */
+  to?: string; image: string | null; tint: string; fallback?: React.ReactNode; kicker?: React.ReactNode; title: React.ReactNode; line?: React.ReactNode;
   footer?: React.ReactNode; label?: string;
 }> = ({ to, image, tint, fallback, kicker, title, line, footer, label }) => (
   <article style={{ borderRadius: RADIUS, overflow: 'hidden', border: `1px solid ${tint}44`, background: `linear-gradient(170deg, ${tint}14, rgba(255,255,255,.03) 60%)` }}>
-    <Link to={to} aria-label={label} className="drl-btn" style={{ display: 'block', textDecoration: 'none', color: DC.text }}>
-      <Illustration src={image} height={IMG_H} tint={tint} radius={0} fallback={fallback} />
-      <span style={{ display: 'flex', alignItems: 'center', gap: 12, padding: `12px ${PAD}px ${footer ? 4 : 14}px` }}>
-        <span style={{ flex: 1, minWidth: 0 }}>
-          {kicker && <span style={{ display: 'block', fontSize: 13, fontWeight: 700, color: tint }}>{kicker}</span>}
-          <span style={{ display: 'block', marginTop: kicker ? 4 : 0, fontFamily: 'Fraunces, serif', fontSize: 19, lineHeight: 1.25, fontWeight: 600, color: DC.title }}>{title}</span>
-          {line && <span style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', marginTop: 2, fontSize: 14, lineHeight: 1.4, color: DC.muted }}>{line}</span>}
-        </span>
-        {!footer && <ArrowRight size={18} color={DC.muted} aria-hidden="true" style={{ flexShrink: 0 }} />}
-      </span>
-    </Link>
+    {(() => {
+      const body = (
+        <>
+          <Illustration src={image} height={IMG_H} tint={tint} radius={0} fallback={fallback} />
+          <span style={{ display: 'flex', alignItems: 'center', gap: 12, padding: `12px ${PAD}px ${footer ? 4 : 14}px` }}>
+            <span style={{ flex: 1, minWidth: 0 }}>
+              {kicker && <span style={{ display: 'block', fontSize: 13, fontWeight: 700, color: tint }}>{kicker}</span>}
+              <span style={{ display: 'block', marginTop: kicker ? 4 : 0, fontFamily: 'Fraunces, serif', fontSize: 19, lineHeight: 1.25, fontWeight: 600, color: DC.title }}>{title}</span>
+              {line && <span style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', marginTop: 2, fontSize: 14, lineHeight: 1.4, color: DC.muted }}>{line}</span>}
+            </span>
+            {!footer && to && <ArrowRight size={18} color={DC.muted} aria-hidden="true" style={{ flexShrink: 0 }} />}
+          </span>
+        </>
+      );
+      return to
+        ? <Link to={to} aria-label={label} className="drl-btn" style={{ display: 'block', textDecoration: 'none', color: DC.text }}>{body}</Link>
+        : <div style={{ color: DC.text }}>{body}</div>;
+    })()}
     {footer && <div style={{ padding: `8px ${PAD}px 14px` }}>{footer}</div>}
   </article>
 );

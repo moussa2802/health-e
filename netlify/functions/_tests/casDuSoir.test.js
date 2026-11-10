@@ -283,6 +283,39 @@ test('égalité ou moins de 30 votes à l\'épisode 3 : tout le monde lit la fin
   }
 }));
 
+test('liste des cas et liste des épisodes : masquées aux autres, états, version de la majorité seulement une fois figée', async () => {
+  uid = 'quelquun';
+  assert.deepEqual((await call({ action: 'liste' })).body, { visible: false });
+  assert.equal((await call({ action: 'episodes', histoire: H.id })).status, 404);
+  uid = 'papa';
+  let l = (await call({ action: 'liste' })).body;
+  assert.equal(l.visible, true);
+  assert.equal(l.histoires.length, 1);
+  assert.equal(l.histoires[0].statut, 'bientot');
+  assert.equal(l.histoires[0].image, H.image);
+  l = (await call({ action: 'liste', jour: 5 })).body;
+  assert.equal(l.histoires[0].statut, 'termine');
+  // Jour 3 en aperçu : 1 à 3 lisibles ; 4 et 5 dépendent du vote (aucune version révélée)
+  let e = (await call({ action: 'episodes', histoire: H.id, jour: 3 })).body;
+  assert.deepEqual(e.episodes.map((x) => x.etat), ['a_lire', 'a_lire', 'a_lire', 'vote', 'vote']);
+  assert.equal(e.episodes[0].image, H.episodes[0].image);
+  assert.ok(!JSON.stringify(e).includes(H.episodes[3].A.titre) && !JSON.stringify(e).includes(H.episodes[3].B.titre));
+  // Jour 4 : la version de la majorité (B sans vote) apparaît pour 4 ; 5 est « prochain », payable tout de suite
+  e = (await call({ action: 'episodes', histoire: H.id, jour: 4 })).body;
+  assert.equal(e.episodes[3].titre, H.episodes[3].B.titre);
+  assert.equal(e.episodes[4].etat, 'prochain');
+  assert.deepEqual(e.episodes[4].avance, { ok: true });
+  assert.ok(!JSON.stringify(e).includes(H.episodes[3].A.titre));
+  // Jour 2 : l'épisode 3 est le prochain (gratuit le lendemain ou payé), pas de version encore
+  e = (await call({ action: 'episodes', histoire: H.id, jour: 2 })).body;
+  assert.equal(e.episodes[2].etat, 'prochain');
+  assert.equal(e.episodes[2].parution, K.publication(H, 3));
+  assert.equal(e.finie, false);
+  // Un identifiant de cas inconnu : introuvable
+  assert.equal((await call({ action: 'episodes', histoire: 'inconnu' })).status, 404);
+  assert.equal((await call({ action: 'etat', histoire: H.id })).body.histoire.id, H.id);
+});
+
 test('règles Firestore : les collections du cas du soir sont fermées au navigateur', () => {
   const rules = fs.readFileSync(path.join(__dirname, '..', '..', '..', 'firestore.rules'), 'utf8');
   for (const c of ['casDuSoirVotes', 'casDuSoirResultats', 'casDuSoirAcces']) {

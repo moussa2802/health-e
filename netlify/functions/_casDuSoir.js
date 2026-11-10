@@ -158,6 +158,12 @@ function vueHistoire(h, now, { parus, debloques = [], connecte }) {
   };
 }
 
+/** L'état d'un cas pour la liste : « bientot », « en_cours » ou « termine ». */
+function statut(h, parus) {
+  if (!parus) return 'bientot';
+  return parus >= h.episodes.length ? 'termine' : 'en_cours';
+}
+
 /** L'autre fin (bonus) : la version qui n'a pas été publiée, une fois l'histoire terminée pour la personne. */
 const autreBranche = (b) => (b === 'A' ? 'B' : b === 'B' ? 'A' : null);
 
@@ -188,6 +194,6 @@ function verifierHistoire(h) {
 
 module.exports = {
   CAS_DU_SOIR_PUBLIC, PRIX, SEUIL_POURCENTAGES, ANIMAUX, ANIMAL_PLURIEL, HISTOIRES, histoireById, histoireDuMoment, publication, episodesParus, aDesVersions,
-  majorite, autreBranche, aUnAudio, episodeContenu, peutLire, peutAvancer, choixValide, votant, pourcentages, choixDeLAnimal, detailParAnimal, vueEpisode, vueHistoire,
+  majorite, statut, autreBranche, aUnAudio, episodeContenu, peutLire, peutAvancer, choixValide, votant, pourcentages, choixDeLAnimal, detailParAnimal, vueEpisode, vueHistoire,
   verifierHistoire,
 };

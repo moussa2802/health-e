@@ -2,7 +2,10 @@
  * cas-du-soir — « Le cas du soir » : une histoire en 5 épisodes, un épisode par soir, un vote à la fin de chacun.
  * POST { action, ... }, jeton Firebase facultatif (visiteur : épisode 1 et son vote seulement). Aucun appel à l'IA.
  *
- *   etat                     → { visible, histoire, prix, connecte, bonus, apercu, animal, proprio }   (visible:false : rien d'autre)
+ *   liste                    → { visible, histoires: [vue + statut] }   la page « Le cas du soir » (tous les cas)
+ *   etat { histoire? }       → { visible, histoire, prix, connecte, bonus, apercu, animal, proprio }   (visible:false : rien d'autre)
+ *   episodes { histoire }    → la liste des épisodes d'un cas, avec l'état de chacun (lu, à lire, prochain, verrouillé…)
+ *   Toutes les actions acceptent « histoire » (l'identifiant du cas) ; sans lui, c'est le cas du moment.
  *   episode { n }            → l'épisode (texte, lien audio), mon vote et les résultats si j'ai voté, la suite possible
  *   vote { n, choix, visiteurId? } → un vote par personne et par épisode ; renvoie les résultats
  *   avancer { n }            → lire l'épisode n tout de suite (prix PRIX.suite, débité une fois)
@@ -93,13 +96,29 @@ exports.handler = async (event) => {
     const user = await verifyAuth(event);
     const uid = user ? user.uid : null;
     const owner = uid ? (await R.roleOf(uid)).owner : false;
-    if (!K.CAS_DU_SOIR_PUBLIC && !owner) return action === 'etat' ? reply(200, { visible: false }) : reply(404, { error: 'Introuvable' });
+    if (!K.CAS_DU_SOIR_PUBLIC && !owner) return action === 'etat' || action === 'liste' ? reply(200, { visible: false }) : reply(404, { error: 'Introuvable' });
 
     // Aperçu du propriétaire : il choisit le jour à simuler (1 à 5)
     const jour = owner ? Math.round(Number(body.jour)) : NaN;
     const realNow = Date.now();
-    let h = K.histoireDuMoment(realNow);
-    if (!h) return reply(200, { visible: false });
+
+    // La liste des cas (page « Le cas du soir ») : la couverture, l'accroche et l'état de chacun
+    if (action === 'liste') {
+      const histoires = await Promise.all(K.HISTOIRES.map(async (x) => {
+        const ap = Number.isInteger(jour) && jour >= 1 && jour <= x.episodes.length;
+        const t = ap ? K.publication(x, jour) + 60000 : realNow;
+        const p = K.episodesParus(x, t, ap);
+        let deb = [];
+        if (uid) { const ac = await ACCES().doc(`${uid}_${x.id}`).get(); if (ac.exists && Array.isArray(ac.data().episodes)) deb = ac.data().episodes; }
+        return { ...K.vueHistoire(x, t, { parus: p, debloques: deb, connecte: !!uid }), statut: K.statut(x, p) };
+      }));
+      return reply(200, { visible: true, histoires, proprio: owner });
+    }
+
+    // Un cas précis (adresse /cas-du-soir/:id) ; inconnu : introuvable. Sans identifiant : le cas du moment.
+    if (body.histoire && !K.histoireById(String(body.histoire))) return reply(404, { error: 'Ce cas n\'existe pas.' });
+    const h = body.histoire ? K.histoireById(String(body.histoire)) : K.histoireDuMoment(realNow);
+    if (!h) return reply(action === 'etat' ? 200 : 404, action === 'etat' ? { visible: false } : { error: 'Introuvable' });
     const apercu = Number.isInteger(jour) && jour >= 1 && jour <= h.episodes.length;
     const now = apercu ? K.publication(h, jour) + 60000 : realNow;
     const parus = K.episodesParus(h, now, apercu);
@@ -125,6 +144,30 @@ exports.handler = async (event) => {
         // Pour le vote de l'embranchement : quand la majorité décide (la parution de l'épisode suivant)
         decision: h.embranchement && (h.programmee !== false || apercu) ? K.publication(h, h.embranchement + 1) : null,
       });
+    }
+
+    // Les épisodes d'un cas : une carte par épisode, avec son état. Après l'embranchement, seule la version choisie
+    // par la majorité est montrée, et seulement une fois figée ; avant, « la suite dépend de votre vote ».
+    if (action === 'episodes') {
+      const qui = K.votant(uid, body.visiteurId, sha);
+      const branche = h.embranchement && parus > h.embranchement ? await brancheDe(h, parus, apercu) : null;
+      const votes = qui ? await Promise.all(h.episodes.map((_, i) => VOTES().doc(`${h.id}_${i + 1}_${qui}`).get())) : [];
+      const list = h.episodes.map((_, i) => {
+        const k = i + 1;
+        const lisible = K.peutLire({ n: k, parus, connecte, debloques });
+        const contenu = K.episodeContenu(h, k, K.aDesVersions(h, k) ? branche : null);
+        if (!contenu) return { n: k, attente: true, etat: 'vote' };
+        const vote = votes[i] && votes[i].exists;
+        let etat = 'verrouille';
+        if (lisible) etat = vote ? 'lu' : 'a_lire';
+        else if (!connecte && k > 1) etat = 'compte';
+        else if (k === parus + 1) etat = 'prochain';
+        const avance = etat === 'prochain' ? K.peutAvancer(h, { n: k, parus, debloques }) : null;
+        const programme = h.programmee !== false || apercu;
+        return { n: k, titre: contenu.titre, image: contenu.image || null, etat, parution: programme ? K.publication(h, k) : null, avance };
+      });
+      const finie = K.peutLire({ n: h.episodes.length, parus, connecte, debloques });
+      return reply(200, { episodes: list, finie, prix: K.PRIX, autreFin: { achetee: acces.autreFin, possible: connecte && finie && !!h.embranchement }, apercu });
     }
 
     const n = Math.round(Number(body.n));

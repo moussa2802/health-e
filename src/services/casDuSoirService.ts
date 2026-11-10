@@ -44,6 +44,11 @@ function visiteurId(): string {
 /** Jour simulé par le propriétaire (aperçu avant la date de départ) ; ignoré par le serveur pour les autres. */
 let jourApercu: number | null = null;
 export const setJourApercu = (j: number | null) => { jourApercu = j; };
+export const getJourApercu = () => jourApercu;
+
+/** Le cas ouvert (adresse /cas-du-soir/:id) : envoyé avec chaque demande ; null = le cas du moment. */
+let histoireActive: string | null = null;
+export const setHistoire = (id: string | null) => { histoireActive = id; };
 
 async function call<T>(body: Record<string, unknown>): Promise<T> {
   // Attendre que Firebase ait restauré la session : sinon, au premier affichage, l'appel part sans jeton (vu comme visiteur)
@@ -52,7 +57,7 @@ async function call<T>(body: Record<string, unknown>): Promise<T> {
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
   if (user) headers.Authorization = `Bearer ${await user.getIdToken()}`;
   const res = await fetch('/.netlify/functions/cas-du-soir', {
-    method: 'POST', headers, body: JSON.stringify({ ...body, ...(jourApercu ? { jour: jourApercu } : {}), ...(user ? {} : { visiteurId: visiteurId() }) }),
+    method: 'POST', headers, body: JSON.stringify({ ...(histoireActive ? { histoire: histoireActive } : {}), ...body, ...(jourApercu ? { jour: jourApercu } : {}), ...(user ? {} : { visiteurId: visiteurId() }) }),
   });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new CdsError((data as { error?: string }).error ?? `Erreur ${res.status}`, res.status, data as Record<string, unknown>);
@@ -60,6 +65,15 @@ async function call<T>(body: Record<string, unknown>): Promise<T> {
 }
 
 export const getEtat = () => call<CdsEtat>({ action: 'etat' });
+/** L'état du cas du moment, quel que soit le cas ouvert (carte de l'accueil). */
+export const getEtatDuMoment = () => call<CdsEtat>({ action: 'etat', histoire: null });
+export const getListe = () => call<{ visible: boolean; histoires?: (CdsHistoire & { statut: 'bientot' | 'en_cours' | 'termine' })[]; proprio?: boolean }>({ action: 'liste' });
+export interface CdsEpisodeCarte {
+  n: number; titre?: string; image?: string | null; attente?: boolean;
+  etat: 'lu' | 'a_lire' | 'prochain' | 'verrouille' | 'compte' | 'vote';
+  parution?: number | null; avance?: { ok: boolean; raison?: string } | null;
+}
+export const getEpisodes = () => call<{ episodes: CdsEpisodeCarte[]; finie: boolean; prix: { suite: number; bonus: number; autreFin: number }; autreFin: { achetee: boolean; possible: boolean }; apercu: boolean }>({ action: 'episodes' });
 export const getEpisode = (n: number, autre = false) => call<CdsEpisodeReponse>({ action: 'episode', n, ...(autre ? { autre: true } : {}) });
 export const acheterAutreFin = () => call<{ ok: boolean }>({ action: 'autreFin' });
 export const voter = (n: number, choix: string) => call<{ ok: boolean; monChoix: string; resultats: CdsResultats; apercu?: boolean }>({ action: 'vote', n, choix });

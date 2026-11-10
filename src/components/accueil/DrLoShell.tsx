@@ -33,14 +33,16 @@ const DrLoShell: React.FC<{
   back?: { to: string; label: string };
   genre?: 'homme' | 'femme';
   palette: MomentPalette;
+  /** Colonne de 480 px au plus (même système que l'accueil) */
+  narrow?: boolean;
   children: React.ReactNode;
-}> = ({ back, genre, palette, children }) => {
+}> = ({ back, genre, palette, narrow, children }) => {
   const navigate = useNavigate();
   const [veiled, setVeiled] = useState(false);
   const seul = genre === 'femme' ? 'seule' : genre === 'homme' ? 'seul' : 'uniquement';
   return (
     <div className="drl-screen font-sans" style={{ minHeight: '100svh', background: palette.bg, color: DC.text, position: 'relative', ['--he-action' as string]: palette.primary } as React.CSSProperties}>
-      <div className="drl-wrap" style={{ margin: '0 auto', padding: '16px 18px calc(92px + env(safe-area-inset-bottom, 0px))', boxSizing: 'border-box' }}>
+      <div className={narrow ? 'drl-wrap drl-wrap-home' : 'drl-wrap'} style={{ margin: '0 auto', padding: '16px 18px calc(92px + env(safe-area-inset-bottom, 0px))', boxSizing: 'border-box' }}>
         <header style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
           {back ? (
             <Link to={back.to} aria-label={back.label} className="drl-btn"
