@@ -79,6 +79,7 @@ test('droits : visiteur = épisode 1 ; compte = épisodes parus + payés ; la su
   assert.equal(K.peutAvancer(H, { n: 4, parus: 3 }).raison, 'vote_en_cours');
   assert.deepEqual(K.peutAvancer(H, { n: 5, parus: 4 }), { ok: true });
   assert.equal(K.peutAvancer(H, { n: 2, parus: 1, debloques: [2] }).ok, false); // déjà payé
+  assert.equal(K.peutAvancer(H, { n: 1, parus: 0 }).raison, 'pas_commence'); // rien à payer avant le premier épisode
 });
 
 test('embranchement : la majorité décide ; égalité ou moins de 30 votes → la fin B', () => {

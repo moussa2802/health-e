@@ -85,6 +85,8 @@ function peutLire({ n, parus, connecte, debloques = [] }) {
  * Seulement l'épisode qui suit le dernier paru, et jamais celui qui dépend d'un vote encore ouvert (l'embranchement).
  */
 function peutAvancer(h, { n, parus, debloques = [] }) {
+  // Pas d'achat avant la parution du premier épisode (histoire non commencée ou sans date)
+  if (!(parus >= 1)) return { ok: false, raison: 'pas_commence' };
   if (n !== parus + 1 || n > h.episodes.length || debloques.includes(n)) return { ok: false, raison: 'pas_maintenant' };
   if (h.embranchement && n === h.embranchement + 1) return { ok: false, raison: 'vote_en_cours' };
   return { ok: true };
