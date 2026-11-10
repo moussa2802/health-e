@@ -34,7 +34,7 @@ const CasDuSoirCard: React.FC<{ accent: string }> = ({ accent }) => {
       <ImageCard to="/cas-du-soir" image={IMAGES.casDuSoir} tint={accent} fallback={<Moon size={40} color={accent} strokeWidth={1.4} />}
         kicker={`Une histoire, un épisode chaque soir${etat?.apercu ? ' · aperçu' : ''}`}
         title="Qu'aurais-tu fait à sa place ?"
-        line="Des histoires de couple et de famille, en cinq épisodes. À chaque épisode, tu votes. À la fin, Dr Lô t'explique ce qui se jouait."
+        line="Des histoires de couple et de famille. Tu votes à chaque épisode, Dr Lô t'explique à la fin."
         footer={<Link to="/cas-du-soir" className="drl-btn" style={{ minHeight: 44, display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 15, fontWeight: 700, color: accent, textDecoration: 'none' }}>Voir les cas <ArrowRight size={16} aria-hidden="true" /></Link>} />
     </>
   );
