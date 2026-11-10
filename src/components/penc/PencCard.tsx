@@ -23,7 +23,7 @@ const PencCard: React.FC<{ p: Penc; accent: string; onRemind?: (p: Penc) => void
         <span style={{ display: 'block', marginTop: 2, fontSize: 14, color: DC.soft }}>{p.host.name}{p.host.title ? ` · ${p.host.title}` : ''}</span>
         <span style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 2, fontSize: 13, color: DC.faint }}>
           {p.access === 'channel' && <><Lock size={13} aria-hidden="true" />Membres de « {p.channelName} »</>}
-          {p.access === 'paid' && `${p.price} étincelle${p.price > 1 ? 's' : ''}`}
+          {p.access === 'paid' && (p.registered ? 'Ta place est réservée' : `${p.price} étincelle${p.price > 1 ? 's' : ''} · réserver ta place`)}
           {p.access === 'all' && `${p.registeredCount} inscrit${p.registeredCount > 1 ? 's' : ''}`}
         </span>
       </Link>

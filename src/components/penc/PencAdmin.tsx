@@ -3,6 +3,7 @@
  * Dr Lô voit tous les Pénc ; un pro, les siens. Aucune validation : un pro programme librement.
  */
 import React, { useEffect, useState } from 'react';
+import { PENC_PRIX_PAR_DEFAUT } from '../../config/contenusPayants';
 import { Link } from 'react-router-dom';
 import { Loader2, Plus } from 'lucide-react';
 import { DC, card } from '../accueil/DrLoShell';
@@ -21,7 +22,7 @@ const dakarToMs = (date: string, time: string) => { const [y, m, d] = date.split
 const SCALES = Object.entries(SCALE_META).map(([id, m]) => ({ id, label: m.label })).sort((a, b) => a.label.localeCompare(b.label, 'fr'));
 
 type Form = { id?: string; title: string; description: string; date: string; time: string; durationMin: number; access: PencAccess; channelId: string; price: number; testScaleId: string; repeatWeekly: boolean };
-const empty = (): Form => { const t = Date.now() + 2 * 86400000; return { title: '', description: '', date: toDate(t), time: '21:00', durationMin: 45, access: 'all', channelId: '', price: 10, testScaleId: '', repeatWeekly: false }; };
+const empty = (): Form => { const t = Date.now() + 2 * 86400000; return { title: '', description: '', date: toDate(t), time: '21:00', durationMin: 45, access: 'all', channelId: '', price: PENC_PRIX_PAR_DEFAUT, testScaleId: '', repeatWeekly: false }; };
 
 const PencAdmin: React.FC<{ palette: MomentPalette }> = ({ palette }) => {
   const [items, setItems] = useState<Penc[] | null>(null);
@@ -125,7 +126,7 @@ const PencAdmin: React.FC<{ palette: MomentPalette }> = ({ palette }) => {
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 6 }}>
                 <Link to={`/penc/${p.id}`} className="drl-btn" style={{ ...btn(true), display: 'inline-flex', alignItems: 'center', textDecoration: 'none' }}>{p.status === 'live' ? 'Ouvrir la salle' : 'Démarrer et entrer'}</Link>
                 <button type="button" onClick={() => setEnding(p.id)} style={btn(p.status === 'live')}>Terminer</button>
-                {p.status === 'scheduled' && <button type="button" onClick={() => setForm({ id: p.id, title: p.title, description: p.description, date: toDate(p.startAt), time: toTime(p.startAt), durationMin: p.durationMin, access: p.access, channelId: p.channelId ?? '', price: p.price || 10, testScaleId: p.testScaleId ?? '', repeatWeekly: !!p.repeatWeekly })} style={btn(false)}>Modifier</button>}
+                {p.status === 'scheduled' && <button type="button" onClick={() => setForm({ id: p.id, title: p.title, description: p.description, date: toDate(p.startAt), time: toTime(p.startAt), durationMin: p.durationMin, access: p.access, channelId: p.channelId ?? '', price: p.price || PENC_PRIX_PAR_DEFAUT, testScaleId: p.testScaleId ?? '', repeatWeekly: !!p.repeatWeekly })} style={btn(false)}>Modifier</button>}
                 {p.status === 'scheduled' && <button type="button" onClick={() => setConfirmCancel(p.id)} style={btn(false)}>Annuler</button>}
               </div>
             )}

@@ -22,7 +22,7 @@ interface Stats {
   features: { key: string; users: number }[];
   pages: KV[]; goes: KV[]; tests: KV[]; hours: number[];
   funnel: { accueil: number; debut: number; testCommence: number; testFini: number; inscription: number };
-  koris: { spentByFeature: KV[]; offeredByFeature: KV[]; purchases: number; purchased: number };
+  koris: { spentByFeature: KV[]; offeredByFeature: KV[]; purchases: number; purchased: number; contenus?: { key: string; spent: number; refunded: number; buyers: number }[] };
   acquisition: KV[];
   retention: { lendemain: number | null; semaine: number | null };
   trackingSince: string | null; notifOn: number | null; since: string;
@@ -45,7 +45,7 @@ const PAGE_LABEL: Record<string, string> = {
   penc: 'Pénc mi', journal: 'Journal', achat: 'Acheter des étincelles', chaines: 'Chaînes', question: 'Questions / messages', defi: 'Défi',
   humeur: 'Humeur', bilan: 'Point de la semaine', outils: 'Outils', autre: 'Autres pages',
 };
-const KORIS_LABEL: Record<string, string> = { chat: 'Messages au compagnon', test: 'Tests', analysis: 'Analyses', compatibility: 'Compatibilité', daily_gift: 'Cadeau du jour', referral: 'Parrainage', welcome: 'Bienvenue', penc: 'Pénc mi' };
+const KORIS_LABEL: Record<string, string> = { chat: 'Messages au compagnon', test: 'Tests', analysis: 'Analyses', compatibility: 'Compatibilité', daily_gift: 'Cadeau du jour', referral: 'Parrainage', welcome: 'Bienvenue', penc: 'Pénc mi', practice: 'Pratiques (audios, techniques, carnets)', channel: 'Chaînes' };
 
 const fmtDay = (d: string) => { const [, m, j] = d.split('-'); return `${Number(j)}/${Number(m)}`; };
 const pct = (x: number | null) => (x === null || x === undefined ? '—' : `${Math.round(x * 100)} %`);
@@ -332,6 +332,18 @@ const AdminStats: React.FC = () => {
               <h2 style={h2}>Étincelles dépensées</h2>
               <p style={sub}>{nf(data.koris.purchases)} achat{data.koris.purchases > 1 ? 's' : ''} sur la période ({nf(data.koris.purchased)} étincelles achetées).</p>
               <Ranking rows={data.koris.spentByFeature.map(k => ({ label: KORIS_LABEL[k.key] || k.key, n: k.n }))} empty="Aucune dépense sur la période." />
+              {data.koris.contenus && (
+                <>
+                  <p style={{ ...sub, margin: '16px 0 8px' }}>Contenus payants (comptés à part, même à zéro)</p>
+                  <ul style={{ margin: 0, padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    {data.koris.contenus.map(c => (
+                      <li key={c.key} style={{ fontSize: 14, color: DC.text }}>
+                        {KORIS_LABEL[c.key] || c.key} : <b>{nf(c.spent - c.refunded)}</b> étincelle{c.spent - c.refunded > 1 ? 's' : ''} · {nf(c.buyers)} acheteur{c.buyers > 1 ? 's' : ''}{c.refunded ? ` (${nf(c.refunded)} rendues)` : ''}
+                      </li>
+                    ))}
+                  </ul>
+                </>
+              )}
               <p style={{ ...sub, margin: '16px 0 8px' }}>Offertes sur la période</p>
               <Ranking rows={data.koris.offeredByFeature.map(k => ({ label: KORIS_LABEL[k.key] || k.key, n: k.n }))} empty="Rien d'offert sur la période." />
             </section>

@@ -18,6 +18,7 @@ import { Equalizer, HostAvatar, listenersLabel, PencLiveCard, PencMotif } from '
 import { NotifOptinCard } from '../../components/accueil/NotificationsPanel';
 import { useAuth } from '../../contexts/AuthContext';
 import { useLaunch } from '../../hooks/useLaunch';
+import { useKoris } from '../../contexts/KorisContext';
 import { SCALE_META } from '../../utils/scaleMeta';
 import { loadPrefs, pushSupport } from '../../services/pushService';
 import { getAgenda, getPenc, registerPenc, startPenc, whenLabel, type Penc } from '../../services/pencService';
@@ -35,13 +36,18 @@ function useRemind(uid: string | null, onChanged: () => void) {
   const [busy, setBusy] = useState('');
   const [error, setError] = useState('');
   const [askNotif, setAskNotif] = useState(false);
+  const { openNoKorisModal } = useKoris();
   const toggle = async (p: Penc) => {
     setBusy(p.id); setError('');
     try {
       await registerPenc(p.id, !p.registered);
       if (!p.registered && uid && pushSupport() !== 'unsupported') loadPrefs(uid).then(pr => { if (!pr.on) setAskNotif(true); }).catch(() => {});
       onChanged();
-    } catch (e) { setError(e instanceof Error ? e.message : 'Erreur'); } finally { setBusy(''); }
+    } catch (e) {
+      // Pénc payant sans assez d'étincelles : on propose d'en acheter, au lieu d'un simple message d'erreur
+      if ((e as { status?: number }).status === 402) openNoKorisModal('Réserver ta place au Pénc mi', p.price);
+      setError(e instanceof Error ? e.message : 'Erreur');
+    } finally { setBusy(''); }
   };
   return { busy, error, askNotif, toggle };
 }

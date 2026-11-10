@@ -70,3 +70,26 @@ test('comptes : fiche users + profil, sans les administrateurs, date la plus anc
   assert.equal(m.find((x) => x.uid === 'a').createdAt, '2026-10-01T00:00:00Z');
   assert.ok(m.find((x) => x.uid === 'a').scaleResults.x);
 });
+
+test('étincelles des contenus payants (Pénc mi, pratiques, chaînes) comptées à part, même à zéro', () => {
+  const list = A.dayList(7, Date.parse('2026-11-07T12:00:00Z'));
+  const ts = (d) => ({ toMillis: () => Date.parse(`${d}T10:00:00Z`) });
+  const empty = A.compute({ list, history: [] });
+  assert.deepEqual(empty.koris.contenus, [
+    { key: 'penc', spent: 0, refunded: 0, buyers: 0 }, { key: 'practice', spent: 0, refunded: 0, buyers: 0 }, { key: 'channel', spent: 0, refunded: 0, buyers: 0 },
+  ]);
+  const out = A.compute({ list, history: [
+    { uid: 'a', type: 'spend', feature: 'penc', amount: 10, timestamp: ts('2026-11-05') },
+    { uid: 'b', type: 'spend', feature: 'penc', amount: 10, timestamp: ts('2026-11-06') },
+    { uid: 'b', type: 'refund', feature: 'penc', amount: 10, details: 'Pénc annulé : étincelles rendues', timestamp: ts('2026-11-06') },
+    { uid: 'c', type: 'refund', feature: 'practice', amount: 5, details: 'Étincelles restituées — opération annulée', timestamp: ts('2026-11-06') },
+    { uid: 'a', type: 'spend', feature: 'practice', amount: 15, timestamp: ts('2026-11-06') },
+    { uid: 'a', type: 'spend', feature: 'chat', amount: 1, timestamp: ts('2026-11-06') },
+  ] });
+  const by = Object.fromEntries(out.koris.contenus.map((c) => [c.key, c]));
+  assert.deepEqual(by.penc, { key: 'penc', spent: 20, refunded: 10, buyers: 2 });
+  assert.deepEqual(by.practice, { key: 'practice', spent: 15, refunded: 0, buyers: 1 });
+  assert.equal(by.channel.spent, 0);
+  // L'existant ne change pas
+  assert.deepEqual(out.koris.spentByFeature.map((k) => k.key), ['penc', 'practice', 'chat']);
+});

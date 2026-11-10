@@ -46,7 +46,7 @@ exports.handler = async (event) => {
     const [users, profiles, history, moods, notifOn] = await Promise.all([
       db.collection('users').select('createdAt', 'type').get().catch(() => ({ docs: [] })),
       db.collection('userProfiles').select('createdAt', 'scaleResults', 'acquisition', 'totem').get(),
-      db.collectionGroup('korisHistory').select('type', 'feature', 'amount', 'timestamp', 'serverTimestamp').get().catch(() => ({ docs: [] })),
+      db.collectionGroup('korisHistory').select('type', 'feature', 'amount', 'details', 'timestamp', 'serverTimestamp').get().catch(() => ({ docs: [] })),
       db.collectionGroup('moods').select().get().catch(() => ({ docs: [] })),
       db.collection('patients').where('notifPrefs.on', '==', true).count().get().then((c) => c.data().count).catch(() => null),
     ]);

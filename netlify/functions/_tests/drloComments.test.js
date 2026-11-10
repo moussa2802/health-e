@@ -116,3 +116,18 @@ test('modération : mots entiers (technique, unique, dispute, bien finir passent
   assert.equal(C.moderate('pensées suicidaires', true).reason, 'crisis');
   assert.equal(C.moderate('ça va bien finir', true).ok, true);
 });
+
+test('pseudos de réseaux sociaux bloqués (@, insta, snap, tiktok), sans bloquer un « @ » isolé', () => {
+  const C = require('../_drloComments.js');
+  for (const t of ['ajoute moi @awa_22', 'Mon insta : awa.ba', 'snap: modou221', 'mon tiktok c\'est awa_22', 'suis-moi sur insta awa_22', '@moussa.lo', '(@awa) merci', 'ig = khady.s', 'mon snap cest awa221']) {
+    assert.equal(C.moderate(t).reason, 'handle', t);
+  }
+  for (const t of ['rdv @ 18h à la maison', 'je suis @ la maison', 'on se voit @18h', 'je suis sur insta tous les jours', 'snap est mon appli préférée', 'snap c\'est génial', 'Le Pénc était top @ tous', 'big up à toute l\'équipe']) {
+    assert.equal(C.moderate(t).ok, true, t);
+  }
+  // Les adresses e-mail restent bloquées (comme liens)
+  assert.equal(C.moderate('écris à awa@gmail.com').reason, 'link');
+  assert.match(C.REASON_TEXT.handle, /Instagram, Snapchat, TikTok/);
+  // Un pseudo d'affichage avec un compte Instagram est refusé
+  assert.ok(C.resolveIdentity('pseudo', { pseudo: '@awa_22' }).error);
+});

@@ -60,14 +60,22 @@ function compute({ list, tracked = {}, profiles = [], history = [], moods = [] }
   // Étincelles : messages au compagnon (1 message = 1 étincelle), dépenses, achats, cadeaux
   const spentByFeature = {}; const offeredByFeature = {};
   let purchases = 0; let purchased = 0;
+  // Contenus payants, comptés à part même à zéro : étincelles dépensées, rendues (Pénc annulé) et acheteurs différents
+  const PAID = ['penc', 'practice', 'channel'];
+  const paid = Object.fromEntries(PAID.map((k) => [k, { spent: 0, refunded: 0, buyers: new Set() }]));
   for (const h of history) {
     const d = toDay(h.timestamp) || toDay(h.serverTimestamp);
     if (!d || !inRange.has(d)) continue;
     const amount = Number(h.amount) || 0;
     if (h.type === 'spend') {
       add(spentByFeature, h.feature || 'autre', amount);
+      if (paid[h.feature]) { paid[h.feature].spent += amount; if (h.uid) paid[h.feature].buyers.add(h.uid); }
       if (h.feature === 'chat') { per[d].chatMsgs += 1; per[d].chatUsers.add(h.uid); per[d].actifs.add(h.uid); fUser('compagnon', h.uid); }
-    } else if (h.type === 'purchase') { purchases += 1; purchased += amount; }
+    } else if (h.type === 'refund') {
+      // Seulement les vrais remboursements (Pénc annulé) : une réservation annulée avant débit n'a jamais été comptée en dépense
+      if (paid[h.feature] && /annul/i.test(String(h.details || '')) && !/opération annulée/i.test(String(h.details || ''))) paid[h.feature].refunded += amount;
+    }
+    else if (h.type === 'purchase') { purchases += 1; purchased += amount; }
     else if (h.type === 'bonus' || h.type === 'refill' || h.type === 'welcome') add(offeredByFeature, h.feature || h.type, amount);
   }
 
@@ -152,7 +160,7 @@ function compute({ list, tracked = {}, profiles = [], history = [], moods = [] }
       testFini: Object.entries(events).filter(([k]) => k.startsWith('test_done')).reduce((s, [, n]) => s + n, 0),
       inscription: events.signup_done || 0,
     },
-    koris: { spentByFeature: sortDesc(spentByFeature).map(([key, n]) => ({ key, n })), offeredByFeature: sortDesc(offeredByFeature).map(([key, n]) => ({ key, n })), purchases, purchased },
+    koris: { spentByFeature: sortDesc(spentByFeature).map(([key, n]) => ({ key, n })), offeredByFeature: sortDesc(offeredByFeature).map(([key, n]) => ({ key, n })), purchases, purchased, contenus: PAID.map((key) => ({ key, spent: paid[key].spent, refunded: paid[key].refunded, buyers: paid[key].buyers.size })) },
     acquisition: sortDesc(acquisition).map(([key, n]) => ({ key, n })),
     retention: { lendemain: base1 ? back1 / base1 : null, semaine: base7 ? back7 / base7 : null },
     events: sortDesc(events).slice(0, 40).map(([key, n]) => ({ key, n })),

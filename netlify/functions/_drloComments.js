@@ -26,6 +26,21 @@ function hasPhone(t) {
 function hasLink(t) {
   return /https?:\/\//i.test(t) || /\bwww\./i.test(t) || /[a-z0-9-]+\.(com|sn|fr|net|org|io|me|tv|ly)\b/i.test(t) || /\S+@\S+\.\S+/.test(t) || /wa\.me|t\.me|bit\.ly/i.test(t);
 }
+/**
+ * Pseudo de réseau social (Instagram, Snapchat, TikTok…) : « @awa_22 », ou « snap : awa22 », « mon insta c'est awa.ba ».
+ * Un « @ » isolé dans une phrase (« rdv @ 18 h ») passe ; les adresses e-mail sont déjà bloquées comme liens.
+ */
+const SOCIAL = '(?:insta(?:gram)?|snap(?:chat)?|tik ?tok|tiktok|ig|fb|facebook|twitter|telegram)';
+function hasHandle(t) {
+  const s = String(t || '');
+  // « @pseudo » : un @ en début de mot, suivi d'au moins 2 caractères de pseudo dont une lettre
+  if (/(^|[^\w@.])@(?=[a-z_.])(?=[\w.]*[a-z])[\w.]{2,30}/i.test(s)) return true;
+  // « snap : awa22 », « insta = awa.ba », « mon tiktok c'est awa_22 », « ajoute-moi sur snap awa_22 »
+  const f = fold(s);
+  // « : » ou « = » : tout pseudo ; « c'est » ou directement après le nom : seulement un pseudo avec chiffre, « _ » ou « . »
+  return new RegExp(`\\b${SOCIAL}\\s*(?::|=|->)\\s*@?[a-z0-9._]{3,30}`).test(f)
+    || new RegExp(`\\b${SOCIAL}\\s+(?:c'?est\\s+|cest\\s+)?@?(?=[a-z0-9._]*[0-9_.])[a-z0-9._]{3,30}`).test(f);
+}
 const esc = (w) => fold(w).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 // Insultes : mot entier seulement (sinon « technique » contient « nique », « dispute » contient « pute »…).
 const hasWholeWord = (list, t) => { const f = fold(t); return list.some((w) => new RegExp('(^|[^a-z0-9])' + esc(w) + '([^a-z0-9]|$)').test(f)); };
@@ -40,12 +55,13 @@ const hasWordStart = (list, t) => { const f = fold(t); return list.some((w) => n
  */
 const DISTRESS_MODERATION = false;
 
-/** { ok:true } | { ok:false, reason:'crisis'|'phone'|'link'|'insult' } — 'crisis' seulement si DISTRESS_MODERATION. */
+/** { ok:true } | { ok:false, reason:'crisis'|'phone'|'link'|'handle'|'insult' } — 'crisis' seulement si DISTRESS_MODERATION. */
 function moderate(text, distress = DISTRESS_MODERATION) {
   const t = String(text || '');
   if (distress && hasWordStart(CRISIS, t)) return { ok: false, reason: 'crisis' };
   if (hasPhone(t)) return { ok: false, reason: 'phone' };
   if (hasLink(t)) return { ok: false, reason: 'link' };
+  if (hasHandle(t)) return { ok: false, reason: 'handle' };
   if (hasWholeWord(INSULTS, t)) return { ok: false, reason: 'insult' };
   return { ok: true };
 }
@@ -53,6 +69,7 @@ function moderate(text, distress = DISTRESS_MODERATION) {
 const REASON_TEXT = {
   phone: 'Pour ta sécurité, on ne publie pas de numéro de téléphone.',
   link: 'Les liens et adresses ne sont pas acceptés ici.',
+  handle: 'Pour ta sécurité, on ne partage pas de compte Instagram, Snapchat, TikTok ou autre ici.',
   insult: 'Ce message contient des mots qui peuvent blesser. Reformule-le avec bienveillance.',
 };
 
@@ -151,4 +168,4 @@ function totemOf(profile) {
   return t && t.revealedAt && TOTEM_ANIMALS.includes(t.animal) ? t.animal : null;
 }
 
-module.exports = { totemOf, MAX_THREAD, threadOf, entryTime, lastDrloAt, userCanFollowUp, validateEntry, presentEntry, MAX_COMMENT, MAX_REPLY, REPORTS_TO_HIDE, PER_MESSAGE_LIMIT, moderate, DISTRESS_MODERATION, REASON_TEXT, validateComment, resolveIdentity, CRISIS_NOTIF, visible, sortComments };
+module.exports = { totemOf, MAX_THREAD, threadOf, entryTime, lastDrloAt, userCanFollowUp, validateEntry, presentEntry, MAX_COMMENT, MAX_REPLY, REPORTS_TO_HIDE, PER_MESSAGE_LIMIT, moderate, hasHandle, DISTRESS_MODERATION, REASON_TEXT, validateComment, resolveIdentity, CRISIS_NOTIF, visible, sortComments };
