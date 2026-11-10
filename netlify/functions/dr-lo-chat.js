@@ -206,8 +206,37 @@ function buildPromptLayers(context, opts = {}) {
 
 const TAG = /\[\[(test:[a-z0-9_]{2,40}|chaine:[A-Za-z0-9]{4,40}|pratique:[A-Za-z0-9]{4,40}|exercice:(?:coherence|ancrage|sommeil|relacher)|vocal:(?:journee|pensees|avant)|chaines|respiration|humeur|programme|journal|defi|compat|vrai_drlo|totem|catalogue)\]\]/gi;
 
+// Libellés des boutons (les mêmes que dans l'appli, src/data/guidedExercises.ts), pour une balise écrite au milieu d'une phrase
+const EXERCICE_LABEL = { coherence: 'Cohérence cardiaque', ancrage: 'Ancrage 5-4-3-2-1', sommeil: 'Pour s\'endormir', relacher: 'Relâcher les tensions' };
+const VOCAL_LABEL = { journee: 'Après une journée lourde', pensees: 'Quand les pensées tournent', avant: 'Avant un moment stressant' };
+const INLINE_LABEL = {
+  respiration: 'la respiration guidée', humeur: 'la note d\'humeur du jour', programme: 'le programme', journal: 'ton journal',
+  defi: 'le défi', compat: 'la comparaison de profils', vrai_drlo: 'une question à Dr Lô', totem: 'ton animal intérieur',
+  catalogue: 'la liste des tests', chaines: 'les chaînes de Dr Lô',
+};
+/** Ce qu'on écrit à la place d'une balise posée au milieu d'une phrase (le bouton reste affiché sous la réponse). */
+function inlineLabel(tag, channels = {}, tools = {}) {
+  const [k, id] = [tag.split(':')[0].toLowerCase(), tag.slice(tag.indexOf(':') + 1)];
+  if (k === 'exercice') return EXERCICE_LABEL[id] ? `l'exercice « ${EXERCICE_LABEL[id]} »` : 'cet exercice';
+  if (k === 'vocal') return VOCAL_LABEL[id] ? `le vocal « ${VOCAL_LABEL[id]} »` : 'ce vocal';
+  if (k === 'pratique') return tools[id] ? `l'outil « ${tools[id]} »` : 'cet outil';
+  if (k === 'chaine') return channels[id] ? `la chaîne « ${channels[id]} »` : 'cette chaîne';
+  if (k === 'test') return 'le test juste en dessous';
+  return INLINE_LABEL[k] || '';
+}
+/** Une balise est « dans une phrase » s'il y a des mots avant ET après elle sur la même ligne. */
+function inSentence(str, offset, len) {
+  const start = str.lastIndexOf('\n', offset - 1) + 1;
+  const endNl = str.indexOf('\n', offset + len);
+  const before = str.slice(start, offset);
+  const after = str.slice(offset + len, endNl < 0 ? str.length : endNl);
+  return /[\p{L}\p{N}]/u.test(before) && /[\p{L}\p{N}]/u.test(after);
+}
+
 /**
- * Sépare le texte et les boutons proposés (balises n'importe où, retirées du texte) : jusqu'à 3 tests, ou une seule autre action.
+ * Sépare le texte et les boutons proposés : jusqu'à 3 tests, ou une seule autre action.
+ * Une balise en fin de message est retirée ; une balise au milieu d'une phrase est remplacée par le nom lisible
+ * du bouton (sinon la phrase garde un trou : « tu peux commencer par  : trois minutes… »).
  * Plus de balise [[crise]] (10/11/2026, « compagnon d'abord ») : en cas de danger immédiat, le compagnon glisse un numéro
  * dans sa réponse et reste dans la conversation. Une balise [[crise]] égarée est retirée du texte comme toute balise inconnue.
  */
@@ -215,8 +244,16 @@ function splitActions(raw, channels = {}, tools = {}) {
   let text = String(raw || '');
   const tags = [];
   // Les identifiants de chaîne gardent leur casse ; une chaîne inconnue est ignorée
-  text = text.replace(TAG, (_, t) => { tags.push(/^chaine:/i.test(t) ? `chaine:${t.slice(7)}` : /^pratique:/i.test(t) ? `pratique:${t.slice(9)}` : t.toLowerCase()); return ''; });
-  text = text.replace(/\[\[[^\]]{0,60}\]\]/g, '').replace(/[ \t]+\n/g, '\n').replace(/\n{3,}/g, '\n\n').trim();
+  text = text.replace(TAG, (m, t, offset, str) => {
+    const tag = /^chaine:/i.test(t) ? `chaine:${t.slice(7)}` : /^pratique:/i.test(t) ? `pratique:${t.slice(9)}` : t.toLowerCase();
+    tags.push(tag);
+    return inSentence(str, offset, m.length) ? inlineLabel(tag, channels, tools) : '';
+  });
+  text = text.replace(/\[\[[^\]]{0,60}\]\]/g, '')
+    .replace(/[ \t]{2,}/g, ' ') // trou laissé par une balise
+    .replace(/[ \t]+([,.)…])/g, '$1') // pas d'espace avant une virgule, un point, une parenthèse fermante
+    .replace(/^[ \t]+/gm, '')
+    .replace(/[ \t]+\n/g, '\n').replace(/\n{3,}/g, '\n\n').trim();
   const tests = [...new Set(tags.filter(t => t.startsWith('test:')).map(t => t.slice(5)))].slice(0, 3);
   if (tests.length) return { text, actions: tests.map(scaleId => ({ kind: 'test', scaleId })) };
   const other = tags.find(t => !t.startsWith('test:') && (!t.startsWith('chaine:') || Object.prototype.hasOwnProperty.call(channels, t.slice(7))) && (!t.startsWith('pratique:') || Object.prototype.hasOwnProperty.call(tools, t.slice(9))));

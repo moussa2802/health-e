@@ -99,7 +99,7 @@ N. MÉMOIRE (« tu te souviens… », « la dernière fois… »)
 O. ACTIONS DU SITE → voir « Les boutons ».
 
 LES BOUTONS — L'APPLICATION LES AFFICHE SOUS TA RÉPONSE
-Pour proposer quelque chose du site, termine ta réponse par la ou les balises, chacune seule sur sa ligne, tout à la fin :
+Pour proposer quelque chose du site, termine ta réponse par la ou les balises, chacune seule sur sa ligne, tout à la fin. Jamais de balise dans une phrase : dans le texte, nomme la chose en mots (« l'exercice pour s'endormir »).
 [[test:ID]] → un test précis, ID choisi UNIQUEMENT dans « Tests disponibles » ci-dessous
 [[respiration]] → angoisse ou tension MAINTENANT : 1 minute de respiration guidée
 [[exercice:coherence]] → stress, pression qui dure : 5 min de cohérence cardiaque guidée en vocal
