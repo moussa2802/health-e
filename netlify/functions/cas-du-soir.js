@@ -8,7 +8,7 @@
  *   Toutes les actions acceptent « histoire » (l'identifiant du cas) ; sans lui, c'est le cas du moment.
  *   episode { n }            → l'épisode (texte, lien audio), mon vote et les résultats si j'ai voté, la suite possible
  *   vote { n, choix, visiteurId? } → un vote par personne et par épisode ; renvoie les résultats
- *   avancer { n }            → lire l'épisode n tout de suite (prix PRIX.suite, débité une fois)
+ *   avancer { n }            → lire l'épisode n tout de suite (prix PRIX.suite[n], qui monte avec l'épisode ; débité une fois)
  *   bonus                    → le détail des votes par animal pour toute l'histoire (prix PRIX.bonus, une fois)
  *   autreFin                 → l'autre fin, une fois l'histoire terminée (prix PRIX.autreFin, une fois) ; puis episode { n, autre: true }
  *   fin                      → la leçon (gratuite), le quiz, le test lié, une fois l'épisode 5 lisible
@@ -235,7 +235,8 @@ exports.handler = async (event) => {
       if (action === 'avancer') {
         const can = K.peutAvancer(h, { n, parus, debloques });
         if (!can.ok) return reply(409, { error: can.raison === 'vote_en_cours' ? 'La suite dépend du vote de tous : elle s\'ouvre demain soir.' : 'Cet épisode ne peut pas s\'ouvrir maintenant.', raison: can.raison });
-        price = K.PRIX.suite; meta = { histoire: h.id, episode: n, quoi: 'suite' };
+        // Le prix de CET épisode, lu dans la table du serveur (jamais un prix envoyé par l'appli)
+        price = K.prixSuite(n); meta = { histoire: h.id, episode: n, quoi: 'suite' };
         patch = { episodes: admin.firestore.FieldValue.arrayUnion(n) };
       } else if (action === 'autreFin') {
         if (acces.autreFin) return reply(200, { ok: true, deja: true });

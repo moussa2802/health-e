@@ -17,11 +17,18 @@ test('données : chaque histoire est complète (5 épisodes, 3 choix, 2 à l\'em
   assert.ok(K.verifierHistoire(casse).length >= 2);
 });
 
-test('les prix du serveur et de l\'appli sont les mêmes', () => {
+test('les prix du serveur et de l\'appli sont les mêmes, table par épisode comprise ; valeurs décidées par Papa Moussa', () => {
   const src = fs.readFileSync(path.join(__dirname, '..', '..', '..', 'src', 'config', 'contenusPayants.ts'), 'utf8');
-  const m = src.match(/CAS_DU_SOIR_PRIX = \{ suite: (\d+), bonus: (\d+), autreFin: (\d+) \}/);
-  assert.ok(m);
-  assert.deepEqual({ suite: Number(m[1]), bonus: Number(m[2]), autreFin: Number(m[3]) }, K.PRIX);
+  const bloc = src.slice(src.indexOf('CAS_DU_SOIR_PRIX'), src.indexOf('};', src.indexOf('CAS_DU_SOIR_PRIX')) + 1);
+  const objet = bloc.slice(bloc.indexOf('= {') + 2).replace(/\/\/[^\n]*/g, '').replace(/([A-Za-z0-9]+)\s*:/g, '"$1":').replace(/,\s*([}\]])/g, '$1');
+  const appli = JSON.parse(objet);
+  assert.deepEqual(appli, JSON.parse(JSON.stringify(K.PRIX)));
+  assert.deepEqual(K.PRIX, { suite: { 2: 3, 3: 6, 5: 9 }, bonus: 2, autreFin: 5 });
+  assert.equal(K.prixSuite(2), 3);
+  assert.equal(K.prixSuite(3), 6);
+  assert.equal(K.prixSuite(5), 9);
+  assert.equal(K.prixSuite(4), null); // décidé par la majorité : jamais en avance
+  assert.equal(K.prixSuite(1), null);
 });
 
 test('« Le vu de minuit » est branché, sans date publique ; la mention et les tests liés sont ceux de la direction', () => {
@@ -74,10 +81,10 @@ test('droits : visiteur = épisode 1 ; compte = épisodes parus + payés ; la su
   assert.equal(K.peutLire({ n: 2, parus: 2, connecte: true }), true);
   assert.equal(K.peutLire({ n: 3, parus: 2, connecte: true }), false);
   assert.equal(K.peutLire({ n: 3, parus: 2, connecte: true, debloques: [3] }), true);
-  assert.deepEqual(K.peutAvancer(H, { n: 2, parus: 1 }), { ok: true });
+  assert.deepEqual(K.peutAvancer(H, { n: 2, parus: 1 }), { ok: true, prix: 3 });
   assert.equal(K.peutAvancer(H, { n: 3, parus: 1 }).ok, false); // seulement le suivant
   assert.equal(K.peutAvancer(H, { n: 4, parus: 3 }).raison, 'vote_en_cours');
-  assert.deepEqual(K.peutAvancer(H, { n: 5, parus: 4 }), { ok: true });
+  assert.deepEqual(K.peutAvancer(H, { n: 5, parus: 4 }), { ok: true, prix: 9 });
   assert.equal(K.peutAvancer(H, { n: 2, parus: 1, debloques: [2] }).ok, false); // déjà payé
   assert.equal(K.peutAvancer(H, { n: 1, parus: 0 }).raison, 'pas_commence'); // rien à payer avant le premier épisode
 });
@@ -214,7 +221,7 @@ test('ouvert à tous : visiteur, un vote par personne, pourcentages à partir de
     // La suite tout de suite : 1 étincelle
     r = await call({ action: 'avancer', n: 2 });
     assert.equal(r.status, 200);
-    assert.deepEqual(spent.at(-1), ['lion1', 'cas_du_soir', K.PRIX.suite]);
+    assert.deepEqual(spent.at(-1), ['lion1', 'cas_du_soir', 3]); // épisode 2 : 3 étincelles
     assert.equal((await call({ action: 'episode', n: 2 })).status, 200);
     assert.equal((await call({ action: 'avancer', n: 2 })).status, 409);
     uid = 'pauvre';
@@ -246,7 +253,7 @@ test('ouvert à tous : visiteur, un vote par personne, pourcentages à partir de
     assert.equal((await call({ action: 'episode', n: 4, autre: true })).status, 403);
     r = await call({ action: 'autreFin' });
     assert.equal(r.status, 200);
-    assert.deepEqual(spent.at(-1), ['lion1', 'cas_du_soir', 2]);
+    assert.deepEqual(spent.at(-1), ['lion1', 'cas_du_soir', 5]); // l'autre fin : 5 étincelles
     r = await call({ action: 'episode', n: 5, autre: true });
     assert.equal(r.body.episode.titre, H.episodes[4].B.titre);
     assert.equal(r.body.autre, true);
@@ -305,7 +312,7 @@ test('liste des cas et liste des épisodes : masquées aux autres, états, versi
   e = (await call({ action: 'episodes', histoire: H.id, jour: 4 })).body;
   assert.equal(e.episodes[3].titre, H.episodes[3].B.titre);
   assert.equal(e.episodes[4].etat, 'prochain');
-  assert.deepEqual(e.episodes[4].avance, { ok: true });
+  assert.deepEqual(e.episodes[4].avance, { ok: true, prix: 9 });
   assert.ok(!JSON.stringify(e).includes(H.episodes[3].A.titre));
   // Jour 2 : l'épisode 3 est le prochain (gratuit le lendemain ou payé), pas de version encore
   e = (await call({ action: 'episodes', histoire: H.id, jour: 2 })).body;
@@ -354,6 +361,42 @@ test('minutage : envoyé avec l\'épisode 1 et l\'intrigue, jamais en public pou
   assert.equal(r.body.audioUrl, '/audio/cas-du-soir/vu-de-minuit-ep1.mp3');
   assert.equal(r.body.episode.minutage.duree, M['vu-de-minuit-ep1'].duree);
 });
+
+test('débit : le prix de l\'épisode demandé, lu dans la table du serveur ; un prix envoyé par l\'appli est ignoré', avecDate(async () => {
+  K.CAS_DU_SOIR_PUBLIC = true;
+  try {
+    uid = 'acheteur';
+    at(2);
+    let r = await call({ action: 'avancer', n: 3, prix: 1, price: 1, quantity: 1 });
+    assert.equal(r.status, 200);
+    assert.deepEqual(spent.at(-1), ['acheteur', 'cas_du_soir', 6]); // épisode 3 : 6, quoi que dise l'appli
+    at(4);
+    r = await call({ action: 'avancer', n: 5, prix: 0 });
+    assert.deepEqual(spent.at(-1), ['acheteur', 'cas_du_soir', 9]); // épisode 5 : 9
+    at(3);
+    uid = 'acheteur2';
+    r = await call({ action: 'avancer', n: 4, prix: 1 });
+    assert.equal(r.status, 409); // épisode 4 : jamais en avance
+    assert.equal(r.body.raison, 'vote_en_cours');
+    const avant = spent.length;
+    at(1);
+    r = await call({ action: 'avancer', n: 3 }); // pas le suivant immédiat : refusé, rien débité
+    assert.equal(r.status, 409);
+    assert.equal(spent.length, avant);
+    // Le détail par animal : 2 étincelles
+    uid = 'acheteur3';
+    await call({ action: 'bonus', prix: 0 });
+    assert.deepEqual(spent.at(-1), ['acheteur3', 'cas_du_soir', 2]);
+    // La lecture de l'épisode 2 annonce le prix de l'épisode 3
+    at(2);
+    uid = 'lecteur';
+    r = await call({ action: 'episode', n: 2 });
+    assert.deepEqual(r.body.suite.avance, { ok: true, prix: 6 });
+  } finally {
+    K.CAS_DU_SOIR_PUBLIC = false;
+    Date.now = realNow;
+  }
+}));
 
 test('règles Firestore : les collections du cas du soir sont fermées au navigateur', () => {
   const rules = fs.readFileSync(path.join(__dirname, '..', '..', '..', 'firestore.rules'), 'utf8');

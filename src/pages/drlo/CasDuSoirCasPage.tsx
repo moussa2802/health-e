@@ -54,7 +54,7 @@ const CasDuSoirCasPage: React.FC = () => {
       if (what === 'suite' && n) { await avancer(n); refreshBalance?.(); navigate(`/cas-du-soir/${id}/${n}`); return; }
       if (what === 'autreFin') { await acheterAutreFin(); refreshBalance?.(); load(); }
     } catch (e) {
-      if (e instanceof CdsError && e.status === 402) openNoKorisModal(what === 'suite' ? 'Lire la suite du cas du soir' : 'L\'autre fin du cas du soir', prix[what]);
+      if (e instanceof CdsError && e.status === 402) openNoKorisModal(what === 'suite' ? 'Lire la suite du cas du soir' : 'L\'autre fin du cas du soir', what === 'suite' ? (n ? prix.suite[n] ?? 0 : 0) : prix.autreFin);
       setError(e instanceof Error ? e.message : 'Erreur');
     } finally { setBusy(''); }
   };
@@ -70,7 +70,7 @@ const CasDuSoirCasPage: React.FC = () => {
       : e.parution ? `Paraît ${quandLabel(e.parution)}` : 'Bientôt';
     const footer = e.etat === 'prochain' && e.avance?.ok
       ? <button type="button" disabled={!!busy} onClick={() => pay('suite', e.n)} className="drl-btn" style={{ minHeight: 44, padding: '0 16px', borderRadius: 999, border: `1px solid ${palette.accent}`, background: 'transparent', color: palette.accent, fontSize: 14, fontWeight: 700, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 6, fontFamily: 'inherit' }}>
-          {busy === 'suite' ? <Loader2 size={16} className="animate-spin" aria-hidden="true" /> : null}La suite tout de suite · {etoiles(prix.suite)}
+          {busy === 'suite' ? <Loader2 size={16} className="animate-spin" aria-hidden="true" /> : null}La suite tout de suite · {etoiles(e.avance?.prix ?? prix.suite[e.n] ?? 0)}
         </button>
       : e.etat === 'compte'
         ? <Link to="/espace" className="drl-btn" style={{ minHeight: 44, display: 'inline-flex', alignItems: 'center', fontSize: 14, fontWeight: 700, color: palette.accent, textDecoration: 'none' }}>Créer mon espace</Link>

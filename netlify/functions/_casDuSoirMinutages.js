@@ -154,6 +154,10 @@ module.exports = {
     "images": [
       {
         "t": 0,
+        "image": "cas-vu-de-minuit-ep1-vibre.webp"
+      },
+      {
+        "t": 15.9,
         "image": "cas-vu-de-minuit-ep1-attente.webp"
       },
       {
@@ -161,12 +165,32 @@ module.exports = {
         "image": "cas-vu-de-minuit-ep1-retour.webp"
       },
       {
+        "t": 53.31,
+        "image": "cas-vu-de-minuit-ep1-douche.webp"
+      },
+      {
+        "t": 62.68,
+        "image": "cas-vu-de-minuit-ep1-resiste.webp"
+      },
+      {
         "t": 72.48,
         "image": "cas-vu-de-minuit-ep1.webp"
       },
       {
+        "t": 116.08,
+        "image": "cas-vu-de-minuit-ep1-froid.webp"
+      },
+      {
+        "t": 120.62,
+        "image": "cas-vu-de-minuit-ep1-sourire.webp"
+      },
+      {
         "t": 130.01,
         "image": "cas-vu-de-minuit-ep1-nuit.webp"
+      },
+      {
+        "t": 147.27,
+        "image": "cas-vu-de-minuit-couverture.webp"
       }
     ]
   },
@@ -219,6 +243,22 @@ module.exports = {
     "images": [
       {
         "t": 0,
+        "image": "cas-vu-de-minuit-ep1-attente.webp"
+      },
+      {
+        "t": 14.66,
+        "image": "cas-vu-de-minuit-ep1.webp"
+      },
+      {
+        "t": 21.69,
+        "image": "cas-vu-de-minuit-yaay.webp"
+      },
+      {
+        "t": 32.92,
+        "image": "cas-vu-de-minuit-ep3.webp"
+      },
+      {
+        "t": 42.72,
         "image": "cas-vu-de-minuit-couverture.webp"
       }
     ]

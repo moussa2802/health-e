@@ -41,6 +41,8 @@ const CasDuSoirEpisodePage: React.FC = () => {
   if (!etat.visible || !etat.histoire) return <Navigate to="/" replace />;
   const h = etat.histoire;
   const prix = etat.prix ?? CAS_DU_SOIR_PRIX;
+  // Le prix de l'épisode suivant (il monte avec l'épisode) : celui du serveur, sinon la table de l'appli
+  const prixSuite = ep?.suite ? (ep.suite.avance.prix ?? prix.suite[ep.suite.n] ?? 0) : 0;
 
   const onVote = async (choix: string) => {
     if (!ep) return;
@@ -54,7 +56,7 @@ const CasDuSoirEpisodePage: React.FC = () => {
       if (what === 'suite' && ep?.suite) { await avancer(ep.suite.n); refreshBalance?.(); navigate(`/cas-du-soir/${id}/${ep.suite.n}`); }
       if (what === 'bonus') { await acheterBonus(); refreshBalance?.(); await loadEtat(); setEp(await getEpisode(n)); }
     } catch (e) {
-      if (e instanceof CdsError && e.status === 402) openNoKorisModal(what === 'suite' ? 'Lire la suite du cas du soir' : 'Le détail des votes par animal', prix[what]);
+      if (e instanceof CdsError && e.status === 402) openNoKorisModal(what === 'suite' ? 'Lire la suite du cas du soir' : 'Le détail des votes par animal', what === 'suite' ? prixSuite : prix.bonus);
       setError(e instanceof Error ? e.message : 'Erreur');
     } finally { setBusy(''); }
   };
@@ -104,7 +106,7 @@ const CasDuSoirEpisodePage: React.FC = () => {
             <div style={{ marginTop: 16 }}>
               {ep.suite.avance.ok ? (
                 <button type="button" disabled={!!busy} onClick={() => pay('suite')} style={primary}>
-                  {busy === 'suite' ? <Loader2 size={18} className="animate-spin" aria-hidden="true" /> : null}La suite maintenant · {etoiles(prix.suite)}
+                  {busy === 'suite' ? <Loader2 size={18} className="animate-spin" aria-hidden="true" /> : null}La suite tout de suite · {etoiles(prixSuite)}
                 </button>
               ) : ep.suite.avance.raison === 'compte' ? (
                 <Link to="/espace" style={primary}>Crée ton espace pour lire la suite</Link>
