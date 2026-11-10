@@ -1,8 +1,10 @@
 import { useState, useEffect, useRef } from 'react';
 import { useRegisterSW } from 'virtual:pwa-register/react';
 import { Info } from 'lucide-react';
+import { verifierVersion } from '../../utils/versionCheck';
 
 const CHECK_INTERVAL = 30 * 60 * 1000; // 30 min
+const VERSION_CHECK_GAP = 15 * 60 * 1000; // filet de sécurité : au plus une vérification de /version.json par quart d'heure
 const RELOAD_KEY = 'he-sw-reload-ts';
 const RELOAD_COOLDOWN = 10_000; // 10s anti-boucle
 
@@ -55,6 +57,21 @@ export default function UpdateBanner() {
 
     sw.addEventListener('controllerchange', onControllerChange);
     return () => sw.removeEventListener('controllerchange', onControllerChange);
+  }, []);
+
+  // Filet de sécurité : si l'appli installée sert une ancienne version (mise à jour bloquée), on la répare
+  useEffect(() => {
+    let last = 0;
+    const reload = () => { if (isLocked()) setDeferred(true); else safeReload(); };
+    const check = () => {
+      if (Date.now() - last < VERSION_CHECK_GAP) return;
+      last = Date.now();
+      void verifierVersion(__APP_VERSION__, reload);
+    };
+    const t = window.setTimeout(check, 8000);
+    const onVis = () => { if (document.visibilityState === 'visible') check(); };
+    document.addEventListener('visibilitychange', onVis);
+    return () => { window.clearTimeout(t); document.removeEventListener('visibilitychange', onVis); };
   }, []);
 
   useEffect(() => {

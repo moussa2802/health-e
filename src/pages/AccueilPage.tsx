@@ -17,13 +17,11 @@ import HomeProgramme from '../components/accueil/HomeProgramme';
 import { MoodSheet } from '../components/accueil/HomeSheets';
 import HomePenc from '../components/penc/HomePenc';
 import CasDuSoirCard from '../components/casdusoir/CasDuSoirCard';
-import Illustration from '../components/accueil/Illustration';
-import { IMAGES } from '../config/images';
 import { CAS_DU_SOIR_CARTE_VISITEURS } from '../config/contenusPayants';
 import MotDuJour from '../components/accueil/MotDuJour';
 import { readResultsCache, writeResultsCache } from '../utils/resultsCache';
 import { useLaunch } from '../hooks/useLaunch';
-import { HScroll, SectionTitle, NewsCard, ChannelCard, WideLink, tintOf, type NewsItem } from '../components/accueil/HomeParts';
+import { HScroll, SectionTitle, NewsCard, ChannelCard, WideLink, CompactRow, Stack, GAP, tintOf, type NewsItem } from '../components/accueil/HomeParts';
 import { RealDrLoPhoto } from '../components/accueil/RealDrLoBadge';
 import CompanionMark from '../components/accueil/CompanionMark';
 import { getCompanionColor } from '../utils/companion';
@@ -74,8 +72,7 @@ const FeaturedCard: React.FC<{ featured: Featured; guest: boolean; palette: Mome
   const minutes = getScaleById(featured.scaleId)?.timeEstimateMinutes ?? 3;
   const title = featured.label || meta.label;
   return (
-    <section aria-label="À la une" style={{ ...card, marginTop: 18, padding: 18, overflow: 'hidden', borderColor: 'rgba(242,182,109,.5)', background: 'linear-gradient(150deg, rgba(242,182,109,.2), rgba(255,255,255,.04))' }}>
-      <Illustration src={IMAGES.compagnon} tint={palette.accent} radius={0} style={{ margin: '-18px -18px 14px', width: 'calc(100% + 36px)' }} fallback={<CompanionMark size={72} />} />
+    <section aria-label="À la une" style={{ ...card, marginTop: 18, padding: 18, borderColor: 'rgba(242,182,109,.5)', background: 'linear-gradient(150deg, rgba(242,182,109,.2), rgba(255,255,255,.04))' }}>
       <p style={{ margin: 0, fontSize: 13, fontWeight: 700, letterSpacing: '.12em', color: palette.accent }}>{featured.label ? 'VU DANS LA VIDÉO' : 'COMMENCE ICI'}</p>
       <h2 style={{ margin: '8px 0 0', fontFamily: 'Fraunces, serif', fontSize: 26, lineHeight: 1.2, fontWeight: 600, color: DC.title }}>{title}</h2>
       <p style={{ margin: '8px 0 0', fontSize: 15, lineHeight: 1.5, color: DC.soft }}>{meta.description}</p>
@@ -156,14 +153,13 @@ const AskBox: React.FC = () => (
 
 const WhenItRises: React.FC<{ confier?: boolean }> = ({ confier = true }) => {
   const navigate = useNavigate();
-  const btn: React.CSSProperties = { flex: 1, minHeight: 56, borderRadius: 16, border: `1px solid ${DC.line}`, background: DC.glass, color: DC.text, fontSize: 15, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 };
   return (
     <>
       <SectionTitle>Quand ça monte</SectionTitle>
-      <div style={{ display: 'flex', gap: 10 }}>
-        <button onClick={() => navigate('/compagnon', { state: { breath: true } })} className="drl-btn" style={btn}><Wind size={18} color={DC.sage} aria-hidden="true" /> Respirer 1 min</button>
-        {confier && <button onClick={() => navigate('/compagnon', { state: { tab: 'confier' } })} className="drl-btn" style={btn}><PenLine size={18} color={DC.confier} aria-hidden="true" /> Me confier</button>}
-      </div>
+      <Stack>
+        <CompactRow onClick={() => navigate('/compagnon', { state: { breath: true } })} title="Respirer 1 min" tint={DC.sage} icon={<Wind size={20} color={DC.sage} />} />
+        {confier && <CompactRow onClick={() => navigate('/compagnon', { state: { tab: 'confier' } })} title="Me confier" tint={DC.confier} icon={<PenLine size={20} color={DC.confier} />} />}
+      </Stack>
     </>
   );
 };
@@ -324,7 +320,6 @@ const ConnectedHome: React.FC<{ feed: HomeFeed | null; palette: MomentPalette; u
 
       {suite && !pencLive && (
         <section aria-label="Ta suite" style={{ ...card, marginTop: 14, padding: 16, position: 'relative', overflow: 'hidden', borderColor: `${cc}80`, background: `radial-gradient(60% 80% at 100% 0%, ${cc}4D, transparent 70%), linear-gradient(140deg, ${cc}33, rgba(26,18,11,.9) 65%)` }}>
-          <Illustration src={IMAGES.compagnon} tint={cc} radius={0} style={{ margin: '-16px -16px 14px', width: 'calc(100% + 32px)' }} fallback={<CompanionMark size={64} />} />
           <p style={{ margin: 0, fontSize: 13, fontWeight: 700, letterSpacing: '.12em', color: palette.accent }}>{suite.kicker}</p>
           <p style={{ margin: '6px 0 0', fontFamily: 'Fraunces, serif', fontSize: 21, lineHeight: 1.25, fontWeight: 600, color: DC.title }}>{suite.title}</p>
           <button onClick={suite.go} className="drl-btn"
@@ -333,10 +328,10 @@ const ConnectedHome: React.FC<{ feed: HomeFeed | null; palette: MomentPalette; u
       )}
 
       {featuredForYou && featuredForYou.scaleId !== suite?.id && (
-        <div style={{ marginTop: 14 }}>
+        <div style={{ marginTop: GAP }}>
           <WideLink to="/compagnon" state={{ prescribe: featuredForYou.scaleId }} kicker={featuredForYou.label ? 'VU DANS LA VIDÉO' : 'LE TEST DU MOMENT'}
             title={featuredForYou.label || getScaleMeta(featuredForYou.scaleId).label} tint={DC.sage}
-            icon={<span aria-hidden="true" style={{ width: 40, height: 40, flex: 'none', borderRadius: 12, background: `${DC.sage}38`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><ClipboardList size={20} color={DC.sage} /></span>} />
+            icon={<ClipboardList size={20} color={DC.sage} />} />
         </div>
       )}
 
@@ -350,7 +345,7 @@ const ConnectedHome: React.FC<{ feed: HomeFeed | null; palette: MomentPalette; u
       {(lastMsg || (chBadge > 0 && launch.on('chaines'))) && (
         <>
           <SectionTitle>Nouveau pour toi</SectionTitle>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: GAP }}>
             {lastMsg && (
               <Link to={`/messages-dr-lo/${lastMsg.id}`} className="drl-btn" style={{ ...card, display: 'flex', alignItems: 'center', gap: 12, textDecoration: 'none', color: DC.text, borderColor: 'rgba(242,182,109,.4)' }}>
                 <RealDrLoPhoto size={44} palette={palette} />
@@ -369,11 +364,8 @@ const ConnectedHome: React.FC<{ feed: HomeFeed | null; palette: MomentPalette; u
       )}
 
       {moodDone === false && (
-        <div style={{ marginTop: 14 }}>
-          <button onClick={() => setMoodOpen(true)} className="drl-btn" style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 12, padding: 14, minHeight: 64, borderRadius: 18, textAlign: 'left', color: DC.text, border: `1px solid ${DC.sage}55`, background: `linear-gradient(135deg, ${DC.sage}26, ${DC.sage}07 70%)`, cursor: 'pointer', fontFamily: 'inherit' }}>
-            <CloudSun size={22} color={DC.sage} aria-hidden="true" />
-            <span style={{ flex: 1 }}><span style={{ display: 'block', fontFamily: 'Fraunces, serif', fontSize: 18, fontWeight: 600, color: DC.title }}>Comment tu te sens ?</span><span style={{ display: 'block', marginTop: 2, fontSize: 14, color: DC.muted }}>Note ton humeur en 30 secondes.</span></span>
-          </button>
+        <div style={{ marginTop: GAP }}>
+          <CompactRow onClick={() => setMoodOpen(true)} title="Comment tu te sens ?" sub="Note ton humeur en 30 secondes." tint={DC.sage} icon={<CloudSun size={22} color={DC.sage} />} />
         </div>
       )}
 
@@ -425,7 +417,7 @@ const AccueilPage: React.FC = () => {
 
   return (
     <div className="drl-screen font-sans" style={{ minHeight: '100svh', background: isAuthenticated ? `radial-gradient(60% 28% at 85% 2%, ${getCompanionColor().hex}2B, transparent 70%), ${palette.bg}` : palette.bg, color: DC.text, ['--he-action' as string]: palette.primary } as React.CSSProperties}>
-      <div className="drl-wrap" style={{ margin: '0 auto', padding: '16px 18px calc(92px + env(safe-area-inset-bottom, 0px))', boxSizing: 'border-box' }}>
+      <div className="drl-wrap drl-wrap-home" style={{ margin: '0 auto', padding: '16px 18px calc(92px + env(safe-area-inset-bottom, 0px))', boxSizing: 'border-box' }}>
         {authReady && (isAuthenticated && currentUser
           ? <ConnectedHome feed={feed} palette={palette} uid={currentUser.id} prenom={prenom} />
           : <VisitorHome feed={feed} palette={palette} />)}
@@ -434,7 +426,7 @@ const AccueilPage: React.FC = () => {
       {/* Contenu indexable pour Google : inutile pour une personne connectée */}
       {authReady && !isAuthenticated && <AccueilSeoSections />}
 
-      <div className="drl-wrap" style={{ margin: '0 auto', padding: '8px 18px calc(92px + env(safe-area-inset-bottom, 0px))', boxSizing: 'border-box', fontSize: 13, color: DC.faint, display: 'flex', flexDirection: 'column', gap: 4 }}>
+      <div className="drl-wrap drl-wrap-home" style={{ margin: '0 auto', padding: '8px 18px calc(92px + env(safe-area-inset-bottom, 0px))', boxSizing: 'border-box', fontSize: 13, color: DC.faint, display: 'flex', flexDirection: 'column', gap: 4 }}>
         <span><strong style={{ color: DC.text }}>Health-e</strong> — Ces évaluations ne remplacent pas un professionnel de santé.</span>
         <nav aria-label="Liens du site" style={{ display: 'flex', flexWrap: 'wrap', gap: '0 18px' }}>
           <Link to="/confidentialite" style={{ minHeight: 44, display: 'inline-flex', alignItems: 'center', color: DC.faint, textDecoration: 'none' }}>Confidentialité</Link>

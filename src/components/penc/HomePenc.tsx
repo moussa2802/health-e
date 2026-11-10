@@ -6,15 +6,15 @@
  */
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight } from 'lucide-react';
+import { Bell, BellRing } from 'lucide-react';
 import { DC } from '../accueil/DrLoShell';
-import { SectionTitle } from '../accueil/HomeParts';
-import PencCard from './PencCard';
+import { GAP, IMG_H, ImageCard, SectionTitle, Stack } from '../accueil/HomeParts';
 import { PencLiveCard, PencMotif } from './PencVisuals';
-import Illustration from '../accueil/Illustration';
 import { IMAGES } from '../../config/images';
 import type { MomentPalette } from '../../utils/drloMoment';
-import { getAgenda, registerPenc, type Penc } from '../../services/pencService';
+import { getAgenda, registerPenc, whenLabel, type Penc } from '../../services/pencService';
+
+const Maj = (t: string) => t.charAt(0).toUpperCase() + t.slice(1);
 
 /**
  * L'agenda gardé sur ce téléphone : la section s'affiche tout de suite (avant, elle arrivait en dernier,
@@ -56,22 +56,19 @@ const HomePenc: React.FC<{ palette: MomentPalette; full?: boolean; onLive?: (liv
   useEffect(() => { if (cached) onLive?.(pick(cached).live.length > 0); load(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
   const remind = async (p: Penc) => { setBusy(p.id); try { await registerPenc(p.id, !p.registered); await load(); } catch { /* la page Pénc mi explique les erreurs */ } finally { setBusy(''); } };
   // Première visite (rien en mémoire) : une place réservée, pour que l'accueil ne saute pas quand ça arrive
-  if (!loaded) return full ? <div aria-hidden="true" style={{ marginTop: 14, height: 88, borderRadius: 20, background: 'rgba(255,255,255,.03)', border: `1px solid ${DC.line}` }} /> : null;
+  if (!loaded) return full ? <div aria-hidden="true" style={{ marginTop: 26 + 34 + GAP, height: IMG_H + 96, borderRadius: 20, background: 'rgba(255,255,255,.03)', border: `1px solid ${DC.line}` }} /> : null;
   if (!full && !live.length) return null;
   const all = <Link to="/penc" style={{ fontSize: 14, fontWeight: 700, color: palette.accent, whiteSpace: 'nowrap' }}>Tout voir</Link>;
+  const motif = <PencMotif size={80} color={palette.accent} />;
 
+  // Rien de prévu : la section Pénc mi, avec une carte d'entrée
   if (!live.length && !next.length) {
     return (
-      <Link to="/penc" className="drl-btn" style={{ marginTop: 14, display: 'block', overflow: 'hidden', borderRadius: 20, textDecoration: 'none', border: `1px solid ${palette.accent}44`, background: `linear-gradient(160deg, ${palette.accent}1A, rgba(20,14,10,.55) 70%)` }}>
-        <Illustration src={IMAGES.penc} tint={palette.accent} radius={0} fallback={<PencMotif size={84} color={palette.accent} />} />
-        <span style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px 14px' }}>
-          <span style={{ flex: 1, minWidth: 0 }}>
-            <b style={{ display: 'block', fontFamily: 'Fraunces, serif', fontSize: 19, color: DC.title }}>Pénc mi</b>
-            <span style={{ display: 'block', marginTop: 2, fontSize: 14, lineHeight: 1.4, color: DC.muted }}>On se retrouve pour parler, en direct. Écoute, pose ta question, prends la parole si tu veux.</span>
-          </span>
-          <ArrowRight size={18} color={DC.muted} aria-hidden="true" />
-        </span>
-      </Link>
+      <>
+        <SectionTitle>Pénc mi</SectionTitle>
+        <ImageCard to="/penc" image={IMAGES.penc} tint={palette.accent} fallback={motif}
+          title="On se retrouve pour parler, en direct." line="Écoute, pose ta question, prends la parole si tu veux." />
+      </>
     );
   }
   return (
@@ -79,14 +76,34 @@ const HomePenc: React.FC<{ palette: MomentPalette; full?: boolean; onLive?: (liv
       {live.length > 0 && (
         <>
           <SectionTitle aside={full ? all : undefined}>En direct maintenant</SectionTitle>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>{live.map(p => <PencLiveCard key={p.id} p={p} palette={palette} />)}</div>
+          <Stack>{live.map(p => <PencLiveCard key={p.id} p={p} palette={palette} />)}</Stack>
         </>
       )}
       {full && next.length > 0 && (
         <>
           <SectionTitle aside={live.length ? undefined : all}>Pénc mi cette semaine</SectionTitle>
-          {!live.length && <Link to="/penc" aria-label="Voir Pénc mi" style={{ display: 'block', marginBottom: 10 }}><Illustration src={IMAGES.penc} tint={palette.accent} fallback={<PencMotif size={72} color={palette.accent} />} /></Link>}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>{next.map(p => <PencCard key={p.id} p={p} accent={palette.accent} onRemind={remind} busy={busy === p.id} />)}</div>
+          {/* Chaque Pénc à venir : une carte avec image (la même pour tous), la date, le sujet et le bouton dans la carte */}
+          <Stack>
+            {next.map(p => {
+              const paid = p.access === 'paid';
+              const btn: React.CSSProperties = { minHeight: 44, padding: '0 16px', borderRadius: 999, fontSize: 14, fontWeight: 700, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 6, fontFamily: 'inherit', textDecoration: 'none' };
+              return (
+                <ImageCard key={p.id} to={`/penc/${p.id}`} image={IMAGES.penc} tint={palette.accent} fallback={motif}
+                  kicker={`${Maj(whenLabel(p.startAt))}${paid ? ` · ${p.price} étincelle${p.price > 1 ? 's' : ''}` : ''}`}
+                  title={p.title} line={`${p.host.name}${p.host.title ? ` · ${p.host.title}` : ''}`}
+                  footer={paid
+                    ? (p.registered
+                      ? <span style={{ fontSize: 14, fontWeight: 700, color: palette.accent }}>Ta place est réservée</span>
+                      : <Link to={`/penc/${p.id}`} className="drl-btn" style={{ ...btn, border: `1px solid ${palette.accent}`, color: palette.accent }}>Réserver ta place</Link>)
+                    : (
+                      <button type="button" onClick={() => remind(p)} disabled={busy === p.id} aria-pressed={!!p.registered} className="drl-btn"
+                        style={{ ...btn, border: `1px solid ${p.registered ? palette.accent : DC.line}`, background: p.registered ? `${palette.accent}26` : 'transparent', color: p.registered ? palette.accent : DC.text }}>
+                        {p.registered ? <BellRing size={16} aria-hidden="true" /> : <Bell size={16} aria-hidden="true" />}{p.registered ? 'Rappel activé' : 'Me rappeler'}
+                      </button>
+                    )} />
+              );
+            })}
+          </Stack>
         </>
       )}
     </>

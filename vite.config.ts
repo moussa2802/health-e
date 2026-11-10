@@ -18,6 +18,14 @@ export default defineConfig(({ mode }) => {
 
   const plugins = [
     react(),
+    // /version.json : la version publiée, lue par l'appli pour repérer un service worker resté bloqué sur une ancienne version
+    {
+      name: 'he-version-json',
+      apply: 'build' as const,
+      generateBundle() {
+        this.emitFile({ type: 'asset', fileName: 'version.json', source: JSON.stringify({ version: gitHash }) });
+      },
+    },
     VitePWA({
       registerType: 'autoUpdate',
       injectRegister: false,

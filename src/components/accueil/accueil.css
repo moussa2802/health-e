@@ -122,3 +122,6 @@
 .drl-think{animation:drlThink 1.4s ease-in-out infinite}
 @keyframes drlThink{50%{transform:scale(1.12);filter:brightness(1.25)}}
 @media (prefers-reduced-motion: reduce){.drl-amb,.drl-think{animation:none}}
+
+/* Accueil : une colonne de 480 px au plus, centrée, même sur ordinateur (les images restent à taille de téléphone) */
+.drl-wrap.drl-wrap-home{max-width:480px}

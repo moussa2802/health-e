@@ -35,7 +35,7 @@ const Group: React.FC<{ title: string; hint: string; icon: React.ElementType; id
       </span>
       <ChevronDown size={18} aria-hidden="true" className="shrink-0 text-[#A79E90] transition-transform group-open:rotate-180" />
     </summary>
-    <ul className="m-0 mt-3 list-none grid grid-cols-1 gap-x-4 gap-y-2 p-0 sm:grid-cols-2">
+    <ul className="m-0 mt-3 list-none grid grid-cols-1 gap-x-4 gap-y-2 p-0">
       {ids.map(id => {
         const m = getScaleMeta(id);
         return (
@@ -50,14 +50,14 @@ const Group: React.FC<{ title: string; hint: string; icon: React.ElementType; id
 );
 
 const AccueilSeoSections: React.FC = () => (
-  <div className="w-full max-w-3xl mx-auto mt-14 px-5 text-left flex flex-col gap-14">
+  <div className="w-full max-w-[480px] mx-auto mt-14 px-[18px] text-left flex flex-col gap-14">
     <section>
       <p className="m-0 mb-1 text-[13px] font-semibold uppercase tracking-[0.08em] text-[#A79E90]">Health-e · santé mentale & vie intime</p>
       <h2 className="font-display m-0 mb-6 text-[clamp(1.4rem,4vw,2rem)] font-bold leading-tight text-[#FBF5EA]">
         Comprends ce que tu ressens, <span className="text-[#F2B66D]">en parlant avec ton compagnon.</span>
       </h2>
       <h2 className="font-display text-2xl font-bold text-[#F4EEE4] mb-5">Comment ça marche</h2>
-      <ol className="m-0 p-0 list-none grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <ol className="m-0 p-0 list-none grid grid-cols-1 gap-[14px]">
         {STEPS.map((s, i) => (
           <li key={s.title} className="rounded-card border border-white/[0.12] bg-white/[0.05] p-4">
             <s.icon size={20} className="text-[#F2B66D]" />
