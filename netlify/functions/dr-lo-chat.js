@@ -141,6 +141,9 @@ ${prenomLabel}, ${context.age || '?'} ans, ${context.genre || '?'}, ${context.si
 Accord : ${isFemme ? 'FÉMININ (satisfaite, seule, épuisée)' : 'MASCULIN (satisfait, seul, épuisé)'}. Jamais de (e).`,
     totem: `━━━ TOTEM & PROFIL ━━━
 ${totemSection}`,
+    // Le bloc variable arrive juste après son message (Haiku 5.5) : on rappelle que c'est un arrière-plan, pas un sujet
+    fond: `━━━ ARRIÈRE-PLAN DE CE MESSAGE ━━━
+Ce qui suit (tests, journal, carnet) est ce que l'appli sait d'elle : un arrière-plan, pas un sujet. Réponds d'abord à son dernier message. N'en tire un élément que s'il est directement lié à ce message, et un même sujet au plus une fois par discussion.`,
     mental: `━━━ TESTS PSYCHOLOGIQUES ━━━
 ${mentalSection}`,
     intime: `━━━ VIE INTIME ━━━
@@ -154,7 +157,7 @@ ${journalSection}`,
     analyses: `━━━ ANALYSES DR LÔ (arrière-plan : tu ne les cites pas) ━━━
 ${analyseSection}`,
     carnet: `━━━ CE QUE TU SAIS D'ELLE (ton carnet) ━━━
-Sers-t'en comme un ami qui se souvient : appelle ses proches par leur prénom, relie ce qu'elle dit à ce que tu sais déjà (« comme la dernière fois avec ton chef ? »), adapte-toi à sa façon d'aimer qu'on lui parle. Jamais de liste de ce que tu sais, jamais « j'ai noté » ni « d'après mes notes ». N'en parle que si ça aide CE message.
+Sers-t'en comme un ami qui se souvient : appelle ses proches par leur prénom, relie ce qu'elle dit à ce que tu sais déjà quand c'est directement lié (« comme la dernière fois avec ton chef ? »), adapte-toi à sa façon d'aimer qu'on lui parle. Jamais de liste de ce que tu sais, jamais « j'ai noté » ni « d'après mes notes ». N'en parle que si ça aide CE message, et une même note au plus une fois par discussion.
 Au début d'une discussion (peu ou pas d'échanges avant), si un point « À REPRENDRE » est d'actualité, prends-en des nouvelles en une phrase (un seul point), puis laisse-la mener.
 ${memSection}`,
     rules: `━━━ RÈGLES ━━━
@@ -168,7 +171,7 @@ ${context.outils_txt || 'Aucun pour le moment.'}`,
 ${testsDispo || 'Aucun.'}`,
     launch: context.launch_txt || '',
     discretion: INTIME_TOPIC.test(message) ? '' : 'DISCRÉTION : son dernier message ne parle pas de sexualité ni de vie intime. N\'en parle pas de toi-même, même si le sujet est venu plus tôt dans la discussion (ex. ne cite pas l\'érection ou le désir dans une liste). Si tu résumes ce qu\'elle vit, reste général (« ce que tu traverses »).',
-    francais: 'FRANÇAIS : phrases correctes et simples (« ce que tu vis », jamais « ce que tu vivre »).',
+    francais: 'FRANÇAIS : phrases correctes et simples (« ce que tu vis », jamais « ce que tu vivre »), accords et verbes pronominaux soignés (« tu t\'en es voulu », « elle s\'est sentie seule »).',
   };
 }
 
@@ -179,7 +182,7 @@ function buildSystemPrompt(context, opts = {}) {
 
 ${VOICE}
 ${p.style ? `\n${p.style}\n` : ''}
-${[p.profil, p.totem, p.mental, p.intime, p.bonus, p.compat, p.journal, p.analyses, p.carnet, p.rules, p.chaines, p.outils, p.tests].join('\n\n')}${p.launch ? `\n\n${p.launch}` : ''}${p.discretion ? `\n\n${p.discretion}` : ''}
+${[p.profil, p.totem, p.fond, p.mental, p.intime, p.bonus, p.compat, p.journal, p.analyses, p.carnet, p.rules, p.chaines, p.outils, p.tests].join('\n\n')}${p.launch ? `\n\n${p.launch}` : ''}${p.discretion ? `\n\n${p.discretion}` : ''}
 
 ${p.francais}`;
 }
@@ -195,7 +198,7 @@ function buildPromptLayers(context, opts = {}) {
   return {
     fixed: `${VOICE}\n\n${p.rules}\n\n${p.francais}`,
     personal: [p.intro, p.style, p.profil, p.totem, p.compat, p.analyses, p.chaines, p.outils, p.tests, p.launch].filter(Boolean).join('\n\n'),
-    dynamic: [p.mental, p.intime, p.bonus, p.journal, p.carnet, p.discretion].filter(Boolean).join('\n\n'),
+    dynamic: [p.fond, p.mental, p.intime, p.bonus, p.journal, p.carnet, p.discretion].filter(Boolean).join('\n\n'),
   };
 }
 

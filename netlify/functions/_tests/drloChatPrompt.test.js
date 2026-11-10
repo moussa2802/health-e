@@ -136,3 +136,30 @@ test('fiche C2 : idées de mort dites sans « maintenant » → accueil et une q
   assert.ok(!/1515|3114|988|869/.test(c2));
   assert.match(r, /Si elle en parle elle-même : fiche C2\./);
 });
+
+test('conversation : un sujet du dossier une fois par discussion, pas de répétition, bonne nouvelle, wolof de la famille', () => {
+  const { VOICE } = require('../_drloVoice');
+  const r = rulesV2(false);
+  assert.match(r, /revient au plus UNE fois par discussion, et seulement s'il a un lien direct avec CE message/);
+  assert.match(r, /Jamais « parles-en à un médecin » ajouté à une réponse qui n'en parle pas/);
+  assert.match(r, /PRINCIPE N°5 — JAMAIS DEUX FOIS LA MÊME CHOSE/);
+  assert.match(r, /Ne redonne jamais un conseil, un exercice ou une idée déjà donnés/);
+  assert.match(r, /au plus une fois toutes les 3 ou 4 réponses, jamais comme premier mot/);
+  assert.match(r, /B3\. BONNE NOUVELLE/);
+  assert.match(r, /c'est SA réussite/);
+  assert.ok(!/Le test sommeil m'aidera/.test(r), 'l\'exemple ne nomme plus le test');
+  for (const w of ['yaay (mère)', 'baay (père)', 'jëkkër (mari)', 'jabar (épouse)', 'doom (enfant)', 'mag (aîné)', 'rakk (cadet)', 'xarit (ami)', '« sama yaay » = ma mère']) assert.ok(VOICE.includes(w), w);
+  assert.match(VOICE, /Ne retraduis pas à la personne ce qu'elle vient d'écrire/);
+  // Le danger n'est pas touché
+  assert.match(r, /D\. DANGER IMMÉDIAT — LE SEUL CAS À PART/);
+  assert.match(r, /C2\. IDÉES DE MORT DITES CLAIREMENT/);
+});
+
+test('le bloc variable commence par un rappel : arrière-plan, pas un sujet', () => {
+  const chat = require('../dr-lo-chat');
+  const L = chat._buildPromptLayers({ prenom: 'Awa', genre: 'Femme', memoire: ['Dort mal depuis des semaines'] }, { message: 'Mon copain ne me parle plus' });
+  assert.ok(L.dynamic.startsWith('━━━ ARRIÈRE-PLAN DE CE MESSAGE ━━━'));
+  assert.match(L.dynamic, /un arrière-plan, pas un sujet/);
+  assert.ok(!L.fixed.includes('ARRIÈRE-PLAN DE CE MESSAGE') && !L.personal.includes('ARRIÈRE-PLAN DE CE MESSAGE'));
+  assert.match(L.fixed, /tu t'en es voulu/);
+});
