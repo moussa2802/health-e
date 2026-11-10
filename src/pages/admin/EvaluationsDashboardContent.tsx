@@ -471,8 +471,10 @@ const AlertsTab: React.FC<{
     return Object.values(counts).sort((a, b) => b.count - a.count);
   }, [alerts]);
 
+  // Part des résultats en alerte (niveaux 2 et 3) : on utilise les totaux de stats, pas la liste affichée (limitée à 50 alertes récentes)
+  const totalAlerts = (stats.alertsLevel2 ?? 0) + (stats.alertsLevel3 ?? 0);
   const alertRate = stats.totalTests > 0
-    ? ((alerts.length / stats.totalTests) * 100).toFixed(1)
+    ? ((totalAlerts / stats.totalTests) * 100).toFixed(1)
     : '0';
 
   return (
@@ -480,7 +482,7 @@ const AlertsTab: React.FC<{
       <div className="flex gap-3 flex-wrap">
         <KpiCard icon={<AlertCircle className="h-[18px] w-[18px]" />} value={stats.alertsLevel3 ?? 0} label="Niveau 3 (critique)" tone="danger" />
         <KpiCard icon={<AlertTriangle className="h-[18px] w-[18px]" />} value={stats.alertsLevel2 ?? 0} label="Niveau 2 (attention)" tone="warn" />
-        <KpiCard icon={<Percent className="h-[18px] w-[18px]" />} value={`${alertRate}%`} label="Taux d'alerte global" tone="muted" />
+        <KpiCard icon={<Percent className="h-[18px] w-[18px]" />} value={`${alertRate}%`} label="Résultats en alerte (niveaux 2-3)" tone="muted" />
       </div>
 
       <div className="flex gap-1.5">
