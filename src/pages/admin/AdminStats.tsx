@@ -45,7 +45,7 @@ const PAGE_LABEL: Record<string, string> = {
   penc: 'Pénc mi', journal: 'Journal', achat: 'Acheter des étincelles', chaines: 'Chaînes', question: 'Questions / messages', defi: 'Défi',
   humeur: 'Humeur', bilan: 'Point de la semaine', outils: 'Outils', autre: 'Autres pages',
 };
-const KORIS_LABEL: Record<string, string> = { chat: 'Messages au compagnon', test: 'Tests', analysis: 'Analyses', compatibility: 'Compatibilité', daily_gift: 'Cadeau du jour', referral: 'Parrainage', welcome: 'Bienvenue', penc: 'Pénc mi', practice: 'Pratiques (audios, techniques, carnets)', channel: 'Chaînes' };
+const KORIS_LABEL: Record<string, string> = { chat: 'Messages au compagnon', test: 'Tests', analysis: 'Analyses', compatibility: 'Compatibilité', daily_gift: 'Cadeau du jour', referral: 'Parrainage', welcome: 'Bienvenue', penc: 'Pénc mi', practice: 'Pratiques (audios, techniques, carnets)', channel: 'Chaînes', cas_du_soir: 'Le cas du soir' };
 
 const fmtDay = (d: string) => { const [, m, j] = d.split('-'); return `${Number(j)}/${Number(m)}`; };
 const pct = (x: number | null) => (x === null || x === undefined ? '—' : `${Math.round(x * 100)} %`);

@@ -16,6 +16,8 @@ import type { MoodMap } from '../utils/moodLog';
 import HomeProgramme from '../components/accueil/HomeProgramme';
 import { MoodSheet } from '../components/accueil/HomeSheets';
 import HomePenc from '../components/penc/HomePenc';
+import CasDuSoirCard from '../components/casdusoir/CasDuSoirCard';
+import { CAS_DU_SOIR_CARTE_VISITEURS } from '../config/contenusPayants';
 import MotDuJour from '../components/accueil/MotDuJour';
 import { readResultsCache, writeResultsCache } from '../utils/resultsCache';
 import { useLaunch } from '../hooks/useLaunch';
@@ -207,6 +209,7 @@ const VisitorHome: React.FC<{ feed: HomeFeed | null; palette: MomentPalette }> =
       <p style={{ margin: '10px 0 0', fontSize: 16, lineHeight: 1.5, color: DC.soft }}>Des tests sérieux, expliqués simplement. Privé, gratuit pour commencer, en wolof et en français.</p>
       <TrustRow palette={palette} />
       <FeaturedCard featured={pickFeatured(feed)} guest palette={palette} />
+      {CAS_DU_SOIR_CARTE_VISITEURS && <CasDuSoirCard accent={palette.accent} />}
       <SectionTitle>Ton animal intérieur</SectionTitle>
       <AnimalTeaser palette={palette} />
       <Discover feed={feed} connected={false} channels={launch.on('chaines')} tools={false} />
@@ -315,6 +318,8 @@ const ConnectedHome: React.FC<{ feed: HomeFeed | null; palette: MomentPalette; u
 
       {/* Une seule carte vedette : un Pénc en direct, sinon ta suite ; puis le test du moment, ton message, l'humeur */}
       <HomePenc palette={palette} full={launch.on('penc_page')} onLive={setPencLive} />
+      {/* Le cas du soir : la carte n'apparaît que si le serveur la dit visible (aujourd'hui : le propriétaire seulement) */}
+      <CasDuSoirCard accent={palette.accent} />
 
       {suite && !pencLive && (
         <section aria-label="Ta suite" style={{ ...card, marginTop: 14, padding: 16, position: 'relative', overflow: 'hidden', borderColor: `${cc}80`, background: `radial-gradient(60% 80% at 100% 0%, ${cc}4D, transparent 70%), linear-gradient(140deg, ${cc}33, rgba(26,18,11,.9) 65%)` }}>

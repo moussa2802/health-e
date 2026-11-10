@@ -61,7 +61,7 @@ function compute({ list, tracked = {}, profiles = [], history = [], moods = [] }
   const spentByFeature = {}; const offeredByFeature = {};
   let purchases = 0; let purchased = 0;
   // Contenus payants, comptés à part même à zéro : étincelles dépensées, rendues (Pénc annulé) et acheteurs différents
-  const PAID = ['penc', 'practice', 'channel'];
+  const PAID = ['penc', 'practice', 'channel', 'cas_du_soir'];
   const paid = Object.fromEntries(PAID.map((k) => [k, { spent: 0, refunded: 0, buyers: new Set() }]));
   for (const h of history) {
     const d = toDay(h.timestamp) || toDay(h.serverTimestamp);

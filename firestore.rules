@@ -130,6 +130,11 @@ service cloud.firestore {
       match /{rest=**} { allow read, write: if false; }
     }
 
+    // ─── LE CAS DU SOIR : votes, résultats, achats ; écrits par le serveur (cas-du-soir.js) seulement ──
+    match /casDuSoirVotes/{id} { allow read, write: if false; }
+    match /casDuSoirResultats/{id} { allow read, write: if false; }
+    match /casDuSoirAcces/{id} { allow read, write: if false; }
+
     // ─── ADMIN CATCHALL ───────────────────────────────────────────────────────
     match /{document=**} {
       allow read, write: if isAdmin();

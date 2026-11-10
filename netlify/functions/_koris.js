@@ -16,6 +16,7 @@ const KORIS_COSTS = {
   channel: 1, // entrée dans une chaîne de Dr Lô : quantité = prix en étincelles fixé par Dr Lô
   penc: 1, // inscription à un Pénc payant (Pénc mi) : quantité = prix fixé par l'hôte
   practice: 1, // déblocage d'une pratique de Dr Lô (une fois) : quantité = prix fixé par Dr Lô
+  cas_du_soir: 1, // « Le cas du soir » : la suite tout de suite, ou le détail des votes par animal ; quantité = prix (_casDuSoir.js)
 };
 
 /**

@@ -77,6 +77,7 @@ test('étincelles des contenus payants (Pénc mi, pratiques, chaînes) comptées
   const empty = A.compute({ list, history: [] });
   assert.deepEqual(empty.koris.contenus, [
     { key: 'penc', spent: 0, refunded: 0, buyers: 0 }, { key: 'practice', spent: 0, refunded: 0, buyers: 0 }, { key: 'channel', spent: 0, refunded: 0, buyers: 0 },
+    { key: 'cas_du_soir', spent: 0, refunded: 0, buyers: 0 },
   ]);
   const out = A.compute({ list, history: [
     { uid: 'a', type: 'spend', feature: 'penc', amount: 10, timestamp: ts('2026-11-05') },
@@ -85,11 +86,13 @@ test('étincelles des contenus payants (Pénc mi, pratiques, chaînes) comptées
     { uid: 'c', type: 'refund', feature: 'practice', amount: 5, details: 'Étincelles restituées — opération annulée', timestamp: ts('2026-11-06') },
     { uid: 'a', type: 'spend', feature: 'practice', amount: 15, timestamp: ts('2026-11-06') },
     { uid: 'a', type: 'spend', feature: 'chat', amount: 1, timestamp: ts('2026-11-06') },
+    { uid: 'b', type: 'spend', feature: 'cas_du_soir', amount: 1, timestamp: ts('2026-11-06') },
   ] });
   const by = Object.fromEntries(out.koris.contenus.map((c) => [c.key, c]));
   assert.deepEqual(by.penc, { key: 'penc', spent: 20, refunded: 10, buyers: 2 });
   assert.deepEqual(by.practice, { key: 'practice', spent: 15, refunded: 0, buyers: 1 });
   assert.equal(by.channel.spent, 0);
+  assert.deepEqual(by.cas_du_soir, { key: 'cas_du_soir', spent: 1, refunded: 0, buyers: 1 });
   // L'existant ne change pas
-  assert.deepEqual(out.koris.spentByFeature.map((k) => k.key), ['penc', 'practice', 'chat']);
+  assert.deepEqual(out.koris.spentByFeature.map((k) => k.key), ['penc', 'practice', 'chat', 'cas_du_soir']);
 });
