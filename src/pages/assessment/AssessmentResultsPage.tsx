@@ -14,6 +14,7 @@ import { resolveScaleGender } from '../../utils/gender';
 import { getOnboardingProfile } from '../../utils/onboardingProfile';
 import type { UserAssessmentSession, ScaleResult, TriggeredAlert } from '../../types/assessment';
 import { getCrisisResources } from '../../data/crisisResources';
+import { TEST_ALERT_NUMBERS, LEVEL2_ALERT_NUMBERS } from '../../config/alertes';
 import { getJournalPrompt, savePendingPrompt } from '../../utils/journalPrompts';
 import { archiveCurrentResult, getTestHistory, deleteTestResult, deleteSpecificHistoryEntry, getAnswersFromSession } from '../../services/testManagementService';
 import type { ScaleResultHistoryEntry } from '../../services/testManagementService';
@@ -389,7 +390,12 @@ const AssessmentResultsPage: React.FC = () => {
   const alertLevel = result.alertLevel ?? 0;
   const criticalAlerts = (result.alertsTriggered ?? []).filter(a => a.alertLevel === 3)
     .map(a => ({ ...a, message: rg(a.message) }));
-  const showCriticalModal = alertLevel >= 3 && criticalAlerts.length > 0 && !criticalAlertDismissed;
+  // Fenêtre rouge avec les numéros (question 9 du test d'humeur) : coupée, voir TEST_ALERT_NUMBERS ; un mot doux à la place
+  const showCriticalModal = TEST_ALERT_NUMBERS && alertLevel >= 3 && criticalAlerts.length > 0 && !criticalAlertDismissed;
+  const showCriticalNote = !TEST_ALERT_NUMBERS && alertLevel >= 3 && criticalAlerts.length > 0;
+  // Alertes de niveau 2 : bloc avec deux numéros coupé (LEVEL2_ALERT_NUMBERS) ; une note douce à la place
+  const hasLevel2 = alertLevel === 2 || !!result.alertsTriggered?.some(a => a.alertLevel === 2);
+  const showLevel2Note = !LEVEL2_ALERT_NUMBERS && hasLevel2 && !showCriticalNote;
 
   const SEC: React.CSSProperties = {
     marginTop: 14, background: DC.glass, border: `1px solid ${DC.line}`,
@@ -481,10 +487,30 @@ const AssessmentResultsPage: React.FC = () => {
 
           {/* Alerts */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginTop: 14 }}>
-            {result.alertsTriggered?.filter(a => a.alertLevel === 2).map((alert, i) => (
+            {showCriticalNote && (
+              <div role="note" style={{ background: 'rgba(185,166,214,.10)', border: '1px solid rgba(185,166,214,.4)', borderRadius: 16, padding: '14px 16px' }}>
+                <p style={{ margin: 0, fontSize: 14, lineHeight: 1.55, color: DC.soft }}>
+                  Une de tes réponses parle de pensées de mort ou de te faire du mal. Elle compte plus que le score. Si tu veux en parler, le compagnon est là pour t'écouter, sans jugement.
+                </p>
+                <Link to="/compagnon" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, marginTop: 8, color: DC.sage, fontSize: 14, fontWeight: 600, textDecoration: 'none', minHeight: 32 }}>
+                  En parler avec le compagnon <ChevronRight size={14} aria-hidden="true" />
+                </Link>
+              </div>
+            )}
+            {showLevel2Note && (
+              <div role="note" style={{ background: 'rgba(185,166,214,.10)', border: '1px solid rgba(185,166,214,.4)', borderRadius: 16, padding: '14px 16px' }}>
+                <p style={{ margin: 0, fontSize: 14, lineHeight: 1.55, color: DC.soft }}>
+                  Une de tes réponses mérite qu'on s'y arrête un moment. En parler à un professionnel ou à quelqu'un de confiance peut vraiment aider, et le compagnon est là si tu veux en parler maintenant.
+                </p>
+                <Link to="/compagnon" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, marginTop: 8, color: DC.sage, fontSize: 14, fontWeight: 600, textDecoration: 'none', minHeight: 32 }}>
+                  En parler avec le compagnon <ChevronRight size={14} aria-hidden="true" />
+                </Link>
+              </div>
+            )}
+            {LEVEL2_ALERT_NUMBERS && result.alertsTriggered?.filter(a => a.alertLevel === 2).map((alert, i) => (
               <AlertLevel2Block key={i} message={rg(alert.message)} />
             ))}
-            {alertLevel === 2 && !result.alertsTriggered?.some(a => a.alertLevel === 2) && <AlertLevel2Block />}
+            {LEVEL2_ALERT_NUMBERS && alertLevel === 2 && !result.alertsTriggered?.some(a => a.alertLevel === 2) && <AlertLevel2Block />}
             {alertLevel === 1 && <AlertLevel1Block />}
 
             {resolvedInterp.referralRequired && alertLevel === 0 && (

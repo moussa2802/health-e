@@ -14,11 +14,17 @@ test('téléphone, lien, insulte refusés', () => {
   assert.strictEqual(C.moderate('écris à moi@gmail.com').reason, 'link');
   assert.strictEqual(C.moderate('quel connard').reason, 'insult');
 });
-test('la détresse passe avant tout, accents et wolof compris', () => {
-  assert.strictEqual(C.moderate('je veux me tuer').reason, 'crisis');
-  assert.strictEqual(C.moderate('J\'ai envie de mourir, appelle le 77 123 45 67').reason, 'crisis');
-  assert.strictEqual(C.moderate('dama bëgg dee').reason, 'crisis');
-  assert.strictEqual(C.moderate('ils seraient mieux sans moi').reason, 'crisis');
+test('compagnon d\'abord : la détresse ne bloque plus rien ; les vrais contenus interdits restent bloqués', () => {
+  assert.strictEqual(C.DISTRESS_MODERATION, false);
+  for (const t of ['je veux me tuer', 'dama bëgg dee', 'ils seraient mieux sans moi', 'je veux en finir', 'pensées suicidaires']) assert.strictEqual(C.moderate(t).ok, true, t);
+  assert.strictEqual(C.moderate('J\'ai envie de mourir, appelle le 77 123 45 67').reason, 'phone');
+  assert.strictEqual(C.moderate('j\'ai envie de mourir, espèce de connard').reason, 'insult');
+});
+test('repérage en sommeil (retour en arrière) : la détresse passe avant tout, accents et wolof compris', () => {
+  assert.strictEqual(C.moderate('je veux me tuer', true).reason, 'crisis');
+  assert.strictEqual(C.moderate('J\'ai envie de mourir, appelle le 77 123 45 67', true).reason, 'crisis');
+  assert.strictEqual(C.moderate('dama bëgg dee', true).reason, 'crisis');
+  assert.strictEqual(C.moderate('ils seraient mieux sans moi', true).reason, 'crisis');
 });
 test('validateComment : taille', () => {
   assert.ok(C.validateComment('a').error);
@@ -106,6 +112,7 @@ test('modération : mots entiers (technique, unique, dispute, bien finir passent
   }
   assert.equal(C.moderate('espèce de connard').reason, 'insult');
   assert.equal(C.moderate('ntm').reason, 'insult');
-  assert.equal(C.moderate('je veux en finir').reason, 'crisis');
-  assert.equal(C.moderate('pensées suicidaires').reason, 'crisis');
+  assert.equal(C.moderate('je veux en finir', true).reason, 'crisis');
+  assert.equal(C.moderate('pensées suicidaires', true).reason, 'crisis');
+  assert.equal(C.moderate('ça va bien finir', true).ok, true);
 });

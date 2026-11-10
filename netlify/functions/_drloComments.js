@@ -32,10 +32,18 @@ const hasWholeWord = (list, t) => { const f = fold(t); return list.some((w) => n
 // Détresse : début de mot obligatoire (« bien finir » ne contient pas « en finir »), fin libre pour les radicaux (« suicid »).
 const hasWordStart = (list, t) => { const f = fold(t); return list.some((w) => new RegExp('(^|[^a-z0-9])' + esc(w)).test(f)); };
 
-/** { ok:true } | { ok:false, reason:'crisis'|'phone'|'link'|'insult' } — la détresse passe avant tout. */
-function moderate(text) {
+/**
+ * Repérage de la détresse par liste de mots (boîte à questions, commentaires et discussion des chaînes, lives Pénc mi).
+ * Coupé le 10/11/2026 (« compagnon d'abord », décision de Papa Moussa) : un message n'est plus bloqué, caché ni remplacé
+ * par les numéros d'urgence à cause de ces mots ; il suit les règles normales (numéros, liens, insultes restent bloqués).
+ * Retour en arrière : remettre à true (la raison 'crisis' et CRISIS_NOTIF reviennent partout).
+ */
+const DISTRESS_MODERATION = false;
+
+/** { ok:true } | { ok:false, reason:'crisis'|'phone'|'link'|'insult' } — 'crisis' seulement si DISTRESS_MODERATION. */
+function moderate(text, distress = DISTRESS_MODERATION) {
   const t = String(text || '');
-  if (hasWordStart(CRISIS, t)) return { ok: false, reason: 'crisis' };
+  if (distress && hasWordStart(CRISIS, t)) return { ok: false, reason: 'crisis' };
   if (hasPhone(t)) return { ok: false, reason: 'phone' };
   if (hasLink(t)) return { ok: false, reason: 'link' };
   if (hasWholeWord(INSULTS, t)) return { ok: false, reason: 'insult' };
@@ -143,4 +151,4 @@ function totemOf(profile) {
   return t && t.revealedAt && TOTEM_ANIMALS.includes(t.animal) ? t.animal : null;
 }
 
-module.exports = { totemOf, MAX_THREAD, threadOf, entryTime, lastDrloAt, userCanFollowUp, validateEntry, presentEntry, MAX_COMMENT, MAX_REPLY, REPORTS_TO_HIDE, PER_MESSAGE_LIMIT, moderate, REASON_TEXT, validateComment, resolveIdentity, CRISIS_NOTIF, visible, sortComments };
+module.exports = { totemOf, MAX_THREAD, threadOf, entryTime, lastDrloAt, userCanFollowUp, validateEntry, presentEntry, MAX_COMMENT, MAX_REPLY, REPORTS_TO_HIDE, PER_MESSAGE_LIMIT, moderate, DISTRESS_MODERATION, REASON_TEXT, validateComment, resolveIdentity, CRISIS_NOTIF, visible, sortComments };

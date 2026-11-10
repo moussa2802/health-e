@@ -14,9 +14,9 @@ test('question normale : nettoyée, pas de crise', () => {
   assert.strictEqual(r.text, 'Pourquoi je n\'arrive pas à dormir ?');
   assert.strictEqual(r.crisis, false);
 });
-test('détresse : gardée, signalée', () => {
+test('compagnon d\'abord : une question de détresse est gardée comme les autres, sans écran d\'aide', () => {
   const r = B.cleanQuestion('J\'ai envie de mourir, je ne sais plus quoi faire');
-  assert.strictEqual(r.crisis, true);
+  assert.strictEqual(r.crisis, false);
   assert.ok(r.text);
 });
 test('limites par appareil et globale', () => {

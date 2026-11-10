@@ -6,10 +6,9 @@
 const MAX_NOTES = 30;
 const CATS = ['vie', 'proches', 'pese', 'aide', 'envies', 'parler', 'suivre', 'intime'];
 
-function buildMemoryPrompt() {
-  return `Tu tiens le carnet du compagnon de Health-e (le compagnon de bien-être de Health-e). À partir des notes actuelles et des derniers échanges, renvoie le carnet À JOUR : ce que le compagnon doit savoir de cette personne pour la connaître de mieux en mieux, comme un ami attentif qui se souvient.
-
-Thèmes (champ "c") :
+// Blocs du prompt du carnet, communs aux deux modes (carnet réécrit en entier, ou seulement les changements)
+const MEMORY_INTRO = 'Tu tiens le carnet du compagnon de Health-e (le compagnon de bien-être de Health-e).';
+const MEMORY_RULES = `Thèmes (champ "c") :
 - vie : sa situation durable (travail, études, ville, couple, famille, rythme de vie)
 - proches : les personnes qui comptent, avec leur rôle et leur prénom s'il est donné (« sa sœur Awa », « son collègue Modou »)
 - pese : ce qui lui pèse en ce moment
@@ -21,8 +20,40 @@ Thèmes (champ "c") :
 
 Ne garde PAS : diagnostics ou étiquettes médicales, médicaments, scores de tests, la sexualité HORS du thème « intime », les détails sexuels crus ou les pratiques, le nom ou tout détail permettant de reconnaître un partenaire, propos violents détaillés, données d'identité (adresse, numéros), démarches administratives ou juridiques (papiers, immigration, régularisation, avocat, justice), dettes. Une période de grande détresse se note sobrement (« a traversé un moment très difficile en octobre, a été orientée vers une aide »), sans détail.
 
-Règles : ${MAX_NOTES} notes au plus, une phrase courte chacune (moins de 160 caractères), à la 3e personne, au présent. Ajoute ce qui est nouveau, mets à jour ce qui a changé, retire ce qui n'est plus vrai, fusionne les doublons. Garde en priorité ce qui aide à la comprendre. Pas d'invention : seulement ce que la personne a dit.
+Règles : ${MAX_NOTES} notes au plus, une phrase courte chacune (moins de 160 caractères), à la 3e personne, au présent. Ajoute ce qui est nouveau, mets à jour ce qui a changé, retire ce qui n'est plus vrai, fusionne les doublons. Garde en priorité ce qui aide à la comprendre. Pas d'invention : seulement ce que la personne a dit.`;
+
+/** Mode « carnet entier » (ancien) : l'IA réécrit tout le carnet. */
+function buildMemoryPrompt() {
+  return `${MEMORY_INTRO} À partir des notes actuelles et des derniers échanges, renvoie le carnet À JOUR : ce que le compagnon doit savoir de cette personne pour la connaître de mieux en mieux, comme un ami attentif qui se souvient.
+
+${MEMORY_RULES}
 Réponds UNIQUEMENT avec un tableau JSON d'objets {"t": "la note", "c": "thème"}, sans texte autour. Si rien ne change, renvoie les notes actuelles.`;
+}
+
+/**
+ * Mode « changements » (A2) : mêmes thèmes, mêmes interdits, mêmes règles ; l'IA ne renvoie que ce qui change
+ * (beaucoup moins de texte écrit, donc moins cher). Les notes actuelles lui sont données numérotées.
+ */
+function buildMemoryDeltaPrompt() {
+  return `${MEMORY_INTRO} À partir des notes actuelles (numérotées par "id") et des derniers échanges, renvoie SEULEMENT LES CHANGEMENTS à faire au carnet, pour qu'il dise ce que le compagnon doit savoir de cette personne pour la connaître de mieux en mieux, comme un ami attentif qui se souvient.
+
+${MEMORY_RULES}
+Réponds UNIQUEMENT avec un objet JSON, sans texte autour :
+{"ajouter": [{"t": "la note", "c": "thème"}], "modifier": [{"id": 3, "t": "la note réécrite", "c": "thème"}], "retirer": [5, 7]}
+- ajouter : ce qui est nouveau ;
+- modifier : une note actuelle qui a changé ou se complète (son "id") ; pour fusionner deux doublons, modifie l'une et retire l'autre ;
+- retirer : les "id" des notes qui ne sont plus vraies, des doublons, et de toute note actuelle qui ne respecte pas les règles ci-dessus (ce qu'il ne faut pas garder) ;
+- une note qui ne change pas : ne la recopie pas.
+Au-delà de ${MAX_NOTES} notes, retire les moins utiles. Si rien ne change, renvoie {"ajouter": [], "modifier": [], "retirer": []}.`;
+}
+
+/** Le message envoyé au carnet : notes actuelles (numérotées en mode changements) et derniers échanges. */
+function memoryUserPayload(current, turns, delta) {
+  const notes = (current || []).map((n, i) => {
+    const o = typeof n === 'string' ? { t: n, c: 'vie' } : { t: n.text, c: n.cat || 'vie' };
+    return delta ? { id: i + 1, ...o } : o;
+  });
+  return JSON.stringify({ notes_actuelles: notes, echanges_recents: turns });
 }
 
 const textOf = (n) => (typeof n === 'string' ? n : (n && (n.text || n.t)) || '');
@@ -59,8 +90,50 @@ function newNotes(next, current = []) {
   return (next || []).filter(n => !before.has(keyOf(textOf(n))));
 }
 
-/** Faut-il mettre le carnet à jour après cette réponse ? (n = nombre de messages du jour) */
-const shouldRemember = (n) => n === 2 || (n > 2 && n % 3 === 0);
+/**
+ * Applique les changements renvoyés par l'IA (mode « changements ») au carnet actuel.
+ * Mêmes nettoyages que cleanNotes (longueur, thème, intime, doublons, plafond). Les notes inchangées gardent leur date.
+ * Une réponse au format « carnet entier » (tableau) est acceptée aussi. null si illisible : on garde l'ancien carnet.
+ */
+function applyMemoryDelta(raw, current = [], now = new Date()) {
+  const str = String(raw || '');
+  const om = str.match(/\{[\s\S]*\}/);
+  let d = null;
+  if (om) { try { d = JSON.parse(om[0]); } catch { d = null; } }
+  if (!d || typeof d !== 'object' || Array.isArray(d) || !['ajouter', 'modifier', 'retirer'].some((k) => Array.isArray(d[k]))) {
+    return /^\s*\[/.test(str.slice(str.search(/[[{]/))) ? cleanNotes(str, current, now) : null;
+  }
+  const list = (current || []).map((n) => ({ text: String(textOf(n)), cat: n && typeof n === 'object' ? n.cat : null, at: n && typeof n === 'object' ? n.at : null }));
+  const idOf = (v) => { const i = Number(v); return Number.isInteger(i) && i >= 1 && i <= list.length ? i - 1 : -1; };
+  const removed = new Set((Array.isArray(d.retirer) ? d.retirer : []).map((x) => idOf(x && typeof x === 'object' ? x.id : x)).filter((i) => i >= 0));
+  for (const m of Array.isArray(d.modifier) ? d.modifier : []) {
+    const i = idOf(m && m.id);
+    const t = m && String(textOf(m)).trim();
+    if (i < 0 || removed.has(i) || !t) continue;
+    const changed = keyOf(t) !== keyOf(list[i].text);
+    list[i] = { text: t, cat: (m.c || m.cat || list[i].cat), at: changed ? null : list[i].at };
+  }
+  const merged = [
+    ...list.filter((_, i) => !removed.has(i)),
+    ...(Array.isArray(d.ajouter) ? d.ajouter : []).map((x) => ({ text: String(textOf(x)), cat: x && typeof x === 'object' ? (x.c || x.cat) : null, at: null })),
+  ];
+  const seen = new Set();
+  const out = [];
+  for (const n of merged) {
+    const t = n.text.replace(/[\u0000-\u001f]/g, ' ').trim().slice(0, 200);
+    if (!t || seen.has(keyOf(t))) continue;
+    seen.add(keyOf(t));
+    out.push({ text: t, cat: catOf(t, n.cat), at: n.at || now.toISOString() });
+    if (out.length >= MAX_NOTES) break;
+  }
+  return out;
+}
+
+/** Mode du carnet : complet par défaut ; DRLO_MEMORY_MODE=changements (ou delta) : seulement les changements. */
+const memoryDeltaMode = (env = process.env) => ['changements', 'delta'].includes(String((env && env.DRLO_MEMORY_MODE) || '').trim());
+
+/** Faut-il mettre le carnet à jour après cette réponse ? (n = nombre de messages du jour) : au 2e, puis tous les 5. */
+const shouldRemember = (n) => n === 2 || (n > 2 && n % 5 === 0);
 
 const CAT_TITLE = { vie: 'Sa vie', proches: 'Ses proches', pese: 'Ce qui lui pèse', aide: 'Ce qui l\'aide', envies: 'Ses envies et projets', parler: 'Comment lui parler', suivre: 'À REPRENDRE (prends des nouvelles)', intime: 'INTIME (discret : tu le sais pour comprendre et faire des liens, par ex. stress ↔ érection ; tu n\'en parles de toi-même que si elle aborde un sujet proche, en mots sobres)' };
 
@@ -77,4 +150,4 @@ function formatMemory(notes) {
   return CATS.filter(c => groups.has(c)).map(c => `${CAT_TITLE[c]} :\n${groups.get(c).join('\n')}`).join('\n');
 }
 
-module.exports = { MAX_NOTES, CATS, INTIME_RE, catOf, buildMemoryPrompt, cleanNotes, newNotes, shouldRemember, formatMemory };
+module.exports = { MAX_NOTES, CATS, INTIME_RE, catOf, buildMemoryPrompt, buildMemoryDeltaPrompt, memoryUserPayload, cleanNotes, applyMemoryDelta, newNotes, shouldRemember, memoryDeltaMode, formatMemory };

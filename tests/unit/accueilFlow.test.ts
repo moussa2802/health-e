@@ -3,7 +3,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   startConversation, respond, afterTest, pickNextScale, getQuickReplies, detectCrisis, classifyNeed,
-  parsePrenom, parseAge, enterCrisis, leaveCrisisIfCalm, newDay, addExchange, type Known, type AccueilState,
+  parsePrenom, parseAge, enterCrisis, leaveCrisisIfCalm, newDay, addExchange, autoCrisis, CRISIS_SCREEN_AUTO, type Known, type AccueilState,
 } from '../../src/utils/accueilFlow.ts';
 
 const LABELS: Record<string, string> = { gad7: 'Anxiété', phq9: 'Humeur & Dépression', big_five: 'Personnalité', ecr_r: "Style d'attachement", pss10: 'Stress', pg13: 'Deuil & Pertes', brs: 'Résilience', rses: 'Estime de soi' };
@@ -72,13 +72,23 @@ test('texte incompris deux fois → on démarre en douceur, pas de boucle', () =
   assert.equal(s.step, 'genre');
 });
 
-test('crise détectée à n\'importe quelle étape → ressources, pas de test', () => {
+test('compagnon d\'abord : la liste de mots n\'ouvre plus l\'écran de crise (la liste reste, en sommeil)', () => {
+  assert.equal(CRISIS_SCREEN_AUTO, false);
   assert.ok(detectCrisis("J'ai plus envie de vivre"));
   assert.ok(detectCrisis('je pense au SUICIDE'));
   assert.ok(detectCrisis('parfois je veux me faire du mal'));
   assert.ok(!detectCrisis('je suis stressée par mon travail'));
-  let s = startConversation(guest);
-  s = respond(s, { text: "j'ai envie d'en finir" }, guest);
+  // Fausses alertes du banc du 10/11 : plus aucun écran
+  for (const t of ["j'ai envie d'en finir", 'Je veux en finir avec ce mémoire', "J'ai envie de disparaître sous ma couette", 'Ce travail me tue']) {
+    assert.equal(autoCrisis(t), false, t);
+    const s = respond(startConversation(guest), { text: t }, guest);
+    assert.notEqual(s.step, 'crisis', t);
+    assert.ok(!s.messages.some(m => m.card?.type === 'crisis'), t);
+  }
+});
+
+test('écran de crise en sommeil : il marche encore si on le rouvre (retour en arrière)', () => {
+  let s = enterCrisis(startConversation(guest));
   assert.equal(s.step, 'crisis');
   assert.deepEqual(last(s).card, { type: 'crisis' });
   assert.equal(s.prescribed, undefined);
@@ -86,12 +96,12 @@ test('crise détectée à n\'importe quelle étape → ressources, pas de test',
   assert.equal(s.step, 'need');
 });
 
-test('crise pendant la question du prénom', () => {
+test('« je veux mourir » pendant la question du prénom : la discussion continue, sans écran', () => {
   let s = startConversation(guest);
   s = respond(s, { value: 'need:mal', label: 'x' }, guest);
   s = respond(s, { text: 'je veux mourir' }, guest);
-  assert.equal(s.step, 'crisis');
-  assert.equal(s.prenom, undefined);
+  assert.notEqual(s.step, 'crisis');
+  assert.ok(!s.messages.some(m => m.card?.type === 'crisis'));
 });
 
 test('moins de 18 ans → aucun test, orientation adulte de confiance', () => {
@@ -124,10 +134,12 @@ test('après le test : commentaire + portrait + prochaine pièce (règle d\'or)'
   assert.equal(again.messages.length, s.messages.length);
 });
 
-test('après le test, résultat sévère → orientation professionnelle', () => {
+test('après le test, résultat sévère → mot chaleureux et invitation à en parler, sans carte de numéros', () => {
   let s = guestToPrescription('need:mal');
   s = afterTest(s, { scaleId: 'phq9', resultLabel: 'Période très difficile', severity: 'severe', referralRequired: true }, { portraitPct: 3, guestRemaining: 2 }, { ...guest, doneScaleIds: ['phq9'] });
-  assert.ok(s.messages.some(m => /professionnel de santé/.test(m.text) && m.card?.type === 'crisis'));
+  assert.ok(s.messages.some(m => /période vraiment difficile/.test(m.text) && /raconte-moi ce qui pèse le plus/.test(m.text)));
+  assert.ok(!s.messages.some(m => m.card?.type === 'crisis'));
+  assert.ok(!s.messages.some(m => /1515|appelle/i.test(m.text)));
 });
 
 test('après le dernier test gratuit → proposition de compte', () => {
@@ -199,4 +211,14 @@ test('crise : sortie douce après deux échanges calmes, et le lendemain', () =>
   c = newDay(c, '2026-11-02', guest);
   assert.equal(c.step, 'need');
   assert.match(last(c).text, /Comment tu te sens aujourd'hui/);
+});
+
+test('compagnon d\'abord : toutes les alertes automatiques sont coupées par défaut (drapeaux de retour en arrière)', async () => {
+  const A = await import('../../src/config/alertes.ts');
+  assert.equal(A.CRISIS_SCREEN_AUTO, false);
+  assert.equal(A.TEST_ALERT_NUMBERS, false);
+  assert.equal(A.PROGRAMME_LOW_MOOD_NUMBERS, false);
+  assert.equal(A.SEVERE_RESULT_NUMBERS, false);
+  assert.equal(A.LEVEL2_ALERT_NUMBERS, false);
+  assert.equal(CRISIS_SCREEN_AUTO, A.CRISIS_SCREEN_AUTO);
 });

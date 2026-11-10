@@ -16,6 +16,7 @@ import type { ActiveTest } from './chatTest';
 import type { ExerciseId, VocalId } from '../data/guidedExercises';
 import type { SocialFlow } from './socialFlow.ts';
 import type { ProgAxis } from '../data/programmeLibrary.ts';
+import { CRISIS_SCREEN_AUTO, TEST_ALERT_NUMBERS, SEVERE_RESULT_NUMBERS } from '../config/alertes.ts';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -236,6 +237,18 @@ const CRISIS_PATTERNS: RegExp[] = [
 export function detectCrisis(text: string): boolean {
   const t = normalize(text);
   return CRISIS_PATTERNS.some(re => re.test(t));
+}
+
+/**
+ * Écran de crise automatique (liste de mots ci-dessus, balise [[crise]] du compagnon, tri « crisis » de l'accueil) :
+ * coupé le 10/11/2026, voir src/config/alertes.ts. La liste ouvrait l'écran sur des messages sans danger
+ * (« ce travail me tue », « en finir avec ce mémoire »).
+ */
+export { CRISIS_SCREEN_AUTO, TEST_ALERT_NUMBERS, SEVERE_RESULT_NUMBERS };
+
+/** La liste de mots ouvre-t-elle l'écran de crise ? Toujours non tant que CRISIS_SCREEN_AUTO est coupé. */
+export function autoCrisis(text: string): boolean {
+  return CRISIS_SCREEN_AUTO && detectCrisis(text);
 }
 
 export interface NeedMatch { need: Need; scaleId?: string }
@@ -468,8 +481,8 @@ export function respond(state: AccueilState, input: Input, k: Known): AccueilSta
   const value = input.value ?? '';
   let s = push(state, 'user', input.label ?? text ?? value);
 
-  // 1. Crise : prioritaire sur tout, à chaque saisie libre
-  if (text && detectCrisis(text)) return enterCrisis(s);
+  // 1. Crise : prioritaire sur tout, à chaque saisie libre (coupé : voir CRISIS_SCREEN_AUTO)
+  if (text && autoCrisis(text)) return enterCrisis(s);
 
   if (s.step === 'minor') {
     if (value === 'minor:mistake') {
@@ -630,13 +643,22 @@ export function afterTest(state: AccueilState, o: TestOutcome, ctx: AfterTestCtx
 
   // Une réponse critique (ex. idées noires) compte plus que le score global :
   // pas de « c'est rassurant », pas de test suivant proposé, orientation humaine.
+  if (critical && !TEST_ALERT_NUMBERS) {
+    // Compagnon d'abord : pas de carte de numéros ; un mot chaleureux et une question ouverte pour comprendre
+    s = push(s, 'drlo', `Une de tes réponses compte plus que le score : tu as dit avoir eu des pensées de mort ou de te faire du mal. Je ne pose pas de diagnostic, je voudrais juste comprendre ce que tu vis. Qu'est-ce qui rend les choses si lourdes en ce moment ?`);
+    s = push(s, 'drlo', `On ne fait pas d'autre test pour l'instant. Prends le temps qu'il te faut, je suis là.`);
+    return { ...s, step: 'prescribed' };
+  }
   if (critical) {
     s = push(s, 'drlo', `Quel que soit le score, une de tes réponses compte plus que tout le reste : ce que tu as dit sur les pensées de te faire du mal. Je ne pose pas de diagnostic, mais je te demande d'en parler à un professionnel de santé, cette semaine si tu peux. Et si ça devient urgent, appelle ${crisisShown ? 'un des numéros juste au-dessus' : 'tout de suite'}.`, crisisShown ? undefined : { type: 'crisis' });
     s = push(s, 'drlo', `On ne fait pas d'autre test pour l'instant. Je suis là si tu veux écrire ce que tu ressens, ou respirer un moment avec moi.`);
     return { ...s, step: 'prescribed' };
   }
 
-  if (o.referralRequired || o.severity === 'severe' || o.severity === 'alert') {
+  if ((o.referralRequired || o.severity === 'severe' || o.severity === 'alert') && !SEVERE_RESULT_NUMBERS) {
+    // Compagnon d'abord : un mot chaleureux et une invitation à en parler ici, sans carte de numéros
+    s = push(s, 'drlo', `Ce résultat montre que tu traverses une période vraiment difficile, et c'est bien de l'avoir regardé en face. Si tu veux, raconte-moi ce qui pèse le plus en ce moment : je suis là pour en parler avec toi.`);
+  } else if (o.referralRequired || o.severity === 'severe' || o.severity === 'alert') {
     s = push(s, 'drlo', `Ce résultat montre que tu traverses une période vraiment difficile. Je ne pose pas de diagnostic, mais je te conseille d'en parler à un professionnel de santé : tu mérites d'être ${g(s, 'accompagné', 'accompagnée')}.`, { type: 'crisis' });
   } else if (o.severity === 'moderate' && !ctx.aiComment) {
     s = push(s, 'drlo', `Ça montre que ça pèse vraiment en ce moment. C'est déjà un pas de l'avoir mis en lumière.`);
@@ -693,8 +715,17 @@ export function recordChatAnswer(state: AccueilState, itemId: number, value: num
   return { ...s, activeTest: { ...state.activeTest, answers: { ...state.activeTest.answers, [itemId]: value }, askedItemId: null } };
 }
 
-/** Réponse inquiétante pendant le test : ressources tout de suite, puis on continue si la personne veut. */
+/**
+ * Réponse inquiétante pendant le test (question 9 du test d'humeur).
+ * Par défaut (TEST_ALERT_NUMBERS coupé) : un mot chaleureux, sans numéros ni carte, et le test continue ; on en parle à la fin.
+ * Avant : le message de l'échelle et la carte des numéros d'urgence tout de suite.
+ */
 export function alertDuringTest(state: AccueilState, message: string, isLast = false): AccueilState {
+  if (!TEST_ALERT_NUMBERS) {
+    return push(state, 'drlo', isLast
+      ? `Merci de me l'avoir dit. Ce que tu viens de répondre compte pour moi : on en parle juste après, tranquillement.`
+      : `Merci de me l'avoir dit. Ce que tu viens de répondre compte pour moi : on finit le test si tu veux, et ensuite on en parle tranquillement.`);
+  }
   let s = push(state, 'drlo', message, { type: 'crisis' });
   s = push(s, 'drlo', isLast
     ? `Tu n'as pas à porter ça ${g(s, 'seul', 'seule')}. Je regarde l'ensemble de tes réponses avec toi.`
@@ -815,12 +846,13 @@ function reAsk(s: AccueilState): AccueilState {
 
 /**
  * Applique la décision de l'IA. `state` contient DÉJÀ le message de la personne.
- * La crise utilise toujours les messages validés (enterCrisis), jamais le texte de l'IA.
+ * Écran de crise (si CRISIS_SCREEN_AUTO) : toujours les messages validés (enterCrisis), jamais le texte de l'IA.
  */
 export function routeDecision(state: AccueilState, d: RouteDecision, k: Known, ctx: RouteCtx = {}): { state: AccueilState; ui: RouteUi } {
   let s = state;
   const ui = (u: RouteUi, next: AccueilState) => ({ state: next, ui: u });
-  if (d.action === 'crisis') return ui(null, enterCrisis(s));
+  // Danger immédiat : écran de crise seulement si CRISIS_SCREEN_AUTO ; sinon la réponse de l'IA (avec un numéro d'aide) s'affiche
+  if (d.action === 'crisis') return ui(null, CRISIS_SCREEN_AUTO ? enterCrisis(s) : push(s, 'drlo', d.reply));
 
   if (s.step === 'testing' && s.activeTest) {
     if (d.action === 'explain') return ui(null, push(s, 'drlo', d.reply));

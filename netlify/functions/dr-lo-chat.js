@@ -11,6 +11,7 @@ const { rulesV1 } = require('./_drloChatRulesV1');
 const { wantsJournal, wantsNumbers, filterNotes } = require('./_drloChatContext');
 const { shouldRemember, formatMemory, catOf } = require('./_drloMemory');
 const LA = require('./_launch');
+const { HAIKU_4_5, HAIKU_5_5, NO_THINKING, modelFrom, textOf } = require('./_aiModel');
 
 const headers = {
   'Access-Control-Allow-Origin': '*',
@@ -18,13 +19,13 @@ const headers = {
   'Content-Type': 'application/json',
 };
 
-// ── System prompt (stable across messages — cacheable) ───────────────────────
+// ── System prompt : des blocs, assemblés dans l'ancien ordre ou dans le nouveau (A1, cache) ──────────
 
 /**
  * opts.message : le message en cours (décide ce qui entre dans le prompt : journal, chiffres, notes sensibles).
  * opts.rules : texte de règles de remplacement (Banc d'essai seulement) ; opts.version : 'v1' (ancien jeu) ou 'v2'.
  */
-function buildSystemPrompt(context, opts = {}) {
+function promptParts(context, opts = {}) {
   const message = typeof opts.message === 'string' ? opts.message : '';
   const withNumbers = wantsNumbers(message);
   const withJournal = wantsJournal(message);
@@ -129,64 +130,83 @@ function buildSystemPrompt(context, opts = {}) {
   // Lancement par vagues : on retire des règles ce qui décrit une fonctionnalité fermée pour elle
   const rulesBlock = context.open_features ? LA.pruneRules(rulesBase, context.open_features) : LA.pruneRules(rulesBase, Object.fromEntries(Object.keys(LA.FEATURES).map((k) => [k, true])));
 
-  return `Tu es ${companionName ? companionName + ', ' : ''}le compagnon de bien-être IA de Health-e${companionName ? ' (la personne t\'a donné ce nom)' : ''}. Sensibilité au contexte sénégalais et africain.
-Tu parles comme un ami attentif qui connaît vraiment la personne — pas comme un chatbot. Tu es une IA : tu ne prétends jamais être un humain, ni médecin, ni un membre de l'équipe (Health-e est conçu par une équipe de professionnels de santé).
-
-${VOICE}
-${companionStyleBlock(context.companion_style, context.companion_lang) ? `\n${companionStyleBlock(context.companion_style, context.companion_lang)}\n` : ''}
-━━━ PROFIL ━━━
+  // Les blocs du prompt. Leur texte ne dépend pas de l'ordre : l'ancien ordre et le nouveau (A1) les assemblent tels quels.
+  const style = companionStyleBlock(context.companion_style, context.companion_lang);
+  return {
+    intro: `Tu es ${companionName ? companionName + ', ' : ''}le compagnon de bien-être IA de Health-e${companionName ? ' (la personne t\'a donné ce nom)' : ''}. Sensibilité au contexte sénégalais et africain.
+Tu parles comme un ami attentif qui connaît vraiment la personne — pas comme un chatbot. Tu es une IA : tu ne prétends jamais être un humain, ni médecin, ni un membre de l'équipe (Health-e est conçu par une équipe de professionnels de santé).`,
+    style,
+    profil: `━━━ PROFIL ━━━
 ${prenomLabel}, ${context.age || '?'} ans, ${context.genre || '?'}, ${context.situation || '?'}
-Accord : ${isFemme ? 'FÉMININ (satisfaite, seule, épuisée)' : 'MASCULIN (satisfait, seul, épuisé)'}. Jamais de (e).
-
-━━━ TOTEM & PROFIL ━━━
-${totemSection}
-
-━━━ TESTS PSYCHOLOGIQUES ━━━
-${mentalSection}
-
-━━━ VIE INTIME ━━━
-${intimeSection}
-
-━━━ TESTS BONUS ━━━
-${bonusSection}
-
-━━━ COMPATIBILITÉ ━━━
-${compatSection}
-
-━━━ JOURNAL RÉCENT ━━━
-${journalSection}
-
-━━━ ANALYSES DR LÔ (arrière-plan : tu ne les cites pas) ━━━
-${analyseSection}
-
-━━━ CE QUE TU SAIS D'ELLE (ton carnet) ━━━
+Accord : ${isFemme ? 'FÉMININ (satisfaite, seule, épuisée)' : 'MASCULIN (satisfait, seul, épuisé)'}. Jamais de (e).`,
+    totem: `━━━ TOTEM & PROFIL ━━━
+${totemSection}`,
+    mental: `━━━ TESTS PSYCHOLOGIQUES ━━━
+${mentalSection}`,
+    intime: `━━━ VIE INTIME ━━━
+${intimeSection}`,
+    bonus: `━━━ TESTS BONUS ━━━
+${bonusSection}`,
+    compat: `━━━ COMPATIBILITÉ ━━━
+${compatSection}`,
+    journal: `━━━ JOURNAL RÉCENT ━━━
+${journalSection}`,
+    analyses: `━━━ ANALYSES DR LÔ (arrière-plan : tu ne les cites pas) ━━━
+${analyseSection}`,
+    carnet: `━━━ CE QUE TU SAIS D'ELLE (ton carnet) ━━━
 Sers-t'en comme un ami qui se souvient : appelle ses proches par leur prénom, relie ce qu'elle dit à ce que tu sais déjà (« comme la dernière fois avec ton chef ? »), adapte-toi à sa façon d'aimer qu'on lui parle. Jamais de liste de ce que tu sais, jamais « j'ai noté » ni « d'après mes notes ». N'en parle que si ça aide CE message.
 Au début d'une discussion (peu ou pas d'échanges avant), si un point « À REPRENDRE » est d'actualité, prends-en des nouvelles en une phrase (un seul point), puis laisse-la mener.
-${memSection}
+${memSection}`,
+    rules: `━━━ RÈGLES ━━━
 
-━━━ RÈGLES ━━━
+${rulesBlock}`,
+    chaines: `Chaînes de Dr Lô (ID, thème, situation de cette personne) :
+${context.chaines_txt || 'Aucune pour le moment.'}`,
+    outils: `Outils de Dr Lô (ID, ce qu'elle en connaît) :
+${context.outils_txt || 'Aucun pour le moment.'}`,
+    tests: `Tests disponibles (ID = nom) :
+${testsDispo || 'Aucun.'}`,
+    launch: context.launch_txt || '',
+    discretion: INTIME_TOPIC.test(message) ? '' : 'DISCRÉTION : son dernier message ne parle pas de sexualité ni de vie intime. N\'en parle pas de toi-même, même si le sujet est venu plus tôt dans la discussion (ex. ne cite pas l\'érection ou le désir dans une liste). Si tu résumes ce qu\'elle vit, reste général (« ce que tu traverses »).',
+    francais: 'FRANÇAIS : phrases correctes et simples (« ce que tu vis », jamais « ce que tu vivre »).',
+  };
+}
 
-${rulesBlock}
+/** Ancien ordre (un seul bloc) : profil et carnet AVANT les règles. Gardé pour le retour en arrière et le banc d'essai. */
+function buildSystemPrompt(context, opts = {}) {
+  const p = promptParts(context, opts);
+  return `${p.intro}
 
-Chaînes de Dr Lô (ID, thème, situation de cette personne) :
-${context.chaines_txt || 'Aucune pour le moment.'}
+${VOICE}
+${p.style ? `\n${p.style}\n` : ''}
+${[p.profil, p.totem, p.mental, p.intime, p.bonus, p.compat, p.journal, p.analyses, p.carnet, p.rules, p.chaines, p.outils, p.tests].join('\n\n')}${p.launch ? `\n\n${p.launch}` : ''}${p.discretion ? `\n\n${p.discretion}` : ''}
 
-Outils de Dr Lô (ID, ce qu'elle en connaît) :
-${context.outils_txt || 'Aucun pour le moment.'}
+${p.francais}`;
+}
 
-Tests disponibles (ID = nom) :
-${testsDispo || 'Aucun.'}${context.launch_txt ? `\n\n${context.launch_txt}` : ''}${INTIME_TOPIC.test(message) ? '' : '\n\nDISCRÉTION : son dernier message ne parle pas de sexualité ni de vie intime. N\'en parle pas de toi-même, même si le sujet est venu plus tôt dans la discussion (ex. ne cite pas l\'érection ou le désir dans une liste). Si tu résumes ce qu\'elle vit, reste général (« ce que tu traverses »).'}
-
-FRANÇAIS : phrases correctes et simples (« ce que tu vis », jamais « ce que tu vivre »).`;
+/**
+ * Nouvel ordre (A1), mêmes blocs, mêmes mots :
+ * - fixed : la voix et les règles, identiques pour tout le monde (au genre et aux fonctions ouvertes près) → cache partagé ;
+ * - personal : ce qui est propre à la personne et ne change pas d'un message à l'autre → cache de la discussion ;
+ * - dynamic : ce qui change selon le message ou le jour (tests avec dates, journal, carnet filtré, DISCRÉTION) → jamais en cache.
+ */
+function buildPromptLayers(context, opts = {}) {
+  const p = promptParts(context, opts);
+  return {
+    fixed: `${VOICE}\n\n${p.rules}\n\n${p.francais}`,
+    personal: [p.intro, p.style, p.profil, p.totem, p.compat, p.analyses, p.chaines, p.outils, p.tests, p.launch].filter(Boolean).join('\n\n'),
+    dynamic: [p.mental, p.intime, p.bonus, p.journal, p.carnet, p.discretion].filter(Boolean).join('\n\n'),
+  };
 }
 
 // ── Action proposée par Dr Lô (balise en dernière ligne) ─────────────────────
 
-const TAG = /\[\[(test:[a-z0-9_]{2,40}|chaine:[A-Za-z0-9]{4,40}|pratique:[A-Za-z0-9]{4,40}|exercice:(?:coherence|ancrage|sommeil|relacher)|vocal:(?:journee|pensees|avant)|chaines|respiration|humeur|programme|journal|defi|compat|vrai_drlo|totem|catalogue|crise)\]\]/gi;
+const TAG = /\[\[(test:[a-z0-9_]{2,40}|chaine:[A-Za-z0-9]{4,40}|pratique:[A-Za-z0-9]{4,40}|exercice:(?:coherence|ancrage|sommeil|relacher)|vocal:(?:journee|pensees|avant)|chaines|respiration|humeur|programme|journal|defi|compat|vrai_drlo|totem|catalogue)\]\]/gi;
 
 /**
- * Sépare le texte et les boutons proposés (balises n'importe où, retirées du texte).
- * Crise → seul bouton gardé. Sinon : jusqu'à 3 tests, ou une seule autre action.
+ * Sépare le texte et les boutons proposés (balises n'importe où, retirées du texte) : jusqu'à 3 tests, ou une seule autre action.
+ * Plus de balise [[crise]] (10/11/2026, « compagnon d'abord ») : en cas de danger immédiat, le compagnon glisse un numéro
+ * dans sa réponse et reste dans la conversation. Une balise [[crise]] égarée est retirée du texte comme toute balise inconnue.
  */
 function splitActions(raw, channels = {}, tools = {}) {
   let text = String(raw || '');
@@ -194,7 +214,6 @@ function splitActions(raw, channels = {}, tools = {}) {
   // Les identifiants de chaîne gardent leur casse ; une chaîne inconnue est ignorée
   text = text.replace(TAG, (_, t) => { tags.push(/^chaine:/i.test(t) ? `chaine:${t.slice(7)}` : /^pratique:/i.test(t) ? `pratique:${t.slice(9)}` : t.toLowerCase()); return ''; });
   text = text.replace(/\[\[[^\]]{0,60}\]\]/g, '').replace(/[ \t]+\n/g, '\n').replace(/\n{3,}/g, '\n\n').trim();
-  if (tags.includes('crise')) return { text, actions: [{ kind: 'crise' }] };
   const tests = [...new Set(tags.filter(t => t.startsWith('test:')).map(t => t.slice(5)))].slice(0, 3);
   if (tests.length) return { text, actions: tests.map(scaleId => ({ kind: 'test', scaleId })) };
   const other = tags.find(t => !t.startsWith('test:') && (!t.startsWith('chaine:') || Object.prototype.hasOwnProperty.call(channels, t.slice(7))) && (!t.startsWith('pratique:') || Object.prototype.hasOwnProperty.call(tools, t.slice(9))));
@@ -219,9 +238,94 @@ function buildUserMessage(context, message, isFirstMessage = false) {
   return `${prenomLabel} : ${message}`;
 }
 
+// ── La requête envoyée à Claude (logique pure : le banc d'essai construit exactement la même) ──
+
+const EPHEMERAL = { type: 'ephemeral' };
+// Modèles qui acceptent un message { role: 'system' } au milieu de la conversation (doc Anthropic)
+const MID_SYSTEM = /^claude-(haiku-5-5|sonnet-5-5|opus-5-5)/;
+// Contexte du message quand le modèle n'accepte pas de message système au milieu (Haiku 4.5) : il va dans le message
+const CONTEXT_LABEL = '[Contexte transmis par l\'application pour ce message ; elle ne le voit pas]';
+
+/**
+ * Réflexion de Claude Haiku 5.5 (active par défaut ; elle compte dans max_tokens et peut ne laisser aucun texte).
+ * 'off' : coupée ; 'low' : réflexion légère, avec plus de place. Haiku 4.5 : rien n'est ajouté (requête d'aujourd'hui).
+ */
+function thinkingFor(model, mode) {
+  if (!MID_SYSTEM.test(String(model))) return { max_tokens: 800 };
+  if (mode === 'low') return { max_tokens: 2000, output_config: { effort: 'low' } };
+  return { max_tokens: 800, thinking: NO_THINKING };
+}
+
+/**
+ * Corps de la requête Anthropic.
+ * layout 'a1' (par défaut) : règles fixes en premier (cache partagé), puis la personne (cache), puis l'historique
+ * (cache sur son dernier message), puis le message ; ce qui change à chaque message vient après le dernier point de cache.
+ * layout 'ancien' : un seul bloc système, profil et carnet avant les règles (retour en arrière).
+ */
+function buildChatRequest({ context = {}, message = '', historique = [], promptOpts = {}, model = HAIKU_4_5, layout = 'a1', thinking = 'off' } = {}) {
+  // Conversation history: the last 12 messages of the thread
+  const trimmed = (Array.isArray(historique) ? historique : [])
+    .filter(m => m && (m.role === 'user' || m.role === 'assistant') && typeof m.content === 'string' && m.content.trim())
+    .slice(-12);
+  const userText = buildUserMessage(context, message, trimmed.length === 0);
+  const opts = { ...promptOpts, message };
+  const base = { model, ...thinkingFor(model, thinking) };
+
+  if (layout === 'ancien') {
+    return {
+      ...base,
+      system: [{ type: 'text', text: buildSystemPrompt(context, opts), cache_control: EPHEMERAL }],
+      messages: [...trimmed.map(m => ({ role: m.role, content: m.content })), { role: 'user', content: userText }],
+    };
+  }
+
+  const L = buildPromptLayers(context, opts);
+  const last = trimmed.length - 1;
+  const messages = trimmed.map((m, i) => (i === last
+    ? { role: m.role, content: [{ type: 'text', text: m.content, cache_control: EPHEMERAL }] }
+    : { role: m.role, content: m.content }));
+  if (MID_SYSTEM.test(String(model))) {
+    messages.push({ role: 'user', content: userText }, { role: 'system', content: L.dynamic });
+  } else {
+    messages.push({ role: 'user', content: [{ type: 'text', text: `${CONTEXT_LABEL}\n\n${L.dynamic}` }, { type: 'text', text: userText }] });
+  }
+  return {
+    ...base,
+    system: [
+      { type: 'text', text: L.fixed, cache_control: EPHEMERAL },
+      { type: 'text', text: L.personal, cache_control: EPHEMERAL },
+    ],
+    messages,
+  };
+}
+
+/**
+ * Réglages du compagnon, sans rien à régler dans Netlify : Claude Haiku 5.5, réflexion légère (effort low), nouvel ordre du prompt.
+ * Retour en arrière par variables : DRLO_CHAT_MODEL=claude-haiku-4-5-20251001, DRLO_CHAT_THINKING=off, DRLO_CHAT_PROMPT=ancien.
+ */
+function chatSettings(env = process.env) {
+  return {
+    model: modelFrom('DRLO_CHAT_MODEL', HAIKU_5_5, env),
+    layout: String(env.DRLO_CHAT_PROMPT || '').trim() === 'ancien' ? 'ancien' : 'a1',
+    thinking: String(env.DRLO_CHAT_THINKING || '').trim() === 'off' ? 'off' : 'low',
+  };
+}
+
+/** Le contexte complet du prompt : ce que l'appli envoie, plus ce que le serveur calcule (carnet, chaînes, outils, ouvertures). */
+function chatContext(context, memoire, open, chaines, outils) {
+  // Carnet : une note qui parle d'une fonction fermée (« a commencé un programme ») ferait croire qu'elle existe
+  const memoireVue = LA.filterNotesByLaunch(memoire, open);
+  return { ...context, memoire: memoireVue, chaines_txt: open.chaines ? chaines.text : 'Pas encore ouvert : n\'en parle pas.', outils_txt: open.routine ? outils.text : 'Pas encore ouvert : n\'en parle pas.', launch_txt: LA.launchBlock(open), open_features: open };
+}
+
+exports._chatContext = chatContext;
+exports._chatSettings = chatSettings;
 exports._splitAction = splitAction;
 exports._splitActions = splitActions;
 exports._buildSystemPrompt = buildSystemPrompt;
+exports._buildPromptLayers = buildPromptLayers;
+exports._buildChatRequest = buildChatRequest;
+exports._thinkingFor = thinkingFor;
 
 exports.handler = async (event) => {
   if (event.httpMethod === 'OPTIONS') {
@@ -328,29 +432,18 @@ exports.handler = async (event) => {
     outils = PR.chatTools(ps.docs.map(d => ({ id: d.id, p: d.data(), u: byP[d.id] })));
   } catch (e) { console.warn('dr-lo-chat outils', e.message); }
 
-  // System prompt with cache_control (stable across messages in a conversation)
   // Banc d'essai seulement : on peut choisir l'ancien jeu de règles, en essayer un nouveau texte, ou un autre modèle
-  const promptOpts = { message };
-  let model0 = 'claude-haiku-4-5-20251001';
+  const promptOpts = {};
+  // Modèle, ordre du prompt et réflexion : voir chatSettings (Haiku 5.5 effort low par défaut, variables pour revenir en arrière)
+  const settings = chatSettings();
+  let model0 = settings.model;
   if (testMode) {
     if (body.rulesVersion === 'v1') promptOpts.version = 'v1';
     if (typeof body.rules === 'string' && body.rules.trim()) promptOpts.rules = body.rules.slice(0, 40000);
     if (body.model === 'sonnet') model0 = 'claude-sonnet-4-5-20250929';
   }
-  // Carnet : une note qui parle d'une fonction fermée (« a commencé un programme ») ferait croire qu'elle existe
-  const memoireVue = LA.filterNotesByLaunch(memoire, open);
-  const systemPrompt = buildSystemPrompt({ ...context, memoire: memoireVue, chaines_txt: open.chaines ? chaines.text : 'Pas encore ouvert : n\'en parle pas.', outils_txt: open.routine ? outils.text : 'Pas encore ouvert : n\'en parle pas.', launch_txt: LA.launchBlock(open), open_features: open }, promptOpts);
-
-  // Conversation history: the last 12 messages of the thread
-  const trimmedHistory = (Array.isArray(historique) ? historique : [])
-    .filter(m => m && (m.role === 'user' || m.role === 'assistant') && typeof m.content === 'string' && m.content.trim())
-    .slice(-12);
-
-  // Messages array: history + current user message (no duplication)
-  const messages = [
-    ...trimmedHistory.map(m => ({ role: m.role, content: m.content })),
-    { role: 'user', content: buildUserMessage(context, message, trimmedHistory.length === 0) },
-  ];
+  const { layout, thinking } = settings;
+  const fullContext = chatContext(context, memoire, open, chaines, outils);
 
   const MODELS = [model0];
 
@@ -363,30 +456,33 @@ exports.handler = async (event) => {
           'Content-Type': 'application/json',
           'x-api-key': apiKey,
           'anthropic-version': '2023-06-01',
-          'anthropic-beta': 'prompt-caching-2024-07-31',
         },
-        body: JSON.stringify({
-          model,
-          max_tokens: 800,
-          system: [{ type: 'text', text: systemPrompt, cache_control: { type: 'ephemeral' } }],
-          messages,
-        }),
+        body: JSON.stringify(buildChatRequest({ context: fullContext, message, historique, promptOpts, model, layout, thinking })),
       });
 
       if (response.ok) {
         const data = await response.json();
-        const split = splitActions(data?.content?.[0]?.text ?? '', chaines.ids, outils.ids);
+        // Texte lu par type de bloc (Haiku 5.5 peut commencer par un bloc de réflexion)
+        const raw = textOf(data);
+        if (!raw.trim()) {
+          // Réponse vide (ex. réflexion qui a pris toute la place) : traitée comme une panne, l'étincelle est rendue
+          console.warn(`dr-lo-chat empty answer model=${model} stop=${data?.stop_reason || '?'}`);
+          await release();
+          return { statusCode: 502, headers, body: JSON.stringify({ error: 'Réponse vide', error_code: 'ai_unavailable', koris_debited: false }) };
+        }
+        const split = splitActions(raw, chaines.ids, outils.ids);
         const text = split.text;
         const actions = split.actions.filter((a) => LA.allowedAction(a, open));
         await commit();
         if (!testMode) await ST.bump(db, admin, { uid: user.uid, counts: { ev_chat_message: 1 }, features: ['compagnon'] });
         const cached = data?.usage?.cache_read_input_tokens || 0;
+        const written = data?.usage?.cache_creation_input_tokens || 0;
         const total = data?.usage?.input_tokens || 0;
-        console.log(`dr-lo-chat OK model=${model} input=${total} cached=${cached} output=${data?.usage?.output_tokens || 0}`);
+        console.log(`dr-lo-chat OK model=${model} layout=${layout} input=${total} cached=${cached} written=${written} output=${data?.usage?.output_tokens || 0}`);
         return { statusCode: 200, headers, body: JSON.stringify({
           response: text, actions, action: actions[0] || null,
           koris_debited: !!holdId,
-          // Au 2e message du jour puis tous les 3 : l'appli demande au compagnon de mettre son carnet à jour
+          // Au 2e message du jour puis tous les 5 : l'appli demande au compagnon de mettre son carnet à jour
           remember: !testMode && !!slot.next && shouldRemember(Number(slot.next.count)),
         }) };
       }

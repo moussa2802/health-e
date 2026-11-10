@@ -10,7 +10,7 @@ import { ArrowRight, Loader2, Maximize2, Phone, Send, X } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useKoris } from '../../contexts/KorisContext';
 import { KORIS_COSTS } from '../../services/korisService';
-import { addExchange, addOpener, enterCrisis, GO, type AccueilState, type Card } from '../../utils/accueilFlow';
+import { addExchange, addOpener, enterCrisis, CRISIS_SCREEN_AUTO, GO, type AccueilState, type Card } from '../../utils/accueilFlow';
 import { convStorageKey, loadIndex } from '../../utils/conversations';
 import { trimForCloud } from '../../utils/threadSync';
 import { pullThread, pushThread } from '../../services/threadSyncService';
@@ -134,7 +134,7 @@ const DrLoSheet: React.FC<Props> = ({ open, greeting, draft, onClose }) => {
         ? 'Il te manque une étincelle pour ce message. En attendant, ton journal et ton humeur restent gratuits.'
         : out.reason === 'limit' ? 'On a beaucoup parlé aujourd\'hui, on reprend demain. En attendant, tu peux écrire dans ton journal.'
         : 'Je n\'arrive pas à te répondre maintenant (connexion instable). Réessaie dans un instant.']);
-    } else if (out.actions.some(a => a.kind === 'crise')) {
+    } else if (CRISIS_SCREEN_AUTO && out.actions.some(a => a.kind === 'crise')) {
       next = enterCrisis(cur);
     } else {
       refreshBalance();

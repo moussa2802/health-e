@@ -36,7 +36,7 @@ test('résumé des chaînes pour Dr Lô IA : membre, ce qui manque, jamais archi
   assert.deepStrictEqual(Object.keys(r.ids), ['c1', 'c3']);
 });
 
-test('balise [[pratique:ID]] : outil connu seulement, casse gardée, jamais avec [[crise]]', () => {
+test('balise [[pratique:ID]] : outil connu seulement, casse gardée ; [[crise]] n\'existe plus', () => {
   const { _splitActions } = require('../dr-lo-chat.js');
   const tools = { Resp1abc: 'Respiration lente 4-6' };
   let r = _splitActions('Fais ta respiration 4-6 maintenant.\n[[pratique:Resp1abc]]', {}, tools);
@@ -44,6 +44,8 @@ test('balise [[pratique:ID]] : outil connu seulement, casse gardée, jamais avec
   assert.ok(!r.text.includes('[['));
   r = _splitActions('Fais-le.\n[[pratique:Inconnu99]]', {}, tools);
   assert.deepStrictEqual(r.actions, []);
-  r = _splitActions('Danger.\n[[pratique:Resp1abc]]\n[[crise]]', {}, tools);
-  assert.deepStrictEqual(r.actions, [{ kind: 'crise' }]);
+  // Compagnon d'abord (10/11/2026) : une balise [[crise]] égarée est retirée du texte et n'ouvre rien
+  r = _splitActions('Appelle le 1515.\n[[crise]]', {}, tools);
+  assert.deepStrictEqual(r.actions, []);
+  assert.equal(r.text, 'Appelle le 1515.');
 });

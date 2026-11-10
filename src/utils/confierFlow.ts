@@ -4,7 +4,7 @@
  * sauf si la personne demande son avis (payant, comme le journal classique), ou si un message
  * inquiétant apparaît (il sort alors du silence avec les ressources d'urgence, gratuitement).
  */
-import { detectCrisis } from './accueilFlow.ts'; // extension explicite : testable avec node --test
+import { autoCrisis } from './accueilFlow.ts'; // extension explicite : testable avec node --test
 
 export type ConfierItem =
   | { kind: 'entry'; id: string; text: string; at: number; journalId: string | null; status: 'saving' | 'saved' | 'cancelled' | 'error' }
@@ -81,7 +81,7 @@ export function deposit(s: ConfierState, text: string, now = Date.now()): { stat
   const clean = text.trim().slice(0, MAX_ENTRY_CHARS);
   const entryId = `e${s.seq + 1}`;
   let next = add(s, { id: entryId, kind: 'entry', text: clean, at: now, journalId: null, status: 'saving' });
-  const crisis = detectCrisis(clean);
+  const crisis = autoCrisis(clean); // coupé : voir CRISIS_SCREEN_AUTO
   if (crisis) next = add(next, { kind: 'crisis' });
   else next = add(next, { kind: 'ack', text: ackFor(entries(next).length, clean) });
   return { state: next, entryId, crisis };

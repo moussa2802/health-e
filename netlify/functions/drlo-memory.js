@@ -1,13 +1,13 @@
 /**
  * drlo-memory — ce que Dr Lô retient de la personne, d'une discussion à l'autre.
- * Appelée par l'appli au 2e message du jour puis tous les 3 : on met à jour le carnet (notes courtes par thème)
+ * Appelée par l'appli au 2e message du jour puis tous les 5 : on met à jour le carnet (notes courtes par thème)
  * (patients/{uid}.drloMemory), que Dr Lô relit à chaque message. La personne les voit et
  * peut les effacer dans « Mon espace ». Pas facturée à part : elle est comprise dans le prix du message
  * (1 étincelle) ; pour éviter les abus, elle ne tourne que si la personne a écrit à Dr Lô aujourd'hui
  * et pas plus d'une fois par minute.
  */
 const { admin, db, verifyAuth } = require('./_firebase');
-const { cleanNotes, newNotes, buildMemoryPrompt, MAX_NOTES } = require('./_drloMemory');
+const { cleanNotes, applyMemoryDelta, newNotes, buildMemoryPrompt, buildMemoryDeltaPrompt, memoryUserPayload, memoryDeltaMode, MAX_NOTES } = require('./_drloMemory');
 const { modelFrom, textOf, NO_THINKING } = require('./_aiModel');
 
 const headers = {
@@ -43,6 +43,9 @@ exports.handler = async (event) => {
   const lastAt = pd.drloMemoryAt && typeof pd.drloMemoryAt.toMillis === 'function' ? pd.drloMemoryAt.toMillis() : 0;
   if (lastAt && Date.now() - lastAt < 60000) return reply(200, { ok: true, notes: null });
 
+  // Par défaut l'IA réécrit le carnet en entier (le banc du 10/11 : le mode « changements » n'est pas moins cher et oublie plus) ;
+  // DRLO_MEMORY_MODE=changements : l'IA ne renvoie que les changements
+  const delta = memoryDeltaMode();
   try {
     const res = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
@@ -52,14 +55,14 @@ exports.handler = async (event) => {
         model: modelFrom('DRLO_MEMORY_MODEL'),
         max_tokens: 1400,
         thinking: NO_THINKING,
-        system: buildMemoryPrompt(),
-        messages: [{ role: 'user', content: JSON.stringify({ notes_actuelles: current.map(n => (typeof n === 'string' ? { t: n, c: 'vie' } : { t: n.text, c: n.cat || 'vie' })), echanges_recents: turns }) }],
+        system: delta ? buildMemoryDeltaPrompt() : buildMemoryPrompt(),
+        messages: [{ role: 'user', content: memoryUserPayload(current, turns, delta) }],
       }),
     });
     if (!res.ok) return reply(502, { error: 'ia' });
     const data = await res.json();
     const raw = textOf(data);
-    const notes = cleanNotes(raw, current);
+    const notes = delta ? applyMemoryDelta(raw, current) : cleanNotes(raw, current);
     if (!notes) return reply(200, { ok: true, notes: null });
     await ref.set({ drloMemory: notes, drloMemoryAt: admin.firestore.FieldValue.serverTimestamp() }, { merge: true });
     // L'intime n'est jamais affiché dans la discussion (« s'en souviendra ») : quelqu'un peut lire l'écran

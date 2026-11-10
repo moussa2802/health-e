@@ -11,7 +11,8 @@ test('l\'animateur garde son nom ; sans nom, c\'est l\'équipe', () => {
 test('questions et commentaires : modérés, détresse jamais publiée', () => {
   assert.equal(L.checkText('Comment gérer le stress des examens ?', 300).text, 'Comment gérer le stress des examens ?');
   assert.ok(L.checkText('appelle moi au 77 123 45 67', 300).error);
-  assert.equal(L.checkText('j\'ai envie de mourir', 300).crisis, true);
+  // Compagnon d'abord : la détresse n'est plus bloquée
+  assert.equal(L.checkText('j\'ai envie de mourir', 300).text, 'j\'ai envie de mourir');
   assert.ok(L.checkText('a', 300).error);
 });
 

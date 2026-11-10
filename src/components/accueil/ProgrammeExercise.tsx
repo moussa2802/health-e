@@ -8,7 +8,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Check, Play } from 'lucide-react';
 import type { Guide, ProgLearning } from '../../data/programmeLibrary';
 import type { MomentPalette } from '../../utils/drloMoment';
-import { detectCrisis } from '../../utils/accueilFlow';
+import { autoCrisis } from '../../utils/accueilFlow';
 
 import CompanionMark from './CompanionMark';
 const C = { text: '#F4EEE4', soft: '#DCD3C5', muted: '#CFC6B8', faint: '#A79E90', title: '#FBF5EA', sage: '#9DBFAF', ink: '#1C140D', line: 'rgba(255,255,255,.14)' };
@@ -117,7 +117,7 @@ const StepsGuide: React.FC<{ g: Extract<Guide, { kind: 'steps' }>; palette: Mome
   const st = g.steps[i];
   const last = i === g.steps.length - 1;
   const next = () => {
-    if (st.input && detectCrisis(cur)) { onCrisis(cur); return; }
+    if (st.input && autoCrisis(cur)) { onCrisis(cur); return; }
     const all = [...vals]; all[i] = cur.trim();
     if (!last) { setVals(all); setCur(''); setI(i + 1); return; }
     const lines = g.steps.map((s, k) => (s.input && all[k] ? `${s.input} : ${all[k]}` : null)).filter(Boolean);
@@ -163,7 +163,7 @@ const WriteGuide: React.FC<{ g: Extract<Guide, { kind: 'write' }>; palette: Mome
     <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
       <p style={{ margin: 0, fontSize: 16, color: C.title, fontWeight: 600 }}>{g.prompt}</p>
       <textarea value={t} onChange={e => setT(e.target.value)} rows={Math.max(2, g.lines)} maxLength={800} aria-label={g.save} style={field} />
-      <button disabled={!t.trim()} onClick={() => (detectCrisis(t) ? onCrisis(t) : onDone(`${g.save}\n${t.trim()}`))}
+      <button disabled={!t.trim()} onClick={() => (autoCrisis(t) ? onCrisis(t) : onDone(`${g.save}\n${t.trim()}`))}
         style={{ ...btn(palette), alignSelf: 'flex-start', opacity: t.trim() ? 1 : 0.5 }}>Garder dans mon journal</button>
       <p style={{ margin: 0, fontSize: 13, color: C.faint }}>Privé : carnet « Programme » de ton journal.</p>
     </div>

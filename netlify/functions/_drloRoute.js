@@ -3,7 +3,8 @@
  * et choisit où l'emmener (logique pure, testée dans _tests/_drloRoute.test.js).
  *
  * L'IA ne fait que TRIER et répondre en une ou deux phrases : elle ne diagnostique pas,
- * ne donne pas de traitement, et toute détresse part vers « crisis ».
+ * ne donne pas de traitement. « crisis » est réservé au danger immédiat dit clairement (10/11/2026, « compagnon d'abord ») :
+ * l'appli affiche alors la réponse, qui contient un numéro d'aide, et la conversation continue.
  */
 
 const ACTIONS = [
@@ -82,7 +83,8 @@ Destinations possibles (champ "action") :
 - "confier" : elle veut raconter, vider son sac, écrire ce qu'elle a sur le cœur sans être interrompue (journal privé).
 - "breath" : angoisse, crise de panique, cœur qui bat vite, souffle court MAINTENANT, sans idée de mort ni danger : on respire ensemble tout de suite.
 RÈGLE DE CHOIX, PAR ORDRE DE PRIORITÉ
-1. Danger, idées de mort, se faire du mal → "crisis".
+1. Elle dit clairement qu'elle va se tuer ou se faire du mal maintenant, ou qu'elle est en danger immédiat → "crisis". Une image (« ce travail me tue », « mort de fatigue », « liggéey bi dafa may rey »), un souvenir passé ou ce qui arrive à un proche n'en sont pas.
+1 bis. Elle parle clairement d'idées de mort sans dire qu'elle va le faire maintenant (« j'ai envie de mourir », « je pense à me suicider depuis quelques jours », « je me suis coupée hier soir ») → connectée : "chat" ; invitée : "reply", qui l'accueille avec chaleur et pose UNE question ouverte et douce pour comprendre ce qui se passe, sans numéro, sans questionnaire, sans ton médical.
 2. Elle demande une ACTION précise (faire un test, noter son humeur, respirer, lancer un défi, comparer, son programme, ses rappels, voir son totem, la liste des tests) → cette action.
 3. Connectée (« Connecté(e) : oui ») et elle confie une émotion, une situation, un problème de couple, de famille, de travail, de sexualité, ou pose une question sur elle-même → "chat" : le Dr Lô qui la connaît répond vraiment (il pourra proposer un test lui-même si c'est utile). Ne la renvoie pas vers un test à la place d'une écoute.
 4. Invitée (« Connecté(e) : non ») et elle confie une émotion → "test" adapté (repères ci-dessous) : c'est ce qui l'aidera à y voir clair sans compte.
@@ -93,7 +95,7 @@ RÈGLE DE CHOIX, PAR ORDRE DE PRIORITÉ
 - "totem" : seulement si elle demande à VOIR son animal intérieur ou la page de son profil (« montre-moi mon animal intérieur », « c'est quoi mon animal »). Une question sur qui elle est → "chat".
 - "rappels" : elle veut que Dr Lô lui envoie des rappels ou des notifications sur son téléphone, les activer, les régler, ou elle dit qu'elle ne les reçoit pas. Dans ta réponse, dis seulement qu'on règle ça ensemble tout de suite ; l'application affiche la suite.
 - "catalogue" : voir la liste de tous les tests.
-- "crisis" : idées de mort ou de suicide (y compris « à quoi bon vivre ») (même en wolof : « dama bëgg dee », « rey sama bopp », « xaru »…), se faire du mal, danger immédiat, violence subie en ce moment. Dans le doute, choisis "crisis". La réponse dit qu'on prend ça au sérieux et qu'elle a besoin d'une vraie personne maintenant.
+- "crisis" : seulement si elle dit clairement qu'elle va se tuer ou se faire du mal maintenant (même en wolof : « rey sama bopp », « xaru »…), ou qu'elle est en danger immédiat (y compris une violence en train de se passer). Dans le doute, prends ses mots au sens courant et ne choisis pas "crisis". La réponse, chaleureuse et sans alarme, dit qu'elle n'a pas à rester seule avec ça et glisse un numéro d'aide (au Sénégal : SAMU 1515, ou urgences du CHU de Fann +221 33 869 18 20). Jamais de question sur le danger.
 - "reply" : simple échange (bonjour, merci, ça va et toi, question sur le fonctionnement du site, prénom donné…). Réponds et relance doucement sur ce qui l'amène.
 Pendant un test (étape "testing") :
 - "explain" : elle ne comprend pas la question → "reply" = la question reformulée très simplement, avec un exemple concret de la vie de tous les jours (sans orienter la réponse).

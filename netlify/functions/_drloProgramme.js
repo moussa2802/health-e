@@ -21,6 +21,11 @@ const WEEK1_TITLES = {
 };
 
 const ADVICE = ['garder', 'alleger', 'changer'];
+/**
+ * Bilan d'une personne dont l'humeur est basse : avant le 10/11/2026, l'IA rappelait le 1515. Coupé (« compagnon d'abord ») :
+ * un mot chaleureux, sans numéro. Retour en arrière : remettre à true.
+ */
+const BILAN_LOW_MOOD_NUMBER = false;
 
 function clean(s, max) {
   return String(s ?? '').replace(/[\u0000-\u001f]/g, ' ').replace(/\s+/g, ' ').slice(0, max).trim();
@@ -131,7 +136,7 @@ Choisis "advice" :
 - "garder" : le rythme va bien, on continue ainsi ;
 - "alleger" : peu de jours actifs (3 ou moins sur 7) ou fatigue : passer en version légère (5 minutes par jour) ;
 - "changer" : la personne tient le rythme mais l'humeur ne bouge pas du tout ou baisse : proposer de changer d'axe ou de demander l'avis d'un professionnel.
-${c.fragile || (c.moodNow !== null && c.moodNow <= 2) ? 'Son humeur est basse : rappelle avec douceur qu\'en parler à un médecin ou un psychologue est une vraie aide, et que le 1515 répond à toute heure en cas de besoin urgent.' : ''}
+${c.fragile || (c.moodNow !== null && c.moodNow <= 2) ? (BILAN_LOW_MOOD_NUMBER ? 'Son humeur est basse : rappelle avec douceur qu\'en parler à un médecin ou un psychologue est une vraie aide, et que le 1515 répond à toute heure en cas de besoin urgent.' : 'Son humeur est basse : dis-le avec chaleur, sans alarme ni ton médical (ces jours ont l\'air plus lourds, et ce qu\'elle a fait compte quand même) ; tu peux ajouter en une phrase qu\'en parler à quelqu\'un de confiance ou à un professionnel aide vraiment. Pas de numéro de téléphone.') : ''}
 
 Réponds UNIQUEMENT avec un objet JSON sur une ligne :
 {"text":"...","advice":"garder|alleger|changer"}`;

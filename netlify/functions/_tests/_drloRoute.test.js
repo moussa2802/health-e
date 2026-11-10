@@ -53,3 +53,19 @@ test('le prompt contient le message et les tests', () => {
   assert.match(p, /gad7 = Anxiété/);
   assert.match(p, /Question en cours : Q1/);
 });
+
+test('compagnon d\'abord : « crisis » seulement pour un danger immédiat dit clairement, réponse avec un numéro', () => {
+  const p = R.buildSystemPrompt();
+  assert.ok(!p.includes('Dans le doute, choisis "crisis"'));
+  assert.match(p, /Dans le doute, prends ses mots au sens courant et ne choisis pas "crisis"/);
+  assert.match(p, /ce travail me tue/);
+  assert.match(p, /SAMU 1515/);
+  assert.match(p, /Jamais de question sur le danger/);
+});
+
+test('idées de mort sans « maintenant » : chat (connectée) ou réponse avec une question ouverte, sans numéro', () => {
+  const p = R.buildSystemPrompt();
+  assert.match(p, /1 bis\. Elle parle clairement d'idées de mort sans dire qu'elle va le faire maintenant/);
+  assert.match(p, /connectée : "chat" ; invitée : "reply", qui l'accueille avec chaleur et pose UNE question ouverte et douce/);
+  assert.match(p, /sans numéro, sans questionnaire/);
+});

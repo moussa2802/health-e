@@ -9,7 +9,7 @@ import {
 } from '../../src/utils/chatTest.ts';
 import {
   startConversation, respond, beginChatTest, askQuestion, recordChatAnswer, pauseChatTest, alertDuringTest,
-  afterTest, getQuickReplies, type Known,
+  afterTest, getQuickReplies, enterCrisis, TEST_ALERT_NUMBERS, type Known,
 } from '../../src/utils/accueilFlow.ts';
 import type { AssessmentScale } from '../../src/types/assessment.ts';
 
@@ -93,16 +93,20 @@ test('conversation : début, réponse, pause, reprise par la carte', () => {
 test('crise pendant le test : ressources, puis retour au test', () => {
   const t: ActiveTest = { scaleId: 'gad7', sessionId: 'g1', guest: true, answers: { 1: 0 }, askedItemId: 2 };
   let s = beginChatTest(startConversation(k), t, 'intro');
-  s = respond(s, { text: "j'ai envie de mourir" }, k);
+  // Compagnon d'abord : le texte tapé n'ouvre plus l'écran ; l'écran en sommeil marche encore si on l'ouvre
+  assert.notEqual(respond(s, { text: "j'ai envie de mourir" }, k).step, 'crisis');
+  s = enterCrisis(s);
   assert.equal(s.step, 'crisis');
   assert.ok(s.messages.some(m => m.card?.type === 'crisis'));
   s = respond(s, { value: 'crisis:safe', label: 'ok' }, k);
   assert.equal(s.step, 'testing');
   assert.deepEqual(s.activeTest!.answers, { 1: 0 });
-  // alerte venant d'une réponse : carte de crise, le test continue
-  const a = alertDuringTest(s, 'message');
+  // alerte venant d'une réponse (question 9) : un mot chaleureux, sans carte de numéros, le test continue
+  const a = alertDuringTest(s, 'message de l\'échelle');
   assert.equal(a.step, 'testing');
-  assert.equal(a.messages.at(-2)!.card?.type, 'crisis');
+  assert.ok(!a.messages.some(m => m.card?.type === 'crisis' && !s.messages.includes(m)));
+  assert.match(a.messages.at(-1)!.text, /Merci de me l'avoir dit/);
+  assert.ok(!a.messages.some(m => m.text === 'message de l\'échelle'));
 });
 
 test('fin du test : commentaire + lien vers le résultat détaillé', () => {
@@ -116,7 +120,8 @@ test('fin du test : commentaire + lien vers le résultat détaillé', () => {
   assert.deepEqual(first.card, { type: 'result', path: '/assessment/results/g1?guest=true' });
 });
 
-test('réponse critique : jamais « rassurant », pas de test suivant, ressources affichées', () => {
+test('réponse critique : jamais « rassurant », pas de test suivant, mot chaleureux et question ouverte, sans numéros', () => {
+  assert.equal(TEST_ALERT_NUMBERS, false);
   const t: ActiveTest = { scaleId: 'phq9', sessionId: 'g2', guest: true, answers: {}, askedItemId: null };
   const s = beginChatTest(startConversation(k), t, 'intro');
   const done = afterTest(s, { scaleId: 'phq9', resultLabel: 'Moral plutôt bon', severity: 'minimal', referralRequired: false, alertLevel: 3 },
@@ -125,13 +130,14 @@ test('réponse critique : jamais « rassurant », pas de test suivant, ressource
   assert.doesNotMatch(txt, /rassurant/);
   assert.equal(done.prescribed, undefined);
   assert.ok(!done.messages.some(m => m.card?.type === 'test'));
-  assert.ok(done.messages.some(m => m.card?.type === 'crisis'));
-  assert.match(alertDuringTest(s, 'x', true).messages.at(-1)!.text, /regarde l'ensemble/);
+  assert.ok(!done.messages.some(m => m.card?.type === 'crisis'));
+  assert.match(txt, /Qu'est-ce qui rend les choses si lourdes en ce moment \?/);
+  assert.doesNotMatch(txt, /1515|appelle|urgent/i);
+  assert.match(alertDuringTest(s, 'x', true).messages.at(-1)!.text, /on en parle juste après/);
   assert.doesNotMatch(txt, /👏/);
-  // ressources déjà affichées juste avant (alerte pendant le test) : pas de deuxième carte
   const after = afterTest(alertDuringTest(s, 'x', true), { scaleId: 'phq9', resultLabel: 'x', severity: 'minimal', referralRequired: false, alertLevel: 3 },
     { portraitPct: 3, guestRemaining: 2 }, k);
-  assert.equal(after.messages.filter(m => m.card?.type === 'crisis').length, 1);
+  assert.equal(after.messages.filter(m => m.card?.type === 'crisis').length, 0);
 });
 
 test('alerte de niveau 2 : on le signale sans dramatiser, le portrait continue', () => {

@@ -17,10 +17,10 @@ test('déposer : l\'entrée part au journal, Dr Lô répond d\'un mot bref', () 
   assert.notEqual(ackFor(1), ackFor(2));
 });
 
-test('crise : Dr Lô sort du silence (ressources), l\'entrée reste dans le journal', () => {
+test('compagnon d\'abord : la liste de mots n\'ouvre plus d\'alerte dans le journal, l\'entrée est gardée', () => {
   const { state, crisis } = deposit(emptyConfier(), "des fois j'ai envie de mourir");
-  assert.equal(crisis, true);
-  assert.equal(state.items.at(-1)!.kind, 'crisis');
+  assert.equal(crisis, false);
+  assert.equal(state.items.at(-1)!.kind, 'ack');
   assert.equal(entries(state).length, 1);
 });
 

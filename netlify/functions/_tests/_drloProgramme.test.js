@@ -27,12 +27,14 @@ test('propose fragile : le prompt demande d\'orienter vers un professionnel', ()
   assert.match(pr.user, /légère/);
 });
 
-test('bilan : conseil fermé, texte borné, humeur basse → 1515', () => {
+test('bilan : conseil fermé, texte borné, humeur basse → mot chaleureux, sans numéro', () => {
   const c = P.sanitizeBilan({ axis: 'sommeil', week: 9, activeDays: 12, counts: { mood: 3 }, moodNow: 1.5, sleep: { mal: 4 } });
   assert.equal(c.week, 4);
   assert.equal(c.activeDays, 7);
   const pr = P.buildBilanPrompt(c);
-  assert.match(pr.system, /1515/);
+  assert.doesNotMatch(pr.system, /1515/);
+  assert.match(pr.system, /Son humeur est basse : dis-le avec chaleur, sans alarme/);
+  assert.match(pr.system, /Pas de numéro de téléphone/);
   assert.match(pr.user, /4 mauvaises/);
   const b = P.parseBilan(`{"text":"${'a'.repeat(900)}","advice":"tout arrêter"}`);
   assert.equal(b.advice, 'garder');

@@ -20,6 +20,7 @@ import { getResultCardConfig } from '../../data/experiences';
 import { shareResultCard } from '../../utils/shareCard';
 import { isSexualFilterComplete } from '../../utils/sexualHealthFilter';
 import { getCrisisResources } from '../../data/crisisResources';
+import { TEST_ALERT_NUMBERS } from '../../config/alertes';
 import { trackAccueil } from '../../utils/accueilTracking';
 import { openDrLoChat } from '../../components/DrLoChat/drLoEvents';
 import { getScaleMeta } from '../../utils/scaleMeta';
@@ -97,7 +98,14 @@ const ResultatPage: React.FC = () => {
         </button>
       </div>
 
-      {alertLevel >= 2 && (
+      {alertLevel >= 2 && !TEST_ALERT_NUMBERS && (
+        <div role="note" style={{ ...SEC, background: 'rgba(185,166,214,.10)', borderColor: 'rgba(185,166,214,.4)' }}>
+          <p style={{ margin: 0, fontSize: 14, lineHeight: 1.55, color: DC.soft }}>
+            Une de tes réponses mérite qu'on en parle. Si tu veux, le compagnon est là pour t'écouter, sans jugement.
+          </p>
+        </div>
+      )}
+      {alertLevel >= 2 && TEST_ALERT_NUMBERS && (
         <div role="note" style={{ ...SEC, background: 'rgba(240,154,122,.10)', borderColor: 'rgba(240,154,122,.45)' }}>
           <p style={{ margin: 0, fontSize: 14, lineHeight: 1.55, color: DC.soft }}>
             Ce résultat mérite qu'on en parle avec quelqu'un. Si c'est dur maintenant, appelle le {crisisTel}, à toute heure.

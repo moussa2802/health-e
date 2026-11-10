@@ -25,7 +25,7 @@ import { recordMood, fetchMoods } from '../../services/moodService';
 import {
   askAdvice, cleanCarnet, DEFAULT_CARNET, listJournal, loadCarnets, removeConfidence, saveConfidence, updateConfidence, type JournalItem,
 } from '../../services/confierService';
-import { detectCrisis } from '../../utils/accueilFlow';
+import { autoCrisis } from '../../utils/accueilFlow';
 import { ackFor } from '../../utils/confierFlow';
 import { getCrisisResources } from '../../data/crisisResources';
 import { trackAccueil } from '../../utils/accueilTracking';
@@ -206,7 +206,7 @@ const Writer: React.FC<{ uid: string | null; existing: JournalItem | null; palet
         if (mood) fetchMoods(uid, dayKey()).then(m => { if (!m[dayKey()]) void recordMood(uid, dayKey(), mood); }).catch(() => {});
       }
       trackAccueil('confier_entry', { from: existing ? 'journal_edit' : 'journal_page' });
-      const crisis = detectCrisis(t);
+      const crisis = autoCrisis(t);
       if (crisis) trackAccueil('crisis', { at: 'journal' });
       if (existing && !crisis) { navigate(`/journal/${existing.id}`, { replace: true }); return; }
       setAfter({ id, crisis, ack: ackFor(1, t) });

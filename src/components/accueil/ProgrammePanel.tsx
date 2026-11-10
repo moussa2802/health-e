@@ -13,6 +13,7 @@ import {
 } from '../../utils/programme';
 import { CHAPTERS, guideOf, LEARNINGS, QUIZ } from '../../data/programmeLibrary';
 import { getCrisisResources } from '../../data/crisisResources';
+import { PROGRAMME_LOW_MOOD_NUMBERS } from '../../config/alertes';
 import { routineById, TOTEM_ROUTINES } from '../../data/totemGuide';
 import { resolveGender } from '../../utils/gender';
 import type { TotemAnimal } from '../../utils/totemAlgorithm';
@@ -328,7 +329,15 @@ const ProgrammePanel: React.FC<ProgrammePanelProps> = props => {
           </div>
         )}
 
-        {(hard || p.fragile) && (
+        {/* Jours durs : un mot doux, sans numéros (PROGRAMME_LOW_MOOD_NUMBERS coupé) */}
+        {hard && !PROGRAMME_LOW_MOOD_NUMBERS && (
+          <div style={{ ...card, padding: 14, borderColor: 'rgba(185,166,214,.4)', background: 'rgba(185,166,214,.10)' }}>
+            <p style={{ margin: 0, fontSize: 14, lineHeight: 1.55, color: C.soft }}>
+              Ces derniers jours ont l'air plus lourds. Ce que tu fais ici compte quand même. Si tu en as envie, parles-en à quelqu'un de confiance, ou dis-le au compagnon : il est là pour t'écouter.
+            </p>
+          </div>
+        )}
+        {(hard || p.fragile) && PROGRAMME_LOW_MOOD_NUMBERS && (
           <div style={{ ...card, padding: 14, borderColor: 'rgba(185,166,214,.4)', background: 'rgba(185,166,214,.10)' }}>
             <p style={{ margin: 0, fontSize: 14, lineHeight: 1.55, color: C.soft }}>
               {hard

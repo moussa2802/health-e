@@ -117,11 +117,11 @@ test('ancienne réponse (champ answer) : lue comme premier message, la personne 
   assert.equal(r.body.published, true);
 });
 
-test('un mot de détresse n\'est jamais enregistré : message privé de soutien', async () => {
+test('compagnon d\'abord : un mot de détresse est enregistré dans la discussion comme les autres', async () => {
   store.drloQuestions.q4 = { uid: 'user3', text: 'Q', status: 'answered', snapshot: {}, createdAt: 5000, answer: { text: 'R', at: 6000 } };
   const r = await call('user3', { action: 'followup', id: 'q4', text: 'je veux mourir' });
-  assert.equal(r.body.support, true);
-  assert.equal(Array.isArray(store.drloQuestions.q4.thread), false);
+  assert.equal(r.body.support, undefined);
+  assert.equal(store.drloQuestions.q4.thread.at(-1).text, 'je veux mourir');
 });
 
 test('seule la personne concernée peut répondre à sa discussion', async () => {

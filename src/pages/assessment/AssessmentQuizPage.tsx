@@ -32,6 +32,7 @@ import ResultCard from '../../components/assessment/ResultCard';
 import { computeResponseQuality } from '../../utils/responseQuality';
 import type { ResponseQuality } from '../../utils/responseQuality';
 import { getCrisisResources } from '../../data/crisisResources';
+import { TEST_ALERT_NUMBERS } from '../../config/alertes';
 import { shareResultCard } from '../../utils/shareCard';
 
 function getThemeColors(category?: string) {
@@ -232,7 +233,8 @@ const AssessmentQuizPage: React.FC = () => {
       }, 420);
     }
 
-    if (isAlertItem) {
+    // Écran d'aide plein écran (question 9 du test d'humeur) : coupé, voir TEST_ALERT_NUMBERS ; le test continue
+    if (isAlertItem && TEST_ALERT_NUMBERS) {
       const triggered = currentScale.alertItems!.find(a => a.itemId === currentItem.id && value >= a.minValue && a.alertLevel === 3);
       if (triggered) {
         const userGender = getOnboardingProfile()?.genre ?? 'homme';

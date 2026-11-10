@@ -14,8 +14,10 @@ test('numéro, lien, insulte, pseudo invalide, trop long refusés', () => {
   assert.ok(K.prepare('salut', 'pseudo', { pseudo: 'x' }).error);
   assert.ok(K.prepare('a'.repeat(K.MAX_CHAT + 1), 'anon').error);
 });
-test('détresse : jamais publiée', () => {
-  assert.strictEqual(K.prepare('j\'ai envie de mourir', 'anon').crisis, true);
+test('compagnon d\'abord : un message de détresse est publié normalement', () => {
+  const p = K.prepare('j\'ai envie de mourir', 'anon');
+  assert.strictEqual(p.crisis, false);
+  assert.strictEqual(p.text, 'j\'ai envie de mourir');
 });
 test('cadence : 3 s entre messages, 30 par heure', () => {
   assert.ok(!K.rate({ lastChatAt: 1000 }, 2000).ok);

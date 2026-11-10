@@ -49,12 +49,12 @@ test('humeur / respirer → l\'interface ouvre le bon mode ; confier → bouton'
   assert.equal(routeDecision(s, d({ action: 'mood', reply: 'On note ça.' }), member).ui, 'mood');
 });
 
-test('crise : toujours les messages validés, jamais le texte de l\'IA', () => {
-  const s = withUser(startConversation(member), 'dama sonn');
-  const r = routeDecision(s, d({ action: 'crisis', reply: 'texte IA' }), member);
-  assert.equal(r.state.step, 'crisis');
-  assert.ok(!r.state.messages.some(m => m.text === 'texte IA'));
-  assert.equal(r.state.messages.at(-1)!.card?.type, 'crisis');
+test('compagnon d\'abord : « crisis » n\'ouvre plus d\'écran, la réponse de l\'IA (avec un numéro) s\'affiche', () => {
+  const s = withUser(startConversation(member), 'je vais me tuer ce soir');
+  const r = routeDecision(s, d({ action: 'crisis', reply: 'Je suis là. Appelle le SAMU au 1515.' }), member);
+  assert.notEqual(r.state.step, 'crisis');
+  assert.equal(r.state.messages.at(-1)!.text, 'Je suis là. Appelle le SAMU au 1515.');
+  assert.ok(!r.state.messages.some(m => m.card?.type === 'crisis'));
 });
 
 const testing = (): AccueilState => ({

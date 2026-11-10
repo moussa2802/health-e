@@ -75,21 +75,17 @@ test('réservé aux membres ; prénom par défaut ; modération ; limite de 3 ; 
   assert.equal((await call({ action: 'comment_add', postId: 'p1', text: 'Un quatrième', mode: 'prenom' })).status, 400);
 });
 
-test('détresse : jamais publié, message privé, signal sans identité pour Dr Lô', async () => {
+test('compagnon d\'abord : un mot de détresse n\'est plus bloqué ni caché, pas de message d\'alerte', async () => {
   uid = 'm2';
   const r = await call({ action: 'comment_add', postId: 'p1', text: 'je veux me suicider', mode: 'prenom' });
-  assert.equal(r.status, 200); assert.equal(r.body.published, false); assert.equal(r.body.support, true);
-  assert.deepEqual(pushes, [['m2', 'On pense à toi']]);
-  assert.equal(store.channelPosts.p1.stats.comments, 3); // rien publié
-  uid = 'm1';
-  const l = await call({ action: 'comments', postId: 'p1' });
-  assert.equal(l.body.items.length, 3);
-  assert.ok(!l.body.items.some((c) => /suicid/.test(c.text)));
-  uid = 'drlo1';
-  const a = await call({ action: 'comments_list', postId: 'p1' });
-  const d = a.body.items.find((c) => c.status === 'distress');
-  assert.equal(d.name, 'Anonyme'); // pas d'identité
-  assert.equal(JSON.stringify(a.body).includes('m2'), false);
+  assert.equal(r.status, 200); assert.equal(r.body.published, true); assert.equal(r.body.support, undefined);
+  assert.deepEqual(pushes, []);
+  assert.equal(store.channelComments[r.body.id].status, 'public');
+  assert.equal(store.channelComments[r.body.id].hidden, false);
+  // On remet le décor des tests suivants
+  delete store.channelComments[r.body.id];
+  store.channelPosts.p1.stats.comments -= 1;
+  store.channelPostViews && Object.values(store.channelPostViews).forEach((v) => { if (v.uid === 'm2' && typeof v.commentsSeen === 'number') v.commentsSeen -= 1; });
 });
 
 test('Dr Lô répond (texte et vocal), la personne répond à tour de rôle, clôture', async () => {

@@ -47,7 +47,8 @@ import {
   routeDecision,
   newDay,
   firstName,
-  detectCrisis,
+  autoCrisis,
+  CRISIS_SCREEN_AUTO,
   parseAge,
   parseGenre,
   GO,
@@ -1035,12 +1036,12 @@ const ConversationAccueil: React.FC = () => {
     setLearned(null);
     if (breathing) setBreath(null);
     // Défi / compatibilité en préparation : le nom ou le code s'écrivent ici
-    if (flowWantsText(state.flow) && !detectCrisis(text)) { void onFlowText(text); return; }
+    if (flowWantsText(state.flow) && !autoCrisis(text)) { void onFlowText(text); return; }
     // « Active mes rappels », « je reçois pas les notifs »… : géré ici, même en pleine discussion
-    if (isReminderRequest(text) && !detectCrisis(text) && state.step !== 'testing' && state.step !== 'minor') { offerReminders(text); return; }
-    // Gérés sur place, sans IA : la crise (messages validés, immédiats), le mode mineur,
+    if (isReminderRequest(text) && !autoCrisis(text) && state.step !== 'testing' && state.step !== 'minor') { offerReminders(text); return; }
+    // Gérés sur place, sans IA : la crise (messages validés, immédiats ; coupé, voir CRISIS_SCREEN_AUTO), le mode mineur,
     // et les réponses simples aux questions d'identité.
-    const local = detectCrisis(text)
+    const local = autoCrisis(text)
       || state.step === 'minor' || state.step === 'prenom'
       || (state.step === 'genre' && !!parseGenre(text))
       || (state.step === 'age' && !!parseAge(text))
@@ -1499,7 +1500,7 @@ const ConversationAccueil: React.FC = () => {
     const alert = criticalAlert(sc, item.id, opt.value, state.genre);
     if (alert) {
       s = alertDuringTest(s, alert, !nextItem(sc, s.activeTest!.answers));
-      trackAccueil('crisis', { at: 'test' });
+      trackAccueil('crisis', { at: 'test' }); // statistique anonyme seulement (aucun écran : TEST_ALERT_NUMBERS)
     }
     if (nextItem(sc, s.activeTest!.answers)) {
       apply(askNextQuestion(s, sc), state, alert ? 'thinking' : 'quick');
@@ -1792,8 +1793,8 @@ const ConversationAccueil: React.FC = () => {
       return;
     }
     refreshBalance();
-    // Urgence repérée par Dr Lô : messages validés (1515, Fann), jamais le texte de l'IA seul
-    if (out.actions.some(a => a.kind === 'crise')) {
+    // Ancien écran de crise ([[crise]]) : le serveur n'envoie plus cette balise ; gardé derrière CRISIS_SCREEN_AUTO
+    if (CRISIS_SCREEN_AUTO && out.actions.some(a => a.kind === 'crise')) {
       apply(enterCrisis(cur), cur);
       return;
     }

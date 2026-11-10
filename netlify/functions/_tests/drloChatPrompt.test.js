@@ -65,7 +65,6 @@ test('les règles disent le vrai prix d\'un message et rien de plus', () => {
   assert.ok(r.includes('coûte 1 étincelle'));
   assert.ok(r.includes('UNE QUESTION AU PLUS'));
   assert.ok(r.includes('[[pratique:ID]]') && r.includes('LES OUTILS DE DR LÔ'));
-  assert.ok(r.includes('JAMAIS toi-même un numéro de téléphone'));
   assert.ok(!/en tant que médecin, /.test(r.replace(/« en tant que médecin »/g,'')) );
   assert.ok(!/messages? offerts?/i.test(r));
 });
@@ -95,4 +94,45 @@ test('balises exercices guidés et vocaux de soutien', () => {
   assert.deepEqual(split('Écoute ça.\n[[vocal:journee]]').actions, [{ kind: 'vocal', id: 'journee' }]);
   assert.deepEqual(split('x [[exercice:inconnu]]').actions, []);
   assert.ok(rulesV2(false).includes('[[exercice:coherence]]'));
+});
+
+test('compagnon d\'abord (10/11/2026) : plus de balise [[crise]], pas de question sur le danger, un numéro seulement en cas de danger immédiat', () => {
+  const { VOICE } = require('../_drloVoice');
+  for (const r of [rulesV2(true), rulesV2(false)]) {
+    assert.ok(!r.includes('[[crise]]'));
+    assert.ok(r.includes('PRINCIPE N°4 — COMPAGNON D\'ABORD'));
+    assert.match(r, /Tu ne poses JAMAIS de question sur le danger/);
+    assert.match(r, /ce travail me tue/);
+    assert.match(r, /liggéey bi dafa may rey/);
+    assert.match(r, /souvenir qu'elle te confie/);
+    assert.match(r, /demande d'aide pour ce proche/);
+    // Le seul cas à part : danger immédiat dit clairement → les numéros de l'écran de crise, dans le texte
+    assert.match(r, /D\. DANGER IMMÉDIAT — LE SEUL CAS À PART\nSeulement si elle dit clairement qu'elle va se tuer ou se faire du mal maintenant/);
+    for (const n of ['1515', '+221 33 869 18 20', '3114', '988']) assert.ok(r.includes(n), n);
+    assert.ok(!/l'application affiche/.test(r));
+  }
+  assert.ok(VOICE.includes('tu ne poses pas de question sur le danger') && VOICE.includes('1515'));
+});
+
+test('les numéros cités par le compagnon sont ceux de l\'écran de crise (aucun numéro inventé)', () => {
+  const fs = require('node:fs');
+  const path = require('node:path');
+  const src = fs.readFileSync(path.join(__dirname, '..', '..', '..', 'src', 'data', 'crisisResources.ts'), 'utf8');
+  const phones = new Set([...src.matchAll(/phone: '([^']+)'/g)].map((m) => m[1]));
+  const r = rulesV2(false);
+  const fiche = r.slice(r.indexOf('D. DANGER IMMÉDIAT'), r.indexOf('E. QUESTION D\'INFORMATION'));
+  const cited = fiche.match(/\+?\d[\d ]{1,16}\d/g) || [];
+  assert.ok(cited.length >= 4);
+  for (const n of cited) assert.ok(phones.has(n), n);
+});
+
+test('fiche C2 : idées de mort dites sans « maintenant » → accueil et une question ouverte, pas de numéro', () => {
+  const r = rulesV2(false);
+  const c2 = r.slice(r.indexOf('C2. IDÉES DE MORT DITES CLAIREMENT'), r.indexOf('D. DANGER IMMÉDIAT'));
+  assert.ok(c2.length > 200);
+  assert.match(c2, /j'ai envie de mourir/);
+  assert.match(c2, /pose UNE question ouverte et douce pour comprendre/);
+  assert.match(c2, /pas de numéro/);
+  assert.ok(!/1515|3114|988|869/.test(c2));
+  assert.match(r, /Si elle en parle elle-même : fiche C2\./);
 });
