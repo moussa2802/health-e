@@ -44,11 +44,12 @@ const Diaporama: React.FC<{ images: { t: number; image: string }[]; idx: number;
 };
 
 /** Le texte surligné : une phrase par ligne, l'étiquette de qui parle, toucher pour sauter. */
-const Paroles: React.FC<{ lignes: CdsMinutage['lignes']; idx: number; suivre: boolean; accent: string; onSeek: (t: number) => void }> = ({ lignes, idx, suivre, accent, onSeek }) => {
+const Paroles: React.FC<{ lignes: CdsMinutage['lignes']; idx: number; suivre: boolean; accent: string; onSeek: (t: number) => void; marge: number }> = ({ lignes, idx, suivre, accent, onSeek, marge }) => {
   const refs = useRef<(HTMLButtonElement | null)[]>([]);
   useEffect(() => {
     if (!suivre || idx < 0) return;
-    refs.current[idx]?.scrollIntoView({ block: 'center', behavior: moinsDAnimations() ? 'auto' : 'smooth' });
+    // La phrase en cours vient se placer juste sous l'image et le lecteur, qui restent fixés en haut
+    refs.current[idx]?.scrollIntoView({ block: 'start', behavior: moinsDAnimations() ? 'auto' : 'smooth' });
   }, [idx, suivre]);
   return (
     <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 4 }}>
@@ -57,7 +58,7 @@ const Paroles: React.FC<{ lignes: CdsMinutage['lignes']; idx: number; suivre: bo
         const narr = /^narrat/i.test(l.qui);
         return (
           <button key={k} ref={el => { refs.current[k] = el; }} type="button" onClick={() => onSeek(l.t0)} aria-current={on ? 'true' : undefined}
-            style={{ textAlign: 'left', border: 0, borderRadius: 12, padding: '8px 10px', margin: '0 -10px', cursor: 'pointer', fontFamily: 'inherit',
+            style={{ textAlign: 'left', border: 0, borderRadius: 12, padding: '8px 10px', margin: '0 -10px', cursor: 'pointer', fontFamily: 'inherit', scrollMarginTop: marge,
               background: on ? `${accent}22` : 'transparent', transition: 'background .3s ease, color .3s ease' }}>
             {!narr && <span style={{ display: 'block', fontSize: 13, fontWeight: 700, color: accent }}>{l.qui}</span>}
             <span style={{ display: 'block', fontSize: 16, lineHeight: 1.6, color: on ? DC.title : idx >= 0 && k < idx ? DC.soft : DC.text, fontWeight: on ? 600 : 400 }}>{l.texte}</span>
@@ -99,17 +100,26 @@ const AudioSynchro: React.FC<{
     if (playing) setLance(true);
   };
   const synchro = !!minutage && pret && lignes.length > 0;
+  const parolesVisibles = synchro && (!parolesApresLecture || lance);
+  // Pendant l'écoute synchronisée, l'image et le lecteur restent fixés en haut ; seul le texte défile dessous
+  const tete = useRef<HTMLDivElement | null>(null);
+  const [hTete, setHTete] = useState(0);
+  useEffect(() => {
+    const el = tete.current; if (!el || typeof ResizeObserver === 'undefined') return;
+    const ro = new ResizeObserver(() => setHTete(el.getBoundingClientRect().height)); ro.observe(el);
+    return () => ro.disconnect();
+  }, [parolesVisibles]);
   return (
     <>
+      <div ref={tete} style={parolesVisibles ? { position: 'sticky', top: 0, zIndex: 5, background: 'rgb(33,25,19)', paddingTop: 8, paddingBottom: 8, margin: '0 -8px', paddingLeft: 8, paddingRight: 8, boxShadow: '0 10px 14px -10px rgba(0,0,0,.7)' } : undefined}>
       {image && (images.length && pret
         ? <Diaporama images={images} idx={idxI} fixe={image.src} ratio={image.ratio} tint={accent} radius={image.radius ?? 12} fallback={image.fallback} />
         : <Illustration src={image.src} ratio={image.ratio} tint={accent} radius={image.radius ?? 12} fallback={image.fallback} />)}
       {/* Lecteur collé en haut de l'écran pendant la lecture synchronisée : on peut mettre en pause en lisant */}
-      <div style={synchro && joue ? { position: 'sticky', top: 8, zIndex: 5, background: 'rgba(23,16,10,.92)', borderRadius: 14, padding: '2px 8px 8px', margin: '0 -8px' } : undefined}>
-        <LecteurAudio src={src} accent={accent} label={label} compact={compact} onTime={onTime} onPret={setPret} controle={controle} />
+      <LecteurAudio src={src} accent={accent} label={label} compact={compact} onTime={onTime} onPret={setPret} controle={controle} />
       </div>
-      {synchro && (!parolesApresLecture || lance)
-        ? <Paroles lignes={lignes} idx={idxL} suivre={joue} accent={accent} onSeek={t => controle.current?.seek(t)} />
+      {parolesVisibles
+        ? <Paroles lignes={lignes} idx={idxL} suivre={joue} accent={accent} marge={hTete + 12} onSeek={t => controle.current?.seek(t)} />
         : texte}
     </>
   );
