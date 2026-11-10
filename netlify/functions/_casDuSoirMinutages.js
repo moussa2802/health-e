@@ -485,5 +485,204 @@ module.exports = {
         "image": "cas-vu-de-minuit-couverture.webp"
       }
     ]
+  },
+  "vu-de-minuit-ep3": {
+    "duree": 150.82,
+    "lignes": [
+      {
+        "t0": 4.48,
+        "t1": 10.64,
+        "qui": "Narrateur",
+        "texte": "Le cas du soir. Le message de minuit. Épisode trois : Le code."
+      },
+      {
+        "t0": 11.99,
+        "t1": 15.83,
+        "qui": "Narrateur",
+        "texte": "Il est une heure du matin. Diarra n'a pas tenu. Elle sort de la chambre."
+      },
+      {
+        "t0": 16.18,
+        "t1": 18.34,
+        "qui": "Diarra",
+        "texte": "C'est qui, Aïcha ?"
+      },
+      {
+        "t0": 18.69,
+        "t1": 21.57,
+        "qui": "Narrateur",
+        "texte": "Iba lève les yeux de la télé. Une seconde de trop."
+      },
+      {
+        "t0": 21.92,
+        "t1": 27.84,
+        "qui": "Iba",
+        "texte": "Aïcha… c'est Aïcha. Tu sais bien. C'était il y a huit ans."
+      },
+      {
+        "t0": 28.19,
+        "t1": 31.07,
+        "qui": "Diarra",
+        "texte": "Et pourquoi elle t'écrit à minuit : tu n'as pas changé ?"
+      },
+      {
+        "t0": 31.42,
+        "t1": 39.02,
+        "qui": "Iba",
+        "texte": "J'ai mis en statut une vieille photo de l'équipe de foot du quartier. Elle a répondu. C'est tout."
+      },
+      {
+        "t0": 39.37,
+        "t1": 41.37,
+        "qui": "Diarra",
+        "texte": "Et toi, tu lui as répondu quoi ?"
+      },
+      {
+        "t0": 41.72,
+        "t1": 43,
+        "qui": "Narrateur",
+        "texte": "Il se frotte le visage."
+      },
+      {
+        "t0": 43.35,
+        "t1": 55.27,
+        "qui": "Iba",
+        "texte": "Pourquoi je dois toujours tout expliquer ? L'année dernière, ma collègue Ndéye, tu m'as fait la tête une semaine. Cette fois, je n'ai rien dit, parce que je savais que ça finirait comme ça."
+      },
+      {
+        "t0": 55.62,
+        "t1": 58.18,
+        "qui": "Diarra",
+        "texte": "Comme quoi ? Comme une femme qui demande la vérité ?"
+      },
+      {
+        "t0": 58.53,
+        "t1": 60.13,
+        "qui": "Iba",
+        "texte": "Comme un tribunal !"
+      },
+      {
+        "t0": 60.48,
+        "t1": 65.28,
+        "qui": "Narrateur",
+        "texte": "Sa voix monte. La sienne aussi. Puis Iba se lève, prend une natte, et sort."
+      },
+      {
+        "t0": 65.63,
+        "t1": 69.31,
+        "qui": "Iba",
+        "texte": "Je dors sur la terrasse. J'ai besoin d'air."
+      },
+      {
+        "t0": 74.66,
+        "t1": 82.02,
+        "qui": "Narrateur",
+        "texte": "La porte se ferme. Le silence revient. Et sur la table basse, il y a le téléphone. Il l'a oublié."
+      },
+      {
+        "t0": 82.37,
+        "t1": 89.65,
+        "qui": "Narrateur",
+        "texte": "Diarra connaît le code : la date de leur mariage. Il le lui avait donné un jour, en riant : « Je n'ai rien à cacher. »"
+      },
+      {
+        "t0": 91.48,
+        "t1": 95,
+        "qui": "Narrateur",
+        "texte": "Son propre téléphone vibre. C'est Coumba, réveillée elle aussi."
+      },
+      {
+        "t0": 95.35,
+        "t1": 96.87,
+        "qui": "Coumba",
+        "texte": "Alors ?"
+      },
+      {
+        "t0": 97.22,
+        "t1": 102.02,
+        "qui": "Diarra",
+        "texte": "Il dit que c'est rien. Il est sorti. Il a laissé son téléphone."
+      },
+      {
+        "t0": 102.37,
+        "t1": 107.49,
+        "qui": "Coumba",
+        "texte": "Waaw, xoolal ko ! (Oui, regarde-le !) Maintenant ou jamais. Tu dormiras mieux après."
+      },
+      {
+        "t0": 107.84,
+        "t1": 110.56,
+        "qui": "Narrateur",
+        "texte": "Diarra prend le téléphone. Il est encore tiède."
+      },
+      {
+        "t0": 110.91,
+        "t1": 112.99,
+        "qui": "Narrateur",
+        "texte": "Son pouce est juste au-dessus de l'écran."
+      },
+      {
+        "t0": 116.34,
+        "t1": 121.86,
+        "qui": "Narrateur",
+        "texte": "Dehors, elle entend Iba tousser sur la terrasse. Dans sa poitrine, la main serre plus fort que jamais."
+      },
+      {
+        "t0": 122.21,
+        "t1": 130.45,
+        "qui": "Diarra",
+        "texte": "Si je regarde, je saurai. Si je ne regarde pas, je ne dormirai pas. Ou peut-être que c'est l'inverse."
+      },
+      {
+        "t0": 132.3,
+        "t1": 139.9,
+        "qui": "Narrateur",
+        "texte": "Ce soir, c'est toi qui décides. Le choix le plus voté sera la suite de l'histoire. À sa place, qu'est-ce que tu fais ? Vote, juste en dessous."
+      },
+      {
+        "t0": 144.73,
+        "t1": 148.97,
+        "qui": "Narrateur",
+        "texte": "La suite dépend de vous. Rendez-vous demain soir, à vingt heures."
+      }
+    ],
+    "images": [
+      {
+        "t": 0,
+        "image": "cas-vu-de-minuit-ep3-couloir.webp"
+      },
+      {
+        "t": 21.92,
+        "image": "cas-vu-de-minuit-ep3-photo.webp"
+      },
+      {
+        "t": 43.35,
+        "image": "cas-vu-de-minuit-ep3-tribunal.webp"
+      },
+      {
+        "t": 65.63,
+        "image": "cas-vu-de-minuit-ep3-natte.webp"
+      },
+      {
+        "t": 74.66,
+        "image": "cas-vu-de-minuit-ep3-table.webp"
+      },
+      {
+        "t": 90,
+        "image": "cas-vu-de-minuit-ep3-coumba.webp"
+      },
+      {
+        "t": 107.84,
+        "image": "cas-vu-de-minuit-ep3.webp"
+      },
+      {
+        "t": 110.91,
+        "image": "cas-vu-de-minuit-ep3-pouce.webp"
+      },
+      {
+        "t": 132.3,
+        "image": "cas-vu-de-minuit-couverture.webp"
+      }
+    ]
   }
 };
