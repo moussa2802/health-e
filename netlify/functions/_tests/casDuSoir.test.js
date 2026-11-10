@@ -349,7 +349,9 @@ test('minutage : envoyé avec l\'épisode 1 et l\'intrigue, jamais en public pou
   assert.equal(ep1.minutage, M['vu-de-minuit-ep1']);
   assert.ok(ep1.minutage.lignes.length > 10 && ep1.minutage.images.length >= 1);
   assert.equal(K.vueHistoire(H, 0, { parus: 0 }).intrigueMinutage, M['vu-de-minuit-intrigue']);
-  assert.equal(K.vueEpisode(H, 2, H.episodes[1]).minutage, null);
+  // L'épisode 2 a maintenant son minutage (envoyé avec l'épisode, jamais en public) ; l'épisode 3 n'en a pas encore
+  assert.equal(K.vueEpisode(H, 2, H.episodes[1]).minutage, M['vu-de-minuit-ep2']);
+  assert.equal(K.vueEpisode(H, 3, H.episodes[2]).minutage, null);
   const casse = JSON.parse(JSON.stringify(H));
   casse.episodes[1].audio = '/audio/cas-du-soir/vu-de-minuit-ep2.mp3';
   casse.episodes[2].minutage = 'inconnu';

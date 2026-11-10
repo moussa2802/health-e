@@ -262,5 +262,228 @@ module.exports = {
         "image": "cas-vu-de-minuit-couverture.webp"
       }
     ]
+  },
+  "vu-de-minuit-ep2": {
+    "duree": 168.88,
+    "lignes": [
+      {
+        "t0": 4.48,
+        "t1": 8.96,
+        "qui": "Narrateur",
+        "texte": "Le cas du soir. Le message de minuit. Épisode deux : Six appels."
+      },
+      {
+        "t0": 10.31,
+        "t1": 13.51,
+        "qui": "Narrateur",
+        "texte": "Le lendemain, Diarra n'a rien dit. Mais elle n'a pensé qu'à ça."
+      },
+      {
+        "t0": 14.66,
+        "t1": 17.62,
+        "qui": "Narrateur",
+        "texte": "À neuf heures, elle regarde si Iba est « en ligne »."
+      },
+      {
+        "t0": 17.97,
+        "t1": 21.41,
+        "qui": "Narrateur",
+        "texte": "À dix heures, elle écrit : « Tu es où ? » Pas de réponse."
+      },
+      {
+        "t0": 21.76,
+        "t1": 23.2,
+        "qui": "Narrateur",
+        "texte": "À onze heures : « Tu as mangé ? »"
+      },
+      {
+        "t0": 27.55,
+        "t1": 29.79,
+        "qui": "Narrateur",
+        "texte": "À midi, un appel. Puis deux."
+      },
+      {
+        "t0": 30.14,
+        "t1": 33.5,
+        "qui": "Narrateur",
+        "texte": "À quatorze heures, un message vocal où elle rit un peu trop fort."
+      },
+      {
+        "t0": 37.85,
+        "t1": 40.49,
+        "qui": "Narrateur",
+        "texte": "À quinze heures, encore un appel. Six en tout."
+      },
+      {
+        "t0": 44.84,
+        "t1": 48.12,
+        "qui": "Narrateur",
+        "texte": "Iba finit par décrocher, essoufflé, avec le vent dans le micro."
+      },
+      {
+        "t0": 48.47,
+        "t1": 51.51,
+        "qui": "Iba",
+        "texte": "Diarra, je suis à trente mètres de haut ! Qu'est-ce qu'il y a ?"
+      },
+      {
+        "t0": 51.86,
+        "t1": 54.82,
+        "qui": "Diarra",
+        "texte": "Rien… Je voulais juste entendre ta voix."
+      },
+      {
+        "t0": 55.17,
+        "t1": 57.33,
+        "qui": "Iba",
+        "texte": "Bon. Je te rappelle."
+      },
+      {
+        "t0": 57.68,
+        "t1": 60.16,
+        "qui": "Narrateur",
+        "texte": "Il ne rappelle pas."
+      },
+      {
+        "t0": 61.31,
+        "t1": 68.27,
+        "qui": "Narrateur",
+        "texte": "Au salon, Coumba tresse une cliente à côté d'elle. Diarra lui a tout raconté, à voix basse. Coumba fait claquer sa langue."
+      },
+      {
+        "t0": 68.62,
+        "t1": 77.5,
+        "qui": "Coumba",
+        "texte": "Aïcha ? La fille d'Italie ? Dafa am lu muy nëbb. (Il cache quelque chose.) Un homme qui ne dit rien, c'est un homme qui prépare quelque chose."
+      },
+      {
+        "t0": 77.85,
+        "t1": 78.81,
+        "qui": "Diarra",
+        "texte": "Il n'est pas comme ça…"
+      },
+      {
+        "t0": 79.16,
+        "t1": 83.48,
+        "qui": "Coumba",
+        "texte": "Ils sont tous « pas comme ça », jusqu'au jour où on t'annonce la deuxième !"
+      },
+      {
+        "t0": 83.83,
+        "t1": 86.79,
+        "qui": "Narrateur",
+        "texte": "La cliente éclate de rire. Diarra, non."
+      },
+      {
+        "t0": 87.14,
+        "t1": 92.98,
+        "qui": "Narrateur",
+        "texte": "En fin d'après-midi, elle passe chez sa belle-mère, juste à côté. Yaay Fatou la regarde longtemps."
+      },
+      {
+        "t0": 93.33,
+        "t1": 102.37,
+        "qui": "Yaay Fatou",
+        "texte": "Tu as la tête de quelqu'un qui n'a pas dormi. Écoute, ma fille. Un foyer, ça tient avec le muñ. (La patience.) Toi, tu restes digne."
+      },
+      {
+        "t0": 102.72,
+        "t1": 108.64,
+        "qui": "Narrateur",
+        "texte": "Diarra hoche la tête. Muñ. Elle ne sait pas si ça veut dire attendre, ou se taire."
+      },
+      {
+        "t0": 113.79,
+        "t1": 121.39,
+        "qui": "Narrateur",
+        "texte": "Iba rentre à vingt-deux heures. Il tient une petite boîte de thiakry, le dessert de mil qu'elle adore. Comme avant. Elle ne la prend pas."
+      },
+      {
+        "t0": 125.74,
+        "t1": 129.42,
+        "qui": "Narrateur",
+        "texte": "Elle sert le repas sans un mot, mange debout, lave son assiette."
+      },
+      {
+        "t0": 129.77,
+        "t1": 131.69,
+        "qui": "Iba",
+        "texte": "Diarra, qu'est-ce que j'ai fait ?"
+      },
+      {
+        "t0": 132.04,
+        "t1": 133.64,
+        "qui": "Diarra",
+        "texte": "Tu sais très bien."
+      },
+      {
+        "t0": 133.99,
+        "t1": 138.63,
+        "qui": "Iba",
+        "texte": "Non, je ne sais pas ! Six appels aujourd'hui, et maintenant le silence ?"
+      },
+      {
+        "t0": 138.98,
+        "t1": 146.9,
+        "qui": "Narrateur",
+        "texte": "Il s'assied devant la télévision. Elle part dans la chambre. Entre eux, le mur de la cuisine. Et quelque chose de plus épais que le mur."
+      },
+      {
+        "t0": 148.75,
+        "t1": 153.15,
+        "qui": "Narrateur",
+        "texte": "Elle voulait qu'il vienne vers elle. Lui ne savait plus comment s'approcher."
+      },
+      {
+        "t0": 155,
+        "t1": 159.88,
+        "qui": "Narrateur",
+        "texte": "Et toi ? Si tu étais à la place de Diarra… qu'est-ce que tu aurais fait ? Vote, juste en dessous."
+      },
+      {
+        "t0": 164.71,
+        "t1": 167.03,
+        "qui": "Narrateur",
+        "texte": "La suite, demain soir, à vingt heures."
+      }
+    ],
+    "images": [
+      {
+        "t": 0,
+        "image": "cas-vu-de-minuit-ep2-matin.webp"
+      },
+      {
+        "t": 40.84,
+        "image": "cas-vu-de-minuit-ep2-pylone.webp"
+      },
+      {
+        "t": 61.31,
+        "image": "cas-vu-de-minuit-ep2.webp"
+      },
+      {
+        "t": 87.14,
+        "image": "cas-vu-de-minuit-yaay.webp"
+      },
+      {
+        "t": 109.79,
+        "image": "cas-vu-de-minuit-ep2-thiakry.webp"
+      },
+      {
+        "t": 121.74,
+        "image": "cas-vu-de-minuit-ep2-assiette.webp"
+      },
+      {
+        "t": 129.77,
+        "image": "cas-vu-de-minuit-ep2-dispute.webp"
+      },
+      {
+        "t": 138.98,
+        "image": "cas-vu-de-minuit-ep2-mur.webp"
+      },
+      {
+        "t": 155,
+        "image": "cas-vu-de-minuit-couverture.webp"
+      }
+    ]
   }
 };
