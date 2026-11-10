@@ -46,6 +46,8 @@ let jourApercu: number | null = null;
 export const setJourApercu = (j: number | null) => { jourApercu = j; };
 
 async function call<T>(body: Record<string, unknown>): Promise<T> {
+  // Attendre que Firebase ait restauré la session : sinon, au premier affichage, l'appel part sans jeton (vu comme visiteur)
+  try { await (auth as { authStateReady?: () => Promise<void> } | null)?.authStateReady?.(); } catch { /* ignore */ }
   const user = auth?.currentUser ?? null;
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
   if (user) headers.Authorization = `Bearer ${await user.getIdToken()}`;
