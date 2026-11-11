@@ -1060,5 +1060,192 @@ module.exports = {
         "image": "cas-vu-de-minuit-couverture.webp"
       }
     ]
+  },
+  "vu-de-minuit-ep5b": {
+    "duree": 164.52,
+    "lignes": [
+      {
+        "t0": 4.48,
+        "t1": 9.28,
+        "qui": "Narrateur",
+        "texte": "Le cas du soir. Le message de minuit. Épisode cinq : Le faire-part."
+      },
+      {
+        "t0": 10.63,
+        "t1": 16.47,
+        "qui": "Narrateur",
+        "texte": "Trois semaines plus tard. Un samedi, au salon, Coumba arrive avec son téléphone levé comme un trophée."
+      },
+      {
+        "t0": 16.82,
+        "t1": 24.34,
+        "qui": "Coumba",
+        "texte": "Diarra ! Tu as vu ? Aïcha se marie ! Elle a envoyé le faire-part à toute l'équipe de foot du quartier… et à Iba."
+      },
+      {
+        "t0": 24.69,
+        "t1": 38.05,
+        "qui": "Narrateur",
+        "texte": "Diarra sent la vieille chaleur monter. La main dans la poitrine. Iba invité. Iba qui va la revoir. Iba en grand boubou, à quelques pas de celle d'avant. Ses doigts cherchent déjà son téléphone pour appeler."
+      },
+      {
+        "t0": 39.4,
+        "t1": 46.12,
+        "qui": "Narrateur",
+        "texte": "Elle s'arrête. Elle reconnaît la sensation. Elle lui a donné un nom, cette nuit-là, sur la terrasse : la vieille peur."
+      },
+      {
+        "t0": 47.27,
+        "t1": 52.23,
+        "qui": "Narrateur",
+        "texte": "Elle pose ses ciseaux. Elle inspire, en comptant jusqu'à quatre."
+      },
+      {
+        "t0": 52.58,
+        "t1": 55.78,
+        "qui": "Narrateur",
+        "texte": "Un… deux… trois… quatre."
+      },
+      {
+        "t0": 56.93,
+        "t1": 59.01,
+        "qui": "Narrateur",
+        "texte": "Elle souffle, en comptant jusqu'à quatre."
+      },
+      {
+        "t0": 59.36,
+        "t1": 62.56,
+        "qui": "Narrateur",
+        "texte": "Un… deux… trois… quatre."
+      },
+      {
+        "t0": 63.71,
+        "t1": 65.87,
+        "qui": "Narrateur",
+        "texte": "Une fois. Deux fois."
+      },
+      {
+        "t0": 67.72,
+        "t1": 68.6,
+        "qui": "Narrateur",
+        "texte": "Puis elle n'appelle pas."
+      },
+      {
+        "t0": 68.95,
+        "t1": 70.63,
+        "qui": "Narrateur",
+        "texte": "Elle écrit un seul message :"
+      },
+      {
+        "t0": 71.98,
+        "t1": 79.98,
+        "qui": "Diarra",
+        "texte": "« Coumba vient de me parler du mariage d'Aïcha. Je sens la vieille peur qui revient. Rien de grave, je voulais juste te le dire. »"
+      },
+      {
+        "t0": 81.13,
+        "t1": 84.97,
+        "qui": "Narrateur",
+        "texte": "La réponse arrive deux minutes plus tard. Iba est sur une antenne, à Thiaroye."
+      },
+      {
+        "t0": 86.32,
+        "t1": 96.08,
+        "qui": "Iba",
+        "texte": "« Merci de me le dire. J'allais t'en parler ce soir. On y va ensemble si tu veux, ou on n'y va pas. C'est toi qui choisis. Et je ramène du thiakry. »"
+      },
+      {
+        "t0": 96.43,
+        "t1": 99.39,
+        "qui": "Narrateur",
+        "texte": "Diarra sourit à son écran. Coumba se penche."
+      },
+      {
+        "t0": 99.74,
+        "t1": 103.58,
+        "qui": "Coumba",
+        "texte": "Alors ? Il a dit quoi ? Moi, à ta place…"
+      },
+      {
+        "t0": 103.93,
+        "t1": 109.69,
+        "qui": "Diarra",
+        "texte": "Coumba. Merci de veiller sur moi, vraiment. Mais ça, je le règle avec lui."
+      },
+      {
+        "t0": 115.04,
+        "t1": 119.44,
+        "qui": "Narrateur",
+        "texte": "Le soir, Iba rentre avec la petite boîte de thiakry. Cette fois, elle la prend."
+      },
+      {
+        "t0": 120.39,
+        "t1": 132.79,
+        "qui": "Narrateur",
+        "texte": "Ils parlent du mariage. De ce qu'elle ressent. De ce que lui ressent, à revoir une vieille histoire. Ça ne dure pas longtemps. Ce n'est pas un tribunal. Ce sont juste deux personnes qui se racontent leur journée, y compris la partie qui fait peur."
+      },
+      {
+        "t0": 134.14,
+        "t1": 142.62,
+        "qui": "Narrateur",
+        "texte": "La peur reviendra sans doute, un autre soir, avec un autre message. Mais maintenant, Diarra sait la reconnaître. Et elle sait qu'elle a le droit de la dire."
+      },
+      {
+        "t0": 144.47,
+        "t1": 149.03,
+        "qui": "Narrateur",
+        "texte": "Ce n'est pas l'absence de peur qui fait un couple solide. C'est ce qu'on en fait, quand elle arrive."
+      },
+      {
+        "t0": 150.88,
+        "t1": 155.2,
+        "qui": "Narrateur",
+        "texte": "Et toi ? Selon toi, qu'est-ce qui a le plus changé chez Diarra ? Vote, juste en dessous."
+      },
+      {
+        "t0": 160.03,
+        "t1": 162.67,
+        "qui": "Narrateur",
+        "texte": "La leçon de Dr Lô vous attend juste après."
+      }
+    ],
+    "images": [
+      {
+        "t": 0,
+        "image": "cas-vu-de-minuit-ep5b-trophee.webp"
+      },
+      {
+        "t": 24.69,
+        "image": "cas-vu-de-minuit-ep5b-peur.webp"
+      },
+      {
+        "t": 47.27,
+        "image": "cas-vu-de-minuit-ep5B.webp"
+      },
+      {
+        "t": 68.95,
+        "image": "cas-vu-de-minuit-ep5b-message.webp"
+      },
+      {
+        "t": 81.13,
+        "image": "cas-vu-de-minuit-ep5b-antenne.webp"
+      },
+      {
+        "t": 96.43,
+        "image": "cas-vu-de-minuit-ep5b-coumba.webp"
+      },
+      {
+        "t": 111.04,
+        "image": "cas-vu-de-minuit-ep5b-thiakry.webp"
+      },
+      {
+        "t": 120.39,
+        "image": "cas-vu-de-minuit-ep5b-discussion.webp"
+      },
+      {
+        "t": 150.88,
+        "image": "cas-vu-de-minuit-couverture.webp"
+      }
+    ]
   }
 };
