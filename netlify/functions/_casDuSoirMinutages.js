@@ -861,5 +861,204 @@ module.exports = {
         "image": "cas-vu-de-minuit-couverture.webp"
       }
     ]
+  },
+  "vu-de-minuit-ep4b": {
+    "duree": 164.48,
+    "lignes": [
+      {
+        "t0": 4.48,
+        "t1": 9.2,
+        "qui": "Narrateur",
+        "texte": "Le cas du soir. Le message de minuit. Épisode quatre : La terrasse."
+      },
+      {
+        "t0": 10.55,
+        "t1": 17.19,
+        "qui": "Narrateur",
+        "texte": "Diarra pose le téléphone, l'écran contre la table. Ses mains tremblent un peu. Elle répond à Coumba."
+      },
+      {
+        "t0": 18.54,
+        "t1": 20.22,
+        "qui": "Diarra",
+        "texte": "« Non. Je vais lui parler. »"
+      },
+      {
+        "t0": 20.57,
+        "t1": 22.41,
+        "qui": "Narrateur",
+        "texte": "Et elle éteint aussi son téléphone à elle."
+      },
+      {
+        "t0": 23.56,
+        "t1": 33.96,
+        "qui": "Narrateur",
+        "texte": "Dehors, l'air de la nuit sent le sel et le charbon d'un fourneau voisin. Iba est assis sur la natte, le dos contre le mur, les yeux sur les toits. Il ne se retourne pas."
+      },
+      {
+        "t0": 34.31,
+        "t1": 35.91,
+        "qui": "Diarra",
+        "texte": "Tu as oublié ton téléphone."
+      },
+      {
+        "t0": 36.26,
+        "t1": 37.7,
+        "qui": "Iba",
+        "texte": "Je sais."
+      },
+      {
+        "t0": 38.05,
+        "t1": 45.41,
+        "qui": "Narrateur",
+        "texte": "Elle s'assied à côté de lui. Pas trop près. Elle cherche ses mots. Ils ne viennent pas comme elle voudrait. Alors elle dit la vérité, telle quelle."
+      },
+      {
+        "t0": 45.76,
+        "t1": 64.4,
+        "qui": "Diarra",
+        "texte": "Quand j'ai vu le message… j'ai senti comme une main qui me serrait le cœur. J'ai eu peur. Peur de te perdre. Peur de ne pas être assez. C'est pour ça que j'ai appelé six fois. C'est pour ça que j'ai boudé. Ce n'était pas pour te punir. C'était la peur."
+      },
+      {
+        "t0": 65.55,
+        "t1": 70.83,
+        "qui": "Narrateur",
+        "texte": "Iba se tourne enfin vers elle. Il s'attendait à une dispute. Il ne sait pas quoi faire d'une peur."
+      },
+      {
+        "t0": 71.18,
+        "t1": 73.58,
+        "qui": "Iba",
+        "texte": "Tu as eu peur… de moi ?"
+      },
+      {
+        "t0": 73.93,
+        "t1": 74.81,
+        "qui": "Diarra",
+        "texte": "Non. Pour nous."
+      },
+      {
+        "t0": 75.16,
+        "t1": 76.84,
+        "qui": "Narrateur",
+        "texte": "Il se tait longtemps. Puis :"
+      },
+      {
+        "t0": 78.19,
+        "t1": 102.67,
+        "qui": "Iba",
+        "texte": "Je ne t'ai rien dit parce que, l'année dernière, avec Ndeye, tu m'as fait la tête une semaine. Je me suis dit : si je ne dis rien, il n'y aura pas de problème. Mais c'est le silence qui a fait le problème. Et je vais être honnête aussi. Quand tu appelles six fois, ou quand tu ne parles plus, je me sens comme un voleur. Alors je m'éloigne. Je viens dormir dehors."
+      },
+      {
+        "t0": 103.02,
+        "t1": 106.46,
+        "qui": "Diarra",
+        "texte": "Et moi, quand tu t'éloignes… j'appelle encore plus."
+      },
+      {
+        "t0": 107.61,
+        "t1": 111.45,
+        "qui": "Narrateur",
+        "texte": "Ils se regardent. Pour la première fois de la soirée, Iba sourit, un peu."
+      },
+      {
+        "t0": 111.8,
+        "t1": 113.72,
+        "qui": "Iba",
+        "texte": "On tourne en rond, hein ?"
+      },
+      {
+        "t0": 114.07,
+        "t1": 116.07,
+        "qui": "Diarra",
+        "texte": "Comme deux chèvres autour du même piquet."
+      },
+      {
+        "t0": 116.42,
+        "t1": 119.54,
+        "qui": "Narrateur",
+        "texte": "Il rit. Elle aussi. Ça ne règle pas tout."
+      },
+      {
+        "t0": 119.89,
+        "t1": 122.61,
+        "qui": "Narrateur",
+        "texte": "Il lui tend son téléphone ; elle secoue la tête."
+      },
+      {
+        "t0": 122.96,
+        "t1": 124.96,
+        "qui": "Diarra",
+        "texte": "Je n'en ai pas besoin. Dis-moi, c'est tout."
+      },
+      {
+        "t0": 125.31,
+        "t1": 139.55,
+        "qui": "Narrateur",
+        "texte": "Il lui raconte : la photo du foot, le garagiste, et ce message bête où il a écrit qu'il préférait rester discret, pour éviter les histoires. Elle a mal un instant. Puis elle comprend : il ne la cachait pas, elle. Il cachait la dispute."
+      },
+      {
+        "t0": 140.9,
+        "t1": 143.22,
+        "qui": "Narrateur",
+        "texte": "La main dans sa poitrine a desserré ses doigts."
+      },
+      {
+        "t0": 145.07,
+        "t1": 149.55,
+        "qui": "Narrateur",
+        "texte": "Il y a des peurs qui se déguisent en colère. Celle-là, Diarra l'a dite à voix haute."
+      },
+      {
+        "t0": 151.4,
+        "t1": 155.48,
+        "qui": "Narrateur",
+        "texte": "Et toi ? À sa place, qu'est-ce que tu aurais fait ? Vote, juste en dessous."
+      },
+      {
+        "t0": 160.31,
+        "t1": 162.63,
+        "qui": "Narrateur",
+        "texte": "La suite, demain soir, à vingt heures."
+      }
+    ],
+    "images": [
+      {
+        "t": 0,
+        "image": "cas-vu-de-minuit-ep4b-pose.webp"
+      },
+      {
+        "t": 23.56,
+        "image": "cas-vu-de-minuit-ep4b-porte.webp"
+      },
+      {
+        "t": 38.05,
+        "image": "cas-vu-de-minuit-ep4B.webp"
+      },
+      {
+        "t": 45.76,
+        "image": "cas-vu-de-minuit-ep4b-peur.webp"
+      },
+      {
+        "t": 75.16,
+        "image": "cas-vu-de-minuit-ep4b-silence.webp"
+      },
+      {
+        "t": 78.19,
+        "image": "cas-vu-de-minuit-ep4b-aveux.webp"
+      },
+      {
+        "t": 107.61,
+        "image": "cas-vu-de-minuit-ep4b-rire.webp"
+      },
+      {
+        "t": 140.9,
+        "image": "cas-vu-de-minuit-ep4b-aube.webp"
+      },
+      {
+        "t": 151.4,
+        "image": "cas-vu-de-minuit-couverture.webp"
+      }
+    ]
   }
 };
