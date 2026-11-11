@@ -487,7 +487,7 @@ module.exports = {
     ]
   },
   "vu-de-minuit-ep3": {
-    "duree": 145.86,
+    "duree": 146.02,
     "lignes": [
       {
         "t0": 4.48,
@@ -545,103 +545,103 @@ module.exports = {
       },
       {
         "t0": 40.39,
-        "t1": 49.91,
+        "t1": 50.07,
         "qui": "Iba",
-        "texte": "Pourquoi je dois toujours tout expliquer ? L'année dernière, ma collègue Ndéye, tu m'as fait la tête une semaine. Cette fois, je n'ai rien dit, parce que je savais que ça finirait comme ça."
+        "texte": "Pourquoi je dois toujours tout expliquer ? L'année dernière, avec ma collègue Ndèye, tu m'as fait la tête une semaine. Cette fois, je n'ai rien dit, parce que je savais que ça finirait comme ça."
       },
       {
-        "t0": 50.26,
-        "t1": 52.82,
+        "t0": 50.42,
+        "t1": 52.98,
         "qui": "Diarra",
         "texte": "Comme quoi ? Comme une femme qui demande la vérité ?"
       },
       {
-        "t0": 53.17,
-        "t1": 54.93,
+        "t0": 53.33,
+        "t1": 55.09,
         "qui": "Iba",
         "texte": "Comme un tribunal !"
       },
       {
-        "t0": 55.28,
-        "t1": 60.08,
+        "t0": 55.44,
+        "t1": 60.24,
         "qui": "Narrateur",
         "texte": "Sa voix monte. La sienne aussi. Puis Iba se lève, prend une natte, et sort."
       },
       {
-        "t0": 60.43,
-        "t1": 63.39,
+        "t0": 60.59,
+        "t1": 63.55,
         "qui": "Iba",
         "texte": "Je dors sur la terrasse. J'ai besoin d'air."
       },
       {
-        "t0": 68.74,
-        "t1": 76.1,
+        "t0": 68.9,
+        "t1": 76.26,
         "qui": "Narrateur",
         "texte": "La porte se ferme. Le silence revient. Et sur la table basse, il y a le téléphone. Il l'a oublié."
       },
       {
-        "t0": 76.45,
-        "t1": 83.73,
+        "t0": 76.61,
+        "t1": 83.89,
         "qui": "Narrateur",
         "texte": "Diarra connaît le code : la date de leur mariage. Il le lui avait donné un jour, en riant : « Je n'ai rien à cacher. »"
       },
       {
-        "t0": 85.56,
-        "t1": 89.08,
+        "t0": 85.72,
+        "t1": 89.24,
         "qui": "Narrateur",
         "texte": "Son propre téléphone vibre. C'est Coumba, réveillée elle aussi."
       },
       {
-        "t0": 89.43,
-        "t1": 90.95,
+        "t0": 89.59,
+        "t1": 91.11,
         "qui": "Coumba",
         "texte": "Alors ?"
       },
       {
-        "t0": 91.3,
-        "t1": 96.1,
+        "t0": 91.46,
+        "t1": 96.26,
         "qui": "Diarra",
         "texte": "Il dit que c'est rien. Il est sorti. Il a laissé son téléphone."
       },
       {
-        "t0": 96.45,
-        "t1": 102.53,
+        "t0": 96.61,
+        "t1": 102.69,
         "qui": "Coumba",
         "texte": "Waaw, xooleu ko ! (Oui, regarde-le !) Maintenant ou jamais. Tu dormiras mieux après."
       },
       {
-        "t0": 102.88,
-        "t1": 105.6,
+        "t0": 103.04,
+        "t1": 105.76,
         "qui": "Narrateur",
         "texte": "Diarra prend le téléphone. Il est encore tiède."
       },
       {
-        "t0": 105.95,
-        "t1": 108.03,
+        "t0": 106.11,
+        "t1": 108.19,
         "qui": "Narrateur",
         "texte": "Son pouce est juste au-dessus de l'écran."
       },
       {
-        "t0": 111.38,
-        "t1": 116.9,
+        "t0": 111.54,
+        "t1": 117.06,
         "qui": "Narrateur",
         "texte": "Dehors, elle entend Iba tousser sur la terrasse. Dans sa poitrine, la main serre plus fort que jamais."
       },
       {
-        "t0": 117.25,
-        "t1": 125.49,
+        "t0": 117.41,
+        "t1": 125.65,
         "qui": "Diarra",
         "texte": "Si je regarde, je saurai. Si je ne regarde pas, je ne dormirai pas. Ou peut-être que c'est l'inverse."
       },
       {
-        "t0": 127.34,
-        "t1": 134.94,
+        "t0": 127.5,
+        "t1": 135.1,
         "qui": "Narrateur",
         "texte": "Ce soir, c'est toi qui décides. Le choix le plus voté sera la suite de l'histoire. À sa place, qu'est-ce que tu fais ? Vote, juste en dessous."
       },
       {
-        "t0": 139.77,
-        "t1": 144.01,
+        "t0": 139.93,
+        "t1": 144.17,
         "qui": "Narrateur",
         "texte": "La suite dépend de vous. Rendez-vous demain soir, à vingt heures."
       }
@@ -660,27 +660,27 @@ module.exports = {
         "image": "cas-vu-de-minuit-ep3-tribunal.webp"
       },
       {
-        "t": 60.43,
+        "t": 60.59,
         "image": "cas-vu-de-minuit-ep3-natte.webp"
       },
       {
-        "t": 68.74,
+        "t": 68.9,
         "image": "cas-vu-de-minuit-ep3-table.webp"
       },
       {
-        "t": 84.08,
+        "t": 84.24,
         "image": "cas-vu-de-minuit-ep3-coumba.webp"
       },
       {
-        "t": 102.88,
+        "t": 103.04,
         "image": "cas-vu-de-minuit-ep3.webp"
       },
       {
-        "t": 105.95,
+        "t": 106.11,
         "image": "cas-vu-de-minuit-ep3-pouce.webp"
       },
       {
-        "t": 127.34,
+        "t": 127.5,
         "image": "cas-vu-de-minuit-couverture.webp"
       }
     ]
@@ -863,7 +863,7 @@ module.exports = {
     ]
   },
   "vu-de-minuit-ep4b": {
-    "duree": 164.48,
+    "duree": 162.96,
     "lignes": [
       {
         "t0": 4.48,
@@ -945,79 +945,79 @@ module.exports = {
       },
       {
         "t0": 78.19,
-        "t1": 102.67,
+        "t1": 101.15,
         "qui": "Iba",
-        "texte": "Je ne t'ai rien dit parce que, l'année dernière, avec Ndeye, tu m'as fait la tête une semaine. Je me suis dit : si je ne dis rien, il n'y aura pas de problème. Mais c'est le silence qui a fait le problème. Et je vais être honnête aussi. Quand tu appelles six fois, ou quand tu ne parles plus, je me sens comme un voleur. Alors je m'éloigne. Je viens dormir dehors."
+        "texte": "Je ne t'ai rien dit parce que, l'année dernière, avec Ndèye, tu m'as fait la tête une semaine. Je me suis dit : si je ne dis rien, il n'y aura pas de problème. Mais c'est le silence qui a fait le problème. Et je vais être honnête aussi. Quand tu appelles six fois, ou quand tu ne parles plus, je me sens comme un voleur. Alors je m'éloigne. Je viens dormir dehors."
       },
       {
-        "t0": 103.02,
-        "t1": 106.46,
+        "t0": 101.5,
+        "t1": 104.94,
         "qui": "Diarra",
         "texte": "Et moi, quand tu t'éloignes… j'appelle encore plus."
       },
       {
-        "t0": 107.61,
-        "t1": 111.45,
+        "t0": 106.09,
+        "t1": 109.93,
         "qui": "Narrateur",
         "texte": "Ils se regardent. Pour la première fois de la soirée, Iba sourit, un peu."
       },
       {
-        "t0": 111.8,
-        "t1": 113.72,
+        "t0": 110.28,
+        "t1": 112.2,
         "qui": "Iba",
         "texte": "On tourne en rond, hein ?"
       },
       {
-        "t0": 114.07,
-        "t1": 116.07,
+        "t0": 112.55,
+        "t1": 114.55,
         "qui": "Diarra",
         "texte": "Comme deux chèvres autour du même piquet."
       },
       {
-        "t0": 116.42,
-        "t1": 119.54,
+        "t0": 114.9,
+        "t1": 118.02,
         "qui": "Narrateur",
         "texte": "Il rit. Elle aussi. Ça ne règle pas tout."
       },
       {
-        "t0": 119.89,
-        "t1": 122.61,
+        "t0": 118.37,
+        "t1": 121.09,
         "qui": "Narrateur",
         "texte": "Il lui tend son téléphone ; elle secoue la tête."
       },
       {
-        "t0": 122.96,
-        "t1": 124.96,
+        "t0": 121.44,
+        "t1": 123.44,
         "qui": "Diarra",
         "texte": "Je n'en ai pas besoin. Dis-moi, c'est tout."
       },
       {
-        "t0": 125.31,
-        "t1": 139.55,
+        "t0": 123.79,
+        "t1": 138.03,
         "qui": "Narrateur",
         "texte": "Il lui raconte : la photo du foot, le garagiste, et ce message bête où il a écrit qu'il préférait rester discret, pour éviter les histoires. Elle a mal un instant. Puis elle comprend : il ne la cachait pas, elle. Il cachait la dispute."
       },
       {
-        "t0": 140.9,
-        "t1": 143.22,
+        "t0": 139.38,
+        "t1": 141.7,
         "qui": "Narrateur",
         "texte": "La main dans sa poitrine a desserré ses doigts."
       },
       {
-        "t0": 145.07,
-        "t1": 149.55,
+        "t0": 143.55,
+        "t1": 148.03,
         "qui": "Narrateur",
         "texte": "Il y a des peurs qui se déguisent en colère. Celle-là, Diarra l'a dite à voix haute."
       },
       {
-        "t0": 151.4,
-        "t1": 155.48,
+        "t0": 149.88,
+        "t1": 153.96,
         "qui": "Narrateur",
         "texte": "Et toi ? À sa place, qu'est-ce que tu aurais fait ? Vote, juste en dessous."
       },
       {
-        "t0": 160.31,
-        "t1": 162.63,
+        "t0": 158.79,
+        "t1": 161.11,
         "qui": "Narrateur",
         "texte": "La suite, demain soir, à vingt heures."
       }
@@ -1048,15 +1048,15 @@ module.exports = {
         "image": "cas-vu-de-minuit-ep4b-aveux.webp"
       },
       {
-        "t": 107.61,
+        "t": 106.09,
         "image": "cas-vu-de-minuit-ep4b-rire.webp"
       },
       {
-        "t": 140.9,
+        "t": 139.38,
         "image": "cas-vu-de-minuit-ep4b-aube.webp"
       },
       {
-        "t": 151.4,
+        "t": 149.88,
         "image": "cas-vu-de-minuit-couverture.webp"
       }
     ]
