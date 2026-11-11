@@ -10,7 +10,7 @@
  */
 module.exports = {
   "vu-de-minuit-ep1": {
-    "duree": 162.43,
+    "duree": 166.89,
     "lignes": [
       {
         "t0": 2,
@@ -62,91 +62,103 @@ module.exports = {
       },
       {
         "t0": 61.72,
-        "t1": 66.92,
+        "t1": 63,
+        "qui": "Narrateur",
+        "texte": "Il disparaît dans le couloir."
+      },
+      {
+        "t0": 63.35,
+        "t1": 68.55,
         "qui": "Narrateur",
         "texte": "Le téléphone reste là. Diarra ne le regarde pas. Elle n'est pas comme ça… Elle se le répète."
       },
       {
-        "t0": 68.77,
-        "t1": 71.17,
+        "t0": 70.4,
+        "t1": 72.8,
         "qui": "Narrateur",
         "texte": "Et puis… l'écran s'allume."
       },
       {
-        "t0": 74.5,
-        "t1": 76.82,
+        "t0": 76.13,
+        "t1": 78.45,
         "qui": "Narrateur",
         "texte": "Un message. On ne voit que le début."
       },
       {
-        "t0": 78.17,
-        "t1": 82.01,
+        "t0": 79.8,
+        "t1": 83.64,
         "qui": "Narrateur",
         "texte": "Un nom : Aïcha. Et quatre mots : « Tu n'as pas changé. »"
       },
       {
-        "t0": 82.36,
-        "t1": 95.24,
+        "t0": 83.99,
+        "t1": 96.87,
         "qui": "Narrateur",
         "texte": "Diarra connaît ce nom. Toute la famille d'Iba connaît ce nom. Aïcha. La fiancée d'avant. Celle qui était partie en Italie, il y a huit ans. Celle que la mère d'Iba appelle encore… « la fille polie »."
       },
       {
-        "t0": 96.59,
-        "t1": 102.27,
+        "t0": 98.22,
+        "t1": 103.9,
         "qui": "Narrateur",
         "texte": "Quelque chose se serre dans la poitrine de Diarra. Comme une main. Son cœur bat dans ses oreilles."
       },
       {
-        "t0": 102.62,
-        "t1": 108.3,
+        "t0": 104.25,
+        "t1": 109.93,
         "qui": "Diarra",
         "texte": "Depuis quand ? Pourquoi elle lui écrit à minuit ? Pourquoi il ne m'a rien dit ?"
       },
       {
-        "t0": 109.65,
-        "t1": 112.77,
+        "t0": 111.28,
+        "t1": 114.4,
         "qui": "Narrateur",
         "texte": "L'écran s'éteint… La douche coule toujours."
       },
       {
-        "t0": 115.12,
-        "t1": 116.96,
+        "t0": 116.75,
+        "t1": 119.23,
+        "qui": "Narrateur",
+        "texte": "Quand Iba revient, il voit tout de suite son visage."
+      },
+      {
+        "t0": 119.58,
+        "t1": 121.42,
         "qui": "Iba",
         "texte": "Lu xew ? (Qu'est-ce qui se passe ?)… Qu'est-ce qu'il y a ?"
       },
       {
-        "t0": 117.31,
-        "t1": 118.83,
+        "t0": 121.77,
+        "t1": 123.29,
         "qui": "Diarra",
         "texte": "Rien. Je suis fatiguée."
       },
       {
-        "t0": 119.18,
-        "t1": 128.22,
+        "t0": 123.64,
+        "t1": 132.68,
         "qui": "Narrateur",
         "texte": "Elle se tourne vers le mur. Iba soupire, prend son téléphone, tape quelque chose… avec un demi-sourire. Puis il éteint la lumière."
       },
       {
-        "t0": 129.57,
-        "t1": 136.53,
+        "t0": 134.03,
+        "t1": 140.99,
         "qui": "Narrateur",
         "texte": "Diarra garde les yeux ouverts dans le noir. Elle compte les respirations de son mari… Et elle se demande ce qu'il a répondu."
       },
       {
-        "t0": 138.38,
-        "t1": 143.98,
+        "t0": 142.84,
+        "t1": 148.44,
         "qui": "Narrateur",
         "texte": "Quatre mots. Il a suffi de quatre mots… pour que la nuit change de couleur."
       },
       {
-        "t0": 145.83,
-        "t1": 153.43,
+        "t0": 150.29,
+        "t1": 157.89,
         "qui": "Narrateur",
         "texte": "Et toi ? À sa place, ce soir-là… qu'est-ce que tu aurais fait ? Vote, juste en dessous."
       },
       {
-        "t0": 158.26,
-        "t1": 160.58,
+        "t0": 162.72,
+        "t1": 165.04,
         "qui": "Narrateur",
         "texte": "La suite, demain soir, à vingt heures."
       }
@@ -169,27 +181,27 @@ module.exports = {
         "image": "cas-vu-de-minuit-ep1-douche.webp"
       },
       {
-        "t": 61.72,
+        "t": 63.35,
         "image": "cas-vu-de-minuit-ep1-resiste.webp"
       },
       {
-        "t": 71.52,
+        "t": 73.15,
         "image": "cas-vu-de-minuit-ep1.webp"
       },
       {
-        "t": 115.12,
+        "t": 116.75,
         "image": "cas-vu-de-minuit-ep1-froid.webp"
       },
       {
-        "t": 119.18,
+        "t": 123.64,
         "image": "cas-vu-de-minuit-ep1-sourire.webp"
       },
       {
-        "t": 128.57,
+        "t": 133.03,
         "image": "cas-vu-de-minuit-ep1-nuit.webp"
       },
       {
-        "t": 145.83,
+        "t": 150.29,
         "image": "cas-vu-de-minuit-couverture.webp"
       }
     ]
@@ -487,7 +499,7 @@ module.exports = {
     ]
   },
   "vu-de-minuit-ep3": {
-    "duree": 146.02,
+    "duree": 147.14,
     "lignes": [
       {
         "t0": 4.48,
@@ -641,9 +653,9 @@ module.exports = {
       },
       {
         "t0": 139.93,
-        "t1": 144.17,
+        "t1": 145.29,
         "qui": "Narrateur",
-        "texte": "La suite dépend de vous. Rendez-vous demain soir, à vingt heures."
+        "texte": "La suite dépend de ton vote, et de celui de tous les autres. À demain soir, à vingt heures."
       }
     ],
     "images": [
@@ -1062,7 +1074,7 @@ module.exports = {
     ]
   },
   "vu-de-minuit-ep5b": {
-    "duree": 164.52,
+    "duree": 164.28,
     "lignes": [
       {
         "t0": 4.48,
@@ -1204,9 +1216,9 @@ module.exports = {
       },
       {
         "t0": 160.03,
-        "t1": 162.67,
+        "t1": 162.43,
         "qui": "Narrateur",
-        "texte": "La leçon de Dr Lô vous attend juste après."
+        "texte": "La leçon de Dr Lô t'attend juste après."
       }
     ],
     "images": [
@@ -1244,6 +1256,165 @@ module.exports = {
       },
       {
         "t": 150.88,
+        "image": "cas-vu-de-minuit-couverture.webp"
+      }
+    ]
+  },
+  "vu-de-minuit-ep5a": {
+    "duree": 143.82,
+    "lignes": [
+      {
+        "t0": 4.48,
+        "t1": 9.28,
+        "qui": "Narrateur",
+        "texte": "Le cas du soir. Le message de minuit. Épisode cinq : Le cercle."
+      },
+      {
+        "t0": 10.63,
+        "t1": 16.95,
+        "qui": "Narrateur",
+        "texte": "Cette nuit-là, personne n'est parti. Yaay Fatou est arrivée en boubou de nuit, a fait asseoir tout le monde, et a dit seulement :"
+      },
+      {
+        "t0": 17.3,
+        "t1": 23.7,
+        "qui": "Yaay Fatou",
+        "texte": "Ndank ndank. (Doucement, doucement.) Demain, vous parlez. Ce soir, vous dormez."
+      },
+      {
+        "t0": 25.05,
+        "t1": 35.45,
+        "qui": "Narrateur",
+        "texte": "Le lendemain soir, ils sont tous les deux chez Tata Ndèye Khady, la badiène d'Iba, à Grand-Yoff. Le thé monte et redescend dans les petits verres. La badiène ne juge personne. Elle pose des questions."
+      },
+      {
+        "t0": 35.8,
+        "t1": 39.64,
+        "qui": "La badiène",
+        "texte": "Diarra, quand tu as vu ce message, tu as eu peur de quoi ?"
+      },
+      {
+        "t0": 39.99,
+        "t1": 45.51,
+        "qui": "Diarra",
+        "texte": "… Qu'il parte. Que je ne compte pas. Que je sois celle qu'on remplace."
+      },
+      {
+        "t0": 45.86,
+        "t1": 49.22,
+        "qui": "La badiène",
+        "texte": "Et toi, Iba, pourquoi tu as caché cette conversation ?"
+      },
+      {
+        "t0": 49.57,
+        "t1": 59.57,
+        "qui": "Iba",
+        "texte": "Parce que j'avais peur qu'elle se fâche. Quand elle a peur, elle appelle, elle boude, elle accuse. Alors je me ferme. Je me tais. Je vais dormir dehors."
+      },
+      {
+        "t0": 59.92,
+        "t1": 63.04,
+        "qui": "La badiène",
+        "texte": "Et toi, Diarra, quand il se tait, tu fais quoi ?"
+      },
+      {
+        "t0": 63.39,
+        "t1": 66.99,
+        "qui": "Diarra",
+        "texte": "J'appelle plus. Je boude plus. Je cherche plus."
+      },
+      {
+        "t0": 67.34,
+        "t1": 68.94,
+        "qui": "Narrateur",
+        "texte": "La badiène pose son verre."
+      },
+      {
+        "t0": 69.29,
+        "t1": 85.05,
+        "qui": "La badiène",
+        "texte": "Vous voyez ? Elle court après toi parce que tu t'éloignes. Et tu t'éloignes parce qu'elle court. Vous tournez en rond, comme deux enfants autour d'un baobab. Aïcha n'est pas le problème. Aïcha, c'est juste le vent qui a fait bouger les branches."
+      },
+      {
+        "t0": 86.2,
+        "t1": 89.48,
+        "qui": "Narrateur",
+        "texte": "Un long silence. Puis Iba dit, très bas :"
+      },
+      {
+        "t0": 91.03,
+        "t1": 97.03,
+        "qui": "Iba",
+        "texte": "Je n'aurais pas dû écrire à Aïcha qu'on resterait discrets. J'aurais dû te le dire, à toi."
+      },
+      {
+        "t0": 97.38,
+        "t1": 101.06,
+        "qui": "Diarra",
+        "texte": "Et moi, j'aurais dû te dire « j'ai peur », au lieu de chercher dans ton téléphone."
+      },
+      {
+        "t0": 102.41,
+        "t1": 112.41,
+        "qui": "Narrateur",
+        "texte": "Rien n'est réglé. La confiance ne se recoud pas en une soirée. Diarra sent encore la petite main dans sa poitrine. Mais pour la première fois, elle sait comment elle s'appelle : la peur de perdre."
+      },
+      {
+        "t0": 113.76,
+        "t1": 119.76,
+        "qui": "Narrateur",
+        "texte": "Dans le taxi du retour, Iba lui prend la main. Il ne dit rien. Mais ce silence-là n'est pas un mur."
+      },
+      {
+        "t0": 121.61,
+        "t1": 128.09,
+        "qui": "Narrateur",
+        "texte": "Ce soir-là, ils ont arrêté de se battre l'un contre l'autre. Ils ont commencé à se battre ensemble, contre le cercle."
+      },
+      {
+        "t0": 129.94,
+        "t1": 134.74,
+        "qui": "Narrateur",
+        "texte": "Et toi ? Selon toi, qu'est-ce qui aurait le plus aidé, dès le premier soir ? Vote, juste en dessous."
+      },
+      {
+        "t0": 139.57,
+        "t1": 141.97,
+        "qui": "Narrateur",
+        "texte": "La leçon de Dr Lô t'attend juste après."
+      }
+    ],
+    "images": [
+      {
+        "t": 0,
+        "image": "cas-vu-de-minuit-ep5a-nuit.webp"
+      },
+      {
+        "t": 25.05,
+        "image": "cas-vu-de-minuit-ep5A.webp"
+      },
+      {
+        "t": 39.99,
+        "image": "cas-vu-de-minuit-ep5a-peur.webp"
+      },
+      {
+        "t": 49.57,
+        "image": "cas-vu-de-minuit-ep5a-iba.webp"
+      },
+      {
+        "t": 69.29,
+        "image": "cas-vu-de-minuit-ep5a-baobab.webp"
+      },
+      {
+        "t": 91.03,
+        "image": "cas-vu-de-minuit-ep5a-excuses.webp"
+      },
+      {
+        "t": 113.76,
+        "image": "cas-vu-de-minuit-ep5a-taxi.webp"
+      },
+      {
+        "t": 129.94,
         "image": "cas-vu-de-minuit-couverture.webp"
       }
     ]
