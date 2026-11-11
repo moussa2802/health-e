@@ -22,11 +22,12 @@ export interface CdsHistoire {
   testAussi: string | null; minutes: number; audio: boolean; autreFin: { mention: string } | null;
 }
 export interface CdsPrix { suite: Record<number, number>; bonus: number; autreFin: number }
-export interface CdsEtat { visible: boolean; histoire?: CdsHistoire; prix?: CdsPrix; autreFin?: { achetee: boolean; possible: boolean }; decision?: number | null; connecte?: boolean; bonus?: boolean; apercu?: boolean; animal?: string | null; proprio?: boolean }
+export interface CdsEtat { visible: boolean; histoire?: CdsHistoire; prix?: CdsPrix; autreFin?: { achetee: boolean; possible: boolean }; decision?: number | null; decisionPrise?: boolean; connecte?: boolean; bonus?: boolean; apercu?: boolean; animal?: string | null; proprio?: boolean }
 export interface CdsEpisodeReponse {
   episode: CdsEpisode; audioUrl: string | null; monChoix: string | null; resultats: CdsResultats | null;
-  suite: { n: number; lisible: boolean; parution: number; avance: { ok: boolean; raison?: string; prix?: number } } | null;
-  finLisible: boolean; apercu: boolean; autre?: boolean;
+  /** parution : l'ouverture GRATUITE de l'épisode suivant pour CE lecteur (son rythme) ; null tant que son horloge n'a pas démarré */
+  suite: { n: number; lisible: boolean; parution: number | null; avance: { ok: boolean; raison?: string; prix?: number } } | null;
+  finLisible: boolean; apercu: boolean; autre?: boolean; decision?: number | null; decisionPrise?: boolean;
 }
 export interface CdsFin { titre: string; texte: string; audioUrl: string | null; minutage?: CdsMinutage | null; quiz: { question: string; reponses: string[]; bonne: number; explication: string }[]; apresQuiz?: string; testLie: string | null; testAussi?: string | null }
 
@@ -76,7 +77,7 @@ export interface CdsEpisodeCarte {
   etat: 'lu' | 'a_lire' | 'prochain' | 'verrouille' | 'compte' | 'vote';
   parution?: number | null; avance?: { ok: boolean; raison?: string; prix?: number } | null;
 }
-export const getEpisodes = () => call<{ episodes: CdsEpisodeCarte[]; finie: boolean; prix: CdsPrix; autreFin: { achetee: boolean; possible: boolean }; apercu: boolean }>({ action: 'episodes' });
+export const getEpisodes = () => call<{ episodes: CdsEpisodeCarte[]; finie: boolean; prix: CdsPrix; autreFin: { achetee: boolean; possible: boolean }; apercu: boolean; decision?: number | null; decisionPrise?: boolean }>({ action: 'episodes' });
 export const getEpisode = (n: number, autre = false) => call<CdsEpisodeReponse>({ action: 'episode', n, ...(autre ? { autre: true } : {}) });
 export const acheterAutreFin = () => call<{ ok: boolean }>({ action: 'autreFin' });
 export const voter = (n: number, choix: string) => call<{ ok: boolean; monChoix: string; resultats: CdsResultats; apercu?: boolean }>({ action: 'vote', n, choix });

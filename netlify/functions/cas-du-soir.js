@@ -13,14 +13,19 @@
  *   autreFin                 → l'autre fin, une fois l'histoire terminée (prix PRIX.autreFin, une fois) ; puis episode { n, autre: true }
  *   fin                      → la leçon (gratuite), le quiz, le test lié, une fois l'épisode 5 lisible
  *
- * Tant que CAS_DU_SOIR_PUBLIC est false, seul le propriétaire (Dr Lô) le voit. Il peut simuler un jour (« jour » 1 à 5)
- * pour tout parcourir avant la date de départ : en aperçu, ses votes ne sont pas enregistrés et la suite n'est pas figée.
+ * RYTHME PERSONNEL : chaque lecteur a sa propre horloge (casDuSoirAcces.debut), qui démarre à la première ouverture de l'épisode 1
+ * avec un compte. L'épisode n s'ouvre gratuitement pour lui le (n-1)-ième soir après son départ, à 20 h (heure de Dakar = UTC) ;
+ * « la suite tout de suite » se paie (prix de l'épisode). Le vote de l'épisode 3 est UNE décision pour tous, figée à la date de
+ * décision (ouverture publique + 3 jours à 20 h) : majorité, égalité ou moins de 30 votes = fin B. Voir _casDuSoir.js.
+ *
+ * Tant que CAS_DU_SOIR_PUBLIC est false, seul le propriétaire (Dr Lô) le voit. Il peut simuler l'âge de sa lecture (« jour » 1 à 5)
+ * pour tout parcourir : en aperçu, son horloge n'est pas enregistrée, ses votes ne sont pas comptés et la décision n'est pas figée.
  *
  * Firestore (écrit par le serveur seulement ; fermé au navigateur) :
  *   casDuSoirVotes/{histoire}_{n}_{votant}   { histoire, n, choix, animal, at }
  *   casDuSoirResultats/{histoire}_{n}         { counts: { A, B, C }, parAnimal: { lion: { A, … } }, total }
- *   casDuSoirResultats/{histoire}_branche     { branche, counts, figeeA }   (la suite choisie par la majorité, figée une fois)
- *   casDuSoirAcces/{uid}_{histoire}           { episodes: [n…], bonus: true, autreFin: true }   (ce qui a été payé)
+ *   casDuSoirResultats/{histoire}_branche     { branche, counts, figeeA }   (le reçu de la décision : figé une fois à la date de décision)
+ *   casDuSoirAcces/{uid}_{histoire}           { debut, episodes: [n…], bonus: true, autreFin: true }   (son horloge, ce qu'il a payé)
  */
 const crypto = require('crypto');
 const { admin, db, verifyAuth } = require('./_firebase');
@@ -57,16 +62,42 @@ async function audioUrl(path) {
   } catch (e) { console.error('cas-du-soir audio', e.message); return null; }
 }
 
-/** La suite choisie par la majorité de l'embranchement ; figée en base au premier passage après sa parution. */
-async function brancheDe(h, parus, apercu) {
-  if (!h.embranchement || parus <= h.embranchement) return null;
+/** Ce que la personne a : son horloge (ms), les épisodes payés, le bonus, l'autre fin. */
+async function accesDe(uid, histoireId) {
+  const vide = { debut: null, episodes: [], bonus: false, autreFin: false };
+  if (!uid) return vide;
+  const ac = await ACCES().doc(`${uid}_${histoireId}`).get();
+  if (!ac.exists) return vide;
+  const d = ac.data() || {};
+  return { debut: Number(d.debut) > 0 ? Number(d.debut) : null, episodes: Array.isArray(d.episodes) ? d.episodes : [], bonus: d.bonus === true, autreFin: d.autreFin === true };
+}
+
+/** Démarre l'horloge personnelle (une seule fois : le premier départ est gardé, même si deux appels se croisent). */
+async function demarrerHorloge(histoireId, uid, t) {
+  const ref = ACCES().doc(`${uid}_${histoireId}`);
+  return db.runTransaction(async (tx) => {
+    const cur = await tx.get(ref);
+    const d = cur.exists ? Number(cur.data().debut) : 0;
+    if (d > 0) return d;
+    tx.set(ref, { uid, histoire: histoireId, debut: t, debutAt: admin.firestore.FieldValue.serverTimestamp() }, { merge: true });
+    return t;
+  });
+}
+
+/**
+ * La suite choisie par la majorité de l'embranchement : UNE décision pour tout le monde, figée dans un reçu
+ * (casDuSoirResultats/{histoire}_branche) au premier passage après la date de décision. À n'appeler qu'une fois la décision prise.
+ * En aperçu : calculée sur les votes du moment, jamais figée (sauf si le vrai reçu existe déjà : alors c'est lui).
+ */
+async function brancheDe(h, apercu) {
+  if (!h.embranchement) return null;
   const ref = RES().doc(`${h.id}_branche`);
   const fixed = await ref.get();
   if (fixed.exists) return fixed.data().branche;
   const r = await RES().doc(`${h.id}_${h.embranchement}`).get();
   const counts = r.exists ? r.data().counts || {} : {};
   const branche = K.majorite(h, counts);
-  if (apercu) return branche; // aperçu avant la date : rien n'est figé
+  if (apercu) return branche; // aperçu : rien n'est figé
   return db.runTransaction(async (tx) => {
     const again = await tx.get(ref);
     if (again.exists) return again.data().branche;
@@ -104,15 +135,14 @@ exports.handler = async (event) => {
     const jour = owner ? Math.round(Number(body.jour)) : NaN;
     const realNow = Date.now();
 
-    // La liste des cas (page « Le cas du soir ») : la couverture, l'accroche et l'état de chacun
+    // La liste des cas (page « Le cas du soir ») : la couverture, l'accroche et l'état de chacun, pour CE lecteur
     if (action === 'liste') {
       const histoires = await Promise.all(K.HISTOIRES.map(async (x) => {
         const ap = Number.isInteger(jour) && jour >= 1 && jour <= x.episodes.length;
-        const t = ap ? K.publication(x, jour) + 60000 : realNow;
-        const p = K.episodesParus(x, t, ap);
-        let deb = [];
-        if (uid) { const ac = await ACCES().doc(`${uid}_${x.id}`).get(); if (ac.exists && Array.isArray(ac.data().episodes)) deb = ac.data().episodes; }
-        return { ...K.vueHistoire(x, t, { parus: p, debloques: deb, connecte: !!uid }), statut: K.statut(x, p) };
+        const ac = await accesDe(uid, x.id);
+        const p = K.parusPour(x, { debut: ac.debut, now: realNow, apercu: ap, jour });
+        const prochain = K.prochaineOuverture(x, { parus: p, debut: ac.debut, now: realNow, apercu: ap, jour });
+        return { ...K.vueHistoire(x, { parus: p, debloques: ac.episodes, connecte: !!uid, prochain }), statut: K.statut(x, p) };
       }));
       return reply(200, { visible: true, histoires, proprio: owner });
     }
@@ -122,62 +152,77 @@ exports.handler = async (event) => {
     const h = body.histoire ? K.histoireById(String(body.histoire)) : K.histoireDuMoment(realNow);
     if (!h) return reply(action === 'etat' ? 200 : 404, action === 'etat' ? { visible: false } : { error: 'Introuvable' });
     const apercu = Number.isInteger(jour) && jour >= 1 && jour <= h.episodes.length;
-    const now = apercu ? K.publication(h, jour) + 60000 : realNow;
-    const parus = K.episodesParus(h, now, apercu);
+    const n = Math.round(Number(body.n));
 
-    // La personne : son animal (révélé), ce qu'elle a payé
-    let animal = null; let acces = { episodes: [], bonus: false, autreFin: false };
+    // La personne : son animal (révélé), son horloge, ce qu'elle a payé
+    let animal = null;
+    let acces = { debut: null, episodes: [], bonus: false, autreFin: false };
     if (uid) {
-      const [up, ac] = await Promise.all([db.collection('userProfiles').doc(uid).get(), ACCES().doc(`${uid}_${h.id}`).get()]);
+      const [up, ac] = await Promise.all([db.collection('userProfiles').doc(uid).get(), accesDe(uid, h.id)]);
       animal = totemOf(up.exists ? up.data() : null);
-      if (ac.exists) acces = { episodes: Array.isArray(ac.data().episodes) ? ac.data().episodes : [], bonus: ac.data().bonus === true, autreFin: ac.data().autreFin === true };
+      acces = ac;
     }
     const connecte = !!uid;
     const debloques = acces.episodes;
 
+    // L'horloge démarre à la première ouverture de l'épisode 1 avec un compte (jamais en aperçu, jamais avant l'ouverture publique)
+    let debut = acces.debut;
+    if (uid && !apercu && !debut && n === 1 && body.autre !== true && (action === 'episode' || action === 'vote') && K.estOuverte(h, realNow)) {
+      debut = await demarrerHorloge(h.id, uid, realNow);
+    }
+    const commence = apercu || !!debut;
+    const debutAffiche = apercu ? K.debutApercu(realNow, jour) : debut;
+    const parus = K.parusPour(h, { debut, now: realNow, apercu, jour });
+    // Le vote de l'embranchement : une décision pour tout le monde, à une date commune
+    const figee = K.decisionPrise(h, { now: realNow, apercu, jour });
+    const decision = K.dateDecision(h, { apercu, jour, now: realNow });
+    const quandOuvre = (k) => (debutAffiche ? K.ouvertureEpisode(h, k, debutAffiche) : null);
+    const decisionInfo = { decision, decisionPrise: figee };
+
     if (action === 'etat') {
       const finie = K.peutLire({ n: h.episodes.length, parus, connecte, debloques });
-      const vue = K.vueHistoire(h, now, { parus, debloques, connecte });
+      const prochain = K.prochaineOuverture(h, { parus, debut, now: realNow, apercu, jour });
+      const vue = K.vueHistoire(h, { parus, debloques, connecte, prochain });
       const e = h.episodes[Math.max(1, parus) - 1];
       vue.audio = await audioExiste(e && (e.audio || (e.A && e.A.audio)));
       return reply(200, {
         visible: true, histoire: vue, prix: K.PRIX, connecte, bonus: acces.bonus, apercu, animal, proprio: owner,
         autreFin: { achetee: acces.autreFin, possible: connecte && finie && !!h.embranchement },
-        // Pour le vote de l'embranchement : quand la majorité décide (la parution de l'épisode suivant)
-        decision: h.embranchement && (h.programmee !== false || apercu) ? K.publication(h, h.embranchement + 1) : null,
+        ...decisionInfo,
       });
     }
 
-    // Les épisodes d'un cas : une carte par épisode, avec son état. Après l'embranchement, seule la version choisie
-    // par la majorité est montrée, et seulement une fois figée ; avant, « la suite dépend de votre vote ».
+    // Les épisodes d'un cas : une carte par épisode, avec son état pour CE lecteur. Après l'embranchement, seule la version choisie
+    // par la majorité est montrée, et seulement une fois la décision figée ; avant, « la suite dépend du vote de tous ».
     if (action === 'episodes') {
       const qui = K.votant(uid, body.visiteurId, sha);
-      const branche = h.embranchement && parus > h.embranchement ? await brancheDe(h, parus, apercu) : null;
+      const branche = h.embranchement && figee ? await brancheDe(h, apercu) : null;
       const votes = qui ? await Promise.all(h.episodes.map((_, i) => VOTES().doc(`${h.id}_${i + 1}_${qui}`).get())) : [];
+      const ouvert = Math.max(parus, ...debloques.map(Number).filter(Number.isFinite));
       const list = h.episodes.map((_, i) => {
         const k = i + 1;
         const lisible = K.peutLire({ n: k, parus, connecte, debloques });
-        const contenu = K.episodeContenu(h, k, K.aDesVersions(h, k) ? branche : null);
+        const versions = K.aDesVersions(h, k);
+        const contenu = K.episodeContenu(h, k, versions ? branche : null);
         if (!contenu) return { n: k, attente: true, etat: 'vote' };
         const vote = votes[i] && votes[i].exists;
         let etat = 'verrouille';
         if (lisible) etat = vote ? 'lu' : 'a_lire';
         else if (!connecte && k > 1) etat = 'compte';
-        else if (k === parus + 1) etat = 'prochain';
-        const avance = etat === 'prochain' ? K.peutAvancer(h, { n: k, parus, debloques }) : null;
-        const programme = h.programmee !== false || apercu;
-        return { n: k, titre: contenu.titre, image: contenu.image || null, etat, parution: programme ? K.publication(h, k) : null, avance };
+        else if (k === ouvert + 1) etat = 'prochain';
+        const avance = etat === 'prochain' ? K.peutAvancer(h, { n: k, parus, debloques, commence, decisionPrise: figee }) : null;
+        // Une version choisie par la majorité ne se révèle (titre, image) qu'à qui peut la lire : pas de spoiler sur la décision
+        const cache = versions && !lisible;
+        return { n: k, titre: cache ? 'À découvrir' : contenu.titre, image: cache ? null : contenu.image || null, etat, parution: k > parus ? quandOuvre(k) : null, avance };
       });
       const finie = K.peutLire({ n: h.episodes.length, parus, connecte, debloques });
-      return reply(200, { episodes: list, finie, prix: K.PRIX, autreFin: { achetee: acces.autreFin, possible: connecte && finie && !!h.embranchement }, apercu });
+      return reply(200, { episodes: list, finie, prix: K.PRIX, autreFin: { achetee: acces.autreFin, possible: connecte && finie && !!h.embranchement }, apercu, ...decisionInfo });
     }
-
-    const n = Math.round(Number(body.n));
 
     // L'autre fin (bonus payé) : la version non publiée des épisodes après l'embranchement, en lecture seule (pas de vote)
     if (action === 'episode' && body.autre === true) {
-      if (!acces.autreFin || !K.aDesVersions(h, n) || !K.peutLire({ n: h.episodes.length, parus, connecte, debloques })) return reply(403, { error: 'L\'autre fin n\'est pas ouverte.' });
-      const branche = await brancheDe(h, parus, apercu);
+      if (!acces.autreFin || !figee || !K.aDesVersions(h, n) || !K.peutLire({ n: h.episodes.length, parus, connecte, debloques })) return reply(403, { error: 'L\'autre fin n\'est pas ouverte.' });
+      const branche = await brancheDe(h, apercu);
       const contenu = K.episodeContenu(h, n, K.autreBranche(branche));
       if (!contenu) return reply(409, { error: 'L\'autre fin n\'est pas encore connue.' });
       return reply(200, { episode: { ...K.vueEpisode(h, n, contenu), choix: [] }, autre: true, audioUrl: await audioUrl(contenu.audio), monChoix: null, resultats: null, suite: null, finLisible: false, apercu });
@@ -187,9 +232,9 @@ exports.handler = async (event) => {
       if (!K.peutLire({ n, parus, connecte, debloques })) {
         return reply(403, { error: !connecte && n > 1 ? 'Crée ton espace pour lire la suite.' : 'Cet épisode n\'est pas encore ouvert.', compte: !connecte && n > 1 });
       }
-      const branche = K.aDesVersions(h, n) ? await brancheDe(h, parus, apercu) : null;
+      const branche = K.aDesVersions(h, n) && figee ? await brancheDe(h, apercu) : null;
       const contenu = K.episodeContenu(h, n, branche);
-      if (!contenu) return reply(409, { error: 'La suite dépend du vote : elle s\'ouvre à la parution.' });
+      if (!contenu) return reply(409, { error: 'La suite dépend du vote de tous.', raison: 'vote_en_cours', ...decisionInfo });
       const qui = K.votant(uid, body.visiteurId, sha);
       const resRef = RES().doc(`${h.id}_${n}`);
 
@@ -201,6 +246,8 @@ exports.handler = async (event) => {
           const r = await resRef.get();
           return reply(200, { ok: true, apercu: true, monChoix: choix, resultats: resultats(contenu, r.exists ? r.data() : null, { choix, animal, bonus: acces.bonus }) });
         }
+        // Après la date de décision, le reçu est figé AVANT d'enregistrer ce vote : un vote tardif ne change plus rien à la suite
+        if (h.embranchement === n && figee) await brancheDe(h, false);
         const voteRef = VOTES().doc(`${h.id}_${n}_${qui}`);
         const finalChoix = await db.runTransaction(async (tx) => {
           const v = await tx.get(voteRef);
@@ -219,12 +266,12 @@ exports.handler = async (event) => {
       const [v, r] = await Promise.all([qui ? VOTES().doc(`${h.id}_${n}_${qui}`).get() : null, resRef.get()]);
       const monChoix = v && v.exists ? v.data().choix : null;
       const suite = n < h.episodes.length
-        ? { n: n + 1, lisible: K.peutLire({ n: n + 1, parus, connecte, debloques }), parution: K.publication(h, n + 1), avance: connecte ? K.peutAvancer(h, { n: n + 1, parus, debloques }) : { ok: false, raison: 'compte' } }
+        ? { n: n + 1, lisible: K.peutLire({ n: n + 1, parus, connecte, debloques }), parution: quandOuvre(n + 1), avance: connecte ? K.peutAvancer(h, { n: n + 1, parus, debloques, commence, decisionPrise: figee }) : { ok: false, raison: 'compte' } }
         : null;
       return reply(200, {
         episode: K.vueEpisode(h, n, contenu), audioUrl: await audioUrl(contenu.audio), monChoix,
         resultats: monChoix ? resultats(contenu, r.exists ? r.data() : null, { choix: monChoix, animal, bonus: acces.bonus }) : null,
-        suite, finLisible: n === h.episodes.length, apercu,
+        suite, finLisible: n === h.episodes.length, apercu, ...decisionInfo,
       });
     }
 
@@ -233,8 +280,11 @@ exports.handler = async (event) => {
       const ref = ACCES().doc(`${uid}_${h.id}`);
       let price; let meta; let patch;
       if (action === 'avancer') {
-        const can = K.peutAvancer(h, { n, parus, debloques });
-        if (!can.ok) return reply(409, { error: can.raison === 'vote_en_cours' ? 'La suite dépend du vote de tous : elle s\'ouvre demain soir.' : 'Cet épisode ne peut pas s\'ouvrir maintenant.', raison: can.raison });
+        const can = K.peutAvancer(h, { n, parus, debloques, commence, decisionPrise: figee });
+        if (!can.ok) {
+          const msg = can.raison === 'vote_en_cours' ? 'La suite dépend du vote de tous.' : can.raison === 'pas_commence' ? 'Commence par lire l\'épisode 1.' : 'Cet épisode ne peut pas s\'ouvrir maintenant.';
+          return reply(409, { error: msg, raison: can.raison, ...decisionInfo });
+        }
         // Le prix de CET épisode, lu dans la table du serveur (jamais un prix envoyé par l'appli)
         price = K.prixSuite(n); meta = { histoire: h.id, episode: n, quoi: 'suite' };
         patch = { episodes: admin.firestore.FieldValue.arrayUnion(n) };

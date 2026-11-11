@@ -16,6 +16,12 @@ import {
   type CdsEpisodeReponse, type CdsEtat,
 } from '../../services/casDuSoirService';
 
+/** Le message d'une erreur ; pour « la suite dépend du vote de tous », avec la date de décision. */
+function messageErreur(e: unknown): string {
+  if (e instanceof CdsError && e.data.raison === 'vote_en_cours' && typeof e.data.decision === 'number') return `La suite dépend du vote de tous : elle s'ouvre ${quandLabel(e.data.decision)}.`;
+  return e instanceof Error ? e.message : 'Erreur';
+}
+
 const CasDuSoirEpisodePage: React.FC = () => {
   const { id = '', episode = '1' } = useParams();
   const n = Math.max(1, Math.round(Number(episode)) || 1);
@@ -32,7 +38,7 @@ const CasDuSoirEpisodePage: React.FC = () => {
   useEffect(() => {
     setHistoire(id); setEp(null); setError('');
     void loadEtat();
-    getEpisode(n, autre).then(setEp).catch(e => setError(e instanceof Error ? e.message : 'Erreur'));
+    getEpisode(n, autre).then(setEp).catch(er => setError(messageErreur(er)));
     window.scrollTo?.(0, 0);
   }, [id, n, autre]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -83,7 +89,9 @@ const CasDuSoirEpisodePage: React.FC = () => {
           {!ep.autre && <>
             <p style={{ margin: '20px 0 0', fontSize: 13, fontWeight: 700, letterSpacing: '.08em', color: palette.accent }}>QU'AURAIS-TU FAIT ?</p>
             <h2 style={{ margin: '4px 0 0', fontSize: 17, color: DC.title }}>{ep.episode.question}</h2>
-            {ep.episode.embranchement && <p style={{ margin: '4px 0 0', fontSize: 14, color: DC.soft }}>Ton vote compte : la majorité décide de la suite{etat.decision ? ` ${quandLabel(etat.decision)}` : ''}.</p>}
+            {ep.episode.embranchement && (etat.decisionPrise
+              ? <p style={{ margin: '4px 0 0', fontSize: 14, color: DC.soft }}>La majorité a déjà décidé de la suite : ton vote est compté dans les résultats.</p>
+              : <p style={{ margin: '4px 0 0', fontSize: 14, color: DC.soft }}>Ton vote compte : la majorité décide de la suite{etat.decision ? ` ${quandLabel(etat.decision)}` : ''}.</p>)}
             {!ep.monChoix ? (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 10 }}>
                 {ep.episode.choix.map(c => (
@@ -111,8 +119,11 @@ const CasDuSoirEpisodePage: React.FC = () => {
               ) : ep.suite.avance.raison === 'compte' ? (
                 <Link to="/espace" style={primary}>Crée ton espace pour lire la suite</Link>
               ) : null}
+              {/* Le rythme de CE lecteur : l'épisode suivant s'ouvre gratuitement son prochain soir à 20 h ; la suite du vote, à la décision de tous */}
               <p style={{ margin: '8px 0 0', fontSize: 14, color: DC.soft, textAlign: 'center' }}>
-                {ep.suite.avance.raison === 'vote_en_cours' ? `La majorité décide de la suite ${quandLabel(ep.suite.parution)}.` : `${Maj(quandLabel(ep.suite.parution))} · gratuit`}
+                {ep.suite.avance.raison === 'vote_en_cours'
+                  ? `La suite dépend du vote de tous : elle s'ouvre ${quandLabel(ep.decision ?? etat.decision ?? ep.suite.parution ?? Date.now())}.`
+                  : ep.suite.parution ? `${Maj(quandLabel(ep.suite.parution))} · gratuit` : 'Gratuit le lendemain soir de ta lecture'}
               </p>
             </div>
           )}

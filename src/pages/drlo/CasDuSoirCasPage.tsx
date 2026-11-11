@@ -61,11 +61,11 @@ const CasDuSoirCasPage: React.FC = () => {
 
   const carte = (e: CdsEpisodeCarte) => {
     if (e.attente) {
-      return <CompactRow key={e.n} title="La suite dépend de votre vote" sub={`Épisode ${e.n}${etat.decision ? ` · la majorité décide ${quandLabel(etat.decision)}` : ''}`} tint={palette.accent} icon={<Hourglass size={20} color={palette.accent} />} onClick={() => navigate(`/cas-du-soir/${id}/3`)} />;
+      return <CompactRow key={e.n} title="La suite dépend du vote de tous" sub={`Épisode ${e.n}${etat.decision ? ` · elle s'ouvre ${quandLabel(etat.decision)}` : ''}`} tint={palette.accent} icon={<Hourglass size={20} color={palette.accent} />} onClick={() => navigate(`/cas-du-soir/${id}/3`)} />;
     }
     const lien = e.etat === 'lu' || e.etat === 'a_lire' ? `/cas-du-soir/${id}/${e.n}` : undefined;
     const line = e.etat === 'lu' ? 'Lu' : e.etat === 'a_lire' ? 'À lire'
-      : e.etat === 'prochain' ? (e.parution ? `${Maj(quandLabel(e.parution))} · gratuit` : 'Bientôt')
+      : e.etat === 'prochain' ? (e.parution ? `${Maj(quandLabel(e.parution))} · gratuit` : 'Gratuit le lendemain soir de ta première lecture')
       : e.etat === 'compte' ? 'Crée ton espace pour lire la suite'
       : e.parution ? `Paraît ${quandLabel(e.parution)}` : 'Bientôt';
     const footer = e.etat === 'prochain' && e.avance?.ok

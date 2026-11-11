@@ -7,8 +7,14 @@
  *   id, titre,                          identifiant (lettres, chiffres, tirets) et titre. L'id ne change JAMAIS (adresses, votes,
  *                                       achats enregistrés) ; le titre se change ici, et seulement ici (aucun autre fichier ne le recopie)
  *   accroche, accroches: { '1': … },    la ligne de la carte de l'accueil (par épisode paru, sinon « accroche »)
- *   depart: 'AAAA-MM-JJ', heure: 'HH:MM' l'épisode n paraît le jour n à cette heure (heure de Dakar = UTC)
- *   programmee: true|false              false : aucune date publique (rien ne paraît), seul l'aperçu du propriétaire fonctionne
+ *   depart: 'AAAA-MM-JJ', heure: 'HH:MM' l'OUVERTURE PUBLIQUE (heure de Dakar = UTC) : à partir de là chaque lecteur a son propre
+ *                                       rythme (voir _casDuSoir.js) : l'horloge démarre à sa première ouverture de l'épisode 1 avec
+ *                                       un compte, et l'épisode n s'ouvre gratuitement le (n-1)-ième soir après, à cette heure
+ *   programmee: true|false              false : aucune date publique (rien ne s'ouvre), seul l'aperçu du propriétaire fonctionne.
+ *                                       Le jour où la date est fixée : mettre depart, heure, et programmee: true
+ *   decisionJours: 3                    le vote de l'embranchement est UNE décision pour tous, figée à l'ouverture publique + ce
+ *                                       nombre de jours (à l'heure ci-dessus). Un lecteur qui commence le jour J vote à l'épisode 3
+ *                                       le soir de J+2 : avec 3, seuls ceux qui commencent le jour de l'ouverture votent à temps
  *   embranchement: 3,                   le vote de cet épisode décide de la suite (2 choix, A et B)
  *   egalite: 'B', minVotes: 30          égalité, ou moins de minVotes votes à l'embranchement : cette suite-là
  *   testLie, testAussi                  tests proposés à la fin (identifiants du catalogue)
@@ -53,6 +59,7 @@ const VU_DE_MINUIT = {
   "heure": "20:00",
   "programmee": false,
   "embranchement": 3,
+  "decisionJours": 4,
   "egalite": "B",
   "minVotes": 30,
   "testLie": "ecr_r",

@@ -1,6 +1,6 @@
 /**
  * _casDuSoir — logique pure du « Cas du soir » (sans Firebase, testée dans _tests/casDuSoir.test.js).
- * Publication par date, droits de lecture, embranchement décidé par la majorité, résultats des votes.
+ * Rythme personnel de chaque lecteur, droits de lecture, embranchement décidé par la majorité à une date commune, résultats des votes.
  */
 const { HISTOIRES } = require('./_casDuSoirHistoires');
 const MINUTAGES = require('./_casDuSoirMinutages');
@@ -42,24 +42,95 @@ const ANIMAL_PLURIEL = {
 
 const histoireById = (id) => HISTOIRES.find((h) => h.id === id) || null;
 
-/** L'histoire en cours : la plus récente déjà commencée, sinon la prochaine. */
+/**
+ * LE RYTHME PERSONNEL (décision de Papa Moussa, 11/11/2026). Chaque lecteur a sa propre horloge, qui démarre à la première
+ * ouverture de l'épisode 1 avec un compte (« debut », enregistré côté serveur dans casDuSoirAcces). L'épisode n s'ouvre
+ * gratuitement pour lui le (n-1)-ième soir après son départ, à l'heure de l'histoire (20 h, heure de Dakar = UTC) :
+ * le jour du départ il a l'épisode 1, le lendemain à 20 h le 2, etc. Quelqu'un qui arrive tard repart donc de l'épisode 1.
+ * Seule exception : le vote de l'embranchement, qui est UNE décision pour tout le monde, figée à une date globale
+ * (l'ouverture publique + h.embranchement jours à 20 h).
+ */
+
+/** L'heure d'ouverture quotidienne, en millisecondes depuis minuit (UTC). */
+const heureMs = (h) => { const [hh, mm] = String(h.heure || '20:00').split(':').map(Number); return ((hh || 0) * 60 + (mm || 0)) * 60000; };
+/** Le début (minuit UTC) du jour de l'instant t. */
+const debutJour = (t) => Math.floor(t / DAY) * DAY;
+
+/** L'ouverture publique de l'histoire (ms), ou null tant qu'elle n'a pas de date publique (programmee: false). */
+function ouverturePublique(h) {
+  return h.programmee === false ? null : Date.parse(`${h.depart}T${h.heure || '20:00'}:00Z`);
+}
+
+/** L'histoire est-elle ouverte aux lecteurs à cet instant ? (l'aperçu du propriétaire l'ouvre toujours) */
+function estOuverte(h, now = Date.now(), apercu = false) {
+  if (apercu) return true;
+  const o = ouverturePublique(h);
+  return o != null && now >= o;
+}
+
+/** L'histoire en cours : la plus récemment ouverte, sinon la prochaine. */
 function histoireDuMoment(now = Date.now(), list = HISTOIRES) {
-  const started = list.filter((h) => h.programmee !== false && publication(h, 1) <= now).sort((a, b) => publication(b, 1) - publication(a, 1));
-  if (started.length) return started[0];
-  return [...list].sort((a, b) => publication(a, 1) - publication(b, 1))[0] || null;
+  const date = (h) => Date.parse(`${h.depart}T${h.heure || '20:00'}:00Z`);
+  const ouvertes = list.filter((h) => estOuverte(h, now)).sort((a, b) => date(b) - date(a));
+  if (ouvertes.length) return ouvertes[0];
+  return [...list].sort((a, b) => date(a) - date(b))[0] || null;
 }
 
-/** Heure de parution de l'épisode n (1 à 5) : le jour n à partir du départ, à l'heure de Dakar (UTC). */
-function publication(h, n) {
-  return Date.parse(`${h.depart}T${h.heure || '20:00'}:00Z`) + (n - 1) * DAY;
+/** L'instant où l'épisode n s'ouvre gratuitement pour qui a commencé à « debut » (ms) : le (n-1)-ième soir après son départ. */
+function ouvertureEpisode(h, n, debut) {
+  return debutJour(debut) + (n - 1) * DAY + heureMs(h);
 }
 
-/** Combien d'épisodes sont parus à cet instant (0 avant le départ, et toujours 0 sans date publique, hors aperçu). */
-function episodesParus(h, now = Date.now(), apercu = false) {
-  if (h.programmee === false && !apercu) return 0;
-  let n = 0;
-  while (n < h.episodes.length && publication(h, n + 1) <= now) n += 1;
+/**
+ * Combien d'épisodes sont ouverts gratuitement pour ce lecteur (0 : histoire pas encore ouverte).
+ *   debut : le départ de son horloge (ms) ou null s'il n'a pas encore ouvert l'épisode 1 avec un compte (visiteur compris) ;
+ *   apercu + jour : l'aperçu du propriétaire (il simule « jour »), sans rien enregistrer.
+ * Sans horloge, il a l'épisode 1 (toujours ouvert dès que l'histoire l'est).
+ */
+function parusPour(h, { debut = null, now = Date.now(), apercu = false, jour = 1 } = {}) {
+  const total = h.episodes.length;
+  if (apercu) return Math.min(total, Math.max(1, Math.round(Number(jour)) || 1));
+  if (!estOuverte(h, now)) return 0;
+  if (!debut) return 1;
+  let n = 1;
+  while (n < total && ouvertureEpisode(h, n + 1, debut) <= now) n += 1;
   return n;
+}
+
+/** Le départ d'horloge simulé en aperçu : un lecteur qui en serait au « jour » donné (sert à calculer les dates affichées). */
+const debutApercu = (now, jour) => debutJour(now) - (Math.max(1, Math.round(Number(jour)) || 1) - 1) * DAY;
+
+/** Le nombre de jours entre l'ouverture publique et la décision du vote (h.decisionJours ; à défaut : le numéro de l'embranchement, soit 3). */
+const decisionJours = (h) => Math.max(1, Math.round(Number(h.decisionJours)) || h.embranchement || 1);
+
+/**
+ * La date de décision du vote de l'embranchement (ms) : l'ouverture publique + decisionJours jours, à l'heure de l'histoire
+ * (20 h) ; null sans embranchement. En aperçu : la même chose pour un lecteur simulé au « jour » donné.
+ * ATTENTION : un lecteur qui commence le jour J arrive à l'épisode 3 le soir de J+2 ; avec 3 jours, seuls ceux qui
+ * commencent le jour même de l'ouverture votent à temps. Plus decisionJours est grand, plus il y a de votants.
+ */
+function dateDecision(h, { apercu = false, jour = 1, now = Date.now() } = {}) {
+  if (!h.embranchement) return null;
+  // Aperçu du propriétaire : la décision tombe quand sa lecture simulée atteint la fin de l'épisode de l'embranchement (« demain soir » au jour 3)
+  if (apercu) return debutApercu(now, jour) + (h.embranchement || decisionJours(h)) * DAY + heureMs(h);
+  const o = ouverturePublique(h);
+  return o == null ? null : o + decisionJours(h) * DAY;
+}
+
+/** La décision est-elle prise ? Une seule règle pour tout le monde : à partir de la date de décision. En aperçu : au-delà de l'embranchement. */
+function decisionPrise(h, { now = Date.now(), apercu = false, jour = 1 } = {}) {
+  if (!h.embranchement) return true;
+  if (apercu) return Math.round(Number(jour)) > h.embranchement;
+  const d = dateDecision(h);
+  return d != null && now >= d;
+}
+
+/** L'instant d'ouverture gratuite de l'épisode suivant pour ce lecteur (« demain soir à 20 h ») ; null si inconnu ou si l'histoire est finie. */
+function prochaineOuverture(h, { parus, debut = null, now = Date.now(), apercu = false, jour = 1 } = {}) {
+  if (parus >= h.episodes.length) return null;
+  if (apercu) return ouvertureEpisode(h, parus + 1, debutApercu(now, jour));
+  if (!estOuverte(h, now)) return ouverturePublique(h);
+  return debut ? ouvertureEpisode(h, parus + 1, debut) : null;
 }
 
 /** Après l'embranchement, un épisode a deux versions. */
@@ -93,14 +164,18 @@ function peutLire({ n, parus, connecte, debloques = [] }) {
 }
 
 /**
- * Peut-on payer pour lire l'épisode n tout de suite ?
- * Seulement l'épisode qui suit le dernier paru, et jamais celui qui dépend d'un vote encore ouvert (l'embranchement).
+ * Peut-on payer pour lire l'épisode n tout de suite (sans attendre son soir) ?
+ *   parus : les épisodes ouverts gratuitement pour lui ; debloques : ceux qu'il a payés ; commence : son horloge a démarré ;
+ *   decisionPrise : le vote de l'embranchement est figé.
+ * Seulement l'épisode qui suit le dernier ouvert (payé ou non : on peut enchaîner 2, puis 3), jamais un épisode déjà ouvert,
+ * jamais celui qui dépend du vote de tous tant qu'il n'est pas figé, et seulement s'il a un prix (l'épisode 4 n'en a jamais).
  */
-function peutAvancer(h, { n, parus, debloques = [] }) {
-  // Pas d'achat avant la parution du premier épisode (histoire non commencée ou sans date)
-  if (!(parus >= 1)) return { ok: false, raison: 'pas_commence' };
-  if (n !== parus + 1 || n > h.episodes.length || debloques.includes(n)) return { ok: false, raison: 'pas_maintenant' };
-  if (h.embranchement && n === h.embranchement + 1) return { ok: false, raison: 'vote_en_cours' };
+function peutAvancer(h, { n, parus, debloques = [], commence = false, decisionPrise: figee = false }) {
+  // Pas d'achat avant d'avoir ouvert l'épisode 1 avec un compte (le rythme ne démarre qu'à ce moment-là)
+  if (!(parus >= 1) || !commence) return { ok: false, raison: 'pas_commence' };
+  const ouvert = Math.max(parus, ...debloques.map(Number).filter(Number.isFinite));
+  if (n !== ouvert + 1 || n > h.episodes.length || debloques.includes(n)) return { ok: false, raison: 'pas_maintenant' };
+  if (h.embranchement && n === h.embranchement + 1 && !figee) return { ok: false, raison: 'vote_en_cours' };
   if (!prixSuite(n)) return { ok: false, raison: 'pas_de_prix' };
   return { ok: true, prix: prixSuite(n) };
 }
@@ -160,11 +235,11 @@ function vueEpisode(h, n, contenu) {
 const aUnAudio = (e) => !!e && (!!e.audio || (!!e.A && !!e.A.audio) || (!!e.B && !!e.B.audio));
 
 /** Ce qu'on montre de l'histoire sur la carte et en haut de la page. */
-function vueHistoire(h, now, { parus, debloques = [], connecte }) {
+function vueHistoire(h, { parus, debloques = [], connecte, prochain = null }) {
   const cur = Math.max(1, parus);
   return {
     id: h.id, titre: h.titre, image: h.image || null, intrigue: h.intrigue || null, intrigueMinutage: minutage(h.intrigueMinutage), accroche: (h.accroches && h.accroches[String(cur)]) || h.accroche, avertissement: h.avertissement, total: h.episodes.length, parus,
-    prochain: h.programmee === false && !parus ? null : parus < h.episodes.length ? publication(h, parus + 1) : null,
+    prochain,
     lisibles: Array.from({ length: h.episodes.length }, (_, i) => i + 1).filter((n) => peutLire({ n, parus, connecte, debloques })),
     minutes: Number((h.episodes[cur - 1] && (h.episodes[cur - 1].minutes || (h.episodes[cur - 1].A || {}).minutes)) || 2),
     audio: aUnAudio(h.episodes[cur - 1]),
@@ -186,7 +261,8 @@ const autreBranche = (b) => (b === 'A' ? 'B' : b === 'B' ? 'A' : null);
 function verifierHistoire(h) {
   const err = [];
   if (!/^[a-z0-9-]{2,40}$/.test(h.id)) err.push('id');
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(h.depart) || !/^\d{2}:\d{2}$/.test(h.heure)) err.push('date');
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(h.depart) || !/^\d{2}:\d{2}$/.test(h.heure)) err.push('date d\'ouverture publique');
+  if (h.embranchement && !(decisionJours(h) >= h.embranchement)) err.push('decisionJours : au moins le numéro de l\'embranchement');
   if (h.episodes.length !== 5) err.push('5 épisodes');
   const imageOk = (src) => src == null || /^\/images\/[a-z0-9/-]+\/[A-Za-z0-9-]+\.webp$/.test(src);
   if (!imageOk(h.image)) err.push('image de couverture : /images/…/nom.webp');
@@ -218,7 +294,8 @@ function verifierHistoire(h) {
 }
 
 module.exports = {
-  CAS_DU_SOIR_PUBLIC, PRIX, prixSuite, SEUIL_POURCENTAGES, ANIMAUX, ANIMAL_PLURIEL, HISTOIRES, histoireById, histoireDuMoment, publication, episodesParus, aDesVersions,
+  CAS_DU_SOIR_PUBLIC, PRIX, prixSuite, SEUIL_POURCENTAGES, ANIMAUX, ANIMAL_PLURIEL, HISTOIRES, histoireById, histoireDuMoment, aDesVersions,
+  DAY, heureMs, debutJour, decisionJours, ouverturePublique, estOuverte, ouvertureEpisode, parusPour, debutApercu, dateDecision, decisionPrise, prochaineOuverture,
   minutage, majorite, statut, autreBranche, aUnAudio, episodeContenu, peutLire, peutAvancer, choixValide, votant, pourcentages, choixDeLAnimal, detailParAnimal, vueEpisode, vueHistoire,
   verifierHistoire,
 };
