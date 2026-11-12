@@ -7,7 +7,7 @@
  */
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
-import { ArrowRight, ClipboardList, CloudSun, Heart, Wind, PenLine, Wrench, MessageCircleQuestion } from 'lucide-react';
+import { ArrowRight, CloudSun, Heart, Wind, PenLine, Wrench, MessageCircleQuestion } from 'lucide-react';
 import { usePalette, DC, card } from '../components/accueil/DrLoShell';
 import AnimauxCommunaute from '../components/accueil/AnimauxCommunaute';
 import HealthLogo from '../components/brand/HealthLogo';
@@ -166,6 +166,12 @@ const WhenItRises: React.FC<{ confier?: boolean }> = ({ confier = true }) => {
 };
 
 /** Le crochet de l'animal intérieur : de vraies images, pas une ligne de texte. */
+/** La carte « Ta suite » de l'accueil : une proposition, ou la liste des tests qui restent pour découvrir l'animal. */
+interface Suite {
+  kicker: string; title: string; cta: string; go: () => void; id: string; sub?: string;
+  list?: { id: string; label: string; minutes: number; video: boolean }[]; done?: number; total?: number;
+}
+
 /**
  * Masqué sur l'accueil pour le moment (décision du 12/11/2026), tout reste en place et accessible par lien :
  *  - Pénc mi (carte « en direct » et agenda) ;
@@ -279,25 +285,38 @@ const ConnectedHome: React.FC<{ feed: HomeFeed | null; palette: MomentPalette; u
     return () => { off = true; };
   }, [uid, today]);
 
-  // Le test à la une : seulement s'il a été choisi dans l'espace Dr Lô, et pas déjà fait
-  const featuredForYou = feed?.featured && getScaleById(feed.featured.scaleId) && results && !results[feed.featured.scaleId] ? feed.featured : null;
-
-  // Ta suite : la prochaine chose à faire, une seule
-  const suite = useMemo(() => {
+  // Ta suite : la prochaine chose à faire, une seule carte, jamais deux propositions de test à la fois.
+  //  1. Animal pas encore découvert : les tests qui restent pour le découvrir (la liste), rien d'autre.
+  //  2. Animal prêt : le révéler.
+  //  3. Sinon : le test à la une choisi par Dr Lô (un test dont il a parlé en vidéo) s'il n'est pas déjà fait, et à défaut le prochain test.
+  const suite = useMemo((): Suite | null => {
     if (!results) return null;
     const prog = getTotemProgress(results);
+    const go = (id: string) => () => { trackAccueil('go', { to: 'suite_test', from: 'accueil' }); navigate('/compagnon', { state: { prescribe: id } }); };
     if (prog.missing.length > 0) {
       const n = prog.missing.length;
-      return { kicker: 'TA SUITE', title: `Plus que ${n} test${n > 1 ? 's' : ''} pour découvrir ton animal intérieur`, cta: `Faire « ${getScaleMeta(prog.missing[0]).label} »`, go: () => navigate('/compagnon', { state: { prescribe: prog.missing[0] } }), id: prog.missing[0] };
+      const fid = feed?.featured?.scaleId;
+      // Le test dont Dr Lô a parlé en vidéo passe en premier, avec sa mention
+      const ids = fid && prog.missing.includes(fid) ? [fid, ...prog.missing.filter(x => x !== fid)] : [...prog.missing];
+      return {
+        kicker: 'TON ANIMAL INTÉRIEUR', title: `Plus que ${n} test${n > 1 ? 's' : ''} pour découvrir ton animal intérieur`, id: ids[0], go: go(ids[0]), cta: '',
+        done: prog.completed, total: prog.total,
+        list: ids.map(id => ({ id, label: getScaleMeta(id).label, minutes: getScaleById(id)?.timeEstimateMinutes ?? 3, video: id === fid && !!feed?.featured?.label })),
+      };
     }
     if (!totemRevealed) return { kicker: 'TA SUITE', title: 'Ton animal intérieur est prêt', cta: 'Le découvrir', go: () => navigate('/assessment/totem'), id: '' };
+    const f = feed?.featured;
+    if (f && getScaleById(f.scaleId) && !results[f.scaleId]) {
+      const meta = getScaleMeta(f.scaleId);
+      return { kicker: f.label ? 'VU DANS LA VIDÉO' : 'LE TEST DU MOMENT', title: f.label || meta.label, sub: `${meta.description} · ${getScaleById(f.scaleId)?.timeEstimateMinutes ?? 3} min · Privé`, cta: 'Faire le test', go: go(f.scaleId), id: f.scaleId };
+    }
     const next = pickNextScale('decouvre', Object.keys(results));
-    if (next) return { kicker: 'TA SUITE', title: `Ton prochain test : ${getScaleMeta(next).label}`, cta: 'Commencer', go: () => navigate('/compagnon', { state: { prescribe: next } }), id: next };
+    if (next) return { kicker: 'TA SUITE', title: `Ton prochain test : ${getScaleMeta(next).label}`, cta: 'Commencer', go: go(next), id: next };
     // Les 7 sont faits : un test du moment, sinon refaire un test d'état ancien. L'accueil n'est jamais vide.
     const dates = Object.fromEntries(Object.entries(results).map(([id, r]) => [id, toDate((r as { completedAt?: unknown }).completedAt)]));
     const more = pickHomeNext(dates, Date.now(), feed?.featured ? [feed.featured.scaleId] : []);
-    if (more?.kind === 'new') return { kicker: 'À DÉCOUVRIR', title: `${getScaleMeta(more.id).label} : et toi, tu es comment ?`, cta: 'Faire le test', go: () => navigate('/compagnon', { state: { prescribe: more.id } }), id: more.id };
-    if (more?.kind === 'retake') return { kicker: 'ÇA A BOUGÉ ?', title: `Ton test « ${getScaleMeta(more.id).label} » date de ${sinceLabel(more.days)}. Et aujourd'hui ?`, cta: 'Refaire le point', go: () => navigate('/compagnon', { state: { prescribe: more.id } }), id: more.id };
+    if (more?.kind === 'new') return { kicker: 'À DÉCOUVRIR', title: `${getScaleMeta(more.id).label} : et toi, tu es comment ?`, cta: 'Faire le test', go: go(more.id), id: more.id };
+    if (more?.kind === 'retake') return { kicker: 'ÇA A BOUGÉ ?', title: `Ton test « ${getScaleMeta(more.id).label} » date de ${sinceLabel(more.days)}. Et aujourd'hui ?`, cta: 'Refaire le point', go: go(more.id), id: more.id };
     return null;
   }, [results, totemRevealed, navigate, feed]);
 
@@ -331,21 +350,35 @@ const ConnectedHome: React.FC<{ feed: HomeFeed | null; palette: MomentPalette; u
       {/* Une seule carte vedette : un Pénc en direct, sinon ta suite (le compagnon et les tests) ; puis Pénc mi, le cas du soir, ton message, l'humeur */}
       {SHOW_HOME_PENC && pencLive && <HomePenc palette={palette} full={launch.on('penc_page')} onLive={setPencLive} />}
 
-      {suite && !pencLive && (
+      {suite && !(SHOW_HOME_PENC && pencLive) && (
         <section aria-label="Ta suite" style={{ ...card, marginTop: 14, padding: 16, position: 'relative', overflow: 'hidden', borderColor: `${cc}80`, background: `radial-gradient(60% 80% at 100% 0%, ${cc}4D, transparent 70%), linear-gradient(140deg, ${cc}33, rgba(26,18,11,.9) 65%)` }}>
           <p style={{ margin: 0, fontSize: 13, fontWeight: 700, letterSpacing: '.12em', color: palette.accent }}>{suite.kicker}</p>
           <p style={{ margin: '6px 0 0', fontFamily: 'Fraunces, serif', fontSize: 21, lineHeight: 1.25, fontWeight: 600, color: DC.title }}>{suite.title}</p>
-          <button onClick={suite.go} className="drl-btn"
-            style={{ marginTop: 12, minHeight: 48, padding: '0 20px', borderRadius: 999, border: 0, background: palette.primary, color: DC.ink, fontSize: 15, fontWeight: 700, cursor: 'pointer' }}>{suite.cta}</button>
+          {suite.sub && <p style={{ margin: '8px 0 0', fontSize: 14, lineHeight: 1.5, color: DC.soft }}>{suite.sub}</p>}
+          {suite.list ? (
+            <>
+              <p style={{ margin: '10px 0 0', fontSize: 13, color: DC.muted }}>{suite.done} test{(suite.done ?? 0) > 1 ? 's' : ''} fait{(suite.done ?? 0) > 1 ? 's' : ''} sur {suite.total}</p>
+              <div role="progressbar" aria-valuemin={0} aria-valuemax={suite.total} aria-valuenow={suite.done} aria-label="Tests faits pour découvrir ton animal intérieur" style={{ display: 'flex', gap: 5, marginTop: 6 }}>
+                {Array.from({ length: suite.total ?? 0 }, (_, k) => <span key={k} style={{ flex: 1, height: 6, borderRadius: 999, background: k < (suite.done ?? 0) ? palette.accent : 'rgba(255,255,255,.14)' }} />)}
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 12 }}>
+                {suite.list.map((t, k) => (
+                  <button key={t.id} onClick={() => { trackAccueil('go', { to: 'totem_test', from: 'accueil' }); navigate('/compagnon', { state: { prescribe: t.id } }); }} className="drl-btn"
+                    style={{ minHeight: 52, padding: '0 16px', borderRadius: 16, border: k === 0 ? 0 : `1px solid ${DC.line}`, background: k === 0 ? palette.primary : 'rgba(255,255,255,.06)', color: k === 0 ? DC.ink : DC.text, fontSize: 15, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, textAlign: 'left' }}>
+                    <span>
+                      {t.label}
+                      {t.video && <span style={{ display: 'block', fontSize: 12, fontWeight: 700, opacity: 0.8 }}>Vu dans la vidéo</span>}
+                    </span>
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 13, fontWeight: 600, opacity: 0.85, whiteSpace: 'nowrap' }}>{t.minutes} min <ArrowRight size={16} aria-hidden="true" /></span>
+                  </button>
+                ))}
+              </div>
+            </>
+          ) : (
+            <button onClick={suite.go} className="drl-btn"
+              style={{ marginTop: 12, minHeight: 48, padding: '0 20px', borderRadius: 999, border: 0, background: palette.primary, color: DC.ink, fontSize: 15, fontWeight: 700, cursor: 'pointer' }}>{suite.cta}</button>
+          )}
         </section>
-      )}
-
-      {featuredForYou && featuredForYou.scaleId !== suite?.id && (
-        <div style={{ marginTop: GAP }}>
-          <WideLink to="/compagnon" state={{ prescribe: featuredForYou.scaleId }} kicker={featuredForYou.label ? 'VU DANS LA VIDÉO' : 'LE TEST DU MOMENT'}
-            title={featuredForYou.label || getScaleMeta(featuredForYou.scaleId).label} tint={DC.sage}
-            icon={<ClipboardList size={20} color={DC.sage} />} />
-        </div>
       )}
 
       {/* Pénc mi (quand il n'est pas en direct), puis le cas du soir (visible seulement si le serveur le dit : aujourd'hui, le propriétaire) */}
