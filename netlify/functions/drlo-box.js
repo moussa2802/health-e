@@ -1,6 +1,7 @@
 /**
  * drlo-box — la boîte à questions anonyme.
- *   GET                           → { answers } : réponses écrites par Dr Lô, publiées sur le site (public).
+ *   GET                           → { answers, topics, waiting } : réponses écrites par Dr Lô (avec leur thème) et nombre de questions en attente (public).
+ *   POST { action:'mine', ids }             → l'état des questions déposées depuis cet appareil (waiting / answered / video / closed).
  *   POST { action:'send', text, website? }  → dépose une question, sans compte (website = piège à robots, doit rester vide).
  *   POST { action:'list' }                  → (espace Dr Lô) les questions reçues.
  *   POST { action:'decide', id, status, publicText?, answer?, note? } → (espace Dr Lô) répondre sur le site, en vidéo, ou classer.
@@ -24,12 +25,21 @@ exports.handler = async (event) => {
   if (event.httpMethod === 'OPTIONS') return { statusCode: 200, headers, body: '' };
   try {
     if (event.httpMethod === 'GET') {
-      const s = await COL().where('status', '==', 'site').limit(60).get();
-      return reply(200, { answers: B.publicAnswers(s.docs.map((d) => ({ id: d.id, ...d.data() }))) }, { 'Cache-Control': 'public, max-age=60' });
+      const [s, w] = await Promise.all([
+        COL().where('status', '==', 'site').limit(300).get(),
+        COL().where('status', '==', 'new').count().get().then((c) => c.data().count).catch(() => null),
+      ]);
+      return reply(200, { answers: B.publicAnswers(s.docs.map((d) => ({ id: d.id, ...d.data() }))), topics: B.TOPICS.map(({ id, label }) => ({ id, label })).concat(B.OTHER_TOPIC), waiting: w }, { 'Cache-Control': 'public, max-age=60' });
     }
     if (event.httpMethod !== 'POST') return reply(405, { error: 'Méthode non autorisée' });
     let body;
     try { body = JSON.parse(event.body || '{}'); } catch { return reply(400, { error: 'JSON invalide' }); }
+
+    if (body.action === 'mine') {
+      const ids = B.cleanIds(body.ids);
+      const snaps = await Promise.all(ids.map((i) => COL().doc(i).get()));
+      return reply(200, { items: snaps.map((d, k) => B.mineView(ids[k], d.exists ? d.data() : null)) }, { 'Cache-Control': 'no-store' });
+    }
 
     if (body.action === 'send') {
       if (body.website) return reply(200, { ok: true }); // robot : on fait comme si
@@ -52,8 +62,8 @@ exports.handler = async (event) => {
       if (!verdict.ok) {
         return reply(429, { error: verdict.reason === 'device' ? 'Tu as déjà déposé plusieurs questions aujourd\'hui. Reviens demain.' : 'La boîte est pleine pour aujourd\'hui. Reviens demain.' });
       }
-      await COL().add({ text: q.text, crisis: q.crisis, status: 'new', createdAt: admin.firestore.Timestamp.now() });
-      return reply(200, { ok: true, support: q.crisis });
+      const added = await COL().add({ text: q.text, crisis: q.crisis, status: 'new', createdAt: admin.firestore.Timestamp.now() });
+      return reply(200, { ok: true, support: q.crisis, id: added.id });
     }
 
     // Espace Dr Lô

@@ -46,3 +46,40 @@ test('réponses publiques : seulement « site », récentes d\'abord', () => {
   ];
   assert.deepStrictEqual(B.publicAnswers(rows).map((r) => r.id), ['b', 'a']);
 });
+
+test('thèmes : les vraies questions de la boîte tombent dans le bon thème', () => {
+  const t = (q, a = '') => B.classifyTopic({ publicText: q, answer: a });
+  assert.strictEqual(t('Est-ce qu\'une femme peut déclarer ses sentiments à un homme ?'), 'amour');
+  assert.strictEqual(t('Je suis amoureuse d\'un homme et je ne sais pas si je dois lui déclarer mes sentiments.'), 'amour');
+  assert.strictEqual(t('Je veux des conseils sur mon mariage'), 'amour');
+  assert.strictEqual(t('Ma mère me rabaisse très souvent, qu\'est-ce qui peut causer cela ?'), 'famille');
+  assert.strictEqual(t('Je veux sortir de la maison familiale'), 'famille');
+  assert.strictEqual(t('J\'ai de l\'anxiété liée à la santé et je stresse beaucoup'), 'anxiete');
+  assert.strictEqual(t('Mon cœur bat très fort, sans arrêt, depuis hier.'), 'anxiete');
+  assert.strictEqual(t('Depuis le décès de mon père, il y a une douleur en moi'), 'souffrance');
+  assert.strictEqual(t('La suicide est elle une solution ?'), 'souffrance');
+  assert.strictEqual(t('Comment gérer l\'envie de sexe en tant que femme musulmane célibataire ?'), 'corps');
+  assert.strictEqual(t('Douleurs 3 mois après une fausse couche précoce'), 'corps');
+  assert.strictEqual(t('Comment me débarrasser de ma dépendance affective'), 'soi');
+  assert.strictEqual(t('Actuellement je me sens seule, je n\'ai confiance en personne'), 'soi');
+  assert.strictEqual(t('Zeus, qu\'est-ce que tu sais sur moi ?'), 'autre');
+  assert.strictEqual(t('Dites ce que vous pensez de moi'), 'autre');
+});
+test('thème choisi par Dr Lô : il l\'emporte sur le calcul', () => {
+  assert.strictEqual(B.classifyTopic({ publicText: 'Je veux sortir de la maison familiale', answer: 'x', topic: 'soi' }), 'soi');
+  assert.strictEqual(B.classifyTopic({ publicText: 'Je veux sortir de la maison familiale', answer: 'x', topic: 'inconnu' }), 'famille');
+});
+test('réponses publiques : chaque réponse porte son thème', () => {
+  const r = B.publicAnswers([{ id: 'a', status: 'site', publicText: 'Pourquoi je dors mal ?', answer: 'Souvent le stress.', answeredAt: 5 }]);
+  assert.strictEqual(r[0].topic, 'anxiete');
+});
+test('mes questions : identifiants nettoyés, état sans fuite', () => {
+  assert.deepStrictEqual(B.cleanIds(['abcdefghij1234567890', 'abcdefghij1234567890', 'x', '../../etc', 5, null]), ['abcdefghij1234567890']);
+  assert.strictEqual(B.cleanIds(Array.from({ length: 40 }, (_, i) => 'abcdefghij' + String(1000 + i))).length, 10);
+  assert.deepStrictEqual(B.mineView('i', null), { id: 'i', state: 'gone' });
+  assert.deepStrictEqual(B.mineView('i', { status: 'new', text: 'secret' }), { id: 'i', state: 'waiting' });
+  assert.deepStrictEqual(B.mineView('i', { status: 'skipped', text: 'secret' }), { id: 'i', state: 'closed' });
+  assert.deepStrictEqual(B.mineView('i', { status: 'video' }), { id: 'i', state: 'video' });
+  const a = B.mineView('i', { status: 'site', publicText: 'Pourquoi je dors mal ?', answer: 'Le stress.', answeredAt: 7, text: 'secret' });
+  assert.strictEqual(a.state, 'answered'); assert.ok(!JSON.stringify(a).includes('secret'));
+});
