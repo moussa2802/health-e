@@ -13,6 +13,7 @@ import AdminLayout from '../../components/admin/AdminLayout';
 import { DC } from '../../components/accueil/DrLoShell';
 import { authedFetch } from '../../utils/authedFetch';
 import { getScaleMeta } from '../../utils/scaleMeta';
+import { animalName, getAnimalCensus, type AnimalCensus } from '../../services/animalCensusService';
 
 interface Day { d: string; visiteurs: number | null; actifs: number; nouveaux: number; revenants: number; inscriptions: number; comptes: number; tests: number; chatMsgs: number; chatUsers: number; humeurs: number; exercices: number }
 interface KV { key: string; n: number }
@@ -102,6 +103,8 @@ const AdminStats: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [table, setTable] = useState(false);
+  const [animals, setAnimals] = useState<AnimalCensus | null>(null);
+  useEffect(() => { getAnimalCensus().then(setAnimals).catch(() => setAnimals(null)); }, []);
 
   const load = (n = days) => {
     setLoading(true); setError(null);
@@ -272,6 +275,32 @@ const AdminStats: React.FC = () => {
               <Ranking rows={(data.tests ?? []).slice(0, 12).map(t => ({ label: getScaleMeta(t.key)?.label || t.key, n: t.n }))} empty="Aucun test sur la période." />
             </section>
           </div>
+
+          {/* Animaux intérieurs : combien de chaque, et les nouveaux des derniers jours (totaux seulement) */}
+          {animals && (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 16 }}>
+              <section style={card} aria-label="Animaux intérieurs">
+                <h2 style={h2}>Animaux intérieurs</h2>
+                <p style={sub}>{nf(animals.total)} personnes ont découvert leur animal, au total. Aujourd'hui : {nf(animals.todayTotal)} · hier : {nf(animals.yesterdayTotal)}. Recalculé au plus toutes les 30 minutes.</p>
+                <Ranking rows={Object.entries(animals.byAnimal).filter(([, n]) => n > 0).sort((a, b) => b[1] - a[1]).map(([id, n]) => ({ label: animalName(id), n }))} empty="Aucun animal révélé pour l'instant." />
+              </section>
+              <section style={card} aria-label="Animaux révélés par jour">
+                <h2 style={h2}>Animaux révélés par jour</h2>
+                <p style={sub}>Les 14 derniers jours.</p>
+                <div style={{ height: 220 }}>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={animals.days.map(x => ({ d: fmtDay(x.d), n: x.n }))} margin={{ top: 8, right: 8, bottom: 0, left: -18 }}>
+                      <CartesianGrid stroke={GRID} vertical={false} />
+                      <XAxis dataKey="d" tick={AXIS} interval="preserveStartEnd" />
+                      <YAxis tick={AXIS} allowDecimals={false} />
+                      <Tooltip content={<Tip />} cursor={{ fill: 'rgba(255,255,255,.04)' }} />
+                      <Bar dataKey="n" name="Animaux révélés" fill={S1} radius={[4, 4, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </section>
+            </div>
+          )}
 
           {/* Ce qui est utilisé */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 16 }}>

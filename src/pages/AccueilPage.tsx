@@ -9,6 +9,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { ArrowRight, ClipboardList, CloudSun, Heart, Wind, PenLine, Wrench, MessageCircleQuestion } from 'lucide-react';
 import { usePalette, DC, card } from '../components/accueil/DrLoShell';
+import AnimauxCommunaute from '../components/accueil/AnimauxCommunaute';
 import HealthLogo from '../components/brand/HealthLogo';
 import { addDays, type Programme } from '../utils/programme';
 import { loadProgramme } from '../services/programmeService';
@@ -238,6 +239,7 @@ const ConnectedHome: React.FC<{ feed: HomeFeed | null; palette: MomentPalette; u
   const [moodDone, setMoodDone] = useState<boolean | null>(null);
   const [moods, setMoods] = useState<MoodMap>({});
   const [prog, setProg] = useState<Programme | null>(null);
+  const [myAnimal, setMyAnimal] = useState<string | null>(null);
   const [moodOpen, setMoodOpen] = useState(false);
   const [drlo, setDrlo] = useState<DrloStatus | null>(null);
   const today = dayKey();
@@ -250,12 +252,12 @@ const ConnectedHome: React.FC<{ feed: HomeFeed | null; palette: MomentPalette; u
     let off = false;
     // Les résultats gardés sur ce téléphone d'abord (« Ta suite » s'affiche tout de suite), puis ceux du compte
     const cached = readResultsCache(uid);
-    if (cached) { setResults(cached.results); if (cached.totem) setTotemRevealed(true); }
+    if (cached) { setResults(cached.results); if (cached.totem) { setTotemRevealed(true); setMyAnimal(cached.totem); } }
     getProfileProgress(uid).then(p => {
       if (off) return;
       const totem = p.totem?.animal && p.totem.revealedAt ? p.totem.animal : null;
       writeResultsCache(uid, p.scaleResults ?? {}, totem);
-      setResults(p.scaleResults ?? {}); setTotemRevealed(!!totem);
+      setResults(p.scaleResults ?? {}); setTotemRevealed(!!totem); setMyAnimal(totem);
     }).catch(() => { if (!off && !cached) setResults({}); });
     getInbox().then(r => { if (!off) { setInbox(r.items); setUnread(r.unread); } }).catch(() => {});
     getChannelNews().then(r => { if (!off) setChBadge(r.badge); }).catch(() => {});
@@ -337,6 +339,9 @@ const ConnectedHome: React.FC<{ feed: HomeFeed | null; palette: MomentPalette; u
 
       {/* Pénc mi (quand il n'est pas en direct), puis le cas du soir (visible seulement si le serveur le dit : aujourd'hui, le propriétaire) */}
       {!pencLive && <HomePenc palette={palette} full={launch.on('penc_page')} onLive={setPencLive} />}
+
+      {/* Les animaux intérieurs de la communauté : les nouveaux du jour, et combien de chaque */}
+      <AnimauxCommunaute mine={myAnimal} accent={palette.accent} />
       <CasDuSoirCard accent={palette.accent} />
 
       <DailyGiftCard palette={palette} />
