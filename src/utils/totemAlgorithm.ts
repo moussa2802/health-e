@@ -512,26 +512,37 @@ export function nearestTotems(animal: TotemAnimal, n = 2): TotemAnimal[] {
 
 export interface LoveMatch { animal: TotemAnimal; score: number; reasons: string[] }
 
+/**
+ * L'amour entre totems se lit sur les profils types, en écarts à la communauté (voir COMMUNITY). Repères de la psychologie des couples :
+ *  - la sécurité d'attachement des deux et la stabilité émotionnelle sont ce qui prédit le mieux un couple apaisé ;
+ *  - la chaleur (agréabilité) aide à traverser les désaccords ;
+ *  - se ressembler sur les valeurs et le mode de vie (ouverture, conscienciosité, agréabilité) facilite le quotidien ;
+ *  - l'énergie sociale peut être proche ou complémentaire ; deux personnes très émotives ensemble s'emballent.
+ * Les valeurs sont ramenées entre -1 et 1 (±1,5 écart-type) avant d'être combinées.
+ */
+const sc = (z: number) => Math.max(-1, Math.min(1, z / 1.5));
+// Positions dans le vecteur : 0 extraversion, 1 ouverture, 2 agréabilité, 3 conscienciosité, 4 instabilité émotionnelle, 5 sécurité d'attachement, 6 résilience
+
 function loveScore(a: number[], b: number[]): number {
-  const sim = 1 - (Math.abs(a[1] - b[1]) + Math.abs(a[2] - b[2]) + Math.abs(a[3] - b[3])) / 3;
-  const secure = (a[5] + b[5]) / 2;
-  const stable = 1 - (a[4] + b[4]) / 2;
-  const warm = (a[2] + b[2]) / 2;
-  const energy = 1 - Math.abs(a[0] - b[0]);
+  const sim = 1 - (Math.abs(sc(a[1]) - sc(b[1])) + Math.abs(sc(a[2]) - sc(b[2])) + Math.abs(sc(a[3]) - sc(b[3]))) / 6;
+  const secure = (sc(a[5]) + sc(b[5])) / 2;
+  const stable = -(sc(a[4]) + sc(b[4])) / 2;
+  const warm = (sc(a[2]) + sc(b[2])) / 2;
+  const energy = 1 - Math.abs(sc(a[0]) - sc(b[0])) / 2;
   return 0.35 * sim + 0.25 * secure + 0.2 * stable + 0.1 * warm + 0.1 * energy;
 }
 
 /** Raisons d'un bon accord, chacune avec deux façons de le dire (pour ne pas répéter la même phrase sur les deux totems). */
 function goodReasons(a: number[], b: number[]): [string, string][] {
   const r: [string, string][] = [];
-  if (Math.abs(a[2] - b[2]) <= 0.15 && b[2] >= 0.55) r.push(['la même douceur avec les autres', 'vous prenez soin l\'un de l\'autre']);
-  if (Math.abs(a[3] - b[3]) <= 0.15) r.push(['le même sérieux dans les engagements', 'quand vous promettez, vous tenez parole']);
-  if (Math.abs(a[1] - b[1]) <= 0.15) r.push(['la même curiosité pour la vie', 'vous aimez découvrir des choses ensemble']);
-  if (b[5] >= 0.75) r.push(['sa sécurité affective t\'apaise', 'à ses côtés, tu te sens en sécurité']);
-  if (b[4] <= 0.2 && a[4] >= 0.4) r.push(['son calme équilibre tes émotions', 'quand tu t\'agites, sa sérénité te pose']);
-  if (Math.abs(a[0] - b[0]) >= 0.4) r.push(['l\'un ouvre au monde, l\'autre ramène au calme', 'vous vous équilibrez : sortir et se poser']);
-  if (a[0] >= 0.7 && b[0] >= 0.7) r.push(['la même énergie, le même goût de l\'action', 'à deux, vous ne tenez pas en place']);
-  if (Math.abs(a[0] - b[0]) <= 0.15 && a[0] < 0.7) r.push(['le même besoin de calme et d\'intimité', 'vous aimez les moments simples, juste à deux']);
+  if (Math.abs(a[2] - b[2]) <= 0.5 && b[2] >= 0.3) r.push(['la même douceur avec les autres', 'vous prenez soin l\'un de l\'autre']);
+  if (Math.abs(a[3] - b[3]) <= 0.5) r.push(['le même sérieux dans les engagements', 'quand vous promettez, vous tenez parole']);
+  if (Math.abs(a[1] - b[1]) <= 0.5) r.push(['la même curiosité pour la vie', 'vous aimez découvrir des choses ensemble']);
+  if (b[5] >= 0.7) r.push(['sa sécurité affective t\'apaise', 'à ses côtés, tu te sens en sécurité']);
+  if (b[4] <= -0.6 && a[4] >= -0.3) r.push(['son calme équilibre tes émotions', 'quand tu t\'agites, sa sérénité te pose']);
+  if (Math.abs(a[0] - b[0]) >= 1.2) r.push(['l\'un ouvre au monde, l\'autre ramène au calme', 'vous vous équilibrez : sortir et se poser']);
+  if (a[0] >= 0.75 && b[0] >= 0.75) r.push(['la même énergie, le même goût de l\'action', 'à deux, vous ne tenez pas en place']);
+  if (Math.abs(a[0] - b[0]) <= 0.5 && a[0] < 0.75) r.push(['le même besoin de calme et d\'intimité', 'vous aimez les moments simples, juste à deux']);
   if (!r.length) r.push(['vos forces se complètent', 'ce qui manque à l\'un, l\'autre l\'apporte']);
   return r;
 }
@@ -543,11 +554,11 @@ function pickReasons(list: [string, string][], used: Set<string>): string[] {
 
 function effortReasons(a: number[], b: number[]): string[] {
   const r: string[] = [];
-  if (a[4] + b[4] >= 0.9) r.push('vos émotions peuvent s\'emballer en même temps');
-  if (Math.abs(a[0] - b[0]) >= 0.5) r.push('l\'un veut sortir quand l\'autre veut rester');
-  if (Math.abs(a[3] - b[3]) >= 0.35) r.push('vos rythmes de vie sont très différents');
-  if (Math.abs(a[2] - b[2]) >= 0.35) r.push('vous ne gérez pas les conflits de la même façon');
-  if ((a[5] + b[5]) / 2 <= 0.55) r.push('chacun peut se protéger en prenant de la distance');
+  if (a[4] > 0.2 && b[4] > 0.2 && a[4] + b[4] >= 0.8) r.push('vos émotions peuvent s\'emballer en même temps');
+  if (Math.abs(a[0] - b[0]) >= 1.6) r.push('l\'un veut sortir quand l\'autre veut rester');
+  if (Math.abs(a[3] - b[3]) >= 1.3) r.push('vos rythmes de vie sont très différents');
+  if (Math.abs(a[2] - b[2]) >= 1.2) r.push('vous ne gérez pas les conflits de la même façon');
+  if ((a[5] + b[5]) / 2 <= -0.1) r.push('chacun peut se protéger en prenant de la distance');
   if (!r.length) r.push('vous voyez souvent les choses différemment');
   return r.slice(0, 2);
 }

@@ -85,3 +85,35 @@ test('les totems voisins sont bien des animaux différents', () => {
     assert.strictEqual(near.length, 2); assert.ok(!near.includes(a));
   }
 });
+
+test('amour : les correspondances sont lues sur les profils recalibrés et restent cohérentes entre elles', () => {
+  const love = Object.fromEntries(ANIMALS.map((a) => [a, T.loveMatches(a)]));
+  for (const a of ANIMALS) {
+    const l = love[a];
+    assert.strictEqual(l.best.length, 2);
+    assert.ok(!l.best.some((m) => m.animal === a) && l.effort.animal !== a);
+    assert.ok(!l.best.some((m) => m.animal === l.effort.animal), `${a} : un même animal ne peut pas être à la fois le meilleur et le plus difficile`);
+    for (const m of [...l.best, l.effort]) assert.ok(m.reasons.length >= 1 && m.reasons.every((r) => r.length > 8));
+    // jamais de contradiction entre deux animaux : si B est un bon accord pour A, A n'est pas « le plus difficile » pour B
+    for (const m of l.best) assert.notStrictEqual(love[m.animal].effort.animal, a, `${a} / ${m.animal}`);
+    // et si B est « le plus difficile » pour A, A n'est pas un bon accord pour B
+    assert.ok(!love[l.effort.animal].best.some((m) => m.animal === a), `${a} / ${l.effort.animal}`);
+  }
+});
+
+test('amour : deux totems très extravertis, calmes et sécures vont ensemble (Lion et Dauphin se choisissent)', () => {
+  assert.ok(T.loveMatches('lion').best.some((m) => m.animal === 'dauphin'));
+  assert.ok(T.loveMatches('dauphin').best.some((m) => m.animal === 'lion'));
+});
+
+test('amour : les raisons affichées sont vraies pour les deux profils', () => {
+  const sig = (a) => T.getTotemSignature(a).vector;
+  for (const a of ANIMALS) {
+    for (const m of T.loveMatches(a).best) {
+      const b = sig(m.animal); const me = sig(a);
+      const t = m.reasons.join(' | ');
+      if (/sécurité affective t'apaise|tu te sens en sécurité/.test(t)) assert.ok(b[5] >= 0.7, `${a}→${m.animal} : sécurité`);
+      if (/calme équilibre tes émotions|sérénité te pose/.test(t)) assert.ok(b[4] <= -0.6 && me[4] >= -0.3, `${a}→${m.animal} : calme`);
+    }
+  }
+});
