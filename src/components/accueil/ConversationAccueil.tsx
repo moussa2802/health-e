@@ -952,7 +952,7 @@ const ConversationAccueil: React.FC = () => {
     if (dueW) liveItems.push({ key: 'bilan', title: 'Ton bilan de la semaine est prêt', body: `Semaine ${dueW} · à ouvrir quand tu veux`, onOpen: () => setProgOpen(true) });
     if (rt?.available) liveItems.push({ key: 'retest', title: 'Ton nouveau test est prêt', body: 'Pour voir le chemin parcouru', onOpen: () => setProgOpen(true) });
   }
-  if (totemPending) liveItems.push({ key: 'totem', title: 'Ton animal intérieur a évolué', body: 'Viens découvrir le nouveau', onOpen: () => navigate('/assessment/totem') });
+  if (totemPending) liveItems.push({ key: 'totem', title: 'Un nouvel animal intérieur t\'attend', body: 'Viens le découvrir', onOpen: () => navigate('/assessment/totem') });
   const unreadCount = inbox.filter(i => !i.read).length;
   const bellCount = liveItems.length + unreadCount;
 

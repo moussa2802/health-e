@@ -17,33 +17,55 @@ export const TOTEM_REQUIRED_SCALES = [
   'big_five', 'rses', 'ecr_r', 'brs', 'gad7', 'pss10', 'phq9',
 ] as const;
 
-const DIM_WEIGHTS = [1.0, 1.0, 1.0, 1.0, 1.0, 0.8, 0.6];
+/**
+ * Recalibrage de novembre 2026 (voir docs/agents/rapports/2026-11-12-animal-recalibrage.md).
+ *
+ * Chaque personne est placée sur 7 axes **par rapport à la communauté** (écart à la moyenne, en écarts-types) :
+ * extraversion, ouverture, agréabilité, conscienciosité, instabilité émotionnelle, sécurité d'attachement, résilience.
+ * L'animal est celui dont le profil type est le plus proche. Les profils types sont construits à partir de ce que dit la
+ * psychologie des traits (Big Five, attachement, résilience) et du symbole de chaque animal, puis calés sur les 732 premiers
+ * profils complets pour qu'aucun animal ne soit rare ni envahissant (de 4 % à 14 % chacun).
+ *
+ * Avant : la résilience valait toujours 0 (le BRS est une moyenne de 1 à 5, le code la divisait par 6) et les profils types étaient
+ * des valeurs absolues : le Cerf recevait 66 % des gens.
+ */
+export const TOTEM_ALGO_VERSION = 2;
 
+/** Moyenne et écart-type de la communauté, axe par axe (valeurs 0 à 1) : extraversion, ouverture, agréabilité, conscienciosité, instabilité, attachement, résilience. */
+export const COMMUNITY = {
+  mean: [0.367, 0.677, 0.626, 0.536, 0.667, 0.487, 0.542],
+  sd: [0.285, 0.212, 0.210, 0.226, 0.271, 0.159, 0.209],
+};
+
+// Instabilité, attachement et résilience sont liés entre eux (corrélations de -0,53 à +0,39) : on évite de les compter trois fois pleins.
+const DIM_WEIGHTS = [1.0, 1.0, 1.0, 1.0, 0.7, 0.7, 0.7];
+
+// vector = [extraversion, ouverture, agréabilité, conscienciosité, instabilité émotionnelle, sécurité d'attachement, résilience], en écarts à la communauté
 const SIGNATURES: TotemSignature[] = [
   { animal: 'lion',     label: 'Lion',     meaning: 'Meneur confiant — tu inspires et rassures naturellement.',
-    vector: [0.85, 0.6, 0.5, 0.65, 0.2, 0.8, 0.8] },
+    vector: [1.13, 0.28, -0.05, 0.44, -0.82, 0.90, 1.10] },
   { animal: 'aigle',    label: 'Aigle',    meaning: 'Visionnaire indépendant — tu vois loin et traces ta route.',
-    vector: [0.65, 0.9, 0.3, 0.5, 0.35, 0.5, 0.7] },
+    vector: [0.00, 0.88, -0.70, 0.59, -0.27, -0.36, 0.54] },
   { animal: 'cheval',   label: 'Cheval',   meaning: 'Libre et fougueux — ton énergie et ta curiosité t\'emportent.',
-    vector: [0.85, 0.8, 0.35, 0.4, 0.45, 0.5, 0.65] },
+    vector: [0.80, 0.73, -0.10, -0.94, 0.58, 0.06, 0.18] },
   { animal: 'loup',     label: 'Loup',     meaning: 'Fidèle relationnel — la loyauté et les liens sont ton moteur.',
-    vector: [0.55, 0.5, 0.85, 0.6, 0.4, 0.75, 0.6] },
+    vector: [0.09, -0.05, 0.69, 0.30, 0.27, 0.24, -0.15] },
   { animal: 'dauphin',  label: 'Dauphin',  meaning: 'Sociable optimiste — ta joie et ton écoute rayonnent.',
-    vector: [0.9, 0.65, 0.85, 0.5, 0.15, 0.7, 0.75] },
+    vector: [1.21, 0.14, 0.64, -0.14, -0.78, 0.85, 0.54] },
   { animal: 'elephant', label: 'Éléphant', meaning: 'Protecteur bienveillant — ta force est au service des autres.',
-    vector: [0.5, 0.55, 0.85, 0.8, 0.2, 0.85, 0.8] },
+    vector: [-0.29, -0.08, 1.00, 0.78, -0.80, 0.77, 0.80] },
   { animal: 'cerf',     label: 'Cerf',     meaning: 'Sensible délicat — ta finesse perçoit ce que d\'autres ignorent.',
-    vector: [0.3, 0.8, 0.8, 0.5, 0.65, 0.55, 0.45] },
+    vector: [-0.72, 0.75, 0.55, -0.33, 0.95, -0.31, -0.43] },
   { animal: 'hibou',    label: 'Hibou',    meaning: 'Introspectif profond — tu réfléchis en profondeur avant d\'agir.',
-    vector: [0.25, 0.85, 0.55, 0.8, 0.45, 0.5, 0.55] },
+    vector: [-0.87, 0.94, 0.00, 0.47, 0.26, -0.07, 0.10] },
   { animal: 'panthere', label: 'Panthère', meaning: 'Maître de soi — tu avances avec calme et assurance.',
-    vector: [0.3, 0.5, 0.45, 0.8, 0.15, 0.55, 0.75] },
+    vector: [-0.50, -0.12, -0.45, 0.90, -0.90, 0.30, 0.94] },
   { animal: 'renard',   label: 'Renard',   meaning: 'Malin stratège — tu t\'adaptes et trouves toujours un chemin.',
-    vector: [0.55, 0.8, 0.55, 0.75, 0.35, 0.55, 0.65] },
+    vector: [0.20, 0.80, -0.40, 0.32, -0.10, -0.20, 0.40] },
   { animal: 'tortue',   label: 'Tortue',   meaning: 'Sage résilient — ta constance et ta paix intérieure impressionnent.',
-    vector: [0.4, 0.5, 0.6, 0.8, 0.15, 0.65, 0.9] },
+    vector: [-0.42, 0.27, 0.30, 0.83, -0.70, 0.20, 1.08] },
   { animal: 'ours',     label: 'Ours',     meaning: 'Protecteur solitaire — ta force tranquille rassure ceux que tu aimes.',
-    vector: [0.15, 0.45, 0.5, 0.55, 0.2, 0.45, 0.75] },
+    vector: [-1.26, -0.77, 0.10, 0.12, -0.51, 0.14, 0.50] },
 ];
 
 export function getTotemSignature(animal: TotemAnimal): TotemSignature {
@@ -87,10 +109,12 @@ function normalizeProfile(profileResults: Record<string, ScaleResult>): number[]
   const avoMean = ecr.subscaleScores['avoidance'] ?? 3.5;
   const nAttachment = clamp(1 - ((anxMean + avoMean) / 2 - 1) / 6);
 
-  const brsMean = brs ? brs.totalScore / 6 : 3;
+  // Le BRS est enregistré en moyenne (1 à 5). Un total de 6 à 30 (anciens enregistrements éventuels) est ramené à la moyenne.
+  const brsRaw = brs ? brs.totalScore : 3;
+  const brsMean = brsRaw > 5 ? brsRaw / 6 : brsRaw;
   const nResilience = clamp((brsMean - 1) / 4);
 
-  return [
+  const raw = [
     nExtraversion,      // dim 0
     nOpenness,          // dim 1
     nAgreeableness,     // dim 2
@@ -99,6 +123,14 @@ function normalizeProfile(profileResults: Record<string, ScaleResult>): number[]
     nAttachment,        // dim 5
     nResilience,        // dim 6
   ];
+  // Position par rapport à la communauté
+  return raw.map((v, i) => (v - COMMUNITY.mean[i]) / COMMUNITY.sd[i]);
+}
+
+/** Le profil d'une personne sur les 7 axes, en écarts à la communauté (null si les tests ne sont pas faits). Sert aux tests. */
+export function totemVector(profileResults: Record<string, ScaleResult>): number[] | null {
+  if (getTotemProgress(profileResults).missing.length > 0) return null;
+  return normalizeProfile(profileResults);
 }
 
 function clamp(v: number): number {
@@ -438,24 +470,26 @@ export function computeTotem(profileResults: Record<string, ScaleResult>): Totem
     distance: weightedDistance(profile, sig.vector, DIM_WEIGHTS),
   }));
 
+  // Pas de départage spécial : la répartition et la cohérence ont été validées telles quelles sur les profils réels
   scored.sort((a, b) => a.distance - b.distance);
 
-  if (scored.length >= 2) {
-    const gap = (scored[1].distance - scored[0].distance) / scored[0].distance;
-    if (gap < 0.05) {
-      const tieWeights = [...DIM_WEIGHTS];
-      tieWeights[1] *= 2; // openness
-      tieWeights[5] *= 2; // attachment
-
-      const a = SIGNATURES.find(s => s.animal === scored[0].animal)!;
-      const b = SIGNATURES.find(s => s.animal === scored[1].animal)!;
-      const dA = weightedDistance(profile, a.vector, tieWeights);
-      const dB = weightedDistance(profile, b.vector, tieWeights);
-      return dA <= dB ? a.animal : b.animal;
-    }
-  }
-
   return scored[0].animal;
+}
+
+/**
+ * Après de nouveaux tests : l'animal ne change que si le nouveau est nettement plus proche que l'actuel
+ * (au moins 10 % de distance en moins). Évite qu'une personne près d'une frontière change d'animal à chaque retest.
+ */
+export function computeTotemKeeping(profileResults: Record<string, ScaleResult>, current: string | null | undefined): TotemAnimal | null {
+  const next = computeTotem(profileResults);
+  if (!next || !current || next === current) return next;
+  const cur = SIGNATURES.find(x => x.animal === current);
+  const profile = normalizeProfile(profileResults);
+  if (!cur || !profile) return next;
+  const nxt = SIGNATURES.find(x => x.animal === next)!;
+  const dCur = weightedDistance(profile, cur.vector, DIM_WEIGHTS);
+  const dNxt = weightedDistance(profile, nxt.vector, DIM_WEIGHTS);
+  return dNxt < dCur * 0.9 ? next : (current as TotemAnimal);
 }
 
 /** Les totems qui te ressemblent le plus (même tempérament sur beaucoup de plans). */

@@ -8,7 +8,7 @@ import type {
 } from '../types/assessment';
 import { ALL_SCALES, MENTAL_HEALTH_SCALES, SEXUAL_HEALTH_SCALES, BONUS_SCALES } from '../data/scales';
 import { generateMentalCompatibilityId, generateSexualCompatibilityId } from '../utils/idGenerator';
-import { computeTotem, TOTEM_REQUIRED_SCALES, classifyDomain, getTotemDomain } from '../utils/totemAlgorithm';
+import { computeTotem, computeTotemKeeping, TOTEM_ALGO_VERSION, TOTEM_REQUIRED_SCALES, classifyDomain, getTotemDomain } from '../utils/totemAlgorithm';
 import { needsRescore, rescore } from '../utils/scaleScoring';
 
 const SESSIONS_COL = 'assessmentSessions';
@@ -412,10 +412,10 @@ export async function saveScaleResultToProfile(
       const allDone = TOTEM_REQUIRED_SCALES.every(id => !!updated[id]);
       if (allDone) {
         const currentTotem = snap.data().totem as Record<string, unknown> | undefined;
-        const newAnimal = computeTotem(updated as Record<string, ScaleResult>);
+        const newAnimal = computeTotemKeeping(updated as Record<string, ScaleResult>, typeof currentTotem?.animal === 'string' ? currentTotem.animal : null);
         if (newAnimal && currentTotem?.animal) {
           if (newAnimal !== currentTotem.animal && newAnimal !== currentTotem.pendingAnimal) {
-            await updateDoc(ref, { 'totem.pendingAnimal': newAnimal, updatedAt: serverTimestamp() });
+            await updateDoc(ref, { 'totem.pendingAnimal': newAnimal, 'totem.pendingReason': null, 'totem.algoVersion': TOTEM_ALGO_VERSION, updatedAt: serverTimestamp() });
           }
         } else if (newAnimal && !currentTotem?.animal) {
           await updateDoc(ref, {
@@ -423,6 +423,7 @@ export async function saveScaleResultToProfile(
             'totem.computedAt': serverTimestamp(),
             'totem.revealedAt': null,
             'totem.pendingAnimal': null,
+            'totem.algoVersion': TOTEM_ALGO_VERSION,
             updatedAt: serverTimestamp(),
           });
         }
@@ -489,9 +490,11 @@ export async function rescoreOutdatedResults(
   // Totem : même règle que lorsqu'un test est refait
   if (outdated.some(id => (TOTEM_REQUIRED_SCALES as readonly string[]).includes(id))
       && TOTEM_REQUIRED_SCALES.every(id => !!updated[id])) {
-    const newAnimal = computeTotem(updated);
+    const newAnimal = computeTotemKeeping(updated, totem?.animal);
     if (newAnimal && totem?.animal && newAnimal !== totem.animal && newAnimal !== totem.pendingAnimal) {
       profileUpdate['totem.pendingAnimal'] = newAnimal;
+      profileUpdate['totem.pendingReason'] = null;
+      profileUpdate['totem.algoVersion'] = TOTEM_ALGO_VERSION;
     }
   }
   if (Object.keys(profileUpdate).length > 0) {
@@ -522,7 +525,7 @@ export async function getProfileProgress(userId: string): Promise<{
   onboardingProfile: Record<string, string> | null;
   sexualHealthFilter: Record<string, unknown> | null;
   signatures: Record<string, { value: number; max: number }[]>;
-  totem: { animal: string; computedAt: Date; revealedAt: Date | null; pendingAnimal: string | null; lastImprovement: { scaleId: string; domainLabel: string; from: string; to: string; at: Date } | null } | null;
+  totem: { animal: string; computedAt: Date; revealedAt: Date | null; pendingAnimal: string | null; pendingReason: string | null; algoVersion: number; lastImprovement: { scaleId: string; domainLabel: string; from: string; to: string; at: Date } | null } | null;
   archetypeId: string | null;
   activeDefis: Array<{ slug: string; titre: string; audience: string; expiresAt: Date }>;
   defiHistory: boolean;
@@ -606,6 +609,8 @@ export async function getProfileProgress(userId: string): Promise<{
         computedAt: t.computedAt instanceof Timestamp ? (t.computedAt as Timestamp).toDate() : new Date(),
         revealedAt: t.revealedAt instanceof Timestamp ? (t.revealedAt as Timestamp).toDate() : null,
         pendingAnimal: (t.pendingAnimal as string) ?? null,
+        pendingReason: (t.pendingReason as string) ?? null,
+        algoVersion: Number(t.algoVersion) || 1,
         lastImprovement: li ? {
           scaleId: li.scaleId as string,
           domainLabel: li.domainLabel as string,
@@ -657,6 +662,7 @@ export async function saveTotem(userId: string, animal: string, archetypeId?: st
     'totem.animal': animal,
     'totem.computedAt': serverTimestamp(),
     'totem.revealedAt': null,
+    'totem.algoVersion': TOTEM_ALGO_VERSION,
     updatedAt: serverTimestamp(),
   };
   if (archetypeId) update.archetypeId = archetypeId;
@@ -674,12 +680,42 @@ export async function acceptPendingTotem(userId: string, newAnimal: string, arch
   const update: Record<string, unknown> = {
     'totem.animal': newAnimal,
     'totem.pendingAnimal': null,
+    'totem.pendingReason': null,
+    'totem.algoVersion': TOTEM_ALGO_VERSION,
     'totem.computedAt': serverTimestamp(),
     'totem.revealedAt': serverTimestamp(),
     updatedAt: serverTimestamp(),
   };
   if (archetypeId) update.archetypeId = archetypeId;
   await updateDoc(doc(db, PROFILES_COL, userId), update);
+}
+
+/** La personne garde son animal : on retire la proposition (elle ne revient pas tant qu'elle ne refait pas ses tests). */
+export async function dismissPendingTotem(userId: string): Promise<void> {
+  await updateDoc(doc(db, PROFILES_COL, userId), { 'totem.pendingAnimal': null, 'totem.pendingReason': null, updatedAt: serverTimestamp() });
+}
+
+/**
+ * Recalibrage de l'animal intérieur (algorithme v2). À appeler une fois à l'ouverture de l'accueil, avec le profil déjà lu.
+ *  - animal pas encore révélé : on le remplace tout de suite par le bon (la personne ne l'a jamais vu) ;
+ *  - animal déjà révélé et différent : on le PROPOSE (pendingAnimal), la personne choisit de le découvrir ou de garder le sien ;
+ *  - dans tous les cas, on note la version pour ne pas refaire le calcul à chaque visite.
+ * Retourne true si quelque chose a été écrit.
+ */
+export async function recalibrateTotem(userId: string, p: { scaleResults: Record<string, ScaleResult> | null; totem: { animal: string; revealedAt: Date | null; pendingAnimal: string | null; algoVersion: number } | null }): Promise<boolean> {
+  const t = p.totem;
+  if (!t?.animal || t.algoVersion >= TOTEM_ALGO_VERSION) return false;
+  const next = computeTotem(p.scaleResults ?? {});
+  const ref = doc(db, PROFILES_COL, userId);
+  if (!next) { await updateDoc(ref, { 'totem.algoVersion': TOTEM_ALGO_VERSION, updatedAt: serverTimestamp() }); return true; }
+  if (!t.revealedAt) {
+    await updateDoc(ref, { 'totem.animal': next, 'totem.pendingAnimal': null, 'totem.pendingReason': null, 'totem.computedAt': serverTimestamp(), 'totem.algoVersion': TOTEM_ALGO_VERSION, updatedAt: serverTimestamp() });
+  } else if (next !== t.animal) {
+    await updateDoc(ref, { 'totem.pendingAnimal': next, 'totem.pendingReason': 'affinage', 'totem.algoVersion': TOTEM_ALGO_VERSION, updatedAt: serverTimestamp() });
+  } else {
+    await updateDoc(ref, { 'totem.pendingAnimal': null, 'totem.pendingReason': null, 'totem.algoVersion': TOTEM_ALGO_VERSION, updatedAt: serverTimestamp() });
+  }
+  return true;
 }
 
 export async function backfillArchetypeId(userId: string, archetypeId: string): Promise<void> {

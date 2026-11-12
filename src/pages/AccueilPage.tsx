@@ -35,7 +35,7 @@ import { getScaleMeta } from '../utils/scaleMeta';
 import { getMoment, greetingFor, type MomentPalette } from '../utils/drloMoment';
 import { pickNextScale, firstName } from '../utils/accueilFlow';
 import { getTotemProgress } from '../utils/totemAlgorithm';
-import { getProfileProgress } from '../services/evaluationService';
+import { getProfileProgress, recalibrateTotem } from '../services/evaluationService';
 import { fetchMoods } from '../services/moodService';
 import { dayKey } from '../utils/moodLog';
 import { getInbox, type InboxItem } from '../services/drloBroadcastService';
@@ -258,6 +258,8 @@ const ConnectedHome: React.FC<{ feed: HomeFeed | null; palette: MomentPalette; u
       const totem = p.totem?.animal && p.totem.revealedAt ? p.totem.animal : null;
       writeResultsCache(uid, p.scaleResults ?? {}, totem);
       setResults(p.scaleResults ?? {}); setTotemRevealed(!!totem); setMyAnimal(totem);
+      // Recalibrage de l'animal (une seule fois par personne) : un animal pas encore vu est remplacé, un animal déjà révélé est seulement proposé
+      recalibrateTotem(uid, p).catch(() => {});
     }).catch(() => { if (!off && !cached) setResults({}); });
     getInbox().then(r => { if (!off) { setInbox(r.items); setUnread(r.unread); } }).catch(() => {});
     getChannelNews().then(r => { if (!off) setChBadge(r.badge); }).catch(() => {});

@@ -7,7 +7,7 @@ import Fold from '../../components/ui/Fold';
 import { COLOR, FONT } from '../../design/charte';
 import { useAuth } from '../../contexts/AuthContext';
 import { useDefiFlag } from '../../hooks/useDefiFlag';
-import { acceptPendingTotem, getProfileProgress, revealTotem, saveTotem } from '../../services/evaluationService';
+import { acceptPendingTotem, dismissPendingTotem, getProfileProgress, revealTotem, saveTotem } from '../../services/evaluationService';
 import { loadProgramme } from '../../services/programmeService';
 import { acceptTotemDefi, defiActive as isDefiActive, loadTotemDefi, type TotemDefi } from '../../services/totemService';
 import { getArchetype, getArchetypeId } from '../../utils/profileArchetype';
@@ -164,6 +164,7 @@ const TotemProfilePage: React.FC = () => {
   const [defi, setDefi] = useState<TotemDefi | null>(null);
   /** L'animal intérieur a évolué (tests refaits) : on propose de découvrir le nouveau */
   const [pending, setPending] = useState<TotemAnimal | null>(null);
+  const [pendingAffined, setPendingAffined] = useState(false);
   const [evolving, setEvolving] = useState(false);
   const [evolvedFrom, setEvolvedFrom] = useState<TotemAnimal | null>(null);
   const [progActive, setProgActive] = useState(false);
@@ -182,7 +183,7 @@ const TotemProfilePage: React.FC = () => {
         if (p.totem?.animal) {
           setAnimal(p.totem.animal as TotemAnimal);
           setHidden(!p.totem.revealedAt);
-          if (p.totem.revealedAt && p.totem.pendingAnimal && p.totem.pendingAnimal !== p.totem.animal) setPending(p.totem.pendingAnimal as TotemAnimal);
+          if (p.totem.revealedAt && p.totem.pendingAnimal && p.totem.pendingAnimal !== p.totem.animal) { setPending(p.totem.pendingAnimal as TotemAnimal); setPendingAffined(p.totem.pendingReason === 'affinage'); }
         } else {
           // Les 7 tests sont faits mais l'animal intérieur n'a jamais été calculé (on arrive de Mon espace)
           const computed = computeTotem(p.scaleResults ?? {});
@@ -299,7 +300,9 @@ const TotemProfilePage: React.FC = () => {
               <img src={TOTEM_IMAGES[pending]} alt="" className={evolving ? 'drl-joy-glow' : undefined}
                 style={{ width: 56, height: 56, borderRadius: 14, objectFit: 'cover', flexShrink: 0, filter: evolving ? 'none' : 'blur(8px) brightness(.6)', transition: 'filter 1.2s ease' }} />
               <p style={{ margin: 0, fontSize: 15, lineHeight: 1.5 }}>
-                <b>Ton animal intérieur a évolué.</b> Tes derniers tests dessinent un tempérament qui a bougé : un nouvel animal t'attend.
+                {pendingAffined
+                  ? <><b>Nous avons affiné la façon de trouver ton animal intérieur.</b> Avec tes résultats, un autre animal te ressemble davantage. Tu peux le découvrir, ou garder celui que tu as.</>
+                  : <><b>Ton animal intérieur a évolué.</b> Tes derniers tests dessinent un tempérament qui a bougé : un nouvel animal t'attend.</>}
               </p>
             </div>
             <Btn disabled={evolving} style={{ alignSelf: 'flex-start' }} icon={<Sparkles size={16} aria-hidden="true" />} onClick={async () => {
@@ -311,9 +314,18 @@ const TotemProfilePage: React.FC = () => {
             }}>
               {evolving ? 'Révélation…' : 'Découvrir mon nouveau totem'}
             </Btn>
+            {pendingAffined && (
+              <Btn variant="secondary" disabled={evolving} style={{ alignSelf: 'flex-start' }} onClick={async () => {
+                if (!currentUser) return;
+                try { await dismissPendingTotem(currentUser.id); } catch { /* on referme quand même */ }
+                setPending(null);
+              }}>Garder mon animal</Btn>
+            )}
           </div>
         )}
-        {evolvedFrom && note(<>Tu es passé{genre === 'femme' ? 'e' : ''} {totemWords(evolvedFrom).du} à {totemWords(animal).un} : c'est le chemin que tu as fait. Relis ce que ton nouveau totem dit de toi.</>)}
+        {evolvedFrom && note(pendingAffined
+          ? <>Ton animal est maintenant {totemWords(animal).un}, au lieu {totemWords(evolvedFrom).du}. Relis ce que ce totem dit de toi : il te ressemble davantage.</>
+          : <>Tu es passé{genre === 'femme' ? 'e' : ''} {totemWords(evolvedFrom).du} à {totemWords(animal).un} : c'est le chemin que tu as fait. Relis ce que ton nouveau totem dit de toi.</>)}
         {justRevealed && note(<>Voici {totemWords(animal).ton} ! En dessous, je t'explique ce qu'il dit de toi au quotidien, en amour, et comment le faire rayonner.</>)}
         {lastImprovement && (
           <div className="drl-in" style={{ ...card, display: 'flex', gap: 10, alignItems: 'center', borderColor: 'rgba(233,200,143,.4)', background: 'rgba(233,200,143,.10)' }}>

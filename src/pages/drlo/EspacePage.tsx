@@ -133,7 +133,7 @@ const EspacePage: React.FC = () => {
             <span style={{ display: 'block', fontFamily: 'Fraunces, serif', fontSize: 24, fontWeight: 600, color: DC.title }}>{getTotemSignature(totem!.animal as TotemAnimal)?.label ?? totem!.animal}</span>
             <span style={{ display: 'block', fontSize: 14, color: DC.muted, lineHeight: 1.4 }}>{totemMeaning(totem!.animal as TotemAnimal, genre === 'femme' ? 'femme' : 'homme')}</span>
             {totem!.pending && totem!.pending !== totem!.animal && (
-              <span style={{ display: 'block', marginTop: 4, fontSize: 13, fontWeight: 700, color: DC.gold }}>Ton animal intérieur a évolué : viens découvrir le nouveau</span>
+              <span style={{ display: 'block', marginTop: 4, fontSize: 13, fontWeight: 700, color: DC.gold }}>Un nouvel animal intérieur t'attend : viens le découvrir</span>
             )}
           </span>
           <ArrowRight size={18} color={DC.muted} aria-hidden="true" style={{ flexShrink: 0 }} />
