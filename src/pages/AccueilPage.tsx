@@ -166,6 +166,15 @@ const WhenItRises: React.FC<{ confier?: boolean }> = ({ confier = true }) => {
 };
 
 /** Le crochet de l'animal intérieur : de vraies images, pas une ligne de texte. */
+/**
+ * Masqué sur l'accueil pour le moment (décision du 12/11/2026), tout reste en place et accessible par lien :
+ *  - Pénc mi (carte « en direct » et agenda) ;
+ *  - les animaux de la communauté : on les affichera quand la répartition des animaux sera plus équilibrée.
+ * Pour les remettre : passer la constante à true.
+ */
+const SHOW_HOME_PENC = false;
+const SHOW_HOME_ANIMAUX = false;
+
 const TEASER: TotemAnimal[] = ['lion', 'cerf', 'dauphin', 'panthere', 'hibou'];
 const AnimalTeaser: React.FC<{ palette: MomentPalette }> = ({ palette }) => (
   <Link to="/espace/mental" onClick={() => trackAccueil('go', { to: 'animal_teaser', from: 'accueil' })} className="drl-btn"
@@ -320,7 +329,7 @@ const ConnectedHome: React.FC<{ feed: HomeFeed | null; palette: MomentPalette; u
       <MotDuJour uid={uid} palette={palette} focus={new URLSearchParams(window.location.search).has('mot')} />
 
       {/* Une seule carte vedette : un Pénc en direct, sinon ta suite (le compagnon et les tests) ; puis Pénc mi, le cas du soir, ton message, l'humeur */}
-      {pencLive && <HomePenc palette={palette} full={launch.on('penc_page')} onLive={setPencLive} />}
+      {SHOW_HOME_PENC && pencLive && <HomePenc palette={palette} full={launch.on('penc_page')} onLive={setPencLive} />}
 
       {suite && !pencLive && (
         <section aria-label="Ta suite" style={{ ...card, marginTop: 14, padding: 16, position: 'relative', overflow: 'hidden', borderColor: `${cc}80`, background: `radial-gradient(60% 80% at 100% 0%, ${cc}4D, transparent 70%), linear-gradient(140deg, ${cc}33, rgba(26,18,11,.9) 65%)` }}>
@@ -340,10 +349,10 @@ const ConnectedHome: React.FC<{ feed: HomeFeed | null; palette: MomentPalette; u
       )}
 
       {/* Pénc mi (quand il n'est pas en direct), puis le cas du soir (visible seulement si le serveur le dit : aujourd'hui, le propriétaire) */}
-      {!pencLive && <HomePenc palette={palette} full={launch.on('penc_page')} onLive={setPencLive} />}
+      {SHOW_HOME_PENC && !pencLive && <HomePenc palette={palette} full={launch.on('penc_page')} onLive={setPencLive} />}
 
       {/* Les animaux intérieurs de la communauté : les nouveaux du jour, et combien de chaque */}
-      <AnimauxCommunaute mine={myAnimal} accent={palette.accent} />
+      {SHOW_HOME_ANIMAUX && <AnimauxCommunaute mine={myAnimal} accent={palette.accent} />}
       <CasDuSoirCard accent={palette.accent} />
 
       <DailyGiftCard palette={palette} />
