@@ -299,4 +299,6 @@ const VU_DE_MINUIT = {
   }
 };
 
-module.exports = { HISTOIRES: [VU_DE_MINUIT] };
+const GOUMIN = require('./_casDuSoirGoumin');
+
+module.exports = { HISTOIRES: [VU_DE_MINUIT, GOUMIN] };

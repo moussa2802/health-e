@@ -610,3 +610,31 @@ test('images et audios : chemins attendus, publics pour les images, la vue d\'é
   assert.ok(K.verifierHistoire(casse).some((e) => /image/.test(e)));
   // Les fichiers attendus existent ou non : rien ne casse (l'appli affiche un dégradé, le serveur ne donne pas de lien audio)
 });
+
+test('Goumin (cas n° 2) : données valides, caché au public, images et audio présents, minutage fidèle au texte', () => {
+  const G = K.HISTOIRES.find((h) => h.id === 'goumin');
+  const MG = require('../_casDuSoirMinutagesGoumin');
+  assert.ok(G);
+  assert.deepEqual(K.verifierHistoire(G), []);
+  assert.equal(G.programmee, false); // aucune date publique : seul le propriétaire le voit
+  assert.equal(G.titre, 'Goumin');
+  assert.equal(G.testLie, 'phq9');
+  const pub = (p) => fs.existsSync(path.join(__dirname, '..', '..', '..', 'public', p.replace(/^\//, '')));
+  assert.ok(pub(G.image));
+  const norm = (t) => t.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, ' ').trim();
+  const sansNoms = (t) => t.split('\n').map((l) => l.replace(/^[A-ZÉÈÔ][A-ZÉÈÔ' ]*(\([^)]*\))? : /, '')).join(' ');
+  const versions = [G.episodes[0], G.episodes[1], G.episodes[2], G.episodes[3].A, G.episodes[3].B, G.episodes[4].A, G.episodes[4].B];
+  versions.forEach((v, i) => {
+    const m = MG[v.minutage];
+    assert.ok(m && m.lignes.length >= 30, `épisode ${i}: minutage`);
+    assert.ok(pub(v.image), `épisode ${i}: image de tête`);
+    assert.equal(m.images[0].t, 0, `épisode ${i}: une image dès le début`);
+    m.images.forEach((x, k) => { assert.ok(pub(`/images/cas-du-soir/${x.image}`), x.image); if (k) assert.ok(x.t > m.images[k - 1].t); assert.ok(x.t < m.duree); });
+    m.lignes.forEach((l, k) => { assert.ok(l.t1 > l.t0, `épisode ${i} phrase ${k}`); if (k) assert.ok(l.t0 >= m.lignes[k - 1].t0); assert.ok(l.t1 <= m.duree + 0.5); });
+    assert.equal(norm(m.lignes.map((l) => l.texte).join(' ')), norm(sansNoms(v.texte)), `épisode ${i}: le minutage reprend tout le texte`);
+  });
+  assert.ok(pub(G.episodes[0].audio)); // l'épisode 1 est public ; les autres passent par Storage (vérifié par verifierHistoire)
+  const lecon = MG[G.fin.minutage];
+  assert.equal(norm(lecon.lignes.map((l) => l.texte).join(' ')), norm(G.fin.texte));
+  assert.equal(G.fin.quiz.length, 3);
+});
