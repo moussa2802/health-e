@@ -18,6 +18,7 @@ import HomeProgramme from '../components/accueil/HomeProgramme';
 import { MoodSheet } from '../components/accueil/HomeSheets';
 import HomePenc from '../components/penc/HomePenc';
 import CasDuSoirCard from '../components/casdusoir/CasDuSoirCard';
+import { getListe } from '../services/casDuSoirService';
 import { CAS_DU_SOIR_CARTE_VISITEURS } from '../config/contenusPayants';
 import MotDuJour from '../components/accueil/MotDuJour';
 import { readResultsCache, writeResultsCache } from '../utils/resultsCache';
@@ -175,7 +176,7 @@ interface Suite {
 /**
  * Masqué sur l'accueil pour le moment (décision du 12/11/2026), tout reste en place et accessible par lien :
  *  - Pénc mi (carte « en direct » et agenda) ;
- *  - les animaux de la communauté : on les affichera quand la répartition des animaux sera plus équilibrée.
+ *  - les animaux de la communauté : visibles seulement pour le propriétaire (Dr Lô) ; pour tout le monde quand la répartition sera plus équilibrée.
  * Pour les remettre : passer la constante à true.
  */
 const SHOW_HOME_PENC = false;
@@ -255,6 +256,9 @@ const ConnectedHome: React.FC<{ feed: HomeFeed | null; palette: MomentPalette; u
   const [moods, setMoods] = useState<MoodMap>({});
   const [prog, setProg] = useState<Programme | null>(null);
   const [myAnimal, setMyAnimal] = useState<string | null>(null);
+  // Le propriétaire (Dr Lô) voit la carte des animaux avant tout le monde : le serveur dit qui il est
+  const [owner, setOwner] = useState(false);
+  useEffect(() => { let off = false; getListe().then(r => { if (!off) setOwner(!!r.proprio); }).catch(() => {}); return () => { off = true; }; }, []);
   const [moodOpen, setMoodOpen] = useState(false);
   const [drlo, setDrlo] = useState<DrloStatus | null>(null);
   const today = dayKey();
@@ -385,7 +389,7 @@ const ConnectedHome: React.FC<{ feed: HomeFeed | null; palette: MomentPalette; u
       {SHOW_HOME_PENC && !pencLive && <HomePenc palette={palette} full={launch.on('penc_page')} onLive={setPencLive} />}
 
       {/* Les animaux intérieurs de la communauté : les nouveaux du jour, et combien de chaque */}
-      {SHOW_HOME_ANIMAUX && <AnimauxCommunaute mine={myAnimal} accent={palette.accent} />}
+      {(SHOW_HOME_ANIMAUX || owner) && <AnimauxCommunaute mine={myAnimal} accent={palette.accent} />}
       <CasDuSoirCard accent={palette.accent} />
 
       <DailyGiftCard palette={palette} />
