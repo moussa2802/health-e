@@ -290,6 +290,7 @@ function verifierHistoire(h) {
   });
   if (!h.fin || !h.fin.texte || !Array.isArray(h.fin.quiz) || h.fin.quiz.length !== 3) err.push('fin : leçon et 3 questions');
   else h.fin.quiz.forEach((q, i) => { if (q.reponses.length !== 3 || !(q.bonne >= 0 && q.bonne < 3)) err.push(`quiz ${i + 1}`); });
+  if (h.fin && !minutageOk(h.fin.minutage)) err.push('fin : minutage');
   return err;
 }
 

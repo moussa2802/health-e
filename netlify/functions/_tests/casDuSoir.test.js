@@ -483,7 +483,25 @@ test('ouvert à tous : visiteur, un vote par personne, pourcentages à partir de
   assert.equal(f.body.testLie, 'ecr_r');
   assert.equal(f.body.testAussi, 'bonus_jalousie');
   assert.equal(f.body.apresQuiz, H.fin.apresQuiz);
+  // La leçon a son minutage (texte surligné pendant l'écoute), envoyé avec elle
+  assert.deepEqual(f.body.minutage, require('../_casDuSoirMinutages')['vu-de-minuit-lecon']);
+  assert.ok(f.body.minutage.lignes.length >= 30);
 }));
+
+test('leçon : le minutage reprend tout le texte écrit, dans l\'ordre, sans trou ni chevauchement ; l\'audio est dans Storage, pas en public', () => {
+  const M = require('../_casDuSoirMinutages')['vu-de-minuit-lecon'];
+  const mots = (t) => t.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, ' ').trim();
+  assert.equal(mots(M.lignes.map((l) => l.texte).join(' ')), mots(H.fin.texte));
+  M.lignes.forEach((l, i) => {
+    assert.ok(l.t1 > l.t0, `phrase ${i + 1}`);
+    if (i) assert.ok(l.t0 >= M.lignes[i - 1].t1 - 0.001, `phrase ${i + 1} : chevauchement`);
+    assert.ok(l.t1 <= M.duree + 0.001);
+  });
+  assert.ok(M.lignes[0].t0 >= 4 && M.duree > 150); // la voix arrive après la signature
+  assert.equal(H.fin.audio, 'casDuSoir/vu-de-minuit/lecon.mp3');
+  assert.equal(H.fin.minutage, 'vu-de-minuit-lecon');
+  assert.deepEqual(K.verifierHistoire(H), []);
+});
 
 test('liste des cas : l\'état du cas est celui de CE lecteur (Bientôt, Épisode n sur 5, Terminé) ; cas inconnu : introuvable', public_(async () => {
   uid = 'lecteur'; maintenant(T(0, 19));

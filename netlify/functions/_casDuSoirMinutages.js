@@ -1418,5 +1418,250 @@ module.exports = {
         "image": "cas-vu-de-minuit-couverture.webp"
       }
     ]
+  },
+  "vu-de-minuit-lecon": {
+    "duree": 159.24,
+    "lignes": [
+      {
+        "t0": 5.25,
+        "t1": 6.03,
+        "qui": "Narrateur",
+        "texte": "Bonsoir."
+      },
+      {
+        "t0": 6.03,
+        "t1": 6.4,
+        "qui": "Narrateur",
+        "texte": "C'est Dr Lô."
+      },
+      {
+        "t0": 7.25,
+        "t1": 9.26,
+        "qui": "Narrateur",
+        "texte": "Tu viens de suivre Diarra et Iba."
+      },
+      {
+        "t0": 9.59,
+        "t1": 12.38,
+        "qui": "Narrateur",
+        "texte": "Et peut-être que, quelque part, tu t'es reconnu."
+      },
+      {
+        "t0": 12.47,
+        "t1": 14.14,
+        "qui": "Narrateur",
+        "texte": "Dans elle, ou dans lui."
+      },
+      {
+        "t0": 14.57,
+        "t1": 17.68,
+        "qui": "Narrateur",
+        "texte": "Ce qui se jouait entre eux a un nom en psychologie."
+      },
+      {
+        "t0": 18.07,
+        "t1": 24.12,
+        "qui": "Narrateur",
+        "texte": "Chacun de nous a un « style d'attachement » : une façon de réagir quand on a peur de perdre quelqu'un qu'on aime."
+      },
+      {
+        "t0": 24.39,
+        "t1": 28.16,
+        "qui": "Narrateur",
+        "texte": "Il se forme tôt, dans l'enfance, et il se réveille dans le couple."
+      },
+      {
+        "t0": 28.63,
+        "t1": 31.56,
+        "qui": "Narrateur",
+        "texte": "Chez Diarra, la peur fait monter une alarme."
+      },
+      {
+        "t0": 31.83,
+        "t1": 37.54,
+        "qui": "Narrateur",
+        "texte": "Et l'alarme pousse à agir, vite : appeler six fois, bouder, fouiller un téléphone."
+      },
+      {
+        "t0": 37.85,
+        "t1": 40.1,
+        "qui": "Narrateur",
+        "texte": "Ce sont des « comportements de protestation »."
+      },
+      {
+        "t0": 40.87,
+        "t1": 43.16,
+        "qui": "Narrateur",
+        "texte": "Ils ne veulent pas dire « je te contrôle »."
+      },
+      {
+        "t0": 43.43,
+        "t1": 45.14,
+        "qui": "Narrateur",
+        "texte": "Ils veulent dire : « Rassure-moi."
+      },
+      {
+        "t0": 45.33,
+        "t1": 46.7,
+        "qui": "Narrateur",
+        "texte": "Dis-moi que je compte. »"
+      },
+      {
+        "t0": 47.05,
+        "t1": 50.74,
+        "qui": "Narrateur",
+        "texte": "Le problème, c'est que l'autre entend surtout le reproche."
+      },
+      {
+        "t0": 51.51,
+        "t1": 57.26,
+        "qui": "Narrateur",
+        "texte": "Chez Iba, la tension fait l'inverse : il se ferme, il se tait, il va dormir dehors."
+      },
+      {
+        "t0": 57.83,
+        "t1": 59.38,
+        "qui": "Narrateur",
+        "texte": "Ce n'est pas de l'indifférence."
+      },
+      {
+        "t0": 59.77,
+        "t1": 62.94,
+        "qui": "Narrateur",
+        "texte": "C'est sa façon à lui de se protéger du conflit."
+      },
+      {
+        "t0": 63.55,
+        "t1": 65,
+        "qui": "Narrateur",
+        "texte": "Et les deux s'entretiennent."
+      },
+      {
+        "t0": 65.01,
+        "t1": 67.54,
+        "qui": "Narrateur",
+        "texte": "Plus elle poursuit, plus il se retire."
+      },
+      {
+        "t0": 67.54,
+        "t1": 69.94,
+        "qui": "Narrateur",
+        "texte": "Plus il se retire, plus elle poursuit."
+      },
+      {
+        "t0": 70.07,
+        "t1": 72.9,
+        "qui": "Narrateur",
+        "texte": "C'est le cercle de la poursuite et du retrait."
+      },
+      {
+        "t0": 73.27,
+        "t1": 75.58,
+        "qui": "Narrateur",
+        "texte": "Aïcha n'en était que le déclencheur."
+      },
+      {
+        "t0": 76.01,
+        "t1": 77.62,
+        "qui": "Narrateur",
+        "texte": "Comment le reconnaître chez toi ?"
+      },
+      {
+        "t0": 77.97,
+        "t1": 79.44,
+        "qui": "Narrateur",
+        "texte": "Pose-toi trois questions."
+      },
+      {
+        "t0": 79.73,
+        "t1": 83.06,
+        "qui": "Narrateur",
+        "texte": "Est-ce que, quand j'ai peur dans une relation, j'agis tout de suite : messages, appels, vérifications ?"
+      },
+      {
+        "t0": 86.01,
+        "t1": 89.48,
+        "qui": "Narrateur",
+        "texte": "Est-ce qu'au contraire je me ferme et je disparais ?"
+      },
+      {
+        "t0": 90.25,
+        "t1": 94.2,
+        "qui": "Narrateur",
+        "texte": "Et est-ce que nos disputes se ressemblent toutes, quel que soit le sujet ?"
+      },
+      {
+        "t0": 94.75,
+        "t1": 97.46,
+        "qui": "Narrateur",
+        "texte": "Voici un geste concret pour cette semaine."
+      },
+      {
+        "t0": 97.75,
+        "t1": 103.78,
+        "qui": "Narrateur",
+        "texte": "Quand la peur monte, avant d'agir, respire : quatre secondes pour inspirer, quatre pour souffler."
+      },
+      {
+        "t0": 104.23,
+        "t1": 116.52,
+        "qui": "Narrateur",
+        "texte": "Puis remplace l'accusation par une phrase en trois morceaux : « Quand j'ai vu… j'ai ressenti… j'ai besoin de… » Par exemple : « Quand j'ai vu ce message, j'ai eu peur de te perdre."
+      },
+      {
+        "t0": 116.67,
+        "t1": 118.34,
+        "qui": "Narrateur",
+        "texte": "J'ai besoin que tu me rassures. »"
+      },
+      {
+        "t0": 118.73,
+        "t1": 125.58,
+        "qui": "Narrateur",
+        "texte": "Et si toi, tu es plutôt celui qui se ferme, dis simplement : « J'ai besoin de vingt minutes, et je reviens en parler. »"
+      },
+      {
+        "t0": 125.65,
+        "t1": 126.96,
+        "qui": "Narrateur",
+        "texte": "Puis reviens."
+      },
+      {
+        "t0": 127.47,
+        "t1": 128.56,
+        "qui": "Narrateur",
+        "texte": "Un dernier mot."
+      },
+      {
+        "t0": 128.63,
+        "t1": 131.94,
+        "qui": "Narrateur",
+        "texte": "Ressentir de la jalousie ou de la peur n'est pas une faiblesse."
+      },
+      {
+        "t0": 132.17,
+        "t1": 142.32,
+        "qui": "Narrateur",
+        "texte": "Mais si, dans ton couple, la surveillance, les menaces ou la peur deviennent ton quotidien, ce n'est plus un cercle : c'est une souffrance, et tu mérites d'en parler à quelqu'un."
+      },
+      {
+        "t0": 142.69,
+        "t1": 149.26,
+        "qui": "Narrateur",
+        "texte": "Si tu veux savoir comment, toi, tu réagis quand tu as peur de perdre quelqu'un, le test du style d'attachement est juste en dessous."
+      },
+      {
+        "t0": 149.61,
+        "t1": 152.12,
+        "qui": "Narrateur",
+        "texte": "Et le compagnon est là, si tu veux en parler."
+      },
+      {
+        "t0": 152.63,
+        "t1": 153.54,
+        "qui": "Narrateur",
+        "texte": "Bonne nuit."
+      }
+    ]
   }
 };
