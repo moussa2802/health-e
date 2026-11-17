@@ -712,3 +712,13 @@ test('Le plaisir féminin (cas n° 3) : 7 épisodes sans embranchement, réserv�
   assert.deepEqual(K.peutAvancer(P, { n: 4, parus: 3, commence: true }), { ok: true, prix: 6 }); // pas de vote requis sans embranchement
   assert.deepEqual(K.peutAvancer(P, { n: 7, parus: 6, commence: true }), { ok: true, prix: 10 });
 });
+
+test('Le plaisir féminin : les images de la couverture et des 7 épisodes existent dans public/', () => {
+  const P = K.HISTOIRES.find((h) => h.id === 'plaisir-feminin');
+  const pub = (p) => fs.existsSync(path.join(__dirname, '..', '..', '..', 'public', p.replace(/^\//, '')));
+  assert.ok(pub(P.image), 'couverture');
+  P.episodes.forEach((e, i) => assert.ok(pub(e.image), `épisode ${i + 1}`));
+  // Les scènes de chaque épisode (ep1-plafond, ep2-iceberg…) sont toutes là : couverture + 30 scènes, et la tête de chaque épisode
+  ['couverture', 'ep1-plafond', 'ep1-couple', 'ep1-amy', 'ep1-salle-de-bain', 'ep2-miroir', 'ep2-iceberg', 'ep2-classe', 'ep2-amy-the', 'ep3-casserole', 'ep3-rama', 'ep3-courbe', 'ep3-dialogue', 'ep4-whatsapp', 'ep4-produits', 'ep4-sursaut', 'ep4-sage-femme', 'ep4-poubelle', 'ep5-courbes', 'ep5-lit', 'ep5-calendrier', 'ep5-sourire', 'ep6-pluie', 'ep6-canape', 'ep6-cour', 'ep6-consultation', 'ep7-vocal', 'ep7-the', 'ep7-schema', 'ep7-mains', 'ep7-matin']
+    .forEach((k) => assert.ok(pub(`/images/cas-du-soir/plaisir-${k}.webp`), k));
+});
