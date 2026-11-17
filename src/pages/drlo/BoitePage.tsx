@@ -7,7 +7,7 @@
  *   2. Poser une question.
  *   3. « Les réponses de Dr Lô » : thèmes, recherche, cartes repliées (la question d'abord), « voir plus ».
  */
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { ChevronDown, Clock, Pin, Phone, Search, Video } from 'lucide-react';
 import DrLoShell, { DC, card, usePalette } from '../../components/accueil/DrLoShell';
 import { RealDrLoPhoto } from '../../components/accueil/RealDrLoBadge';
@@ -24,6 +24,12 @@ const NEW_DAYS = 7;
 const norm = (s: string) => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
 const dayLabel = (ms: number) => (ms ? new Date(ms).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }) : '');
 const isRecent = (ms: number) => ms > 0 && Date.now() - ms < NEW_DAYS * 86400000;
+// Les réponses déjà vues sur cet appareil : le badge « Nouveau » ne reste que sur celles qu'on n'a pas encore vues
+const SEEN_KEY = 'box_seen_answers_v1';
+const readSeen = (): Set<string> => { try { return new Set<string>(JSON.parse(localStorage.getItem(SEEN_KEY) || '[]')); } catch { return new Set<string>(); } };
+const writeSeen = (s: Set<string>) => { try { localStorage.setItem(SEEN_KEY, JSON.stringify([...new Set([...readSeen(), ...s])].slice(-600))); } catch { /* stockage indisponible : tant pis */ } };
+// Le début de la réponse, coupé proprement sur un mot
+const debut = (t: string, n = 120) => { const c = t.replace(/\s+/g, ' ').trim(); if (c.length <= n) return c; const cut = c.slice(0, n); return `${cut.slice(0, cut.lastIndexOf(' ') > 60 ? cut.lastIndexOf(' ') : n).replace(/[\s,;:.]+$/, '')}…`; };
 const short = (t: string, n = 150) => (t.length > n ? `${t.slice(0, n).trimEnd()}…` : t);
 
 const Pill: React.FC<{ color: string; children: React.ReactNode }> = ({ color, children }) => (
@@ -86,7 +92,23 @@ const BoitePage: React.FC = () => {
     return answers.filter(a => (topic === 'all' || a.topic === topic) && (!q || norm(`${a.question} ${a.answer}`).includes(q)));
   }, [answers, topic, query]);
   const visible = filtered.slice(0, shown);
-  const toggle = (id: string) => setOpen(o => ({ ...o, [id]: !o[id] }));
+  useEffect(() => {
+    const root = listRef.current; if (!root || typeof IntersectionObserver === 'undefined') return;
+    const timers = new Map<Element, number>();
+    const io = new IntersectionObserver(entries => entries.forEach(e => {
+      const id = (e.target as HTMLElement).dataset.boxId; if (!id) return;
+      if (e.isIntersecting) timers.set(e.target, window.setTimeout(() => { if (!vues.current.has(id)) { vues.current.add(id); writeSeen(vues.current); } }, 1500));
+      else { const t = timers.get(e.target); if (t) window.clearTimeout(t); timers.delete(e.target); }
+    }), { threshold: 0.7 });
+    root.querySelectorAll('[data-box-id]').forEach(el => io.observe(el));
+    return () => { timers.forEach(t => window.clearTimeout(t)); io.disconnect(); };
+  }, [visible.length, topic, query]); // eslint-disable-line react-hooks/exhaustive-deps
+  const [seen, setSeen] = useState<Set<string>>(() => readSeen());
+  const markSeen = (id: string) => setSeen(prev => { if (prev.has(id)) return prev; const n = new Set(prev); n.add(id); writeSeen(n); return n; });
+  const toggle = (id: string) => { setOpen(o => ({ ...o, [id]: !o[id] })); markSeen(id); };
+  // Une réponse restée à l'écran un instant est « vue » : le badge ne reviendra pas à la prochaine visite (il reste jusque-là pour ne pas bouger sous les yeux)
+  const vues = useRef<Set<string>>(readSeen());
+  const listRef = useRef<HTMLDivElement | null>(null);
   const topicLabel = (id: string) => topics.find(t => t.id === id)?.label ?? 'Autres questions';
 
   const chip = (active: boolean): React.CSSProperties => ({
@@ -198,23 +220,28 @@ const BoitePage: React.FC = () => {
               {filtered.length === 0 ? (
                 <p style={{ margin: '16px 0 0', fontSize: 15, lineHeight: 1.5, color: DC.soft }}>Aucune réponse ne correspond. Essaie un autre mot, ou une autre catégorie.</p>
               ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 14 }}>
+                <div ref={listRef} style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 14 }}>
                   {visible.map(a => {
                     const isOpen = !!open[a.id];
                     const own = mineIds.has(a.id);
                     return (
-                      <article key={a.id} style={{ ...card, padding: 0, border: `1px solid ${own ? palette.accent : DC.line}` }}>
+                      <article key={a.id} data-box-id={a.id} style={{ ...card, padding: 0, border: `1px solid ${own ? palette.accent : DC.line}` }}>
                         <button type="button" onClick={() => toggle(a.id)} aria-expanded={isOpen} className="drl-btn"
                           style={{ width: '100%', display: 'flex', gap: 12, alignItems: 'flex-start', padding: 16, minHeight: 56, border: 'none', background: 'transparent', color: 'inherit', textAlign: 'left', cursor: 'pointer', fontFamily: 'inherit' }}>
                           <span style={{ flex: 1, minWidth: 0 }}>
                             <span style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center', marginBottom: 6 }}>
                               <span style={{ fontSize: 12, fontWeight: 700, color: DC.soft }}>{topicLabel(a.topic)}</span>
                               <span style={{ fontSize: 12, color: DC.faint }}>· {dayLabel(a.at)}</span>
-                              {isRecent(a.at) && <Pill color={palette.accent}>Nouveau</Pill>}
+                              {isRecent(a.at) && !seen.has(a.id) && <Pill color={palette.accent}>Nouveau</Pill>}
                               {own && <Pill color={palette.accent}>Ta question</Pill>}
                             </span>
                             <span style={{ display: 'block', fontSize: 15, fontWeight: 700, lineHeight: 1.45, color: DC.title }}>{a.question}</span>
-                            {!isOpen && <span style={{ display: 'block', marginTop: 6, fontSize: 14, color: palette.accent, fontWeight: 700 }}>Lire la réponse</span>}
+                            {!isOpen && (
+                              <>
+                                <span style={{ display: 'block', marginTop: 8, fontSize: 14, lineHeight: 1.5, color: DC.soft }}>Dr Lô : « {debut(a.answer)} »</span>
+                                <span style={{ display: 'block', marginTop: 6, fontSize: 14, color: palette.accent, fontWeight: 700 }}>Lire la réponse</span>
+                              </>
+                            )}
                           </span>
                           <ChevronDown size={20} color={DC.soft} aria-hidden="true" style={{ flexShrink: 0, marginTop: 20, transform: isOpen ? 'rotate(180deg)' : 'none', transition: 'transform .2s' }} />
                         </button>
