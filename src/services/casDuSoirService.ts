@@ -20,6 +20,13 @@ export interface CdsResultats {
 export interface CdsHistoire {
   id: string; titre: string; image: string | null; intrigue: string | null; intrigueMinutage?: CdsMinutage | null; accroche: string; avertissement: string; total: number; parus: number; prochain: number | null; lisibles: number[]; testLie: string | null;
   testAussi: string | null; minutes: number; audio: boolean; autreFin: { mention: string } | null;
+  /** cas réservé aux adultes (confirmation « 18 ans ou plus » avant d'entrer) */
+  adultes?: boolean;
+  /** date d'ouverture publique (ms), ou null si elle n'est pas fixée */
+  ouverture?: number | null;
+  /** prix pour ouvrir tout le cas tout de suite, ou null (déjà ouvert, déjà débloqué ou pas de déblocage) */
+  debloquer?: number | null;
+  anticipe?: boolean;
 }
 export interface CdsPrix { suite: Record<number, number>; bonus: number; autreFin: number }
 export interface CdsEtat { visible: boolean; histoire?: CdsHistoire; prix?: CdsPrix; autreFin?: { achetee: boolean; possible: boolean }; decision?: number | null; decisionPrise?: boolean; connecte?: boolean; bonus?: boolean; apercu?: boolean; animal?: string | null; proprio?: boolean }
@@ -82,6 +89,8 @@ export const getEpisode = (n: number, autre = false) => call<CdsEpisodeReponse>(
 export const acheterAutreFin = () => call<{ ok: boolean }>({ action: 'autreFin' });
 export const voter = (n: number, choix: string) => call<{ ok: boolean; monChoix: string; resultats: CdsResultats; apercu?: boolean }>({ action: 'vote', n, choix });
 export const avancer = (n: number) => call<{ ok: boolean; paid: number }>({ action: 'avancer', n });
+/** Ouvrir tout le cas tout de suite (avant son ouverture publique) : un seul paiement, le prix est celui du serveur. */
+export const debloquerCas = (id: string) => call<{ ok: boolean; paid?: number; deja?: boolean }>({ action: 'debloquer', histoire: id });
 export const acheterBonus = () => call<{ ok: boolean }>({ action: 'bonus' });
 export const getFin = () => call<CdsFin>({ action: 'fin' });
 

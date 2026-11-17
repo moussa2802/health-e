@@ -4,12 +4,14 @@
  */
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Check, ChevronRight, MessageCircle, Share2 } from 'lucide-react';
+import { Check, ChevronRight, Loader2, MessageCircle, Share2, Unlock } from 'lucide-react';
 import { DC, card } from '../accueil/DrLoShell';
 import AudioSynchro from './AudioSynchro';
 import { openDrLoChat } from '../DrLoChat/drLoEvents';
 import { getScaleMeta } from '../../utils/scaleMeta';
-import { getJourApercu, setJourApercu, type CdsEpisodeReponse, type CdsFin, type CdsResultats } from '../../services/casDuSoirService';
+import { CdsError, debloquerCas, getJourApercu, setJourApercu, type CdsEpisodeReponse, type CdsFin, type CdsResultats } from '../../services/casDuSoirService';
+import { useKoris } from '../../contexts/KorisContext';
+import { useAuth } from '../../contexts/AuthContext';
 
 export const ANIMAL_NOM: Record<string, string> = {
   lion: 'Lion', aigle: 'Aigle', cheval: 'Cheval', loup: 'Loup', dauphin: 'Dauphin', elephant: 'Éléphant',
@@ -113,6 +115,64 @@ export const BandeauApercu: React.FC<{ accent: string; onChange: () => void }> =
 };
 
 /** « En parler avec le compagnon » et la mention, toujours en bas. */
+/**
+ * « Débloquer tout de suite » : ouvre tout le cas pour cette personne avant son ouverture publique, contre des étincelles.
+ * Deux temps : le premier tap montre le prix à confirmer, le second paie (une dépense de cette taille ne part jamais d'un seul tap).
+ * Un visiteur est envoyé créer son espace ; un solde insuffisant ouvre la fenêtre d'achat.
+ */
+export const DebloquerCas: React.FC<{ id: string; prix: number; accent: string; onDone: () => void; compact?: boolean }> = ({ id, prix, accent, onDone, compact }) => {
+  const navigate = useNavigate();
+  const { isAuthenticated } = useAuth();
+  const { openNoKorisModal, refreshBalance } = useKoris();
+  const [confirmer, setConfirmer] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+  const clic = async (e: React.MouseEvent) => {
+    e.preventDefault(); e.stopPropagation();
+    if (!isAuthenticated) { navigate('/espace'); return; }
+    if (!confirmer) { setConfirmer(true); window.setTimeout(() => setConfirmer(false), 6000); return; }
+    setBusy(true); setError('');
+    try { await debloquerCas(id); refreshBalance?.(); onDone(); }
+    catch (er) {
+      if (er instanceof CdsError && er.status === 402) openNoKorisModal('Débloquer ce cas', prix);
+      else setError(er instanceof Error ? er.message : 'Erreur');
+    } finally { setBusy(false); setConfirmer(false); }
+  };
+  return (
+    <div style={{ marginTop: compact ? 8 : 12 }}>
+      <button type="button" onClick={clic} disabled={busy} className="drl-btn"
+        style={{ minHeight: 44, padding: '0 16px', borderRadius: 999, border: `1px solid ${accent}`, background: confirmer ? accent : 'transparent', color: confirmer ? '#1C1612' : accent, fontSize: 14, fontWeight: 700, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 8, fontFamily: 'inherit' }}>
+        {busy ? <Loader2 size={16} className="animate-spin" aria-hidden="true" /> : <Unlock size={16} aria-hidden="true" />}
+        {!isAuthenticated ? 'Créer mon espace pour débloquer' : confirmer ? `Confirmer · ${etoiles(prix)}` : `Débloquer tout de suite · ${etoiles(prix)}`}
+      </button>
+      {error && <p role="alert" style={{ margin: '6px 0 0', fontSize: 13, color: '#F6C2AE' }}>{error}</p>}
+    </div>
+  );
+};
+
+const ADULTE_KEY = 'he_cds_adulte_ok';
+const adulteConfirme = () => { try { return localStorage.getItem(ADULTE_KEY) === '1'; } catch { return false; } };
+
+/**
+ * Un cas réservé aux adultes : tant que la personne n'a pas confirmé avoir 18 ans ou plus (une fois par appareil), on montre
+ * seulement cet écran. C'est une déclaration, pas une vérification d'âge.
+ */
+export const GateAdultes: React.FC<{ actif: boolean; accent: string; retour: () => void; children: React.ReactNode }> = ({ actif, accent, retour, children }) => {
+  const [ok, setOk] = useState(() => adulteConfirme());
+  if (!actif || ok) return <>{children}</>;
+  return (
+    <section aria-labelledby="gate-18" style={{ ...card, marginTop: 24, textAlign: 'center' }}>
+      <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: accent }}>Réservé aux adultes · 18 ans ou plus</p>
+      <h1 id="gate-18" style={{ margin: '8px 0 0', fontFamily: 'Fraunces, serif', fontSize: 24, lineHeight: 1.2, color: DC.title }}>Ce cas parle de sexualité avec des mots directs</h1>
+      <p style={{ margin: '10px 0 0', fontSize: 15, lineHeight: 1.55, color: DC.soft }}>On y parle du corps, du plaisir et des pratiques, sans détour, pour mieux comprendre. C'est de l'éducation, pas de l'érotisme, mais ça s'adresse aux personnes de 18 ans ou plus.</p>
+      <button type="button" onClick={() => { try { localStorage.setItem(ADULTE_KEY, '1'); } catch { /* ignore */ } setOk(true); }} className="drl-btn"
+        style={{ width: '100%', minHeight: 50, marginTop: 18, borderRadius: 999, border: 0, background: accent, color: '#1C1612', fontSize: 16, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>J'ai 18 ans ou plus</button>
+      <button type="button" onClick={retour} className="drl-btn"
+        style={{ width: '100%', minHeight: 48, marginTop: 10, borderRadius: 999, border: `1px solid ${DC.line}`, background: DC.glass, color: DC.text, fontSize: 15, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>Retour</button>
+    </section>
+  );
+};
+
 /** Partager un cas : le partage du téléphone (WhatsApp, SMS…) avec le lien du cas ; sinon le lien est copié. */
 export const PartagerCas: React.FC<{ id: string; titre: string; accroche?: string; accent: string }> = ({ id, titre, accroche, accent }) => {
   const [msg, setMsg] = useState('');

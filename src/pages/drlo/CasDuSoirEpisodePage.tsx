@@ -8,7 +8,7 @@ import { Link, Navigate, useLocation, useNavigate, useParams } from 'react-route
 import { ChevronRight, Loader2, Moon } from 'lucide-react';
 import DrLoShell, { DC, card, usePalette } from '../../components/accueil/DrLoShell';
 import AudioSynchro from '../../components/casdusoir/AudioSynchro';
-import { PiedCas, Resultats, etoiles, Maj } from '../../components/casdusoir/CdsParts';
+import { GateAdultes, PiedCas, Resultats, etoiles, Maj } from '../../components/casdusoir/CdsParts';
 import { useKoris } from '../../contexts/KorisContext';
 import { CAS_DU_SOIR_PRIX } from '../../config/contenusPayants';
 import {
@@ -72,6 +72,7 @@ const CasDuSoirEpisodePage: React.FC = () => {
 
   return (
     <DrLoShell narrow back={retour} palette={palette}>
+      <GateAdultes actif={!!h.adultes} accent={palette.accent} retour={() => navigate('/cas-du-soir')}>
       <p style={{ margin: '18px 0 0', fontSize: 13, fontWeight: 700, color: palette.accent }}>{h.titre}{autre ? ' · l\'autre fin' : ''}</p>
       {error && <p role="alert" style={{ margin: '12px 0 0', fontSize: 14, color: '#F6C2AE' }}>{error}</p>}
       {!ep && !error && <p style={{ marginTop: 30, textAlign: 'center', color: DC.muted }}><Loader2 size={18} className="animate-spin" aria-hidden="true" /> Un instant…</p>}
@@ -138,6 +139,7 @@ const CasDuSoirEpisodePage: React.FC = () => {
 
       <Link to={retour.to} className="drl-btn" style={{ ...ghost, marginTop: 16 }}>Tous les épisodes</Link>
       <PiedCas titre={h.titre} avertissement={h.avertissement} />
+      </GateAdultes>
     </DrLoShell>
   );
 };

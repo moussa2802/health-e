@@ -9,7 +9,7 @@ import { Link, Navigate, useLocation, useNavigate, useParams } from 'react-route
 import { Hourglass, Loader2, Lock, Moon } from 'lucide-react';
 import DrLoShell, { DC, card, usePalette } from '../../components/accueil/DrLoShell';
 import { ImageCard, SectionTitle, Stack, CompactRow } from '../../components/accueil/HomeParts';
-import { BandeauApercu, Fin, PartagerCas, PiedCas, etoiles, Maj } from '../../components/casdusoir/CdsParts';
+import { BandeauApercu, DebloquerCas, Fin, GateAdultes, PartagerCas, PiedCas, etoiles, Maj } from '../../components/casdusoir/CdsParts';
 import AudioSynchro from '../../components/casdusoir/AudioSynchro';
 import { useKoris } from '../../contexts/KorisContext';
 import { CAS_DU_SOIR_PRIX } from '../../config/contenusPayants';
@@ -85,6 +85,7 @@ const CasDuSoirCasPage: React.FC = () => {
 
   return (
     <DrLoShell narrow back={{ to: '/cas-du-soir', label: 'Retour aux cas' }} palette={palette}>
+      <GateAdultes actif={!!h.adultes} accent={palette.accent} retour={() => navigate('/cas-du-soir')}>
       {/* La couverture et l'intrigue : images et phrases synchronisées s'il y a un minutage (les phrases apparaissent à l'écoute) */}
       <div style={{ marginTop: 16 }}>
         <AudioSynchro compact parolesApresLecture src={h.intrigue} minutage={h.intrigueMinutage} label="Écouter l'intrigue" accent={palette.accent}
@@ -94,6 +95,7 @@ const CasDuSoirCasPage: React.FC = () => {
       <h1 style={{ margin: '4px 0 0', fontFamily: 'Fraunces, serif', fontSize: 28, lineHeight: 1.15, color: DC.title }}>{h.titre}</h1>
       <p style={{ margin: '6px 0 0', fontSize: 15, lineHeight: 1.5, color: DC.soft }}>{h.accroche}</p>
       <PartagerCas id={h.id} titre={h.titre} accroche={h.accroche} accent={palette.accent} />
+      {h.debloquer ? <DebloquerCas id={h.id} prix={h.debloquer} accent={palette.accent} onDone={load} /> : null}
 
       {etat.proprio && <BandeauApercu accent={palette.accent} onChange={load} />}
 
@@ -127,6 +129,7 @@ const CasDuSoirCasPage: React.FC = () => {
       )}
 
       <PiedCas titre={h.titre} avertissement={h.avertissement} />
+      </GateAdultes>
     </DrLoShell>
   );
 };

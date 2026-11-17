@@ -8,6 +8,7 @@
  *   Toutes les actions acceptent « histoire » (l'identifiant du cas) ; sans lui, c'est le cas du moment.
  *   episode { n }            → l'épisode (texte, lien audio), mon vote et les résultats si j'ai voté, la suite possible
  *   vote { n, choix, visiteurId? } → un vote par personne et par épisode ; renvoie les résultats
+ *   debloquer                → ouvrir tout le cas tout de suite avant son ouverture publique (prix h.debloquer, une fois ; option A)
  *   avancer { n }            → lire l'épisode n tout de suite (prix PRIX.suite[n], qui monte avec l'épisode ; débité une fois)
  *   bonus                    → le détail des votes par animal pour toute l'histoire (prix PRIX.bonus, une fois)
  *   autreFin                 → l'autre fin, une fois l'histoire terminée (prix PRIX.autreFin, une fois) ; puis episode { n, autre: true }
@@ -25,7 +26,7 @@
  *   casDuSoirVotes/{histoire}_{n}_{votant}   { histoire, n, choix, animal, at }
  *   casDuSoirResultats/{histoire}_{n}         { counts: { A, B, C }, parAnimal: { lion: { A, … } }, total }
  *   casDuSoirResultats/{histoire}_branche     { branche, counts, figeeA }   (le reçu de la décision : figé une fois à la date de décision)
- *   casDuSoirAcces/{uid}_{histoire}           { debut, episodes: [n…], bonus: true, autreFin: true }   (son horloge, ce qu'il a payé)
+ *   casDuSoirAcces/{uid}_{histoire}           { debut, episodes: [n…], bonus: true, autreFin: true, anticipe: true }   (son horloge, ce qu'il a payé)
  */
 const crypto = require('crypto');
 const { admin, db, verifyAuth } = require('./_firebase');
@@ -64,12 +65,12 @@ async function audioUrl(path) {
 
 /** Ce que la personne a : son horloge (ms), les épisodes payés, le bonus, l'autre fin. */
 async function accesDe(uid, histoireId) {
-  const vide = { debut: null, episodes: [], bonus: false, autreFin: false };
+  const vide = { debut: null, episodes: [], bonus: false, autreFin: false, anticipe: false };
   if (!uid) return vide;
   const ac = await ACCES().doc(`${uid}_${histoireId}`).get();
   if (!ac.exists) return vide;
   const d = ac.data() || {};
-  return { debut: Number(d.debut) > 0 ? Number(d.debut) : null, episodes: Array.isArray(d.episodes) ? d.episodes : [], bonus: d.bonus === true, autreFin: d.autreFin === true };
+  return { debut: Number(d.debut) > 0 ? Number(d.debut) : null, episodes: Array.isArray(d.episodes) ? d.episodes : [], bonus: d.bonus === true, autreFin: d.autreFin === true, anticipe: d.anticipe === true };
 }
 
 /** Démarre l'horloge personnelle (une seule fois : le premier départ est gardé, même si deux appels se croisent). */
@@ -140,9 +141,9 @@ exports.handler = async (event) => {
       const histoires = await Promise.all(K.HISTOIRES.map(async (x) => {
         const ap = Number.isInteger(jour) && jour >= 1 && jour <= x.episodes.length;
         const ac = await accesDe(uid, x.id);
-        const p = K.parusPour(x, { debut: ac.debut, now: realNow, apercu: ap, jour });
+        const p = K.parusPour(x, { debut: ac.debut, now: realNow, apercu: ap, jour, anticipe: ac.anticipe });
         const prochain = K.prochaineOuverture(x, { parus: p, debut: ac.debut, now: realNow, apercu: ap, jour });
-        return { ...K.vueHistoire(x, { parus: p, debloques: ac.episodes, connecte: !!uid, prochain }), statut: K.statut(x, p) };
+        return { ...K.vueHistoire(x, { parus: p, debloques: ac.episodes, connecte: !!uid, prochain, anticipe: ac.anticipe, now: realNow }), statut: K.statut(x, p, ac.anticipe) };
       }));
       return reply(200, { visible: true, histoires, proprio: owner });
     }
@@ -156,7 +157,7 @@ exports.handler = async (event) => {
 
     // La personne : son animal (révélé), son horloge, ce qu'elle a payé
     let animal = null;
-    let acces = { debut: null, episodes: [], bonus: false, autreFin: false };
+    let acces = { debut: null, episodes: [], bonus: false, autreFin: false, anticipe: false };
     if (uid) {
       const [up, ac] = await Promise.all([db.collection('userProfiles').doc(uid).get(), accesDe(uid, h.id)]);
       animal = totemOf(up.exists ? up.data() : null);
@@ -172,7 +173,7 @@ exports.handler = async (event) => {
     }
     const commence = apercu || !!debut;
     const debutAffiche = apercu ? K.debutApercu(realNow, jour) : debut;
-    const parus = K.parusPour(h, { debut, now: realNow, apercu, jour });
+    const parus = K.parusPour(h, { debut, now: realNow, apercu, jour, anticipe: acces.anticipe });
     // Le vote de l'embranchement : une décision pour tout le monde, à une date commune
     const figee = K.decisionPrise(h, { now: realNow, apercu, jour });
     const decision = K.dateDecision(h, { apercu, jour, now: realNow });
@@ -182,7 +183,7 @@ exports.handler = async (event) => {
     if (action === 'etat') {
       const finie = K.peutLire({ n: h.episodes.length, parus, connecte, debloques });
       const prochain = K.prochaineOuverture(h, { parus, debut, now: realNow, apercu, jour });
-      const vue = K.vueHistoire(h, { parus, debloques, connecte, prochain });
+      const vue = K.vueHistoire(h, { parus, debloques, connecte, prochain, anticipe: acces.anticipe, now: realNow });
       const e = h.episodes[Math.max(1, parus) - 1];
       vue.audio = await audioExiste(e && (e.audio || (e.A && e.A.audio)));
       return reply(200, {
@@ -275,6 +276,23 @@ exports.handler = async (event) => {
       });
     }
 
+    // Débloquer tout le cas tout de suite (option A) : un seul paiement, tous les épisodes ouverts pour cette personne
+    if (action === 'debloquer') {
+      if (!uid) return reply(401, { error: 'Crée ton espace pour débloquer ce cas.', compte: true });
+      const can = K.peutDebloquer(h, { now: realNow, anticipe: acces.anticipe });
+      if (!can.ok) {
+        if (can.raison === 'deja_debloque') return reply(200, { ok: true, deja: true });
+        return reply(409, { error: can.raison === 'deja_ouvert' ? 'Ce cas est déjà ouvert.' : 'Ce cas ne se débloque pas à l\'avance.', raison: can.raison });
+      }
+      const hold = await reserveKoris(uid, 'cas_du_soir', can.prix, { histoire: h.id, quoi: 'debloquer' });
+      if (hold.error) return reply(402, { error: 'Pas assez d\'étincelles', required: can.prix });
+      try {
+        await ACCES().doc(`${uid}_${h.id}`).set({ uid, histoire: h.id, anticipe: true, anticipeAt: admin.firestore.FieldValue.serverTimestamp() }, { merge: true });
+      } catch (e) { await releaseKoris(hold.holdId); throw e; }
+      await commitKoris(hold.holdId);
+      return reply(200, { ok: true, paid: can.prix });
+    }
+
     if (action === 'avancer' || action === 'bonus' || action === 'autreFin') {
       if (!uid) return reply(401, { error: 'Crée ton espace pour lire la suite.', compte: true });
       const ref = ACCES().doc(`${uid}_${h.id}`);
@@ -286,7 +304,7 @@ exports.handler = async (event) => {
           return reply(409, { error: msg, raison: can.raison, ...decisionInfo });
         }
         // Le prix de CET épisode, lu dans la table du serveur (jamais un prix envoyé par l'appli)
-        price = K.prixSuite(n); meta = { histoire: h.id, episode: n, quoi: 'suite' };
+        price = K.prixPour(h, n); meta = { histoire: h.id, episode: n, quoi: 'suite' };
         patch = { episodes: admin.firestore.FieldValue.arrayUnion(n) };
       } else if (action === 'autreFin') {
         if (acces.autreFin) return reply(200, { ok: true, deja: true });

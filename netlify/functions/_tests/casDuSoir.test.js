@@ -638,3 +638,73 @@ test('Goumin (cas n° 2) : données valides, caché au public, images et audio p
   assert.equal(norm(lecon.lignes.map((l) => l.texte).join(' ')), norm(G.fin.texte));
   assert.equal(G.fin.quiz.length, 3);
 });
+
+test('débloquer tout de suite (option A) : prix du cas, tous les épisodes ouverts pour cette personne seulement, une seule fois', () => {
+  const G = K.HISTOIRES.find((h) => h.id === 'goumin');
+  assert.equal(K.prixDebloquer(G), 20);
+  assert.equal(K.prixDebloquer(H), null); // le premier cas n'a pas de prix de déblocage
+  // Pas encore ouvert à tous : on peut payer ; déjà débloqué ou déjà ouvert : non
+  assert.deepEqual(K.peutDebloquer(G, { now: Date.parse('2026-12-01') }), { ok: true, prix: 20 });
+  assert.equal(K.peutDebloquer(G, { anticipe: true }).raison, 'deja_debloque');
+  assert.equal(K.peutDebloquer(H).raison, 'pas_de_prix');
+  G.programmee = true; G.depart = '2020-01-01';
+  try { assert.equal(K.peutDebloquer(G, { now: Date.parse('2026-12-01') }).raison, 'deja_ouvert'); } finally { G.programmee = false; G.depart = '2030-01-01'; }
+  // Les épisodes : fermés sans paiement, tous ouverts avec
+  assert.equal(K.parusPour(G, { now: Date.parse('2026-12-01') }), 0);
+  assert.equal(K.parusPour(G, { now: Date.parse('2026-12-01'), anticipe: true }), G.episodes.length);
+  assert.equal(K.statut(G, 0), 'bientot');
+  assert.equal(K.statut(G, G.episodes.length, true), 'en_cours');
+  // La vue de la liste : le prix est proposé tant qu'il n'est pas débloqué
+  const v = (anticipe) => K.vueHistoire(G, { parus: anticipe ? 5 : 0, connecte: true, anticipe, now: Date.parse('2026-12-01') });
+  assert.equal(v(false).debloquer, 20);
+  assert.equal(v(true).debloquer, null);
+  assert.equal(v(false).adultes, false);
+});
+
+test('prix par cas : une table propre au cas passe avant la table commune ; un cas de 7 épisodes sans embranchement est valide', () => {
+  const sept = JSON.parse(JSON.stringify(H));
+  sept.embranchement = null; delete sept.A; sept.prixSuite = { 4: 8, 6: 12 };
+  while (sept.episodes.length < 7) sept.episodes.push(JSON.parse(JSON.stringify(sept.episodes[0])));
+  sept.episodes = sept.episodes.map((e) => (e.A ? { ...e.A } : e));
+  assert.equal(K.prixPour(sept, 4), 8);
+  assert.equal(K.prixPour(sept, 6), 12);
+  assert.equal(K.prixPour(sept, 2), 3); // pas dans la table du cas : la table commune
+  assert.equal(K.prixPour(sept, 7), null);
+  const err = K.verifierHistoire(sept).filter((e) => /épisodes|embranchement/.test(e));
+  assert.deepEqual(err, []);
+  const quatre = JSON.parse(JSON.stringify(sept)); quatre.episodes = quatre.episodes.slice(0, 4);
+  assert.ok(K.verifierHistoire(quatre).some((e) => /entre 5 et 10 épisodes/.test(e)));
+});
+
+test('débloquer : un seul paiement, visiteur refusé, solde insuffisant refusé, cas déjà ouvert refusé', public_(async () => {
+  const G = K.HISTOIRES.find((h) => h.id === 'goumin');
+  maintenant(T(1, 12));
+  uid = null;
+  assert.equal((await call({ action: 'debloquer', histoire: 'goumin' })).status, 401);
+  uid = 'acheteur'; spent.length = 0;
+  // Sans paiement : fermé ; ouvert à ce compte après
+  assert.equal((await call({ action: 'episode', histoire: 'goumin', n: 1 })).status, 403);
+  let r = await call({ action: 'debloquer', histoire: 'goumin', prix: 1 });
+  assert.equal(r.status, 200); assert.deepEqual(spent.at(-1), ['acheteur', 'cas_du_soir', 20]); // le prix du serveur, jamais celui de l'appli
+  assert.equal(store.casDuSoirAcces['acheteur_goumin'].anticipe, true);
+  assert.equal((await call({ action: 'debloquer', histoire: 'goumin' })).body.deja, true); // pas de second débit
+  assert.equal(spent.length, 1);
+  assert.equal((await call({ action: 'episode', histoire: 'goumin', n: 1 })).status, 200);
+  assert.equal((await call({ action: 'episode', histoire: 'goumin', n: 3 })).status, 200);
+  const e = (await call({ action: 'episodes', histoire: 'goumin' })).body;
+  assert.deepEqual(e.episodes.slice(0, 3).map((x) => x.etat), ['a_lire', 'a_lire', 'a_lire']);
+  assert.ok(e.episodes[3].attente && e.episodes[4].attente); // la suite après l'embranchement attend le vote de tous
+  // Les autres lecteurs ne gagnent rien
+  uid = 'curieux';
+  assert.equal((await call({ action: 'episode', histoire: 'goumin', n: 1 })).status, 403);
+  const l = (await call({ action: 'liste' })).body.histoires.find((x) => x.id === 'goumin');
+  assert.equal(l.statut, 'bientot'); assert.equal(l.debloquer, 20);
+  // Solde insuffisant : rien n'est ouvert
+  uid = 'pauvre';
+  assert.equal((await call({ action: 'debloquer', histoire: 'goumin' })).status, 402);
+  assert.ok(!store.casDuSoirAcces['pauvre_goumin']);
+  // Un cas sans prix de déblocage ne s'ouvre pas à l'avance
+  uid = 'acheteur'; H.programmee = false;
+  assert.equal((await call({ action: 'debloquer', histoire: H.id })).status, 409);
+  void G;
+}));

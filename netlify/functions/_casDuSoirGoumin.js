@@ -18,6 +18,7 @@ module.exports = {
   "depart": "2030-01-01",
   "heure": "20:00",
   "programmee": false,
+  "debloquer": 20,
   "embranchement": 3,
   "decisionJours": 4,
   "egalite": "B",

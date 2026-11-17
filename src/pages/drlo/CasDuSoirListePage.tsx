@@ -8,20 +8,21 @@ import { Navigate } from 'react-router-dom';
 import { Moon } from 'lucide-react';
 import DrLoShell, { DC, usePalette } from '../../components/accueil/DrLoShell';
 import { ImageCard, Stack } from '../../components/accueil/HomeParts';
-import { PiedCas } from '../../components/casdusoir/CdsParts';
+import { DebloquerCas, Maj, PiedCas } from '../../components/casdusoir/CdsParts';
 import LecteurAudio from '../../components/casdusoir/LecteurAudio';
 import { IMAGES } from '../../config/images';
-import { getListe, setHistoire } from '../../services/casDuSoirService';
+import { getListe, quandLabel, setHistoire } from '../../services/casDuSoirService';
 
 type Liste = Awaited<ReturnType<typeof getListe>>;
 
-export const statutLabel = (statut: string, parus: number, total: number) =>
-  statut === 'termine' ? 'Terminé' : statut === 'bientot' ? 'Bientôt' : `Épisode ${parus} sur ${total}`;
+export const statutLabel = (statut: string, parus: number, total: number, ouverture?: number | null) =>
+  statut === 'termine' ? 'Terminé' : statut === 'bientot' ? (ouverture ? `Bientôt · ${Maj(quandLabel(ouverture))}` : 'Bientôt') : `Épisode ${parus} sur ${total}`;
 
 const CasDuSoirListePage: React.FC = () => {
   const palette = usePalette();
   const [liste, setListe] = useState<Liste | null>(null);
-  useEffect(() => { setHistoire(null); getListe().then(setListe).catch(() => setListe({ visible: false })); }, []);
+  const charger = () => getListe().then(setListe).catch(() => setListe({ visible: false }));
+  useEffect(() => { setHistoire(null); void charger(); }, []);
 
   if (!liste) return <DrLoShell narrow back={{ to: '/', label: 'Retour à l\'accueil' }} palette={palette}><p style={{ marginTop: 60, textAlign: 'center', color: DC.muted }}>Un instant…</p></DrLoShell>;
   if (!liste.visible || !liste.histoires) return <Navigate to="/" replace />;
@@ -35,8 +36,13 @@ const CasDuSoirListePage: React.FC = () => {
         {hs.map(h => (
           <ImageCard key={h.id} to={`/cas-du-soir/${h.id}`} image={h.image || IMAGES.casDuSoir} tint={palette.accent}
             fallback={<Moon size={40} color={palette.accent} strokeWidth={1.4} />}
-            kicker={statutLabel(h.statut, h.parus, h.total)} title={h.titre} line={h.accroche}
-            footer={h.intrigue ? <LecteurAudio compact src={h.intrigue} accent={palette.accent} label="Écouter l'intrigue" style={{ marginTop: 0 }} /> : undefined} />
+            kicker={`${statutLabel(h.statut, h.parus, h.total, h.ouverture)}${h.adultes ? ' · 18 ans et plus' : ''}`} title={h.titre} line={h.accroche}
+            footer={(h.intrigue || h.debloquer) ? (
+              <>
+                {h.intrigue && <LecteurAudio compact src={h.intrigue} accent={palette.accent} label="Écouter l'intrigue" style={{ marginTop: 0 }} />}
+                {h.debloquer ? <DebloquerCas compact id={h.id} prix={h.debloquer} accent={palette.accent} onDone={() => { void charger(); }} /> : null}
+              </>
+            ) : undefined} />
         ))}
       </Stack>
       <PiedCas avertissement={hs[0]?.avertissement} />

@@ -30,6 +30,30 @@ const PRIX = { suite: { 2: 3, 3: 6, 5: 9 }, bonus: 2, autreFin: 5 };
 /** Le prix pour lire l'épisode n tout de suite, ou null s'il ne s'achète pas en avance. */
 const prixSuite = (n) => (Number.isInteger(Number(n)) && PRIX.suite[Number(n)] > 0 ? PRIX.suite[Number(n)] : null);
 
+/**
+ * Le prix « la suite tout de suite » de l'épisode n POUR CE CAS : une table propre au cas (h.prixSuite) passe avant la table commune.
+ * Un cas sans embranchement et de plus de 5 épisodes (« Le plaisir féminin ») a besoin de ses propres prix.
+ */
+const prixPour = (h, n) => {
+  const k = Number(n);
+  const propre = h && h.prixSuite && Number(h.prixSuite[k]) > 0 ? Number(h.prixSuite[k]) : null;
+  return propre || prixSuite(k);
+};
+
+/** Le prix pour débloquer TOUT le cas tout de suite (h.debloquer, en étincelles), ou null s'il ne se débloque pas à l'avance. */
+const prixDebloquer = (h) => (h && Number(h.debloquer) > 0 ? Math.round(Number(h.debloquer)) : null);
+
+/**
+ * Peut-on payer pour ouvrir tout le cas maintenant ? (option A du 17/11/2026 : le bouton « Débloquer tout de suite »)
+ * Seulement un cas qui a un prix de déblocage, pas encore ouvert à tous, pas déjà débloqué par cette personne.
+ */
+function peutDebloquer(h, { now = Date.now(), anticipe = false } = {}) {
+  if (!prixDebloquer(h)) return { ok: false, raison: 'pas_de_prix' };
+  if (estOuverte(h, now)) return { ok: false, raison: 'deja_ouvert' };
+  if (anticipe) return { ok: false, raison: 'deja_debloque' };
+  return { ok: true, prix: prixDebloquer(h) };
+}
+
 /** Les pourcentages (et ce qu'a choisi chaque animal) ne s'affichent qu'à partir de ce nombre de votes. */
 const SEUIL_POURCENTAGES = 30;
 
@@ -87,9 +111,11 @@ function ouvertureEpisode(h, n, debut) {
  *   apercu + jour : l'aperçu du propriétaire (il simule « jour »), sans rien enregistrer.
  * Sans horloge, il a l'épisode 1 (toujours ouvert dès que l'histoire l'est).
  */
-function parusPour(h, { debut = null, now = Date.now(), apercu = false, jour = 1 } = {}) {
+function parusPour(h, { debut = null, now = Date.now(), apercu = false, jour = 1, anticipe = false } = {}) {
   const total = h.episodes.length;
   if (apercu) return Math.min(total, Math.max(1, Math.round(Number(jour)) || 1));
+  // Cas débloqué à l'avance (payé) : tous les épisodes sont ouverts pour cette personne, avant l'ouverture publique
+  if (anticipe) return total;
   if (!estOuverte(h, now)) return 0;
   if (!debut) return 1;
   let n = 1;
@@ -176,8 +202,8 @@ function peutAvancer(h, { n, parus, debloques = [], commence = false, decisionPr
   const ouvert = Math.max(parus, ...debloques.map(Number).filter(Number.isFinite));
   if (n !== ouvert + 1 || n > h.episodes.length || debloques.includes(n)) return { ok: false, raison: 'pas_maintenant' };
   if (h.embranchement && n === h.embranchement + 1 && !figee) return { ok: false, raison: 'vote_en_cours' };
-  if (!prixSuite(n)) return { ok: false, raison: 'pas_de_prix' };
-  return { ok: true, prix: prixSuite(n) };
+  if (!prixPour(h, n)) return { ok: false, raison: 'pas_de_prix' };
+  return { ok: true, prix: prixPour(h, n) };
 }
 
 /** Un choix valide pour cet épisode ? */
@@ -235,7 +261,7 @@ function vueEpisode(h, n, contenu) {
 const aUnAudio = (e) => !!e && (!!e.audio || (!!e.A && !!e.A.audio) || (!!e.B && !!e.B.audio));
 
 /** Ce qu'on montre de l'histoire sur la carte et en haut de la page. */
-function vueHistoire(h, { parus, debloques = [], connecte, prochain = null }) {
+function vueHistoire(h, { parus, debloques = [], connecte, prochain = null, anticipe = false, now = Date.now() }) {
   const cur = Math.max(1, parus);
   return {
     id: h.id, titre: h.titre, image: h.image || null, intrigue: h.intrigue || null, intrigueMinutage: minutage(h.intrigueMinutage), accroche: (h.accroches && h.accroches[String(cur)]) || h.accroche, avertissement: h.avertissement, total: h.episodes.length, parus,
@@ -245,11 +271,17 @@ function vueHistoire(h, { parus, debloques = [], connecte, prochain = null }) {
     audio: aUnAudio(h.episodes[cur - 1]),
     testLie: h.testLie || null, testAussi: h.testAussi || null,
     autreFin: h.embranchement && h.autreFin ? { mention: h.autreFin.mention } : null,
+    adultes: h.adultes === true,
+    // Pas encore ouvert à tous : on le voit, avec la date si elle est fixée et le prix pour l'ouvrir tout de suite
+    ouverture: ouverturePublique(h),
+    debloquer: peutDebloquer(h, { now, anticipe }).ok ? prixDebloquer(h) : null,
+    anticipe,
   };
 }
 
 /** L'état d'un cas pour la liste : « bientot », « en_cours » ou « termine ». */
-function statut(h, parus) {
+function statut(h, parus, anticipe = false) {
+  if (anticipe) return 'en_cours';
   if (!parus) return 'bientot';
   return parus >= h.episodes.length ? 'termine' : 'en_cours';
 }
@@ -263,7 +295,8 @@ function verifierHistoire(h) {
   if (!/^[a-z0-9-]{2,40}$/.test(h.id)) err.push('id');
   if (!/^\d{4}-\d{2}-\d{2}$/.test(h.depart) || !/^\d{2}:\d{2}$/.test(h.heure)) err.push('date d\'ouverture publique');
   if (h.embranchement && !(decisionJours(h) >= h.embranchement)) err.push('decisionJours : au moins le numéro de l\'embranchement');
-  if (h.episodes.length !== 5) err.push('5 épisodes');
+  if (h.episodes.length < 5 || h.episodes.length > 10) err.push('entre 5 et 10 épisodes');
+  if (h.embranchement && h.embranchement >= h.episodes.length) err.push('embranchement avant le dernier épisode');
   const imageOk = (src) => src == null || /^\/images\/[a-z0-9/-]+\/[A-Za-z0-9-]+\.webp$/.test(src);
   if (!imageOk(h.image)) err.push('image de couverture : /images/…/nom.webp');
   if (h.intrigue != null && h.intrigue !== `/audio/cas-du-soir/${h.id}-intrigue.mp3`) err.push(`intrigue : /audio/cas-du-soir/${h.id}-intrigue.mp3`);
@@ -295,7 +328,7 @@ function verifierHistoire(h) {
 }
 
 module.exports = {
-  CAS_DU_SOIR_PUBLIC, PRIX, prixSuite, SEUIL_POURCENTAGES, ANIMAUX, ANIMAL_PLURIEL, HISTOIRES, histoireById, histoireDuMoment, aDesVersions,
+  CAS_DU_SOIR_PUBLIC, PRIX, prixSuite, prixPour, prixDebloquer, peutDebloquer, SEUIL_POURCENTAGES, ANIMAUX, ANIMAL_PLURIEL, HISTOIRES, histoireById, histoireDuMoment, aDesVersions,
   DAY, heureMs, debutJour, decisionJours, ouverturePublique, estOuverte, ouvertureEpisode, parusPour, debutApercu, dateDecision, decisionPrise, prochaineOuverture,
   minutage, majorite, statut, autreBranche, aUnAudio, episodeContenu, peutLire, peutAvancer, choixValide, votant, pourcentages, choixDeLAnimal, detailParAnimal, vueEpisode, vueHistoire,
   verifierHistoire,
