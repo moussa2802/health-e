@@ -7,6 +7,8 @@ module.exports = {
   "id": "goumin",
   "titre": "Goumin",
   "image": "/images/cas-du-soir/goumin-couverture.webp",
+  "intrigue": "/audio/cas-du-soir/goumin-intrigue.mp3",
+  "intrigueMinutage": "goumin-intrigue",
   "accroche": "Elle lui a donné sa virginité. Au matin, il a regardé les draps.",
   "accroches": {
     "1": "Elle lui a donné sa virginité. Au matin, il a regardé les draps.",

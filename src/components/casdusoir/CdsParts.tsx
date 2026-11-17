@@ -4,7 +4,7 @@
  */
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Check, ChevronRight, MessageCircle } from 'lucide-react';
+import { Check, ChevronRight, MessageCircle, Share2 } from 'lucide-react';
 import { DC, card } from '../accueil/DrLoShell';
 import AudioSynchro from './AudioSynchro';
 import { openDrLoChat } from '../DrLoChat/drLoEvents';
@@ -113,6 +113,26 @@ export const BandeauApercu: React.FC<{ accent: string; onChange: () => void }> =
 };
 
 /** « En parler avec le compagnon » et la mention, toujours en bas. */
+/** Partager un cas : le partage du téléphone (WhatsApp, SMS…) avec le lien du cas ; sinon le lien est copié. */
+export const PartagerCas: React.FC<{ id: string; titre: string; accroche?: string; accent: string }> = ({ id, titre, accroche, accent }) => {
+  const [msg, setMsg] = useState('');
+  const partager = async () => {
+    const url = `https://health-e.sn/cas-du-soir/${id}`;
+    const text = `Le cas du soir « ${titre} » sur Health-e, par Dr Lô. ${accroche ? accroche + ' ' : ''}Une histoire en épisodes, à écouter le soir.`;
+    try {
+      if (typeof navigator !== 'undefined' && typeof navigator.share === 'function') { await navigator.share({ title: `Le cas du soir : ${titre}`, text, url }); return; }
+    } catch (e) { if (e instanceof DOMException && e.name === 'AbortError') return; }
+    try { await navigator.clipboard.writeText(`${text}\n${url}`); setMsg('Lien copié'); } catch { setMsg(url); }
+    window.setTimeout(() => setMsg(''), 4000);
+  };
+  return (
+    <button type="button" onClick={partager} className="drl-btn"
+      style={{ marginTop: 12, minHeight: 44, padding: '0 16px', borderRadius: 999, border: `1px solid ${accent}`, background: 'transparent', color: accent, fontSize: 14, fontWeight: 700, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 8, fontFamily: 'inherit' }}>
+      <Share2 size={16} aria-hidden="true" /> {msg || 'Partager ce cas'}
+    </button>
+  );
+};
+
 export const PiedCas: React.FC<{ titre?: string; avertissement?: string }> = ({ titre, avertissement }) => (
   <>
     <button type="button" onClick={() => openDrLoChat({ greeting: titre ? `Tu lis « ${titre} ». Qu'est-ce que cette histoire te fait ?` : 'Qu\'est-ce qui t\'a touché dans le cas du soir ?', source: 'cas_du_soir' })} className="drl-btn"

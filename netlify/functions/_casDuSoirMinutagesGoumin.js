@@ -325,7 +325,7 @@ module.exports = {
       },
       {
         "t0": 126.07,
-        "t1": 127.0,
+        "t1": 127,
         "qui": "Ousmane",
         "texte": "Je te raccompagne."
       },
@@ -875,7 +875,7 @@ module.exports = {
       },
       {
         "t0": 7.51,
-        "t1": 10.0,
+        "t1": 10,
         "qui": "Narrateur",
         "texte": "Elle ouvre le deuxième vocal que Mariama lui a envoyé."
       },
@@ -2010,7 +2010,7 @@ module.exports = {
       },
       {
         "t0": 93.15,
-        "t1": 95.0,
+        "t1": 95,
         "qui": "Dr Lô",
         "texte": "Ce que tu as vécu, c'est ta vie."
       },
@@ -2137,7 +2137,7 @@ module.exports = {
         "image": "goumin-ep4b-cabinet.webp"
       },
       {
-        "t": 84.0,
+        "t": 84,
         "image": "goumin-ep4b-papier.webp"
       },
       {
@@ -2636,5 +2636,52 @@ module.exports = {
       }
     ],
     "images": []
+  },
+  "goumin-intrigue": {
+    "duree": 34.64,
+    "lignes": [
+      {
+        "t0": 2.6,
+        "t1": 7.81,
+        "qui": "Narrateur",
+        "texte": "Awa a vingt-trois ans. Et depuis toujours, elle garde quelque chose. Sa virginité."
+      },
+      {
+        "t0": 9.01,
+        "t1": 17.63,
+        "qui": "Narrateur",
+        "texte": "Mais il y a Ousmane. Deux ans qu'ils sont ensemble. Il est drôle, il est doux, il appelle sa mère tous les soirs. Il lui a dit : « Après mon concours, je viens voir ton père. »"
+      },
+      {
+        "t0": 19.03,
+        "t1": 24.39,
+        "qui": "Narrateur",
+        "texte": "Chez nous, on a un mot pour ça : goumin. La peine d'amour qui s'installe, et qui ne repart plus."
+      },
+      {
+        "t0": 25.79,
+        "t1": 31.14,
+        "qui": "Narrateur",
+        "texte": "Il attend. Elle ne répond pas encore. Et maintenant, c'est à toi de décider ce qu'elle fait."
+      }
+    ],
+    "images": [
+      {
+        "t": 0,
+        "image": "goumin-couverture.webp"
+      },
+      {
+        "t": 9.01,
+        "image": "goumin-ep1-ousmane.webp"
+      },
+      {
+        "t": 19.03,
+        "image": "goumin-ep2-assiette.webp"
+      },
+      {
+        "t": 25.79,
+        "image": "goumin-ep3-carrefour.webp"
+      }
+    ]
   }
 };
