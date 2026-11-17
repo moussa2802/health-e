@@ -62,6 +62,12 @@ test('thèmes : les vraies questions de la boîte tombent dans le bon thème', (
   assert.strictEqual(t('Douleurs 3 mois après une fausse couche précoce'), 'corps');
   assert.strictEqual(t('Comment me débarrasser de ma dépendance affective'), 'soi');
   assert.strictEqual(t('Actuellement je me sens seule, je n\'ai confiance en personne'), 'soi');
+  assert.strictEqual(t("Est-ce vrai que l'hymen peut se déchirer après une chute ?", "Aucun médecin ne peut dire si une femme a déjà fait l'amour. Une relation n'y change rien."), 'corps');
+  assert.strictEqual(t('Je ne ressens pas de plaisir pendant la pénétration, alors que j\'aime les préliminaires'), 'corps');
+  assert.strictEqual(t('Je n\'arrive pas à arrêter la masturbation'), 'corps');
+  assert.strictEqual(t('Est-ce normal de rester 3 mois sans avoir ses règles ?', 'relation'), 'corps');
+  assert.strictEqual(t('Comment se reconstruire après l\'inceste et des attouchements dans l\'enfance ?'), 'souffrance');
+  assert.strictEqual(t('Le manque d\'amour paternel me submerge encore'), 'famille');
   assert.strictEqual(t('Zeus, qu\'est-ce que tu sais sur moi ?'), 'autre');
   assert.strictEqual(t('Dites ce que vous pensez de moi'), 'autre');
 });

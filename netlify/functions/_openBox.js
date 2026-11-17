@@ -51,16 +51,17 @@ function cleanDecision(body) {
   if (answer.length < 2 || answer.length > MAX_ANSWER) return { error: `La réponse doit faire entre 2 et ${MAX_ANSWER} caractères.` };
   const m = C.moderate(`${publicText} ${answer}`);
   if (!m.ok && m.reason !== 'crisis') return { error: 'Retire les numéros, liens ou mots blessants avant de publier.' };
-  return { status, publicText, answer, note: oneSpace(body.note).slice(0, 200) };
+  const topic = [...TOPICS, OTHER_TOPIC].some((t) => t.id === body.topic) ? body.topic : '';
+  return { status, publicText, answer, note: oneSpace(body.note).slice(0, 200), topic };
 }
 
 /** Les grands thèmes de la boîte : de quoi on parle, pour s'y retrouver quand il y a beaucoup de réponses. */
 const TOPICS = [
-  { id: 'amour', label: 'Amour & couple', words: ['amour', 'amoureu', 'couple', 'mariage', 'marier', 'rupture', 'quitt', 'sentiments', 'declarer', 'jalou', 'ex ', 'epoux', 'fiance', 'relation'] },
-  { id: 'souffrance', label: 'Mal-être & deuil', words: ['suicide', 'depress', 'deuil', 'deces', 'trauma', 'blessure', 'aucun sens', 'plus vivre', 'tristesse', 'souvenirs', 'agression', 'viol'] },
-  { id: 'famille', label: 'Famille', words: ['mere', 'pere', 'famille', 'familial', 'parents', 'frere', 'soeur', 'belle-famille', 'maison'] },
+  { id: 'amour', label: 'Amour & couple', words: ['amour', 'amoureu', 'couple', 'mariage', 'marier', 'rupture', 'quitt', 'sentiments', 'declarer', 'jalou', 'ex ', 'epoux', 'fiance', 'relation', 'copain', 'copine', 'petit ami', 'oublier', 'attentionn', 'indepen'] },
+  { id: 'souffrance', label: 'Mal-être & deuil', words: ['suicide', 'depress', 'deuil', 'deces', 'trauma', 'blessure', 'aucun sens', 'plus vivre', 'tristesse', 'souvenir', 'agression', 'viol', 'inceste', 'attouchement', 'effondre', 'reconstruire'] },
+  { id: 'famille', label: 'Famille', words: ['mere', 'pere', 'famille', 'familial', 'parents', 'frere', 'soeur', 'belle-famille', 'maison', 'paternel', 'maternel', 'amour paternel', 'amour maternel'] },
   { id: 'anxiete', label: 'Anxiété & stress', words: ['anxi', 'stress', 'angoisse', 'panique', 'inquiet', 'inquiete', 'peur', 'coeur', 'palpitation', 'dormir', 'sommeil'] },
-  { id: 'corps', label: 'Corps & sexualité', words: ['sexe', 'sexuel', 'desir', 'pulsion', 'fausse couche', 'fauche couche', 'gyneco', 'regles', 'rapports', 'erection', 'libido'] },
+  { id: 'corps', label: 'Corps & sexualité', words: ['sexe', 'sexuel', 'desir', 'pulsion', 'fausse couche', 'fauche couche', 'gyneco', 'regles', 'rapports', 'erection', 'libido', 'hymen', 'virginit', 'penetration', 'masturbation', 'orgasme', 'clitoris', 'preliminaire', 'intime', 'intimite', 'contracepti', 'grossesse', 'enceinte', 'menstru', 'maux de tete', 'migraine', 'paralysie', 'douleur', 'peau', 'acide', 'aisselle', 'cancer'] },
   { id: 'soi', label: 'Confiance en soi & solitude', words: ['seule', 'seul ', 'solitude', 'confiance', 'dependance affective', 'estime', 'valeur', 'rabaiss', 'complexe'] },
 ];
 const OTHER_TOPIC = { id: 'autre', label: 'Autres questions' };
@@ -72,10 +73,12 @@ function classifyTopic(row) {
   if (forced) return forced.id;
   const q = ` ${norm(row && (row.publicText || row.question))} `;
   const a = ` ${norm(row && row.answer)} `;
+  // La question décide ; les mots de la réponse ne comptent que pour départager, ou si la question ne dit rien de clair
+  const qScore = (t) => t.words.reduce((n, w) => n + (q.includes(w) ? 3 : 0), 0);
+  const questionClaire = TOPICS.some((t) => qScore(t) > 0);
   let best = null; let bestScore = 0;
   for (const t of TOPICS) {
-    let score = 0;
-    for (const w of t.words) { if (q.includes(w)) score += 3; if (a.includes(w)) score += 1; }
+    const score = qScore(t) + t.words.reduce((n, w) => n + (a.includes(w) ? (questionClaire ? 0.25 : 1) : 0), 0);
     if (score > bestScore) { best = t; bestScore = score; }
   }
   return best ? best.id : OTHER_TOPIC.id;

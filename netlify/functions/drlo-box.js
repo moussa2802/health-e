@@ -74,7 +74,7 @@ exports.handler = async (event) => {
 
     if (body.action === 'list') {
       const s = await COL().orderBy('createdAt', 'desc').limit(200).get();
-      return reply(200, { items: s.docs.map((d) => { const q = d.data(); return { id: d.id, text: q.text, crisis: !!q.crisis, status: q.status, createdAt: ms(q.createdAt), publicText: q.publicText || '', answer: q.answer || '', note: q.note || '' }; }) });
+      return reply(200, { items: s.docs.map((d) => { const q = d.data(); return { id: d.id, text: q.text, crisis: !!q.crisis, status: q.status, createdAt: ms(q.createdAt), publicText: q.publicText || '', answer: q.answer || '', note: q.note || '', topic: q.topic || '', topicAuto: q.status === 'site' ? B.classifyTopic(q) : '' }; }) });
     }
     if (!body.id) return reply(400, { error: 'Question manquante' });
     const ref = COL().doc(String(body.id));
@@ -85,7 +85,7 @@ exports.handler = async (event) => {
       const r = B.cleanDecision(body);
       if (r.error) return reply(400, { error: r.error });
       const patch = { status: r.status, note: r.note || '', decidedAt: admin.firestore.Timestamp.now() };
-      if (r.status === 'site') { patch.publicText = r.publicText; patch.answer = r.answer; patch.answeredAt = admin.firestore.Timestamp.now(); }
+      if (r.status === 'site') { patch.publicText = r.publicText; patch.answer = r.answer; patch.answeredAt = admin.firestore.Timestamp.now(); patch.topic = r.topic || ''; }
       await ref.set(patch, { merge: true });
       return reply(200, { ok: true });
     }

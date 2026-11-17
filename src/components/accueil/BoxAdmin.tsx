@@ -6,24 +6,25 @@ import React, { useEffect, useState } from 'react';
 import { Loader2 } from 'lucide-react';
 import { DC, card } from './DrLoShell';
 import type { MomentPalette } from '../../utils/drloMoment';
-import { adminBoxDecide, adminBoxList, adminBoxRemove, type BoxItem, type BoxStatus } from '../../services/boxService';
+import { adminBoxDecide, adminBoxList, adminBoxRemove, getBox, type BoxItem, type BoxStatus, type BoxTopic } from '../../services/boxService';
 
 const field: React.CSSProperties = { width: '100%', boxSizing: 'border-box', borderRadius: 12, border: `1px solid ${DC.line}`, background: 'rgba(255,255,255,.06)', padding: 10, fontFamily: 'inherit', fontSize: 16, lineHeight: 1.45, color: DC.text, outline: 'none' };
 const small: React.CSSProperties = { minHeight: 44, padding: '0 14px', borderRadius: 12, border: `1px solid ${DC.line}`, background: DC.glass, color: DC.text, fontSize: 14, fontWeight: 700, cursor: 'pointer' };
 const LABEL: Record<BoxStatus, string> = { new: 'Nouvelle', site: 'Répondue ici', video: 'Réponse en vidéo', skipped: 'Sans suite' };
 const day = (t: number) => new Date(t).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
 
-const Row: React.FC<{ q: BoxItem; palette: MomentPalette; onDone: () => void }> = ({ q, palette, onDone }) => {
+const Row: React.FC<{ q: BoxItem; palette: MomentPalette; onDone: () => void; topics: BoxTopic[] }> = ({ q, palette, onDone, topics }) => {
   const [open, setOpen] = useState(false);
   const [pub, setPub] = useState(q.publicText || q.text);
   const [answer, setAnswer] = useState(q.answer);
   const [note, setNote] = useState(q.note);
+  const [topic, setTopic] = useState(q.topic || '');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
 
   const decide = async (status: BoxStatus) => {
     setBusy(true); setError('');
-    try { await adminBoxDecide(q.id, { status, publicText: pub, answer, note }); setOpen(false); onDone(); }
+    try { await adminBoxDecide(q.id, { status, publicText: pub, answer, note, topic }); setOpen(false); onDone(); }
     catch (e) { setError(e instanceof Error ? e.message : 'Erreur'); }
     finally { setBusy(false); }
   };
@@ -51,6 +52,12 @@ const Row: React.FC<{ q: BoxItem; palette: MomentPalette; onDone: () => void }> 
           <label style={{ fontSize: 13, fontWeight: 700, color: DC.soft }}>Ta réponse écrite
             <textarea value={answer} onChange={e => setAnswer(e.target.value)} rows={4} style={{ ...field, marginTop: 4 }} />
           </label>
+          <label style={{ fontSize: 13, fontWeight: 700, color: DC.soft }}>Thème affiché sur la page
+            <select value={topic} onChange={e => setTopic(e.target.value)} style={{ ...field, marginTop: 4, minHeight: 44 }}>
+              <option value="">Automatique{q.topicAuto ? ` (${topics.find(t => t.id === q.topicAuto)?.label ?? 'Autres questions'})` : ''}</option>
+              {topics.map(t => <option key={t.id} value={t.id}>{t.label}</option>)}
+            </select>
+          </label>
           <label style={{ fontSize: 13, fontWeight: 700, color: DC.soft }}>Note pour toi (ex : vidéo TikTok du 3 nov.)
             <input value={note} onChange={e => setNote(e.target.value)} style={{ ...field, marginTop: 4, minHeight: 44 }} />
           </label>
@@ -74,6 +81,8 @@ const BoxAdmin: React.FC<{ palette: MomentPalette }> = ({ palette }) => {
   const [onlyNew, setOnlyNew] = useState(true);
   const load = () => adminBoxList().then(r => setItems(r.items)).catch(e => setError(e instanceof Error ? e.message : 'Erreur'));
   useEffect(() => { load(); }, []);
+  const [topics, setTopics] = useState<BoxTopic[]>([]);
+  useEffect(() => { getBox().then(b => setTopics(b.topics)).catch(() => {}); }, []);
 
   if (error) return <p role="alert" style={{ color: '#F09A7A', marginTop: 16 }}>{error}</p>;
   if (!items) return <Loader2 className="animate-spin" style={{ marginTop: 20 }} />;
@@ -84,7 +93,7 @@ const BoxAdmin: React.FC<{ palette: MomentPalette }> = ({ palette }) => {
       <button onClick={() => setOnlyNew(v => !v)} className="drl-btn" style={{ ...small, marginTop: 10 }}>{onlyNew ? 'Voir aussi les traitées' : 'Voir seulement les nouvelles'}</button>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 12 }}>
         {shown.length === 0 && <p style={{ color: DC.faint, fontSize: 14 }}>Aucune question {onlyNew ? 'nouvelle' : ''}.</p>}
-        {shown.map(q => <Row key={q.id} q={q} palette={palette} onDone={load} />)}
+        {shown.map(q => <Row key={q.id} q={q} palette={palette} onDone={load} topics={topics} />)}
       </div>
     </section>
   );

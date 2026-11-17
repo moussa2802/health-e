@@ -9,7 +9,7 @@ const URL = '/.netlify/functions/drlo-box';
 export interface BoxAnswer { id: string; question: string; answer: string; at: number; topic: string }
 export interface BoxTopic { id: string; label: string }
 export type BoxStatus = 'new' | 'site' | 'video' | 'skipped';
-export interface BoxItem { id: string; text: string; crisis: boolean; status: BoxStatus; createdAt: number; publicText: string; answer: string; note: string }
+export interface BoxItem { id: string; text: string; crisis: boolean; status: BoxStatus; createdAt: number; publicText: string; answer: string; note: string; topic?: string; topicAuto?: string }
 export type MineState = 'waiting' | 'answered' | 'video' | 'closed' | 'gone';
 export interface MineStatus { id: string; state: MineState; question?: string; answer?: string; at?: number; topic?: string }
 /** Une question déposée depuis cet appareil : seul son texte reste ici, jamais sur un compte. */
@@ -67,5 +67,5 @@ async function admin<T>(body: Record<string, unknown>): Promise<T> {
   return data as T;
 }
 export const adminBoxList = () => admin<{ items: BoxItem[] }>({ action: 'list' });
-export const adminBoxDecide = (id: string, d: { status: BoxStatus; publicText?: string; answer?: string; note?: string }) => admin<{ ok: boolean }>({ action: 'decide', id, ...d });
+export const adminBoxDecide = (id: string, d: { status: BoxStatus; publicText?: string; answer?: string; note?: string; topic?: string }) => admin<{ ok: boolean }>({ action: 'decide', id, ...d });
 export const adminBoxRemove = (id: string) => admin<{ ok: boolean }>({ action: 'remove', id });
