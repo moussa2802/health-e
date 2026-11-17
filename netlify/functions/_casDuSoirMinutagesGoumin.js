@@ -2638,31 +2638,43 @@ module.exports = {
     "images": []
   },
   "goumin-intrigue": {
-    "duree": 34.64,
+    "duree": 54.62,
     "lignes": [
       {
-        "t0": 2.6,
-        "t1": 7.81,
+        "t0": 2.37,
+        "t1": 7.68,
         "qui": "Narrateur",
         "texte": "Awa a vingt-trois ans. Et depuis toujours, elle garde quelque chose. Sa virginité."
       },
       {
-        "t0": 9.01,
-        "t1": 17.63,
+        "t0": 8.67,
+        "t1": 17.46,
         "qui": "Narrateur",
         "texte": "Mais il y a Ousmane. Deux ans qu'ils sont ensemble. Il est drôle, il est doux, il appelle sa mère tous les soirs. Il lui a dit : « Après mon concours, je viens voir ton père. »"
       },
       {
-        "t0": 19.03,
-        "t1": 24.39,
+        "t0": 18.65,
+        "t1": 28.76,
+        "qui": "Narrateur",
+        "texte": "Un samedi après-midi, dans une maison vide, elle choisit de lui faire confiance. Le lendemain, il lui pose une question. Une seule. Et tout ce qu'elle croyait solide se met à trembler."
+      },
+      {
+        "t0": 29.97,
+        "t1": 35.6,
         "qui": "Narrateur",
         "texte": "Chez nous, on a un mot pour ça : goumin. La peine d'amour qui s'installe, et qui ne repart plus."
       },
       {
-        "t0": 25.79,
-        "t1": 31.14,
+        "t0": 36.95,
+        "t1": 41.68,
         "qui": "Narrateur",
-        "texte": "Il attend. Elle ne répond pas encore. Et maintenant, c'est à toi de décider ce qu'elle fait."
+        "texte": "Est-ce qu'elle doit lui pardonner ? Se battre pour lui, ou pour elle ? C'est toi qui vas décider."
+      },
+      {
+        "t0": 43.35,
+        "t1": 48.58,
+        "qui": "Narrateur",
+        "texte": "Goumin. Une histoire en cinq épisodes, un chaque soir. Écoute le premier, maintenant."
       }
     ],
     "images": [
@@ -2671,16 +2683,24 @@ module.exports = {
         "image": "goumin-couverture.webp"
       },
       {
-        "t": 9.01,
+        "t": 8.67,
         "image": "goumin-ep1-ousmane.webp"
       },
       {
-        "t": 19.03,
+        "t": 18.65,
+        "image": "goumin-ep2-question.webp"
+      },
+      {
+        "t": 29.97,
         "image": "goumin-ep2-assiette.webp"
       },
       {
-        "t": 25.79,
+        "t": 36.95,
         "image": "goumin-ep3-carrefour.webp"
+      },
+      {
+        "t": 43.35,
+        "image": "goumin-couverture.webp"
       }
     ]
   }
