@@ -684,3 +684,31 @@ test('débloquer : un seul paiement, visiteur refusé, solde insuffisant refusé
   assert.equal((await call({ action: 'debloquer', histoire: H.id })).status, 409);
   void G;
 }));
+
+test('Le plaisir féminin (cas n° 3) : 7 épisodes sans embranchement, réservé aux adultes, caché au public, prix propres, déblocage à 30', () => {
+  const P = K.HISTOIRES.find((h) => h.id === 'plaisir-feminin');
+  assert.ok(P);
+  assert.deepEqual(K.verifierHistoire(P), []);
+  assert.equal(P.titre, 'Le plaisir féminin');
+  assert.equal(P.programmee, false); // aucune date publique : seul le propriétaire le voit
+  assert.equal(P.episodes.length, 7);
+  assert.ok(!P.embranchement); // histoire linéaire : aucune version A/B
+  assert.equal(P.adultes, true);
+  assert.equal(K.prixDebloquer(P), 30);
+  assert.deepEqual([2, 3, 4, 5, 6, 7].map((n) => K.prixPour(P, n)), [4, 6, 6, 8, 8, 10]);
+  assert.equal(K.prixPour(P, 1), null);
+  // Chaque épisode : un texte, une question, trois choix avec leur écho ; la leçon et ses 3 questions
+  P.episodes.forEach((e, i) => { assert.ok(e.texte.length > 1500, `épisode ${i + 1}`); assert.equal(e.choix.length, 3); assert.ok(e.choix.every((c) => c.echo)); });
+  assert.equal(P.fin.quiz.length, 3);
+  // Les vocaux de Dr Lô sont dans le texte, sous le nom DR LÔ
+  assert.ok(P.episodes[0].texte.includes('DR LÔ : Salut. Avant tout'));
+  assert.ok(P.episodes[3].texte.includes('Sokhna'));
+  // Pas d'audio public : tout passe par Storage (liens signés), même l'épisode 1
+  P.episodes.forEach((e) => assert.ok(!e.audio.startsWith('/')));
+  // Sans embranchement : jamais de suite « en attente de choix », et la vue de la liste le dit
+  const v = K.vueHistoire(P, { parus: 0, connecte: true });
+  assert.equal(v.adultes, true); assert.equal(v.debloquer, 30); assert.equal(v.total, 7); assert.equal(v.autreFin, null);
+  assert.equal(K.aDesVersions(P, 5), false);
+  assert.deepEqual(K.peutAvancer(P, { n: 4, parus: 3, commence: true }), { ok: true, prix: 6 }); // pas de vote requis sans embranchement
+  assert.deepEqual(K.peutAvancer(P, { n: 7, parus: 6, commence: true }), { ok: true, prix: 10 });
+});
