@@ -36,7 +36,7 @@ const Terms: React.FC = () => (
     </InfoSection>
 
     <InfoSection title="Les étincelles">
-      <P>Certaines fonctions de le compagnon IA utilisent des étincelles (conversation, analyses, compatibilité, programme…). Le coût est affiché avant chaque utilisation. Tu en reçois à l'inscription et tu peux en acheter par Wave ou Orange Money, via notre prestataire de paiement PayTech.</P>
+      <P>Certaines fonctions de le compagnon IA utilisent des étincelles (conversation, analyses, compatibilité, programme…). Le coût est affiché avant chaque utilisation. Tu en reçois à l'inscription et tu peux en acheter par Wave, Orange Money ou carte bancaire, via notre prestataire de paiement PayTech.</P>
       <P>Les étincelles servent uniquement sur Health-e : elles ne s'échangent pas contre de l'argent et ne sont pas remboursables, sauf erreur de paiement ou problème technique de notre fait. Dans ce cas, écris à <B>{CONTACT_EMAIL}</B> avec la référence du paiement.</P>
     </InfoSection>
 

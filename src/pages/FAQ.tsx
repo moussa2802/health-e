@@ -39,8 +39,8 @@ const GROUPS: { title: string; items: QA[] }[] = [
   {
     title: 'Étincelles et paiement',
     items: [
-      { q: "C'est gratuit ?", a: <>Créer ton espace, faire les tests et lire tes résultats, c'est gratuit. Certaines fonctions de le compagnon IA (conversation, analyses, compatibilité, programme) utilisent des étincelles. Tu en reçois 25 à l'inscription.</> },
-      { q: 'Comment acheter des étincelles ?', a: <>Dans <Link to="/acheter-koris" style={{ color: COLOR.action }}>Recharger mes étincelles</Link> : tu choisis une formule et tu paies par Wave ou Orange Money. Le paiement passe par PayTech : Health-e ne voit jamais tes codes ni tes informations de paiement.</> },
+      { q: "C'est gratuit ?", a: <>Pour commencer, oui. Sans compte, tu peux faire 3 tests. En créant ton espace, tu reçois 25 étincelles, et tes 3 premiers tests de compte sont offerts. Les tests suivants coûtent 1 étincelle chacun. Refaire un test plus de 30 jours après est gratuit, et relire un résultat déjà obtenu aussi. La conversation avec ton compagnon démarre gratuitement ; ensuite, chaque message libre coûte 1 étincelle, comme les analyses, la compatibilité et le programme. Tu vois toujours le prix avant de valider.</> },
+      { q: 'Comment acheter des étincelles ?', a: <>Dans <Link to="/acheter-koris" style={{ color: COLOR.action }}>Recharger mes étincelles</Link> : tu choisis une formule et tu paies par Wave, Orange Money ou carte bancaire. Le paiement passe par PayTech : Health-e ne voit jamais tes codes ni tes informations de paiement.</> },
       { q: 'Écrire à Dr Lô, ça coûte ?', a: <>Non. C'est une récompense gratuite, qui se débloque en quelques étapes dans ton espace. Il répond sous 7 jours.</> },
     ],
   },

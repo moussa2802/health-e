@@ -30,7 +30,7 @@ import { shareResultCard } from '../../utils/shareCard';
 import type { ScaleResult, ItemSeverity } from '../../types/assessment';
 import { getBigFiveProfile, getBigFiveSummary, BAND_LABEL, type Band } from '../../utils/bigFiveProfile';
 import { useKoris } from '../../contexts/KorisContext';
-import { KORIS_COSTS, spendKorisForTest, isTestFreeRetake } from '../../services/korisService';
+import { KORIS_COSTS, spendKorisForTest, isTestFreeRetake, isFirstTestFree } from '../../services/korisService';
 import KoriCta from '../../components/koris/KoriCta';
 import { credits } from '../../config/creditName';
 
@@ -208,6 +208,8 @@ const TestDetailPage: React.FC = () => {
   const { balance, refreshBalance, openNoKorisModal } = useKoris();
 
   const [result, setResult] = useState<ScaleResult | null>(null);
+  // Combien de tests le compte a déjà faits : sert à annoncer « gratuit » pour les 3 premiers (même règle que le serveur)
+  const [doneCount, setDoneCount] = useState(0);
   const [history, setHistory] = useState<ScaleResultHistoryEntry[]>([]);
   const [signatureValues, setSignatureValues] = useState<{ value: number; max: number }[] | undefined>();
   const [loading, setLoading] = useState(true);
@@ -250,6 +252,7 @@ const TestDetailPage: React.FC = () => {
       try {
         const progress = await getProfileProgress(currentUser.id);
         setResult(progress.scaleResults[scaleId] ?? null);
+        setDoneCount(Object.keys(progress.scaleResults).length);
         setSignatureValues(progress.signatures?.[scaleId] ?? undefined);
         const hist = await getTestHistory(currentUser.id, scaleId);
         setHistory(hist);
@@ -290,7 +293,7 @@ const TestDetailPage: React.FC = () => {
       ?? scale.interpretation[scale.interpretation.length - 1]
     : null;
 
-  const isFreeRetake = isDone && isTestFreeRetake(result?.completedAt);
+  const isFreeRetake = (isDone && isTestFreeRetake(result?.completedAt)) || (!loading && isFirstTestFree(doneCount, isDone));
   const testCostLabel = isGuest
     ? ''
     : isFreeRetake
@@ -437,7 +440,7 @@ const TestDetailPage: React.FC = () => {
               label="Recommencer à zéro"
               cost={KORIS_COSTS.test}
               isFree={isFreeRetake}
-              freeReason={isFreeRetake ? 'Ton dernier passage date de plus de 30 jours' : undefined}
+              freeReason={isFreeRetake ? (isDone ? 'Ton dernier passage date de plus de 30 jours' : 'Tes 3 premiers tests sont offerts') : undefined}
               loading={starting}
               onClick={startTest}
               variant="outline"
@@ -448,7 +451,7 @@ const TestDetailPage: React.FC = () => {
             label={isDone ? 'Refaire le test' : 'Faire le test'}
             cost={KORIS_COSTS.test}
             isFree={isFreeRetake}
-            freeReason={isFreeRetake ? 'Ton dernier passage date de plus de 30 jours' : undefined}
+            freeReason={isFreeRetake ? (isDone ? 'Ton dernier passage date de plus de 30 jours' : 'Tes 3 premiers tests sont offerts') : undefined}
             loading={starting}
             onClick={startTest}
             className="mb-5"

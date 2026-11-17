@@ -38,7 +38,7 @@ import {
   type ScaleCategory,
 } from '../../utils/scaleMeta';
 import { useKoris } from '../../contexts/KorisContext';
-import { KORIS_COSTS, spendKorisForTest, isTestFreeRetake } from '../../services/korisService';
+import { KORIS_COSTS, spendKorisForTest, isTestFreeRetake, isFirstTestFree } from '../../services/korisService';
 import {
   Brain,
   Heart,
@@ -138,11 +138,14 @@ interface ScaleRowProps {
   result?: ScaleResult;
   onStart: (scaleId: string) => void;
   loading: boolean;
+  /** Combien de tests le compte a déjà faits : les 3 premiers sont offerts */
+  doneCount: number;
 }
 
-const ScaleRow: React.FC<ScaleRowProps> = ({ scale, result, onStart, loading }) => {
+const ScaleRow: React.FC<ScaleRowProps> = ({ scale, result, onStart, loading, doneCount }) => {
   const isCompleted = !!result;
   const freeRetake = isCompleted && isTestFreeRetake(result?.completedAt);
+  const firstFree = isFirstTestFree(doneCount, isCompleted);
   const meta = getScaleMeta(scale.id);
   const Icon = meta.icon;
   const category = getScaleCategory(scale.id);
@@ -255,15 +258,19 @@ const ScaleRow: React.FC<ScaleRowProps> = ({ scale, result, onStart, loading }) 
             className={`flex items-center gap-1.5 rounded-pill px-3 py-1.5 text-[13px] font-bold text-white shadow-soft disabled:opacity-60 ${getCategorySolidBg(
               category
             )}`}
-            aria-label={`Commencer ${meta.label}, ${credits(KORIS_COSTS.test)}`}
+            aria-label={`Commencer ${meta.label}, ${firstFree ? 'gratuit' : credits(KORIS_COSTS.test)}`}
           >
             {loading ? <Loader2 size={12} className="animate-spin" /> : (
               <>
                 Commencer
-                <span className="inline-flex items-center gap-0.5 rounded-md px-1.5 py-px" style={{ background: 'rgba(255,255,255,.18)' }}>
-                  <img src="/etincelle.png" alt="" className="w-3 h-3 rounded-full object-cover" />
-                  <span className="font-display text-[13px] font-semibold">{KORIS_COSTS.test}</span>
-                </span>
+                {firstFree ? (
+                  <span className="inline-flex items-center rounded-md px-1.5 py-px text-[13px] font-extrabold uppercase" style={{ background: 'rgba(255,255,255,.22)' }}>Gratuit</span>
+                ) : (
+                  <span className="inline-flex items-center gap-0.5 rounded-md px-1.5 py-px" style={{ background: 'rgba(255,255,255,.18)' }}>
+                    <img src="/etincelle.png" alt="" className="w-3 h-3 rounded-full object-cover" />
+                    <span className="font-display text-[13px] font-semibold">{KORIS_COSTS.test}</span>
+                  </span>
+                )}
               </>
             )}
           </button>
@@ -983,6 +990,7 @@ const AssessmentProfilePage: React.FC = () => {
                 result={scaleResults[scale.id]}
                 onStart={startScale}
                 loading={loadingCard === scale.id}
+                doneCount={Object.keys(scaleResults).length}
               />
             ))}
           </div>
@@ -1006,6 +1014,7 @@ const AssessmentProfilePage: React.FC = () => {
                 result={scaleResults[scale.id]}
                 onStart={startScale}
                 loading={loadingCard === scale.id}
+                doneCount={Object.keys(scaleResults).length}
               />
             ))}
           </div>

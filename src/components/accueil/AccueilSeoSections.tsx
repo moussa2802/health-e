@@ -16,7 +16,7 @@ const STEPS = [
 ];
 
 const FAQ = [
-  { q: 'Health-e, c\'est gratuit ?', a: 'Oui pour commencer : la conversation avec ton compagnon est gratuite et tu peux faire 3 tests sans créer de compte. Certaines fonctions avancées utilisent des étincelles, les crédits du site.' },
+  { q: 'Health-e, c\'est gratuit ?', a: 'Oui pour commencer : tu peux faire 3 tests sans créer de compte, et la conversation avec ton compagnon démarre gratuitement. En créant ton espace, tu reçois 25 étincelles (les crédits du site) et tes 3 premiers tests de compte sont offerts. Ensuite, les tests et les messages libres au compagnon coûtent 1 étincelle, et le prix est toujours affiché avant de valider.' },
   { q: 'Qui est derrière Health-e ?', a: 'Health-e est conçu par une équipe de professionnels de santé, pour le Sénégal et l\'Afrique francophone. Ton compagnon est une intelligence artificielle de bien-être : il n\'est pas médecin, ne pose pas de diagnostic et ne remplace pas une consultation : il t\'aide à mieux te comprendre et t\'oriente vers un professionnel quand c\'est nécessaire.' },
   { q: 'Mes réponses sont-elles confidentielles ?', a: 'Sans compte, tes réponses restent dans ton navigateur. Avec un compte, elles sont enregistrées dans ton profil pour que tu les retrouves sur tous tes appareils.' },
   { q: 'Les tests sont-ils fiables ?', a: 'Ils s\'appuient sur des échelles utilisées en psychologie (anxiété, humeur, personnalité, attachement…), reformulées pour notre contexte. Ce sont des repères pour mieux te connaître, pas des diagnostics.' },
