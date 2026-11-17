@@ -16,16 +16,16 @@ const minutage = (cle) => (cle && MINUTAGES[cle]) || null;
 const CAS_DU_SOIR_PUBLIC = false;
 
 /**
- * Prix en étincelles. LES PRIX SONT LA DÉCISION DE PAPA MOUSSA (11/11/2026 : suite 3, 6, 9 ; animal 2 ; autre fin 5).
+ * Prix en étincelles. LES PRIX SONT LA DÉCISION DE PAPA MOUSSA (11/11/2026 : suite 3, 6, 9 ; animal 2 ; autre fin 5 ; 17/11/2026 : l'épisode 4 à 8).
  *   suite    : lire un épisode tout de suite, sans attendre le lendemain soir (gratuit). Le prix monte avec l'épisode :
  *              { numéro de l'épisode débloqué : prix }. Un épisode absent de la table ne s'achète pas en avance
- *              (l'épisode 4 : sa suite dépend de SON vote à l'épisode 3, il n'a pas de prix ; l'épisode 1 : il est gratuit).
+ *              (l'épisode 4 s'achète à 8 une fois le vote de l'épisode 3 fait : sa version dépend de SON vote ; l'épisode 1 : il est gratuit).
  *   bonus    : le détail des votes par animal (une fois par histoire)
  *   autreFin : l'autre fin, une fois l'histoire terminée
  * Copie de CAS_DU_SOIR_PRIX dans src/config/contenusPayants.ts (un test vérifie que les deux sont identiques) :
  * le serveur fait foi pour le débit (il ne lit jamais un prix envoyé par l'appli), l'appli s'en sert pour l'affichage.
  */
-const PRIX = { suite: { 2: 3, 3: 6, 5: 9 }, bonus: 2, autreFin: 5 };
+const PRIX = { suite: { 2: 3, 3: 6, 4: 8, 5: 9 }, bonus: 2, autreFin: 5 };
 
 /** Le prix pour lire l'épisode n tout de suite, ou null s'il ne s'achète pas en avance. */
 const prixSuite = (n) => (Number.isInteger(Number(n)) && PRIX.suite[Number(n)] > 0 ? PRIX.suite[Number(n)] : null);

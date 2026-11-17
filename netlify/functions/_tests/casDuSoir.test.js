@@ -23,11 +23,11 @@ test('les prix du serveur et de l\'appli sont les mêmes, table par épisode com
   const objet = bloc.slice(bloc.indexOf('= {') + 2).replace(/\/\/[^\n]*/g, '').replace(/([A-Za-z0-9]+)\s*:/g, '"$1":').replace(/,\s*([}\]])/g, '$1');
   const appli = JSON.parse(objet);
   assert.deepEqual(appli, JSON.parse(JSON.stringify(K.PRIX)));
-  assert.deepEqual(K.PRIX, { suite: { 2: 3, 3: 6, 5: 9 }, bonus: 2, autreFin: 5 });
+  assert.deepEqual(K.PRIX, { suite: { 2: 3, 3: 6, 4: 8, 5: 9 }, bonus: 2, autreFin: 5 });
   assert.equal(K.prixSuite(2), 3);
   assert.equal(K.prixSuite(3), 6);
   assert.equal(K.prixSuite(5), 9);
-  assert.equal(K.prixSuite(4), null); // décidé par la majorité : jamais en avance
+  assert.equal(K.prixSuite(4), 8); // 17/11/2026 : l'épisode 4 s'achète, une fois le vote de l'épisode 3 fait
   assert.equal(K.prixSuite(1), null);
 });
 
@@ -76,7 +76,7 @@ test('droits : visiteur = épisode 1 ; compte = épisodes parus + payés ; la su
   assert.deepEqual(K.peutAvancer(H, { ...c, n: 2, parus: 1 }), { ok: true, prix: 3 });
   assert.equal(K.peutAvancer(H, { ...c, n: 3, parus: 1 }).ok, false); // seulement le suivant
   assert.equal(K.peutAvancer(H, { ...c, n: 4, parus: 3 }).raison, 'choix_requis'); // pas avant d'avoir voté à l'épisode 3
-  assert.equal(K.peutAvancer(H, { ...c, n: 4, parus: 3, choixFait: true }).raison, 'pas_de_prix');
+  assert.deepEqual(K.peutAvancer(H, { ...c, n: 4, parus: 3, choixFait: true }), { ok: true, prix: 8 });
   assert.deepEqual(K.peutAvancer(H, { ...c, n: 5, parus: 4 }), { ok: true, prix: 9 });
   assert.equal(K.peutAvancer(H, { ...c, n: 2, parus: 1, debloques: [2] }).ok, false); // déjà payé
   assert.equal(K.peutAvancer(H, { ...c, n: 1, parus: 0 }).raison, 'pas_commence'); // rien à payer avant le premier épisode
@@ -198,7 +198,7 @@ test('enchaînement des achats : le 4 ne s\'achète qu\'après le vote de l\'ép
   try {
     const base = { commence: true };
     assert.equal(K.peutAvancer(H, { ...base, n: 4, parus: 3 }).raison, 'choix_requis');
-    assert.equal(K.peutAvancer(H, { ...base, n: 4, parus: 3, choixFait: true }).raison, 'pas_de_prix');
+    assert.deepEqual(K.peutAvancer(H, { ...base, n: 4, parus: 3, choixFait: true }), { ok: true, prix: 8 });
     assert.deepEqual(K.peutAvancer(H, { ...base, n: 5, parus: 4 }), { ok: true, prix: 9 });
     assert.equal(K.peutAvancer(H, { n: 2, parus: 1 }).raison, 'pas_commence');
     // On enchaîne : ayant payé le 2, on peut payer le 3 (6), mais pas le 4 sans avoir voté
@@ -283,8 +283,8 @@ test('paiement : « la suite tout de suite » au prix de l\'épisode, un épisod
   assert.equal(r.status, 409); assert.equal(r.body.raison, 'choix_requis'); // pas de suite avant d'avoir voté à l'épisode 3
   assert.equal((await call({ action: 'vote', n: 3, choix: 'A' })).status, 200);
   r = await call({ action: 'avancer', n: 4 });
-  assert.equal(r.status, 409); assert.equal(r.body.raison, 'pas_de_prix'); // voté : le 4 a sa suite, mais pas de prix pour l'instant
-  assert.equal(spent.length, 2);
+  assert.equal(r.status, 200); assert.deepEqual(spent.at(-1), ['payeur', 'cas_du_soir', 8]); // voté : le 4 s'achète à 8
+  assert.equal(spent.length, 3);
   // Les épisodes payés restent ouverts les jours suivants, et la liste le montre
   maintenant(T(7, 12));
   const e = (await call({ action: 'episodes', histoire: H.id })).body;
@@ -292,7 +292,7 @@ test('paiement : « la suite tout de suite » au prix de l\'épisode, un épisod
   assert.equal((await call({ action: 'episode', n: 3 })).status, 200);
   // L'épisode 2 gratuit du lendemain n'est pas redébité : le lecteur n'a rien à payer pour un épisode déjà ouvert
   assert.equal((await call({ action: 'avancer', n: 3 })).status, 409);
-  assert.equal(spent.length, 2);
+  assert.equal(spent.length, 3); // 3 + 6 + 8 : rien de plus
   // Pas assez d'étincelles : refus, rien d'enregistré
   uid = 'pauvre'; maintenant(T(5, 10)); await call({ action: 'episode', n: 1 });
   assert.equal((await call({ action: 'avancer', n: 2 })).status, 402);

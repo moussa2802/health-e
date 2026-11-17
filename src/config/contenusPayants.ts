@@ -14,8 +14,8 @@ export const PENC_PRIX_PAR_DEFAUT = 10;
  * (un test vérifie que les deux sont identiques).
  */
 export const CAS_DU_SOIR_PRIX: { suite: Record<number, number>; bonus: number; autreFin: number } = {
-  // Lire l'épisode n tout de suite : le prix monte avec l'épisode (l'épisode 4, la suite de ton choix à l'épisode 3, n'a pas de prix pour l'instant)
-  suite: { 2: 3, 3: 6, 5: 9 },
+  // Lire l'épisode n tout de suite : le prix monte avec l'épisode (17/11/2026 : l'épisode 4 à 8, une fois le vote de l'épisode 3 fait)
+  suite: { 2: 3, 3: 6, 4: 8, 5: 9 },
   bonus: 2,
   autreFin: 5,
 };
