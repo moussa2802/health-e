@@ -317,6 +317,8 @@ const ConversationAccueil: React.FC = () => {
   const [noted, setNoted] = useState<{ day: string; cancelled: boolean } | null>(null);
   /** Ce que le compagnon vient d'apprendre sur la personne (montré discrètement, jusqu'au message suivant). */
   const [learned, setLearned] = useState<string | null>(null);
+  // Le prix d'un message libre est annoncé avant le premier ; il disparaît dès qu'un message est parti
+  const [messageEnvoye, setMessageEnvoye] = useState(false);
   const [breath, setBreath] = useState<{ inhale: boolean } | null>(null);
   // La voix qui guide la respiration (inspire… expire…), coupable
   const breathVoice = useBreathVoice(breath);
@@ -1771,6 +1773,7 @@ const ConversationAccueil: React.FC = () => {
    */
   const askDeep = async (text: string, base: AccueilState, endsWithUserMsg = true) => {
     if (!currentUser) return;
+    setMessageEnvoye(true);
     const t = base.talk ?? { conv: `conv_${Date.now()}`, start: 0, opening: null };
     const withTalk: AccueilState = { ...base, talk: t, step: base.step === 'need' || base.step === 'need_clarify' ? 'prescribed' : base.step };
     setState(withTalk);
@@ -1933,9 +1936,9 @@ const ConversationAccueil: React.FC = () => {
                   ))}
                 </div>
               )}
-              {isAuthenticated && chatModeNow && state.step !== 'testing' && !korisLoading && balance < 5 && (
+              {isAuthenticated && chatModeNow && state.step !== 'testing' && !korisLoading && (balance < 5 || !messageEnvoye) && (
                 <p className="drl-in" style={{ margin: '0 0 2px', fontSize: 13, color: C.faint, textAlign: 'center' }}>
-                  Chaque message coûte {credits(KORIS_COSTS.chat)}.
+                  Chaque message coûte {credits(KORIS_COSTS.chat)}.{balance < 5 ? (balance > 0 ? ` Il t'en reste ${balance}.` : " Il ne t'en reste plus.") : ''}
                 </p>
               )}
               {learned && chatModeNow && state.step !== 'testing' && !routing && (
