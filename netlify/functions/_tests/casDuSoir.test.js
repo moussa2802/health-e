@@ -722,3 +722,16 @@ test('Le plaisir féminin : les images de la couverture et des 7 épisodes exist
   ['couverture', 'ep1-plafond', 'ep1-couple', 'ep1-amy', 'ep1-salle-de-bain', 'ep2-miroir', 'ep2-iceberg', 'ep2-classe', 'ep2-amy-the', 'ep3-casserole', 'ep3-rama', 'ep3-courbe', 'ep3-dialogue', 'ep4-whatsapp', 'ep4-produits', 'ep4-sursaut', 'ep4-sage-femme', 'ep4-poubelle', 'ep5-courbes', 'ep5-lit', 'ep5-calendrier', 'ep5-sourire', 'ep6-pluie', 'ep6-canape', 'ep6-cour', 'ep6-consultation', 'ep7-vocal', 'ep7-the', 'ep7-schema', 'ep7-mains', 'ep7-matin']
     .forEach((k) => assert.ok(pub(`/images/cas-du-soir/plaisir-${k}.webp`), k));
 });
+
+test('Le plaisir féminin : l\'intrigue audio (publique) et son minutage sont branchés', () => {
+  const P = K.HISTOIRES.find((h) => h.id === 'plaisir-feminin');
+  assert.equal(P.intrigue, '/audio/cas-du-soir/plaisir-feminin-intrigue.mp3');
+  assert.ok(fs.existsSync(path.join(__dirname, '..', '..', '..', 'public', 'audio', 'cas-du-soir', 'plaisir-feminin-intrigue.mp3')));
+  const m = K.minutage(P.intrigueMinutage);
+  assert.ok(m && m.lignes.length === 5 && m.images[0].t === 0);
+  m.lignes.forEach((l, k) => { assert.ok(l.t1 > l.t0); if (k) assert.ok(l.t0 >= m.lignes[k - 1].t1 - 0.2); assert.ok(l.t1 <= m.duree); });
+  m.images.forEach((x) => assert.ok(fs.existsSync(path.join(__dirname, '..', '..', '..', 'public', 'images', 'cas-du-soir', x.image)), x.image));
+  // Un cas sans date publique reste invisible pour le public : seul le propriétaire le voit
+  assert.equal(P.programmee, false);
+  assert.equal(K.CAS_DU_SOIR_PUBLIC, false);
+});

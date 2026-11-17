@@ -7,6 +7,8 @@ module.exports = {
   "id": "plaisir-feminin",
   "titre": "Le plaisir féminin",
   "image": "/images/cas-du-soir/plaisir-couverture.webp",
+  "intrigue": "/audio/cas-du-soir/plaisir-feminin-intrigue.mp3",
+  "intrigueMinutage": "plaisir-feminin-intrigue",
   "accroche": "Fatou dit « oui, tu es fou » depuis cinq ans. Elle n'a jamais rien ressenti.",
   "accroches": {
     "1": "Fatou dit « oui, tu es fou » depuis cinq ans. Elle n'a jamais rien ressenti.",

@@ -3,7 +3,7 @@
  * Rythme personnel de chaque lecteur, droits de lecture, embranchement décidé par le vote de CHAQUE lecteur (sa suite), résultats des votes.
  */
 const { HISTOIRES } = require('./_casDuSoirHistoires');
-const MINUTAGES = { ...require('./_casDuSoirMinutages'), ...require('./_casDuSoirMinutagesGoumin') };
+const MINUTAGES = { ...require('./_casDuSoirMinutages'), ...require('./_casDuSoirMinutagesGoumin'), ...require('./_casDuSoirMinutagesPlaisir') };
 
 /** Le minutage d'un audio (ou null). */
 const minutage = (cle) => (cle && MINUTAGES[cle]) || null;
