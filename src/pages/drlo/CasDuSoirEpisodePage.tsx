@@ -12,13 +12,13 @@ import { GateAdultes, PiedCas, Resultats, etoiles, Maj } from '../../components/
 import { useKoris } from '../../contexts/KorisContext';
 import { CAS_DU_SOIR_PRIX } from '../../config/contenusPayants';
 import {
-  acheterBonus, avancer, CdsError, getEpisode, getEtat, quandLabel, setHistoire, voter,
+  acheterBonus, avancer, CdsError, getEpisode, getEtat, quandLabel, setBrancheApercu, setHistoire, voter,
   type CdsEpisodeReponse, type CdsEtat,
 } from '../../services/casDuSoirService';
 
-/** Le message d'une erreur ; pour « la suite dépend du vote de tous », avec la date de décision. */
+/** Le message d'une erreur ; pour « ta suite dépend de ton choix », l'invitation à voter d'abord. */
 function messageErreur(e: unknown): string {
-  if (e instanceof CdsError && e.data.raison === 'vote_en_cours' && typeof e.data.decision === 'number') return `La suite dépend du vote de tous : elle s'ouvre ${quandLabel(e.data.decision)}.`;
+  if (e instanceof CdsError && e.data.raison === 'choix_requis') return 'Ta suite dépend de ton choix : vote d\'abord à l\'épisode 3.';
   return e instanceof Error ? e.message : 'Erreur';
 }
 
@@ -53,7 +53,12 @@ const CasDuSoirEpisodePage: React.FC = () => {
   const onVote = async (choix: string) => {
     if (!ep) return;
     setBusy('vote'); setError('');
-    try { const r = await voter(ep.episode.n, choix); setEp({ ...ep, monChoix: r.monChoix, resultats: r.resultats }); }
+    try {
+      const r = await voter(ep.episode.n, choix);
+      // Aperçu du propriétaire : son vote n'est pas enregistré, la suite montrée est celle de ce choix
+      if (ep.apercu && ep.episode.embranchement && (r.monChoix === 'A' || r.monChoix === 'B')) setBrancheApercu(r.monChoix);
+      setEp({ ...ep, monChoix: r.monChoix, resultats: r.resultats });
+    }
     catch (e) { setError(e instanceof Error ? e.message : 'Erreur'); } finally { setBusy(''); }
   };
   const pay = async (what: 'suite' | 'bonus') => {
@@ -90,9 +95,7 @@ const CasDuSoirEpisodePage: React.FC = () => {
           {!ep.autre && <>
             <p style={{ margin: '20px 0 0', fontSize: 13, fontWeight: 700, letterSpacing: '.08em', color: palette.accent }}>QU'AURAIS-TU FAIT ?</p>
             <h2 style={{ margin: '4px 0 0', fontSize: 17, color: DC.title }}>{ep.episode.question}</h2>
-            {ep.episode.embranchement && (etat.decisionPrise
-              ? <p style={{ margin: '4px 0 0', fontSize: 14, color: DC.soft }}>La majorité a déjà décidé de la suite : ton vote est compté dans les résultats.</p>
-              : <p style={{ margin: '4px 0 0', fontSize: 14, color: DC.soft }}>Ton vote compte : la majorité décide de la suite{etat.decision ? ` ${quandLabel(etat.decision)}` : ''}.</p>)}
+            {ep.episode.embranchement && <p style={{ margin: '4px 0 0', fontSize: 14, color: DC.soft }}>Ton choix décide de ta suite : deux issues possibles, et chacune mène à un épisode différent. À la fin, tu pourras découvrir l'autre.</p>}
             {!ep.monChoix ? (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 10 }}>
                 {ep.episode.choix.map(c => (
@@ -120,10 +123,10 @@ const CasDuSoirEpisodePage: React.FC = () => {
               ) : ep.suite.avance.raison === 'compte' ? (
                 <Link to="/espace" style={primary}>Crée ton espace pour lire la suite</Link>
               ) : null}
-              {/* Le rythme de CE lecteur : l'épisode suivant s'ouvre gratuitement son prochain soir à 20 h ; la suite du vote, à la décision de tous */}
+              {/* Le rythme de CE lecteur : l'épisode suivant s'ouvre gratuitement son prochain soir à 20 h */}
               <p style={{ margin: '8px 0 0', fontSize: 14, color: DC.soft, textAlign: 'center' }}>
-                {ep.suite.avance.raison === 'vote_en_cours'
-                  ? `La suite dépend du vote de tous : elle s'ouvre ${quandLabel(ep.decision ?? etat.decision ?? ep.suite.parution ?? Date.now())}.`
+                {ep.suite.avance.raison === 'choix_requis'
+                  ? 'Ta suite dépend de ton choix : vote d\'abord à l\'épisode 3.'
                   : ep.suite.parution ? `${Maj(quandLabel(ep.suite.parution))} · gratuit` : 'Gratuit le lendemain soir de ta lecture'}
               </p>
             </div>

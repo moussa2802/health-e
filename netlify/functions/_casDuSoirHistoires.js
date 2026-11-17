@@ -12,11 +12,10 @@
  *                                       un compte, et l'épisode n s'ouvre gratuitement le (n-1)-ième soir après, à cette heure
  *   programmee: true|false              false : aucune date publique (rien ne s'ouvre), seul l'aperçu du propriétaire fonctionne.
  *                                       Le jour où la date est fixée : mettre depart, heure, et programmee: true
- *   decisionJours: 3                    le vote de l'embranchement est UNE décision pour tous, figée à l'ouverture publique + ce
- *                                       nombre de jours (à l'heure ci-dessus). Un lecteur qui commence le jour J vote à l'épisode 3
- *                                       le soir de J+2 : avec 3, seuls ceux qui commencent le jour de l'ouverture votent à temps
- *   embranchement: 3,                   le vote de cet épisode décide de la suite (2 choix, A et B)
- *   egalite: 'B', minVotes: 30          égalité, ou moins de minVotes votes à l'embranchement : cette suite-là
+ *   embranchement: 3,                   le vote de cet épisode décide de la suite DE CHAQUE PERSONNE (2 choix, A et B) : personnel, sans date
+ *                                       commune ni majorité (17/11/2026). Sans embranchement : l'histoire est linéaire
+ *   adultes: true,                      réservé aux adultes : écran « 18 ans ou plus » avant d'entrer
+ *   debloquer: 20,                      prix (étincelles) pour ouvrir tout le cas avant son ouverture publique ; prixSuite: { 4: 8 } : prix propres au cas
  *   testLie, testAussi                  tests proposés à la fin (identifiants du catalogue)
  *   image,                              la couverture (16:9), un fichier public de public/images/cas-du-soir/ (webp, 150 Ko au plus)
  *   intrigue,                           la bande-annonce audio (40 à 60 s, gratuite, publique) : public/audio/cas-du-soir/{id}-intrigue.mp3
@@ -59,14 +58,11 @@ const VU_DE_MINUIT = {
   "heure": "20:00",
   "programmee": false,
   "embranchement": 3,
-  "decisionJours": 4,
-  "egalite": "B",
-  "minVotes": 30,
   "testLie": "ecr_r",
   "testAussi": "bonus_jalousie",
   "avertissement": "Histoire inventée. Toute ressemblance avec des personnes réelles serait une coïncidence. Si elle te touche de près, le compagnon est là pour en parler.",
   "autreFin": {
-    "mention": "La majorité avait choisi l'autre chemin. Découvre ce qui se serait passé."
+    "mention": "Tu as suivi un chemin. Découvre ce qui se serait passé si tu avais choisi l'autre."
   },
   "episodes": [
     {

@@ -1,6 +1,6 @@
 /**
  * _casDuSoir — logique pure du « Cas du soir » (sans Firebase, testée dans _tests/casDuSoir.test.js).
- * Rythme personnel de chaque lecteur, droits de lecture, embranchement décidé par la majorité à une date commune, résultats des votes.
+ * Rythme personnel de chaque lecteur, droits de lecture, embranchement décidé par le vote de CHAQUE lecteur (sa suite), résultats des votes.
  */
 const { HISTOIRES } = require('./_casDuSoirHistoires');
 const MINUTAGES = { ...require('./_casDuSoirMinutages'), ...require('./_casDuSoirMinutagesGoumin') };
@@ -19,7 +19,7 @@ const CAS_DU_SOIR_PUBLIC = false;
  * Prix en étincelles. LES PRIX SONT LA DÉCISION DE PAPA MOUSSA (11/11/2026 : suite 3, 6, 9 ; animal 2 ; autre fin 5).
  *   suite    : lire un épisode tout de suite, sans attendre le lendemain soir (gratuit). Le prix monte avec l'épisode :
  *              { numéro de l'épisode débloqué : prix }. Un épisode absent de la table ne s'achète pas en avance
- *              (l'épisode 4 : la majorité le décide ; l'épisode 1 : il est gratuit).
+ *              (l'épisode 4 : sa suite dépend de SON vote à l'épisode 3, il n'a pas de prix ; l'épisode 1 : il est gratuit).
  *   bonus    : le détail des votes par animal (une fois par histoire)
  *   autreFin : l'autre fin, une fois l'histoire terminée
  * Copie de CAS_DU_SOIR_PRIX dans src/config/contenusPayants.ts (un test vérifie que les deux sont identiques) :
@@ -71,8 +71,8 @@ const histoireById = (id) => HISTOIRES.find((h) => h.id === id) || null;
  * ouverture de l'épisode 1 avec un compte (« debut », enregistré côté serveur dans casDuSoirAcces). L'épisode n s'ouvre
  * gratuitement pour lui le (n-1)-ième soir après son départ, à l'heure de l'histoire (20 h, heure de Dakar = UTC) :
  * le jour du départ il a l'épisode 1, le lendemain à 20 h le 2, etc. Quelqu'un qui arrive tard repart donc de l'épisode 1.
- * Seule exception : le vote de l'embranchement, qui est UNE décision pour tout le monde, figée à une date globale
- * (l'ouverture publique + h.embranchement jours à 20 h).
+ * L'embranchement est PERSONNEL (décision de Papa Moussa, 17/11/2026) : chacun a la suite qui correspond à SON vote à l'épisode
+ * de l'embranchement ; il n'y a plus de date commune ni de majorité. L'autre fin reste un bonus payant, une fois l'histoire finie.
  */
 
 /** L'heure d'ouverture quotidienne, en millisecondes depuis minuit (UTC). */
@@ -126,31 +126,6 @@ function parusPour(h, { debut = null, now = Date.now(), apercu = false, jour = 1
 /** Le départ d'horloge simulé en aperçu : un lecteur qui en serait au « jour » donné (sert à calculer les dates affichées). */
 const debutApercu = (now, jour) => debutJour(now) - (Math.max(1, Math.round(Number(jour)) || 1) - 1) * DAY;
 
-/** Le nombre de jours entre l'ouverture publique et la décision du vote (h.decisionJours ; à défaut : le numéro de l'embranchement, soit 3). */
-const decisionJours = (h) => Math.max(1, Math.round(Number(h.decisionJours)) || h.embranchement || 1);
-
-/**
- * La date de décision du vote de l'embranchement (ms) : l'ouverture publique + decisionJours jours, à l'heure de l'histoire
- * (20 h) ; null sans embranchement. En aperçu : la même chose pour un lecteur simulé au « jour » donné.
- * ATTENTION : un lecteur qui commence le jour J arrive à l'épisode 3 le soir de J+2 ; avec 3 jours, seuls ceux qui
- * commencent le jour même de l'ouverture votent à temps. Plus decisionJours est grand, plus il y a de votants.
- */
-function dateDecision(h, { apercu = false, jour = 1, now = Date.now() } = {}) {
-  if (!h.embranchement) return null;
-  // Aperçu du propriétaire : la décision tombe quand sa lecture simulée atteint la fin de l'épisode de l'embranchement (« demain soir » au jour 3)
-  if (apercu) return debutApercu(now, jour) + (h.embranchement || decisionJours(h)) * DAY + heureMs(h);
-  const o = ouverturePublique(h);
-  return o == null ? null : o + decisionJours(h) * DAY;
-}
-
-/** La décision est-elle prise ? Une seule règle pour tout le monde : à partir de la date de décision. En aperçu : au-delà de l'embranchement. */
-function decisionPrise(h, { now = Date.now(), apercu = false, jour = 1 } = {}) {
-  if (!h.embranchement) return true;
-  if (apercu) return Math.round(Number(jour)) > h.embranchement;
-  const d = dateDecision(h);
-  return d != null && now >= d;
-}
-
 /** L'instant d'ouverture gratuite de l'épisode suivant pour ce lecteur (« demain soir à 20 h ») ; null si inconnu ou si l'histoire est finie. */
 function prochaineOuverture(h, { parus, debut = null, now = Date.now(), apercu = false, jour = 1 } = {}) {
   if (parus >= h.episodes.length) return null;
@@ -161,14 +136,6 @@ function prochaineOuverture(h, { parus, debut = null, now = Date.now(), apercu =
 
 /** Après l'embranchement, un épisode a deux versions. */
 const aDesVersions = (h, n) => !!h.embranchement && n > h.embranchement;
-
-/** La majorité du vote de l'embranchement ; égalité, ou moins de h.minVotes votes : h.egalite. */
-function majorite(h, counts = {}) {
-  const a = Number(counts.A) || 0;
-  const b = Number(counts.B) || 0;
-  if (a === b || a + b < (Number(h.minVotes) || 0)) return h.egalite || 'A';
-  return a > b ? 'A' : 'B';
-}
 
 /** Le contenu d'un épisode (la bonne version si besoin). null si la branche n'est pas encore connue. */
 function episodeContenu(h, n, branche) {
@@ -192,16 +159,16 @@ function peutLire({ n, parus, connecte, debloques = [] }) {
 /**
  * Peut-on payer pour lire l'épisode n tout de suite (sans attendre son soir) ?
  *   parus : les épisodes ouverts gratuitement pour lui ; debloques : ceux qu'il a payés ; commence : son horloge a démarré ;
- *   decisionPrise : le vote de l'embranchement est figé.
+ *   choixFait : il a voté à l'embranchement (c'est SON vote qui décide de SA suite).
  * Seulement l'épisode qui suit le dernier ouvert (payé ou non : on peut enchaîner 2, puis 3), jamais un épisode déjà ouvert,
- * jamais celui qui dépend du vote de tous tant qu'il n'est pas figé, et seulement s'il a un prix (l'épisode 4 n'en a jamais).
+ * jamais la suite de l'embranchement avant d'avoir choisi, et seulement s'il a un prix (l'épisode 4 n'en a pas encore).
  */
-function peutAvancer(h, { n, parus, debloques = [], commence = false, decisionPrise: figee = false }) {
+function peutAvancer(h, { n, parus, debloques = [], commence = false, choixFait = false }) {
   // Pas d'achat avant d'avoir ouvert l'épisode 1 avec un compte (le rythme ne démarre qu'à ce moment-là)
   if (!(parus >= 1) || !commence) return { ok: false, raison: 'pas_commence' };
   const ouvert = Math.max(parus, ...debloques.map(Number).filter(Number.isFinite));
   if (n !== ouvert + 1 || n > h.episodes.length || debloques.includes(n)) return { ok: false, raison: 'pas_maintenant' };
-  if (h.embranchement && n === h.embranchement + 1 && !figee) return { ok: false, raison: 'vote_en_cours' };
+  if (h.embranchement && n === h.embranchement + 1 && !choixFait) return { ok: false, raison: 'choix_requis' };
   if (!prixPour(h, n)) return { ok: false, raison: 'pas_de_prix' };
   return { ok: true, prix: prixPour(h, n) };
 }
@@ -294,7 +261,6 @@ function verifierHistoire(h) {
   const err = [];
   if (!/^[a-z0-9-]{2,40}$/.test(h.id)) err.push('id');
   if (!/^\d{4}-\d{2}-\d{2}$/.test(h.depart) || !/^\d{2}:\d{2}$/.test(h.heure)) err.push('date d\'ouverture publique');
-  if (h.embranchement && !(decisionJours(h) >= h.embranchement)) err.push('decisionJours : au moins le numéro de l\'embranchement');
   if (h.episodes.length < 5 || h.episodes.length > 10) err.push('entre 5 et 10 épisodes');
   if (h.embranchement && h.embranchement >= h.episodes.length) err.push('embranchement avant le dernier épisode');
   const imageOk = (src) => src == null || /^\/images\/[a-z0-9/-]+\/[A-Za-z0-9-]+\.webp$/.test(src);
@@ -329,7 +295,7 @@ function verifierHistoire(h) {
 
 module.exports = {
   CAS_DU_SOIR_PUBLIC, PRIX, prixSuite, prixPour, prixDebloquer, peutDebloquer, SEUIL_POURCENTAGES, ANIMAUX, ANIMAL_PLURIEL, HISTOIRES, histoireById, histoireDuMoment, aDesVersions,
-  DAY, heureMs, debutJour, decisionJours, ouverturePublique, estOuverte, ouvertureEpisode, parusPour, debutApercu, dateDecision, decisionPrise, prochaineOuverture,
-  minutage, majorite, statut, autreBranche, aUnAudio, episodeContenu, peutLire, peutAvancer, choixValide, votant, pourcentages, choixDeLAnimal, detailParAnimal, vueEpisode, vueHistoire,
+  DAY, heureMs, debutJour, ouverturePublique, estOuverte, ouvertureEpisode, parusPour, debutApercu, prochaineOuverture,
+  minutage, statut, autreBranche, aUnAudio, episodeContenu, peutLire, peutAvancer, choixValide, votant, pourcentages, choixDeLAnimal, detailParAnimal, vueEpisode, vueHistoire,
   verifierHistoire,
 };

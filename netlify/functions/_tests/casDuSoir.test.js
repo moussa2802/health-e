@@ -36,8 +36,9 @@ test('« Le vu de minuit » est branché, sans date publique ; la mention et les
   assert.equal(H.programmee, false);
   assert.equal(K.parusPour(H, { now: Date.parse('2100-01-01') }), 0); // rien ne paraît, jamais, sans date publique
   assert.equal(K.parusPour(H, { apercu: true, jour: 3 }), 3); // l'aperçu fonctionne
-  assert.equal(H.egalite, 'B');
-  assert.equal(H.minVotes, 30);
+  assert.equal(H.egalite, undefined); // plus de majorité : chacun a la suite de son vote
+  assert.equal(H.minVotes, undefined);
+  assert.equal(H.decisionJours, undefined);
   assert.equal(H.testLie, 'ecr_r');
   assert.equal(H.testAussi, 'bonus_jalousie');
   assert.equal(H.avertissement, 'Histoire inventée. Toute ressemblance avec des personnes réelles serait une coïncidence. Si elle te touche de près, le compagnon est là pour en parler.');
@@ -74,22 +75,23 @@ test('droits : visiteur = épisode 1 ; compte = épisodes parus + payés ; la su
   const c = { commence: true };
   assert.deepEqual(K.peutAvancer(H, { ...c, n: 2, parus: 1 }), { ok: true, prix: 3 });
   assert.equal(K.peutAvancer(H, { ...c, n: 3, parus: 1 }).ok, false); // seulement le suivant
-  assert.equal(K.peutAvancer(H, { ...c, n: 4, parus: 3 }).raison, 'vote_en_cours');
+  assert.equal(K.peutAvancer(H, { ...c, n: 4, parus: 3 }).raison, 'choix_requis'); // pas avant d'avoir voté à l'épisode 3
+  assert.equal(K.peutAvancer(H, { ...c, n: 4, parus: 3, choixFait: true }).raison, 'pas_de_prix');
   assert.deepEqual(K.peutAvancer(H, { ...c, n: 5, parus: 4 }), { ok: true, prix: 9 });
   assert.equal(K.peutAvancer(H, { ...c, n: 2, parus: 1, debloques: [2] }).ok, false); // déjà payé
   assert.equal(K.peutAvancer(H, { ...c, n: 1, parus: 0 }).raison, 'pas_commence'); // rien à payer avant le premier épisode
   assert.equal(K.peutAvancer(H, { n: 2, parus: 1 }).raison, 'pas_commence'); // ni avant d'avoir ouvert l'épisode 1 avec un compte
 });
 
-test('embranchement : la majorité décide ; égalité ou moins de 30 votes → la fin B', () => {
-  assert.equal(K.majorite(H, { A: 20, B: 25 }), 'B');
-  assert.equal(K.majorite(H, { A: 25, B: 20 }), 'A');
-  assert.equal(K.majorite(H, { A: 20, B: 9 }), 'B'); // 29 votes : pas assez
-  assert.equal(K.majorite(H, { A: 21, B: 9 }), 'A'); // 30 votes
-  assert.equal(K.majorite(H, { A: 40, B: 40 }), 'B');
-  assert.equal(K.majorite(H, {}), 'B');
+test('embranchement personnel : chacun a la suite de SON vote ; plus de majorité ni de date commune', () => {
+  assert.equal(K.majorite, undefined);
+  assert.equal(K.dateDecision, undefined);
+  assert.equal(K.decisionPrise, undefined);
   assert.equal(K.autreBranche('A'), 'B');
-  assert.equal(K.episodeContenu(H, 4, null), null);
+  assert.equal(K.autreBranche('B'), 'A');
+  assert.equal(K.autreBranche(null), null);
+  assert.equal(K.episodeContenu(H, 4, null), null); // sans vote, pas de suite
+  assert.equal(K.episodeContenu(H, 4, 'A').titre, H.episodes[3].A.titre);
   assert.equal(K.episodeContenu(H, 4, 'B').titre, H.episodes[3].B.titre);
   assert.equal(K.episodeContenu(H, 2, null).titre, H.episodes[1].titre);
 });
@@ -191,28 +193,19 @@ test('rythme personnel : l\'épisode n s\'ouvre le (n-1)-ième soir après le d�
   } finally { H.programmee = false; }
 });
 
-test('décision commune : figée à l\'ouverture publique + 3 jours à 20 h, pour tout le monde', () => {
+test('enchaînement des achats : le 4 ne s\'achète qu\'après le vote de l\'épisode 3 (et n\'a pas de prix) ; le 5 s\'enchaîne ensuite', () => {
   H.programmee = true;
-  const d0 = H.decisionJours; H.decisionJours = 3;
   try {
-    assert.equal(K.dateDecision(H), T(3, 20));
-    assert.equal(K.decisionPrise(H, { now: T(3, 19, 59) }), false);
-    assert.equal(K.decisionPrise(H, { now: T(3, 20) }), true);
-    // Aperçu : prise à partir du jour 4 ; la date affichée suit le jour simulé (jour 3 : demain à 20 h)
-    assert.equal(K.decisionPrise(H, { apercu: true, jour: 3 }), false);
-    assert.equal(K.decisionPrise(H, { apercu: true, jour: 4 }), true);
-    assert.equal(K.dateDecision(H, { apercu: true, jour: 3, now: T(7, 11) }), T(8, 20));
-    // L'épisode 4 : jamais en avance ; l'épisode 5 s'enchaîne après le 4 ; sans horloge rien ne s'achète
     const base = { commence: true };
-    assert.equal(K.peutAvancer(H, { ...base, n: 4, parus: 3 }).raison, 'vote_en_cours');
-    assert.equal(K.peutAvancer(H, { ...base, n: 4, parus: 3, decisionPrise: true }).raison, 'pas_de_prix');
+    assert.equal(K.peutAvancer(H, { ...base, n: 4, parus: 3 }).raison, 'choix_requis');
+    assert.equal(K.peutAvancer(H, { ...base, n: 4, parus: 3, choixFait: true }).raison, 'pas_de_prix');
     assert.deepEqual(K.peutAvancer(H, { ...base, n: 5, parus: 4 }), { ok: true, prix: 9 });
     assert.equal(K.peutAvancer(H, { n: 2, parus: 1 }).raison, 'pas_commence');
-    // On enchaîne : ayant payé le 2, on peut payer le 3 (6), mais pas le 4
+    // On enchaîne : ayant payé le 2, on peut payer le 3 (6), mais pas le 4 sans avoir voté
     assert.deepEqual(K.peutAvancer(H, { ...base, n: 3, parus: 1, debloques: [2] }), { ok: true, prix: 6 });
     assert.equal(K.peutAvancer(H, { ...base, n: 3, parus: 1 }).ok, false); // sans avoir payé le 2 : non
-    assert.equal(K.peutAvancer(H, { ...base, n: 4, parus: 1, debloques: [2, 3] }).raison, 'vote_en_cours');
-  } finally { H.programmee = false; H.decisionJours = d0; }
+    assert.equal(K.peutAvancer(H, { ...base, n: 4, parus: 1, debloques: [2, 3] }).raison, 'choix_requis');
+  } finally { H.programmee = false; }
 });
 
 test('arrivée tardive : 5 jours après l\'ouverture, un lecteur n\'a que l\'épisode 1, comme le premier jour', public_(async () => {
@@ -227,8 +220,8 @@ test('arrivée tardive : 5 jours après l\'ouverture, un lecteur n\'a que l\'ép
   // Lecteur tardif : 5 jours plus tard, l'épisode 1 seulement
   uid = 'tard'; maintenant(T(5, 10));
   const e = (await call({ action: 'episodes', histoire: H.id })).body;
-  // (5 jours après l'ouverture la décision est prise : les épisodes 4 et 5 existent, mais ne se révèlent pas à qui n'y est pas)
-  assert.deepEqual(e.episodes.map((x) => x.etat), ['a_lire', 'prochain', 'verrouille', 'verrouille', 'verrouille']);
+  // Les épisodes 4 et 5 dépendent du vote de CHAQUE lecteur à l'épisode 3 : sans vote, « ta suite dépend de ton choix »
+  assert.deepEqual(e.episodes.map((x) => x.etat), ['a_lire', 'prochain', 'verrouille', 'vote', 'vote']);
   assert.equal(e.episodes[1].parution, null); // son horloge n'a pas encore démarré : pas de date
   assert.deepEqual(e.episodes[1].avance, { ok: false, raison: 'pas_commence' });
   assert.equal(store.casDuSoirAcces[`tard_${H.id}`], undefined); // lister ne démarre rien
@@ -246,10 +239,10 @@ test('arrivée tardive : 5 jours après l\'ouverture, un lecteur n\'a que l\'ép
   maintenant(T(6, 20));
   assert.equal((await call({ action: 'episode', n: 2 })).status, 200);
   assert.equal((await call({ action: 'episode', n: 3 })).status, 403);
-  // Les épisodes 4 et 5 ne révèlent rien à qui n'y est pas : pas de titre de la version choisie
+  // Les épisodes 4 et 5 ne révèlent rien à qui n'a pas voté : ni titre ni image des deux versions
   const e3 = (await call({ action: 'episodes', histoire: H.id })).body;
-  assert.equal(e3.episodes[3].titre, 'À découvrir');
-  assert.equal(e3.episodes[3].image, null);
+  assert.equal(e3.episodes[3].titre, undefined);
+  assert.equal(e3.episodes[3].image, undefined);
   assert.ok(!JSON.stringify(e3).includes(H.episodes[3].A.titre) && !JSON.stringify(e3).includes(H.episodes[3].B.titre));
 }));
 
@@ -287,12 +280,15 @@ test('paiement : « la suite tout de suite » au prix de l\'épisode, un épisod
   assert.equal(r.status, 200); assert.deepEqual(spent.at(-1), ['payeur', 'cas_du_soir', 6]);
   assert.equal((await call({ action: 'episode', n: 3 })).status, 200);
   r = await call({ action: 'avancer', n: 4 });
-  assert.equal(r.status, 409); assert.equal(r.body.raison, 'pas_de_prix'); // décision prise : le 4 a une suite fixe, mais jamais de prix
+  assert.equal(r.status, 409); assert.equal(r.body.raison, 'choix_requis'); // pas de suite avant d'avoir voté à l'épisode 3
+  assert.equal((await call({ action: 'vote', n: 3, choix: 'A' })).status, 200);
+  r = await call({ action: 'avancer', n: 4 });
+  assert.equal(r.status, 409); assert.equal(r.body.raison, 'pas_de_prix'); // voté : le 4 a sa suite, mais pas de prix pour l'instant
   assert.equal(spent.length, 2);
   // Les épisodes payés restent ouverts les jours suivants, et la liste le montre
   maintenant(T(7, 12));
   const e = (await call({ action: 'episodes', histoire: H.id })).body;
-  assert.deepEqual(e.episodes.slice(0, 3).map((x) => x.etat), ['a_lire', 'a_lire', 'a_lire']);
+  assert.deepEqual(e.episodes.slice(0, 3).map((x) => x.etat), ['a_lire', 'a_lire', 'lu']); // le 3 est lu : le vote est enregistré
   assert.equal((await call({ action: 'episode', n: 3 })).status, 200);
   // L'épisode 2 gratuit du lendemain n'est pas redébité : le lecteur n'a rien à payer pour un épisode déjà ouvert
   assert.equal((await call({ action: 'avancer', n: 3 })).status, 409);
@@ -303,74 +299,53 @@ test('paiement : « la suite tout de suite » au prix de l\'épisode, un épisod
   assert.equal((store.casDuSoirAcces[`pauvre_${H.id}`].episodes || []).length, 0);
 }));
 
-test('décision du vote de l\'épisode 3 : les votes de tous s\'additionnent, figée à la date de décision, jamais recalculée après', public_(async () => {
-  const d6 = H.decisionJours; H.decisionJours = 6; // ouverture + 6 jours : les lecteurs qui commencent les jours 0, 1, 2 arrivent à l'épisode 3 avant la décision
-  try {
-    assert.equal(K.dateDecision(H), T(6, 20));
-    // Trois lecteurs, trois rythmes : ils votent à l'épisode 3 à des jours différents (jours 2, 3 et 4 au soir)
-    seed('x1', T(0, 21)); seed('x2', T(1, 9)); seed('x3', T(2, 9));
-    uid = 'x1'; maintenant(T(2, 21)); assert.equal((await call({ action: 'vote', n: 3, choix: 'A' })).status, 200);
-    uid = 'x2'; maintenant(T(3, 21)); assert.equal((await call({ action: 'vote', n: 3, choix: 'B' })).status, 200);
-    uid = 'x3'; maintenant(T(4, 21)); assert.equal((await call({ action: 'vote', n: 3, choix: 'A' })).status, 200);
-    assert.equal(store.casDuSoirResultats[`${H.id}_3`].total, 3);
-    assert.equal(store.casDuSoirResultats[`${H.id}_branche`], undefined); // la décision n'est pas prise
-    // x1 arrive à l'épisode 4 (le soir du jour 3) AVANT la décision : « La suite dépend du vote de tous », sans rien révéler
-    uid = 'x1'; maintenant(T(5, 10));
-    const avant = (await call({ action: 'episodes', histoire: H.id })).body;
-    assert.equal(avant.decisionPrise, false);
-    assert.equal(avant.decision, T(6, 20));
-    assert.deepEqual(avant.episodes.slice(3).map((x) => x.etat), ['vote', 'vote']);
-    assert.ok(!JSON.stringify(avant).includes(H.episodes[3].A.titre) && !JSON.stringify(avant).includes(H.episodes[3].B.titre));
-    const ep4 = await call({ action: 'episode', n: 4 });
-    assert.equal(ep4.status, 409); assert.equal(ep4.body.raison, 'vote_en_cours'); assert.equal(ep4.body.decision, T(6, 20));
-    // x3 est encore à l'épisode 3 : l'épisode 4 ne s'achète pas, il dépend du vote de tous
-    uid = 'x3'; assert.equal((await call({ action: 'avancer', n: 4 })).body.raison, 'vote_en_cours');
-    uid = 'x1';
-    assert.equal(store.casDuSoirResultats[`${H.id}_branche`], undefined);
-    // Des votes de plus avant la décision : 16 contre 15, la majorité est A (31 votes)
-    store.casDuSoirResultats[`${H.id}_3`] = { counts: { A: 16, B: 15 }, total: 31 };
-    // Le soir de la décision, personne n'a encore regardé : un vote TARDIF arrive d'abord ; le reçu est figé AVANT lui
-    seed('z', T(0, 22)); uid = 'z'; maintenant(T(6, 20, 5));
-    assert.equal((await call({ action: 'vote', n: 3, choix: 'B' })).status, 200);
-    assert.equal(store.casDuSoirResultats[`${H.id}_branche`].branche, 'A'); // 16 A / 15 B avant ce vote ; avec lui, 16 / 16 aurait donné B
-    assert.deepEqual(store.casDuSoirResultats[`${H.id}_branche`].counts, { A: 16, B: 15 });
-    assert.equal(store.casDuSoirResultats[`${H.id}_3`].counts.B, 16); // le vote tardif est quand même compté dans les résultats
-    // Après : tout le monde voit la même suite, même si des votes tardifs changeraient la majorité
-    store.casDuSoirResultats[`${H.id}_3`] = { counts: { A: 16, B: 90 }, total: 106 };
-    uid = 'x1'; maintenant(T(6, 20, 10));
-    assert.equal((await call({ action: 'episode', n: 4 })).body.episode.titre, H.episodes[3].A.titre);
-    seed('x4', T(2, 12)); uid = 'x4'; maintenant(T(9, 12));
-    assert.equal((await call({ action: 'episode', n: 4 })).body.episode.titre, H.episodes[3].A.titre);
-    const apres = (await call({ action: 'episodes', histoire: H.id })).body;
-    assert.equal(apres.decisionPrise, true);
-    assert.equal(apres.episodes[3].titre, H.episodes[3].A.titre);
-    // Arrivée après la décision : directement la suite décidée (mais jamais payable en avance)
-    seed('x5', T(5, 11)); uid = 'x5'; maintenant(T(8, 12)); // son épisode 3 est ouvert, le 4 s'ouvre ce soir
-    assert.equal((await call({ action: 'avancer', n: 4 })).body.raison, 'pas_de_prix');
-    maintenant(T(8, 20));
-    assert.equal((await call({ action: 'episode', n: 4 })).body.episode.titre, H.episodes[3].A.titre); // la suite décidée, directement
-    // Le vote d'un lecteur qui arrive à l'épisode 3 après la décision est compté dans les résultats, sans changer la suite
-    seed('x6', T(7, 10)); uid = 'x6'; maintenant(T(9, 21));
-    assert.equal((await call({ action: 'vote', n: 3, choix: 'B' })).status, 200);
-    assert.equal(store.casDuSoirResultats[`${H.id}_branche`].branche, 'A');
-  } finally { H.decisionJours = d6; }
-}));
-
-test('décision à 4 jours (la valeur de l\'histoire) : les lecteurs partis les jours 0 et 1 arrivent à l\'épisode 3 à temps', public_(async () => {
-  assert.equal(K.decisionJours(H), 4);
-  seed('j0', T(0, 21)); seed('j1', T(1, 9)); seed('j2', T(2, 9));
-  uid = 'j0'; maintenant(T(2, 20, 30)); assert.equal((await call({ action: 'episode', n: 3 })).status, 200); // à temps
-  uid = 'j1'; maintenant(T(3, 20, 30)); assert.equal((await call({ action: 'episode', n: 3 })).status, 200); // à temps (la décision est le jour 4)
-  uid = 'j2'; maintenant(T(4, 19, 59)); assert.equal((await call({ action: 'episode', n: 3 })).status, 403); // pas encore ouvert pour lui
-  maintenant(T(4, 20)); assert.equal((await call({ action: 'episode', n: 3 })).status, 200); // ouvert à la minute de la décision
-  assert.equal((await call({ action: 'episode', n: 4 })).status, 403); // son épisode 4 s'ouvre un soir plus tard
-}));
-
-test('décision : égalité ou moins de 30 votes → la fin B, pour tout le monde', public_(async () => {
-  store.casDuSoirResultats[`${H.id}_3`] = { counts: { A: 12, B: 3 }, total: 15 };
-  seed('lec', T(0, 21)); uid = 'lec'; maintenant(T(4, 21)); // la décision est prise le jour 4 à 20 h
+test('suite personnelle : chacun a la suite de SON vote à l\'épisode 3 ; sans vote, pas de suite ; les votes comptent dans les résultats', public_(async () => {
+  seed('va', T(0, 21)); seed('vb', T(0, 22)); seed('vn', T(0, 23));
+  // Le jour 3 au soir, tout le monde a l'épisode 3 : deux votent, un ne vote pas
+  maintenant(T(2, 21));
+  uid = 'va'; assert.equal((await call({ action: 'vote', n: 3, choix: 'A' })).status, 200);
+  uid = 'vb'; assert.equal((await call({ action: 'vote', n: 3, choix: 'B' })).status, 200);
+  assert.equal(store.casDuSoirResultats[`${H.id}_3`].total, 2); // les votes s'additionnent dans les résultats
+  assert.equal(store.casDuSoirResultats[`${H.id}_branche`], undefined); // aucun reçu commun : plus de décision globale
+  // Le soir suivant, l'épisode 4 s'ouvre pour chacun : la version de SON vote
+  maintenant(T(3, 21));
+  uid = 'va'; assert.equal((await call({ action: 'episode', n: 4 })).body.episode.titre, H.episodes[3].A.titre);
+  uid = 'vb'; assert.equal((await call({ action: 'episode', n: 4 })).body.episode.titre, H.episodes[3].B.titre);
+  // Qui n'a pas voté n'a pas de suite : « ta suite dépend de ton choix », sans rien révéler des deux versions
+  uid = 'vn';
+  const ep4 = await call({ action: 'episode', n: 4 });
+  assert.equal(ep4.status, 409); assert.equal(ep4.body.raison, 'choix_requis');
+  const l = (await call({ action: 'episodes', histoire: H.id })).body;
+  assert.deepEqual(l.episodes.slice(3).map((x) => x.etat), ['vote', 'vote']);
+  assert.ok(!JSON.stringify(l).includes(H.episodes[3].A.titre) && !JSON.stringify(l).includes(H.episodes[3].B.titre));
+  assert.equal((await call({ action: 'avancer', n: 4 })).status, 409); // l'épisode 4 est déjà ouvert pour lui, mais sans vote il n'a pas de suite à lire
+  // Un vote tardif donne sa suite à celui qui vote, quel que soit le moment, et ne change rien pour les autres
+  assert.equal((await call({ action: 'vote', n: 3, choix: 'B' })).status, 200);
   assert.equal((await call({ action: 'episode', n: 4 })).body.episode.titre, H.episodes[3].B.titre);
-  assert.equal(store.casDuSoirResultats[`${H.id}_branche`].branche, 'B');
+  uid = 'va'; assert.equal((await call({ action: 'episode', n: 4 })).body.episode.titre, H.episodes[3].A.titre);
+  // Un vote ne se change pas : le premier est gardé, la suite aussi
+  assert.equal((await call({ action: 'vote', n: 3, choix: 'B' })).body.monChoix, 'A');
+  assert.equal((await call({ action: 'episode', n: 4 })).body.episode.titre, H.episodes[3].A.titre);
+  // Le 5 suit la même branche
+  maintenant(T(4, 21));
+  assert.equal((await call({ action: 'episode', n: 5 })).body.episode.titre, H.episodes[4].A.titre);
+  uid = 'vb'; assert.equal((await call({ action: 'episode', n: 5 })).body.episode.titre, H.episodes[4].B.titre);
+}));
+
+test('suite personnelle : un visiteur sans compte n\'a que l\'épisode 1 ; l\'autre fin est la version qu\'on n\'a pas lue', public_(async () => {
+  seed('fin', T(0, 21)); uid = 'fin'; maintenant(T(9, 12));
+  await call({ action: 'vote', n: 3, choix: 'B' });
+  const etat = (await call({ action: 'etat' })).body;
+  assert.equal(etat.autreFin.possible, true);
+  assert.equal(etat.decision, undefined); assert.equal(etat.decisionPrise, undefined); // plus de date commune
+  assert.equal((await call({ action: 'episode', n: 4, autre: true })).status, 403); // pas payée
+  assert.equal((await call({ action: 'autreFin' })).status, 200);
+  assert.equal((await call({ action: 'episode', n: 4, autre: true })).body.episode.titre, H.episodes[3].A.titre); // il a voté B : l'autre fin est A
+  assert.equal((await call({ action: 'episode', n: 4 })).body.episode.titre, H.episodes[3].B.titre);
+  // Sans vote à l'embranchement, l'autre fin ne se paie pas
+  seed('nov', T(0, 21)); uid = 'nov';
+  assert.equal((await call({ action: 'etat' })).body.autreFin.possible, false);
+  assert.equal((await call({ action: 'autreFin' })).status, 409);
 }));
 
 test('aperçu du propriétaire : il simule l\'âge de sa lecture, sans rien enregistrer (ni horloge, ni vote, ni reçu)', async () => {
@@ -379,27 +354,26 @@ test('aperçu du propriétaire : il simule l\'âge de sa lecture, sans rien enre
     const e = await call({ action: 'etat', jour: 4 });
     assert.equal(e.body.apercu, true);
     assert.equal(e.body.histoire.parus, 4);
-    assert.equal(e.body.decisionPrise, true);
     assert.equal((await call({ action: 'etat', jour: 2 })).body.histoire.accroche, H.accroches['2']);
     const v = await call({ action: 'vote', n: 2, choix: 'B', jour: 4 });
     assert.equal(v.body.apercu, true);
     assert.equal(v.body.resultats.parChoix, null); // moins de 30 votes : pas de pourcentages
     const ep4 = await call({ action: 'episode', n: 4, jour: 4 });
-    assert.equal(ep4.body.episode.titre, H.episodes[3].B.titre); // aucun vote : la fin B
+    assert.equal(ep4.body.episode.titre, H.episodes[3].A.titre); // aperçu : la suite A par défaut
+    assert.equal((await call({ action: 'episode', n: 4, jour: 4, branche: 'B' })).body.episode.titre, H.episodes[3].B.titre); // ou la B, au choix du propriétaire
     assert.equal(ep4.body.audioUrl !== undefined, true);
     // Le premier épisode en aperçu ne démarre pas d'horloge
     await call({ action: 'episode', n: 1, jour: 1 });
-    // Jour 3 : l'épisode 4 dépend encore du vote ; le prochain s'ouvre « demain soir »
+    // Jour 3 : l'épisode 4 est le prochain (il s'ouvre « demain soir »), dans la version choisie pour l'aperçu
     const j3 = (await call({ action: 'episodes', histoire: H.id, jour: 3 })).body;
-    assert.deepEqual(j3.episodes.map((x) => x.etat), ['a_lire', 'a_lire', 'a_lire', 'vote', 'vote']);
-    assert.equal(j3.decisionPrise, false);
-    assert.equal(j3.decision, K.debutJour(T(40, 10)) + DAY + 20 * 3600000);
+    assert.deepEqual(j3.episodes.map((x) => x.etat), ['a_lire', 'a_lire', 'a_lire', 'prochain', 'verrouille']);
+    assert.equal(j3.episodes[3].parution, K.debutJour(T(40, 10)) + DAY + 20 * 3600000);
     const j2 = (await call({ action: 'episodes', histoire: H.id, jour: 2 })).body;
     assert.equal(j2.episodes[2].etat, 'prochain');
     assert.equal(j2.episodes[2].parution, K.debutJour(T(40, 10)) + DAY + 20 * 3600000);
     // Jour 4 : l'épisode 5 est le prochain, payable
     const j4 = (await call({ action: 'episodes', histoire: H.id, jour: 4 })).body;
-    assert.equal(j4.episodes[3].titre, H.episodes[3].B.titre);
+    assert.equal(j4.episodes[3].titre, H.episodes[3].A.titre);
     assert.deepEqual(j4.episodes[4].avance, { ok: true, prix: 9 });
     assert.deepEqual(store.casDuSoirVotes, {});
     assert.deepEqual(store.casDuSoirAcces, {});
@@ -465,15 +439,17 @@ test('ouvert à tous : visiteur, un vote par personne, pourcentages à partir de
   assert.equal((await call({ action: 'bonus', prix: 0 })).status, 200);
   assert.deepEqual(spent.at(-1), ['lion1', 'cas_du_soir', 2]);
   assert.equal((await call({ action: 'episode', n: 1 })).body.resultats.parAnimal[0].animal, 'lion');
-  // L'autre fin : seulement une fois l'histoire terminée POUR CE LECTEUR et la décision prise, 5 étincelles, en lecture seule
+  // L'autre fin : seulement une fois l'histoire terminée POUR CE LECTEUR et son vote à l'embranchement fait, 5 étincelles, en lecture seule
   assert.equal((await call({ action: 'autreFin' })).status, 409);
   assert.equal((await call({ action: 'fin' })).status, 403);
-  store.casDuSoirResultats[`${H.id}_3`] = { counts: { A: 30, B: 5 }, total: 35 };
+  maintenant(T(2, 21));
+  assert.equal((await call({ action: 'vote', n: 3, choix: 'A' })).status, 200); // son vote à l'embranchement : sa suite est A
+  assert.equal((await call({ action: 'autreFin' })).status, 409); // l'histoire n'est pas finie pour lui
   maintenant(T(4, 21));
   assert.equal((await call({ action: 'autreFin' })).status, 200);
   assert.deepEqual(spent.at(-1), ['lion1', 'cas_du_soir', 5]);
   const ap = await call({ action: 'episode', n: 5, autre: true });
-  assert.equal(ap.body.episode.titre, H.episodes[4].B.titre); // la majorité a choisi A : l'autre fin est B
+  assert.equal(ap.body.episode.titre, H.episodes[4].B.titre); // il a voté A : sa suite est A, l'autre fin est B
   assert.equal(ap.body.autre, true);
   assert.deepEqual(ap.body.episode.choix, []);
   assert.equal((await call({ action: 'etat' })).body.autreFin.achetee, true);
@@ -524,7 +500,7 @@ test('débit : le prix de l\'épisode demandé, lu dans la table du serveur ; un
   assert.equal(r.status, 200);
   assert.deepEqual(spent.at(-1), ['acheteur', 'cas_du_soir', 6]); // épisode 3 : 6, quoi que dise l'appli
   r = await call({ action: 'avancer', n: 4, prix: 1 });
-  assert.equal(r.status, 409); assert.equal(r.body.raison, 'vote_en_cours'); // épisode 4 : jamais en avance
+  assert.equal(r.status, 409); assert.equal(r.body.raison, 'choix_requis'); // épisode 4 : pas avant d'avoir voté à l'épisode 3
   const avant = spent.length;
   seed('acheteur2', T(0, 21)); uid = 'acheteur2'; maintenant(T(1, 21));
   assert.equal((await call({ action: 'avancer', n: 4 })).status, 409);

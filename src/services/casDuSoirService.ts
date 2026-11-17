@@ -29,12 +29,12 @@ export interface CdsHistoire {
   anticipe?: boolean;
 }
 export interface CdsPrix { suite: Record<number, number>; bonus: number; autreFin: number }
-export interface CdsEtat { visible: boolean; histoire?: CdsHistoire; prix?: CdsPrix; autreFin?: { achetee: boolean; possible: boolean }; decision?: number | null; decisionPrise?: boolean; connecte?: boolean; bonus?: boolean; apercu?: boolean; animal?: string | null; proprio?: boolean }
+export interface CdsEtat { visible: boolean; histoire?: CdsHistoire; prix?: CdsPrix; autreFin?: { achetee: boolean; possible: boolean }; connecte?: boolean; bonus?: boolean; apercu?: boolean; animal?: string | null; proprio?: boolean }
 export interface CdsEpisodeReponse {
   episode: CdsEpisode; audioUrl: string | null; monChoix: string | null; resultats: CdsResultats | null;
   /** parution : l'ouverture GRATUITE de l'épisode suivant pour CE lecteur (son rythme) ; null tant que son horloge n'a pas démarré */
   suite: { n: number; lisible: boolean; parution: number | null; avance: { ok: boolean; raison?: string; prix?: number } } | null;
-  finLisible: boolean; apercu: boolean; autre?: boolean; decision?: number | null; decisionPrise?: boolean;
+  finLisible: boolean; apercu: boolean; autre?: boolean;
 }
 export interface CdsFin { titre: string; texte: string; audioUrl: string | null; minutage?: CdsMinutage | null; quiz: { question: string; reponses: string[]; bonne: number; explication: string }[]; apresQuiz?: string; testLie: string | null; testAussi?: string | null }
 
@@ -56,6 +56,10 @@ function visiteurId(): string {
 let jourApercu: number | null = null;
 export const setJourApercu = (j: number | null) => { jourApercu = j; };
 export const getJourApercu = () => jourApercu;
+/** La suite (A ou B) que le propriétaire voit en aperçu (son vote ne s'enregistre pas) ; 'A' par défaut. */
+let brancheApercu: 'A' | 'B' = 'A';
+export const setBrancheApercu = (b: 'A' | 'B') => { brancheApercu = b; };
+export const getBrancheApercu = () => brancheApercu;
 
 /** Le cas ouvert (adresse /cas-du-soir/:id) : envoyé avec chaque demande ; null = le cas du moment. */
 let histoireActive: string | null = null;
@@ -68,7 +72,7 @@ async function call<T>(body: Record<string, unknown>): Promise<T> {
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
   if (user) headers.Authorization = `Bearer ${await user.getIdToken()}`;
   const res = await fetch('/.netlify/functions/cas-du-soir', {
-    method: 'POST', headers, body: JSON.stringify({ ...(histoireActive ? { histoire: histoireActive } : {}), ...body, ...(jourApercu ? { jour: jourApercu } : {}), ...(user ? {} : { visiteurId: visiteurId() }) }),
+    method: 'POST', headers, body: JSON.stringify({ ...(histoireActive ? { histoire: histoireActive } : {}), ...body, ...(jourApercu ? { jour: jourApercu, branche: brancheApercu } : {}), ...(user ? {} : { visiteurId: visiteurId() }) }),
   });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new CdsError((data as { error?: string }).error ?? `Erreur ${res.status}`, res.status, data as Record<string, unknown>);
@@ -84,7 +88,7 @@ export interface CdsEpisodeCarte {
   etat: 'lu' | 'a_lire' | 'prochain' | 'verrouille' | 'compte' | 'vote';
   parution?: number | null; avance?: { ok: boolean; raison?: string; prix?: number } | null;
 }
-export const getEpisodes = () => call<{ episodes: CdsEpisodeCarte[]; finie: boolean; prix: CdsPrix; autreFin: { achetee: boolean; possible: boolean }; apercu: boolean; decision?: number | null; decisionPrise?: boolean }>({ action: 'episodes' });
+export const getEpisodes = () => call<{ episodes: CdsEpisodeCarte[]; finie: boolean; prix: CdsPrix; autreFin: { achetee: boolean; possible: boolean }; apercu: boolean }>({ action: 'episodes' });
 export const getEpisode = (n: number, autre = false) => call<CdsEpisodeReponse>({ action: 'episode', n, ...(autre ? { autre: true } : {}) });
 export const acheterAutreFin = () => call<{ ok: boolean }>({ action: 'autreFin' });
 export const voter = (n: number, choix: string) => call<{ ok: boolean; monChoix: string; resultats: CdsResultats; apercu?: boolean }>({ action: 'vote', n, choix });

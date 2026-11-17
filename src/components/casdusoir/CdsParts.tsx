@@ -9,7 +9,7 @@ import { DC, card } from '../accueil/DrLoShell';
 import AudioSynchro from './AudioSynchro';
 import { openDrLoChat } from '../DrLoChat/drLoEvents';
 import { getScaleMeta } from '../../utils/scaleMeta';
-import { CdsError, debloquerCas, getJourApercu, setJourApercu, type CdsEpisodeReponse, type CdsFin, type CdsResultats } from '../../services/casDuSoirService';
+import { CdsError, debloquerCas, getBrancheApercu, getJourApercu, setBrancheApercu, setJourApercu, type CdsEpisodeReponse, type CdsFin, type CdsResultats } from '../../services/casDuSoirService';
 import { useKoris } from '../../contexts/KorisContext';
 import { useAuth } from '../../contexts/AuthContext';
 
@@ -101,7 +101,9 @@ export const Fin: React.FC<{ fin: CdsFin; accent: string }> = ({ fin, accent }) 
 /** Aperçu du propriétaire : simuler le jour 1 à 5 avant la date de départ (visible par lui seul). */
 export const BandeauApercu: React.FC<{ accent: string; onChange: () => void }> = ({ accent, onChange }) => {
   const [jour, setJour] = useState<number | null>(getJourApercu());
+  const [branche, setBranche] = useState<'A' | 'B'>(getBrancheApercu());
   const choisir = (j: number | null) => { setJour(j); setJourApercu(j); onChange(); };
+  const suite = (b: 'A' | 'B') => { setBranche(b); setBrancheApercu(b); onChange(); };
   const b = (on: boolean): React.CSSProperties => ({ minWidth: 44, minHeight: 44, padding: '0 12px', borderRadius: 12, border: `1px solid ${on ? accent : DC.line}`, background: DC.glass, color: DC.text, cursor: 'pointer', fontSize: 14, fontFamily: 'inherit' });
   return (
     <div style={{ ...card, marginTop: 14, padding: 12 }}>
@@ -109,6 +111,10 @@ export const BandeauApercu: React.FC<{ accent: string; onChange: () => void }> =
       <div style={{ display: 'flex', gap: 6, marginTop: 8, flexWrap: 'wrap' }}>
         {[1, 2, 3, 4, 5].map(j => <button key={j} type="button" onClick={() => choisir(j)} style={b(jour === j)}>{j}</button>)}
         <button type="button" onClick={() => choisir(null)} style={b(jour === null)}>Aujourd'hui</button>
+      </div>
+      <p style={{ margin: '10px 0 0', fontSize: 13, color: DC.muted }}>Suite vue en aperçu (le choix de l'épisode 3)</p>
+      <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
+        {(['A', 'B'] as const).map(x => <button key={x} type="button" onClick={() => suite(x)} style={b(branche === x)}>Suite {x}</button>)}
       </div>
     </div>
   );

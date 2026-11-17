@@ -1,7 +1,7 @@
 /**
  * CasDuSoirCasPage — /cas-du-soir/:id : un cas. La couverture et le titre, puis une carte par épisode avec son image
  * et son état (lu, à lire, gratuit demain soir ou tout de suite pour une étincelle, verrouillé). Après l'embranchement,
- * seule la version choisie par la majorité apparaît, une fois figée. En bas : la leçon, le quiz, les tests, l'autre fin.
+ * chacun voit la version de SON choix à l'épisode 3 ; avant d'avoir voté, « ta suite dépend de ton choix ». En bas : la leçon, le quiz, les tests, l'autre fin.
  * Le bandeau d'aperçu du propriétaire (jours 1 à 5) est ici.
  */
 import React, { useEffect, useState } from 'react';
@@ -61,7 +61,7 @@ const CasDuSoirCasPage: React.FC = () => {
 
   const carte = (e: CdsEpisodeCarte) => {
     if (e.attente) {
-      return <CompactRow key={e.n} title="La suite dépend du vote de tous" sub={`Épisode ${e.n}${etat.decision ? ` · elle s'ouvre ${quandLabel(etat.decision)}` : ''}`} tint={palette.accent} icon={<Hourglass size={20} color={palette.accent} />} onClick={() => navigate(`/cas-du-soir/${id}/3`)} />;
+      return <CompactRow key={e.n} title="Ta suite dépend de ton choix" sub={`Épisode ${e.n} · vote à l'épisode 3, deux issues possibles`} tint={palette.accent} icon={<Hourglass size={20} color={palette.accent} />} onClick={() => navigate(`/cas-du-soir/${id}/3`)} />;
     }
     const lien = e.etat === 'lu' || e.etat === 'a_lire' ? `/cas-du-soir/${id}/${e.n}` : undefined;
     const line = e.etat === 'lu' ? 'Lu' : e.etat === 'a_lire' ? 'À lire'

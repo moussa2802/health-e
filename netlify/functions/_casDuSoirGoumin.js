@@ -20,14 +20,11 @@ module.exports = {
   "programmee": false,
   "debloquer": 20,
   "embranchement": 3,
-  "decisionJours": 4,
-  "egalite": "B",
-  "minVotes": 30,
   "testLie": "phq9",
   "testAussi": "rses",
   "avertissement": "Histoire inventée pour adultes, sans scène explicite. Toute ressemblance avec des personnes réelles serait une coïncidence. Si elle te touche de près, le compagnon est là pour en parler.",
   "autreFin": {
-    "mention": "La majorité avait choisi l'autre chemin. Découvre ce qui se serait passé."
+    "mention": "Tu as suivi un chemin. Découvre ce qui se serait passé si tu avais choisi l'autre."
   },
   "episodes": [
     {

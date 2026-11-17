@@ -31,7 +31,7 @@ const CasDuSoirListePage: React.FC = () => {
   return (
     <DrLoShell narrow back={{ to: '/', label: 'Retour à l\'accueil' }} palette={palette}>
       <h1 style={{ margin: '18px 0 0', fontFamily: 'Fraunces, serif', fontSize: 30, lineHeight: 1.15, color: DC.title }}>Le cas du soir</h1>
-      <p style={{ margin: '8px 0 18px', fontSize: 15, lineHeight: 1.5, color: DC.soft }}>Une histoire en cinq épisodes, un par soir. À la fin de chacun, tu votes : qu'aurais-tu fait ?</p>
+      <p style={{ margin: '8px 0 18px', fontSize: 15, lineHeight: 1.5, color: DC.soft }}>Une histoire en plusieurs épisodes, un par soir. À la fin de chacun, tu votes : qu'aurais-tu fait ?</p>
       <Stack>
         {hs.map(h => (
           <ImageCard key={h.id} to={`/cas-du-soir/${h.id}`} image={h.image || IMAGES.casDuSoir} tint={palette.accent}
