@@ -829,7 +829,7 @@ module.exports = {
     ],
     "images": [
       {
-        "t": 0.0,
+        "t": 0,
         "image": "goumin-ep2-robe-bleue.webp"
       },
       {
@@ -1493,7 +1493,7 @@ module.exports = {
     ],
     "images": [
       {
-        "t": 0.0,
+        "t": 0,
         "image": "goumin-ep4a-the.webp"
       },
       {
@@ -1818,7 +1818,7 @@ module.exports = {
     ],
     "images": [
       {
-        "t": 0.27,
+        "t": 0,
         "image": "goumin-ep5a-jour.webp"
       },
       {
@@ -2125,7 +2125,7 @@ module.exports = {
     ],
     "images": [
       {
-        "t": 0.0,
+        "t": 0,
         "image": "goumin-ep4b-attente.webp"
       },
       {
@@ -2408,7 +2408,7 @@ module.exports = {
     ],
     "images": [
       {
-        "t": 0.15,
+        "t": 0,
         "image": "goumin-ep5b-marche.webp"
       },
       {
