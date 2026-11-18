@@ -61,7 +61,7 @@ module.exports = {
       "voix": "narrateur posé ; Fatou fatiguée, qui sourit trop ; Modou doux ; Aminata directe et chaleureuse ; vocal de Dr Lô comme un message WhatsApp.",
       "image": "/images/cas-du-soir/plaisir-ep1.webp",
       "audio": "casDuSoir/plaisir/ep1.mp3",
-      "minutage": null
+      "minutage": "plaisir-ep1"
     },
     {
       "titre": "Ce qu'on ne t'a jamais montré",
@@ -88,7 +88,7 @@ module.exports = {
       "voix": "narrateur ; Fatou à voix basse, la nuit ; Aminata qui rit ; vocal de Dr Lô.",
       "image": "/images/cas-du-soir/plaisir-ep2.webp",
       "audio": "casDuSoir/plaisir/ep2.mp3",
-      "minutage": null
+      "minutage": "plaisir-ep2"
     },
     {
       "titre": "Le désir et la cyprine",
@@ -115,7 +115,7 @@ module.exports = {
       "voix": "narrateur ; Fatou et Modou, tendus puis apaisés ; Tante Rama sûre d'elle ; vocal de Dr Lô.",
       "image": "/images/cas-du-soir/plaisir-ep3.webp",
       "audio": "casDuSoir/plaisir/ep3.mp3",
-      "minutage": null
+      "minutage": "plaisir-ep3"
     },
     {
       "titre": "Quand c'est sec, quand ça fait mal",
@@ -142,7 +142,7 @@ module.exports = {
       "voix": "narrateur ; Fatou qui serre les dents ; Modou désarmé ; Tante Rama ; vocal de Dr Lô.",
       "image": "/images/cas-du-soir/plaisir-ep4.webp",
       "audio": "casDuSoir/plaisir/ep4.mp3",
-      "minutage": null
+      "minutage": "plaisir-ep4"
     },
     {
       "titre": "Ce que nos habitudes font au plaisir",
@@ -169,7 +169,7 @@ module.exports = {
       "voix": "narrateur ; Fatou seule, qui apprend à se découvrir ; vocal de Dr Lô.",
       "image": "/images/cas-du-soir/plaisir-ep5.webp",
       "audio": "casDuSoir/plaisir/ep5.mp3",
-      "minutage": null
+      "minutage": "plaisir-ep5"
     },
     {
       "titre": "Ce qu'on nous a appris à taire",
@@ -196,7 +196,7 @@ module.exports = {
       "voix": "narrateur ; Aminata bouleversée, la pluie ; Fatou qui écoute ; vocal de Dr Lô.",
       "image": "/images/cas-du-soir/plaisir-ep6.webp",
       "audio": "casDuSoir/plaisir/ep6.mp3",
-      "minutage": null
+      "minutage": "plaisir-ep6"
     },
     {
       "titre": "Parler, guider, apprendre ensemble",
@@ -223,14 +223,14 @@ module.exports = {
       "voix": "narrateur ; Fatou et Modou, la vérité enfin dite ; fin chaude ; vocal court de Dr Lô.",
       "image": "/images/cas-du-soir/plaisir-ep7.webp",
       "audio": "casDuSoir/plaisir/ep7.mp3",
-      "minutage": null
+      "minutage": "plaisir-ep7"
     }
   ],
   "fin": {
     "titre": "La leçon de Dr Lô",
     "texte": "Bonsoir, c'est Dr Lô. Tu viens de suivre Fatou et Modou. Et peut-être que quelque part, tu t'es reconnue, ou tu as reconnu ton couple. Je vais te résumer ce qu'il faut retenir, en dix points.\n\nUn. Le plaisir féminin s'apprend. On ne naît pas en sachant, et personne ne nous l'a enseigné.\n\nDeux. Le clitoris est le centre du plaisir. Ce qu'on voit n'est que le sommet : à l'intérieur, il fait une dizaine de centimètres et entoure l'entrée du vagin.\n\nTrois. La plupart des femmes, entre une sur dix et une sur cinq, jouissent par la pénétration seule. Les autres ont besoin d'une stimulation du clitoris. Ce n'est pas un défaut, c'est l'anatomie.\n\nQuatre. Le désir peut venir avant ou après. Les deux sont normaux. Et la cyprine met du temps à venir : dix à vingt minutes de caresses.\n\nCinq. La sécheresse a des causes : le manque de temps, le stress, les hormones, la contraception, l'allaitement, certains médicaments. Un lubrifiant à base d'eau est un outil, pas un échec.\n\nSix. Ne mets rien d'agressif dans ton vagin : ni citron, ni alun, ni poudres, ni gels « resserrants » vendus sur les réseaux. Ils brûlent, abîment ta flore, et augmentent le risque d'infections.\n\nSept. Le vagin n'a pas besoin d'être resserré ni séché. Pour le renforcer, il existe la rééducation du plancher pelvien.\n\nHuit. Des stimulations toujours très fortes, très rapides, ou la pornographie, peuvent habituer ton corps à une seule façon de s'exciter. Ça se corrige : pause, douceur, patience.\n\nNeuf. L'excision et les traumatismes ne condamnent pas le plaisir. Un professionnel peut t'accompagner. Et le consentement, le droit de dire non, est la base de tout.\n\nDix. Parlez. Guidez. Essayez sans pression. Les caresses, les mains, la bouche, ce ne sont pas des préliminaires : c'est du sexe à part entière, et la pénétration n'est pas le but. Et tu as toujours le droit de dire : aujourd'hui, j'ai juste envie de câlins. Le plaisir se construit à deux, avec des mots.\n\nSi tu as mal à chaque rapport, si ton corps se ferme, si tu ne ressens jamais rien malgré le temps, ou si une blessure du passé te revient, va voir un médecin, une sage-femme ou un sexologue. Ce n'est pas honteux. C'est prendre soin de toi. Prends soin de toi, et à bientôt.",
     "audio": "casDuSoir/plaisir/lecon.mp3",
-    "minutage": null,
+    "minutage": "plaisir-lecon",
     "quiz": [
       {
         "question": "Où se trouve la plus grande partie du plaisir féminin ?",

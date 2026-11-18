@@ -735,3 +735,14 @@ test('Le plaisir féminin : l\'intrigue audio (publique) et son minutage sont br
   assert.equal(P.programmee, false);
   assert.equal(K.CAS_DU_SOIR_PUBLIC, false);
 });
+
+test('Le plaisir féminin : chaque épisode et la leçon ont leur minutage (phrases dans l\'ordre, images qui existent, première image à 0)', () => {
+  const P = K.HISTOIRES.find((h) => h.id === 'plaisir-feminin');
+  [...P.episodes.map((e) => e.minutage), P.fin.minutage].forEach((cle) => {
+    const m = K.minutage(cle);
+    assert.ok(m && m.lignes.length > 20, cle);
+    m.lignes.forEach((l, k) => { assert.ok(l.t1 > l.t0, cle); if (k) assert.ok(l.t0 >= m.lignes[k - 1].t0, cle); assert.ok(l.t0 < m.duree, cle); });
+    (m.images || []).forEach((x) => assert.ok(fs.existsSync(path.join(__dirname, '..', '..', '..', 'public', 'images', 'cas-du-soir', x.image)), x.image));
+    if (cle !== P.fin.minutage) assert.equal(m.images[0].t, 0, cle);
+  });
+});
