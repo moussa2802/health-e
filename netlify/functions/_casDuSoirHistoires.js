@@ -56,9 +56,9 @@ const VU_DE_MINUIT = {
     "2": "Six appels dans la journée. Un silence le soir.",
     "3": "Le téléphone est sur la table. Ce soir, c'est toi qui décides."
   },
-  "depart": "2030-01-01",
+  "depart": "2026-11-19",
   "heure": "20:00",
-  "programmee": false,
+  "programmee": true,
   "embranchement": 3,
   "testLie": "ecr_r",
   "testAussi": "bonus_jalousie",

@@ -24,4 +24,4 @@ export const CAS_DU_SOIR_PRIX: { suite: Record<number, number>; bonus: number; a
  * La carte du « Cas du soir » sur l'accueil des visiteurs (sans compte). Coupée tant que le cas du soir est masqué :
  * les visiteurs ne demandent rien au serveur. À passer à true en même temps que CAS_DU_SOIR_PUBLIC (_casDuSoir.js).
  */
-export const CAS_DU_SOIR_CARTE_VISITEURS: boolean = false;
+export const CAS_DU_SOIR_CARTE_VISITEURS: boolean = true;

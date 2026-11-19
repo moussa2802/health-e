@@ -6,6 +6,12 @@ const fs = require('node:fs');
 const path = require('node:path');
 const K = require('../_casDuSoir');
 
+// Réglage de lancement (20/11/2026), relevé avant que les tests ne le neutralisent : ouverture échelonnée décidée par Papa Moussa le 19/11/2026.
+const LANCEMENT = { public: K.CAS_DU_SOIR_PUBLIC, cas: K.HISTOIRES.map((h) => ({ id: h.id, depart: h.depart, heure: h.heure, programmee: h.programmee, adultes: !!h.adultes })) };
+// Les tests ci-dessous partent d'un état masqué (rien de public, aucune date) et ouvrent eux-mêmes ce qu'ils testent.
+K.CAS_DU_SOIR_PUBLIC = false;
+for (const h of K.HISTOIRES) h.programmee = false;
+
 const H = K.HISTOIRES[0];
 const avecDate = (fn) => async () => { H.programmee = true; try { await fn(); } finally { H.programmee = false; } };
 
@@ -628,8 +634,8 @@ test('débloquer tout de suite (option A) : prix du cas, tous les épisodes ouve
   assert.deepEqual(K.peutDebloquer(G, { now: Date.parse('2026-12-01') }), { ok: true, prix: 20 });
   assert.equal(K.peutDebloquer(G, { anticipe: true }).raison, 'deja_debloque');
   assert.equal(K.peutDebloquer(H).raison, 'pas_de_prix');
-  G.programmee = true; G.depart = '2020-01-01';
-  try { assert.equal(K.peutDebloquer(G, { now: Date.parse('2026-12-01') }).raison, 'deja_ouvert'); } finally { G.programmee = false; G.depart = '2030-01-01'; }
+  const departG = G.depart; G.programmee = true; G.depart = '2020-01-01';
+  try { assert.equal(K.peutDebloquer(G, { now: Date.parse('2026-12-01') }).raison, 'deja_ouvert'); } finally { G.programmee = false; G.depart = departG; }
   // Les épisodes : fermés sans paiement, tous ouverts avec
   assert.equal(K.parusPour(G, { now: Date.parse('2026-12-01') }), 0);
   assert.equal(K.parusPour(G, { now: Date.parse('2026-12-01'), anticipe: true }), G.episodes.length);
@@ -639,7 +645,7 @@ test('débloquer tout de suite (option A) : prix du cas, tous les épisodes ouve
   const v = (anticipe) => K.vueHistoire(G, { parus: anticipe ? 5 : 0, connecte: true, anticipe, now: Date.parse('2026-12-01') });
   assert.equal(v(false).debloquer, 20);
   assert.equal(v(true).debloquer, null);
-  assert.equal(v(false).adultes, false);
+  assert.equal(v(false).adultes, true); // 19/11/2026 : Goumin est réservé aux adultes, comme le dit son avertissement
 });
 
 test('prix par cas : une table propre au cas passe avant la table commune ; un cas de 7 épisodes sans embranchement est valide', () => {
@@ -764,7 +770,7 @@ test('chaque cas est rangé dans un rayon : santé mentale ou santé sexuelle', 
 test("Le téléphone sous l'oreiller (cas n° 4) : 7 épisodes linéaires, adultes, santé sexuelle, caché au public, prix propres, déblocage à 30, sources et leçon", () => {
   const T = K.HISTOIRES.find((h) => h.id === 'telephone-sous-oreiller');
   assert.ok(T);
-  assert.equal(T.titre, "Le téléphone sous l'oreiller");
+  assert.equal(T.titre, 'Masturbation et pornographie');  // le titre du cas ; l'épisode 1 garde « Le téléphone sous l'oreiller »
   assert.equal(T.categorie, 'sexuelle');
   assert.equal(T.adultes, true);
   assert.equal(T.programmee, false);
@@ -896,3 +902,16 @@ test('lecteurs : comptés une fois par compte (jamais le propriétaire), masqué
   uid = 'lect1';
   assert.equal((await call({ action: 'etat', histoire: H.id })).body.chiffres, undefined);
 }));
+
+test('lancement du 20/11/2026 : cas du soir public, ouverture échelonnée (Minuit tout de suite, puis un cas par semaine à 20 h), Goumin et les cas 3 et 4 réservés aux adultes', () => {
+  assert.equal(LANCEMENT.public, true);
+  const par = Object.fromEntries(LANCEMENT.cas.map((c) => [c.id, c]));
+  assert.deepEqual(par['vu-de-minuit'], { id: 'vu-de-minuit', depart: '2026-11-19', heure: '20:00', programmee: true, adultes: false });
+  assert.deepEqual(par.goumin, { id: 'goumin', depart: '2026-11-27', heure: '20:00', programmee: true, adultes: true });
+  assert.equal(par.goumin.adultes, true);
+  for (const [id, depart] of [['vu-de-minuit', '2026-11-19'], ['goumin', '2026-11-27']]) assert.equal(par[id].depart, depart);
+  const autres = LANCEMENT.cas.filter((c) => !['vu-de-minuit', 'goumin'].includes(c.id));
+  assert.deepEqual(autres.map((c) => [c.depart, c.programmee, c.adultes, c.heure]).sort(), [['2026-12-04', true, true, '20:00'], ['2026-12-11', true, true, '20:00']]);
+  const src = fs.readFileSync(path.join(__dirname, '..', '..', '..', 'src', 'config', 'contenusPayants.ts'), 'utf8');
+  assert.match(src, /CAS_DU_SOIR_CARTE_VISITEURS: boolean = true;/); // la carte des visiteurs s'ouvre en même temps
+});

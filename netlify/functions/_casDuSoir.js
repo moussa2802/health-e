@@ -13,7 +13,7 @@ const minutage = (cle) => (cle && MINUTAGES[cle]) || null;
  * C'est le serveur qui décide ; l'appli n'affiche la carte et la page que s'il répond « visible ».
  * Ouverture à tous : passer à true.
  */
-const CAS_DU_SOIR_PUBLIC = false;
+const CAS_DU_SOIR_PUBLIC = true;
 
 /**
  * Prix en étincelles. LES PRIX SONT LA DÉCISION DE PAPA MOUSSA (11/11/2026 : suite 3, 6, 9 ; animal 2 ; autre fin 5 ; 17/11/2026 : l'épisode 4 à 8).

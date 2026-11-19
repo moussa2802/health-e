@@ -16,10 +16,11 @@ module.exports = {
     "2": "Il lui demande une preuve. Elle n'a rien à répondre.",
     "3": "Il revient. Mais il veut un certificat."
   },
-  "depart": "2030-01-01",
+  "depart": "2026-11-27",
   "heure": "20:00",
-  "programmee": false,
+  "programmee": true,
   "debloquer": 20,
+  "adultes": true,
   "embranchement": 3,
   "testLie": "phq9",
   "testAussi": "rses",

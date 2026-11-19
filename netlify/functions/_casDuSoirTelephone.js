@@ -1,12 +1,12 @@
 /**
- * _casDuSoirTelephone — « Le téléphone sous l'oreiller » : le quatrième cas du soir (masturbation et pornographie : ce qui est sain, ce qui devient un problème,
+ * _casDuSoirTelephone — « Masturbation et pornographie » : le quatrième cas du soir (masturbation et pornographie : ce qui est sain, ce qui devient un problème,
  * la culpabilité, le couple, les cures et les talismans, les gestes concrets), réservé aux adultes. Écrit le 18/11/2026.
  * 7 épisodes, sans embranchement. Textes et sources : Claude outputs/cas-du-soir/cas4/ (construire_js.py). Aucune date publique
  * (programmee: false) : seul le propriétaire le voit. Images, audios et minutages : à venir (ils s'ajoutent à mesure de la production).
  */
 module.exports = {
   "id": "telephone-sous-oreiller",
-  "titre": "Le téléphone sous l'oreiller",
+  "titre": "Masturbation et pornographie",
   "categorie": "sexuelle",
   "image": "/images/cas-du-soir/telephone-couverture.webp",
   "intrigue": "/audio/cas-du-soir/telephone-sous-oreiller-intrigue.mp3",
@@ -21,9 +21,9 @@ module.exports = {
     "6": "Une rechute n'est pas un échec. Dix gestes sur la porte du frigo.",
     "7": "Trois mois plus tard, un numéro écrit sur un morceau de papier."
   },
-  "depart": "2030-01-01",
+  "depart": "2026-12-11",
   "heure": "20:00",
-  "programmee": false,
+  "programmee": true,
   "debloquer": 30,
   "adultes": true,
   "prixSuite": {

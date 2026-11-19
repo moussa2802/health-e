@@ -19,9 +19,9 @@ module.exports = {
     "6": "Aminata porte un secret depuis qu'elle a six ans.",
     "7": "Elle va tout dire à Modou, ce soir."
   },
-  "depart": "2030-01-01",
+  "depart": "2026-12-04",
   "heure": "20:00",
-  "programmee": false,
+  "programmee": true,
   "debloquer": 30,
   "adultes": true,
   "categorie": "sexuelle",
