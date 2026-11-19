@@ -206,16 +206,16 @@ export const FenetreConfirmer: React.FC<{
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
   const bouton: React.CSSProperties = { width: '100%', minHeight: 50, borderRadius: 999, fontSize: 16, fontWeight: 700, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontFamily: 'inherit' };
   return (
-    <div onClick={() => { if (!busy) onClose(); }} style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(8,6,4,.72)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
+    <div onClick={() => { if (!busy) onClose(); }} style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(8,6,4,.88)', WebkitBackdropFilter: 'blur(8px)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
       <div role="dialog" aria-modal="true" aria-labelledby="cds-confirm-titre" onClick={e => e.stopPropagation()}
-        style={{ ...card, width: '100%', maxWidth: 420, padding: 20, margin: 0, boxShadow: '0 20px 60px rgba(0,0,0,.5)' }}>
+        style={{ ...card, background: '#241C16', width: '100%', maxWidth: 420, maxHeight: 'calc(100dvh - 32px)', overflowY: 'auto', padding: 20, margin: 0, border: `1px solid ${accent}55`, boxShadow: '0 20px 60px rgba(0,0,0,.6)' }}>
         <h2 id="cds-confirm-titre" style={{ margin: 0, fontFamily: 'Fraunces, serif', fontSize: 22, lineHeight: 1.2, color: DC.title }}>{titre}</h2>
         {gratuit && (
-          <p style={{ margin: '12px 0 0', padding: '10px 12px', borderRadius: 12, border: `1px solid ${accent}`, fontSize: 15, lineHeight: 1.5, color: DC.text }}>
+          <p style={{ margin: '12px 0 0', padding: '10px 12px', borderRadius: 12, border: `1px solid ${accent}`, background: '#2E241C', fontSize: 15, lineHeight: 1.5, color: '#FBF5EA' }}>
             <strong style={{ color: accent }}>Tu peux aussi attendre.</strong> {gratuit}
           </p>
         )}
-        <p style={{ margin: '12px 0 0', fontSize: 15, lineHeight: 1.5, color: DC.soft }}>
+        <p style={{ margin: '12px 0 0', fontSize: 15, lineHeight: 1.5, color: '#E4D8C8' }}>
           {gratuit ? 'Si tu préfères ne pas attendre, ça coûte' : 'Ça coûte'} <strong style={{ color: DC.title }}>{etoiles(prix)}</strong>, prises sur ton solde.
         </p>
         {error && <p role="alert" style={{ margin: '10px 0 0', fontSize: 14, color: '#F6C2AE' }}>{error}</p>}
