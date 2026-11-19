@@ -3,7 +3,7 @@
  * Rythme personnel de chaque lecteur, droits de lecture, embranchement décidé par le vote de CHAQUE lecteur (sa suite), résultats des votes.
  */
 const { HISTOIRES } = require('./_casDuSoirHistoires');
-const MINUTAGES = { ...require('./_casDuSoirMinutages'), ...require('./_casDuSoirMinutagesGoumin'), ...require('./_casDuSoirMinutagesPlaisir') };
+const MINUTAGES = { ...require('./_casDuSoirMinutages'), ...require('./_casDuSoirMinutagesGoumin'), ...require('./_casDuSoirMinutagesPlaisir'), ...require('./_casDuSoirMinutagesTelephone') };
 
 /** Le minutage d'un audio (ou null). */
 const minutage = (cle) => (cle && MINUTAGES[cle]) || null;
@@ -239,6 +239,8 @@ function vueHistoire(h, { parus, debloques = [], connecte, prochain = null, anti
     testLie: h.testLie || null, testAussi: h.testAussi || null,
     autreFin: h.embranchement && h.autreFin ? { mention: h.autreFin.mention } : null,
     adultes: h.adultes === true,
+    embranchement: h.embranchement || null,
+    categorie: h.categorie === 'sexuelle' ? 'sexuelle' : 'mentale',
     // Pas encore ouvert à tous : on le voit, avec la date si elle est fixée et le prix pour l'ouvrir tout de suite
     ouverture: ouverturePublique(h),
     debloquer: peutDebloquer(h, { now, anticipe }).ok ? prixDebloquer(h) : null,
@@ -260,6 +262,7 @@ const autreBranche = (b) => (b === 'A' ? 'B' : b === 'B' ? 'A' : null);
 function verifierHistoire(h) {
   const err = [];
   if (!/^[a-z0-9-]{2,40}$/.test(h.id)) err.push('id');
+  if (h.categorie !== 'mentale' && h.categorie !== 'sexuelle') err.push('categorie : \'mentale\' ou \'sexuelle\'');
   if (!/^\d{4}-\d{2}-\d{2}$/.test(h.depart) || !/^\d{2}:\d{2}$/.test(h.heure)) err.push('date d\'ouverture publique');
   if (h.episodes.length < 5 || h.episodes.length > 10) err.push('entre 5 et 10 épisodes');
   if (h.embranchement && h.embranchement >= h.episodes.length) err.push('embranchement avant le dernier épisode');

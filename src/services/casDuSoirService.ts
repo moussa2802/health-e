@@ -22,6 +22,10 @@ export interface CdsHistoire {
   testAussi: string | null; minutes: number; audio: boolean; autreFin: { mention: string } | null;
   /** cas réservé aux adultes (confirmation « 18 ans ou plus » avant d'entrer) */
   adultes?: boolean;
+  /** le rayon de la liste : santé mentale ou santé sexuelle */
+  categorie?: 'mentale' | 'sexuelle';
+  /** numéro de l'épisode dont le vote décide de la suite (A ou B), ou null : cas linéaire */
+  embranchement?: number | null;
   /** date d'ouverture publique (ms), ou null si elle n'est pas fixée */
   ouverture?: number | null;
   /** prix pour ouvrir tout le cas tout de suite, ou null (déjà ouvert, déjà débloqué ou pas de déblocage) */

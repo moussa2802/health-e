@@ -6,6 +6,7 @@
 module.exports = {
   "id": "goumin",
   "titre": "Goumin",
+  "categorie": "sexuelle",
   "image": "/images/cas-du-soir/goumin-couverture.webp",
   "intrigue": "/audio/cas-du-soir/goumin-intrigue.mp3",
   "intrigueMinutage": "goumin-intrigue",
@@ -22,7 +23,7 @@ module.exports = {
   "embranchement": 3,
   "testLie": "phq9",
   "testAussi": "rses",
-  "avertissement": "Histoire inventée pour adultes, sans scène explicite. Toute ressemblance avec des personnes réelles serait une coïncidence. Si elle te touche de près, le compagnon est là pour en parler.",
+  "avertissement": "Histoire inspirée de faits réels, vus en consultation, pour adultes, sans scène explicite. Les prénoms, les lieux et les détails ont été changés pour que personne ne puisse être reconnu. Si elle te touche de près, le compagnon est là pour en parler.",
   "autreFin": {
     "mention": "Tu as suivi un chemin. Découvre ce qui se serait passé si tu avais choisi l'autre."
   },

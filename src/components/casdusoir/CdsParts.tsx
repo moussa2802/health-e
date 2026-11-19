@@ -1,15 +1,15 @@
 /**
  * CdsParts — les pièces communes du « Cas du soir » : les résultats d'un vote, la fin (leçon, quiz, tests),
- * le bandeau d'aperçu du propriétaire, la mention « Histoire inventée ».
+ * le bandeau d'aperçu du propriétaire, la mention « Histoire inspirée de faits réels ».
  */
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Check, ChevronRight, Loader2, MessageCircle, Share2, Unlock } from 'lucide-react';
 import { DC, card } from '../accueil/DrLoShell';
 import AudioSynchro from './AudioSynchro';
 import { openDrLoChat } from '../DrLoChat/drLoEvents';
 import { getScaleMeta } from '../../utils/scaleMeta';
-import { CdsError, debloquerCas, getBrancheApercu, getJourApercu, setBrancheApercu, setJourApercu, type CdsEpisodeReponse, type CdsFin, type CdsResultats } from '../../services/casDuSoirService';
+import { CdsError, debloquerCas, getBrancheApercu, getJourApercu, quandLabel, setBrancheApercu, setJourApercu, type CdsEpisodeReponse, type CdsFin, type CdsResultats } from '../../services/casDuSoirService';
 import { useKoris } from '../../contexts/KorisContext';
 import { useAuth } from '../../contexts/AuthContext';
 
@@ -99,7 +99,7 @@ export const Fin: React.FC<{ fin: CdsFin; accent: string }> = ({ fin, accent }) 
 
 
 /** Aperçu du propriétaire : simuler le jour 1 à 5 avant la date de départ (visible par lui seul). */
-export const BandeauApercu: React.FC<{ accent: string; onChange: () => void }> = ({ accent, onChange }) => {
+export const BandeauApercu: React.FC<{ accent: string; onChange: () => void; total?: number; embranchement?: number | null }> = ({ accent, onChange, total = 5, embranchement }) => {
   const [jour, setJour] = useState<number | null>(getJourApercu());
   const [branche, setBranche] = useState<'A' | 'B'>(getBrancheApercu());
   const choisir = (j: number | null) => { setJour(j); setJourApercu(j); onChange(); };
@@ -109,49 +109,106 @@ export const BandeauApercu: React.FC<{ accent: string; onChange: () => void }> =
     <div style={{ ...card, marginTop: 14, padding: 12 }}>
       <p style={{ margin: 0, fontSize: 13, color: DC.muted }}>Aperçu (visible par toi seul) : simuler le jour</p>
       <div style={{ display: 'flex', gap: 6, marginTop: 8, flexWrap: 'wrap' }}>
-        {[1, 2, 3, 4, 5].map(j => <button key={j} type="button" onClick={() => choisir(j)} style={b(jour === j)}>{j}</button>)}
+        {Array.from({ length: total }, (_, i) => i + 1).map(j => <button key={j} type="button" onClick={() => choisir(j)} style={b(jour === j)}>{j}</button>)}
         <button type="button" onClick={() => choisir(null)} style={b(jour === null)}>Aujourd'hui</button>
       </div>
-      <p style={{ margin: '10px 0 0', fontSize: 13, color: DC.muted }}>Suite vue en aperçu (le choix de l'épisode 3)</p>
+      {embranchement ? <>
+      <p style={{ margin: '10px 0 0', fontSize: 13, color: DC.muted }}>Suite vue en aperçu (le choix de l'épisode {embranchement})</p>
       <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
         {(['A', 'B'] as const).map(x => <button key={x} type="button" onClick={() => suite(x)} style={b(branche === x)}>Suite {x}</button>)}
       </div>
+      </> : null}
     </div>
   );
 };
 
 /** « En parler avec le compagnon » et la mention, toujours en bas. */
 /**
+ * La fenêtre de confirmation de TOUTE dépense d'étincelles du cas du soir (cas entier, épisode, autre fin, votes par animal).
+ * Quand l'attente est gratuite, elle le dit avec la date : « si tu attends …, c'est gratuit ». Échap, le fond ou « Attendre » la ferment ;
+ * le focus part sur « Attendre » (le choix qui ne coûte rien) et revient au bouton d'origine à la fermeture.
+ */
+export const FenetreConfirmer: React.FC<{
+  titre: string; prix: number; gratuit?: string | null; accent: string; busy?: boolean; error?: string;
+  onConfirm: () => void; onClose: () => void;
+}> = ({ titre, prix, gratuit, accent, busy, error, onConfirm, onClose }) => {
+  const attendre = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    const avant = document.activeElement as HTMLElement | null;
+    attendre.current?.focus();
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape' && !busy) onClose(); };
+    document.addEventListener('keydown', onKey);
+    return () => { document.removeEventListener('keydown', onKey); avant?.focus?.(); };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  const bouton: React.CSSProperties = { width: '100%', minHeight: 50, borderRadius: 999, fontSize: 16, fontWeight: 700, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontFamily: 'inherit' };
+  return (
+    <div onClick={() => { if (!busy) onClose(); }} style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(8,6,4,.72)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
+      <div role="dialog" aria-modal="true" aria-labelledby="cds-confirm-titre" onClick={e => e.stopPropagation()}
+        style={{ ...card, width: '100%', maxWidth: 420, padding: 20, margin: 0, boxShadow: '0 20px 60px rgba(0,0,0,.5)' }}>
+        <h2 id="cds-confirm-titre" style={{ margin: 0, fontFamily: 'Fraunces, serif', fontSize: 22, lineHeight: 1.2, color: DC.title }}>{titre}</h2>
+        {gratuit && (
+          <p style={{ margin: '12px 0 0', padding: '10px 12px', borderRadius: 12, border: `1px solid ${accent}`, fontSize: 15, lineHeight: 1.5, color: DC.text }}>
+            <strong style={{ color: accent }}>Tu peux aussi attendre.</strong> {gratuit}
+          </p>
+        )}
+        <p style={{ margin: '12px 0 0', fontSize: 15, lineHeight: 1.5, color: DC.soft }}>
+          {gratuit ? 'Si tu préfères ne pas attendre, ça coûte' : 'Ça coûte'} <strong style={{ color: DC.title }}>{etoiles(prix)}</strong>, prises sur ton solde.
+        </p>
+        {error && <p role="alert" style={{ margin: '10px 0 0', fontSize: 14, color: '#F6C2AE' }}>{error}</p>}
+        <button type="button" onClick={onConfirm} disabled={busy} className="drl-btn" style={{ ...bouton, marginTop: 16, border: 0, background: accent, color: '#1C1612' }}>
+          {busy ? <Loader2 size={18} className="animate-spin" aria-hidden="true" /> : <Unlock size={18} aria-hidden="true" />}
+          Débloquer maintenant · {etoiles(prix)}
+        </button>
+        <button ref={attendre} type="button" onClick={onClose} disabled={busy} className="drl-btn" style={{ ...bouton, marginTop: 10, fontWeight: 600, border: `1px solid ${DC.line}`, background: DC.glass, color: DC.text }}>
+          {gratuit ? 'Attendre, c’est gratuit' : 'Annuler'}
+        </button>
+      </div>
+    </div>
+  );
+};
+
+/** « Tu peux attendre » pour un cas entier : la date d'ouverture si elle est fixée, sinon l'ouverture au public (sans date). */
+export const gratuitCas = (ouverture?: number | null) => ouverture
+  ? `Si tu attends ${quandLabel(ouverture)}, le cas s'ouvre gratuitement : un épisode chaque soir, sans rien payer.`
+  : 'Quand le cas ouvrira au public (la date n’est pas encore annoncée), il sera gratuit : un épisode chaque soir, sans rien payer.';
+/** « Tu peux attendre » pour l'épisode suivant : sa parution gratuite (le rythme de CE lecteur). */
+export const gratuitEpisode = (parution?: number | null) => parution
+  ? `Si tu attends ${quandLabel(parution)}, la suite s'ouvre gratuitement.`
+  : 'Si tu attends le lendemain soir de ta lecture, la suite s’ouvre gratuitement.';
+
+/**
  * « Débloquer tout de suite » : ouvre tout le cas pour cette personne avant son ouverture publique, contre des étincelles.
- * Deux temps : le premier tap montre le prix à confirmer, le second paie (une dépense de cette taille ne part jamais d'un seul tap).
+ * Un tap ouvre TOUJOURS la fenêtre de confirmation (prix + « si tu attends, c'est gratuit ») : rien ne se paie d'un seul tap.
  * Un visiteur est envoyé créer son espace ; un solde insuffisant ouvre la fenêtre d'achat.
  */
-export const DebloquerCas: React.FC<{ id: string; prix: number; accent: string; onDone: () => void; compact?: boolean }> = ({ id, prix, accent, onDone, compact }) => {
+export const DebloquerCas: React.FC<{ id: string; prix: number; accent: string; onDone: () => void; compact?: boolean; ouverture?: number | null; titre?: string }> = ({ id, prix, accent, onDone, compact, ouverture, titre }) => {
   const navigate = useNavigate();
   const { isAuthenticated } = useAuth();
   const { openNoKorisModal, refreshBalance } = useKoris();
-  const [confirmer, setConfirmer] = useState(false);
+  const [ouvert, setOuvert] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
-  const clic = async (e: React.MouseEvent) => {
+  const clic = (e: React.MouseEvent) => {
     e.preventDefault(); e.stopPropagation();
     if (!isAuthenticated) { navigate('/espace'); return; }
-    if (!confirmer) { setConfirmer(true); window.setTimeout(() => setConfirmer(false), 6000); return; }
+    setError(''); setOuvert(true);
+  };
+  const payer = async () => {
     setBusy(true); setError('');
-    try { await debloquerCas(id); refreshBalance?.(); onDone(); }
+    try { await debloquerCas(id); refreshBalance?.(); setOuvert(false); onDone(); }
     catch (er) {
-      if (er instanceof CdsError && er.status === 402) openNoKorisModal('Débloquer ce cas', prix);
+      if (er instanceof CdsError && er.status === 402) { setOuvert(false); openNoKorisModal('Débloquer ce cas', prix); }
       else setError(er instanceof Error ? er.message : 'Erreur');
-    } finally { setBusy(false); setConfirmer(false); }
+    } finally { setBusy(false); }
   };
   return (
-    <div style={{ marginTop: compact ? 8 : 12 }}>
-      <button type="button" onClick={clic} disabled={busy} className="drl-btn"
-        style={{ minHeight: 44, padding: '0 16px', borderRadius: 999, border: `1px solid ${accent}`, background: confirmer ? accent : 'transparent', color: confirmer ? '#1C1612' : accent, fontSize: 14, fontWeight: 700, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 8, fontFamily: 'inherit' }}>
-        {busy ? <Loader2 size={16} className="animate-spin" aria-hidden="true" /> : <Unlock size={16} aria-hidden="true" />}
-        {!isAuthenticated ? 'Créer mon espace pour débloquer' : confirmer ? `Confirmer · ${etoiles(prix)}` : `Débloquer tout de suite · ${etoiles(prix)}`}
+    <div style={{ marginTop: compact ? 8 : 12 }} onClick={e => e.stopPropagation()}>
+      <button type="button" onClick={clic} className="drl-btn"
+        style={{ minHeight: 44, padding: '0 16px', borderRadius: 999, border: `1px solid ${accent}`, background: 'transparent', color: accent, fontSize: 14, fontWeight: 700, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 8, fontFamily: 'inherit' }}>
+        <Unlock size={16} aria-hidden="true" />
+        {!isAuthenticated ? 'Créer mon espace pour débloquer' : `Débloquer tout de suite · ${etoiles(prix)}`}
       </button>
-      {error && <p role="alert" style={{ margin: '6px 0 0', fontSize: 13, color: '#F6C2AE' }}>{error}</p>}
+      {ouvert && <FenetreConfirmer titre={titre ? `Débloquer « ${titre} » maintenant ?` : 'Débloquer ce cas maintenant ?'} prix={prix} gratuit={gratuitCas(ouverture)} accent={accent} busy={busy} error={error} onConfirm={payer} onClose={() => setOuvert(false)} />}
     </div>
   );
 };

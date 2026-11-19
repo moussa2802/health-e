@@ -19,7 +19,7 @@
  * « la suite tout de suite » se paie (prix de l'épisode). Le vote de l'épisode 3 est PERSONNEL : chacun a la suite (A ou B)
  * qui correspond à SON vote, sans date commune ni majorité. Voir _casDuSoir.js.
  *
- * Tant que CAS_DU_SOIR_PUBLIC est false, seul le propriétaire (Dr Lô) le voit. Il peut simuler l'âge de sa lecture (« jour » 1 à 5)
+ * Tant que CAS_DU_SOIR_PUBLIC est false, seul le propriétaire (Dr Lô) le voit. Il peut simuler l'âge de sa lecture (« jour » 1 au nombre d'épisodes du cas)
  * pour tout parcourir (et la suite A ou B à voir : « branche ») : en aperçu, son horloge n'est pas enregistrée et ses votes ne sont pas comptés.
  *
  * Firestore (écrit par le serveur seulement ; fermé au navigateur) :
@@ -123,7 +123,7 @@ exports.handler = async (event) => {
     const owner = uid ? (await R.roleOf(uid)).owner : false;
     if (!K.CAS_DU_SOIR_PUBLIC && !owner) return action === 'etat' || action === 'liste' ? reply(200, { visible: false }) : reply(404, { error: 'Introuvable' });
 
-    // Aperçu du propriétaire : il choisit le jour à simuler (1 à 5)
+    // Aperçu du propriétaire : il choisit le jour à simuler (1 au nombre d'épisodes du cas)
     const jour = owner ? Math.round(Number(body.jour)) : NaN;
     const realNow = Date.now();
 

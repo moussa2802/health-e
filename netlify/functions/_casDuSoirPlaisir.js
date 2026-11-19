@@ -24,6 +24,7 @@ module.exports = {
   "programmee": false,
   "debloquer": 30,
   "adultes": true,
+  "categorie": "sexuelle",
   "prixSuite": {
     "2": 4,
     "3": 6,
@@ -34,7 +35,7 @@ module.exports = {
   },
   "testLie": "fsfi",
   "testAussi": "sise",
-  "avertissement": "Histoire inventée, réservée aux adultes (18 ans et plus). Elle parle du corps et de la sexualité avec des mots directs, sans scène explicite. Toute ressemblance avec des personnes réelles serait une coïncidence. Si elle te touche de près, le compagnon est là pour en parler.",
+  "avertissement": "Histoire inspirée de faits réels, vus en consultation, réservée aux adultes (18 ans et plus). Elle parle du corps et de la sexualité avec des mots directs, sans scène explicite. Les prénoms, les lieux et les détails ont été changés pour que personne ne puisse être reconnu. Si elle te touche de près, le compagnon est là pour en parler.",
   "episodes": [
     {
       "titre": "Je simule",

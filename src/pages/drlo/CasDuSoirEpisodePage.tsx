@@ -8,7 +8,7 @@ import { Link, Navigate, useLocation, useNavigate, useParams } from 'react-route
 import { ChevronRight, Loader2, Moon } from 'lucide-react';
 import DrLoShell, { DC, card, usePalette } from '../../components/accueil/DrLoShell';
 import AudioSynchro from '../../components/casdusoir/AudioSynchro';
-import { GateAdultes, PiedCas, Resultats, etoiles, Maj } from '../../components/casdusoir/CdsParts';
+import { FenetreConfirmer, GateAdultes, PiedCas, Resultats, etoiles, gratuitEpisode, Maj } from '../../components/casdusoir/CdsParts';
 import { useKoris } from '../../contexts/KorisContext';
 import { CAS_DU_SOIR_PRIX } from '../../config/contenusPayants';
 import {
@@ -33,6 +33,8 @@ const CasDuSoirEpisodePage: React.FC = () => {
   const [ep, setEp] = useState<CdsEpisodeReponse | null>(null);
   const [busy, setBusy] = useState('');
   const [error, setError] = useState('');
+  // Toute dépense passe par la fenêtre de confirmation (prix + « si tu attends, c'est gratuit »)
+  const [confirme, setConfirme] = useState<'suite' | 'bonus' | null>(null);
 
   const loadEtat = () => getEtat().then(setEtat).catch(() => setEtat({ visible: false }));
   useEffect(() => {
@@ -64,9 +66,10 @@ const CasDuSoirEpisodePage: React.FC = () => {
   const pay = async (what: 'suite' | 'bonus') => {
     setBusy(what); setError('');
     try {
-      if (what === 'suite' && ep?.suite) { await avancer(ep.suite.n); refreshBalance?.(); navigate(`/cas-du-soir/${id}/${ep.suite.n}`); }
-      if (what === 'bonus') { await acheterBonus(); refreshBalance?.(); await loadEtat(); setEp(await getEpisode(n)); }
+      if (what === 'suite' && ep?.suite) { await avancer(ep.suite.n); refreshBalance?.(); setConfirme(null); navigate(`/cas-du-soir/${id}/${ep.suite.n}`); }
+      if (what === 'bonus') { await acheterBonus(); refreshBalance?.(); setConfirme(null); await loadEtat(); setEp(await getEpisode(n)); }
     } catch (e) {
+      if (e instanceof CdsError && e.status === 402) setConfirme(null);
       if (e instanceof CdsError && e.status === 402) openNoKorisModal(what === 'suite' ? 'Lire la suite du cas du soir' : 'Le détail des votes par animal', what === 'suite' ? prixSuite : prix.bonus);
       setError(e instanceof Error ? e.message : 'Erreur');
     } finally { setBusy(''); }
@@ -109,7 +112,7 @@ const CasDuSoirEpisodePage: React.FC = () => {
           </>}
 
           {ep.monChoix && etat.connecte && !etat.bonus && ep.resultats?.parChoix && (
-            <button type="button" disabled={!!busy} onClick={() => pay('bonus')} style={{ ...ghost, marginTop: 14, minHeight: 44, fontSize: 14 }}>
+            <button type="button" disabled={!!busy} onClick={() => setConfirme('bonus')} style={{ ...ghost, marginTop: 14, minHeight: 44, fontSize: 14 }}>
               Voir les votes par animal · {etoiles(prix.bonus)}
             </button>
           )}
@@ -117,8 +120,8 @@ const CasDuSoirEpisodePage: React.FC = () => {
           {ep.monChoix && ep.suite && !ep.suite.lisible && (
             <div style={{ marginTop: 16 }}>
               {ep.suite.avance.ok ? (
-                <button type="button" disabled={!!busy} onClick={() => pay('suite')} style={primary}>
-                  {busy === 'suite' ? <Loader2 size={18} className="animate-spin" aria-hidden="true" /> : null}La suite tout de suite · {etoiles(prixSuite)}
+                <button type="button" disabled={!!busy} onClick={() => setConfirme('suite')} style={primary}>
+                  La suite tout de suite · {etoiles(prixSuite)}
                 </button>
               ) : ep.suite.avance.raison === 'compte' ? (
                 <Link to="/espace" style={primary}>Crée ton espace pour lire la suite</Link>
@@ -140,6 +143,13 @@ const CasDuSoirEpisodePage: React.FC = () => {
         </article>
       )}
 
+      {confirme && ep && (
+        <FenetreConfirmer accent={palette.accent} busy={!!busy} error={error}
+          titre={confirme === 'suite' ? `Lire l'épisode ${ep.suite?.n} maintenant ?` : 'Voir les votes par animal ?'}
+          prix={confirme === 'suite' ? prixSuite : prix.bonus}
+          gratuit={confirme === 'suite' ? gratuitEpisode(ep.suite?.parution) : null}
+          onConfirm={() => pay(confirme)} onClose={() => { setConfirme(null); setError(''); }} />
+      )}
       <Link to={retour.to} className="drl-btn" style={{ ...ghost, marginTop: 16 }}>Tous les épisodes</Link>
       <PiedCas titre={h.titre} avertissement={h.avertissement} />
       </GateAdultes>

@@ -41,7 +41,7 @@ test('« Le vu de minuit » est branché, sans date publique ; la mention et les
   assert.equal(H.decisionJours, undefined);
   assert.equal(H.testLie, 'ecr_r');
   assert.equal(H.testAussi, 'bonus_jalousie');
-  assert.equal(H.avertissement, 'Histoire inventée. Toute ressemblance avec des personnes réelles serait une coïncidence. Si elle te touche de près, le compagnon est là pour en parler.');
+  assert.equal(H.avertissement, 'Histoire inspirée de faits réels, vus en consultation. Les prénoms, les lieux et les détails ont été changés pour que personne ne puisse être reconnu. Si elle te touche de près, le compagnon est là pour en parler.');
   assert.deepEqual(H.episodes.map((e) => e.titre || `${e.A.titre} / ${e.B.titre}`), ['Quatre mots', 'Six appels', 'Le code', 'Discrets / La terrasse', 'Le cercle / Le faire-part']);
   assert.ok(H.episodes[0].texte.startsWith('Il est presque minuit aux Parcelles Assainies.'));
   assert.ok(H.episodes[0].texte.includes('IBA : Nanga def, sama soxna ? (Comment vas-tu, ma femme ?)'));
@@ -745,4 +745,69 @@ test('Le plaisir féminin : chaque épisode et la leçon ont leur minutage (phra
     (m.images || []).forEach((x) => assert.ok(fs.existsSync(path.join(__dirname, '..', '..', '..', 'public', 'images', 'cas-du-soir', x.image)), x.image));
     if (cle !== P.fin.minutage) assert.equal(m.images[0].t, 0, cle);
   });
+});
+
+test('chaque cas est rangé dans un rayon : santé mentale ou santé sexuelle', () => {
+  const rayon = Object.fromEntries(K.HISTOIRES.map((h) => [h.id, h.categorie]));
+  assert.equal(rayon['vu-de-minuit'], 'mentale');
+  assert.equal(rayon['goumin'], 'sexuelle');
+  assert.equal(rayon['plaisir-feminin'], 'sexuelle');
+  K.HISTOIRES.forEach((h) => assert.ok(['mentale', 'sexuelle'].includes(h.categorie), h.id));
+  assert.ok(K.verifierHistoire({ ...K.HISTOIRES[0], categorie: undefined }).some((e) => e.startsWith('categorie')));
+});
+
+test("Le téléphone sous l'oreiller (cas n° 4) : 7 épisodes linéaires, adultes, santé sexuelle, caché au public, prix propres, déblocage à 30, sources et leçon", () => {
+  const T = K.HISTOIRES.find((h) => h.id === 'telephone-sous-oreiller');
+  assert.ok(T);
+  assert.equal(T.titre, "Le téléphone sous l'oreiller");
+  assert.equal(T.categorie, 'sexuelle');
+  assert.equal(T.adultes, true);
+  assert.equal(T.programmee, false);
+  assert.equal(T.embranchement, undefined);
+  assert.equal(T.episodes.length, 7);
+  assert.equal(T.debloquer, 30);
+  assert.deepEqual(T.prixSuite, { 2: 4, 3: 6, 4: 6, 5: 8, 6: 8, 7: 10 });
+  assert.deepEqual(K.verifierHistoire(T), []);
+  T.episodes.forEach((e, i) => { assert.equal(e.choix.length, 3, `épisode ${i + 1}`); assert.ok(e.texte.length > 1500, `épisode ${i + 1}`); assert.ok(e.question.endsWith('?')); });
+  // Les prénoms difficiles pour la synthèse vocale ont été remplacés : aucun reste dans les textes
+  const tout = JSON.stringify(T);
+  assert.ok(!/Ndèye|NDÈYE|Cheikh|CHEIKH/.test(tout));
+  // Dr Lô est une personne qui fait des vidéos : les épisodes 1, 4 et 7 contiennent sa vidéo, 2, 3, 5, 6 ses conversations
+  [0, 3, 6].forEach((i) => assert.ok(T.episodes[i].texte.includes('DR LÔ : '), `vidéo épisode ${i + 1}`));
+  [1, 2, 4, 5].forEach((i) => assert.ok(/DR LÔ : /.test(T.episodes[i].texte), `conversation épisode ${i + 1}`));
+  assert.equal(T.fin.quiz.length, 3);
+  T.fin.quiz.forEach((q) => { assert.equal(q.reponses.length, 3); assert.ok(q.bonne >= 0 && q.bonne <= 2); assert.ok(q.explication); });
+  assert.ok(/Sources : /.test(T.fin.texte) && /CIM-11/.test(T.fin.texte));
+  assert.ok(/inspirée de faits réels/.test(T.avertissement));
+  assert.equal(K.CAS_DU_SOIR_PUBLIC, false);
+});
+
+test("Le téléphone sous l'oreiller : les images de la couverture et des 7 épisodes, l'intrigue audio et son minutage sont branchés", () => {
+  const T = K.HISTOIRES.find((h) => h.id === 'telephone-sous-oreiller');
+  const pub = (p) => fs.existsSync(path.join(__dirname, '..', '..', '..', 'public', p.replace(/^\//, '')));
+  assert.ok(pub(T.image), 'couverture');
+  T.episodes.forEach((e, i) => assert.ok(pub(e.image), `épisode ${i + 1}`));
+  ['couverture', 'ep1-lueur', 'ep1-cuisine', 'ep1-recre', 'ep1-video', 'ep2-ecran', 'ep2-bureau', 'ep2-appel', 'ep2-porte', 'ep3-attente', 'ep3-cabinet', 'ep3-fenetre', 'ep3-taxi', 'ep4-promesses', 'ep4-marabout', 'ep4-bureau', 'ep4-cuisine', 'ep5-table', 'ep5-face', 'ep5-cabinet', 'ep5-taxi', 'ep6-appel', 'ep6-carnet', 'ep6-frigo', 'ep6-couloir', 'ep7-matin', 'ep7-chapelet', 'ep7-balcon', 'ep7-soir']
+    .forEach((k) => assert.ok(pub(`/images/cas-du-soir/telephone-${k}.webp`), k));
+  assert.equal(T.intrigue, '/audio/cas-du-soir/telephone-sous-oreiller-intrigue.mp3');
+  assert.ok(pub(T.intrigue));
+  const m = K.minutage(T.intrigueMinutage);
+  assert.ok(m && m.lignes.length === 4 && m.images[0].t === 0);
+  m.lignes.forEach((l, k) => { assert.ok(l.t1 > l.t0); if (k) assert.ok(l.t0 >= m.lignes[k - 1].t1 - 0.2); assert.ok(l.t1 <= m.duree); });
+  m.images.forEach((x) => assert.ok(pub(`/images/cas-du-soir/${x.image}`), x.image));
+  assert.deepEqual(K.verifierHistoire(T), []);
+});
+
+test("Le téléphone sous l'oreiller : chaque épisode et la leçon ont leur audio et leur minutage (phrases dans l'ordre, images qui existent, première image à 0)", () => {
+  const T = K.HISTOIRES.find((h) => h.id === 'telephone-sous-oreiller');
+  T.episodes.forEach((e, i) => assert.equal(e.audio, `casDuSoir/telephone/ep${i + 1}.mp3`));
+  assert.equal(T.fin.audio, 'casDuSoir/telephone/lecon.mp3');
+  [...T.episodes.map((e) => e.minutage), T.fin.minutage].forEach((cle) => {
+    const m = K.minutage(cle);
+    assert.ok(m && m.lignes.length > 20, cle);
+    m.lignes.forEach((l, k) => { assert.ok(l.t1 > l.t0, cle); if (k) assert.ok(l.t0 >= m.lignes[k - 1].t0, cle); assert.ok(l.t0 < m.duree, cle); });
+    (m.images || []).forEach((x) => assert.ok(fs.existsSync(path.join(__dirname, '..', '..', '..', 'public', 'images', 'cas-du-soir', x.image)), x.image));
+    if (cle !== T.fin.minutage) assert.equal(m.images[0].t, 0, cle);
+  });
+  assert.ok(!/alun/i.test(JSON.stringify(T)));
 });

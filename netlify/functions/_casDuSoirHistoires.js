@@ -14,6 +14,7 @@
  *                                       Le jour où la date est fixée : mettre depart, heure, et programmee: true
  *   embranchement: 3,                   le vote de cet épisode décide de la suite DE CHAQUE PERSONNE (2 choix, A et B) : personnel, sans date
  *                                       commune ni majorité (17/11/2026). Sans embranchement : l'histoire est linéaire
+ *   categorie: 'mentale'|'sexuelle',   le rayon de la liste des cas (santé mentale / santé sexuelle) ; obligatoire
  *   adultes: true,                      réservé aux adultes : écran « 18 ans ou plus » avant d'entrer
  *   debloquer: 20,                      prix (étincelles) pour ouvrir tout le cas avant son ouverture publique ; prixSuite: { 4: 8 } : prix propres au cas
  *   testLie, testAussi                  tests proposés à la fin (identifiants du catalogue)
@@ -45,6 +46,7 @@
 const VU_DE_MINUIT = {
   "id": "vu-de-minuit",
   "titre": "Le message de minuit",
+  "categorie": "mentale",
   "image": "/images/cas-du-soir/cas-vu-de-minuit-couverture.webp",
   "intrigue": "/audio/cas-du-soir/vu-de-minuit-intrigue.mp3",
   "intrigueMinutage": "vu-de-minuit-intrigue",
@@ -60,7 +62,7 @@ const VU_DE_MINUIT = {
   "embranchement": 3,
   "testLie": "ecr_r",
   "testAussi": "bonus_jalousie",
-  "avertissement": "Histoire inventée. Toute ressemblance avec des personnes réelles serait une coïncidence. Si elle te touche de près, le compagnon est là pour en parler.",
+  "avertissement": "Histoire inspirée de faits réels, vus en consultation. Les prénoms, les lieux et les détails ont été changés pour que personne ne puisse être reconnu. Si elle te touche de près, le compagnon est là pour en parler.",
   "autreFin": {
     "mention": "Tu as suivi un chemin. Découvre ce qui se serait passé si tu avais choisi l'autre."
   },
@@ -297,5 +299,6 @@ const VU_DE_MINUIT = {
 
 const GOUMIN = require('./_casDuSoirGoumin');
 const PLAISIR = require('./_casDuSoirPlaisir');
+const TELEPHONE = require('./_casDuSoirTelephone');
 
-module.exports = { HISTOIRES: [VU_DE_MINUIT, GOUMIN, PLAISIR] };
+module.exports = { HISTOIRES: [VU_DE_MINUIT, GOUMIN, PLAISIR, TELEPHONE] };

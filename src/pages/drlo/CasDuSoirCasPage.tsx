@@ -6,10 +6,10 @@
  */
 import React, { useEffect, useState } from 'react';
 import { Link, Navigate, useLocation, useNavigate, useParams } from 'react-router-dom';
-import { Hourglass, Loader2, Lock, Moon } from 'lucide-react';
+import { Hourglass, Lock, Moon } from 'lucide-react';
 import DrLoShell, { DC, card, usePalette } from '../../components/accueil/DrLoShell';
 import { ImageCard, SectionTitle, Stack, CompactRow } from '../../components/accueil/HomeParts';
-import { BandeauApercu, DebloquerCas, Fin, GateAdultes, PartagerCas, PiedCas, etoiles, Maj } from '../../components/casdusoir/CdsParts';
+import { BandeauApercu, DebloquerCas, FenetreConfirmer, Fin, GateAdultes, PartagerCas, PiedCas, etoiles, gratuitEpisode, Maj } from '../../components/casdusoir/CdsParts';
 import AudioSynchro from '../../components/casdusoir/AudioSynchro';
 import { useKoris } from '../../contexts/KorisContext';
 import { CAS_DU_SOIR_PRIX } from '../../config/contenusPayants';
@@ -31,6 +31,8 @@ const CasDuSoirCasPage: React.FC = () => {
   const [fin, setFin] = useState<CdsFin | null>(null);
   const [busy, setBusy] = useState('');
   const [error, setError] = useState('');
+  // Toute dépense passe par la fenêtre de confirmation (prix + « si tu attends, c'est gratuit »)
+  const [confirme, setConfirme] = useState<{ what: 'suite' | 'autreFin'; n?: number; parution?: number | null } | null>(null);
 
   const load = () => {
     setHistoire(id);
@@ -51,9 +53,10 @@ const CasDuSoirCasPage: React.FC = () => {
   const pay = async (what: 'suite' | 'autreFin', n?: number) => {
     setBusy(what); setError('');
     try {
-      if (what === 'suite' && n) { await avancer(n); refreshBalance?.(); navigate(`/cas-du-soir/${id}/${n}`); return; }
-      if (what === 'autreFin') { await acheterAutreFin(); refreshBalance?.(); load(); }
+      if (what === 'suite' && n) { await avancer(n); refreshBalance?.(); setConfirme(null); navigate(`/cas-du-soir/${id}/${n}`); return; }
+      if (what === 'autreFin') { await acheterAutreFin(); refreshBalance?.(); setConfirme(null); load(); }
     } catch (e) {
+      if (e instanceof CdsError && e.status === 402) setConfirme(null);
       if (e instanceof CdsError && e.status === 402) openNoKorisModal(what === 'suite' ? 'Lire la suite du cas du soir' : 'L\'autre fin du cas du soir', what === 'suite' ? (n ? prix.suite[n] ?? 0 : 0) : prix.autreFin);
       setError(e instanceof Error ? e.message : 'Erreur');
     } finally { setBusy(''); }
@@ -69,8 +72,8 @@ const CasDuSoirCasPage: React.FC = () => {
       : e.etat === 'compte' ? 'Crée ton espace pour lire la suite'
       : e.parution ? `Paraît ${quandLabel(e.parution)}` : 'Bientôt';
     const footer = e.etat === 'prochain' && e.avance?.ok
-      ? <button type="button" disabled={!!busy} onClick={() => pay('suite', e.n)} className="drl-btn" style={{ minHeight: 44, padding: '0 16px', borderRadius: 999, border: `1px solid ${palette.accent}`, background: 'transparent', color: palette.accent, fontSize: 14, fontWeight: 700, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 6, fontFamily: 'inherit' }}>
-          {busy === 'suite' ? <Loader2 size={16} className="animate-spin" aria-hidden="true" /> : null}La suite tout de suite · {etoiles(e.avance?.prix ?? prix.suite[e.n] ?? 0)}
+      ? <button type="button" disabled={!!busy} onClick={() => setConfirme({ what: 'suite', n: e.n, parution: e.parution })} className="drl-btn" style={{ minHeight: 44, padding: '0 16px', borderRadius: 999, border: `1px solid ${palette.accent}`, background: 'transparent', color: palette.accent, fontSize: 14, fontWeight: 700, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 6, fontFamily: 'inherit' }}>
+          La suite tout de suite · {etoiles(e.avance?.prix ?? prix.suite[e.n] ?? 0)}
         </button>
       : e.etat === 'compte'
         ? <Link to="/espace" className="drl-btn" style={{ minHeight: 44, display: 'inline-flex', alignItems: 'center', fontSize: 14, fontWeight: 700, color: palette.accent, textDecoration: 'none' }}>Créer mon espace</Link>
@@ -95,9 +98,9 @@ const CasDuSoirCasPage: React.FC = () => {
       <h1 style={{ margin: '4px 0 0', fontFamily: 'Fraunces, serif', fontSize: 28, lineHeight: 1.15, color: DC.title }}>{h.titre}</h1>
       <p style={{ margin: '6px 0 0', fontSize: 15, lineHeight: 1.5, color: DC.soft }}>{h.accroche}</p>
       <PartagerCas id={h.id} titre={h.titre} accroche={h.accroche} accent={palette.accent} />
-      {h.debloquer ? <DebloquerCas id={h.id} prix={h.debloquer} accent={palette.accent} onDone={load} /> : null}
+      {h.debloquer ? <DebloquerCas id={h.id} titre={h.titre} ouverture={h.ouverture} prix={h.debloquer} accent={palette.accent} onDone={load} /> : null}
 
-      {etat.proprio && <BandeauApercu accent={palette.accent} onChange={load} />}
+      {etat.proprio && <BandeauApercu accent={palette.accent} onChange={load} total={h.total} embranchement={h.embranchement} />}
 
       <SectionTitle>Les épisodes</SectionTitle>
       {error && <p role="alert" style={{ margin: '0 0 12px', fontSize: 14, color: '#F6C2AE' }}>{error}</p>}
@@ -121,13 +124,20 @@ const CasDuSoirCasPage: React.FC = () => {
                   {[4, 5].map(k => <Link key={k} to={`/cas-du-soir/${id}/${k}?autre=1`} className="drl-btn" style={{ flex: 1, minHeight: 44, borderRadius: 999, border: `1px solid ${DC.line}`, background: DC.glass, color: DC.text, fontSize: 14, fontWeight: 600, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', textDecoration: 'none' }}>L'autre épisode {k}</Link>)}
                 </div>
               ) : (
-                <button type="button" disabled={!!busy} onClick={() => pay('autreFin')} style={{ width: '100%', marginTop: 10, minHeight: 48, borderRadius: 999, border: `1px solid ${DC.line}`, background: DC.glass, color: DC.text, fontSize: 15, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>L'autre fin · {etoiles(prix.autreFin)}</button>
+                <button type="button" disabled={!!busy} onClick={() => setConfirme({ what: 'autreFin' })} style={{ width: '100%', marginTop: 10, minHeight: 48, borderRadius: 999, border: `1px solid ${DC.line}`, background: DC.glass, color: DC.text, fontSize: 15, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>L'autre fin · {etoiles(prix.autreFin)}</button>
               )}
             </section>
           )}
         </>
       )}
 
+      {confirme && (
+        <FenetreConfirmer accent={palette.accent} busy={!!busy} error={error}
+          titre={confirme.what === 'suite' ? `Lire l'épisode ${confirme.n} maintenant ?` : 'Débloquer l\'autre fin ?'}
+          prix={confirme.what === 'suite' ? (confirme.n ? (eps?.episodes.find(x => x.n === confirme.n)?.avance?.prix ?? prix.suite[confirme.n] ?? 0) : 0) : prix.autreFin}
+          gratuit={confirme.what === 'suite' ? gratuitEpisode(confirme.parution) : null}
+          onConfirm={() => pay(confirme.what, confirme.n)} onClose={() => { setConfirme(null); setError(''); }} />
+      )}
       <PiedCas titre={h.titre} avertissement={h.avertissement} />
       </GateAdultes>
     </DrLoShell>
