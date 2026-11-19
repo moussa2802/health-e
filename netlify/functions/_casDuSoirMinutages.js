@@ -499,7 +499,7 @@ module.exports = {
     ]
   },
   "vu-de-minuit-ep3": {
-    "duree": 147.14,
+    "duree": 142.94,
     "lignes": [
       {
         "t0": 4.48,
@@ -647,15 +647,15 @@ module.exports = {
       },
       {
         "t0": 127.5,
-        "t1": 135.1,
+        "t1": 132.74,
         "qui": "Narrateur",
-        "texte": "Ce soir, c'est toi qui décides. Le choix le plus voté sera la suite de l'histoire. À sa place, qu'est-ce que tu fais ? Vote, juste en dessous."
+        "texte": "Ce soir, c'est toi qui décides. À sa place, qu'est-ce que tu fais ? Vote, juste en dessous."
       },
       {
-        "t0": 139.93,
-        "t1": 145.29,
+        "t0": 137.57,
+        "t1": 141.06,
         "qui": "Narrateur",
-        "texte": "La suite dépend de ton vote, et de celui de tous les autres. À demain soir, à vingt heures."
+        "texte": "La suite dépend de ton vote. À demain soir, à vingt heures."
       }
     ],
     "images": [
