@@ -41,6 +41,7 @@ const Row: React.FC<{ q: BoxItem; palette: MomentPalette; onDone: () => void; to
       </div>
       <p style={{ margin: '8px 0 0', fontSize: 15, lineHeight: 1.5, color: DC.text, whiteSpace: 'pre-line' }}>{q.text}</p>
       {q.status === 'site' && <p style={{ margin: '8px 0 0', fontSize: 14, color: DC.muted, whiteSpace: 'pre-line' }}>Ta réponse : {q.answer}</p>}
+      {q.status === 'site' && q.reactions && <p style={{ margin: '6px 0 0', fontSize: 13, color: DC.faint }}>Chiffres bruts (toi seul) : {q.vues ?? 0} vues · {q.reactions.utile} utile · {q.reactions.moi} moi aussi · {q.reactions.pasclair} pas clair</p>}
       {q.status === 'video' && q.note && <p style={{ margin: '8px 0 0', fontSize: 14, color: DC.muted }}>Note : {q.note}</p>}
       {!open ? (
         <button onClick={() => setOpen(true)} className="drl-btn" style={{ ...small, marginTop: 10 }}>{q.status === 'new' ? 'Décider' : 'Modifier'}</button>

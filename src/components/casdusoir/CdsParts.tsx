@@ -9,7 +9,7 @@ import { DC, card } from '../accueil/DrLoShell';
 import AudioSynchro from './AudioSynchro';
 import { openDrLoChat } from '../DrLoChat/drLoEvents';
 import { getScaleMeta } from '../../utils/scaleMeta';
-import { CdsError, debloquerCas, getBrancheApercu, getJourApercu, quandLabel, setBrancheApercu, setJourApercu, type CdsEpisodeReponse, type CdsFin, type CdsResultats } from '../../services/casDuSoirService';
+import { CdsError, debloquerCas, getBrancheApercu, getJourApercu, quandLabel, repondreUtile, setBrancheApercu, setJourApercu, type CdsChiffres, type CdsEpisodeReponse, type CdsFin, type CdsResultats } from '../../services/casDuSoirService';
 import { useKoris } from '../../contexts/KorisContext';
 import { useAuth } from '../../contexts/AuthContext';
 
@@ -51,6 +51,69 @@ export const Resultats: React.FC<{ ep: CdsEpisodeReponse; r: CdsResultats; monCh
   </div>
 );
 
+/**
+ * « Ce cas t'a été utile ? » à la fin de la leçon : oui ou non, une seule réponse par personne (qu'on peut changer).
+ * Le « non » (et le texte facultatif « Qu'est-ce qui a manqué ? ») reste privé : seul Dr Lô le lit. Le public ne voit que le nombre de « oui »,
+ * et seulement au-dessus de 10 (le serveur n'envoie rien sinon).
+ */
+export const UtileCas: React.FC<{ fin: CdsFin; accent: string }> = ({ fin, accent }) => {
+  const [choix, setChoix] = useState<'oui' | 'non' | null>(fin.monUtile ?? null);
+  const [texte, setTexte] = useState('');
+  const [texteEnvoye, setTexteEnvoye] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+  const envoyer = async (oui: boolean, t?: string) => {
+    setBusy(true); setError('');
+    try { await repondreUtile(oui, t); setChoix(oui ? 'oui' : 'non'); if (oui) setTexteEnvoye(false); if (!oui && t) setTexteEnvoye(true); }
+    catch (er) { setError(er instanceof Error ? er.message : 'Erreur'); }
+    finally { setBusy(false); }
+  };
+  const bouton = (actif: boolean): React.CSSProperties => ({ flex: 1, minHeight: 48, borderRadius: 14, fontFamily: 'inherit', fontSize: 15, fontWeight: 700, cursor: busy ? 'default' : 'pointer', color: actif ? '#1C1612' : DC.text, border: `1px solid ${actif ? accent : DC.line}`, background: actif ? accent : DC.glass });
+  return (
+    <div style={{ marginTop: 20, paddingTop: 16, borderTop: `1px solid ${DC.line}` }}>
+      <h3 id="cds-utile" style={{ margin: 0, fontSize: 16, color: DC.title }}>Ce cas t'a été utile ?</h3>
+      <div role="group" aria-labelledby="cds-utile" style={{ display: 'flex', gap: 8, marginTop: 10 }}>
+        <button type="button" disabled={busy} aria-pressed={choix === 'oui'} onClick={() => { if (choix !== 'oui') void envoyer(true); }} style={bouton(choix === 'oui')}>Oui</button>
+        <button type="button" disabled={busy} aria-pressed={choix === 'non'} onClick={() => { if (choix !== 'non') void envoyer(false); }} style={bouton(choix === 'non')}>Non</button>
+      </div>
+      {choix === 'oui' && <p role="status" style={{ margin: '10px 0 0', fontSize: 14, color: DC.soft }}>Merci.</p>}
+      {choix === 'non' && (
+        <div style={{ marginTop: 10 }}>
+          <p role="status" style={{ margin: 0, fontSize: 14, color: DC.soft }}>Merci. {texteEnvoye ? 'Ton message est bien arrivé.' : 'Qu\'est-ce qui a manqué ? (facultatif : seul Dr Lô le lit)'}</p>
+          {!texteEnvoye && (
+            <>
+              <label htmlFor="cds-utile-texte" style={{ position: 'absolute', left: -9999 }}>Qu'est-ce qui a manqué ?</label>
+              <textarea id="cds-utile-texte" value={texte} onChange={e => setTexte(e.target.value.slice(0, 300))} rows={3} maxLength={300} placeholder="Écris comme tu parles. Pas de numéro ni de lien."
+                style={{ width: '100%', boxSizing: 'border-box', marginTop: 8, borderRadius: 12, border: `1px solid ${DC.line}`, background: 'rgba(255,255,255,.06)', padding: 10, fontFamily: 'inherit', fontSize: 15, color: DC.text }} />
+              <button type="button" disabled={busy || texte.trim().length < 2} onClick={() => void envoyer(false, texte.trim())}
+                style={{ marginTop: 8, minHeight: 44, padding: '0 16px', borderRadius: 12, border: `1px solid ${DC.line}`, background: DC.glass, color: DC.text, fontFamily: 'inherit', fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>Envoyer</button>
+            </>
+          )}
+        </div>
+      )}
+      {error && <p role="alert" style={{ margin: '8px 0 0', fontSize: 14, color: '#F6C2AE' }}>{error}</p>}
+      {fin.utile && <p style={{ margin: '10px 0 0', fontSize: 13, color: DC.faint }}>{fin.utile} personnes ont trouvé ce cas utile.</p>}
+    </div>
+  );
+};
+
+/** (Dr Lô seul) Les chiffres bruts d'un cas, jamais arrondis ni masqués, et les « non » avec leur texte. */
+export const ChiffresProprio: React.FC<{ chiffres: CdsChiffres }> = ({ chiffres: c }) => {
+  const total = c.utileOui + c.utileNon;
+  return (
+    <div style={{ ...card, marginTop: 14, padding: 12 }}>
+      <p style={{ margin: 0, fontSize: 13, color: DC.muted }}>Chiffres (visibles par toi seul, jamais arrondis)</p>
+      <p style={{ margin: '6px 0 0', fontSize: 15, color: DC.text }}>{c.lecteurs} lecteur{c.lecteurs > 1 ? 's' : ''} · « utile » : {c.utileOui} oui, {c.utileNon} non{total ? ` (${Math.round((100 * c.utileOui) / total)} % de oui)` : ''}</p>
+      {c.non && c.non.length > 0 && (
+        <div style={{ marginTop: 8 }}>
+          <p style={{ margin: 0, fontSize: 13, color: DC.muted }}>Ce qui a manqué, d'après les « non » :</p>
+          <ul style={{ margin: '4px 0 0', paddingLeft: 18, fontSize: 14, lineHeight: 1.5, color: DC.soft }}>{c.non.map((n, i) => <li key={i}>{n.texte}</li>)}</ul>
+        </div>
+      )}
+    </div>
+  );
+};
+
 export const Fin: React.FC<{ fin: CdsFin; accent: string }> = ({ fin, accent }) => {
   const navigate = useNavigate();
   const [rep, setRep] = useState<Record<number, number>>({});
@@ -81,6 +144,7 @@ export const Fin: React.FC<{ fin: CdsFin; accent: string }> = ({ fin, accent }) 
         </div>
       ))}
       {tous && fin.apresQuiz && <p style={{ margin: '14px 0 0', fontSize: 15, color: DC.text }}>{fin.apresQuiz}</p>}
+      <UtileCas fin={fin} accent={accent} />
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 18 }}>
         {fin.testLie && (
           <button type="button" onClick={() => navigate('/compagnon', { state: { prescribe: fin.testLie } })} className="drl-btn" style={testBtn}>

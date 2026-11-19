@@ -3,6 +3,8 @@
  *   GET                           → { answers, topics, waiting } : réponses écrites par Dr Lô (avec leur thème) et nombre de questions en attente (public).
  *   POST { action:'mine', ids }             → l'état des questions déposées depuis cet appareil (waiting / answered / video / closed).
  *   POST { action:'send', text, website? }  → dépose une question, sans compte (website = piège à robots, doit rester vide).
+ *   POST { action:'react', id, kind, visiteurId } → « utile » | « moi » | « pasclair » (privé) | null pour annuler : une réaction par visiteur et par réponse.
+ *   POST { action:'view', id, visiteurId }  → une vue de plus (une seule par visiteur et par réponse).
  *   POST { action:'list' }                  → (espace Dr Lô) les questions reçues.
  *   POST { action:'decide', id, status, publicText?, answer?, note? } → (espace Dr Lô) répondre sur le site, en vidéo, ou classer.
  *   POST { action:'remove', id }            → (espace Dr Lô) supprimer.
@@ -66,6 +68,49 @@ exports.handler = async (event) => {
       return reply(200, { ok: true, support: q.crisis, id: added.id });
     }
 
+    if (body.action === 'react' || body.action === 'view') {
+      const vid = B.visiteurHash(body.visiteurId);
+      const id = String(body.id || '');
+      if (!vid || !B.cleanIds([id]).length) return reply(400, { error: 'Demande incomplète.' });
+      const kind = body.action === 'react' ? (body.kind === null ? null : String(body.kind)) : undefined;
+      if (body.action === 'react' && kind !== null && !B.REACTIONS.includes(kind)) return reply(400, { error: 'Réaction inconnue.' });
+      // La personne qui répond (Dr Lô) ne compte pas dans les chiffres de ses propres réponses
+      const u = await verifyAuth(event).catch(() => null);
+      if (u) { const st = await db.collection('staff').doc(u.uid).get(); if (st.exists && st.data().drlo === true) return reply(200, { ok: true, ignore: true }); }
+      // Frein : au plus 80 gestes par appareil et par jour
+      const day = B.dayKey(); const h = event.headers || {};
+      const ip = String(h['x-nf-client-connection-ip'] || h['x-forwarded-for'] || '').split(',')[0].trim();
+      const rateRef = db.collection('openBoxRate').doc(`${day}_${B.fingerprint(ip, h['user-agent'], day)}_r`);
+      const qRef = COL().doc(id);
+      const out = await db.runTransaction(async (tx) => {
+        const [q, rt] = await Promise.all([tx.get(qRef), tx.get(rateRef)]);
+        if (!q.exists || q.data().status !== 'site') return { code: 404 };
+        const n = rt.exists ? Number(rt.data().n) || 0 : 0;
+        if (n >= 80) return { code: 429 };
+        tx.set(rateRef, { n: n + 1, day }, { merge: true });
+        const inc = (k) => admin.firestore.FieldValue.increment(k);
+        if (body.action === 'view') {
+          const vRef = db.collection('openViews').doc(`${id}_${vid}`);
+          const v = await tx.get(vRef);
+          if (!v.exists) { tx.set(vRef, { id, day }); tx.set(qRef, { vues: inc(1) }, { merge: true }); }
+          return { code: 200 };
+        }
+        const rRef = db.collection('openReactions').doc(`${id}_${vid}`);
+        const r = await tx.get(rRef);
+        const prev = r.exists ? r.data().kind : null;
+        if (prev === kind) return { code: 200, kind };
+        const upd = {};
+        if (prev) upd[`reactions.${prev}`] = inc(-1);
+        if (kind) upd[`reactions.${kind}`] = inc(1);
+        tx.set(qRef, upd, { merge: true });
+        if (kind) tx.set(rRef, { id, kind, day }); else tx.delete(rRef);
+        return { code: 200, kind };
+      });
+      if (out.code === 404) return reply(404, { error: 'Réponse introuvable.' });
+      if (out.code === 429) return reply(429, { error: 'Reviens demain.' });
+      return reply(200, { ok: true, kind: out.kind === undefined ? null : out.kind });
+    }
+
     // Espace Dr Lô
     const user = await verifyAuth(event);
     if (!user) return reply(401, { error: 'Non authentifié' });
@@ -74,7 +119,7 @@ exports.handler = async (event) => {
 
     if (body.action === 'list') {
       const s = await COL().orderBy('createdAt', 'desc').limit(200).get();
-      return reply(200, { items: s.docs.map((d) => { const q = d.data(); return { id: d.id, text: q.text, crisis: !!q.crisis, status: q.status, createdAt: ms(q.createdAt), publicText: q.publicText || '', answer: q.answer || '', note: q.note || '', topic: q.topic || '', topicAuto: q.status === 'site' ? B.classifyTopic(q) : '' }; }) });
+      return reply(200, { items: s.docs.map((d) => { const q = d.data(); return { id: d.id, text: q.text, crisis: !!q.crisis, status: q.status, createdAt: ms(q.createdAt), publicText: q.publicText || '', answer: q.answer || '', note: q.note || '', topic: q.topic || '', topicAuto: q.status === 'site' ? B.classifyTopic(q) : '', vues: Number(q.vues) || 0, reactions: B.reactionsDe(q) }; }) });
     }
     if (!body.id) return reply(400, { error: 'Question manquante' });
     const ref = COL().doc(String(body.id));

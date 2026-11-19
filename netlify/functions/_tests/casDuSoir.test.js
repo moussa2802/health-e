@@ -118,7 +118,7 @@ test('la vue d\'un épisode ne contient ni les « echo » ni l\'autre version', 
 });
 
 // ── La fonction Netlify, avec une base en mémoire ──
-const store = { casDuSoirVotes: {}, casDuSoirResultats: {}, casDuSoirAcces: {}, userProfiles: {}, staff: { papa: { role: 'owner' } } };
+const store = { casDuSoirVotes: {}, casDuSoirResultats: {}, casDuSoirAcces: {}, casDuSoirStats: {}, casDuSoirUtile: {}, casDuSoirRate: {}, userProfiles: {}, staff: { papa: { role: 'owner' } } };
 const spent = [];
 const setIn = (o, key, v) => { const ks = key.split('.'); let t = o; ks.slice(0, -1).forEach((k) => { t[k] = t[k] && typeof t[k] === 'object' ? t[k] : {}; t = t[k]; }); const k = ks[ks.length - 1]; t[k] = v && v.__inc !== undefined ? (Number(t[k]) || 0) + v.__inc : v && v.__union ? [...new Set([...(t[k] || []), ...v.__union])] : v; };
 const apply = (cur, patch) => { const o = JSON.parse(JSON.stringify(cur || {})); for (const [k, v] of Object.entries(patch)) setIn(o, k, v); return o; };
@@ -126,8 +126,13 @@ const ref = (col, id) => ({
   id, get: async () => ({ id, exists: store[col][id] !== undefined, data: () => store[col][id] }),
   set: async (d, opt) => { store[col][id] = opt && opt.merge ? apply(store[col][id], d) : apply({}, d); },
 });
+// Requêtes minimales (égalités seulement) pour la base en mémoire
+const requete = (col, conds) => ({
+  where: (f, o, v) => requete(col, [...conds, [f, v]]), limit: () => requete(col, conds),
+  get: async () => ({ docs: Object.entries(store[col]).filter(([, d]) => conds.every(([f, v]) => d[f] === v)).map(([id, d]) => ({ id, data: () => d })) }),
+});
 const db = {
-  collection: (col) => ({ doc: (id) => ref(col, id) }),
+  collection: (col) => ({ doc: (id) => ref(col, id), where: (f, o, v) => requete(col, [[f, v]]) }),
   runTransaction: async (fn) => { const ops = []; const r = await fn({ get: (x) => x.get(), set: (x, d, o) => ops.push(() => x.set(d, o)) }); for (const o of ops) await o(); return r; },
 };
 const admin = {
@@ -141,7 +146,7 @@ inject('../_koris.js', {
   reserveKoris: async (u, feature, q) => { if (u === 'pauvre') return { error: 'insufficient_balance' }; spent.push([u, feature, q]); return { holdId: `h${spent.length}` }; },
   commitKoris: async () => {}, releaseKoris: async () => {},
 });
-const { handler } = require('../cas-du-soir.js');
+const { handler, _viderCache } = require('../cas-du-soir.js');
 const call = async (body) => { const r = await handler({ httpMethod: 'POST', headers: {}, body: JSON.stringify(body) }); return { status: r.statusCode, body: JSON.parse(r.body) }; };
 const realNow = Date.now;
 
@@ -150,7 +155,7 @@ const DAY = 86400000;
 const D0 = Date.parse(`${H.depart}T00:00:00Z`); // minuit, le jour de l'ouverture publique
 const T = (jours, h = 0, m = 0) => D0 + jours * DAY + h * 3600000 + m * 60000; // l'instant : jour J (0 = ouverture), à h h m (UTC = Dakar)
 const maintenant = (t) => { Date.now = () => t; };
-const reset = () => { for (const c of ['casDuSoirVotes', 'casDuSoirResultats', 'casDuSoirAcces', 'userProfiles']) store[c] = {}; spent.length = 0; uid = null; };
+const reset = () => { for (const c of ['casDuSoirVotes', 'casDuSoirResultats', 'casDuSoirAcces', 'casDuSoirStats', 'casDuSoirUtile', 'casDuSoirRate', 'userProfiles']) store[c] = {}; _viderCache(); spent.length = 0; uid = null; };
 const seed = (u, debut) => { store.casDuSoirAcces[`${u}_${H.id}`] = { uid: u, histoire: H.id, debut }; };
 /** Exécute un test avec le cas du soir ouvert au public (ouverture : H.depart à 20 h) ; tout est remis après. */
 const public_ = (fn) => async () => {
@@ -811,3 +816,83 @@ test("Le téléphone sous l'oreiller : chaque épisode et la leçon ont leur aud
   });
   assert.ok(!/alun/i.test(JSON.stringify(T)));
 });
+
+test('les chiffres montrés au public : rien sous le seuil, exact jusqu\'à 99, puis arrondi par dizaines puis par centaines', () => {
+  const C = require('../_compteurs');
+  assert.deepEqual(C.SEUILS, { lecteurs: 50, utile: 10, moi: 10, vues: 50 });
+  assert.equal(C.afficher(49, C.SEUILS.lecteurs), null);
+  assert.equal(C.afficher(0, C.SEUILS.utile), null);
+  assert.equal(C.afficher(undefined, C.SEUILS.utile), null);
+  assert.equal(C.afficher(50, C.SEUILS.lecteurs), '50');
+  assert.equal(C.afficher(10, C.SEUILS.utile), '10');
+  assert.equal(C.afficher(99, C.SEUILS.vues), '99');
+  assert.equal(C.afficher(100, C.SEUILS.vues), '100+');
+  assert.equal(C.afficher(123, C.SEUILS.vues), '120+');
+  assert.equal(C.afficher(999, C.SEUILS.vues), '990+');
+  assert.equal(C.afficher(1234, C.SEUILS.vues), '1200+');
+});
+
+test('boîte anonyme : « utile » et « moi aussi » sont publics au-dessus du seuil, « pas clair » ne l\'est jamais ; vues masquées sous 50', () => {
+  const B = require('../_openBox');
+  assert.deepEqual(B.REACTIONS, ['utile', 'moi', 'pasclair']);
+  assert.deepEqual(B.reactionsDe({ reactions: { utile: 3, moi: -2, pasclair: 'x' } }), { utile: 3, moi: 0, pasclair: 0 });
+  assert.deepEqual(B.reactionsDe(null), { utile: 0, moi: 0, pasclair: 0 });
+  const bas = B.chiffresPublics({ vues: 49, reactions: { utile: 9, moi: 9, pasclair: 400 } });
+  assert.deepEqual(bas, { vues: null, utile: null, moi: null });
+  const haut = B.chiffresPublics({ vues: 50, reactions: { utile: 12, moi: 130, pasclair: 400 } });
+  assert.deepEqual(haut, { vues: '50', utile: '12', moi: '130+' });
+  assert.ok(!('pasclair' in haut));
+  // une réponse publiée porte ces chiffres, jamais le « pas clair »
+  const [r] = B.publicAnswers([{ id: 'a1', status: 'site', publicText: 'Une question assez longue ?', answer: 'Une réponse.', answeredAt: 5, vues: 77, reactions: { utile: 11, moi: 2, pasclair: 9 } }]);
+  assert.equal(r.vues, '77'); assert.equal(r.utile, '11'); assert.equal(r.moi, null); assert.ok(!('pasclair' in r));
+  // identifiant de visiteur : tiré au hasard dans le navigateur, haché côté serveur ; un identifiant invalide est refusé
+  assert.equal(B.visiteurHash('court'), null);
+  assert.equal(B.visiteurHash('../../etc/passwd-xxxxxxxxxxxxxxxx'), null);
+  const h1 = B.visiteurHash('a1b2c3d4-e5f6-7890-abcd-ef1234567890'); const h2 = B.visiteurHash('a1b2c3d4-e5f6-7890-abcd-ef1234567891');
+  assert.ok(/^[0-9a-f]{32}$/.test(h1)); assert.notEqual(h1, h2);
+});
+
+test('lecteurs : comptés une fois par compte (jamais le propriétaire), masqués sous 50 ; « utile ? » : une réponse par personne, modifiable, le « non » reste privé', public_(async () => {
+  uid = 'lect1'; maintenant(T(0, 21));
+  assert.equal((await call({ action: 'episode', n: 1, histoire: H.id })).status, 200);
+  assert.equal(store.casDuSoirStats[H.id].lecteurs, 1);
+  assert.equal((await call({ action: 'episode', n: 1, histoire: H.id })).status, 200);
+  assert.equal(store.casDuSoirStats[H.id].lecteurs, 1); // l'horloge ne démarre qu'une fois : un seul lecteur
+  uid = 'papa'; maintenant(T(0, 22));
+  assert.equal((await call({ action: 'episode', n: 1, histoire: H.id })).status, 200);
+  assert.equal(store.casDuSoirStats[H.id].lecteurs, 1); // le propriétaire ne compte pas
+  // Le public ne voit aucun chiffre sous le seuil ; le propriétaire seul voit les bruts
+  uid = 'lect1';
+  _viderCache();
+  const lp = (await call({ action: 'liste' })).body.histoires.find((x) => x.id === H.id);
+  assert.deepEqual(lp.stats, { lecteurs: null, utile: null }); assert.equal(lp.chiffres, undefined);
+  uid = 'papa';
+  _viderCache();
+  const lo = (await call({ action: 'liste' })).body.histoires.find((x) => x.id === H.id);
+  assert.equal(lo.chiffres.lecteurs, 1);
+  // « Utile ? » : seulement quand la leçon est lisible, une réponse par personne, qu'on peut changer
+  uid = 'lect1'; maintenant(T(0, 23));
+  assert.equal((await call({ action: 'utile', histoire: H.id, oui: true })).status, 403); // la fin n'est pas ouverte
+  store.casDuSoirAcces[`lect1_${H.id}`].episodes = [2, 3, 4, 5];
+  assert.equal((await call({ action: 'utile', histoire: H.id, oui: 'oui' })).status, 400);
+  assert.equal((await call({ action: 'utile', histoire: H.id, oui: true })).status, 200);
+  assert.equal(store.casDuSoirStats[H.id].utileOui, 1);
+  assert.equal((await call({ action: 'utile', histoire: H.id, oui: true })).status, 200);
+  assert.equal(store.casDuSoirStats[H.id].utileOui, 1); // la même réponse deux fois ne compte qu'une fois
+  assert.equal((await call({ action: 'utile', histoire: H.id, oui: false, texte: '  Il manquait   des exemples  ' })).status, 200);
+  assert.equal(store.casDuSoirStats[H.id].utileOui, 0); assert.equal(store.casDuSoirStats[H.id].utileNon, 1);
+  const doc = Object.values(store.casDuSoirUtile)[0];
+  assert.equal(doc.oui, false); assert.equal(doc.texte, 'Il manquait des exemples');
+  _viderCache();
+  const fin = (await call({ action: 'fin', histoire: H.id })).body;
+  assert.equal(fin.monUtile, 'non'); assert.equal(fin.utile, null);
+  // Le propriétaire (et son aperçu) ne compte jamais ; lui seul voit les « non » et leur texte
+  uid = 'papa';
+  assert.equal((await call({ action: 'utile', histoire: H.id, oui: true })).body.apercu, true);
+  assert.equal(store.casDuSoirStats[H.id].utileOui, 0);
+  _viderCache();
+  const et = (await call({ action: 'etat', histoire: H.id })).body;
+  assert.deepEqual(et.chiffres.non.map((x) => x.texte), ['Il manquait des exemples']);
+  uid = 'lect1';
+  assert.equal((await call({ action: 'etat', histoire: H.id })).body.chiffres, undefined);
+}));

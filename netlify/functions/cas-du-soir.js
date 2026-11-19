@@ -13,6 +13,7 @@
  *   bonus                    → le détail des votes par animal pour toute l'histoire (prix PRIX.bonus, une fois)
  *   autreFin                 → l'autre fin, une fois l'histoire terminée (prix PRIX.autreFin, une fois) ; puis episode { n, autre: true }
  *   fin                      → la leçon (gratuite), le quiz, le test lié, une fois l'épisode 5 lisible
+ *   utile { oui, texte? }    → « Ce cas t'a été utile ? » (une fois la leçon lisible) : oui/non, changeable ; le « non » et son texte restent privés (Dr Lô seul)
  *
  * RYTHME PERSONNEL : chaque lecteur a sa propre horloge (casDuSoirAcces.debut), qui démarre à la première ouverture de l'épisode 1
  * avec un compte. L'épisode n s'ouvre gratuitement pour lui le (n-1)-ième soir après son départ, à 20 h (heure de Dakar = UTC) ;
@@ -26,12 +27,16 @@
  *   casDuSoirVotes/{histoire}_{n}_{votant}   { histoire, n, choix, animal, at }
  *   casDuSoirResultats/{histoire}_{n}         { counts: { A, B, C }, parAnimal: { lion: { A, … } }, total }
  *   casDuSoirAcces/{uid}_{histoire}           { debut, episodes: [n…], bonus: true, autreFin: true, anticipe: true }   (son horloge, ce qu'il a payé)
+ *   casDuSoirStats/{histoire}                 { lecteurs, utileOui, utileNon }   (lecteurs = comptes dont l'horloge a démarré, hors propriétaire)
+ *   casDuSoirUtile/{histoire}_{votant}        { histoire, oui, texte, visiteur, atMs }   (une réponse par personne, modifiable)
  */
 const crypto = require('crypto');
 const { admin, db, verifyAuth } = require('./_firebase');
 const R = require('./_roles');
 const K = require('./_casDuSoir');
-const { totemOf } = require('./_drloComments');
+const { totemOf, moderate, REASON_TEXT } = require('./_drloComments');
+const CP = require('./_compteurs');
+const OB = require('./_openBox');
 const { reserveKoris, commitKoris, releaseKoris } = require('./_koris');
 
 const BUCKET = process.env.FIREBASE_STORAGE_BUCKET || 'health-e-af2bf.firebasestorage.app';
@@ -41,6 +46,8 @@ const inc = (n) => admin.firestore.FieldValue.increment(n);
 const VOTES = () => db.collection('casDuSoirVotes');
 const RES = () => db.collection('casDuSoirResultats');
 const ACCES = () => db.collection('casDuSoirAcces');
+const STATS = () => db.collection('casDuSoirStats');
+const UTILE = () => db.collection('casDuSoirUtile');
 const sha = (s) => crypto.createHash('sha256').update(`cds|${s}`).digest('hex');
 
 /** Le fichier audio est-il déposé ? (la carte dit alors « Écouter », sinon « Lire ») */
@@ -72,14 +79,30 @@ async function accesDe(uid, histoireId) {
   return { debut: Number(d.debut) > 0 ? Number(d.debut) : null, episodes: Array.isArray(d.episodes) ? d.episodes : [], bonus: d.bonus === true, autreFin: d.autreFin === true, anticipe: d.anticipe === true };
 }
 
+/** Les compteurs bruts d'un cas (gardés 60 s en mémoire : la page d'accueil des cas les relit à chaque affichage). */
+const cacheStats = new Map();
+async function statsDe(id) {
+  const c = cacheStats.get(id);
+  const age = c ? Date.now() - c.t : -1;
+  if (c && age >= 0 && age < 60000) return c.v;
+  let v = { lecteurs: 0, utileOui: 0, utileNon: 0 };
+  try { const d = await STATS().doc(id).get(); if (d.exists) { const x = d.data(); v = { lecteurs: Number(x.lecteurs) || 0, utileOui: Number(x.utileOui) || 0, utileNon: Number(x.utileNon) || 0 }; } } catch (e) { console.error('cas-du-soir stats', e.message); }
+  cacheStats.set(id, { t: Date.now(), v });
+  return v;
+}
+/** Ce que voit le public : un chiffre seulement au-dessus du seuil (voir _compteurs.js), sinon rien. */
+const statsPubliques = (st) => ({ lecteurs: CP.afficher(st.lecteurs, CP.SEUILS.lecteurs), utile: CP.afficher(st.utileOui, CP.SEUILS.utile) });
+
 /** Démarre l'horloge personnelle (une seule fois : le premier départ est gardé, même si deux appels se croisent). */
-async function demarrerHorloge(histoireId, uid, t) {
+async function demarrerHorloge(histoireId, uid, t, compter) {
   const ref = ACCES().doc(`${uid}_${histoireId}`);
   return db.runTransaction(async (tx) => {
     const cur = await tx.get(ref);
     const d = cur.exists ? Number(cur.data().debut) : 0;
     if (d > 0) return d;
     tx.set(ref, { uid, histoire: histoireId, debut: t, debutAt: admin.firestore.FieldValue.serverTimestamp() }, { merge: true });
+    // Un lecteur de plus : une personne = un compte dont l'horloge démarre (jamais le propriétaire, jamais deux fois)
+    if (compter) tx.set(STATS().doc(histoireId), { lecteurs: inc(1) }, { merge: true });
     return t;
   });
 }
@@ -110,6 +133,7 @@ function resultats(contenu, r, { choix, animal, bonus }) {
   return out;
 }
 
+exports._viderCache = () => cacheStats.clear(); // pour les tests
 exports.handler = async (event) => {
   if (event.httpMethod === 'OPTIONS') return reply(204, {});
   if (event.httpMethod !== 'POST') return reply(405, { error: 'Méthode non autorisée' });
@@ -134,7 +158,8 @@ exports.handler = async (event) => {
         const ac = await accesDe(uid, x.id);
         const p = K.parusPour(x, { debut: ac.debut, now: realNow, apercu: ap, jour, anticipe: ac.anticipe });
         const prochain = K.prochaineOuverture(x, { parus: p, debut: ac.debut, now: realNow, apercu: ap, jour });
-        return { ...K.vueHistoire(x, { parus: p, debloques: ac.episodes, connecte: !!uid, prochain, anticipe: ac.anticipe, now: realNow }), statut: K.statut(x, p, ac.anticipe) };
+        const st = await statsDe(x.id);
+        return { ...K.vueHistoire(x, { parus: p, debloques: ac.episodes, connecte: !!uid, prochain, anticipe: ac.anticipe, now: realNow }), statut: K.statut(x, p, ac.anticipe), stats: statsPubliques(st), ...(owner ? { chiffres: st } : {}) };
       }));
       return reply(200, { visible: true, histoires, proprio: owner });
     }
@@ -160,7 +185,7 @@ exports.handler = async (event) => {
     // L'horloge démarre à la première ouverture de l'épisode 1 avec un compte (jamais en aperçu, jamais avant l'ouverture publique)
     let debut = acces.debut;
     if (uid && !apercu && !debut && n === 1 && body.autre !== true && (action === 'episode' || action === 'vote') && K.estOuverte(h, realNow)) {
-      debut = await demarrerHorloge(h.id, uid, realNow);
+      debut = await demarrerHorloge(h.id, uid, realNow, !owner);
     }
     const commence = apercu || !!debut;
     const debutAffiche = apercu ? K.debutApercu(realNow, jour) : debut;
@@ -177,8 +202,17 @@ exports.handler = async (event) => {
       const vue = K.vueHistoire(h, { parus, debloques, connecte, prochain, anticipe: acces.anticipe, now: realNow });
       const e = h.episodes[Math.max(1, parus) - 1];
       vue.audio = await audioExiste(e && (e.audio || (e.A && e.A.audio)));
+      const st = await statsDe(h.id);
+      vue.stats = statsPubliques(st);
+      let chiffres = null;
+      if (owner) {
+        // Dr Lô seul : les chiffres bruts et les « non » avec leur texte (pour savoir ce qui a manqué)
+        let non = [];
+        try { const q = await UTILE().where('histoire', '==', h.id).where('oui', '==', false).limit(100).get(); non = q.docs.map((d) => d.data()).filter((x) => x.texte).sort((a, b) => (b.atMs || 0) - (a.atMs || 0)).slice(0, 20).map((x) => ({ texte: x.texte, atMs: x.atMs || 0 })); } catch (e2) { console.error('cas-du-soir non', e2.message); }
+        chiffres = { ...st, non };
+      }
       return reply(200, {
-        visible: true, histoire: vue, prix: K.PRIX, connecte, bonus: acces.bonus, apercu, animal, proprio: owner,
+        visible: true, histoire: vue, prix: K.PRIX, connecte, bonus: acces.bonus, apercu, animal, proprio: owner, ...(chiffres ? { chiffres } : {}),
         autreFin: { achetee: acces.autreFin, possible: connecte && finie && !!h.embranchement && !!branche },
       });
     }
@@ -308,10 +342,48 @@ exports.handler = async (event) => {
       return reply(200, { ok: true, paid: price });
     }
 
+    // « Ce cas t'a été utile ? » : une réponse par personne (modifiable), une fois la leçon lisible. Le « oui » alimente un chiffre public (au-dessus du seuil) ;
+    // le « non » et son texte facultatif restent privés. Le propriétaire (et son aperçu) ne compte jamais.
+    if (action === 'utile') {
+      if (typeof body.oui !== 'boolean') return reply(400, { error: 'Réponse inconnue.' });
+      if (owner || apercu) return reply(200, { ok: true, apercu: true, oui: body.oui });
+      if (!K.peutLire({ n: h.episodes.length, parus, connecte, debloques })) return reply(403, { error: 'La fin n\'est pas encore ouverte.' });
+      if (!qui) return reply(400, { error: 'Visiteur inconnu.' });
+      let texte = '';
+      if (body.oui === false) {
+        texte = String(body.texte || '').replace(/\s+/g, ' ').trim().slice(0, 300);
+        if (texte) { const m = moderate(texte); if (!m.ok && m.reason !== 'crisis') return reply(400, { error: REASON_TEXT[m.reason] || 'Retire les numéros, liens ou mots blessants.' }); }
+      }
+      // Freins : une personne = une réponse ; et au plus 40 envois par appareil et par jour (contre les inscriptions en série)
+      const day = OB.dayKey(); const hd = event.headers || {};
+      const ip = String(hd['x-nf-client-connection-ip'] || hd['x-forwarded-for'] || '').split(',')[0].trim();
+      const rateRef = db.collection('casDuSoirRate').doc(`${day}_${OB.fingerprint(ip, hd['user-agent'], day)}`);
+      const ref = UTILE().doc(`${h.id}_${qui}`); const stRef = STATS().doc(h.id);
+      const verdict = await db.runTransaction(async (tx) => {
+        const [r, cur, rt] = await Promise.all([tx.get(ref), tx.get(stRef), tx.get(rateRef)]);
+        const n = rt.exists ? Number(rt.data().n) || 0 : 0;
+        if (n >= 40) return { ok: false };
+        tx.set(rateRef, { n: n + 1, day }, { merge: true });
+        const prev = r.exists ? r.data().oui : undefined;
+        const upd = {};
+        if (prev === undefined) upd[body.oui ? 'utileOui' : 'utileNon'] = inc(1);
+        else if (prev !== body.oui) { upd[prev ? 'utileOui' : 'utileNon'] = inc(-1); upd[body.oui ? 'utileOui' : 'utileNon'] = inc(1); }
+        if (Object.keys(upd).length) tx.set(stRef, upd, { merge: true });
+        tx.set(ref, { histoire: h.id, oui: body.oui, texte, visiteur: !uid, atMs: Date.now() }, { merge: true });
+        return { ok: true };
+      });
+      if (!verdict.ok) return reply(429, { error: 'Reviens demain.' });
+      cacheStats.delete(h.id);
+      return reply(200, { ok: true, oui: body.oui });
+    }
+
     if (action === 'fin') {
       if (!K.peutLire({ n: h.episodes.length, parus, connecte, debloques })) return reply(403, { error: 'La fin n\'est pas encore ouverte.' });
       const f = h.fin;
-      return reply(200, { titre: f.titre, texte: f.texte, audioUrl: await audioUrl(f.audio), minutage: K.minutage(f.minutage), quiz: f.quiz, apresQuiz: f.apresQuiz || '', testLie: h.testLie || null, testAussi: h.testAussi || null });
+      let monUtile = null;
+      if (qui) { try { const u = await UTILE().doc(`${h.id}_${qui}`).get(); if (u.exists) monUtile = u.data().oui === true ? 'oui' : 'non'; } catch { /* pas grave : la question se repose */ } }
+      const st = await statsDe(h.id);
+      return reply(200, { titre: f.titre, texte: f.texte, audioUrl: await audioUrl(f.audio), minutage: K.minutage(f.minutage), quiz: f.quiz, apresQuiz: f.apresQuiz || '', testLie: h.testLie || null, testAussi: h.testAussi || null, monUtile, utile: statsPubliques(st).utile });
     }
 
     return reply(400, { error: 'Action inconnue' });

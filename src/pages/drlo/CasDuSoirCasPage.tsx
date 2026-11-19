@@ -9,7 +9,7 @@ import { Link, Navigate, useLocation, useNavigate, useParams } from 'react-route
 import { Hourglass, Lock, Moon } from 'lucide-react';
 import DrLoShell, { DC, card, usePalette } from '../../components/accueil/DrLoShell';
 import { ImageCard, SectionTitle, Stack, CompactRow } from '../../components/accueil/HomeParts';
-import { BandeauApercu, DebloquerCas, FenetreConfirmer, Fin, GateAdultes, PartagerCas, PiedCas, etoiles, gratuitEpisode, Maj } from '../../components/casdusoir/CdsParts';
+import { BandeauApercu, ChiffresProprio, DebloquerCas, FenetreConfirmer, Fin, GateAdultes, PartagerCas, PiedCas, etoiles, gratuitEpisode, Maj } from '../../components/casdusoir/CdsParts';
 import AudioSynchro from '../../components/casdusoir/AudioSynchro';
 import { useKoris } from '../../contexts/KorisContext';
 import { CAS_DU_SOIR_PRIX } from '../../config/contenusPayants';
@@ -97,9 +97,11 @@ const CasDuSoirCasPage: React.FC = () => {
       <p style={{ margin: '14px 0 0', fontSize: 13, fontWeight: 700, color: palette.accent }}>Le cas du soir</p>
       <h1 style={{ margin: '4px 0 0', fontFamily: 'Fraunces, serif', fontSize: 28, lineHeight: 1.15, color: DC.title }}>{h.titre}</h1>
       <p style={{ margin: '6px 0 0', fontSize: 15, lineHeight: 1.5, color: DC.soft }}>{h.accroche}</p>
+      <p style={{ margin: '8px 0 0', fontSize: 13, color: DC.faint }}>{h.stats?.lecteurs ? `${h.stats.lecteurs} lecteurs` : 'Nouveau'}{h.stats?.utile ? ` · ${h.stats.utile} ont trouvé ce cas utile` : ''}</p>
       <PartagerCas id={h.id} titre={h.titre} accroche={h.accroche} accent={palette.accent} />
       {h.debloquer ? <DebloquerCas id={h.id} titre={h.titre} ouverture={h.ouverture} prix={h.debloquer} accent={palette.accent} onDone={load} /> : null}
 
+      {etat.proprio && etat.chiffres && <ChiffresProprio chiffres={etat.chiffres} />}
       {etat.proprio && <BandeauApercu accent={palette.accent} onChange={load} total={h.total} embranchement={h.embranchement} />}
 
       <SectionTitle>Les épisodes</SectionTitle>

@@ -12,8 +12,8 @@ import { ChevronDown, Clock, Pin, Phone, Search, Video } from 'lucide-react';
 import DrLoShell, { DC, card, usePalette } from '../../components/accueil/DrLoShell';
 import { RealDrLoPhoto } from '../../components/accueil/RealDrLoBadge';
 import {
-  forgetMyQuestion, getBox, getMineStatus, readMyQuestions, rememberMyQuestion, sendBoxQuestion,
-  type BoxAnswer, type BoxTopic, type MineStatus, type MyQuestion,
+  compterVue, forgetMyQuestion, getBox, getMineStatus, readMyQuestions, readReactions, reagir, rememberMyQuestion, sendBoxQuestion,
+  type BoxAnswer, type BoxTopic, type MineStatus, type MyQuestion, type Reaction,
 } from '../../services/boxService';
 import { pageTitle } from './outilsShared';
 
@@ -35,6 +35,35 @@ const short = (t: string, n = 150) => (t.length > n ? `${t.slice(0, n).trimEnd()
 const Pill: React.FC<{ color: string; children: React.ReactNode }> = ({ color, children }) => (
   <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '3px 10px', borderRadius: 999, border: `1px solid ${color}`, color, fontSize: 12, fontWeight: 700, whiteSpace: 'nowrap' }}>{children}</span>
 );
+
+/**
+ * Tes réactions à une réponse : « Utile » et « Moi aussi » (j'ai la même question) sont publiques, sans nom, avec un chiffre seulement au-dessus de 10 ;
+ * « Pas clair » reste privé (seul Dr Lô le voit). Une seule réaction par réponse, qu'on peut changer ou annuler en la retouchant.
+ */
+const Reactions: React.FC<{ a: BoxAnswer; accent: string }> = ({ a, accent }) => {
+  const [mienne, setMienne] = useState<Reaction | null>(() => readReactions()[a.id] ?? null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+  const toucher = async (k: Reaction) => {
+    const suite = mienne === k ? null : k;
+    setBusy(true); setError('');
+    try { await reagir(a.id, suite); setMienne(suite); } catch (e) { setError(e instanceof Error ? e.message : 'Erreur'); }
+    finally { setBusy(false); }
+  };
+  const btn = (actif: boolean): React.CSSProperties => ({ minHeight: 44, padding: '0 14px', borderRadius: 999, cursor: busy ? 'default' : 'pointer', fontSize: 14, fontWeight: 700, fontFamily: 'inherit', color: actif ? '#1C1612' : DC.text, border: `1px solid ${actif ? accent : DC.line}`, background: actif ? accent : 'transparent' });
+  const items: { k: Reaction; label: string; n: string | null | undefined }[] = [{ k: 'utile', label: 'Utile', n: a.utile }, { k: 'moi', label: 'Moi aussi', n: a.moi }, { k: 'pasclair', label: 'Pas clair', n: null }];
+  return (
+    <div style={{ marginTop: 14 }}>
+      <div role="group" aria-label="Ta réaction à cette réponse" style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+        {items.map(i => <button key={i.k} type="button" disabled={busy} aria-pressed={mienne === i.k} onClick={() => void toucher(i.k)} className="drl-btn" style={btn(mienne === i.k)}>{i.label}{i.n ? ` · ${i.n}` : ''}</button>)}
+      </div>
+      <p role="status" style={{ margin: '8px 0 0', fontSize: 13, lineHeight: 1.45, color: DC.faint }}>
+        {mienne ? 'Merci. ' : ''}« Moi aussi » veut dire : j'ai la même question. « Pas clair » reste privé : seul Dr Lô le voit.{a.vues ? ` · Lue par ${a.vues} personnes.` : ''}
+      </p>
+      {error && <p role="alert" style={{ margin: '6px 0 0', fontSize: 13, color: '#F09A7A' }}>{error}</p>}
+    </div>
+  );
+};
 
 const BoitePage: React.FC = () => {
   const palette = usePalette();
@@ -105,7 +134,7 @@ const BoitePage: React.FC = () => {
   }, [visible.length, topic, query]); // eslint-disable-line react-hooks/exhaustive-deps
   const [seen, setSeen] = useState<Set<string>>(() => readSeen());
   const markSeen = (id: string) => setSeen(prev => { if (prev.has(id)) return prev; const n = new Set(prev); n.add(id); writeSeen(n); return n; });
-  const toggle = (id: string) => { setOpen(o => ({ ...o, [id]: !o[id] })); markSeen(id); };
+  const toggle = (id: string) => { if (!open[id]) compterVue(id); setOpen(o => ({ ...o, [id]: !o[id] })); markSeen(id); };
   // Une réponse restée à l'écran un instant est « vue » : le badge ne reviendra pas à la prochaine visite (il reste jusque-là pour ne pas bouger sous les yeux)
   const vues = useRef<Set<string>>(readSeen());
   const listRef = useRef<HTMLDivElement | null>(null);
@@ -245,7 +274,7 @@ const BoitePage: React.FC = () => {
                           </span>
                           <ChevronDown size={20} color={DC.soft} aria-hidden="true" style={{ flexShrink: 0, marginTop: 20, transform: isOpen ? 'rotate(180deg)' : 'none', transition: 'transform .2s' }} />
                         </button>
-                        {isOpen && <div style={{ padding: '0 16px 16px' }}>{answerBlock(a.answer)}</div>}
+                        {isOpen && <div style={{ padding: '0 16px 16px' }}>{answerBlock(a.answer)}<Reactions a={a} accent={palette.accent} /></div>}
                       </article>
                     );
                   })}

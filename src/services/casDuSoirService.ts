@@ -31,16 +31,21 @@ export interface CdsHistoire {
   /** prix pour ouvrir tout le cas tout de suite, ou null (déjà ouvert, déjà débloqué ou pas de déblocage) */
   debloquer?: number | null;
   anticipe?: boolean;
+  /** ce que le public voit : un chiffre seulement au-dessus du seuil (50 lecteurs, 10 « utile »), sinon null ; déjà arrondi par le serveur (« 120+ ») */
+  stats?: { lecteurs: string | null; utile: string | null };
+  /** (propriétaire seulement) les chiffres bruts, et les « non » avec leur texte */
+  chiffres?: CdsChiffres;
 }
+export interface CdsChiffres { lecteurs: number; utileOui: number; utileNon: number; non?: { texte: string; atMs: number }[] }
 export interface CdsPrix { suite: Record<number, number>; bonus: number; autreFin: number }
-export interface CdsEtat { visible: boolean; histoire?: CdsHistoire; prix?: CdsPrix; autreFin?: { achetee: boolean; possible: boolean }; connecte?: boolean; bonus?: boolean; apercu?: boolean; animal?: string | null; proprio?: boolean }
+export interface CdsEtat { visible: boolean; histoire?: CdsHistoire; prix?: CdsPrix; autreFin?: { achetee: boolean; possible: boolean }; connecte?: boolean; bonus?: boolean; apercu?: boolean; animal?: string | null; proprio?: boolean; chiffres?: CdsChiffres }
 export interface CdsEpisodeReponse {
   episode: CdsEpisode; audioUrl: string | null; monChoix: string | null; resultats: CdsResultats | null;
   /** parution : l'ouverture GRATUITE de l'épisode suivant pour CE lecteur (son rythme) ; null tant que son horloge n'a pas démarré */
   suite: { n: number; lisible: boolean; parution: number | null; avance: { ok: boolean; raison?: string; prix?: number } } | null;
   finLisible: boolean; apercu: boolean; autre?: boolean;
 }
-export interface CdsFin { titre: string; texte: string; audioUrl: string | null; minutage?: CdsMinutage | null; quiz: { question: string; reponses: string[]; bonne: number; explication: string }[]; apresQuiz?: string; testLie: string | null; testAussi?: string | null }
+export interface CdsFin { monUtile?: 'oui' | 'non' | null; utile?: string | null; titre: string; texte: string; audioUrl: string | null; minutage?: CdsMinutage | null; quiz: { question: string; reponses: string[]; bonne: number; explication: string }[]; apresQuiz?: string; testLie: string | null; testAussi?: string | null }
 
 export class CdsError extends Error {
   status: number; data: Record<string, unknown>;
@@ -99,6 +104,8 @@ export const voter = (n: number, choix: string) => call<{ ok: boolean; monChoix:
 export const avancer = (n: number) => call<{ ok: boolean; paid: number }>({ action: 'avancer', n });
 /** Ouvrir tout le cas tout de suite (avant son ouverture publique) : un seul paiement, le prix est celui du serveur. */
 export const debloquerCas = (id: string) => call<{ ok: boolean; paid?: number; deja?: boolean }>({ action: 'debloquer', histoire: id });
+/** « Ce cas t'a été utile ? » : oui, ou non avec un texte facultatif (privé : Dr Lô seul le lit). Une réponse par personne, qu'on peut changer. */
+export const repondreUtile = (oui: boolean, texte?: string) => call<{ ok: boolean; oui: boolean; apercu?: boolean }>({ action: 'utile', oui, ...(texte ? { texte } : {}) });
 export const acheterBonus = () => call<{ ok: boolean }>({ action: 'bonus' });
 export const getFin = () => call<CdsFin>({ action: 'fin' });
 

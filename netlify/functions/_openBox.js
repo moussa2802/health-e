@@ -5,6 +5,7 @@
  */
 const crypto = require('crypto');
 const C = require('./_drloComments');
+const CP = require('./_compteurs');
 
 const MIN = 8;
 const MAX = 500;
@@ -84,11 +85,29 @@ function classifyTopic(row) {
   return best ? best.id : OTHER_TOPIC.id;
 }
 
+/**
+ * Les réactions d'une réponse : « Utile » et « Moi aussi » sont publiques (au-dessus du seuil seulement), « Pas clair » reste privé (Dr Lô seul).
+ * Un visiteur = une seule réaction par réponse ; il peut la changer ou l'annuler.
+ */
+const REACTIONS = ['utile', 'moi', 'pasclair'];
+const reactionsDe = (row) => { const r = (row && row.reactions) || {}; return { utile: Math.max(0, Number(r.utile) || 0), moi: Math.max(0, Number(r.moi) || 0), pasclair: Math.max(0, Number(r.pasclair) || 0) }; };
+/** Ce que voit le public d'une réponse : vues, « utile », « moi aussi » (un chiffre seulement au-dessus du seuil, sinon null). */
+function chiffresPublics(row) {
+  const r = reactionsDe(row);
+  return { vues: CP.afficher(row && row.vues, CP.SEUILS.vues), utile: CP.afficher(r.utile, CP.SEUILS.utile), moi: CP.afficher(r.moi, CP.SEUILS.moi) };
+}
+/** Identifiant de visiteur (tiré au hasard dans le navigateur) → empreinte qui ne permet pas de le retrouver. */
+const VISITEUR_RE = /^[A-Za-z0-9-]{16,64}$/;
+function visiteurHash(raw, secret = process.env.OPENBOX_SALT || 'health-e-box') {
+  const v = String(raw || '');
+  return VISITEUR_RE.test(v) ? crypto.createHash('sha256').update(`${secret}|react|${v}`).digest('hex').slice(0, 32) : null;
+}
+
 /** Les réponses publiées sur le site, les plus récentes d'abord, avec leur thème. */
 function publicAnswers(rows, limit = 100) {
   return rows
     .filter((r) => r && r.status === 'site' && r.publicText && r.answer)
-    .map((r) => ({ id: r.id, question: r.publicText, answer: r.answer, at: ms(r.answeredAt), topic: classifyTopic(r) }))
+    .map((r) => ({ id: r.id, question: r.publicText, answer: r.answer, at: ms(r.answeredAt), topic: classifyTopic(r), ...chiffresPublics(r) }))
     .sort((a, b) => b.at - a.at)
     .slice(0, limit);
 }
@@ -106,4 +125,4 @@ function mineView(id, row) {
   return { id, state: 'waiting' };
 }
 
-module.exports = { TOPICS, OTHER_TOPIC, classifyTopic, cleanIds, mineView, MIN, MAX, MAX_ANSWER, PER_DAY, GLOBAL_PER_DAY, STATUSES, cleanQuestion, dayKey, fingerprint, allow, cleanDecision, publicAnswers };
+module.exports = { REACTIONS, reactionsDe, chiffresPublics, visiteurHash, TOPICS, OTHER_TOPIC, classifyTopic, cleanIds, mineView, MIN, MAX, MAX_ANSWER, PER_DAY, GLOBAL_PER_DAY, STATUSES, cleanQuestion, dayKey, fingerprint, allow, cleanDecision, publicAnswers };
