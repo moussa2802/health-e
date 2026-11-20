@@ -14,7 +14,7 @@ import AudioSynchro from '../../components/casdusoir/AudioSynchro';
 import { useKoris } from '../../contexts/KorisContext';
 import { CAS_DU_SOIR_PRIX } from '../../config/contenusPayants';
 import {
-  acheterAutreFin, avancer, CdsError, getEpisodes, getEtat, getFin, quandLabel, setHistoire,
+  acheterAutreFin, avancer, CdsError, getEpisodes, getEtat, getFin, noterGeste, quandLabel, setHistoire,
   type CdsEpisodeCarte, type CdsEtat, type CdsFin,
 } from '../../services/casDuSoirService';
 
@@ -39,7 +39,7 @@ const CasDuSoirCasPage: React.FC = () => {
     getEtat().then(setEtat).catch(() => setEtat({ visible: false }));
     getEpisodes().then(setEps).catch(e => setError(e instanceof Error ? e.message : 'Erreur'));
   };
-  useEffect(() => { setFin(null); load(); }, [id]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { setFin(null); load(); setHistoire(id); noterGeste('page'); }, [id]); // eslint-disable-line react-hooks/exhaustive-deps
   // Arrivée depuis le dernier épisode : la leçon s'ouvre directement
   useEffect(() => {
     if ((location.state as { fin?: boolean } | null)?.fin && eps?.finie && !fin) getFin().then(setFin).catch(() => {});

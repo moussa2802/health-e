@@ -15,6 +15,7 @@
  *   embranchement: 3,                   le vote de cet épisode décide de la suite DE CHAQUE PERSONNE (2 choix, A et B) : personnel, sans date
  *                                       commune ni majorité (17/11/2026). Sans embranchement : l'histoire est linéaire
  *   categorie: 'mentale'|'sexuelle',   le rayon de la liste des cas (santé mentale / santé sexuelle) ; obligatoire
+ *   cache: true,                        en construction : seul le propriétaire voit ce cas (on le retire le jour de la mise en ligne)
  *   adultes: true,                      réservé aux adultes : écran « 18 ans ou plus » avant d'entrer
  *   debloquer: 20,                      prix (étincelles) pour ouvrir tout le cas avant son ouverture publique ; prixSuite: { 4: 8 } : prix propres au cas
  *   testLie, testAussi                  tests proposés à la fin (identifiants du catalogue)
@@ -31,6 +32,7 @@
  *       une réplique par ligne ; audio : chemin dans Firebase Storage, casDuSoir/{id}/ep2.mp3 … pour un épisode payant (lien
  *       signé, donné seulement à qui y a droit) ; ou un fichier public « /audio/cas-du-soir/{id}-ep1.mp3 » pour un épisode
  *       gratuit pour tous (l'épisode 1). Fichier absent : le lecteur se masque et le texte s'affiche seul.
+ *       tests : [ids] (2 au plus) : les tests proposés à la fin de l'épisode (« Pour toi »)
  *       minutage : la clé d'un minutage de _casDuSoirMinutages.js (texte surligné pendant l'écoute, images qui changent)
  *       choix : 3 réponses (2 à l'embranchement) ; echo : la phrase montrée après ce choix
  *   ],
@@ -300,5 +302,6 @@ const VU_DE_MINUIT = {
 const GOUMIN = require('./_casDuSoirGoumin');
 const PLAISIR = require('./_casDuSoirPlaisir');
 const TELEPHONE = require('./_casDuSoirTelephone');
+const DEPENDANCE = require('./_casDuSoirDependance');
 
-module.exports = { HISTOIRES: [VU_DE_MINUIT, GOUMIN, PLAISIR, TELEPHONE] };
+module.exports = { HISTOIRES: [VU_DE_MINUIT, GOUMIN, PLAISIR, TELEPHONE, DEPENDANCE] };

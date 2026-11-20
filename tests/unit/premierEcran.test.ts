@@ -18,9 +18,9 @@ test('moment de la journée : matin / après-midi / soir', () => {
 });
 
 test('salutation avec et sans prénom', () => {
-  assert.equal(greetingFor('matin'), 'Jàmm nga fanaane ?');
-  assert.equal(greetingFor('aprem', 'Awa'), 'Na nga def, Awa ?');
-  assert.equal(greetingFor('soir', 'Moussa'), 'Na nga yendoo, Moussa ?');
+  assert.equal(greetingFor('matin'), 'Bonjour');
+  assert.equal(greetingFor('aprem', 'Awa'), 'Bonjour, Awa');
+  assert.equal(greetingFor('soir', 'Moussa'), 'Bonsoir, Moussa');
 });
 
 test('humeur : clé de jour locale, ajout, mise à jour, annulation', () => {

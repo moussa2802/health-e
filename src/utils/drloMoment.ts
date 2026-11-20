@@ -13,10 +13,10 @@ export function getMoment(d: Date = new Date()): Moment {
   return 'soir';
 }
 
-/** Salutation du titre. Sans prénom : « Na nga def ? » ; avec : « Na nga def, Awa ? ». */
+/** Salutation du titre, en français (plus de mots wolofs, décision du 19/11/2026). Sans prénom : « Bonsoir » ; avec : « Bonsoir, Awa ». */
 export function greetingFor(moment: Moment, prenom?: string): string {
-  const base = moment === 'matin' ? 'Jàmm nga fanaane' : moment === 'aprem' ? 'Na nga def' : 'Na nga yendoo';
-  return prenom ? `${base}, ${prenom} ?` : `${base} ?`;
+  const base = moment === 'soir' ? 'Bonsoir' : 'Bonjour';
+  return prenom ? `${base}, ${prenom}` : base;
 }
 
 export interface MomentPalette {

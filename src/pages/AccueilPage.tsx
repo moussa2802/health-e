@@ -181,6 +181,14 @@ interface Suite {
  */
 const SHOW_HOME_PENC = false;
 const SHOW_HOME_ANIMAUX = false;
+/**
+ * Accueil épuré (décision du 19/11/2026) : l'accueil ne garde que le cas du soir, « Ta suite », le message de Dr Lô et la boîte anonyme.
+ * Mis de côté, tout reste en place (le compagnon garde « Respirer » et « Me confier ») ; pour les remettre : passer la constante à true.
+ */
+const SHOW_HOME_MOT = false;      // le mot du compagnon (post-it du jour)
+const SHOW_HOME_CADEAU = false;   // le cadeau du jour (les étincelles de bienvenue et de parrainage continuent)
+const SHOW_HOME_HUMEUR = false;   // « Comment tu te sens ? »
+const SHOW_HOME_RISE = false;     // « Quand ça monte » : Respirer 1 min, Me confier
 
 const TEASER: TotemAnimal[] = ['lion', 'cerf', 'dauphin', 'panthere', 'hibou'];
 const AnimalTeaser: React.FC<{ palette: MomentPalette }> = ({ palette }) => (
@@ -237,7 +245,7 @@ const VisitorHome: React.FC<{ feed: HomeFeed | null; palette: MomentPalette }> =
         </>
       )}
       <AskBox />
-      <WhenItRises confier={false} />
+      {SHOW_HOME_RISE && <WhenItRises confier={false} />}
     </>
   );
 };
@@ -349,10 +357,13 @@ const ConnectedHome: React.FC<{ feed: HomeFeed | null; palette: MomentPalette; u
       <GrewCard palette={palette} />
 
       {/* Le petit mot du compagnon, comme un post-it sur le miroir (un nouveau chaque jour) */}
-      <MotDuJour uid={uid} palette={palette} focus={new URLSearchParams(window.location.search).has('mot')} />
+      {SHOW_HOME_MOT && <MotDuJour uid={uid} palette={palette} focus={new URLSearchParams(window.location.search).has('mot')} />}
 
       {/* Une seule carte vedette : un Pénc en direct, sinon ta suite (le compagnon et les tests) ; puis Pénc mi, le cas du soir, ton message, l'humeur */}
       {SHOW_HOME_PENC && pencLive && <HomePenc palette={palette} full={launch.on('penc_page')} onLive={setPencLive} />}
+
+      {/* Le cas du soir d'abord : c'est la raison de revenir chaque soir (visible seulement si le serveur le dit) */}
+      <CasDuSoirCard accent={palette.accent} />
 
       {suite && !(SHOW_HOME_PENC && pencLive) && (
         <section aria-label="Ta suite" style={{ ...card, marginTop: 14, padding: 16, position: 'relative', overflow: 'hidden', borderColor: `${cc}80`, background: `radial-gradient(60% 80% at 100% 0%, ${cc}4D, transparent 70%), linear-gradient(140deg, ${cc}33, rgba(26,18,11,.9) 65%)` }}>
@@ -390,9 +401,7 @@ const ConnectedHome: React.FC<{ feed: HomeFeed | null; palette: MomentPalette; u
 
       {/* Les animaux intérieurs de la communauté : les nouveaux du jour, et combien de chaque */}
       {(SHOW_HOME_ANIMAUX || owner) && <AnimauxCommunaute mine={myAnimal} accent={palette.accent} />}
-      <CasDuSoirCard accent={palette.accent} />
-
-      <DailyGiftCard palette={palette} />
+      {SHOW_HOME_CADEAU && <DailyGiftCard palette={palette} />}
 
 
       {(lastMsg || (chBadge > 0 && launch.on('chaines'))) && (
@@ -416,13 +425,13 @@ const ConnectedHome: React.FC<{ feed: HomeFeed | null; palette: MomentPalette; u
         </>
       )}
 
-      {moodDone === false && (
+      {SHOW_HOME_HUMEUR && moodDone === false && (
         <div style={{ marginTop: GAP }}>
           <CompactRow onClick={() => setMoodOpen(true)} title="Comment tu te sens ?" sub="Note ton humeur en 30 secondes." tint={DC.sage} icon={<CloudSun size={22} color={DC.sage} />} />
         </div>
       )}
 
-      {moodOpen && <MoodSheet uid={uid} prenom={prenom} onNoted={() => { setMoodDone(true); setMoods(m => ({ ...m, [today]: { mood: 'bof', at: Date.now() } })); }} onClose={() => setMoodOpen(false)} />}
+      {SHOW_HOME_HUMEUR && moodOpen && <MoodSheet uid={uid} prenom={prenom} onNoted={() => { setMoodDone(true); setMoods(m => ({ ...m, [today]: { mood: 'bof', at: Date.now() } })); }} onClose={() => setMoodOpen(false)} />}
 
       {prog && launch.on('programme') && <HomeProgramme uid={uid} prog={prog} onProg={setProg} moods={moods} onMoods={setMoods} prenom={prenom} genre={getOnboardingProfile()?.genre ?? undefined} palette={palette} />}
 
@@ -444,7 +453,7 @@ const ConnectedHome: React.FC<{ feed: HomeFeed | null; palette: MomentPalette; u
         </>
       )}
       <AskBox />
-      <WhenItRises confier={launch.on('confier')} />
+      {SHOW_HOME_RISE && <WhenItRises confier={launch.on('confier')} />}
     </>
   );
 };

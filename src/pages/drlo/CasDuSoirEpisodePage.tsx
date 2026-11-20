@@ -8,11 +8,11 @@ import { Link, Navigate, useLocation, useNavigate, useParams } from 'react-route
 import { ChevronRight, Loader2, Moon } from 'lucide-react';
 import DrLoShell, { DC, card, usePalette } from '../../components/accueil/DrLoShell';
 import AudioSynchro from '../../components/casdusoir/AudioSynchro';
-import { FenetreConfirmer, GateAdultes, PiedCas, Resultats, etoiles, gratuitEpisode, Maj } from '../../components/casdusoir/CdsParts';
+import { FenetreConfirmer, GateAdultes, PiedCas, Resultats, TestsEpisode, etoiles, gratuitEpisode, Maj } from '../../components/casdusoir/CdsParts';
 import { useKoris } from '../../contexts/KorisContext';
 import { CAS_DU_SOIR_PRIX } from '../../config/contenusPayants';
 import {
-  acheterBonus, avancer, CdsError, getEpisode, getEtat, quandLabel, setBrancheApercu, setHistoire, voter,
+  acheterBonus, avancer, CdsError, getEpisode, getEtat, noterGeste, quandLabel, setBrancheApercu, setHistoire, voter,
   type CdsEpisodeReponse, type CdsEtat,
 } from '../../services/casDuSoirService';
 
@@ -38,7 +38,7 @@ const CasDuSoirEpisodePage: React.FC = () => {
 
   const loadEtat = () => getEtat().then(setEtat).catch(() => setEtat({ visible: false }));
   useEffect(() => {
-    setHistoire(id); setEp(null); setError('');
+    setHistoire(id); setEp(null); setError(''); noterGeste('page');
     void loadEtat();
     getEpisode(n, autre).then(setEp).catch(er => setError(messageErreur(er)));
     window.scrollTo?.(0, 0);
@@ -110,6 +110,8 @@ const CasDuSoirEpisodePage: React.FC = () => {
               </div>
             ) : ep.resultats && <Resultats ep={ep} r={ep.resultats} monChoix={ep.monChoix} accent={palette.accent} />}
           </>}
+
+          {!ep.autre && <TestsEpisode ids={ep.episode.tests ?? []} accent={palette.accent} />}
 
           {ep.monChoix && etat.connecte && !etat.bonus && ep.resultats?.parChoix && (
             <button type="button" disabled={!!busy} onClick={() => setConfirme('bonus')} style={{ ...ghost, marginTop: 14, minHeight: 44, fontSize: 14 }}>

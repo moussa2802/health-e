@@ -7,7 +7,8 @@ const path = require('node:path');
 const K = require('../_casDuSoir');
 
 // Réglage de lancement (20/11/2026), relevé avant que les tests ne le neutralisent : ouverture échelonnée décidée par Papa Moussa le 19/11/2026.
-const LANCEMENT = { public: K.CAS_DU_SOIR_PUBLIC, cas: K.HISTOIRES.map((h) => ({ id: h.id, depart: h.depart, heure: h.heure, programmee: h.programmee, adultes: !!h.adultes })) };
+const LANCEMENT = { public: K.CAS_DU_SOIR_PUBLIC, cas: K.HISTOIRES.filter((h) => !h.cache).map((h) => ({ id: h.id, depart: h.depart, heure: h.heure, programmee: h.programmee, adultes: !!h.adultes })) };
+// (un cas « cache: true », en construction, n'est pas dans le lancement)
 // Les tests ci-dessous partent d'un état masqué (rien de public, aucune date) et ouvrent eux-mêmes ce qu'ils testent.
 K.CAS_DU_SOIR_PUBLIC = false;
 for (const h of K.HISTOIRES) h.programmee = false;
@@ -124,7 +125,7 @@ test('la vue d\'un épisode ne contient ni les « echo » ni l\'autre version', 
 });
 
 // ── La fonction Netlify, avec une base en mémoire ──
-const store = { casDuSoirVotes: {}, casDuSoirResultats: {}, casDuSoirAcces: {}, casDuSoirStats: {}, casDuSoirUtile: {}, casDuSoirRate: {}, userProfiles: {}, staff: { papa: { role: 'owner' } } };
+const store = { casDuSoirVotes: {}, casDuSoirResultats: {}, casDuSoirAcces: {}, casDuSoirStats: {}, casDuSoirUtile: {}, casDuSoirRate: {}, casDuSoirEvt: {}, openQuestions: {}, userProfiles: {}, staff: { papa: { role: 'owner' } } };
 const spent = [];
 const setIn = (o, key, v) => { const ks = key.split('.'); let t = o; ks.slice(0, -1).forEach((k) => { t[k] = t[k] && typeof t[k] === 'object' ? t[k] : {}; t = t[k]; }); const k = ks[ks.length - 1]; t[k] = v && v.__inc !== undefined ? (Number(t[k]) || 0) + v.__inc : v && v.__union ? [...new Set([...(t[k] || []), ...v.__union])] : v; };
 const apply = (cur, patch) => { const o = JSON.parse(JSON.stringify(cur || {})); for (const [k, v] of Object.entries(patch)) setIn(o, k, v); return o; };
@@ -161,7 +162,7 @@ const DAY = 86400000;
 const D0 = Date.parse(`${H.depart}T00:00:00Z`); // minuit, le jour de l'ouverture publique
 const T = (jours, h = 0, m = 0) => D0 + jours * DAY + h * 3600000 + m * 60000; // l'instant : jour J (0 = ouverture), à h h m (UTC = Dakar)
 const maintenant = (t) => { Date.now = () => t; };
-const reset = () => { for (const c of ['casDuSoirVotes', 'casDuSoirResultats', 'casDuSoirAcces', 'casDuSoirStats', 'casDuSoirUtile', 'casDuSoirRate', 'userProfiles']) store[c] = {}; _viderCache(); spent.length = 0; uid = null; };
+const reset = () => { for (const c of ['casDuSoirVotes', 'casDuSoirResultats', 'casDuSoirAcces', 'casDuSoirStats', 'casDuSoirUtile', 'casDuSoirRate', 'casDuSoirEvt', 'openQuestions', 'userProfiles']) store[c] = {}; _viderCache(); spent.length = 0; uid = null; };
 const seed = (u, debut) => { store.casDuSoirAcces[`${u}_${H.id}`] = { uid: u, histoire: H.id, debut }; };
 /** Exécute un test avec le cas du soir ouvert au public (ouverture : H.depart à 20 h) ; tout est remis après. */
 const public_ = (fn) => async () => {
@@ -903,6 +904,45 @@ test('lecteurs : comptés une fois par compte (jamais le propriétaire), masqué
   assert.equal((await call({ action: 'etat', histoire: H.id })).body.chiffres, undefined);
 }));
 
+test('statistiques admin : Dr Lô seul, chiffres bruts par cas (lecteurs, payeurs, votes par épisode, « non »)', public_(async () => {
+  uid = 'lect1'; maintenant(T(0, 21));
+  await call({ action: 'episode', n: 1, histoire: H.id });
+  store.casDuSoirAcces[`lect1_${H.id}`].episodes = [2];
+  assert.equal((await call({ action: 'statistiques' })).status, 403); // un lecteur ne voit rien
+  uid = null;
+  assert.equal((await call({ action: 'statistiques' })).status, 403);
+  uid = 'papa';
+  _viderCache();
+  const r = await call({ action: 'statistiques' });
+  assert.equal(r.status, 200);
+  const c = r.body.cas.find((x) => x.id === H.id);
+  assert.equal(c.lecteurs, 1); assert.equal(c.commences, 1); assert.equal(c.payeurs, 1);
+  assert.equal(c.episodes.length, H.episodes.length);
+  assert.equal(c.episodes[1].ouverts, 1);
+  assert.ok(r.body.cas.length === K.HISTOIRES.length); // les cas cachés y sont aussi
+}));
+
+test('gestes comptés une fois par personne : page, épisodes lus, leçon, quiz, test ouvert ; jamais le propriétaire ; visibles de Dr Lô seul', public_(async () => {
+  uid = 'lect1'; maintenant(T(0, 21));
+  for (let i = 0; i < 2; i++) assert.equal((await call({ action: 'evenement', kind: 'page', histoire: H.id })).status, 200);
+  assert.equal((await call({ action: 'evenement', kind: 'inconnu', histoire: H.id })).status, 400);
+  assert.equal((await call({ action: 'evenement', kind: 'test', histoire: H.id, id: 'nimporte' })).status, 400);
+  assert.equal((await call({ action: 'evenement', kind: 'quiz', histoire: H.id })).status, 403); // la leçon n'est pas ouverte
+  await call({ action: 'episode', n: 1, histoire: H.id }); await call({ action: 'episode', n: 1, histoire: H.id });
+  const lu = Object.values(store.casDuSoirStats)[0];
+  assert.equal(store.casDuSoirStats[H.id].visiteurs, 1); assert.equal(store.casDuSoirStats[H.id].visiteursCompte, 1);
+  assert.equal(store.casDuSoirStats[H.id].lu_1, 1); assert.ok(lu);
+  store.casDuSoirAcces[`lect1_${H.id}`].episodes = [2, 3, 4, 5];
+  assert.equal((await call({ action: 'evenement', kind: 'quiz', histoire: H.id })).status, 200);
+  await call({ action: 'fin', histoire: H.id });
+  assert.equal(store.casDuSoirStats[H.id].quiz, 1); assert.equal(store.casDuSoirStats[H.id].lu_fin, 1);
+  uid = 'papa';
+  await call({ action: 'evenement', kind: 'page', histoire: H.id });
+  assert.equal(store.casDuSoirStats[H.id].visiteurs, 1); // le propriétaire ne compte pas
+  const c = (await call({ action: 'statistiques' })).body.cas.find((x) => x.id === H.id);
+  assert.equal(c.visiteurs, 1); assert.equal(c.episodes[0].lus, 1); assert.equal(c.quiz, 1); assert.equal(c.lectureFin, 1);
+}));
+
 test('lancement du 20/11/2026 : cas du soir public, ouverture échelonnée (Minuit tout de suite, puis un cas par semaine à 20 h), Goumin et les cas 3 et 4 réservés aux adultes', () => {
   assert.equal(LANCEMENT.public, true);
   const par = Object.fromEntries(LANCEMENT.cas.map((c) => [c.id, c]));
@@ -914,4 +954,78 @@ test('lancement du 20/11/2026 : cas du soir public, ouverture échelonnée (Minu
   assert.deepEqual(autres.map((c) => [c.depart, c.programmee, c.adultes, c.heure]).sort(), [['2026-12-04', true, true, '20:00'], ['2026-12-11', true, true, '20:00']]);
   const src = fs.readFileSync(path.join(__dirname, '..', '..', '..', 'src', 'config', 'contenusPayants.ts'), 'utf8');
   assert.match(src, /CAS_DU_SOIR_CARTE_VISITEURS: boolean = true;/); // la carte des visiteurs s'ouvre en même temps
+});
+
+test('un cas « cache: true » (en construction) : invisible pour tous sauf le propriétaire (liste, adresse, cas du moment)', public_(async () => {
+  const G = K.HISTOIRES.find((h) => h.id === 'goumin');
+  G.cache = true;
+  try {
+    uid = 'lecteur'; maintenant(T(0, 21));
+    const l = (await call({ action: 'liste' })).body.histoires.map((x) => x.id);
+    assert.ok(!l.includes('goumin') && l.includes(H.id));
+    assert.equal((await call({ action: 'etat', histoire: 'goumin' })).status, 404);
+    assert.equal((await call({ action: 'episodes', histoire: 'goumin' })).status, 404);
+    uid = 'papa';
+    assert.ok((await call({ action: 'liste' })).body.histoires.map((x) => x.id).includes('goumin'));
+    assert.equal((await call({ action: 'etat', histoire: 'goumin' })).status, 200);
+  } finally { delete G.cache; }
+}));
+
+test('les tests proposés après un épisode : identifiants valides, 2 au plus, jamais dans la liste d\'un épisode sans test', () => {
+  const ep = (tests) => ({ titre: 't', texte: 'x', question: 'q ?', choix: [{ id: 'A', label: 'a' }, { id: 'B', label: 'b' }, { id: 'C', label: 'c' }], tests });
+  assert.deepEqual(K.vueEpisode(H, 1, ep(['ecr_r', 'rses'])).tests, ['ecr_r', 'rses']);
+  assert.deepEqual(K.vueEpisode(H, 1, ep(['ecr_r', 'rses', 'pss10'])).tests, ['ecr_r', 'rses']);
+  assert.deepEqual(K.vueEpisode(H, 1, ep(['<script>', 'ECR', 'rses'])).tests, ['rses']);
+  assert.deepEqual(K.vueEpisode(H, 1, ep(undefined)).tests, []);
+  // le vérificateur refuse un test mal écrit ou trop de tests
+  const copie = JSON.parse(JSON.stringify(H)); copie.episodes[0].tests = ['ecr_r', 'rses', 'pss10'];
+  assert.ok(K.verifierHistoire(copie).some((e) => e.includes('tests')));
+  copie.episodes[0].tests = ['ecr_r', 'Pas Valide'];
+  assert.ok(K.verifierHistoire(copie).some((e) => e.includes('tests')));
+  copie.episodes[0].tests = ['ecr_r'];
+  assert.ok(!K.verifierHistoire(copie).some((e) => e.includes('tests')));
+});
+
+test('Amour ou dépendance affective (cas n° 5) : 7 épisodes linéaires, santé mentale, tout public, en construction (caché), 4 épisodes avec des tests, leçon, quiz et sources', () => {
+  const D = K.HISTOIRES.find((h) => h.id === 'amour-ou-dependance');
+  assert.ok(D);
+  assert.equal(D.titre, 'Amour ou dépendance affective');
+  assert.equal(D.categorie, 'mentale');
+  assert.ok(!D.adultes);
+  assert.equal(D.cache, true); // en construction : seul le propriétaire le voit
+  assert.equal(D.embranchement, undefined);
+  assert.equal(D.episodes.length, 7);
+  assert.equal(D.debloquer, 30);
+  assert.deepEqual(D.prixSuite, { 2: 4, 3: 6, 4: 6, 5: 8, 6: 8, 7: 10 });
+  assert.deepEqual(K.verifierHistoire(D), []);
+  D.episodes.forEach((e, i) => { assert.equal(e.choix.length, 3, `épisode ${i + 1}`); assert.ok(e.texte.length > 1500, `épisode ${i + 1}`); assert.ok(e.question.endsWith('?')); });
+  // Les tests proposés pendant le cas, à la fin des épisodes concernés
+  assert.deepEqual(D.episodes.map((e) => e.tests || []), [[], ['ecr_r'], ['rses'], [], ['bonus_dependance'], ['bonus_confiance'], []]);
+  assert.equal(D.testLie, 'bonus_dependance'); assert.equal(D.testAussi, 'ecr_r');
+  // Dr Lô n'occupe pas tout l'espace : jamais dans les épisodes 1 et 5, un tiers au plus ailleurs
+  const part = (e) => { const l = e.texte.split('\n'); const dr = l.filter((x) => x.startsWith('DR LÔ : ')).join(' ').split(/\s+/).length; return dr / e.texte.split(/\s+/).length; };
+  assert.ok(!D.episodes[0].texte.includes('DR LÔ : ') && !D.episodes[4].texte.includes('DR LÔ : '));
+  D.episodes.forEach((e, i) => { if ([0, 4].includes(i)) return; assert.ok(part(e) <= 0.36, `épisode ${i + 1} : ${Math.round(part(e) * 100)} %`); });
+  // Les cinq questions sont dans l'épisode 2 et dans la leçon
+  assert.ok(/ma valeur du jour dépend-elle de son message/i.test(D.episodes[1].texte) && /ma valeur du jour dépend-elle de son message/i.test(D.fin.texte));
+  assert.equal(D.fin.quiz.length, 3);
+  D.fin.quiz.forEach((q) => { assert.equal(q.reponses.length, 3); assert.ok(q.bonne >= 0 && q.bonne <= 2); assert.ok(q.explication); });
+  assert.ok(/Sources : /.test(D.fin.texte) && /Bamelis/.test(D.fin.texte));
+  assert.ok(!/Ndèye|NDÈYE|Cheikh/.test(JSON.stringify(D)));
+});
+
+test('Amour ou dépendance affective : les images de la couverture et des 7 épisodes, l\'intrigue audio et son minutage sont branchés', () => {
+  const D = K.HISTOIRES.find((h) => h.id === 'amour-ou-dependance');
+  const pub = (p) => fs.existsSync(path.join(__dirname, '..', '..', '..', 'public', p.replace(/^\//, '')));
+  assert.ok(pub(D.image), 'couverture');
+  D.episodes.forEach((e, i) => assert.ok(pub(e.image), `épisode ${i + 1}`));
+  ['couverture', 'ep1-lit', 'ep1-coches', 'ep1-maternite', 'ep1-boite', 'ep2-live', 'ep2-coeurs', 'ep2-cahier', 'ep2-regard', 'ep3-dejeuner', 'ep3-enfance', 'ep3-cabinet', 'ep3-taxi', 'ep4-photo', 'ep4-mamadou', 'ep4-appel', 'ep4-notes', 'ep5-salon', 'ep5-miroir', 'ep5-liste', 'ep5-amis', 'ep6-cabinet', 'ep6-charge', 'ep6-maternite', 'ep6-volley', 'ep7-terrain', 'ep7-cahier', 'ep7-diner', 'ep7-message']
+    .forEach((k) => assert.ok(pub(`/images/cas-du-soir/dependance-${k}.webp`), k));
+  assert.equal(D.intrigue, '/audio/cas-du-soir/amour-ou-dependance-intrigue.mp3');
+  assert.ok(pub(D.intrigue));
+  const m = K.minutage(D.intrigueMinutage);
+  assert.ok(m && m.lignes.length === 4 && m.images[0].t === 0);
+  m.lignes.forEach((l, k) => { assert.ok(l.t1 > l.t0); if (k) assert.ok(l.t0 >= m.lignes[k - 1].t1 - 0.2); assert.ok(l.t1 <= m.duree); });
+  m.images.forEach((x) => assert.ok(pub(`/images/cas-du-soir/${x.image}`), x.image));
+  assert.deepEqual(K.verifierHistoire(D), []);
 });

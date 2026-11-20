@@ -19,6 +19,7 @@ import DrloBench from '../../components/accueil/DrloBench';
 import CommunityPanel from '../../components/accueil/CommunityPanel';
 import ChannelsAdmin from '../../components/accueil/ChannelsAdmin';
 import BoxAdmin from '../../components/accueil/BoxAdmin';
+import CasDuSoirAdmin from '../../components/accueil/CasDuSoirAdmin';
 import HomeAdmin from '../../components/accueil/HomeAdmin';
 import PracticesAdmin from '../../components/accueil/PracticesAdmin';
 import ProsAdmin from '../../components/pro/ProsAdmin';
@@ -188,7 +189,7 @@ const DrLoConsole: React.FC = () => {
   const [week, setWeek] = useState<{ used: number; cap: number; queued: number } | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  type Tab = 'pending' | 'done' | 'bench' | 'community' | 'channels' | 'practices' | 'home' | 'box' | 'pros' | 'profile' | 'penc';
+  type Tab = 'pending' | 'done' | 'bench' | 'community' | 'channels' | 'practices' | 'home' | 'box' | 'cas' | 'pros' | 'profile' | 'penc';
   // L'onglet survit à un rechargement de la page (la console se remonte quand la session se rafraîchit) : sinon retour sur « À répondre »
   const [tab, setTabState] = useState<Tab>(() => { try { return (sessionStorage.getItem(TAB_KEY) as Tab) || 'pending'; } catch { return 'pending'; } });
   const setTabRaw = (t: Tab) => { setTabState(t); try { sessionStorage.setItem(TAB_KEY, t); } catch { /* ignore */ } };
@@ -291,9 +292,9 @@ const DrLoConsole: React.FC = () => {
         </p>
       )}
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 14, alignItems: 'center' }}>
-        {(role === 'pro' ? (['channels', 'penc', 'profile'] as const) : (['pending', 'done', 'community', 'channels', 'penc', 'pros', 'practices', 'home', 'box', 'bench'] as const)).map(t => {
+        {(role === 'pro' ? (['channels', 'penc', 'profile'] as const) : (['pending', 'done', 'community', 'channels', 'penc', 'pros', 'practices', 'home', 'box', 'cas', 'bench'] as const)).map(t => {
           const n = t === 'pending' ? pendingCount : t === 'community' && tab !== 'community' ? activity.community : t === 'channels' ? chBadge : t === 'pros' ? prosPending : 0;
-          const label = t === 'pending' ? 'À répondre' : t === 'done' ? 'Répondues' : t === 'community' ? 'Ma communauté' : t === 'channels' ? 'Chaînes' : t === 'pros' ? 'Pros' : t === 'penc' ? 'Pénc' : t === 'profile' ? 'Mon profil' : t === 'practices' ? 'Pratiques' : t === 'home' ? 'Accueil' : t === 'box' ? 'Boîte' : 'Banc d\'essai';
+          const label = t === 'pending' ? 'À répondre' : t === 'done' ? 'Répondues' : t === 'community' ? 'Ma communauté' : t === 'channels' ? 'Chaînes' : t === 'pros' ? 'Pros' : t === 'penc' ? 'Pénc' : t === 'profile' ? 'Mon profil' : t === 'practices' ? 'Pratiques' : t === 'home' ? 'Accueil' : t === 'box' ? 'Boîte' : t === 'cas' ? 'Cas du soir' : 'Banc d\'essai';
           return (
             <button key={t} onClick={() => setTab(t)} className="drl-btn" aria-label={n > 0 ? `${label} : ${n} nouveauté${n > 1 ? 's' : ''}` : label}
               style={{ position: 'relative', minHeight: 38, padding: '0 14px', borderRadius: 999, border: `1px solid ${tab === t ? palette.accent : DC.line}`, background: tab === t ? 'rgba(242,182,109,.15)' : DC.glass, color: tab === t ? palette.accent : DC.muted, fontWeight: 700, fontSize: 14, cursor: 'pointer' }}>
@@ -307,7 +308,7 @@ const DrLoConsole: React.FC = () => {
         </button>
       </div>
       {error && <p role="alert" style={{ color: '#F09A7A', fontSize: 14 }}>{error}</p>}
-      {tab === 'penc' ? <PencAdmin palette={palette} /> : tab === 'pros' && role === 'drlo' ? <ProsAdmin palette={palette} onCount={setProsPending} /> : tab === 'profile' && role === 'pro' ? <ProProfile palette={palette} /> : tab === 'community' ? <CommunityPanel palette={palette} newByBroadcast={activity.byBroadcast} /> : tab === 'channels' ? <ChannelsAdmin palette={palette} /> : tab === 'practices' ? <PracticesAdmin palette={palette} /> : tab === 'home' ? <HomeAdmin palette={palette} /> : tab === 'box' ? <BoxAdmin palette={palette} /> : tab === 'bench' && currentUser ? <DrloBench uid={currentUser.id} palette={palette} /> : loading && items.length === 0 ? <Loader2 className="animate-spin" style={{ marginTop: 20 }} /> : (
+      {tab === 'penc' ? <PencAdmin palette={palette} /> : tab === 'pros' && role === 'drlo' ? <ProsAdmin palette={palette} onCount={setProsPending} /> : tab === 'profile' && role === 'pro' ? <ProProfile palette={palette} /> : tab === 'community' ? <CommunityPanel palette={palette} newByBroadcast={activity.byBroadcast} /> : tab === 'channels' ? <ChannelsAdmin palette={palette} /> : tab === 'practices' ? <PracticesAdmin palette={palette} /> : tab === 'home' ? <HomeAdmin palette={palette} /> : tab === 'box' ? <BoxAdmin palette={palette} /> : tab === 'cas' ? <CasDuSoirAdmin palette={palette} /> : tab === 'bench' && currentUser ? <DrloBench uid={currentUser.id} palette={palette} /> : loading && items.length === 0 ? <Loader2 className="animate-spin" style={{ marginTop: 20 }} /> : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginTop: 14 }}>
           {list.length === 0 && <p style={{ color: DC.faint, fontSize: 14 }}>{tab === 'pending' ? 'Aucune question en attente. 🙏' : 'Pas encore de réponse envoyée.'}</p>}
           {list.map(q => (

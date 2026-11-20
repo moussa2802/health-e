@@ -7,7 +7,7 @@ import { auth } from '../utils/firebase';
 export interface CdsChoix { id: string; label: string }
 /** Le minutage d'un audio : les phrases (t en secondes) et les images qui changent pendant l'écoute */
 export interface CdsMinutage { duree: number; lignes: { t0: number; t1: number; qui: string; texte: string }[]; images?: { t: number; image: string }[] }
-export interface CdsEpisode { n: number; titre: string; texte: string; image: string | null; minutage?: CdsMinutage | null; minutes: number; question: string; choix: CdsChoix[]; embranchement: boolean }
+export interface CdsEpisode { n: number; titre: string; texte: string; image: string | null; minutage?: CdsMinutage | null; minutes: number; question: string; choix: CdsChoix[]; embranchement: boolean; /** tests proposés à la fin de l'épisode (identifiants du catalogue) */ tests?: string[] }
 export interface CdsResultats {
   total: number;
   /** null tant qu'il y a moins de « seuil » votes */
@@ -88,6 +88,11 @@ async function call<T>(body: Record<string, unknown>): Promise<T> {
   return data as T;
 }
 
+export interface CdsStatCas { id: string; titre: string; categorie: 'mentale' | 'sexuelle' | null; cache: boolean; lecteurs: number; visiteurs: number; visiteursCompte: number; commences: number; payeurs: number; lectureFin: number; quiz: number; tests: { id: string; n: number }[]; utileOui: number; utileNon: number; episodes: { n: number; titre: string; votes: number; counts: Record<string, number>; ouverts: number; lus: number }[]; non: { texte: string; atMs: number }[] }
+/** Dr Lô seul : les chiffres bruts de tous les cas (espace admin). */
+export const getStatistiques = () => call<{ cas: CdsStatCas[]; boite: { reponses: number; vues: number; utile: number; moi: number; pasclair: number } }>({ action: 'statistiques', histoire: undefined });
+/** Compte un geste (une fois par personne côté serveur) : la page d'un cas, un test proposé ouvert, le quiz terminé. Silencieux : ne gêne jamais la lecture. */
+export const noterGeste = (kind: 'page' | 'test' | 'quiz', id?: string) => { call({ action: 'evenement', kind, ...(id ? { id } : {}) }).catch(() => {}); };
 export const getEtat = () => call<CdsEtat>({ action: 'etat' });
 /** L'état du cas du moment, quel que soit le cas ouvert (carte de l'accueil). */
 export const getEtatDuMoment = () => call<CdsEtat>({ action: 'etat', histoire: null });

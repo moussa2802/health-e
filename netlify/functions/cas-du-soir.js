@@ -5,6 +5,7 @@
  *   liste                    → { visible, histoires: [vue + statut] }   la page « Le cas du soir » (tous les cas)
  *   etat { histoire? }       → { visible, histoire, prix, connecte, bonus, apercu, animal, proprio }   (visible:false : rien d'autre)
  *   episodes { histoire }    → la liste des épisodes d'un cas, avec l'état de chacun (lu, à lire, prochain, verrouillé…)
+ *   Un cas « cache: true » est en construction : seul le propriétaire le voit.
  *   Toutes les actions acceptent « histoire » (l'identifiant du cas) ; sans lui, c'est le cas du moment.
  *   episode { n }            → l'épisode (texte, lien audio), mon vote et les résultats si j'ai voté, la suite possible
  *   vote { n, choix, visiteurId? } → un vote par personne et par épisode ; renvoie les résultats
@@ -13,6 +14,8 @@
  *   bonus                    → le détail des votes par animal pour toute l'histoire (prix PRIX.bonus, une fois)
  *   autreFin                 → l'autre fin, une fois l'histoire terminée (prix PRIX.autreFin, une fois) ; puis episode { n, autre: true }
  *   fin                      → la leçon (gratuite), le quiz, le test lié, une fois l'épisode 5 lisible
+ *   statistiques             → { cas: [...] }   Dr Lô seul : chiffres bruts par cas (espace admin, onglet « Cas du soir »)
+ *   evenement { kind: 'page'|'test'|'quiz', id? } → compte un geste, une fois par personne (la page d'un cas, un test proposé ouvert, le quiz terminé)
  *   utile { oui, texte? }    → « Ce cas t'a été utile ? » (une fois la leçon lisible) : oui/non, changeable ; le « non » et son texte restent privés (Dr Lô seul)
  *
  * RYTHME PERSONNEL : chaque lecteur a sa propre horloge (casDuSoirAcces.debut), qui démarre à la première ouverture de l'épisode 1
@@ -29,6 +32,8 @@
  *   casDuSoirAcces/{uid}_{histoire}           { debut, episodes: [n…], bonus: true, autreFin: true, anticipe: true }   (son horloge, ce qu'il a payé)
  *   casDuSoirStats/{histoire}                 { lecteurs, utileOui, utileNon }   (lecteurs = comptes dont l'horloge a démarré, hors propriétaire)
  *   casDuSoirUtile/{histoire}_{votant}        { histoire, oui, texte, visiteur, atMs }   (une réponse par personne, modifiable)
+ *   casDuSoirEvt/{histoire}_{champ}_{votant}  { histoire, champ, atMs }   (un geste compté une fois par personne : visiteurs, lu_n, lu_fin, quiz, test_<id>)
+ *   casDuSoirStats/{histoire} reçoit aussi les compteurs de ces gestes (visiteurs, visiteursCompte, lu_1…, lu_fin, quiz, test_<id>) : Dr Lô seul les voit (action statistiques)
  */
 const crypto = require('crypto');
 const { admin, db, verifyAuth } = require('./_firebase');
@@ -48,6 +53,7 @@ const RES = () => db.collection('casDuSoirResultats');
 const ACCES = () => db.collection('casDuSoirAcces');
 const STATS = () => db.collection('casDuSoirStats');
 const UTILE = () => db.collection('casDuSoirUtile');
+const EVT = () => db.collection('casDuSoirEvt');
 const sha = (s) => crypto.createHash('sha256').update(`cds|${s}`).digest('hex');
 
 /** Le fichier audio est-il déposé ? (la carte dit alors « Écouter », sinon « Lire ») */
@@ -92,6 +98,20 @@ async function statsDe(id) {
 }
 /** Ce que voit le public : un chiffre seulement au-dessus du seuil (voir _compteurs.js), sinon rien. */
 const statsPubliques = (st) => ({ lecteurs: CP.afficher(st.lecteurs, CP.SEUILS.lecteurs), utile: CP.afficher(st.utileOui, CP.SEUILS.utile) });
+
+/** Compte un geste UNE fois par personne (champ = visiteurs, lu_2, lu_fin, quiz, test_ecr_r…) ; ne bloque jamais la lecture. */
+async function noter(h, qui, champ, extra) {
+  if (!qui) return;
+  try {
+    const ref = EVT().doc(`${h.id}_${champ}_${qui}`); const st = STATS().doc(h.id);
+    await db.runTransaction(async (tx) => {
+      const d = await tx.get(ref);
+      if (d.exists) return;
+      tx.set(ref, { histoire: h.id, champ, atMs: Date.now() });
+      tx.set(st, { [champ]: inc(1), ...(extra || {}) }, { merge: true });
+    });
+  } catch (e) { console.error('cas-du-soir noter', e.message); }
+}
 
 /** Démarre l'horloge personnelle (une seule fois : le premier départ est gardé, même si deux appels se croisent). */
 async function demarrerHorloge(histoireId, uid, t, compter) {
@@ -151,9 +171,41 @@ exports.handler = async (event) => {
     const jour = owner ? Math.round(Number(body.jour)) : NaN;
     const realNow = Date.now();
 
+    // Statistiques pour l'espace admin (Dr Lô seul) : par cas, lecteurs, progression, achats, votes par épisode, « utile » et les « non »
+    if (action === 'statistiques') {
+      if (!owner) return reply(403, { error: 'Réservé à Dr Lô.' });
+      const cas = await Promise.all(K.HISTOIRES.map(async (x) => {
+        const st = await statsDe(x.id);
+        let acces = [];
+        try { acces = (await ACCES().where('histoire', '==', x.id).get()).docs.map((d) => d.data() || {}); } catch (e2) { console.error('cas-du-soir stats acces', e2.message); }
+        let brut = {};
+        try { const d = await STATS().doc(x.id).get(); if (d.exists) brut = d.data() || {}; } catch (e2) { console.error('cas-du-soir stats brut', e2.message); }
+        const commences = acces.filter((a) => Number(a.debut) > 0).length;
+        const payeurs = acces.filter((a) => (Array.isArray(a.episodes) && a.episodes.length > 0) || a.anticipe === true || a.bonus === true || a.autreFin === true).length;
+        const episodes = await Promise.all(x.episodes.map(async (e, i) => {
+          let r = {};
+          try { const d = await RES().doc(`${x.id}_${i + 1}`).get(); if (d.exists) r = d.data() || {}; } catch (e2) { console.error('cas-du-soir stats votes', e2.message); }
+          return { n: i + 1, titre: e.titre, votes: Number(r.total) || 0, counts: r.counts || {}, ouverts: acces.filter((a) => Array.isArray(a.episodes) && a.episodes.includes(i + 1)).length, lus: Number(brut[`lu_${i + 1}`]) || 0 };
+        }));
+        let non = [];
+        try { const q = await UTILE().where('histoire', '==', x.id).where('oui', '==', false).limit(100).get(); non = q.docs.map((d) => d.data()).filter((y) => y.texte).sort((a, b) => (b.atMs || 0) - (a.atMs || 0)).slice(0, 20).map((y) => ({ texte: y.texte, atMs: y.atMs || 0 })); } catch (e2) { console.error('cas-du-soir stats non', e2.message); }
+        return { id: x.id, titre: x.titre, categorie: x.categorie || null, cache: x.cache === true, lecteurs: st.lecteurs, visiteurs: Number(brut.visiteurs) || 0, visiteursCompte: Number(brut.visiteursCompte) || 0, commences, payeurs, lectureFin: Number(brut.lu_fin) || 0, quiz: Number(brut.quiz) || 0,
+          tests: Object.keys(brut).filter((k) => k.startsWith('test_')).map((k) => ({ id: k.slice(5), n: Number(brut[k]) || 0 })).sort((a, b) => b.n - a.n), utileOui: st.utileOui, utileNon: st.utileNon, episodes, non };
+      }));
+      // Boîte anonyme : les réponses publiées, avec leurs vues et réactions (chiffres bruts)
+      let boite = { reponses: 0, vues: 0, utile: 0, moi: 0, pasclair: 0 };
+      try {
+        (await db.collection('openQuestions').where('status', '==', 'site').get()).docs.forEach((d) => {
+          const q = d.data() || {}; const r = q.reactions || {};
+          boite = { reponses: boite.reponses + 1, vues: boite.vues + (Number(q.vues) || 0), utile: boite.utile + (Number(r.utile) || 0), moi: boite.moi + (Number(r.moi) || 0), pasclair: boite.pasclair + (Number(r.pasclair) || 0) };
+        });
+      } catch (e2) { console.error('cas-du-soir stats boite', e2.message); }
+      return reply(200, { cas, boite });
+    }
+
     // La liste des cas (page « Le cas du soir ») : la couverture, l'accroche et l'état de chacun, pour CE lecteur
     if (action === 'liste') {
-      const histoires = await Promise.all(K.HISTOIRES.map(async (x) => {
+      const histoires = await Promise.all(K.HISTOIRES.filter((x) => !x.cache || owner).map(async (x) => {
         const ap = Number.isInteger(jour) && jour >= 1 && jour <= x.episodes.length;
         const ac = await accesDe(uid, x.id);
         const p = K.parusPour(x, { debut: ac.debut, now: realNow, apercu: ap, jour, anticipe: ac.anticipe });
@@ -165,8 +217,10 @@ exports.handler = async (event) => {
     }
 
     // Un cas précis (adresse /cas-du-soir/:id) ; inconnu : introuvable. Sans identifiant : le cas du moment.
-    if (body.histoire && !K.histoireById(String(body.histoire))) return reply(404, { error: 'Ce cas n\'existe pas.' });
-    const h = body.histoire ? K.histoireById(String(body.histoire)) : K.histoireDuMoment(realNow);
+    // Un cas « cache: true » est en construction : seul le propriétaire le voit (ni liste, ni adresse, ni « cas du moment »)
+    const visibles = K.HISTOIRES.filter((x) => !x.cache || owner);
+    if (body.histoire && !visibles.some((x) => x.id === String(body.histoire))) return reply(404, { error: 'Ce cas n\'existe pas.' });
+    const h = body.histoire ? K.histoireById(String(body.histoire)) : K.histoireDuMoment(realNow, visibles);
     if (!h) return reply(action === 'etat' ? 200 : 404, action === 'etat' ? { visible: false } : { error: 'Introuvable' });
     const apercu = Number.isInteger(jour) && jour >= 1 && jour <= h.episodes.length;
     const n = Math.round(Number(body.n));
@@ -257,6 +311,7 @@ exports.handler = async (event) => {
       const contenu = K.episodeContenu(h, n, K.aDesVersions(h, n) ? branche : null);
       if (!contenu) return reply(409, { error: 'Ta suite dépend de ton choix à l\'épisode ' + h.embranchement + '.', raison: 'choix_requis' });
       const resRef = RES().doc(`${h.id}_${n}`);
+      if (action === 'episode' && !owner && !apercu) await noter(h, qui, `lu_${n}`);
 
       if (action === 'vote') {
         const choix = String(body.choix || '');
@@ -377,9 +432,35 @@ exports.handler = async (event) => {
       return reply(200, { ok: true, oui: body.oui });
     }
 
+    // Un geste compté une fois par personne : la page d'un cas, un test proposé ouvert, le quiz terminé (jamais le propriétaire ni l'aperçu)
+    if (action === 'evenement') {
+      const kind = String(body.kind || '');
+      if (!['page', 'test', 'quiz'].includes(kind)) return reply(400, { error: 'Geste inconnu.' });
+      if (owner || apercu) return reply(200, { ok: true, apercu: true });
+      if (!qui) return reply(400, { error: 'Visiteur inconnu.' });
+      const day = OB.dayKey(); const hd = event.headers || {};
+      const ip = String(hd['x-nf-client-connection-ip'] || hd['x-forwarded-for'] || '').split(',')[0].trim();
+      const rateRef = db.collection('casDuSoirRate').doc(`evt_${day}_${OB.fingerprint(ip, hd['user-agent'], day)}`);
+      const rt = await rateRef.get(); const nb = rt.exists ? Number(rt.data().n) || 0 : 0;
+      if (nb >= 120) return reply(429, { error: 'Reviens demain.' });
+      await rateRef.set({ n: nb + 1, day }, { merge: true });
+      if (kind === 'page') await noter(h, qui, 'visiteurs', uid ? { visiteursCompte: inc(1) } : null);
+      else if (kind === 'test') {
+        const permis = new Set([...h.episodes.flatMap((e) => e.tests || []), h.testLie, h.testAussi].filter(Boolean));
+        const id = String(body.id || '');
+        if (!permis.has(id)) return reply(400, { error: 'Test inconnu.' });
+        await noter(h, qui, `test_${id}`);
+      } else {
+        if (!K.peutLire({ n: h.episodes.length, parus, connecte, debloques })) return reply(403, { error: 'La fin n\'est pas encore ouverte.' });
+        await noter(h, qui, 'quiz');
+      }
+      return reply(200, { ok: true });
+    }
+
     if (action === 'fin') {
       if (!K.peutLire({ n: h.episodes.length, parus, connecte, debloques })) return reply(403, { error: 'La fin n\'est pas encore ouverte.' });
       const f = h.fin;
+      if (!owner && !apercu) await noter(h, qui, 'lu_fin');
       let monUtile = null;
       if (qui) { try { const u = await UTILE().doc(`${h.id}_${qui}`).get(); if (u.exists) monUtile = u.data().oui === true ? 'oui' : 'non'; } catch { /* pas grave : la question se repose */ } }
       const st = await statsDe(h.id);

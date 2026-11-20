@@ -9,7 +9,7 @@ import { DC, card } from '../accueil/DrLoShell';
 import AudioSynchro from './AudioSynchro';
 import { openDrLoChat } from '../DrLoChat/drLoEvents';
 import { getScaleMeta } from '../../utils/scaleMeta';
-import { CdsError, debloquerCas, getBrancheApercu, getJourApercu, quandLabel, repondreUtile, setBrancheApercu, setJourApercu, type CdsChiffres, type CdsEpisodeReponse, type CdsFin, type CdsResultats } from '../../services/casDuSoirService';
+import { CdsError, debloquerCas, getBrancheApercu, getJourApercu, noterGeste, quandLabel, repondreUtile, setBrancheApercu, setJourApercu, type CdsChiffres, type CdsEpisodeReponse, type CdsFin, type CdsResultats } from '../../services/casDuSoirService';
 import { useKoris } from '../../contexts/KorisContext';
 import { useAuth } from '../../contexts/AuthContext';
 
@@ -50,6 +50,29 @@ export const Resultats: React.FC<{ ep: CdsEpisodeReponse; r: CdsResultats; monCh
     )}
   </div>
 );
+
+/**
+ * « Pour toi » : les tests liés à ce que l'épisode vient de dire (style d'attachement, estime de soi…). Chaque bouton ouvre le test dans le compagnon.
+ * L'épisode les déclare dans ses données (tests: ['ecr_r']) ; sans test, rien ne s'affiche.
+ */
+export const TestsEpisode: React.FC<{ ids: string[]; accent: string }> = ({ ids, accent }) => {
+  const navigate = useNavigate();
+  if (!ids.length) return null;
+  return (
+    <section aria-labelledby="cds-pour-toi" style={{ marginTop: 20, paddingTop: 16, borderTop: `1px solid ${DC.line}` }}>
+      <p id="cds-pour-toi" style={{ margin: 0, fontSize: 13, fontWeight: 700, letterSpacing: '.08em', color: accent }}>POUR TOI</p>
+      <p style={{ margin: '4px 0 0', fontSize: 15, lineHeight: 1.5, color: DC.soft }}>Un test ne dit pas qui tu es : il t'aide à mettre des mots sur ce que tu vis.</p>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 10 }}>
+        {ids.map(id => (
+          <button key={id} type="button" onClick={() => { noterGeste('test', id); navigate('/compagnon', { state: { prescribe: id } }); }} className="drl-btn"
+            style={{ minHeight: 48, padding: '0 16px', borderRadius: 14, border: `1px solid ${accent}`, background: 'transparent', color: accent, fontSize: 15, fontWeight: 700, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, fontFamily: 'inherit' }}>
+            <span>Faire le test : {getScaleMeta(id).label}</span><ChevronRight size={18} aria-hidden="true" />
+          </button>
+        ))}
+      </div>
+    </section>
+  );
+};
 
 /**
  * « Ce cas t'a été utile ? » à la fin de la leçon : oui ou non, une seule réponse par personne (qu'on peut changer).
@@ -118,6 +141,7 @@ export const Fin: React.FC<{ fin: CdsFin; accent: string }> = ({ fin, accent }) 
   const navigate = useNavigate();
   const [rep, setRep] = useState<Record<number, number>>({});
   const tous = fin.quiz.every((_, i) => rep[i] !== undefined);
+  useEffect(() => { if (tous) noterGeste('quiz'); }, [tous]);
   const testBtn: React.CSSProperties = { minHeight: 48, borderRadius: 14, border: `1px solid ${DC.line}`, background: DC.glass, color: DC.text, fontSize: 15, fontWeight: 600, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6, fontFamily: 'inherit' };
   return (
     <section style={{ ...card, marginTop: 16 }}>

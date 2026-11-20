@@ -3,7 +3,7 @@
  * Rythme personnel de chaque lecteur, droits de lecture, embranchement décidé par le vote de CHAQUE lecteur (sa suite), résultats des votes.
  */
 const { HISTOIRES } = require('./_casDuSoirHistoires');
-const MINUTAGES = { ...require('./_casDuSoirMinutages'), ...require('./_casDuSoirMinutagesGoumin'), ...require('./_casDuSoirMinutagesPlaisir'), ...require('./_casDuSoirMinutagesTelephone') };
+const MINUTAGES = { ...require('./_casDuSoirMinutages'), ...require('./_casDuSoirMinutagesGoumin'), ...require('./_casDuSoirMinutagesPlaisir'), ...require('./_casDuSoirMinutagesTelephone'), ...require('./_casDuSoirMinutagesDependance') };
 
 /** Le minutage d'un audio (ou null). */
 const minutage = (cle) => (cle && MINUTAGES[cle]) || null;
@@ -221,6 +221,8 @@ function vueEpisode(h, n, contenu) {
   return {
     n, titre: contenu.titre, texte: contenu.texte, image: contenu.image || null, minutage: minutage(contenu.minutage), minutes: Number(contenu.minutes) || 2, question: contenu.question,
     choix: contenu.choix.map((c) => ({ id: c.id, label: c.label })), embranchement: h.embranchement === n,
+    // Les tests proposés à la fin de l'épisode (identifiants du catalogue) : « Pour toi », liés à ce que l'épisode vient de dire
+    tests: Array.isArray(contenu.tests) ? contenu.tests.filter((t) => /^[a-z0-9_]{2,40}$/.test(String(t))).slice(0, 2) : [],
   };
 }
 
@@ -266,6 +268,8 @@ function verifierHistoire(h) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(h.depart) || !/^\d{2}:\d{2}$/.test(h.heure)) err.push('date d\'ouverture publique');
   if (h.episodes.length < 5 || h.episodes.length > 10) err.push('entre 5 et 10 épisodes');
   if (h.embranchement && h.embranchement >= h.episodes.length) err.push('embranchement avant le dernier épisode');
+  const testsOk = (t) => t == null || (Array.isArray(t) && t.length <= 2 && t.every((x) => /^[a-z0-9_]{2,40}$/.test(String(x))));
+  if (h.cache != null && typeof h.cache !== 'boolean') err.push('cache : true ou absent');
   const imageOk = (src) => src == null || /^\/images\/[a-z0-9/-]+\/[A-Za-z0-9-]+\.webp$/.test(src);
   if (!imageOk(h.image)) err.push('image de couverture : /images/…/nom.webp');
   if (h.intrigue != null && h.intrigue !== `/audio/cas-du-soir/${h.id}-intrigue.mp3`) err.push(`intrigue : /audio/cas-du-soir/${h.id}-intrigue.mp3`);
@@ -282,6 +286,7 @@ function verifierHistoire(h) {
       if (!v || !v.titre || !v.texte || !v.question) { err.push(`épisode ${n} incomplet`); continue; }
       if (!imageOk(v.image)) err.push(`épisode ${n} : image /images/…/nom.webp`);
       if (!minutageOk(v.minutage)) err.push(`épisode ${n} : minutage`);
+      if (!testsOk(v.tests)) err.push(`épisode ${n} : tests (2 identifiants au plus)`);
       // Audio public seulement pour un épisode ouvert à tous (le 1) : les autres passent par Storage (liens signés)
       if (v.audio && v.audio.startsWith('/') && n !== 1) err.push(`épisode ${n} : audio payant, pas dans public/`);
       const attendu = h.embranchement === n ? 2 : 3;
