@@ -78,6 +78,32 @@ const CasDuSoirEpisodePage: React.FC = () => {
   const primary: React.CSSProperties = { width: '100%', minHeight: 50, borderRadius: 999, border: 0, background: palette.primary, color: DC.ink, fontSize: 16, fontWeight: 700, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontFamily: 'inherit', textDecoration: 'none' };
   const ghost: React.CSSProperties = { ...primary, background: DC.glass, color: DC.text, border: `1px solid ${DC.line}`, fontWeight: 600 };
 
+  // « Épisode suivant » (ou la leçon, au dernier épisode), tout de suite après le texte : pas besoin de descendre jusqu'au vote.
+  // Gratuit si l'épisode est déjà ouvert ; sinon le prix en étincelles est écrit sur le bouton, et le toucher ouvre la fenêtre
+  // « si tu attends jusqu'à demain, c'est gratuit ». À l'embranchement (épisode 3), le choix d'abord.
+  const blocSuite = (clef: string) => {
+    if (!ep || ep.autre) return null;
+    if (!ep.suite) {
+      return ep.finLisible ? <button key={clef} type="button" onClick={() => navigate(`/cas-du-soir/${id}`, { state: { fin: true } })} style={{ ...primary, marginTop: 16 }}>La leçon de Dr Lô · gratuite</button> : null;
+    }
+    const s = ep.suite;
+    const choixD = !!ep.episode.embranchement && !ep.monChoix;
+    const rythme = s.avance.raison === 'choix_requis' || choixD ? 'Ta suite dépend de ton choix : vote d\'abord, juste en dessous.'
+      : s.lisible ? '' : s.parution ? `${Maj(quandLabel(s.parution))} · gratuit` : 'Gratuit le lendemain soir de ta lecture';
+    return (
+      <div key={clef} style={{ marginTop: 16 }}>
+        {s.lisible && !choixD
+          ? <Link to={`/cas-du-soir/${id}/${s.n}`} style={primary}>Épisode suivant <ChevronRight size={18} aria-hidden="true" /></Link>
+          : choixD
+            ? <button type="button" onClick={() => document.getElementById('cds-vote')?.scrollIntoView({ block: 'center', behavior: 'smooth' })} style={ghost}>Épisode suivant · fais d'abord ton choix</button>
+            : s.avance.ok
+              ? <button type="button" disabled={!!busy} onClick={() => setConfirme('suite')} style={primary}>Épisode suivant · {etoiles(prixSuite)}</button>
+              : s.avance.raison === 'compte' ? <Link to="/espace" style={primary}>Crée ton espace pour lire la suite</Link> : null}
+        {rythme && <p style={{ margin: '8px 0 0', fontSize: 14, color: DC.soft, textAlign: 'center' }}>{rythme}</p>}
+      </div>
+    );
+  };
+
   return (
     <DrLoShell narrow back={retour} palette={palette}>
       <GateAdultes actif={!!h.adultes} accent={palette.accent} retour={() => navigate('/cas-du-soir')}>
@@ -95,8 +121,10 @@ const CasDuSoirEpisodePage: React.FC = () => {
             image={{ src: ep.episode.image, ratio: '4 / 3', fallback: <Moon size={32} color={palette.accent} strokeWidth={1.4} /> }}
             texte={ep.episode.texte.split(/\n{2,}/).map((p, i) => <p key={i} style={{ margin: '12px 0 0', fontSize: 16, lineHeight: 1.65, color: DC.text, whiteSpace: 'pre-line' }}>{p}</p>)} />
 
+          {blocSuite('haut')}
+
           {!ep.autre && <>
-            <p style={{ margin: '20px 0 0', fontSize: 13, fontWeight: 700, letterSpacing: '.08em', color: palette.accent }}>QU'AURAIS-TU FAIT ?</p>
+            <p id="cds-vote" style={{ margin: '24px 0 0', fontSize: 13, fontWeight: 700, letterSpacing: '.08em', color: palette.accent, scrollMarginTop: 80 }}>QU'AURAIS-TU FAIT ?</p>
             <h2 style={{ margin: '4px 0 0', fontSize: 17, color: DC.title }}>{ep.episode.question}</h2>
             {ep.episode.embranchement && <p style={{ margin: '4px 0 0', fontSize: 14, color: DC.soft }}>Ton choix décide de ta suite : deux issues possibles, et chacune mène à un épisode différent. À la fin, tu pourras découvrir l'autre.</p>}
             {!ep.monChoix ? (
@@ -119,29 +147,8 @@ const CasDuSoirEpisodePage: React.FC = () => {
             </button>
           )}
 
-          {ep.monChoix && ep.suite && !ep.suite.lisible && (
-            <div style={{ marginTop: 16 }}>
-              {ep.suite.avance.ok ? (
-                <button type="button" disabled={!!busy} onClick={() => setConfirme('suite')} style={primary}>
-                  La suite tout de suite · {etoiles(prixSuite)}
-                </button>
-              ) : ep.suite.avance.raison === 'compte' ? (
-                <Link to="/espace" style={primary}>Crée ton espace pour lire la suite</Link>
-              ) : null}
-              {/* Le rythme de CE lecteur : l'épisode suivant s'ouvre gratuitement son prochain soir à 20 h */}
-              <p style={{ margin: '8px 0 0', fontSize: 14, color: DC.soft, textAlign: 'center' }}>
-                {ep.suite.avance.raison === 'choix_requis'
-                  ? 'Ta suite dépend de ton choix : vote d\'abord à l\'épisode 3.'
-                  : ep.suite.parution ? `${Maj(quandLabel(ep.suite.parution))} · gratuit` : 'Gratuit le lendemain soir de ta lecture'}
-              </p>
-            </div>
-          )}
-          {ep.monChoix && ep.suite && ep.suite.lisible && (
-            <Link to={`/cas-du-soir/${id}/${ep.suite.n}`} style={{ ...primary, marginTop: 16 }}>Épisode suivant <ChevronRight size={18} aria-hidden="true" /></Link>
-          )}
-          {ep.monChoix && ep.finLisible && (
-            <button type="button" onClick={() => navigate(`/cas-du-soir/${id}`, { state: { fin: true } })} style={{ ...primary, marginTop: 16 }}>La leçon de Dr Lô · gratuite</button>
-          )}
+          {/* Après le vote : le même bouton, pour ne pas remonter */}
+          {ep.monChoix && blocSuite('bas')}
         </article>
       )}
 

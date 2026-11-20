@@ -48,7 +48,8 @@ const Paroles: React.FC<{ lignes: CdsMinutage['lignes']; idx: number; suivre: bo
   const refs = useRef<(HTMLButtonElement | null)[]>([]);
   useEffect(() => {
     if (!suivre || idx < 0) return;
-    // La phrase en cours vient se placer juste sous l'image et le lecteur, qui restent fixés en haut
+    // La phrase en cours vient se placer juste sous l'image et le lecteur, qui restent fixés en haut.
+    // (Pas pour l'intrigue : son texte est court, la page ne doit pas bouger, sinon l'image remonterait avec lui.)
     refs.current[idx]?.scrollIntoView({ block: 'start', behavior: moinsDAnimations() ? 'auto' : 'smooth' });
   }, [idx, suivre]);
   return (
@@ -101,17 +102,49 @@ const AudioSynchro: React.FC<{
   };
   const synchro = !!minutage && pret && lignes.length > 0;
   const parolesVisibles = synchro && (!parolesApresLecture || lance);
-  // Pendant l'écoute synchronisée, l'image et le lecteur restent fixés en haut ; seul le texte défile dessous
+  // Pendant l'écoute synchronisée, l'image et le lecteur restent fixés en haut ; seul le texte défile dessous.
+  // Pas de « position: sticky » : sur iPhone, un élément sticky retarde sur le défilement (l'image remonte un instant avec le texte,
+  // surtout au doigt). On le fixe (« fixed », posé par le navigateur sur sa propre couche) tant que la zone est à l'écran :
+  // en haut de la zone il reste à sa place, en bas il s'arrête sur le dernier texte, entre les deux il est collé au haut de l'écran.
   const tete = useRef<HTMLDivElement | null>(null);
+  const zone = useRef<HTMLDivElement | null>(null);
   const [hTete, setHTete] = useState(0);
+  const [pos, setPos] = useState<'haut' | 'milieu' | 'bas'>('haut');
+  const [geo, setGeo] = useState({ left: 0, width: 0 });
   useEffect(() => {
     const el = tete.current; if (!el || typeof ResizeObserver === 'undefined') return;
     const ro = new ResizeObserver(() => setHTete(el.getBoundingClientRect().height)); ro.observe(el);
     return () => ro.disconnect();
   }, [parolesVisibles]);
+  useEffect(() => {
+    if (!parolesVisibles) return;
+    let raf = 0;
+    const calc = () => {
+      raf = 0;
+      const z = zone.current; if (!z) return;
+      const r = z.getBoundingClientRect();
+      const h = tete.current?.getBoundingClientRect().height ?? 0;
+      const p = r.top >= 0 ? 'haut' : r.bottom <= h ? 'bas' : 'milieu';
+      setPos(prev => (prev === p ? prev : p));
+      setGeo(g => (Math.abs(g.left - (r.left - 8)) < 0.5 && Math.abs(g.width - (r.width + 16)) < 0.5 ? g : { left: r.left - 8, width: r.width + 16 }));
+    };
+    const demande = () => { if (!raf) raf = window.requestAnimationFrame(calc); };
+    calc();
+    window.addEventListener('scroll', demande, { passive: true });
+    window.addEventListener('resize', demande);
+    return () => { window.removeEventListener('scroll', demande); window.removeEventListener('resize', demande); if (raf) window.cancelAnimationFrame(raf); };
+  }, [parolesVisibles, hTete]);
+  const styleTete: React.CSSProperties | undefined = parolesVisibles
+    ? { zIndex: 5, background: 'rgb(33,25,19)', padding: 8, boxSizing: 'border-box', boxShadow: '0 10px 14px -10px rgba(0,0,0,.7)', transform: 'translateZ(0)',
+        ...(pos === 'milieu' ? { position: 'fixed', top: 0, left: geo.left, width: geo.width }
+          : pos === 'bas' ? { position: 'absolute', bottom: 0, left: -8, right: -8 }
+          : { position: 'absolute', top: 0, left: -8, right: -8 }) }
+    : undefined;
   return (
-    <>
-      <div ref={tete} style={parolesVisibles ? { position: 'sticky', top: 0, zIndex: 5, background: 'rgb(33,25,19)', paddingTop: 8, paddingBottom: 8, margin: '0 -8px', paddingLeft: 8, paddingRight: 8, boxShadow: '0 10px 14px -10px rgba(0,0,0,.7)' } : undefined}>
+    <div ref={zone} style={{ position: 'relative' }}>
+      {/* La place de l'en-tête, gardée dans la page pendant qu'il est fixé */}
+      {parolesVisibles && <div aria-hidden="true" style={{ height: hTete }} />}
+      <div ref={tete} style={styleTete}>
       {image && (images.length && pret
         ? <Diaporama images={images} idx={idxI} fixe={image.src} ratio={image.ratio} tint={accent} radius={image.radius ?? 12} fallback={image.fallback} />
         : <Illustration src={image.src} ratio={image.ratio} tint={accent} radius={image.radius ?? 12} fallback={image.fallback} />)}
@@ -119,9 +152,9 @@ const AudioSynchro: React.FC<{
       <LecteurAudio src={src} accent={accent} label={label} compact={compact} onTime={onTime} onPret={setPret} controle={controle} />
       </div>
       {parolesVisibles
-        ? <Paroles lignes={lignes} idx={idxL} suivre={joue} accent={accent} marge={hTete + 12} onSeek={t => controle.current?.seek(t)} />
+        ? <Paroles lignes={lignes} idx={idxL} suivre={joue && !parolesApresLecture} accent={accent} marge={hTete + 12} onSeek={t => controle.current?.seek(t)} />
         : texte}
-    </>
+    </div>
   );
 };
 

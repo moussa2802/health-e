@@ -3,13 +3,13 @@
  * le bandeau d'aperçu du propriétaire, la mention « Histoire inspirée de faits réels ».
  */
 import React, { useEffect, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Check, ChevronRight, Loader2, MessageCircle, Share2, Unlock } from 'lucide-react';
 import { DC, card } from '../accueil/DrLoShell';
 import AudioSynchro from './AudioSynchro';
 import { openDrLoChat } from '../DrLoChat/drLoEvents';
 import { getScaleMeta } from '../../utils/scaleMeta';
-import { CdsError, debloquerCas, getBrancheApercu, getJourApercu, noterGeste, quandLabel, repondreUtile, setBrancheApercu, setJourApercu, type CdsChiffres, type CdsEpisodeReponse, type CdsFin, type CdsResultats } from '../../services/casDuSoirService';
+import { CdsError, debloquerCas, getBrancheApercu, getJourApercu, getListe, noterGeste, quandLabel, repondreUtile, setBrancheApercu, setJourApercu, type CdsChiffres, type CdsEpisodeReponse, type CdsFin, type CdsHistoire, type CdsResultats } from '../../services/casDuSoirService';
 import { useKoris } from '../../contexts/KorisContext';
 import { useAuth } from '../../contexts/AuthContext';
 
@@ -137,7 +137,7 @@ export const ChiffresProprio: React.FC<{ chiffres: CdsChiffres }> = ({ chiffres:
   );
 };
 
-export const Fin: React.FC<{ fin: CdsFin; accent: string }> = ({ fin, accent }) => {
+export const Fin: React.FC<{ fin: CdsFin; accent: string; id?: string }> = ({ fin, accent, id }) => {
   const navigate = useNavigate();
   const [rep, setRep] = useState<Record<number, number>>({});
   const tous = fin.quiz.every((_, i) => rep[i] !== undefined);
@@ -181,10 +181,45 @@ export const Fin: React.FC<{ fin: CdsFin; accent: string }> = ({ fin, accent }) 
           </button>
         )}
       </div>
+      {id && <CasSuivant id={id} accent={accent} />}
     </section>
   );
 };
 
+
+/**
+ * « Le cas suivant » : à la fin d'un cas (sous la leçon), le cas qui vient après lui dans la liste.
+ * Ouvert : on y va. Pas encore ouvert : sa date, et « Débloquer tout de suite · ✦N » (la fenêtre de confirmation redit le prix
+ * et « si tu attends, c'est gratuit »). Aucun cas après lui : rien n'est montré.
+ */
+export const CasSuivant: React.FC<{ id: string; accent: string }> = ({ id, accent }) => {
+  const [suivant, setSuivant] = useState<(CdsHistoire & { statut: 'bientot' | 'en_cours' | 'termine' }) | null>(null);
+  const charger = () => getListe().then(l => {
+    const hs = l.histoires ?? []; const i = hs.findIndex(h => h.id === id);
+    setSuivant(i >= 0 ? hs.slice(i + 1).find(h => h.statut !== 'termine') ?? null : null);
+  }).catch(() => setSuivant(null));
+  useEffect(() => { void charger(); }, [id]); // eslint-disable-line react-hooks/exhaustive-deps
+  if (!suivant) return null;
+  const ouvert = suivant.statut === 'en_cours';
+  return (
+    <div style={{ marginTop: 22, paddingTop: 18, borderTop: `1px solid ${DC.line}` }}>
+      <p style={{ margin: 0, fontSize: 13, fontWeight: 700, letterSpacing: '.08em', color: accent }}>LE CAS SUIVANT</p>
+      <h3 style={{ margin: '4px 0 0', fontFamily: 'Fraunces, serif', fontSize: 20, lineHeight: 1.2, color: DC.title }}>{suivant.titre}</h3>
+      {suivant.accroche && <p style={{ margin: '6px 0 0', fontSize: 15, lineHeight: 1.5, color: DC.soft }}>{suivant.accroche}</p>}
+      {ouvert ? (
+        <Link to={`/cas-du-soir/${suivant.id}`} className="drl-btn"
+          style={{ width: '100%', minHeight: 50, marginTop: 12, borderRadius: 999, border: 0, background: accent, color: '#1C1612', fontSize: 16, fontWeight: 700, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8, textDecoration: 'none', boxSizing: 'border-box' }}>
+          Commencer ce cas <ChevronRight size={18} aria-hidden="true" />
+        </Link>
+      ) : (
+        <>
+          <p style={{ margin: '8px 0 0', fontSize: 14, color: DC.soft }}>{suivant.ouverture ? `${Maj(quandLabel(suivant.ouverture))} · gratuit` : 'Bientôt · gratuit à son ouverture'}</p>
+          {suivant.debloquer ? <DebloquerCas id={suivant.id} titre={suivant.titre} ouverture={suivant.ouverture} prix={suivant.debloquer} accent={accent} onDone={() => { void charger(); }} /> : null}
+        </>
+      )}
+    </div>
+  );
+};
 
 /** Aperçu du propriétaire : simuler le jour 1 à 5 avant la date de départ (visible par lui seul). */
 export const BandeauApercu: React.FC<{ accent: string; onChange: () => void; total?: number; embranchement?: number | null }> = ({ accent, onChange, total = 5, embranchement }) => {

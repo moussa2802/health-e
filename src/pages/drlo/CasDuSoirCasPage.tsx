@@ -117,7 +117,7 @@ const CasDuSoirCasPage: React.FC = () => {
               La leçon de Dr Lô · gratuite
             </button>
           )}
-          {fin && <Fin fin={fin} accent={palette.accent} />}
+          {fin && <Fin fin={fin} accent={palette.accent} id={h.id} />}
           {h.autreFin && eps.autreFin.possible && (
             <section style={{ ...card, marginTop: 14 }}>
               <p style={{ margin: 0, fontSize: 15, color: DC.text }}>{h.autreFin.mention}</p>
