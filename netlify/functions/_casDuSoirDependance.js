@@ -7,7 +7,6 @@ module.exports = {
   "id": "amour-ou-dependance",
   "titre": "Amour ou dépendance affective",
   "categorie": "mentale",
-  "cache": true,
   "image": "/images/cas-du-soir/dependance-couverture.webp",
   "intrigue": "/audio/cas-du-soir/amour-ou-dependance-intrigue.mp3",
   "intrigueMinutage": "amour-ou-dependance-intrigue",
@@ -21,9 +20,9 @@ module.exports = {
     "6": "Une rechute n'est pas un échec. Un cahier, un plan, une phrase.",
     "7": "Quatre mois plus tard, une absence, et une autre façon de réagir."
   },
-  "depart": "2030-01-01",
+  "depart": "2026-11-27",
   "heure": "20:00",
-  "programmee": false,
+  "programmee": true,
   "debloquer": 30,
   "prixSuite": {
     "2": 4,
@@ -61,8 +60,8 @@ module.exports = {
       "minutes": 3,
       "voix": "narrateur posé ; Binta à bout de souffle ; Fanta ferme et douce, au téléphone.",
       "image": "/images/cas-du-soir/dependance-ep1.webp",
-      "audio": null,
-      "minutage": null
+      "audio": "casDuSoir/dependance/ep1.mp3",
+      "minutage": "dependance-ep1"
     },
     {
       "titre": "Un live à vingt heures",
@@ -88,15 +87,15 @@ module.exports = {
       "minutes": 3,
       "voix": "narrateur ; live de Dr Lô (tes répliques L2-n, plus ouvert) ; Fanta chaleureuse ; Binta qui répond tout bas.",
       "image": "/images/cas-du-soir/dependance-ep2.webp",
-      "audio": null,
-      "minutage": null,
+      "audio": "casDuSoir/dependance/ep2.mp3",
+      "minutage": "dependance-ep2",
       "tests": [
         "ecr_r"
       ]
     },
     {
       "titre": "Ce que Maman dit tout bas",
-      "texte": "Dimanche, déjeuner chez Maman Nafi. Le riz au poisson est parfait. Comme toujours, ce n'est pas assez bien : trop de sel, pas assez de piment, Binta a mal découpé le chou. Maman Nafi parle sans lever les yeux de son assiette.\n\nMAMAN NAFI : Mamadou est parti parce que tu l'as étouffé. Je te l'ai dit cent fois : un homme n'aime pas qu'on lui court après. Tu es comme ça depuis toute petite. Collante.\nBINTA : Maman, je ne cours pas après…\nMAMAN NAFI : Et ton père ? Il t'appelle une fois par mois, et toi tu restes plantée devant le téléphone. Tu n'as jamais su faire autrement.\n\nBinta serre sa fourchette. Elle avale. Elle sourit. C'est ce qu'elle a toujours fait : sourire, aider, débarrasser la table avant qu'on le lui demande. Être irréprochable pour ne pas être laissée.\n\nDeux jours plus tard, elle est assise dans le cabinet de Dr Lô, à Point E. Il y a une plante, une fenêtre qui donne sur un manguier. Elle parle longtemps. De Mamadou. De sa mère. Du père qui téléphone une fois par mois. De la petite fille qui apprenait à tout réussir pour qu'on l'aime un peu.\n\nDR LÔ : Merci de me l'avoir dit. Ce que tu décris est très courant, et tu n'es pas « collante » : tu as appris à aimer en craignant de perdre. Ce que vit un enfant qu'on critique beaucoup ou qu'on touche peu laisse des traces. Ça explique. Ça n'excuse pas, et ça ne te fige pas : un lien peut se desserrer, même à vingt-huit ans.\n\nBINTA : Alors pourquoi je me sens toujours obligée de donner plus que les autres ? Quand je rends service, je me sens exister. Quand je ne le fais pas, j'ai peur qu'on ne me garde plus.\n\nDR LÔ : Parce que, pour toi, donner, c'est te mettre à l'abri d'être laissée. Mais ta valeur n'est pas dans ce que tu donnes, ni dans les messages que tu reçois.\n\nBinta sourit pour la première fois depuis longtemps : un vrai sourire, un peu tremblant. Dans le taxi, en rentrant, elle se souvient que Fanta lui a parlé d'un test d'estime de soi, dans le compagnon. Elle l'ouvrira ce soir. Puis elle note dans son téléphone une phrase qu'elle n'avait jamais osé penser : « Ma mère m'aime. Mais elle ne sait pas le dire. »",
+      "texte": "Dimanche, déjeuner chez Maman Nafi. Le riz au poisson est parfait. Comme toujours, ce n'est pas assez bien : trop de sel, pas assez de piment, Binta a mal découpé le chou. Maman Nafi parle sans lever les yeux de son assiette.\n\nMAMAN NAFI : Mamadou est parti parce que tu l'as étouffé. Je te l'ai dit cent fois : un homme n'aime pas qu'on lui court après. Tu es comme ça depuis toute petite. Collante.\nBINTA : Maman, je ne cours pas après…\nMAMAN NAFI : Et ton père ? Il t'appelle une fois par mois, et toi tu restes plantée devant le téléphone. Tu n'as jamais su faire autrement.\n\nBinta serre sa fourchette. Elle avale. Elle sourit. C'est ce qu'elle a toujours fait : sourire, aider, débarrasser la table avant qu'on le lui demande. Être irréprochable pour ne pas être laissée.\n\nDeux jours plus tard, elle est assise dans le cabinet de Dr Lô, à Point E. Il y a une plante, une fenêtre qui donne sur un manguier. Elle parle longtemps. De Mamadou. De sa mère. Du père qui téléphone une fois par mois. De la petite fille qui apprenait à tout réussir pour qu'on l'aime un peu.\n\nDR LÔ : Merci de me l'avoir dit. Ce que tu décris est très courant, et tu n'es pas « collante » : tu as appris à aimer en craignant de perdre. Ce que vit un enfant qu'on critique beaucoup, ou à qui on donne peu d'affection, laisse des traces. Ça explique. Ça n'excuse pas, et ça ne te fige pas : un lien peut se desserrer, même à vingt-huit ans.\n\nBINTA : Alors pourquoi je me sens toujours obligée de donner plus que les autres ? Quand je rends service, je me sens exister. Quand je ne le fais pas, j'ai peur qu'on ne me garde plus.\n\nDR LÔ : Parce que, pour toi, donner, c'est te mettre à l'abri d'être laissée. Mais ta valeur n'est pas dans ce que tu donnes, ni dans les messages que tu reçois.\n\nBinta sourit pour la première fois depuis longtemps : un vrai sourire, un peu tremblant. Dans le taxi, en rentrant, elle se souvient que Fanta lui a parlé d'un test d'estime de soi, dans le compagnon. Elle l'ouvrira ce soir. Puis elle note dans son téléphone une phrase qu'elle n'avait jamais osé penser : « Ma mère m'aime. Mais elle ne sait pas le dire. »",
       "question": "À la place de Binta, face à une mère qui critique, que ferais-tu ?",
       "choix": [
         {
@@ -118,8 +117,8 @@ module.exports = {
       "minutes": 3,
       "voix": "narrateur ; Maman Nafi sèche, sans lever les yeux ; consultation de Dr Lô (C3-n, voix posée de cabinet) ; Binta.",
       "image": "/images/cas-du-soir/dependance-ep3.webp",
-      "audio": null,
-      "minutage": null,
+      "audio": "casDuSoir/dependance/ep3.mp3",
+      "minutage": "dependance-ep3",
       "tests": [
         "rses"
       ]
@@ -148,8 +147,8 @@ module.exports = {
       "minutes": 3,
       "voix": "narrateur ; Mamadou froid puis démuni ; appel de nuit de Dr Lô (A4-1, très doux, voix de téléphone) ; Binta.",
       "image": "/images/cas-du-soir/dependance-ep4.webp",
-      "audio": null,
-      "minutage": null
+      "audio": "casDuSoir/dependance/ep4.mp3",
+      "minutage": "dependance-ep4"
     },
     {
       "titre": "Qui je suis sans lui",
@@ -175,8 +174,8 @@ module.exports = {
       "minutes": 3,
       "voix": "narrateur ; Fanta franche ; Alioune gêné puis sincère ; Binta. Dr Lô absent.",
       "image": "/images/cas-du-soir/dependance-ep5.webp",
-      "audio": null,
-      "minutage": null,
+      "audio": "casDuSoir/dependance/ep5.mp3",
+      "minutage": "dependance-ep5",
       "tests": [
         "bonus_dependance"
       ]
@@ -205,8 +204,8 @@ module.exports = {
       "minutes": 3,
       "voix": "narrateur ; consultation de suivi de Dr Lô (C6-n) ; Binta ; Fanta.",
       "image": "/images/cas-du-soir/dependance-ep6.webp",
-      "audio": null,
-      "minutage": null,
+      "audio": "casDuSoir/dependance/ep6.mp3",
+      "minutage": "dependance-ep6",
       "tests": [
         "bonus_confiance"
       ]
@@ -235,15 +234,15 @@ module.exports = {
       "minutes": 3,
       "voix": "narrateur ; Binta apaisée ; vidéo courte de Dr Lô (V7) ; Souleymane (message).",
       "image": "/images/cas-du-soir/dependance-ep7.webp",
-      "audio": null,
-      "minutage": null
+      "audio": "casDuSoir/dependance/ep7.mp3",
+      "minutage": "dependance-ep7"
     }
   ],
   "fin": {
     "titre": "La leçon de Dr Lô",
-    "texte": "Bonsoir, c'est Dr Lô. Tu viens de suivre Binta. Peut-être que, quelque part, tu t'es reconnu, ou tu as reconnu quelqu'un que tu aimes. Voici ce qu'il faut retenir, en dix points.\n\nUn. Aimer et dépendre ne sont pas la même chose, et on peut passer de l'un à l'autre. Aimer, c'est vouloir le bien de l'autre et le tien. Dépendre, c'est avoir besoin de l'autre pour calmer sa peur.\n\nDeux. Dépendre de ceux qu'on aime est normal : on a tous besoin des autres. Ce qui devient un problème, c'est l'excès, la panique au moindre silence, et l'oubli de soi.\n\nTrois. Les cinq questions pour faire la différence : quand l'autre s'absente, suis-je triste ou en panique ? Puis-je dire non sans avoir peur qu'il parte ? Ai-je encore ma vie, mes amis, mes projets ? Est-ce que je veux son bonheur, ou que j'ai besoin qu'il me rassure ? Ma valeur du jour dépend-elle de son message ?\n\nQuatre. Ce n'est pas un diagnostic, ni un défaut de caractère. On parle surtout d'attachement anxieux : la peur d'être abandonné, le besoin de réassurance, la vigilance au moindre signe de rejet.\n\nCinq. Ça vient souvent de l'enfance : critiques répétées, manque de tendresse, absence. Cela explique, sans condamner ceux qui ont mal aimé et sans te figer toi.\n\nSix. Ça touche les femmes et les hommes, sous des formes différentes : supplier, surveiller, contrôler, ou se faire tout petit. La peur est la même.\n\nSept. Être quitté sans explication fait plus mal, parce que le cerveau cherche une réponse. Ruminer n'est pas de la faiblesse. Ce qui aide : ne pas relire, écrire dans tes notes sans envoyer, et décider toi-même de tes limites, sans attendre une clôture que l'autre ne donnera peut-être jamais.\n\nHuit. Les gestes qui aident : mettre le téléphone loin la nuit, retrouver une activité à toi, garder deux ou trois personnes sûres, dormir, dire ce dont tu as besoin simplement, sans tester l'autre.\n\nNeuf. La bienveillance envers soi n'est pas du laxisme : c'est ce qui fait tenir. Parle-toi comme tu parlerais à une amie. Si tu n'y arrives pas seul, consulte : la thérapie des schémas et les thérapies cognitivo-comportementales ont fait leurs preuves pour les difficultés proches.\n\nDix. Si ta tristesse devient « je ne veux plus vivre », parle tout de suite à quelqu'un ou appelle le 1515 : ce jour-là, on ne reste pas seul. Prends soin de toi, et à bientôt.\n\nSources : Mickelson, Kessler et Shaver, 1997 (attachement chez l'adulte) ; Knee, Canevello, Bush et Cook, 2008 (estime de soi dépendante de la relation) ; Pinquart, Feußner et Ahnert, 2013 (stabilité de l'attachement) ; Bamelis et coll., 2014 (thérapie des schémas) ; Hill et coll., 2025 (autocompassion et attachement) ; Han et Kim, 2023 (interventions d'autocompassion) ; études sur le ghosting et la rumination.",
-    "audio": null,
-    "minutage": null,
+    "texte": "Bonsoir, c'est Dr Lô. Tu viens de suivre Binta. Peut-être que, quelque part, tu t'es reconnu, ou tu as reconnu quelqu'un que tu aimes. Voici ce qu'il faut retenir, en dix points.\n\nUn. Aimer et dépendre ne sont pas la même chose, et on peut passer de l'un à l'autre. Aimer, c'est vouloir le bien de l'autre et le tien. Dépendre, c'est avoir besoin de l'autre pour calmer sa peur.\n\nDeux. Dépendre de ceux qu'on aime est normal : on a tous besoin des autres. Ce qui devient un problème, c'est l'excès, la panique au moindre silence, et l'oubli de soi.\n\nTrois. Les cinq questions pour faire la différence : quand l'autre s'absente, suis-je triste ou en panique ? Puis-je dire non sans avoir peur qu'il parte ? Ai-je encore ma vie, mes amis, mes projets ? Est-ce que je veux son bonheur, ou que j'ai besoin qu'il me rassure ? Ma valeur du jour dépend-elle de son message ?\n\nQuatre. Ce n'est pas un diagnostic, ni un défaut de caractère. On parle surtout d'attachement anxieux : la peur d'être abandonné, le besoin de réassurance, la vigilance au moindre signe de rejet.\n\nCinq. Ça vient souvent de l'enfance : critiques répétées, manque de tendresse, absence. Cela explique tes réflexes. Cela ne veut pas dire que tu es condamnée à les garder.\n\nSix. Ça touche les femmes et les hommes, sous des formes différentes : supplier, surveiller, contrôler, ou se faire tout petit. La peur est la même.\n\nSept. Être quitté sans explication fait plus mal, parce que le cerveau cherche une réponse. Ruminer n'est pas de la faiblesse. Ce qui aide : ne pas relire, écrire dans tes notes sans envoyer, et décider toi-même de tes limites, sans attendre une clôture que l'autre ne donnera peut-être jamais.\n\nHuit. Les gestes qui aident : mettre le téléphone loin la nuit, retrouver une activité à toi, garder deux ou trois personnes sûres, dormir, dire ce dont tu as besoin simplement, sans tester l'autre.\n\nNeuf. La bienveillance envers soi n'est pas du laxisme : c'est ce qui fait tenir. Parle-toi comme tu parlerais à une amie. Si tu n'y arrives pas seul, consulte un psychologue : des méthodes comme les thérapies cognitivo-comportementales marchent bien pour ça.\n\nDix. Si ta tristesse devient « je ne veux plus vivre », parle tout de suite à quelqu'un ou appelle le 1515 : ce jour-là, on ne reste pas seul. Prends soin de toi, et à bientôt.\n\nSources : Mickelson, Kessler et Shaver, 1997 (attachement chez l'adulte) ; Knee, Canevello, Bush et Cook, 2008 (estime de soi dépendante de la relation) ; Pinquart, Feußner et Ahnert, 2013 (stabilité de l'attachement) ; Bamelis et coll., 2014 (thérapie des schémas) ; Hill et coll., 2025 (autocompassion et attachement) ; Han et Kim, 2023 (interventions d'autocompassion) ; études sur le ghosting et la rumination.",
+    "audio": "casDuSoir/dependance/lecon.mp3",
+    "minutage": "dependance-lecon",
     "quiz": [
       {
         "question": "Laquelle de ces situations est un signe de dépendance affective ?",
