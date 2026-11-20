@@ -947,11 +947,11 @@ test('lancement du 20/11/2026 : cas du soir public, ouverture échelonnée (Minu
   assert.equal(LANCEMENT.public, true);
   const par = Object.fromEntries(LANCEMENT.cas.map((c) => [c.id, c]));
   assert.deepEqual(par['vu-de-minuit'], { id: 'vu-de-minuit', depart: '2026-11-18', heure: '20:00', programmee: true, adultes: false });
-  assert.deepEqual(par.goumin, { id: 'goumin', depart: '2026-11-27', heure: '20:00', programmee: true, adultes: true });
+  assert.deepEqual(par.goumin, { id: 'goumin', depart: '2026-11-23', heure: '20:00', programmee: true, adultes: true });
   assert.equal(par.goumin.adultes, true);
-  for (const [id, depart] of [['vu-de-minuit', '2026-11-18'], ['goumin', '2026-11-27']]) assert.equal(par[id].depart, depart);
+  for (const [id, depart] of [['vu-de-minuit', '2026-11-18'], ['goumin', '2026-11-23']]) assert.equal(par[id].depart, depart);
   const autres = LANCEMENT.cas.filter((c) => !['vu-de-minuit', 'goumin'].includes(c.id));
-  assert.deepEqual(autres.map((c) => [c.depart, c.programmee, c.adultes, c.heure]).sort(), [['2026-12-04', true, true, '20:00'], ['2026-12-11', true, true, '20:00']]);
+  assert.deepEqual(autres.map((c) => [c.depart, c.programmee, c.adultes, c.heure]).sort(), [['2026-11-25', true, true, '20:00'], ['2026-12-11', true, true, '20:00']]);
   const src = fs.readFileSync(path.join(__dirname, '..', '..', '..', 'src', 'config', 'contenusPayants.ts'), 'utf8');
   assert.match(src, /CAS_DU_SOIR_CARTE_VISITEURS: boolean = true;/); // la carte des visiteurs s'ouvre en même temps
 });

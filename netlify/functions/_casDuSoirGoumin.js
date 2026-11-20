@@ -16,7 +16,7 @@ module.exports = {
     "2": "Il lui demande une preuve. Elle n'a rien à répondre.",
     "3": "Il revient. Mais il veut un certificat."
   },
-  "depart": "2026-11-27",
+  "depart": "2026-11-23",
   "heure": "20:00",
   "programmee": true,
   "debloquer": 20,
