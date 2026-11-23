@@ -45,7 +45,7 @@ const CasDuSoirEpisodePage: React.FC = () => {
   }, [id, n, autre]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const retour = { to: `/cas-du-soir/${id}`, label: 'Retour aux épisodes' };
-  if (!etat) return <DrLoShell narrow back={retour} palette={palette}><p style={{ marginTop: 60, textAlign: 'center', color: DC.muted }}>Un instant…</p></DrLoShell>;
+  if (!etat) return <DrLoShell narrow backDirect back={retour} palette={palette}><p style={{ marginTop: 60, textAlign: 'center', color: DC.muted }}>Un instant…</p></DrLoShell>;
   if (!etat.visible || !etat.histoire) return <Navigate to="/" replace />;
   const h = etat.histoire;
   const prix = etat.prix ?? CAS_DU_SOIR_PRIX;
@@ -105,7 +105,7 @@ const CasDuSoirEpisodePage: React.FC = () => {
   };
 
   return (
-    <DrLoShell narrow back={retour} palette={palette}>
+    <DrLoShell narrow backDirect back={retour} palette={palette}>
       <GateAdultes actif={!!h.adultes} accent={palette.accent} retour={() => navigate('/cas-du-soir')}>
       <p style={{ margin: '18px 0 0', fontSize: 13, fontWeight: 700, color: palette.accent }}>{h.titre}{autre ? ' · l\'autre fin' : ''}</p>
       {error && <p role="alert" style={{ margin: '12px 0 0', fontSize: 14, color: '#F6C2AE' }}>{error}</p>}

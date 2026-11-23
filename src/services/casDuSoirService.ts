@@ -105,6 +105,8 @@ export interface CdsEpisodeCarte {
   parution?: number | null; avance?: { ok: boolean; raison?: string; prix?: number } | null;
 }
 export const getEpisodes = () => call<{ episodes: CdsEpisodeCarte[]; finie: boolean; prix: CdsPrix; autreFin: { achetee: boolean; possible: boolean }; apercu: boolean }>({ action: 'episodes' });
+/** Les épisodes d'un cas précis (sans dépendre du cas ouvert) : l'accueil montre où en est la personne dans le cas du moment. */
+export const getEpisodesDe = (histoire: string) => call<Awaited<ReturnType<typeof getEpisodes>>>({ action: 'episodes', histoire });
 export const getEpisode = (n: number, autre = false) => call<CdsEpisodeReponse>({ action: 'episode', n, ...(autre ? { autre: true } : {}) });
 export const acheterAutreFin = () => call<{ ok: boolean }>({ action: 'autreFin' });
 export const voter = (n: number, choix: string) => call<{ ok: boolean; monChoix: string; resultats: CdsResultats; apercu?: boolean }>({ action: 'vote', n, choix });

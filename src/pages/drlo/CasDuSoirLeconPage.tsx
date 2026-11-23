@@ -28,22 +28,22 @@ const CasDuSoirLeconPage: React.FC = () => {
   }, [id]);
 
   const retour = { to: `/cas-du-soir/${id}`, label: 'Retour au cas' };
-  if (!etat) return <DrLoShell narrow back={retour} palette={palette}><p style={{ marginTop: 60, textAlign: 'center', color: DC.muted }}>Un instant…</p></DrLoShell>;
+  if (!etat) return <DrLoShell narrow backDirect back={retour} palette={palette}><p style={{ marginTop: 60, textAlign: 'center', color: DC.muted }}>Un instant…</p></DrLoShell>;
   if (!etat.visible || !etat.histoire) return <Navigate to="/" replace />;
   const h = etat.histoire;
   if (error) {
     return (
-      <DrLoShell narrow back={retour} palette={palette}>
+      <DrLoShell narrow backDirect back={retour} palette={palette}>
         <p role="alert" style={{ margin: '40px 0 0', fontSize: 15, color: '#F6C2AE', textAlign: 'center' }}>{error}</p>
         <Link to={retour.to} className="drl-btn" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 50, marginTop: 16, borderRadius: 999, border: `1px solid ${DC.line}`, background: DC.glass, color: DC.text, fontWeight: 600, textDecoration: 'none' }}>Retour au cas</Link>
       </DrLoShell>
     );
   }
-  if (!fin) return <DrLoShell narrow back={retour} palette={palette}><p style={{ marginTop: 60, textAlign: 'center', color: DC.muted }}>Un instant…</p></DrLoShell>;
+  if (!fin) return <DrLoShell narrow backDirect back={retour} palette={palette}><p style={{ marginTop: 60, textAlign: 'center', color: DC.muted }}>Un instant…</p></DrLoShell>;
 
   const minutes = fin.minutage?.duree ? Math.max(1, Math.round(fin.minutage.duree / 60)) : null;
   return (
-    <DrLoShell narrow back={retour} palette={palette}>
+    <DrLoShell narrow backDirect back={retour} palette={palette}>
       <GateAdultes actif={!!h.adultes} accent={palette.accent} retour={() => navigate('/cas-du-soir')}>
         <LecteurImmersif
           kicker={h.titre} titre="La leçon de Dr Lô" accent={palette.accent} fond="plein"

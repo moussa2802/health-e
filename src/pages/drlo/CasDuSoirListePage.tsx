@@ -79,7 +79,7 @@ const CasDuSoirListePage: React.FC = () => {
   const charger = () => getListe().then(setListe).catch(() => setListe({ visible: false }));
   useEffect(() => { setHistoire(null); void charger(); }, []);
 
-  if (!liste) return <DrLoShell narrow back={{ to: '/', label: 'Retour à l\'accueil' }} palette={palette}><p style={{ marginTop: 60, textAlign: 'center', color: DC.muted }}>Un instant…</p></DrLoShell>;
+  if (!liste) return <DrLoShell narrow backDirect back={{ to: '/', label: 'Retour à l\'accueil' }} palette={palette}><p style={{ marginTop: 60, textAlign: 'center', color: DC.muted }}>Un instant…</p></DrLoShell>;
   if (!liste.visible || !liste.histoires) return <Navigate to="/" replace />;
   const hs = liste.histoires;
   const nb = (o: Onglet) => (o === 'tous' ? hs.length : hs.filter(h => rayonsDe(h).includes(o)).length);
@@ -87,7 +87,7 @@ const CasDuSoirListePage: React.FC = () => {
   const chip = (actif: boolean): React.CSSProperties => ({ minHeight: 44, padding: '0 16px', borderRadius: 999, cursor: 'pointer', fontSize: 14, fontWeight: 700, whiteSpace: 'nowrap', fontFamily: 'inherit', border: `1px solid ${actif ? palette.accent : DC.line}`, background: actif ? palette.accent : 'transparent', color: actif ? '#1C1612' : DC.text });
 
   return (
-    <DrLoShell narrow back={{ to: '/', label: 'Retour à l\'accueil' }} palette={palette}>
+    <DrLoShell narrow backDirect back={{ to: '/', label: 'Retour à l\'accueil' }} palette={palette}>
       <h1 style={{ margin: '18px 0 0', fontFamily: 'Fraunces, serif', fontSize: 30, lineHeight: 1.15, color: DC.title }}>Le cas du soir</h1>
       <p style={{ margin: '8px 0 14px', fontSize: 15, lineHeight: 1.5, color: DC.soft }}>Une histoire en plusieurs épisodes, un par soir. À la fin de chacun, tu votes : qu'aurais-tu fait ?</p>
       <div ref={barre} role="tablist" aria-label="Choisir une catégorie" onKeyDown={touche} style={{ display: 'flex', gap: 8, overflowX: 'auto', padding: '2px 0 12px', scrollbarWidth: 'none' }}>

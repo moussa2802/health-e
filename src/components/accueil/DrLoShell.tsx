@@ -31,12 +31,14 @@ export function usePalette(): MomentPalette {
 const DrLoShell: React.FC<{
   /** Absent sur les pages d'onglet (Tests, Moi) : il n'y a pas de page « avant ». */
   back?: { to: string; label: string };
+  /** Le retour va toujours à `back.to` (jamais à la page d'où l'on vient) : pour les pages d'un parcours, comme les cas du soir. */
+  backDirect?: boolean;
   genre?: 'homme' | 'femme';
   palette: MomentPalette;
   /** Colonne de 480 px au plus (même système que l'accueil) */
   narrow?: boolean;
   children: React.ReactNode;
-}> = ({ back, genre, palette, narrow, children }) => {
+}> = ({ back, backDirect, genre, palette, narrow, children }) => {
   const navigate = useNavigate();
   const [veiled, setVeiled] = useState(false);
   const seul = genre === 'femme' ? 'seule' : genre === 'homme' ? 'seul' : 'uniquement';
@@ -46,7 +48,7 @@ const DrLoShell: React.FC<{
         <header style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
           {back ? (
             <Link to={back.to} aria-label={back.label} className="drl-btn"
-              onClick={e => { if (canGoBackInApp((window.history.state as { idx?: number } | null)?.idx)) { e.preventDefault(); navigate(-1); } }}
+              onClick={e => { if (!backDirect && canGoBackInApp((window.history.state as { idx?: number } | null)?.idx)) { e.preventDefault(); navigate(-1); } }}
               style={{ width: 44, height: 44, borderRadius: 13, border: `1px solid ${DC.line}`, background: DC.glass, display: 'flex', alignItems: 'center', justifyContent: 'center', color: DC.muted }}>
               <ArrowLeft size={20} aria-hidden="true" />
             </Link>

@@ -148,7 +148,7 @@ const Discover: React.FC<{ feed: HomeFeed | null; connected: boolean; channels?:
 /** La boîte à questions : anonyme, sans compte, sans promesse de réponse. */
 const AskBox: React.FC = () => (
   <>
-    <SectionTitle>Une question ?</SectionTitle>
+    <SectionTitle>Une question que tu n'oses pas poser ?</SectionTitle>
     <WideLink to="/boite-a-questions" title="Dépose-la, en anonyme" sub="L'équipe lit tout et répond à certaines : ici, ou dans une vidéo." tint={DC.confier} icon={<MessageCircleQuestion size={24} color={DC.confier} aria-hidden="true" />} />
   </>
 );
@@ -234,6 +234,7 @@ const VisitorHome: React.FC<{ feed: HomeFeed | null; palette: MomentPalette }> =
       <TrustRow palette={palette} />
       <FeaturedCard featured={pickFeatured(feed)} guest palette={palette} />
       {CAS_DU_SOIR_CARTE_VISITEURS && <CasDuSoirCard accent={palette.accent} />}
+      <AskBox />
       <SectionTitle>Ton animal intérieur</SectionTitle>
       <AnimalTeaser palette={palette} />
       <Discover feed={feed} connected={false} channels={launch.on('chaines')} tools={false} />
@@ -244,7 +245,6 @@ const VisitorHome: React.FC<{ feed: HomeFeed | null; palette: MomentPalette }> =
           <WideLink to="/assessment/compatibility" title="Comparez vos profils" sub="Partenaire, crush ou ami : un code à partager, une analyse croisée." tint={DC.social} icon={<Heart size={24} color={DC.social} aria-hidden="true" />} />
         </>
       )}
-      <AskBox />
       {SHOW_HOME_RISE && <WhenItRises confier={false} />}
     </>
   );
@@ -364,6 +364,28 @@ const ConnectedHome: React.FC<{ feed: HomeFeed | null; palette: MomentPalette; u
 
       {/* Le cas du soir d'abord : c'est la raison de revenir chaque soir (visible seulement si le serveur le dit) */}
       <CasDuSoirCard accent={palette.accent} />
+      <AskBox />
+
+      {(lastMsg || (chBadge > 0 && launch.on('chaines'))) && (
+        <>
+          <SectionTitle>Nouveau pour toi</SectionTitle>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: GAP }}>
+            {lastMsg && (
+              <Link to={`/messages-dr-lo/${lastMsg.id}`} className="drl-btn" style={{ ...card, display: 'flex', alignItems: 'center', gap: 12, textDecoration: 'none', color: DC.text, borderColor: 'rgba(242,182,109,.4)' }}>
+                <RealDrLoPhoto size={44} palette={palette} />
+                <span style={{ flex: 1, minWidth: 0 }}>
+                  <span style={{ display: 'block', fontSize: 13, fontWeight: 700, color: palette.accent }}>Un message de Dr Lô{unread > 1 ? ` · ${unread} non lus` : ''}</span>
+                  <span style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', fontSize: 15, lineHeight: 1.4, color: DC.soft }}>{lastMsg.text}</span>
+                </span>
+                <ArrowRight size={18} color={DC.muted} aria-hidden="true" />
+              </Link>
+            )}
+            {chBadge > 0 && launch.on('chaines') && (
+              <WideLink to="/chaines" title={`${chBadge} nouveauté${chBadge > 1 ? 's' : ''} dans tes chaînes`} tint={DC.gold} />
+            )}
+          </div>
+        </>
+      )}
 
       {suite && !(SHOW_HOME_PENC && pencLive) && (
         <section aria-label="Ta suite" style={{ ...card, marginTop: 14, padding: 16, position: 'relative', overflow: 'hidden', borderColor: `${cc}80`, background: `radial-gradient(60% 80% at 100% 0%, ${cc}4D, transparent 70%), linear-gradient(140deg, ${cc}33, rgba(26,18,11,.9) 65%)` }}>
@@ -404,27 +426,6 @@ const ConnectedHome: React.FC<{ feed: HomeFeed | null; palette: MomentPalette; u
       {SHOW_HOME_CADEAU && <DailyGiftCard palette={palette} />}
 
 
-      {(lastMsg || (chBadge > 0 && launch.on('chaines'))) && (
-        <>
-          <SectionTitle>Nouveau pour toi</SectionTitle>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: GAP }}>
-            {lastMsg && (
-              <Link to={`/messages-dr-lo/${lastMsg.id}`} className="drl-btn" style={{ ...card, display: 'flex', alignItems: 'center', gap: 12, textDecoration: 'none', color: DC.text, borderColor: 'rgba(242,182,109,.4)' }}>
-                <RealDrLoPhoto size={44} palette={palette} />
-                <span style={{ flex: 1, minWidth: 0 }}>
-                  <span style={{ display: 'block', fontSize: 13, fontWeight: 700, color: palette.accent }}>Un message de Dr Lô{unread > 1 ? ` · ${unread} non lus` : ''}</span>
-                  <span style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', fontSize: 15, lineHeight: 1.4, color: DC.soft }}>{lastMsg.text}</span>
-                </span>
-                <ArrowRight size={18} color={DC.muted} aria-hidden="true" />
-              </Link>
-            )}
-            {chBadge > 0 && launch.on('chaines') && (
-              <WideLink to="/chaines" title={`${chBadge} nouveauté${chBadge > 1 ? 's' : ''} dans tes chaînes`} tint={DC.gold} />
-            )}
-          </div>
-        </>
-      )}
-
       {SHOW_HOME_HUMEUR && moodDone === false && (
         <div style={{ marginTop: GAP }}>
           <CompactRow onClick={() => setMoodOpen(true)} title="Comment tu te sens ?" sub="Note ton humeur en 30 secondes." tint={DC.sage} icon={<CloudSun size={22} color={DC.sage} />} />
@@ -452,7 +453,6 @@ const ConnectedHome: React.FC<{ feed: HomeFeed | null; palette: MomentPalette; u
           <WideLink to="/question" kicker={`ÉTAPE ${Math.min(stepsDone + 1, drlo.paliers.steps.length)} SUR ${drlo.paliers.steps.length}`} title="Ta question privée au médecin" sub="Une réponse personnelle, au bout de ton parcours." tint={DC.gold} />
         </>
       )}
-      <AskBox />
       {SHOW_HOME_RISE && <WhenItRises confier={launch.on('confier')} />}
     </>
   );
