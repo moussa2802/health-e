@@ -26,7 +26,7 @@ const Cas: React.FC<{ c: CdsStatCas; palette: MomentPalette }> = ({ c, palette }
   return (
     <article style={{ ...card, marginTop: 12 }}>
       <h3 style={{ margin: 0, fontFamily: 'Fraunces, serif', fontSize: 19, color: DC.title }}>{c.titre}</h3>
-      <p style={{ margin: '2px 0 0', fontSize: 13, color: DC.faint }}>{c.categorie === 'sexuelle' ? 'Santé sexuelle' : c.categorie === 'mentale' ? 'Santé mentale' : ''}{c.cache ? ' · en construction (caché au public)' : ''}</p>
+      <p style={{ margin: '2px 0 0', fontSize: 13, color: DC.faint }}>{[c.categorie, c.categorieAussi].filter(Boolean).map(k => (k === 'sexuelle' ? 'Santé sexuelle' : 'Santé mentale')).join(' · ')}{c.cache ? ' · en construction (caché au public)' : ''}</p>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 10 }}>
         <Tuile valeur={String(c.visiteurs)} legende={`${nb(c.visiteurs, 'visiteur')} (dont ${c.visiteursCompte} avec compte)`} />
         <Tuile valeur={String(c.lecteurs)} legende={`${nb(c.lecteurs, 'lecteur')} (${pct(c.lecteurs, c.visiteurs)} des visiteurs)`} />

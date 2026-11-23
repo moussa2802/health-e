@@ -1,15 +1,14 @@
 /**
- * CasDuSoirListePage — /cas-du-soir : la liste des cas (même s'il n'y en a qu'un). Une carte par cas : la couverture,
- * le titre, l'accroche et l'état (« Épisode 3 sur 5 », « Bientôt », « Terminé »).
+ * CasDuSoirListePage — /cas-du-soir : la vitrine des cas, en affiches (deux colonnes) pour les voir tous d'un coup d'œil.
+ * Chaque affiche : la couverture, le rayon (santé mentale / sexuelle, 18+), l'état en un mot (Ouvert, la date, Terminé), le titre,
+ * l'accroche et le nombre d'épisodes. Les cas ouverts d'abord, puis ceux à venir (le plus proche en premier), puis les terminés.
+ * « Débloquer tout de suite » est dans la fiche du cas.
  * Masquée tant que le serveur ne la dit pas visible (aujourd'hui : le propriétaire seulement). Aucun appel à l'IA.
  */
 import React, { useEffect, useRef, useState } from 'react';
-import { Navigate } from 'react-router-dom';
-import { Moon } from 'lucide-react';
+import { Link, Navigate } from 'react-router-dom';
 import DrLoShell, { DC, usePalette } from '../../components/accueil/DrLoShell';
-import { ImageCard, Stack } from '../../components/accueil/HomeParts';
-import { DebloquerCas, Maj, PiedCas } from '../../components/casdusoir/CdsParts';
-import LecteurAudio from '../../components/casdusoir/LecteurAudio';
+import { Maj, PiedCas } from '../../components/casdusoir/CdsParts';
 import { IMAGES } from '../../config/images';
 import { getListe, quandLabel, setHistoire } from '../../services/casDuSoirService';
 
@@ -22,6 +21,48 @@ type Onglet = 'tous' | 'mentale' | 'sexuelle';
 const ONGLETS: { id: Onglet; label: string }[] = [{ id: 'tous', label: 'Tout' }, { id: 'mentale', label: 'Santé mentale' }, { id: 'sexuelle', label: 'Santé sexuelle' }];
 const ONGLET_KEY = 'cds_onglet';
 const lireOnglet = (): Onglet => { try { const v = sessionStorage.getItem(ONGLET_KEY); return v === 'mentale' || v === 'sexuelle' ? v : 'tous'; } catch { return 'tous'; } };
+
+const RANG: Record<string, number> = { en_cours: 0, bientot: 1, termine: 2 };
+type Histoire = NonNullable<Liste['histoires']>[number];
+const rang = (h: Histoire) => RANG[h.statut] * 1e15 + (h.statut === 'bientot' ? (h.ouverture ?? 9e14) : 0);
+
+/** Les rayons d'un cas : un seul, ou les deux quand il touche santé mentale ET santé sexuelle. */
+const rayonsDe = (h: Histoire): ('mentale' | 'sexuelle')[] => {
+  const un = h.categorie ?? 'mentale';
+  return h.categorieAussi && h.categorieAussi !== un ? [un, h.categorieAussi] : [un];
+};
+
+/** Une affiche : toute la carte est un lien vers le cas. */
+const Affiche: React.FC<{ h: Histoire; accent: string }> = ({ h, accent }) => {
+  const rayons = rayonsDe(h);
+  const etat = h.statut === 'termine' ? 'Terminé' : h.statut === 'bientot' ? (h.ouverture ? Maj(quandLabel(h.ouverture)) : 'Bientôt') : 'Ouvert';
+  const ouvert = h.statut === 'en_cours';
+  return (
+    <Link to={`/cas-du-soir/${h.id}`} className="drl-btn" aria-label={`${h.titre}, ${etat}`}
+      style={{ position: 'relative', display: 'block', aspectRatio: '3 / 4.2', borderRadius: 16, overflow: 'hidden', background: '#000', textDecoration: 'none', color: DC.title, minWidth: 0, border: `1px solid ${DC.line}` }}>
+      <img src={h.image || IMAGES.casDuSoir} alt="" loading="lazy" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} />
+      <span aria-hidden="true" style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, rgba(10,6,3,.55) 0, rgba(10,6,3,0) 30%, rgba(10,6,3,.2) 45%, rgba(10,6,3,.94) 100%)' }} />
+      <span style={{ position: 'absolute', inset: 0, padding: 9, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+        <span style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+          {rayons.map(r => (
+            <span key={r} style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 10, fontWeight: 700, letterSpacing: '.03em', borderRadius: 99, padding: '4px 8px', background: 'rgba(19,13,8,.68)', color: r === 'sexuelle' ? DC.intime : DC.sage }}>
+              <i aria-hidden="true" style={{ width: 5, height: 5, borderRadius: '50%', background: r === 'sexuelle' ? DC.intime : DC.sage, display: 'inline-block' }} />{r === 'sexuelle' ? 'SANTÉ SEXUELLE' : 'SANTÉ MENTALE'}
+            </span>
+          ))}
+          {h.adultes && <span style={{ fontSize: 10, fontWeight: 700, borderRadius: 99, padding: '4px 8px', background: 'rgba(19,13,8,.68)', color: DC.soft }}>18+</span>}
+        </span>
+        <span style={{ display: 'block' }}>
+          <span style={{ display: 'inline-block', fontSize: 10, fontWeight: 700, borderRadius: 99, padding: '4px 8px', marginBottom: 6, background: ouvert ? accent : 'rgba(19,13,8,.68)', color: ouvert ? '#1C1612' : DC.soft }}>{etat}</span>
+          <span style={{ display: 'block', fontFamily: 'Fraunces, serif', fontSize: 16, lineHeight: 1.12, fontWeight: 600, textWrap: 'balance' as React.CSSProperties['textWrap'] }}>{h.titre}</span>
+          <span style={{ display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden', marginTop: 4, fontSize: 11, lineHeight: 1.35, color: DC.soft }}>{h.accroche}</span>
+          <span style={{ display: 'block', marginTop: 6, fontSize: 10.5, color: DC.soft }}>
+            {h.total} épisodes · {h.minutes} min
+          </span>
+        </span>
+      </span>
+    </Link>
+  );
+};
 
 const CasDuSoirListePage: React.FC = () => {
   const palette = usePalette();
@@ -41,9 +82,8 @@ const CasDuSoirListePage: React.FC = () => {
   if (!liste) return <DrLoShell narrow back={{ to: '/', label: 'Retour à l\'accueil' }} palette={palette}><p style={{ marginTop: 60, textAlign: 'center', color: DC.muted }}>Un instant…</p></DrLoShell>;
   if (!liste.visible || !liste.histoires) return <Navigate to="/" replace />;
   const hs = liste.histoires;
-  const nb = (o: Onglet) => (o === 'tous' ? hs.length : hs.filter(h => (h.categorie ?? 'mentale') === o).length);
-  const affiches = hs.filter(h => onglet === 'tous' || (h.categorie ?? 'mentale') === onglet);
-  const nomCategorie = (h: (typeof hs)[number]) => ((h.categorie ?? 'mentale') === 'sexuelle' ? 'Santé sexuelle' : 'Santé mentale');
+  const nb = (o: Onglet) => (o === 'tous' ? hs.length : hs.filter(h => rayonsDe(h).includes(o)).length);
+  const affiches = hs.filter(h => onglet === 'tous' || rayonsDe(h).includes(onglet));
   const chip = (actif: boolean): React.CSSProperties => ({ minHeight: 44, padding: '0 16px', borderRadius: 999, cursor: 'pointer', fontSize: 14, fontWeight: 700, whiteSpace: 'nowrap', fontFamily: 'inherit', border: `1px solid ${actif ? palette.accent : DC.line}`, background: actif ? palette.accent : 'transparent', color: actif ? '#1C1612' : DC.text });
 
   return (
@@ -60,19 +100,9 @@ const CasDuSoirListePage: React.FC = () => {
       {affiches.length === 0 ? (
         <p style={{ margin: '16px 0 0', fontSize: 15, lineHeight: 1.5, color: DC.soft }}>Pas encore de cas dans cette catégorie.</p>
       ) : (
-      <Stack>
-        {affiches.map(h => (
-          <ImageCard key={h.id} to={`/cas-du-soir/${h.id}`} image={h.image || IMAGES.casDuSoir} tint={palette.accent}
-            fallback={<Moon size={40} color={palette.accent} strokeWidth={1.4} />}
-            kicker={`${statutLabel(h.statut, h.parus, h.total, h.ouverture)}${h.adultes ? ' · 18 ans et plus' : ''}${onglet === 'tous' ? ` · ${nomCategorie(h)}` : ''} · ${h.stats?.lecteurs ? `${h.stats.lecteurs} lecteurs` : 'Nouveau'}`} title={h.titre} line={h.accroche}
-            footer={(h.intrigue || h.debloquer) ? (
-              <>
-                {h.intrigue && <LecteurAudio compact src={h.intrigue} accent={palette.accent} label="Écouter l'intrigue" style={{ marginTop: 0 }} />}
-                {h.debloquer ? <DebloquerCas compact id={h.id} titre={h.titre} ouverture={h.ouverture} prix={h.debloquer} accent={palette.accent} onDone={() => { void charger(); }} /> : null}
-              </>
-            ) : undefined} />
-        ))}
-      </Stack>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 10 }}>
+        {[...affiches].sort((a, b) => rang(a) - rang(b)).map(h => <Affiche key={h.id} h={h} accent={palette.accent} />)}
+      </div>
       )}
       </div>
       <PiedCas avertissement={hs[0]?.avertissement} />

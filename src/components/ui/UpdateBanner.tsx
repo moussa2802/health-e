@@ -1,10 +1,11 @@
 import { useState, useEffect, useRef } from 'react';
 import { useRegisterSW } from 'virtual:pwa-register/react';
 import { Info } from 'lucide-react';
-import { verifierVersion } from '../../utils/versionCheck';
+import { forcerMiseAJour, verifierVersion } from '../../utils/versionCheck';
 
 const CHECK_INTERVAL = 30 * 60 * 1000; // 30 min
-const VERSION_CHECK_GAP = 15 * 60 * 1000; // filet de sécurité : au plus une vérification de /version.json par quart d'heure
+const VERSION_CHECK_GAP = 60 * 1000; // au plus une vérification de /version.json par minute (fichier minuscule, jamais en cache)
+const VERSION_POLL = 5 * 60 * 1000; // et une toutes les 5 minutes tant que l'appli est ouverte
 const RELOAD_KEY = 'he-sw-reload-ts';
 const RELOAD_COOLDOWN = 10_000; // 10s anti-boucle
 
@@ -24,6 +25,7 @@ function safeReload() {
 
 export default function UpdateBanner() {
   const [deferred, setDeferred] = useState(false);
+  const [nouvelle, setNouvelle] = useState(false);
   const hadController = useRef(!!navigator.serviceWorker?.controller);
   const refreshing = useRef(false);
 
@@ -66,12 +68,14 @@ export default function UpdateBanner() {
     const check = () => {
       if (Date.now() - last < VERSION_CHECK_GAP) return;
       last = Date.now();
-      void verifierVersion(__APP_VERSION__, reload);
+      void verifierVersion(__APP_VERSION__, reload, 6000, () => setNouvelle(true));
     };
-    const t = window.setTimeout(check, 8000);
+    // Dès l'entrée dans l'appli (1,5 s), à chaque retour au premier plan, puis toutes les 5 minutes
+    const t = window.setTimeout(check, 1500);
+    const poll = window.setInterval(() => { if (document.visibilityState === 'visible') check(); }, VERSION_POLL);
     const onVis = () => { if (document.visibilityState === 'visible') check(); };
     document.addEventListener('visibilitychange', onVis);
-    return () => { window.clearTimeout(t); document.removeEventListener('visibilitychange', onVis); };
+    return () => { window.clearTimeout(t); window.clearInterval(poll); document.removeEventListener('visibilitychange', onVis); };
   }, []);
 
   useEffect(() => {
@@ -94,17 +98,24 @@ export default function UpdateBanner() {
     return () => document.removeEventListener('visibilitychange', onVisChange);
   }, [deferred]);
 
-  if (!deferred) return null;
+  if (!deferred && !nouvelle) return null;
 
   return (
     <div
-      className="fixed bottom-4 left-4 right-4 z-[9999] flex items-center gap-2 bg-card border border-line rounded-xl px-4 py-3 shadow-lg max-w-sm mx-auto"
+      className="fixed bottom-4 left-4 right-4 z-[9999] flex items-center gap-3 bg-card border border-line rounded-xl px-4 py-3 shadow-lg max-w-sm mx-auto"
       role="status"
     >
       <Info size={14} className="text-accent flex-shrink-0" />
-      <span className="text-sm text-ink">
-        Mise à jour prête — elle s'appliquera quand tu auras terminé.
+      <span className="text-sm text-ink flex-1">
+        {deferred ? 'Mise à jour prête : elle s\'appliquera quand tu auras terminé.' : 'Une nouvelle version est disponible.'}
       </span>
+      <button
+        type="button"
+        onClick={() => { void forcerMiseAJour(() => window.location.reload()); }}
+        className="min-h-[44px] px-4 rounded-full bg-accent text-white text-sm font-bold flex-shrink-0"
+      >
+        Actualiser
+      </button>
     </div>
   );
 }

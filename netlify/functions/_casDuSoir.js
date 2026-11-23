@@ -243,6 +243,8 @@ function vueHistoire(h, { parus, debloques = [], connecte, prochain = null, anti
     adultes: h.adultes === true,
     embranchement: h.embranchement || null,
     categorie: h.categorie === 'sexuelle' ? 'sexuelle' : 'mentale',
+    // Un cas qui touche aussi l'autre rayon (ex. Goumin : santé sexuelle ET santé mentale) : les deux sont montrés
+    categorieAussi: (h.categorieAussi === 'mentale' || h.categorieAussi === 'sexuelle') && h.categorieAussi !== (h.categorie === 'sexuelle' ? 'sexuelle' : 'mentale') ? h.categorieAussi : null,
     // Pas encore ouvert à tous : on le voit, avec la date si elle est fixée et le prix pour l'ouvrir tout de suite
     ouverture: ouverturePublique(h),
     debloquer: peutDebloquer(h, { now, anticipe }).ok ? prixDebloquer(h) : null,
@@ -265,6 +267,7 @@ function verifierHistoire(h) {
   const err = [];
   if (!/^[a-z0-9-]{2,40}$/.test(h.id)) err.push('id');
   if (h.categorie !== 'mentale' && h.categorie !== 'sexuelle') err.push('categorie : \'mentale\' ou \'sexuelle\'');
+  if (h.categorieAussi !== undefined && (h.categorieAussi === h.categorie || (h.categorieAussi !== 'mentale' && h.categorieAussi !== 'sexuelle'))) err.push('categorieAussi : l\'autre rayon (\'mentale\' ou \'sexuelle\')');
   if (!/^\d{4}-\d{2}-\d{2}$/.test(h.depart) || !/^\d{2}:\d{2}$/.test(h.heure)) err.push('date d\'ouverture publique');
   if (h.episodes.length < 5 || h.episodes.length > 10) err.push('entre 5 et 10 épisodes');
   if (h.embranchement && h.embranchement >= h.episodes.length) err.push('embranchement avant le dernier épisode');

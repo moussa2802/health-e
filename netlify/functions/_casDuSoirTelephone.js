@@ -8,6 +8,7 @@ module.exports = {
   "id": "telephone-sous-oreiller",
   "titre": "Masturbation et pornographie",
   "categorie": "sexuelle",
+  "categorieAussi": "mentale",
   "image": "/images/cas-du-soir/telephone-couverture.webp",
   "intrigue": "/audio/cas-du-soir/telephone-sous-oreiller-intrigue.mp3",
   "intrigueMinutage": "telephone-sous-oreiller-intrigue",

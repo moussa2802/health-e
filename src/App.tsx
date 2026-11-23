@@ -72,6 +72,7 @@ const PencPage = lazy(() => import("./pages/drlo/PencPage"));
 const CasDuSoirListePage = lazy(() => import("./pages/drlo/CasDuSoirListePage"));
 const CasDuSoirCasPage = lazy(() => import("./pages/drlo/CasDuSoirCasPage"));
 const CasDuSoirEpisodePage = lazy(() => import("./pages/drlo/CasDuSoirEpisodePage"));
+const CasDuSoirLeconPage = lazy(() => import("./pages/drlo/CasDuSoirLeconPage"));
 const ProApplyPage = lazy(() => import("./pages/drlo/ProApplyPage"));
 const InfosPage = lazy(() => import("./pages/drlo/InfosPage"));
 const PointPage = lazy(() => import("./pages/drlo/PointPage"));
@@ -163,6 +164,7 @@ const AppChrome: React.FC = () => {
             <Route path="/espace-pro/rejoindre" element={<ProApplyPage />} />
             <Route path="/cas-du-soir" element={<CasDuSoirListePage />} />
             <Route path="/cas-du-soir/:id" element={<CasDuSoirCasPage />} />
+            <Route path="/cas-du-soir/:id/lecon" element={<CasDuSoirLeconPage />} />
             <Route path="/cas-du-soir/:id/:episode" element={<CasDuSoirEpisodePage />} />
             <Route path="/penc" element={<PencPage />} />
             <Route path="/penc/:id" element={<PencPage />} />

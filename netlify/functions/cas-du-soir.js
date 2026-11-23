@@ -189,7 +189,7 @@ exports.handler = async (event) => {
         }));
         let non = [];
         try { const q = await UTILE().where('histoire', '==', x.id).where('oui', '==', false).limit(100).get(); non = q.docs.map((d) => d.data()).filter((y) => y.texte).sort((a, b) => (b.atMs || 0) - (a.atMs || 0)).slice(0, 20).map((y) => ({ texte: y.texte, atMs: y.atMs || 0 })); } catch (e2) { console.error('cas-du-soir stats non', e2.message); }
-        return { id: x.id, titre: x.titre, categorie: x.categorie || null, cache: x.cache === true, lecteurs: st.lecteurs, visiteurs: Number(brut.visiteurs) || 0, visiteursCompte: Number(brut.visiteursCompte) || 0, commences, payeurs, lectureFin: Number(brut.lu_fin) || 0, quiz: Number(brut.quiz) || 0,
+        return { id: x.id, titre: x.titre, categorie: x.categorie || null, categorieAussi: x.categorieAussi || null, cache: x.cache === true, lecteurs: st.lecteurs, visiteurs: Number(brut.visiteurs) || 0, visiteursCompte: Number(brut.visiteursCompte) || 0, commences, payeurs, lectureFin: Number(brut.lu_fin) || 0, quiz: Number(brut.quiz) || 0,
           tests: Object.keys(brut).filter((k) => k.startsWith('test_')).map((k) => ({ id: k.slice(5), n: Number(brut[k]) || 0 })).sort((a, b) => b.n - a.n), utileOui: st.utileOui, utileNon: st.utileNon, episodes, non };
       }));
       // Boîte anonyme : les réponses publiées, avec leurs vues et réactions (chiffres bruts)

@@ -5,9 +5,9 @@
  */
 import React, { useEffect, useState } from 'react';
 import { Link, Navigate, useLocation, useNavigate, useParams } from 'react-router-dom';
-import { ChevronRight, Loader2, Moon } from 'lucide-react';
-import DrLoShell, { DC, card, usePalette } from '../../components/accueil/DrLoShell';
-import AudioSynchro from '../../components/casdusoir/AudioSynchro';
+import { ChevronRight, Loader2 } from 'lucide-react';
+import DrLoShell, { DC, usePalette } from '../../components/accueil/DrLoShell';
+import LecteurImmersif from '../../components/casdusoir/LecteurImmersif';
 import { FenetreConfirmer, GateAdultes, PiedCas, Resultats, TestsEpisode, etoiles, gratuitEpisode, Maj } from '../../components/casdusoir/CdsParts';
 import { useKoris } from '../../contexts/KorisContext';
 import { CAS_DU_SOIR_PRIX } from '../../config/contenusPayants';
@@ -84,7 +84,7 @@ const CasDuSoirEpisodePage: React.FC = () => {
   const blocSuite = (clef: string) => {
     if (!ep || ep.autre) return null;
     if (!ep.suite) {
-      return ep.finLisible ? <button key={clef} type="button" onClick={() => navigate(`/cas-du-soir/${id}`, { state: { fin: true } })} style={{ ...primary, marginTop: 16 }}>La leçon de Dr Lô · gratuite</button> : null;
+      return ep.finLisible ? <button key={clef} type="button" onClick={() => navigate(`/cas-du-soir/${id}/lecon`)} style={{ ...primary, marginTop: 16 }}>La leçon de Dr Lô · gratuite</button> : null;
     }
     const s = ep.suite;
     const choixD = !!ep.episode.embranchement && !ep.monChoix;
@@ -113,43 +113,42 @@ const CasDuSoirEpisodePage: React.FC = () => {
       {error && !ep && <Link to={retour.to} style={{ ...ghost, marginTop: 16 }}>Retour aux épisodes</Link>}
 
       {ep && (
-        <article style={{ ...card, marginTop: 10 }}>
-          <p style={{ margin: '0 0 10px', fontSize: 13, color: DC.muted }}>Épisode {ep.episode.n} sur {h.total} · {ep.episode.minutes} min</p>
-          <h1 style={{ margin: '0 0 12px', fontFamily: 'Fraunces, serif', fontSize: 24, lineHeight: 1.2, color: DC.title }}>{ep.episode.titre}</h1>
-          {/* L'image, le lecteur et le texte : surligné et images qui changent pendant l'écoute s'il y a un minutage */}
-          <AudioSynchro src={ep.audioUrl} minutage={ep.episode.minutage} label="Écouter l'épisode" accent={palette.accent}
-            image={{ src: ep.episode.image, ratio: '4 / 3', fallback: <Moon size={32} color={palette.accent} strokeWidth={1.4} /> }}
-            texte={ep.episode.texte.split(/\n{2,}/).map((p, i) => <p key={i} style={{ margin: '12px 0 0', fontSize: 16, lineHeight: 1.65, color: DC.text, whiteSpace: 'pre-line' }}>{p}</p>)} />
+        <LecteurImmersif
+          kicker={`${h.titre}${autre ? ' · l\'autre fin' : ''}`} titre={ep.episode.titre} accent={palette.accent}
+          meta={`Épisode ${ep.episode.n} sur ${h.total} · ${ep.episode.minutes} min`}
+          audioSrc={ep.audioUrl} minutage={ep.episode.minutage} texte={ep.episode.texte} image={ep.episode.image}
+          onBack={() => navigate(retour.to)}
+          fin={<>
+            <p style={{ margin: '0 0 4px', fontSize: 13, color: DC.muted }}>Épisode {ep.episode.n} sur {h.total}</p>
+            <h1 style={{ margin: '0 0 12px', fontFamily: 'Fraunces, serif', fontSize: 24, lineHeight: 1.2, color: DC.title }}>{ep.episode.titre}</h1>
+            {!ep.autre && <>
+              <p id="cds-vote" style={{ margin: '16px 0 0', fontSize: 13, fontWeight: 700, letterSpacing: '.08em', color: palette.accent }}>QU'AURAIS-TU FAIT ?</p>
+              <h2 style={{ margin: '4px 0 0', fontSize: 17, color: DC.title }}>{ep.episode.question}</h2>
+              {ep.episode.embranchement && <p style={{ margin: '4px 0 0', fontSize: 14, color: DC.soft }}>Ton choix décide de ta suite : deux issues possibles, et chacune mène à un épisode différent. À la fin, tu pourras découvrir l'autre.</p>}
+              {!ep.monChoix ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 10 }}>
+                  {ep.episode.choix.map(c => (
+                    <button key={c.id} type="button" disabled={!!busy} onClick={() => onVote(c.id)} className="drl-btn"
+                      style={{ minHeight: 48, textAlign: 'left', padding: '10px 14px', borderRadius: 14, border: `1px solid ${DC.line}`, background: DC.glass, color: DC.text, fontSize: 15, cursor: 'pointer', fontFamily: 'inherit' }}>
+                      {c.label}
+                    </button>
+                  ))}
+                </div>
+              ) : ep.resultats && <Resultats ep={ep} r={ep.resultats} monChoix={ep.monChoix} accent={palette.accent} />}
+            </>}
 
-          {blocSuite('haut')}
+            {!ep.autre && <TestsEpisode ids={ep.episode.tests ?? []} accent={palette.accent} />}
 
-          {!ep.autre && <>
-            <p id="cds-vote" style={{ margin: '24px 0 0', fontSize: 13, fontWeight: 700, letterSpacing: '.08em', color: palette.accent, scrollMarginTop: 80 }}>QU'AURAIS-TU FAIT ?</p>
-            <h2 style={{ margin: '4px 0 0', fontSize: 17, color: DC.title }}>{ep.episode.question}</h2>
-            {ep.episode.embranchement && <p style={{ margin: '4px 0 0', fontSize: 14, color: DC.soft }}>Ton choix décide de ta suite : deux issues possibles, et chacune mène à un épisode différent. À la fin, tu pourras découvrir l'autre.</p>}
-            {!ep.monChoix ? (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 10 }}>
-                {ep.episode.choix.map(c => (
-                  <button key={c.id} type="button" disabled={!!busy} onClick={() => onVote(c.id)} className="drl-btn"
-                    style={{ minHeight: 48, textAlign: 'left', padding: '10px 14px', borderRadius: 14, border: `1px solid ${DC.line}`, background: DC.glass, color: DC.text, fontSize: 15, cursor: 'pointer', fontFamily: 'inherit' }}>
-                    {c.label}
-                  </button>
-                ))}
-              </div>
-            ) : ep.resultats && <Resultats ep={ep} r={ep.resultats} monChoix={ep.monChoix} accent={palette.accent} />}
-          </>}
+            {ep.monChoix && etat.connecte && !etat.bonus && ep.resultats?.parChoix && (
+              <button type="button" disabled={!!busy} onClick={() => setConfirme('bonus')} style={{ ...ghost, marginTop: 14, minHeight: 44, fontSize: 14 }}>
+                Voir les votes par animal · {etoiles(prix.bonus)}
+              </button>
+            )}
 
-          {!ep.autre && <TestsEpisode ids={ep.episode.tests ?? []} accent={palette.accent} />}
-
-          {ep.monChoix && etat.connecte && !etat.bonus && ep.resultats?.parChoix && (
-            <button type="button" disabled={!!busy} onClick={() => setConfirme('bonus')} style={{ ...ghost, marginTop: 14, minHeight: 44, fontSize: 14 }}>
-              Voir les votes par animal · {etoiles(prix.bonus)}
-            </button>
-          )}
-
-          {/* Après le vote : le même bouton, pour ne pas remonter */}
-          {ep.monChoix && blocSuite('bas')}
-        </article>
+            {blocSuite('suite')}
+            <Link to={retour.to} className="drl-btn" style={{ ...ghost, marginTop: 12 }}>Tous les épisodes</Link>
+            <PiedCas titre={h.titre} avertissement={h.avertissement} />
+          </>} />
       )}
 
       {confirme && ep && (
@@ -159,8 +158,6 @@ const CasDuSoirEpisodePage: React.FC = () => {
           gratuit={confirme === 'suite' ? gratuitEpisode(ep.suite?.parution) : null}
           onConfirm={() => pay(confirme)} onClose={() => { setConfirme(null); setError(''); }} />
       )}
-      <Link to={retour.to} className="drl-btn" style={{ ...ghost, marginTop: 16 }}>Tous les épisodes</Link>
-      <PiedCas titre={h.titre} avertissement={h.avertissement} />
       </GateAdultes>
     </DrLoShell>
   );

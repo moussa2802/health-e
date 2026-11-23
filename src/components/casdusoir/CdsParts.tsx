@@ -6,7 +6,6 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Check, ChevronRight, Loader2, MessageCircle, Share2, Unlock } from 'lucide-react';
 import { DC, card } from '../accueil/DrLoShell';
-import AudioSynchro from './AudioSynchro';
 import { openDrLoChat } from '../DrLoChat/drLoEvents';
 import { getScaleMeta } from '../../utils/scaleMeta';
 import { CdsError, debloquerCas, getBrancheApercu, getJourApercu, getListe, noterGeste, quandLabel, repondreUtile, setBrancheApercu, setJourApercu, type CdsChiffres, type CdsEpisodeReponse, type CdsFin, type CdsHistoire, type CdsResultats } from '../../services/casDuSoirService';
@@ -137,18 +136,17 @@ export const ChiffresProprio: React.FC<{ chiffres: CdsChiffres }> = ({ chiffres:
   );
 };
 
-export const Fin: React.FC<{ fin: CdsFin; accent: string; id?: string }> = ({ fin, accent, id }) => {
+/** Ce qui suit la leçon (sous la lecture en plein écran) : le quiz, « utile ? », les tests, les sources, le cas suivant. */
+export const FinLecon: React.FC<{ fin: CdsFin; accent: string; id?: string }> = ({ fin, accent, id }) => {
+  const sources = fin.texte.split(/\n\s*\n\s*Sources\s*:/)[1]?.trim();
   const navigate = useNavigate();
   const [rep, setRep] = useState<Record<number, number>>({});
   const tous = fin.quiz.every((_, i) => rep[i] !== undefined);
   useEffect(() => { if (tous) noterGeste('quiz'); }, [tous]);
   const testBtn: React.CSSProperties = { minHeight: 48, borderRadius: 14, border: `1px solid ${DC.line}`, background: DC.glass, color: DC.text, fontSize: 15, fontWeight: 600, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6, fontFamily: 'inherit' };
   return (
-    <section style={{ ...card, marginTop: 16 }}>
-      <h2 style={{ margin: 0, fontFamily: 'Fraunces, serif', fontSize: 22, color: DC.title }}>{fin.titre}</h2>
-      <AudioSynchro src={fin.audioUrl} minutage={fin.minutage} label="Écouter la leçon" accent={accent}
-        texte={fin.texte.split(/\n{2,}/).map((p, i) => <p key={i} style={{ margin: '12px 0 0', fontSize: 15, lineHeight: 1.6, color: DC.text, whiteSpace: 'pre-line' }}>{p}</p>)} />
-      <h3 style={{ margin: '20px 0 0', fontSize: 16, color: DC.title }}>Le quiz : 3 questions</h3>
+    <section>
+      <h2 style={{ margin: 0, fontFamily: 'Fraunces, serif', fontSize: 24, lineHeight: 1.2, color: DC.title }}>Le quiz : 3 questions</h2>
       {fin.quiz.map((q, i) => (
         <div key={i} style={{ marginTop: 12 }}>
           <p style={{ margin: 0, fontSize: 15, color: DC.text }}>{i + 1}. {q.question}</p>
@@ -182,6 +180,7 @@ export const Fin: React.FC<{ fin: CdsFin; accent: string; id?: string }> = ({ fi
         )}
       </div>
       {id && <CasSuivant id={id} accent={accent} />}
+      {sources && <p style={{ margin: '22px 0 0', fontSize: 12, lineHeight: 1.5, color: DC.faint }}>Sources : {sources}</p>}
     </section>
   );
 };

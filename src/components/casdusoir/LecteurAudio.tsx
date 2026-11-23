@@ -23,9 +23,11 @@ const LecteurAudio: React.FC<{
   onTime?: (t: number, playing: boolean) => void;
   /** Le fichier est reconnu (true) ou absent / illisible (false) */
   onPret?: (ok: boolean) => void;
+  /** L'audio est arrivé à sa fin */
+  onEnded?: () => void;
   /** Pour sauter à un moment (toucher une phrase) */
   controle?: React.MutableRefObject<{ seek: (t: number) => void } | null>;
-}> = ({ src, accent, label, compact, style, onTime, onPret, controle }) => {
+}> = ({ src, accent, label, compact, style, onTime, onPret, onEnded, controle }) => {
   const ref = useRef<HTMLAudioElement | null>(null);
   const [pret, setPret] = useState(false);
   const [playing, setPlaying] = useState(false);
@@ -71,7 +73,7 @@ const LecteurAudio: React.FC<{
         onError={() => { setPret(false); onPret?.(false); }}
         onPlay={e => { setPlaying(true); onTime?.(e.currentTarget.currentTime, true); }} onPause={e => { setPlaying(false); onTime?.(e.currentTarget.currentTime, false); }}
         onTimeUpdate={e => { setT(e.currentTarget.currentTime); onTime?.(e.currentTarget.currentTime, !e.currentTarget.paused); }}
-        onEnded={() => { setPlaying(false); setT(0); onTime?.(0, false); }} />
+        onEnded={() => { setPlaying(false); setT(0); onTime?.(0, false); onEnded?.(); }} />
       <button type="button" onClick={toggle} aria-label={playing ? 'Pause' : label} style={{ ...btn, width: 48, flex: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', borderColor: accent, color: accent }}>
         {playing ? <Pause size={20} aria-hidden="true" /> : <Play size={20} aria-hidden="true" />}
       </button>

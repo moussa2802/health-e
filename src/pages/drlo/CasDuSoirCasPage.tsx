@@ -5,17 +5,17 @@
  * Le bandeau d'aperçu du propriétaire (jours 1 à 5) est ici.
  */
 import React, { useEffect, useState } from 'react';
-import { Link, Navigate, useLocation, useNavigate, useParams } from 'react-router-dom';
+import { Link, Navigate, useNavigate, useParams } from 'react-router-dom';
 import { Hourglass, Lock, Moon } from 'lucide-react';
 import DrLoShell, { DC, card, usePalette } from '../../components/accueil/DrLoShell';
 import { ImageCard, SectionTitle, Stack, CompactRow } from '../../components/accueil/HomeParts';
-import { BandeauApercu, ChiffresProprio, DebloquerCas, FenetreConfirmer, Fin, GateAdultes, PartagerCas, PiedCas, etoiles, gratuitEpisode, Maj } from '../../components/casdusoir/CdsParts';
+import { BandeauApercu, ChiffresProprio, DebloquerCas, FenetreConfirmer, GateAdultes, PartagerCas, PiedCas, etoiles, gratuitEpisode, Maj } from '../../components/casdusoir/CdsParts';
 import AudioSynchro from '../../components/casdusoir/AudioSynchro';
 import { useKoris } from '../../contexts/KorisContext';
 import { CAS_DU_SOIR_PRIX } from '../../config/contenusPayants';
 import {
-  acheterAutreFin, avancer, CdsError, getEpisodes, getEtat, getFin, noterGeste, quandLabel, setHistoire,
-  type CdsEpisodeCarte, type CdsEtat, type CdsFin,
+  acheterAutreFin, avancer, CdsError, getEpisodes, getEtat, noterGeste, quandLabel, setHistoire,
+  type CdsEpisodeCarte, type CdsEtat,
 } from '../../services/casDuSoirService';
 
 type Episodes = Awaited<ReturnType<typeof getEpisodes>>;
@@ -24,11 +24,9 @@ const CasDuSoirCasPage: React.FC = () => {
   const { id = '' } = useParams();
   const palette = usePalette();
   const navigate = useNavigate();
-  const location = useLocation();
   const { openNoKorisModal, refreshBalance } = useKoris();
   const [etat, setEtat] = useState<CdsEtat | null>(null);
   const [eps, setEps] = useState<Episodes | null>(null);
-  const [fin, setFin] = useState<CdsFin | null>(null);
   const [busy, setBusy] = useState('');
   const [error, setError] = useState('');
   // Toute dépense passe par la fenêtre de confirmation (prix + « si tu attends, c'est gratuit »)
@@ -39,11 +37,7 @@ const CasDuSoirCasPage: React.FC = () => {
     getEtat().then(setEtat).catch(() => setEtat({ visible: false }));
     getEpisodes().then(setEps).catch(e => setError(e instanceof Error ? e.message : 'Erreur'));
   };
-  useEffect(() => { setFin(null); load(); setHistoire(id); noterGeste('page'); }, [id]); // eslint-disable-line react-hooks/exhaustive-deps
-  // Arrivée depuis le dernier épisode : la leçon s'ouvre directement
-  useEffect(() => {
-    if ((location.state as { fin?: boolean } | null)?.fin && eps?.finie && !fin) getFin().then(setFin).catch(() => {});
-  }, [eps]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { load(); setHistoire(id); noterGeste('page'); }, [id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!etat) return <DrLoShell narrow back={{ to: '/cas-du-soir', label: 'Retour aux cas' }} palette={palette}><p style={{ marginTop: 60, textAlign: 'center', color: DC.muted }}>Un instant…</p></DrLoShell>;
   if (!etat.visible || !etat.histoire) return <Navigate to="/" replace />;
@@ -111,13 +105,10 @@ const CasDuSoirCasPage: React.FC = () => {
       {eps?.finie && (
         <>
           <SectionTitle>La fin de l'histoire</SectionTitle>
-          {!fin && (
-            <button type="button" disabled={!!busy} onClick={() => { setBusy('fin'); getFin().then(setFin).catch(e => setError(e instanceof Error ? e.message : 'Erreur')).finally(() => setBusy('')); }}
-              className="drl-btn" style={{ width: '100%', minHeight: 50, borderRadius: 999, border: 0, background: palette.primary, color: DC.ink, fontSize: 16, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>
-              La leçon de Dr Lô · gratuite
-            </button>
-          )}
-          {fin && <Fin fin={fin} accent={palette.accent} id={h.id} />}
+          <button type="button" onClick={() => navigate(`/cas-du-soir/${id}/lecon`)}
+            className="drl-btn" style={{ width: '100%', minHeight: 50, borderRadius: 999, border: 0, background: palette.primary, color: DC.ink, fontSize: 16, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>
+            La leçon de Dr Lô · gratuite
+          </button>
           {h.autreFin && eps.autreFin.possible && (
             <section style={{ ...card, marginTop: 14 }}>
               <p style={{ margin: 0, fontSize: 15, color: DC.text }}>{h.autreFin.mention}</p>

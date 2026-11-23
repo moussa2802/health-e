@@ -15,6 +15,7 @@
  *   embranchement: 3,                   le vote de cet épisode décide de la suite DE CHAQUE PERSONNE (2 choix, A et B) : personnel, sans date
  *                                       commune ni majorité (17/11/2026). Sans embranchement : l'histoire est linéaire
  *   categorie: 'mentale'|'sexuelle',   le rayon de la liste des cas (santé mentale / santé sexuelle) ; obligatoire
+ *   categorieAussi: 'mentale'|'sexuelle',  facultatif : l'autre rayon, pour un cas qui touche les DEUX (montré comme « Santé mentale · Santé sexuelle »)
  *   cache: true,                        en construction : seul le propriétaire voit ce cas (on le retire le jour de la mise en ligne)
  *   adultes: true,                      réservé aux adultes : écran « 18 ans ou plus » avant d'entrer
  *   debloquer: 20,                      prix (étincelles) pour ouvrir tout le cas avant son ouverture publique ; prixSuite: { 4: 8 } : prix propres au cas

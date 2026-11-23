@@ -7,6 +7,7 @@ module.exports = {
   "id": "goumin",
   "titre": "Goumin",
   "categorie": "sexuelle",
+  "categorieAussi": "mentale",
   "image": "/images/cas-du-soir/goumin-couverture.webp",
   "intrigue": "/audio/cas-du-soir/goumin-intrigue.mp3",
   "intrigueMinutage": "goumin-intrigue",

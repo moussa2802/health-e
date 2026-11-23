@@ -768,6 +768,24 @@ test('chaque cas est rangé dans un rayon : santé mentale ou santé sexuelle', 
   assert.ok(K.verifierHistoire({ ...K.HISTOIRES[0], categorie: undefined }).some((e) => e.startsWith('categorie')));
 });
 
+test("un cas qui touche les deux rayons le dit : Goumin est santé sexuelle ET santé mentale ; les autres n'ont qu'un rayon", () => {
+  // Répartition décidée sur le contenu de chaque cas (23/11/2026) : Goumin et Masturbation et pornographie touchent les deux, les autres un seul
+  const double = K.HISTOIRES.filter((h) => h.categorieAussi).map((h) => h.id).sort();
+  assert.deepEqual(double, ['goumin', 'telephone-sous-oreiller']);
+  const goumin = K.HISTOIRES.find((h) => h.id === 'goumin');
+  assert.equal(goumin.categorie, 'sexuelle');
+  assert.equal(goumin.categorieAussi, 'mentale');
+  const vue = K.vueHistoire(goumin, { parus: 1, debloques: 0, connecte: false });
+  assert.equal(vue.categorie, 'sexuelle');
+  assert.equal(vue.categorieAussi, 'mentale');
+  const seul = K.vueHistoire(K.HISTOIRES.find((h) => h.id === 'vu-de-minuit'), { parus: 1, debloques: 0, connecte: false });
+  assert.equal(seul.categorieAussi, null);
+  // L'autre rayon doit être valide et différent du premier
+  assert.ok(K.verifierHistoire({ ...goumin, categorieAussi: 'sexuelle' }).some((e) => e.startsWith('categorieAussi')));
+  assert.ok(K.verifierHistoire({ ...goumin, categorieAussi: 'autre' }).some((e) => e.startsWith('categorieAussi')));
+  assert.ok(!K.verifierHistoire(goumin).some((e) => e.startsWith('categorie')));
+});
+
 test("Le téléphone sous l'oreiller (cas n° 4) : 7 épisodes linéaires, adultes, santé sexuelle, caché au public, prix propres, déblocage à 30, sources et leçon", () => {
   const T = K.HISTOIRES.find((h) => h.id === 'telephone-sous-oreiller');
   assert.ok(T);

@@ -24,6 +24,8 @@ export interface CdsHistoire {
   adultes?: boolean;
   /** le rayon de la liste : santé mentale ou santé sexuelle */
   categorie?: 'mentale' | 'sexuelle';
+  /** l'autre rayon quand le cas touche les deux (santé mentale ET santé sexuelle) */
+  categorieAussi?: 'mentale' | 'sexuelle' | null;
   /** numéro de l'épisode dont le vote décide de la suite (A ou B), ou null : cas linéaire */
   embranchement?: number | null;
   /** date d'ouverture publique (ms), ou null si elle n'est pas fixée */
@@ -88,7 +90,7 @@ async function call<T>(body: Record<string, unknown>): Promise<T> {
   return data as T;
 }
 
-export interface CdsStatCas { id: string; titre: string; categorie: 'mentale' | 'sexuelle' | null; cache: boolean; lecteurs: number; visiteurs: number; visiteursCompte: number; commences: number; payeurs: number; lectureFin: number; quiz: number; tests: { id: string; n: number }[]; utileOui: number; utileNon: number; episodes: { n: number; titre: string; votes: number; counts: Record<string, number>; ouverts: number; lus: number }[]; non: { texte: string; atMs: number }[] }
+export interface CdsStatCas { id: string; titre: string; categorie: 'mentale' | 'sexuelle' | null; categorieAussi?: 'mentale' | 'sexuelle' | null; cache: boolean; lecteurs: number; visiteurs: number; visiteursCompte: number; commences: number; payeurs: number; lectureFin: number; quiz: number; tests: { id: string; n: number }[]; utileOui: number; utileNon: number; episodes: { n: number; titre: string; votes: number; counts: Record<string, number>; ouverts: number; lus: number }[]; non: { texte: string; atMs: number }[] }
 /** Dr Lô seul : les chiffres bruts de tous les cas (espace admin). */
 export const getStatistiques = () => call<{ cas: CdsStatCas[]; boite: { reponses: number; vues: number; utile: number; moi: number; pasclair: number } }>({ action: 'statistiques', histoire: undefined });
 /** Compte un geste (une fois par personne côté serveur) : la page d'un cas, un test proposé ouvert, le quiz terminé. Silencieux : ne gêne jamais la lecture. */

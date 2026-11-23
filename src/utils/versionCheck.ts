@@ -4,7 +4,7 @@
  * Normalement, le service worker se met à jour seul (autoUpdate, skipWaiting, clientsClaim) et la page se recharge.
  * Mais si son installation échoue (réseau coupé pendant le téléchargement, quota plein…), l'ancien service worker
  * continue de servir une ancienne version, parfois très ancienne. Ici, on compare la version qui tourne avec
- * /version.json (jamais mis en cache) : si elles diffèrent, on demande la mise à jour ; si rien n'a changé peu après,
+ * /version.json (jamais mis en cache) : si elles diffèrent, on demande la mise à jour et on propose « Actualiser » ; si rien n'a changé peu après,
  * on désinstalle le service worker de l'appli (pas celui des notifications), on vide ses caches et on recharge.
  * Une seule tentative par version, pour ne jamais tourner en boucle.
  */
@@ -32,21 +32,9 @@ export async function fetchVersionEnLigne(): Promise<string | null> {
   } catch { return null; }
 }
 
-/**
- * Vérifie, et répare si besoin. `onReload` recharge la page (en respectant les verrous : test en cours, etc.).
- * `attente` : le temps laissé à la mise à jour normale avant de forcer.
- */
-export async function verifierVersion(courante: string, onReload: () => void, attente = 20000): Promise<void> {
-  const distante = await fetchVersionEnLigne();
-  let deja: string | null = null;
-  try { deja = localStorage.getItem(TRIED_KEY); } catch { /* ignore */ }
-  if (decideVersion(courante, distante, deja) !== 'reparer') return;
+/** Désinstalle le service worker de l'appli (pas celui des notifications), vide ses caches, puis recharge. */
+export async function forcerMiseAJour(onReload: () => void): Promise<void> {
   const sw = navigator.serviceWorker;
-  // 1. La voie normale : demander la mise à jour du service worker (le rechargement suit tout seul)
-  try { const reg = await sw?.getRegistration('/'); await reg?.update(); } catch { /* ignore */ }
-  await new Promise(r => setTimeout(r, attente));
-  // 2. Toujours l'ancienne version : on répare (une seule fois pour cette version)
-  try { localStorage.setItem(TRIED_KEY, String(distante)); } catch { /* ignore */ }
   try {
     const regs = (await sw?.getRegistrations()) ?? [];
     const racine = `${location.origin}/`;
@@ -57,4 +45,24 @@ export async function verifierVersion(courante: string, onReload: () => void, at
     }
   } catch { /* au pire, le rechargement ira chercher le réseau */ }
   onReload();
+}
+
+/**
+ * Vérifie, et répare si besoin. `onReload` recharge la page (en respectant les verrous : test en cours, etc.).
+ * `attente` : le temps laissé à la mise à jour normale avant de forcer.
+ * `onDetect` : appelé dès qu'une version plus récente est repérée (pour proposer tout de suite « Actualiser »).
+ */
+export async function verifierVersion(courante: string, onReload: () => void, attente = 6000, onDetect?: () => void): Promise<void> {
+  const distante = await fetchVersionEnLigne();
+  let deja: string | null = null;
+  try { deja = localStorage.getItem(TRIED_KEY); } catch { /* ignore */ }
+  if (decideVersion(courante, distante, deja) !== 'reparer') return;
+  onDetect?.();
+  const sw = navigator.serviceWorker;
+  // 1. La voie normale : demander la mise à jour du service worker (le rechargement suit tout seul)
+  try { const reg = await sw?.getRegistration('/'); await reg?.update(); } catch { /* ignore */ }
+  await new Promise(r => setTimeout(r, attente));
+  // 2. Toujours l'ancienne version : on répare (une seule fois pour cette version)
+  try { localStorage.setItem(TRIED_KEY, String(distante)); } catch { /* ignore */ }
+  await forcerMiseAJour(onReload);
 }
