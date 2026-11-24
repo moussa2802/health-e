@@ -80,11 +80,11 @@ const LecteurImmersif: React.FC<{
   const [idxL, setIdxL] = useState(-1);
   const [idxI, setIdxI] = useState(0);
   const [libre, setLibre] = useState(false);
-  const controle = useRef<{ seek: (t: number) => void } | null>(null);
+  const controle = useRef<{ seek: (t: number) => void; time?: () => number } | null>(null);
   const veutJouer = useRef(false);
   const tx = useRef<HTMLDivElement | null>(null);
   const refs = useRef<(HTMLElement | null)[]>([]);
-  const progJusque = useRef(0);
+  const centres = useRef<number[]>([]);
 
   const lignes: Ligne[] = useMemo(() => {
     if (minutage?.lignes?.length) return minutage.lignes.map(l => ({ t0: l.t0, qui: l.qui, texte: l.texte }));
@@ -122,16 +122,42 @@ const LecteurImmersif: React.FC<{
     return () => { document.body.style.overflow = avant; };
   }, []);
 
-  // La phrase en cours se place à hauteur du pouce (55 % de la zone), les anciennes montent et se dissolvent
-  const suivre = () => {
-    const box = tx.current; const el = refs.current[idxL];
-    if (!box || !el) return;
-    progJusque.current = Date.now() + 1100;
-    box.scrollTo({ top: el.offsetTop + el.offsetHeight / 2 - box.clientHeight * 0.55, behavior: moinsDAnimations() ? 'auto' : 'smooth' });
-  };
-  useEffect(() => { if (phase === 'lecture' && synchro && idxL >= 0 && joue && !libre) suivre(); }, [idxL, phase, synchro, joue, libre]); // eslint-disable-line react-hooks/exhaustive-deps
-  const onScroll = () => { if (Date.now() > progJusque.current && joue && synchro && !libre) setLibre(true); };
-  const revenir = () => { setLibre(false); window.setTimeout(suivre, 0); };
+  // Le texte monte en continu avec la voix, comme un défilement de générique : à chaque image de l'écran, la position suit le temps de l'audio
+  // (entre le centre d'une phrase et celui de la suivante), lissée pour que la vitesse change en douceur d'une phrase à l'autre.
+  // Pas de défilement « par à-coups » à chaque phrase, et aucun changement de taille de texte qui ferait bouger les lignes en dessous.
+  const mesurer = () => { centres.current = refs.current.map(el => (el ? el.offsetTop + el.offsetHeight / 2 : 0)); };
+  useEffect(() => {
+    mesurer();
+    window.addEventListener('resize', mesurer);
+    const t = window.setTimeout(mesurer, 400); // une fois les polices chargées
+    return () => { window.removeEventListener('resize', mesurer); window.clearTimeout(t); };
+  }, [lignes, phase]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (phase !== 'lecture' || !synchro || !joue || libre) return;
+    const box = tx.current; if (!box) return;
+    const calme = moinsDAnimations();
+    const fin = minutage?.duree ?? 0;
+    let courant = box.scrollTop; let raf = 0;
+    const boucle = () => {
+      const c = centres.current; const t = controle.current?.time?.() ?? 0;
+      if (c.length === lignes.length && lignes.length > 0) {
+        const i = Math.max(0, indexA(lignes, t, x => x.t0));
+        const suivante = lignes[i + 1];
+        const duree = Math.max(0.4, (suivante ? suivante.t0 : fin || lignes[i].t0 + 3) - lignes[i].t0);
+        const f = Math.min(1, Math.max(0, (t - lignes[i].t0) / duree));
+        const p = c[i] + ((suivante ? c[i + 1] : c[i]) - c[i]) * f;
+        const cible = Math.max(0, p - box.clientHeight * 0.55);
+        courant = calme ? cible : courant + (cible - courant) * 0.09;
+        box.scrollTop = courant;
+      }
+      raf = window.requestAnimationFrame(boucle);
+    };
+    raf = window.requestAnimationFrame(boucle);
+    return () => window.cancelAnimationFrame(raf);
+  }, [phase, synchro, joue, libre, lignes, minutage]); // eslint-disable-line react-hooks/exhaustive-deps
+  // Dès que la personne pose le doigt (ou la molette) sur le texte, elle reprend la main : le défilement automatique s'arrête
+  const reprendre = () => { if (joue && synchro && !libre) setLibre(true); };
+  const revenir = () => setLibre(false);
 
   const commencer = (avecSon: boolean) => {
     setPhase('lecture');
@@ -177,9 +203,10 @@ const LecteurImmersif: React.FC<{
       )}
 
       {/* 2. La lecture : le texte qui monte et se dissout */}
-      <div ref={tx} onScroll={onScroll} tabIndex={lecture ? 0 : -1} aria-hidden={!lecture} aria-label="Le texte"
-        style={{ position: 'absolute', left: 0, right: 0, top: 'calc(64px + env(safe-area-inset-top, 0px))', bottom: audioSrc ? 86 : 0, overflowY: lecture ? 'auto' : 'hidden', scrollbarWidth: 'none', opacity: lecture ? 1 : 0, pointerEvents: lecture ? 'auto' : 'none', transition: 'opacity .5s', zIndex: 3,
-          WebkitMaskImage: 'linear-gradient(to bottom, transparent 0, #000 34%, #000 100%)', maskImage: 'linear-gradient(to bottom, transparent 0, #000 34%, #000 100%)' }}>
+      <div style={{ position: 'absolute', left: 0, right: 0, top: 'calc(64px + env(safe-area-inset-top, 0px))', bottom: audioSrc ? 86 : 0, zIndex: 3, opacity: lecture ? 1 : 0, pointerEvents: lecture ? 'auto' : 'none', transition: 'opacity .5s',
+        WebkitMaskImage: 'linear-gradient(to bottom, transparent 0, #000 34%, #000 100%)', maskImage: 'linear-gradient(to bottom, transparent 0, #000 34%, #000 100%)' }}>
+      <div ref={tx} onTouchStart={reprendre} onWheel={reprendre} onPointerDown={e => { if (e.pointerType === 'mouse') reprendre(); }} tabIndex={lecture ? 0 : -1} aria-hidden={!lecture} aria-label="Le texte"
+        style={{ position: 'absolute', inset: 0, overflowY: lecture ? 'auto' : 'hidden', scrollbarWidth: 'none', overscrollBehavior: 'contain', WebkitOverflowScrolling: 'touch' }}>
         <div style={{ padding: `${synchro ? '45vh' : '34vh'} 22px 30vh`, maxWidth: 520, margin: '0 auto' }}>
           {lignes.map((l, k) => {
             const on = synchro && k === idxL;
@@ -187,8 +214,8 @@ const LecteurImmersif: React.FC<{
             const narr = !l.qui || /^narrat/i.test(l.qui);
             return (
               <p key={k} ref={el => { refs.current[k] = el; }} onClick={synchro ? () => { setLibre(false); controle.current?.seek(l.t0); } : undefined}
-                style={{ margin: '0 0 14px', cursor: synchro ? 'pointer' : 'default', fontFamily: 'Fraunces, serif', fontSize: on ? 21 : 17, lineHeight: on ? 1.4 : 1.55, whiteSpace: 'pre-line',
-                  color: on ? INK : passe ? 'rgba(251,245,234,.38)' : 'rgba(251,245,234,.6)', transition: 'color .6s, font-size .4s' }}>
+                style={{ margin: '0 0 16px', cursor: synchro ? 'pointer' : 'default', fontFamily: 'Fraunces, serif', fontSize: 19, lineHeight: 1.5, whiteSpace: 'pre-line',
+                  color: on ? INK : passe ? 'rgba(251,245,234,.38)' : 'rgba(251,245,234,.62)', transform: on ? 'scale(1.045)' : 'none', transformOrigin: 'left center', transition: 'color .5s ease, transform .5s ease', willChange: synchro ? 'transform, color' : undefined }}>
                 {!narr && <span style={{ display: 'block', fontFamily: 'inherit', fontSize: 12, fontWeight: 700, letterSpacing: '.04em', color: accent, marginBottom: 1 }}>{l.qui}</span>}
                 {l.texte}
               </p>
@@ -196,6 +223,7 @@ const LecteurImmersif: React.FC<{
           })}
           <button type="button" onClick={() => setPhase('fin')} className="drl-btn" style={{ ...bouton, marginTop: 18, border: 0, background: accent, color: '#1C1612' }}>{lib.continuer}</button>
         </div>
+      </div>
       </div>
       {lecture && libre && synchro && (
         <button type="button" onClick={revenir} className="drl-btn"

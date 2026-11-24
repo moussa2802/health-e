@@ -26,7 +26,7 @@ const LecteurAudio: React.FC<{
   /** L'audio est arrivé à sa fin */
   onEnded?: () => void;
   /** Pour sauter à un moment (toucher une phrase) */
-  controle?: React.MutableRefObject<{ seek: (t: number) => void } | null>;
+  controle?: React.MutableRefObject<{ seek: (t: number) => void; time?: () => number } | null>;
 }> = ({ src, accent, label, compact, style, onTime, onPret, onEnded, controle }) => {
   const ref = useRef<HTMLAudioElement | null>(null);
   const [pret, setPret] = useState(false);
@@ -45,6 +45,7 @@ const LecteurAudio: React.FC<{
   useEffect(() => {
     if (!controle) return;
     controle.current = {
+      time: () => ref.current?.currentTime ?? 0,
       seek: (s: number) => {
         const a = ref.current;
         if (!a) return;
