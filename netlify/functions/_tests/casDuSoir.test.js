@@ -1012,7 +1012,7 @@ test('lancement du 20/11/2026 : cas du soir public, ouverture échelonnée (Minu
   assert.equal(par.goumin.adultes, true);
   for (const [id, depart] of [['vu-de-minuit', '2026-11-18'], ['goumin', '2026-11-23']]) assert.equal(par[id].depart, depart);
   const autres = LANCEMENT.cas.filter((c) => !['vu-de-minuit', 'goumin'].includes(c.id));
-  assert.deepEqual(autres.map((c) => [c.depart, c.programmee, c.adultes, c.heure]).sort(), [['2026-11-27', true, false, '20:00'], ['2026-12-01', true, true, '20:00'], ['2026-12-11', true, true, '20:00']]);
+  assert.deepEqual(autres.map((c) => [c.depart, c.programmee, c.adultes, c.heure]).sort(), [['2026-11-25', true, false, '20:00'], ['2026-12-01', true, true, '20:00'], ['2026-12-11', true, true, '20:00']]);
   const src = fs.readFileSync(path.join(__dirname, '..', '..', '..', 'src', 'config', 'contenusPayants.ts'), 'utf8');
   assert.match(src, /CAS_DU_SOIR_CARTE_VISITEURS: boolean = true;/); // la carte des visiteurs s'ouvre en même temps
 });
@@ -1054,7 +1054,7 @@ test('Amour ou dépendance affective (cas n° 5) : 7 épisodes linéaires, sant�
   assert.equal(D.categorie, 'mentale');
   assert.ok(!D.adultes);
   assert.ok(!D.cache); // ouvert au public le 27/11/2026 à 20 h (décision du 20/11)
-  assert.equal(D.depart, '2026-11-27');
+  assert.equal(D.depart, '2026-11-25');
   assert.equal(D.embranchement, undefined);
   assert.equal(D.episodes.length, 7);
   assert.equal(D.debloquer, 30);

@@ -20,7 +20,7 @@ module.exports = {
     "6": "Une rechute n'est pas un échec. Un cahier, un plan, une phrase.",
     "7": "Quatre mois plus tard, une absence, et une autre façon de réagir."
   },
-  "depart": "2026-11-27",
+  "depart": "2026-11-25",
   "heure": "20:00",
   "programmee": true,
   "debloquer": 30,
