@@ -11,6 +11,7 @@ import { getStatistiques, type CdsStatCas } from '../../services/casDuSoirServic
 
 const pct = (a: number, b: number) => (b > 0 ? `${Math.round((100 * a) / b)} %` : '—');
 const nb = (n: number, un: string, plusieurs = `${un}s`) => `${n} ${n > 1 ? plusieurs : un}`;
+const SOURCE: Record<string, string> = { tiktok: 'TikTok', instagram: 'Instagram', facebook: 'Facebook', whatsapp: 'WhatsApp', youtube: 'YouTube' };
 const cell: React.CSSProperties = { padding: '6px 8px', fontSize: 14, color: DC.text, textAlign: 'right', whiteSpace: 'nowrap' };
 const head: React.CSSProperties = { ...cell, fontSize: 12, color: DC.faint, fontWeight: 700 };
 
@@ -29,13 +30,15 @@ const Cas: React.FC<{ c: CdsStatCas; palette: MomentPalette }> = ({ c, palette }
       <p style={{ margin: '2px 0 0', fontSize: 13, color: DC.faint }}>{[c.categorie, c.categorieAussi].filter(Boolean).map(k => (k === 'sexuelle' ? 'Santé sexuelle' : 'Santé mentale')).join(' · ')}{c.cache ? ' · en construction (caché au public)' : ''}</p>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 10 }}>
         <Tuile valeur={String(c.visiteurs)} legende={`${nb(c.visiteurs, 'visiteur')} (dont ${c.visiteursCompte} avec compte)`} />
-        <Tuile valeur={String(c.lecteurs)} legende={`${nb(c.lecteurs, 'lecteur')} (${pct(c.lecteurs, c.visiteurs)} des visiteurs)`} />
+        <Tuile valeur={String(c.episodes[0]?.lus ?? 0)} legende={`ont lu l'épisode 1, avec ou sans compte (${pct(c.episodes[0]?.lus ?? 0, c.visiteurs)} des visiteurs)`} />
+        <Tuile valeur={String(c.lecteurs)} legende={`${nb(c.lecteurs, 'lecteur')} avec compte (${pct(c.lecteurs, c.visiteurs)} des visiteurs)`} />
         <Tuile valeur={String(c.payeurs)} legende={`ont payé (${pct(c.payeurs, c.commences)})`} />
         <Tuile valeur={reponses ? pct(c.utileOui, reponses) : '—'} legende={`« utile » : ${c.utileOui} oui, ${c.utileNon} non`} />
       </div>
+      {(c.sources?.length ?? 0) > 0 && <p style={{ margin: '8px 0 0', fontSize: 14, color: DC.soft }}>Venus d'un lien en bio : {c.sources!.map((x) => `${SOURCE[x.id] ?? x.id} ${x.n}`).join(' · ')}</p>}
       <div style={{ overflowX: 'auto', marginTop: 10 }}>
         <table style={{ borderCollapse: 'collapse', width: '100%' }}>
-          <thead><tr><th style={{ ...head, textAlign: 'left' }}>Épisode</th><th style={head}>Arrivés</th><th style={head}>Payés</th><th style={head}>Votes</th><th style={head}>Choix</th></tr></thead>
+          <thead><tr><th style={{ ...head, textAlign: 'left' }}>Épisode</th><th style={head}>Lus</th><th style={head}>Payés</th><th style={head}>Votes</th><th style={head}>Choix</th></tr></thead>
           <tbody>
             {c.episodes.map((e) => (
               <tr key={e.n} style={{ borderTop: `1px solid ${DC.line}` }}>

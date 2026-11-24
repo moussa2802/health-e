@@ -9,7 +9,7 @@ export function sectionOf(path: string): string {
     [/^\/compagnon/, 'compagnon'], [/^\/espace/, 'moi'], [/^\/assessment\/totem/, 'animal'], [/^\/assessment\/compatibility|^\/compat\//, 'compat'],
     [/^\/assessment\/results/, 'resultats'], [/^\/assessment/, 'tests'], [/^\/penc|^\/p\//, 'penc'], [/^\/journal/, 'journal'],
     [/^\/acheter-koris/, 'achat'], [/^\/chaines|^\/c\//, 'chaines'], [/^\/question|^\/messages-dr-lo/, 'question'], [/^\/defi|^\/decouvre/, 'defi'],
-    [/^\/humeur/, 'humeur'], [/^\/point-de-la-semaine/, 'bilan'], [/^\/routine|^\/boite-a-outils|^\/pratique/, 'outils'], [/^\/admin|^\/espace-pro|^\/drlo/, ''],
+    [/^\/cas-du-soir/, 'cas'], [/^\/humeur/, 'humeur'], [/^\/point-de-la-semaine/, 'bilan'], [/^\/routine|^\/boite-a-outils|^\/pratique/, 'outils'], [/^\/admin|^\/espace-pro|^\/drlo/, ''],
   ];
   for (const [re, s] of rules) if (re.test(p)) return s;
   return 'autre';

@@ -3,6 +3,7 @@
  * Connecté : le jeton est envoyé. Visiteur : un identifiant au hasard gardé sur ce téléphone (un vote par épisode).
  */
 import { auth } from '../utils/firebase';
+import { sourceDeLaVisite } from '../utils/source';
 
 export interface CdsChoix { id: string; label: string }
 /** Le minutage d'un audio : les phrases (t en secondes) et les images qui changent pendant l'écoute */
@@ -40,7 +41,7 @@ export interface CdsHistoire {
 }
 export interface CdsChiffres { lecteurs: number; utileOui: number; utileNon: number; non?: { texte: string; atMs: number }[] }
 export interface CdsPrix { suite: Record<number, number>; bonus: number; autreFin: number }
-export interface CdsEtat { visible: boolean; histoire?: CdsHistoire; prix?: CdsPrix; autreFin?: { achetee: boolean; possible: boolean }; connecte?: boolean; bonus?: boolean; apercu?: boolean; animal?: string | null; proprio?: boolean; chiffres?: CdsChiffres }
+export interface CdsEtat { visible: boolean; histoire?: CdsHistoire; prix?: CdsPrix; autreFin?: { achetee: boolean; possible: boolean }; connecte?: boolean; /** « 18 ans ou plus » déjà confirmé sur le compte */ adulte?: boolean; bonus?: boolean; apercu?: boolean; animal?: string | null; proprio?: boolean; chiffres?: CdsChiffres }
 export interface CdsEpisodeReponse {
   episode: CdsEpisode; audioUrl: string | null; monChoix: string | null; resultats: CdsResultats | null;
   /** parution : l'ouverture GRATUITE de l'épisode suivant pour CE lecteur (son rythme) ; null tant que son horloge n'a pas démarré */
@@ -77,24 +78,30 @@ let histoireActive: string | null = null;
 export const setHistoire = (id: string | null) => { histoireActive = id; };
 
 async function call<T>(body: Record<string, unknown>): Promise<T> {
+  // Connecté : « appareil » permet au serveur de reconnaître l'épisode 1 lu sans compte sur ce téléphone (son horloge démarre alors)
   // Attendre que Firebase ait restauré la session : sinon, au premier affichage, l'appel part sans jeton (vu comme visiteur)
   try { await (auth as { authStateReady?: () => Promise<void> } | null)?.authStateReady?.(); } catch { /* ignore */ }
   const user = auth?.currentUser ?? null;
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
   if (user) headers.Authorization = `Bearer ${await user.getIdToken()}`;
   const res = await fetch('/.netlify/functions/cas-du-soir', {
-    method: 'POST', headers, body: JSON.stringify({ ...(histoireActive ? { histoire: histoireActive } : {}), ...body, ...(jourApercu ? { jour: jourApercu, branche: brancheApercu } : {}), ...(user ? {} : { visiteurId: visiteurId() }) }),
+    method: 'POST', headers, body: JSON.stringify({ ...(histoireActive ? { histoire: histoireActive } : {}), ...body, ...(jourApercu ? { jour: jourApercu, branche: brancheApercu } : {}), ...(user ? { appareil: visiteurId() } : { visiteurId: visiteurId() }) }),
   });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new CdsError((data as { error?: string }).error ?? `Erreur ${res.status}`, res.status, data as Record<string, unknown>);
   return data as T;
 }
 
-export interface CdsStatCas { id: string; titre: string; categorie: 'mentale' | 'sexuelle' | null; categorieAussi?: 'mentale' | 'sexuelle' | null; cache: boolean; lecteurs: number; visiteurs: number; visiteursCompte: number; commences: number; payeurs: number; lectureFin: number; quiz: number; tests: { id: string; n: number }[]; utileOui: number; utileNon: number; episodes: { n: number; titre: string; votes: number; counts: Record<string, number>; ouverts: number; lus: number }[]; non: { texte: string; atMs: number }[] }
+export interface CdsStatCas { id: string; titre: string; categorie: 'mentale' | 'sexuelle' | null; categorieAussi?: 'mentale' | 'sexuelle' | null; cache: boolean; lecteurs: number; visiteurs: number; visiteursCompte: number; sources?: { id: string; n: number }[]; commences: number; payeurs: number; lectureFin: number; quiz: number; tests: { id: string; n: number }[]; utileOui: number; utileNon: number; episodes: { n: number; titre: string; votes: number; counts: Record<string, number>; ouverts: number; lus: number }[]; non: { texte: string; atMs: number }[] }
 /** Dr Lô seul : les chiffres bruts de tous les cas (espace admin). */
 export const getStatistiques = () => call<{ cas: CdsStatCas[]; boite: { reponses: number; vues: number; utile: number; moi: number; pasclair: number } }>({ action: 'statistiques', histoire: undefined });
 /** Compte un geste (une fois par personne côté serveur) : la page d'un cas, un test proposé ouvert, le quiz terminé. Silencieux : ne gêne jamais la lecture. */
-export const noterGeste = (kind: 'page' | 'test' | 'quiz', id?: string) => { call({ action: 'evenement', kind, ...(id ? { id } : {}) }).catch(() => {}); };
+export const noterGeste = (kind: 'page' | 'test' | 'quiz', id?: string) => {
+  const src = kind === 'page' ? sourceDeLaVisite() : null;
+  call({ action: 'evenement', kind, ...(id ? { id } : {}), ...(src ? { src } : {}) }).catch(() => {});
+};
+/** « J'ai 18 ans ou plus » : gardé sur le compte (le serveur ne fait rien sans compte). Silencieux en cas d'erreur. */
+export const confirmerAdulte = () => { call({ action: 'adulte' }).catch(() => {}); };
 export const getEtat = () => call<CdsEtat>({ action: 'etat' });
 /** L'état du cas du moment, quel que soit le cas ouvert (carte de l'accueil). */
 export const getEtatDuMoment = () => call<CdsEtat>({ action: 'etat', histoire: null });

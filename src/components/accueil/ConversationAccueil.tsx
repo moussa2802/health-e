@@ -8,6 +8,7 @@
  *  - « Noter mon humeur · 30 s » (src/utils/moodLog.ts) et « Respirer avec moi · 1 min »
  * L'état est gardé dans le navigateur (localStorage) : rien n'est envoyé au serveur.
  */
+import { prendreRetour } from '../../utils/retourInscription';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { ArrowRight, Bell, Heart, Mail, Users, Check, ChevronLeft, ClipboardCheck, Clock, CloudSun, Copy, EyeOff, ListChecks, Lock, MessagesSquare, Mic, Pencil, Phone, Plus, Send, Sparkles, Sprout, Wind, Volume2, VolumeX, CalendarCheck, MoreHorizontal, Trash2 } from 'lucide-react';
@@ -802,6 +803,9 @@ const ConversationAccueil: React.FC = () => {
       setResults(p.scaleResults ?? {});
     } catch { /* ignore */ }
     trackAccueil('signup_done', { isNew, imported: report.importedScaleIds.length, journal: report.journalCount });
+    // Venu de « Crée ton espace » sur une page (un cas du soir…) : on l'y ramène tout de suite
+    const retour = prendreRetour();
+    if (retour) { navigate(retour); return; }
     const prev = stateRef.current;
     if (!prev) return;
     apply(welcomeAfterAuth(prev, {

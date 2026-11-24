@@ -9,7 +9,7 @@ import React, { useEffect, useState } from 'react';
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom';
 import { Check, Hourglass, Lock, Moon, Play } from 'lucide-react';
 import DrLoShell, { DC, card, usePalette } from '../../components/accueil/DrLoShell';
-import { BandeauApercu, ChiffresProprio, DebloquerCas, FenetreConfirmer, GateAdultes, PartagerCas, PiedCas, etoiles, gratuitEpisode, Maj } from '../../components/casdusoir/CdsParts';
+import { BandeauApercu, ChiffresProprio, DebloquerCas, FenetreConfirmer, MentionAdultes, PartagerCas, PiedCas, creerEspaceDepuis, etoiles, gratuitEpisode, Maj, useAdulte } from '../../components/casdusoir/CdsParts';
 import AudioSynchro from '../../components/casdusoir/AudioSynchro';
 import { useKoris } from '../../contexts/KorisContext';
 import { CAS_DU_SOIR_PRIX } from '../../config/contenusPayants';
@@ -40,6 +40,9 @@ const CasDuSoirCasPage: React.FC = () => {
   // Toute dépense passe par la fenêtre de confirmation (prix + « si tu attends, c'est gratuit »)
   const [confirme, setConfirme] = useState<{ what: 'suite' | 'autreFin'; n?: number; parution?: number | null } | null>(null);
 
+  // Cas 18+ : la couverture, le titre et l'accroche restent visibles ; on confirme « 18 ans ou plus » en touchant « Commencer »
+  const adulte = useAdulte(!!etat?.histoire?.adultes, etat?.adulte, etat?.connecte);
+
   const load = () => {
     setHistoire(id);
     getEtat().then(setEtat).catch(() => setEtat({ visible: false }));
@@ -55,6 +58,7 @@ const CasDuSoirCasPage: React.FC = () => {
   const pay = async (what: 'suite' | 'autreFin', n?: number) => {
     setBusy(what); setError('');
     try {
+      adulte.confirmer();
       if (what === 'suite' && n) { await avancer(n); refreshBalance?.(); setConfirme(null); navigate(`/cas-du-soir/${id}/${n}`); return; }
       if (what === 'autreFin') { await acheterAutreFin(); refreshBalance?.(); setConfirme(null); load(); }
     } catch (e) {
@@ -74,7 +78,7 @@ const CasDuSoirCasPage: React.FC = () => {
   const ligne = (e: CdsEpisodeCarte) => {
     if (e.attente) {
       return (
-        <Link key={e.n} to={`/cas-du-soir/${id}/3`} className="drl-btn" style={{ ...ligneStyle, textDecoration: 'none' }}>
+        <Link key={e.n} to={`/cas-du-soir/${id}/3`} onClick={adulte.confirmer} className="drl-btn" style={{ ...ligneStyle, textDecoration: 'none' }}>
           <span style={{ ...vignette, display: 'flex', alignItems: 'center', justifyContent: 'center', background: DC.glass }}><Hourglass size={20} color={palette.accent} aria-hidden="true" /></span>
           <span style={{ flex: 1, minWidth: 0 }}>
             <span style={petit}>ÉPISODE {e.n}</span>
@@ -111,14 +115,14 @@ const CasDuSoirCasPage: React.FC = () => {
               Tout de suite · {etoiles(e.avance?.prix ?? prix.suite[e.n] ?? 0)}
             </button>
           )}
-          {e.etat === 'compte' && <Link to="/espace" style={{ display: 'inline-block', marginTop: 4, fontSize: 13, fontWeight: 700, color: palette.accent, textDecoration: 'none' }}>Créer mon espace</Link>}
+          {e.etat === 'compte' && <button type="button" onClick={() => creerEspaceDepuis(navigate, `/cas-du-soir/${id}`)} style={{ display: 'inline-block', marginTop: 4, padding: 0, border: 0, background: 'transparent', fontSize: 13, fontWeight: 700, color: palette.accent, cursor: 'pointer', fontFamily: 'inherit' }}>Créer mon espace</button>}
         </span>
         {droite}
       </>
     );
     const style = { ...ligneStyle, ...(encours ? { border: `1px solid ${palette.accent}`, background: `${palette.accent}1A` } : null) };
     return lien
-      ? <Link key={e.n} to={lien} aria-label={`Épisode ${e.n}, ${e.titre}, ${sous}`} className="drl-btn" style={{ ...style, textDecoration: 'none' }}>{corps}</Link>
+      ? <Link key={e.n} to={lien} onClick={adulte.confirmer} aria-label={`Épisode ${e.n}, ${e.titre}, ${sous}`} className="drl-btn" style={{ ...style, textDecoration: 'none' }}>{corps}</Link>
       : <div key={e.n} style={style}>{corps}</div>;
   };
 
@@ -127,7 +131,6 @@ const CasDuSoirCasPage: React.FC = () => {
 
   return (
     <DrLoShell narrow backDirect back={{ to: '/cas-du-soir', label: 'Retour aux cas' }} palette={palette}>
-      <GateAdultes actif={!!h.adultes} accent={palette.accent} retour={() => navigate('/cas-du-soir')}>
       {/* La vitrine : la couverture en grand, les rayons, le titre, l'accroche */}
       <div style={{ position: 'relative', margin: '12px -18px 0', height: 290, overflow: 'hidden' }}>
         {h.image ? <img src={h.image} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} /> : <span style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Moon size={44} color={palette.accent} aria-hidden="true" /></span>}
@@ -150,15 +153,16 @@ const CasDuSoirCasPage: React.FC = () => {
       {/* Un seul gros bouton : reprendre là où on en est */}
       <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
         {courant
-          ? <Link to={`/cas-du-soir/${id}/${courant.n}`} className="drl-btn" style={boutonReprise}>{nbLus > 0 ? `Reprendre · épisode ${courant.n}` : 'Commencer l\'histoire'}</Link>
+          ? <Link to={`/cas-du-soir/${id}/${courant.n}`} onClick={adulte.confirmer} className="drl-btn" style={boutonReprise}>{adulte.ok ? (nbLus > 0 ? `Reprendre · épisode ${courant.n}` : 'Commencer l\'histoire') : (nbLus > 0 ? 'Reprendre (18 ans et plus)' : 'Commencer (18 ans et plus)')}</Link>
           : eps?.finie
-            ? <Link to={`/cas-du-soir/${id}/lecon`} className="drl-btn" style={boutonReprise}>La leçon de Dr Lô</Link>
+            ? <Link to={`/cas-du-soir/${id}/lecon`} onClick={adulte.confirmer} className="drl-btn" style={boutonReprise}>La leçon de Dr Lô</Link>
             : <div style={{ ...boutonReprise, background: DC.glass, color: DC.soft, border: `1px solid ${DC.line}`, fontSize: 13, fontWeight: 600 }}>{sousReprise ?? 'La suite arrive bientôt'}</div>}
         {h.intrigue && (
           <button type="button" onClick={() => setIntrigue(v => !v)} aria-pressed={intrigue} aria-label="Écouter l'intrigue" className="drl-btn"
             style={{ width: 50, minHeight: 50, borderRadius: 999, border: `1px solid ${intrigue ? palette.accent : DC.line}`, background: DC.glass, color: intrigue ? palette.accent : DC.text, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Play size={16} aria-hidden="true" /></button>
         )}
       </div>
+      {!adulte.ok && <MentionAdultes />}
       {intrigue && h.intrigue && (
         <div style={{ ...card, marginTop: 10, padding: 12 }}>
           <p style={{ margin: 0, fontSize: 12, fontWeight: 700, letterSpacing: '.06em', color: palette.accent }}>L'INTRIGUE</p>
@@ -186,7 +190,7 @@ const CasDuSoirCasPage: React.FC = () => {
           {liste.map(ligne)}
           {/* La leçon de Dr Lô, à la fin de la liste : fermée jusqu'au dernier épisode */}
           {eps.finie ? (
-            <Link to={`/cas-du-soir/${id}/lecon`} aria-label="La leçon de Dr Lô, gratuite" className="drl-btn" style={{ ...ligneStyle, textDecoration: 'none', border: `1px solid ${palette.accent}`, background: `${palette.accent}1A` }}>
+            <Link to={`/cas-du-soir/${id}/lecon`} onClick={adulte.confirmer} aria-label="La leçon de Dr Lô, gratuite" className="drl-btn" style={{ ...ligneStyle, textDecoration: 'none', border: `1px solid ${palette.accent}`, background: `${palette.accent}1A` }}>
               <span style={{ ...vignette, borderRadius: '50%', width: 47 }}><img src="/images/cas-du-soir/drlo-lecon.webp" alt="" loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: '60% 12%', display: 'block' }} /></span>
               <span style={{ flex: 1, minWidth: 0 }}><span style={petit}>À LA FIN</span><span style={titreLigne}>La leçon de Dr Lô</span><span style={sousLigne}>Gratuite · à écouter</span></span>
               <span aria-hidden="true" style={{ ...rondIcone, width: 30, height: 30, background: palette.accent, color: '#1C1612' }}><Play size={12} /></span>
@@ -206,7 +210,7 @@ const CasDuSoirCasPage: React.FC = () => {
         <section style={{ ...card, marginTop: 14, padding: 14 }}>
           <p style={{ margin: 0, fontFamily: 'Fraunces, serif', fontSize: 17, fontWeight: 600, color: DC.title }}>Pas envie d'attendre ?</p>
           <p style={{ margin: '4px 0 0', fontSize: 13, lineHeight: 1.5, color: DC.soft }}>Un épisode s'ouvre chaque soir à 20 h, gratuitement. Tu peux aussi ouvrir tout le cas maintenant.</p>
-          <DebloquerCas id={h.id} titre={h.titre} ouverture={h.ouverture} prix={h.debloquer} accent={palette.accent} onDone={load} />
+          <DebloquerCas id={h.id} titre={h.titre} ouverture={h.ouverture} prix={h.debloquer} accent={palette.accent} onDone={() => { adulte.confirmer(); load(); }} />
         </section>
       ) : null}
 
@@ -231,7 +235,6 @@ const CasDuSoirCasPage: React.FC = () => {
           onConfirm={() => pay(confirme.what, confirme.n)} onClose={() => { setConfirme(null); setError(''); }} />
       )}
       <PiedCas titre={h.titre} avertissement={h.avertissement} />
-      </GateAdultes>
     </DrLoShell>
   );
 };

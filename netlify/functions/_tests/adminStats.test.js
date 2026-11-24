@@ -96,3 +96,11 @@ test('étincelles des contenus payants (Pénc mi, pratiques, chaînes) comptées
   // L'existant ne change pas
   assert.deepEqual(out.koris.spentByFeature.map((k) => k.key), ['penc', 'practice', 'chat', 'cas_du_soir']);
 });
+
+test('lien en bio : l\'arrivée « ?src= » est comptée par réseau (liste fermée), et les pages du cas du soir ont leur rubrique', () => {
+  assert.deepEqual(S.counterOf({ e: 'arrivee', p: { src: 'tiktok' } }), { key: 'src_tiktok', feature: null });
+  assert.deepEqual(S.counterOf({ e: 'arrivee', p: { src: 'IG' } }), { key: 'src_instagram', feature: null });
+  assert.equal(S.counterOf({ e: 'arrivee', p: { src: 'monsite' } }), null);
+  assert.equal(S.counterOf({ e: 'arrivee' }), null);
+  assert.equal(S.sectionOf('/cas-du-soir/goumin/1'), 'cas');
+});

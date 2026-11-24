@@ -140,7 +140,7 @@ const requete = (col, conds) => ({
 });
 const db = {
   collection: (col) => ({ doc: (id) => ref(col, id), where: (f, o, v) => requete(col, [[f, v]]) }),
-  runTransaction: async (fn) => { const ops = []; const r = await fn({ get: (x) => x.get(), set: (x, d, o) => ops.push(() => x.set(d, o)) }); for (const o of ops) await o(); return r; },
+  runTransaction: async (fn) => { const ops = []; const r = await fn({ get: (x) => { if (ops.length) throw new Error('Firestore transactions require all reads to be executed before all writes.'); return x.get(); }, set: (x, d, o) => ops.push(() => x.set(d, o)) }); for (const o of ops) await o(); return r; },
 };
 const admin = {
   firestore: { FieldValue: { increment: (n) => ({ __inc: n }), serverTimestamp: () => 0, arrayUnion: (...a) => ({ __union: a }) } },
@@ -959,6 +959,49 @@ test('gestes comptés une fois par personne : page, épisodes lus, leçon, quiz,
   assert.equal(store.casDuSoirStats[H.id].visiteurs, 1); // le propriétaire ne compte pas
   const c = (await call({ action: 'statistiques' })).body.cas.find((x) => x.id === H.id);
   assert.equal(c.visiteurs, 1); assert.equal(c.episodes[0].lus, 1); assert.equal(c.quiz, 1); assert.equal(c.lectureFin, 1);
+}));
+
+test('épisode 1 lu sans compte puis espace créé sur le même téléphone : l\'horloge démarre tout de suite (épisode 2 demain à 20 h)', public_(async () => {
+  const TEL = 'abcdefghijklmnop0001';
+  maintenant(T(0, 21));
+  uid = null;
+  assert.equal((await call({ action: 'episode', n: 1, histoire: H.id, visiteurId: TEL })).status, 200);
+  uid = 'nouveau1';
+  const e = await call({ action: 'etat', histoire: H.id, appareil: TEL });
+  assert.equal(e.status, 200);
+  assert.equal(store.casDuSoirAcces[`nouveau1_${H.id}`].debut, T(0, 21));
+  assert.equal(store.casDuSoirStats[H.id].lecteurs, 1);
+  const eps = (await call({ action: 'episodes', histoire: H.id, appareil: TEL })).body.episodes;
+  assert.equal(eps[1].etat, 'prochain'); assert.equal(eps[1].parution, T(1, 20));
+  // Un autre téléphone (jamais lu l'épisode 1) : pas d'horloge tant qu'il n'a pas ouvert l'épisode 1
+  uid = 'nouveau2';
+  await call({ action: 'etat', histoire: H.id, appareil: 'abcdefghijklmnop0002' });
+  assert.equal(store.casDuSoirAcces[`nouveau2_${H.id}`], undefined);
+}));
+
+test('« 18 ans ou plus » : gardé sur le compte, rien sans compte', public_(async () => {
+  maintenant(T(0, 21));
+  uid = null;
+  assert.deepEqual((await call({ action: 'adulte' })).body, { ok: true, compte: false });
+  uid = 'adulte1';
+  assert.equal((await call({ action: 'etat', histoire: H.id })).body.adulte, false);
+  assert.deepEqual((await call({ action: 'adulte' })).body, { ok: true, compte: true });
+  assert.equal(store.userProfiles.adulte1.adulteConfirme, true);
+  assert.equal((await call({ action: 'etat', histoire: H.id })).body.adulte, true);
+}));
+
+test('lien en bio : la source (« ?src=tiktok ») est comptée avec la première visite du cas, liste fermée seulement', public_(async () => {
+  maintenant(T(0, 21));
+  uid = null;
+  await call({ action: 'evenement', kind: 'page', histoire: H.id, visiteurId: 'abcdefghijklmnop0003', src: 'tiktok' });
+  await call({ action: 'evenement', kind: 'page', histoire: H.id, visiteurId: 'abcdefghijklmnop0003', src: 'tiktok' }); // une fois par personne
+  await call({ action: 'evenement', kind: 'page', histoire: H.id, visiteurId: 'abcdefghijklmnop0004', src: 'tt' }); // alias
+  await call({ action: 'evenement', kind: 'page', histoire: H.id, visiteurId: 'abcdefghijklmnop0005', src: 'nimporte<quoi>' }); // refusée
+  assert.equal(store.casDuSoirStats[H.id].visiteurs, 3);
+  assert.equal(store.casDuSoirStats[H.id].visiteurs_src_tiktok, 2);
+  uid = 'papa';
+  const c = (await call({ action: 'statistiques' })).body.cas.find((x) => x.id === H.id);
+  assert.deepEqual(c.sources, [{ id: 'tiktok', n: 2 }]);
 }));
 
 test('lancement du 20/11/2026 : cas du soir public, ouverture échelonnée (Minuit tout de suite, puis un cas par semaine à 20 h), Goumin et les cas 3 et 4 réservés aux adultes', () => {

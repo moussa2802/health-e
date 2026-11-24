@@ -16,6 +16,7 @@
  *   fin                      → la leçon (gratuite), le quiz, le test lié, une fois l'épisode 5 lisible
  *   statistiques             → { cas: [...] }   Dr Lô seul : chiffres bruts par cas (espace admin, onglet « Cas du soir »)
  *   evenement { kind: 'page'|'test'|'quiz', id? } → compte un geste, une fois par personne (la page d'un cas, un test proposé ouvert, le quiz terminé)
+ *   adulte                   → « J'ai 18 ans ou plus » (déclaratif), gardé sur le compte pour ne plus le redemander (userProfiles.adulteConfirme)
  *   utile { oui, texte? }    → « Ce cas t'a été utile ? » (une fois la leçon lisible) : oui/non, changeable ; le « non » et son texte restent privés (Dr Lô seul)
  *
  * RYTHME PERSONNEL : chaque lecteur a sa propre horloge (casDuSoirAcces.debut), qui démarre à la première ouverture de l'épisode 1
@@ -42,6 +43,7 @@ const K = require('./_casDuSoir');
 const { totemOf, moderate, REASON_TEXT } = require('./_drloComments');
 const CP = require('./_compteurs');
 const OB = require('./_openBox');
+const SRC = require('./_sources');
 const { reserveKoris, commitKoris, releaseKoris } = require('./_koris');
 
 const BUCKET = process.env.FIREBASE_STORAGE_BUCKET || 'health-e-af2bf.firebasestorage.app';
@@ -190,6 +192,7 @@ exports.handler = async (event) => {
         let non = [];
         try { const q = await UTILE().where('histoire', '==', x.id).where('oui', '==', false).limit(100).get(); non = q.docs.map((d) => d.data()).filter((y) => y.texte).sort((a, b) => (b.atMs || 0) - (a.atMs || 0)).slice(0, 20).map((y) => ({ texte: y.texte, atMs: y.atMs || 0 })); } catch (e2) { console.error('cas-du-soir stats non', e2.message); }
         return { id: x.id, titre: x.titre, categorie: x.categorie || null, categorieAussi: x.categorieAussi || null, cache: x.cache === true, lecteurs: st.lecteurs, visiteurs: Number(brut.visiteurs) || 0, visiteursCompte: Number(brut.visiteursCompte) || 0, commences, payeurs, lectureFin: Number(brut.lu_fin) || 0, quiz: Number(brut.quiz) || 0,
+          sources: Object.keys(brut).filter((k) => k.startsWith('visiteurs_src_')).map((k) => ({ id: k.slice(14), n: Number(brut[k]) || 0 })).sort((a, b) => b.n - a.n),
           tests: Object.keys(brut).filter((k) => k.startsWith('test_')).map((k) => ({ id: k.slice(5), n: Number(brut[k]) || 0 })).sort((a, b) => b.n - a.n), utileOui: st.utileOui, utileNon: st.utileNon, episodes, non };
       }));
       // Boîte anonyme : les réponses publiées, avec leurs vues et réactions (chiffres bruts)
@@ -216,6 +219,13 @@ exports.handler = async (event) => {
       return reply(200, { visible: true, histoires, proprio: owner });
     }
 
+    // « J'ai 18 ans ou plus » : déclaratif, mémorisé sur le compte (l'appareil le garde aussi, côté appli). Sans compte : rien à garder ici.
+    if (action === 'adulte') {
+      if (!uid) return reply(200, { ok: true, compte: false });
+      await db.collection('userProfiles').doc(uid).set({ adulteConfirme: true }, { merge: true });
+      return reply(200, { ok: true, compte: true });
+    }
+
     // Un cas précis (adresse /cas-du-soir/:id) ; inconnu : introuvable. Sans identifiant : le cas du moment.
     // Un cas « cache: true » est en construction : seul le propriétaire le voit (ni liste, ni adresse, ni « cas du moment »)
     const visibles = K.HISTOIRES.filter((x) => !x.cache || owner);
@@ -227,10 +237,12 @@ exports.handler = async (event) => {
 
     // La personne : son animal (révélé), son horloge, ce qu'elle a payé
     let animal = null;
+    let adulte = false;
     let acces = { debut: null, episodes: [], bonus: false, autreFin: false, anticipe: false };
     if (uid) {
       const [up, ac] = await Promise.all([db.collection('userProfiles').doc(uid).get(), accesDe(uid, h.id)]);
       animal = totemOf(up.exists ? up.data() : null);
+      adulte = up.exists && (up.data() || {}).adulteConfirme === true;
       acces = ac;
     }
     const connecte = !!uid;
@@ -240,6 +252,14 @@ exports.handler = async (event) => {
     let debut = acces.debut;
     if (uid && !apercu && !debut && n === 1 && body.autre !== true && (action === 'episode' || action === 'vote') && K.estOuverte(h, realNow)) {
       debut = await demarrerHorloge(h.id, uid, realNow, !owner);
+    } else if (uid && !owner && !apercu && !debut && ['etat', 'episodes', 'episode'].includes(action) && K.estOuverte(h, realNow)) {
+      // Il a lu l'épisode 1 sans compte sur ce téléphone, puis a créé son espace : son horloge démarre tout de suite
+      // (l'épisode 2 s'ouvre demain à 20 h), sans devoir relire l'épisode 1
+      const avant = K.votant(null, body.appareil, sha);
+      if (avant) {
+        const lu = await EVT().doc(`${h.id}_lu_1_${avant}`).get().catch(() => null);
+        if (lu && lu.exists) debut = await demarrerHorloge(h.id, uid, realNow, true);
+      }
     }
     const commence = apercu || !!debut;
     const debutAffiche = apercu ? K.debutApercu(realNow, jour) : debut;
@@ -266,7 +286,7 @@ exports.handler = async (event) => {
         chiffres = { ...st, non };
       }
       return reply(200, {
-        visible: true, histoire: vue, prix: K.PRIX, connecte, bonus: acces.bonus, apercu, animal, proprio: owner, ...(chiffres ? { chiffres } : {}),
+        visible: true, histoire: vue, prix: K.PRIX, connecte, adulte, bonus: acces.bonus, apercu, animal, proprio: owner, ...(chiffres ? { chiffres } : {}),
         autreFin: { achetee: acces.autreFin, possible: connecte && finie && !!h.embranchement && !!branche },
       });
     }
@@ -444,7 +464,12 @@ exports.handler = async (event) => {
       const rt = await rateRef.get(); const nb = rt.exists ? Number(rt.data().n) || 0 : 0;
       if (nb >= 120) return reply(429, { error: 'Reviens demain.' });
       await rateRef.set({ n: nb + 1, day }, { merge: true });
-      if (kind === 'page') await noter(h, qui, 'visiteurs', uid ? { visiteursCompte: inc(1) } : null);
+      if (kind === 'page') {
+        // D'où vient la personne (lien en bio « ?src=tiktok »…) : compté avec sa première visite du cas
+        const src = SRC.sourceValide(body.src);
+        const extra = { ...(uid ? { visiteursCompte: inc(1) } : {}), ...(src ? { [`visiteurs_src_${src}`]: inc(1) } : {}) };
+        await noter(h, qui, 'visiteurs', Object.keys(extra).length ? extra : null);
+      }
       else if (kind === 'test') {
         const permis = new Set([...h.episodes.flatMap((e) => e.tests || []), h.testLie, h.testAussi].filter(Boolean));
         const id = String(body.id || '');

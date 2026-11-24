@@ -21,7 +21,7 @@ interface Stats {
   daily: Day[];
   totals: Record<string, number | null>;
   features: { key: string; users: number }[];
-  pages: KV[]; goes: KV[]; tests: KV[]; hours: number[];
+  pages: KV[]; sources?: KV[]; goes: KV[]; tests: KV[]; hours: number[];
   funnel: { accueil: number; debut: number; testCommence: number; testFini: number; inscription: number };
   koris: { spentByFeature: KV[]; offeredByFeature: KV[]; purchases: number; purchased: number; contenus?: { key: string; spent: number; refunded: number; buyers: number }[] };
   acquisition: KV[];
@@ -44,8 +44,9 @@ const FEATURE_LABEL: Record<string, string> = {
 const PAGE_LABEL: Record<string, string> = {
   accueil: 'Accueil', compagnon: 'Compagnon', moi: 'Moi', tests: 'Tests', resultats: 'Résultats', animal: 'Animal intérieur', compat: 'Compatibilité',
   penc: 'Pénc mi', journal: 'Journal', achat: 'Acheter des étincelles', chaines: 'Chaînes', question: 'Questions / messages', defi: 'Défi',
-  humeur: 'Humeur', bilan: 'Point de la semaine', outils: 'Outils', autre: 'Autres pages',
+  humeur: 'Humeur', bilan: 'Point de la semaine', outils: 'Outils', cas: 'Le cas du soir', autre: 'Autres pages',
 };
+const SOURCE_LABEL: Record<string, string> = { tiktok: 'TikTok', instagram: 'Instagram', facebook: 'Facebook', whatsapp: 'WhatsApp', youtube: 'YouTube' };
 const KORIS_LABEL: Record<string, string> = { chat: 'Messages au compagnon', test: 'Tests', analysis: 'Analyses', compatibility: 'Compatibilité', daily_gift: 'Cadeau du jour', referral: 'Parrainage', welcome: 'Bienvenue', penc: 'Pénc mi', practice: 'Pratiques (audios, techniques, carnets)', channel: 'Chaînes', cas_du_soir: 'Le cas du soir' };
 
 const fmtDay = (d: string) => { const [, m, j] = d.split('-'); return `${Number(j)}/${Number(m)}`; };
@@ -313,6 +314,11 @@ const AdminStats: React.FC = () => {
               <h2 style={h2}>Pages les plus visitées</h2>
               <p style={sub}>Ouvertures de chaque rubrique (suivi).</p>
               <Ranking rows={(data.pages ?? []).map(p => ({ label: PAGE_LABEL[p.key] || p.key, n: p.n }))} empty="Le suivi des pages démarre avec ce déploiement." />
+            </section>
+            <section style={card} aria-label="D'où ils arrivent">
+              <h2 style={h2}>D'où ils arrivent</h2>
+              <p style={sub}>Visites arrivées par un lien en bio (health-e.sn/tt pour TikTok…). Une par visite.</p>
+              <Ranking rows={(data.sources ?? []).map(p => ({ label: SOURCE_LABEL[p.key] || p.key, n: p.n }))} empty="Pas encore d'arrivée par un lien en bio." />
             </section>
           </div>
 

@@ -1,2 +1,5 @@
+# Liens en bio (courts, avec la source pour les statistiques) : avant la règle générale, sinon jamais lus
+/tt       /cas-du-soir?src=tiktok                   302
+/minuit   /cas-du-soir/vu-de-minuit/1?src=tiktok    302
 /api/d/*  /index.html  200
 /*    /index.html   200

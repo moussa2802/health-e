@@ -86,7 +86,7 @@ function compute({ list, tracked = {}, profiles = [], history = [], moods = [] }
   }
 
   // Suivi d'utilisation
-  const pages = {}; const goes = {}; const hours = Array(24).fill(0); const events = {};
+  const pages = {}; const goes = {}; const sources = {}; const hours = Array(24).fill(0); const events = {};
   let trackingSince = null;
   for (const d of list) {
     const t = tracked[d];
@@ -100,6 +100,7 @@ function compute({ list, tracked = {}, profiles = [], history = [], moods = [] }
     for (const [k, n] of Object.entries(t.c || {})) {
       if (k.startsWith('page_')) add(pages, k.slice(5), n);
       else if (k.startsWith('go_')) add(goes, k.slice(3), n);
+      else if (k.startsWith('src_')) add(sources, k.slice(4), n);
       else if (/^h_\d\d$/.test(k)) hours[Number(k.slice(2))] += n;
       else if (k.startsWith('ev_')) {
         add(events, k.slice(3), n);
@@ -152,6 +153,7 @@ function compute({ list, tracked = {}, profiles = [], history = [], moods = [] }
     },
     features: sortDesc(Object.fromEntries(Object.entries(featureUsers).map(([k, s]) => [k, s.size]))).map(([key, users]) => ({ key, users })),
     pages: sortDesc(pages).map(([key, n]) => ({ key, n })),
+    sources: sortDesc(sources).map(([key, n]) => ({ key, n })),
     goes: sortDesc(goes).slice(0, 15).map(([key, n]) => ({ key, n })),
     tests: sortDesc(testsByScale).map(([key, n]) => ({ key, n })),
     hours,

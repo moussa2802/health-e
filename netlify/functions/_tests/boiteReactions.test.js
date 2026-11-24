@@ -21,8 +21,10 @@ const requete = (col, conds) => ({
 const db = {
   collection: (col) => ({ doc: (id) => ref(col, id), where: (f, o, v) => requete(col, [[f, v]]), orderBy: () => requete(col, []), add: async (d) => { const id = `q${Object.keys(store[col]).length + 1}`; store[col][id] = d; return { id }; } }),
   runTransaction: async (fn) => {
+    // Comme Firestore : toute lecture doit précéder les écritures de la transaction, sinon erreur
     const ops = [];
-    const r = await fn({ get: (x) => x.get(), set: (x, d, o) => ops.push(() => x.set(d, o)), delete: (x) => ops.push(() => x.delete()) });
+    const lire = (x) => { if (ops.length) throw new Error('Firestore transactions require all reads to be executed before all writes.'); return x.get(); };
+    const r = await fn({ get: lire, set: (x, d, o) => ops.push(() => x.set(d, o)), delete: (x) => ops.push(() => x.delete()) });
     for (const o of ops) await o();
     return r;
   },

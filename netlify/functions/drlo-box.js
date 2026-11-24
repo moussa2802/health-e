@@ -82,22 +82,21 @@ exports.handler = async (event) => {
       const ip = String(h['x-nf-client-connection-ip'] || h['x-forwarded-for'] || '').split(',')[0].trim();
       const rateRef = db.collection('openBoxRate').doc(`${day}_${B.fingerprint(ip, h['user-agent'], day)}_r`);
       const qRef = COL().doc(id);
+      // Firestore : toutes les lectures AVANT la première écriture (sinon la transaction échoue : c'était le « 0 vue »)
+      const vRef = db.collection('openViews').doc(`${id}_${vid}`);
+      const rRef = db.collection('openReactions').doc(`${id}_${vid}`);
       const out = await db.runTransaction(async (tx) => {
-        const [q, rt] = await Promise.all([tx.get(qRef), tx.get(rateRef)]);
+        const [q, rt, deja] = await Promise.all([tx.get(qRef), tx.get(rateRef), tx.get(body.action === 'view' ? vRef : rRef)]);
         if (!q.exists || q.data().status !== 'site') return { code: 404 };
         const n = rt.exists ? Number(rt.data().n) || 0 : 0;
         if (n >= 80) return { code: 429 };
         tx.set(rateRef, { n: n + 1, day }, { merge: true });
         const inc = (k) => admin.firestore.FieldValue.increment(k);
         if (body.action === 'view') {
-          const vRef = db.collection('openViews').doc(`${id}_${vid}`);
-          const v = await tx.get(vRef);
-          if (!v.exists) { tx.set(vRef, { id, day }); tx.set(qRef, { vues: inc(1) }, { merge: true }); }
+          if (!deja.exists) { tx.set(vRef, { id, day }); tx.set(qRef, { vues: inc(1) }, { merge: true }); }
           return { code: 200 };
         }
-        const rRef = db.collection('openReactions').doc(`${id}_${vid}`);
-        const r = await tx.get(rRef);
-        const prev = r.exists ? r.data().kind : null;
+        const prev = deja.exists ? deja.data().kind : null;
         if (prev === kind) return { code: 200, kind };
         const upd = {};
         if (prev) upd[`reactions.${prev}`] = inc(-1);

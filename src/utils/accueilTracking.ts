@@ -22,7 +22,7 @@ export type AccueilEvent =
   | 'cycle_set' | 'cycle_period' | 'mood_erase_all' | 'espace_view'
   | 'question_sent' | 'queue_join' | 'invite_share'
   | 'programme_offer' | 'programme_proposed' | 'programme_start' | 'programme_open' | 'programme_bilan' | 'programme_end'
-  | 'reminders_offer' | 'result_share' | 'home_view' | 'page';
+  | 'reminders_offer' | 'result_share' | 'home_view' | 'page' | 'arrivee';
 
 // ── Notre suivi : file d'attente envoyée toutes les 8 s, et quand on quitte la page ──
 type Ev = { e: string; p?: Record<string, string | number | boolean> };

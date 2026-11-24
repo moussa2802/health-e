@@ -5,10 +5,11 @@
  */
 import React, { useEffect, useState } from 'react';
 import { Link, Navigate, useLocation, useNavigate, useParams } from 'react-router-dom';
-import { ChevronRight, Loader2 } from 'lucide-react';
+import { CalendarPlus, ChevronRight, Loader2 } from 'lucide-react';
 import DrLoShell, { DC, usePalette } from '../../components/accueil/DrLoShell';
 import LecteurImmersif from '../../components/casdusoir/LecteurImmersif';
-import { FenetreConfirmer, GateAdultes, PiedCas, Resultats, TestsEpisode, etoiles, gratuitEpisode, Maj } from '../../components/casdusoir/CdsParts';
+import { FenetreConfirmer, PiedCas, PorteAdultes, Resultats, TestsEpisode, creerEspaceDepuis, etoiles, gratuitEpisode } from '../../components/casdusoir/CdsParts';
+import { ajouterRappel } from '../../utils/rappelCalendrier';
 import { useKoris } from '../../contexts/KorisContext';
 import { CAS_DU_SOIR_PRIX } from '../../config/contenusPayants';
 import {
@@ -88,8 +89,12 @@ const CasDuSoirEpisodePage: React.FC = () => {
     }
     const s = ep.suite;
     const choixD = !!ep.episode.embranchement && !ep.monChoix;
+    const sansCompte = s.avance.raison === 'compte';
+    // Quand l'épisode suivant s'ouvre gratuitement : sa date ; sans compte, demain soir à 20 h (l'horloge démarre à la création de l'espace)
+    const quand = s.lisible || choixD ? null : s.parution ?? (sansCompte ? Math.floor(Date.now() / 86400000) * 86400000 + 86400000 + 20 * 3600000 : null);
     const rythme = s.avance.raison === 'choix_requis' || choixD ? 'Ta suite dépend de ton choix : vote d\'abord, juste en dessous.'
-      : s.lisible ? '' : s.parution ? `${Maj(quandLabel(s.parution))} · gratuit` : 'Gratuit le lendemain soir de ta lecture';
+      : s.lisible ? '' : sansCompte && quand ? `Gratuit ${quandLabel(quand)}, une fois ton espace créé (gratuit, 10 secondes).`
+      : quand ? `L'épisode ${s.n} s'ouvre ${quandLabel(quand)}, gratuitement.` : 'Gratuit le lendemain soir de ta lecture';
     return (
       <div key={clef} style={{ marginTop: 16 }}>
         {s.lisible && !choixD
@@ -98,15 +103,21 @@ const CasDuSoirEpisodePage: React.FC = () => {
             ? <button type="button" onClick={() => document.getElementById('cds-vote')?.scrollIntoView({ block: 'center', behavior: 'smooth' })} style={ghost}>Épisode suivant · fais d'abord ton choix</button>
             : s.avance.ok
               ? <button type="button" disabled={!!busy} onClick={() => setConfirme('suite')} style={primary}>Épisode suivant · {etoiles(prixSuite)}</button>
-              : s.avance.raison === 'compte' ? <Link to="/espace" style={primary}>Crée ton espace pour lire la suite</Link> : null}
+              : sansCompte ? <button type="button" onClick={() => creerEspaceDepuis(navigate, `/cas-du-soir/${id}`)} style={primary}>Crée ton espace pour lire la suite</button> : null}
         {rythme && <p style={{ margin: '8px 0 0', fontSize: 14, color: DC.soft, textAlign: 'center' }}>{rythme}</p>}
+        {quand && (
+          <button type="button" className="drl-btn" style={{ ...ghost, marginTop: 10, minHeight: 44, fontSize: 14 }}
+            onClick={() => ajouterRappel({ titre: `Le cas du soir : ${h.titre}, épisode ${s.n}`, debut: quand, url: `https://health-e.sn/cas-du-soir/${id}`, description: `L'épisode ${s.n} est ouvert, gratuitement.` })}>
+            <CalendarPlus size={16} aria-hidden="true" /> Me le rappeler {quandLabel(quand)}
+          </button>
+        )}
       </div>
     );
   };
 
   return (
     <DrLoShell narrow backDirect back={retour} palette={palette}>
-      <GateAdultes actif={!!h.adultes} accent={palette.accent} retour={() => navigate('/cas-du-soir')}>
+      <PorteAdultes actif={!!h.adultes} surCompte={etat.adulte} connecte={etat.connecte} image={h.image} titre={h.titre} accroche={h.accroche} libelle={`Lire l'épisode ${n}`} accent={palette.accent}>
       <p style={{ margin: '18px 0 0', fontSize: 13, fontWeight: 700, color: palette.accent }}>{h.titre}{autre ? ' · l\'autre fin' : ''}</p>
       {error && <p role="alert" style={{ margin: '12px 0 0', fontSize: 14, color: '#F6C2AE' }}>{error}</p>}
       {!ep && !error && <p style={{ marginTop: 30, textAlign: 'center', color: DC.muted }}><Loader2 size={18} className="animate-spin" aria-hidden="true" /> Un instant…</p>}
@@ -158,7 +169,7 @@ const CasDuSoirEpisodePage: React.FC = () => {
           gratuit={confirme === 'suite' ? gratuitEpisode(ep.suite?.parution) : null}
           onConfirm={() => pay(confirme)} onClose={() => { setConfirme(null); setError(''); }} />
       )}
-      </GateAdultes>
+      </PorteAdultes>
     </DrLoShell>
   );
 };

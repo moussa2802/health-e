@@ -7,7 +7,7 @@ import React, { useEffect, useState } from 'react';
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom';
 import DrLoShell, { DC, usePalette } from '../../components/accueil/DrLoShell';
 import LecteurImmersif from '../../components/casdusoir/LecteurImmersif';
-import { FinLecon, GateAdultes, PiedCas } from '../../components/casdusoir/CdsParts';
+import { FinLecon, PiedCas, PorteAdultes } from '../../components/casdusoir/CdsParts';
 import { getEtat, getFin, setHistoire, type CdsEtat, type CdsFin } from '../../services/casDuSoirService';
 
 const PHOTO = '/images/cas-du-soir/drlo-lecon.webp';
@@ -44,7 +44,7 @@ const CasDuSoirLeconPage: React.FC = () => {
   const minutes = fin.minutage?.duree ? Math.max(1, Math.round(fin.minutage.duree / 60)) : null;
   return (
     <DrLoShell narrow backDirect back={retour} palette={palette}>
-      <GateAdultes actif={!!h.adultes} accent={palette.accent} retour={() => navigate('/cas-du-soir')}>
+      <PorteAdultes actif={!!h.adultes} surCompte={etat.adulte} connecte={etat.connecte} image={h.image} titre={h.titre} accroche={h.accroche} libelle="Écouter la leçon" accent={palette.accent}>
         <LecteurImmersif
           kicker={h.titre} titre="La leçon de Dr Lô" accent={palette.accent} fond="plein"
           meta={`Ce qu'il faut retenir${minutes ? ` · ${minutes} min` : ''} · gratuite`}
@@ -56,7 +56,7 @@ const CasDuSoirLeconPage: React.FC = () => {
             <FinLecon fin={fin} accent={palette.accent} id={h.id} />
             <PiedCas titre={h.titre} avertissement={h.avertissement} />
           </>} />
-      </GateAdultes>
+      </PorteAdultes>
     </DrLoShell>
   );
 };

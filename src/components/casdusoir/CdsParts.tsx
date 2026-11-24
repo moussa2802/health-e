@@ -8,9 +8,10 @@ import { Check, ChevronRight, Loader2, MessageCircle, Share2, Unlock } from 'luc
 import { DC, card } from '../accueil/DrLoShell';
 import { openDrLoChat } from '../DrLoChat/drLoEvents';
 import { getScaleMeta } from '../../utils/scaleMeta';
-import { CdsError, debloquerCas, getBrancheApercu, getJourApercu, getListe, noterGeste, quandLabel, repondreUtile, setBrancheApercu, setJourApercu, type CdsChiffres, type CdsEpisodeReponse, type CdsFin, type CdsHistoire, type CdsResultats } from '../../services/casDuSoirService';
+import { CdsError, confirmerAdulte, debloquerCas, getBrancheApercu, getJourApercu, getListe, noterGeste, quandLabel, repondreUtile, setBrancheApercu, setJourApercu, type CdsChiffres, type CdsEpisodeReponse, type CdsFin, type CdsHistoire, type CdsResultats } from '../../services/casDuSoirService';
 import { useKoris } from '../../contexts/KorisContext';
 import { useAuth } from '../../contexts/AuthContext';
+import { retenirRetour } from '../../utils/retourInscription';
 
 export const ANIMAL_NOM: Record<string, string> = {
   lion: 'Lion', aigle: 'Aigle', cheval: 'Cheval', loup: 'Loup', dauphin: 'Dauphin', elephant: 'Éléphant',
@@ -18,6 +19,12 @@ export const ANIMAL_NOM: Record<string, string> = {
 };
 export const etoiles = (n: number) => `${n} étincelle${n > 1 ? 's' : ''}`;
 export const Maj = (t: string) => t.charAt(0).toUpperCase() + t.slice(1);
+
+/** « Crée ton espace » depuis un cas : l'inscription s'ouvre directement, et on revient ensuite sur cette page du cas. */
+export function creerEspaceDepuis(navigate: (to: string, opts?: { state?: unknown }) => void, retour: string): void {
+  retenirRetour(retour);
+  navigate('/compagnon', { state: { signup: true } });
+}
 
 export const Resultats: React.FC<{ ep: CdsEpisodeReponse; r: CdsResultats; monChoix: string; accent: string }> = ({ ep, r, monChoix, accent }) => (
   <div style={{ marginTop: 14 }}>
@@ -312,7 +319,7 @@ export const DebloquerCas: React.FC<{ id: string; prix: number; accent: string; 
   const [error, setError] = useState('');
   const clic = (e: React.MouseEvent) => {
     e.preventDefault(); e.stopPropagation();
-    if (!isAuthenticated) { navigate('/espace'); return; }
+    if (!isAuthenticated) { creerEspaceDepuis(navigate, `/cas-du-soir/${id}`); return; }
     setError(''); setOuvert(true);
   };
   const payer = async () => {
@@ -336,24 +343,48 @@ export const DebloquerCas: React.FC<{ id: string; prix: number; accent: string; 
 };
 
 const ADULTE_KEY = 'he_cds_adulte_ok';
-const adulteConfirme = () => { try { return localStorage.getItem(ADULTE_KEY) === '1'; } catch { return false; } };
+const adulteSurAppareil = () => { try { return localStorage.getItem(ADULTE_KEY) === '1'; } catch { return false; } };
+const garderSurAppareil = () => { try { localStorage.setItem(ADULTE_KEY, '1'); } catch { /* navigateur sans stockage : on redemandera, sans bloquer */ } };
 
 /**
- * Un cas réservé aux adultes : tant que la personne n'a pas confirmé avoir 18 ans ou plus (une fois par appareil), on montre
- * seulement cet écran. C'est une déclaration, pas une vérification d'âge.
+ * « 18 ans ou plus » : une déclaration, pas une vérification d'âge. Elle se fait en un toucher (le bouton « Commencer (18 ans et plus) »),
+ * puis elle est gardée sur l'appareil ET sur le compte (si connecté) pour ne plus jamais revenir.
+ *   ok : déjà confirmé ; confirmer() : à appeler au toucher d'un bouton qui ouvre l'histoire.
  */
-export const GateAdultes: React.FC<{ actif: boolean; accent: string; retour: () => void; children: React.ReactNode }> = ({ actif, accent, retour, children }) => {
-  const [ok, setOk] = useState(() => adulteConfirme());
-  if (!actif || ok) return <>{children}</>;
+export function useAdulte(actif: boolean, surCompte?: boolean, connecte?: boolean): { ok: boolean; confirmer: () => void } {
+  const [surAppareil, setSurAppareil] = useState(adulteSurAppareil);
+  const ok = !actif || surAppareil || !!surCompte;
+  useEffect(() => {
+    if (!actif) return;
+    // Confirmé sur le compte (autre téléphone) : on le garde aussi ici
+    if (surCompte && !surAppareil) { garderSurAppareil(); setSurAppareil(true); }
+    // Confirmé sur ce téléphone avant d'avoir un compte : on le garde aussi sur le compte
+    else if (surAppareil && connecte && surCompte === false) confirmerAdulte();
+  }, [actif, surCompte, connecte, surAppareil]);
+  const confirmer = () => { if (ok) return; garderSurAppareil(); confirmerAdulte(); setSurAppareil(true); };
+  return { ok, confirmer };
+}
+
+/** La petite mention sous le bouton d'un cas 18+ (13 px). */
+export const MentionAdultes: React.FC<{ style?: React.CSSProperties }> = ({ style }) => (
+  <p style={{ margin: '6px 0 0', fontSize: 13, lineHeight: 1.4, color: DC.faint, textAlign: 'center', ...style }}>Pour adultes. En continuant, tu confirmes avoir 18 ans ou plus.</p>
+);
+
+/**
+ * Arrivée DIRECTE sur un épisode ou la leçon d'un cas 18+ sans l'avoir confirmé (lien partagé) : pas d'écran qui cache tout,
+ * la couverture et le titre restent visibles, et un seul toucher « Lire (18 ans et plus) » ouvre le contenu.
+ */
+export const PorteAdultes: React.FC<{ actif: boolean; surCompte?: boolean; connecte?: boolean; image?: string | null; titre: string; accroche?: string; libelle: string; accent: string; children: React.ReactNode }> = ({ actif, surCompte, connecte, image, titre, accroche, libelle, accent, children }) => {
+  const { ok, confirmer } = useAdulte(actif, surCompte, connecte);
+  if (ok) return <>{children}</>;
   return (
-    <section aria-labelledby="gate-18" style={{ ...card, marginTop: 24, textAlign: 'center' }}>
-      <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: accent }}>Réservé aux adultes · 18 ans ou plus</p>
-      <h1 id="gate-18" style={{ margin: '8px 0 0', fontFamily: 'Fraunces, serif', fontSize: 24, lineHeight: 1.2, color: DC.title }}>Ce cas parle de sexualité avec des mots directs</h1>
-      <p style={{ margin: '10px 0 0', fontSize: 15, lineHeight: 1.55, color: DC.soft }}>On y parle du corps, du plaisir et des pratiques, sans détour, pour mieux comprendre. C'est de l'éducation, pas de l'érotisme, mais ça s'adresse aux personnes de 18 ans ou plus.</p>
-      <button type="button" onClick={() => { try { localStorage.setItem(ADULTE_KEY, '1'); } catch { /* ignore */ } setOk(true); }} className="drl-btn"
-        style={{ width: '100%', minHeight: 50, marginTop: 18, borderRadius: 999, border: 0, background: accent, color: '#1C1612', fontSize: 16, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>J'ai 18 ans ou plus</button>
-      <button type="button" onClick={retour} className="drl-btn"
-        style={{ width: '100%', minHeight: 48, marginTop: 10, borderRadius: 999, border: `1px solid ${DC.line}`, background: DC.glass, color: DC.text, fontSize: 15, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>Retour</button>
+    <section aria-label={titre} style={{ marginTop: 12 }}>
+      {image && <img src={image} alt="" style={{ width: '100%', height: 220, objectFit: 'cover', borderRadius: 18, display: 'block' }} />}
+      <h1 style={{ margin: '14px 0 4px', fontFamily: 'Fraunces, serif', fontSize: 26, lineHeight: 1.15, color: DC.title }}>{titre}</h1>
+      {accroche && <p style={{ margin: 0, fontSize: 15, lineHeight: 1.5, color: DC.soft }}>{accroche}</p>}
+      <button type="button" onClick={confirmer} className="drl-btn"
+        style={{ width: '100%', minHeight: 50, marginTop: 16, borderRadius: 999, border: 0, background: accent, color: '#1C1612', fontSize: 16, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>{libelle} (18 ans et plus)</button>
+      <MentionAdultes />
     </section>
   );
 };

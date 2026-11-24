@@ -12,7 +12,7 @@ const EVENTS = new Set([
   'test_start', 'test_pause', 'confier_open', 'confier_entry', 'confier_cancel', 'confier_advice',
   'signup_open', 'signup_start', 'signup_done', 'account_linked', 'cycle_set', 'cycle_period', 'mood_erase_all', 'espace_view',
   'question_sent', 'queue_join', 'invite_share', 'programme_offer', 'programme_proposed', 'programme_start', 'programme_open',
-  'programme_bilan', 'programme_end', 'reminders_offer', 'result_share', 'home_view', 'page',
+  'programme_bilan', 'programme_end', 'reminders_offer', 'result_share', 'home_view', 'page', 'arrivee',
   // comptés par le serveur
   'chat_message', 'mot', 'mot_keep', 'gift_claim',
 ]);
@@ -28,6 +28,8 @@ const FEATURE_OF = {
 };
 const PAGE_FEATURE = { penc: 'penc', animal: 'animal', chaines: 'chaines', defi: 'defi', compat: 'compat', achat: 'achat', journal: 'journal' };
 
+const { sourceValide } = require('./_sources');
+
 const clean = (s, n = 30) => String(s == null ? '' : s).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9_]+/g, '_').replace(/^_+|_+$/g, '').slice(0, n);
 
 /** La rubrique d'une adresse de page. */
@@ -38,7 +40,7 @@ function sectionOf(path) {
     [/^\/compagnon/, 'compagnon'], [/^\/espace/, 'moi'], [/^\/assessment\/totem/, 'animal'], [/^\/assessment\/compatibility|^\/compat\//, 'compat'],
     [/^\/assessment\/results/, 'resultats'], [/^\/assessment/, 'tests'], [/^\/penc|^\/p\//, 'penc'], [/^\/journal/, 'journal'],
     [/^\/acheter-koris/, 'achat'], [/^\/chaines|^\/c\//, 'chaines'], [/^\/question|^\/messages-dr-lo/, 'question'], [/^\/defi|^\/decouvre/, 'defi'],
-    [/^\/humeur/, 'humeur'], [/^\/point-de-la-semaine/, 'bilan'], [/^\/routine|^\/boite-a-outils|^\/pratique/, 'outils'], [/^\/admin|^\/espace-pro|^\/drlo/, ''],
+    [/^\/cas-du-soir/, 'cas'], [/^\/humeur/, 'humeur'], [/^\/point-de-la-semaine/, 'bilan'], [/^\/routine|^\/boite-a-outils|^\/pratique/, 'outils'], [/^\/admin|^\/espace-pro|^\/drlo/, ''],
   ];
   for (const [re, s] of rules) if (re.test(p)) return s;
   return 'autre';
@@ -57,6 +59,8 @@ function counterOf(ev) {
     if (!s) return null;
     return { key: `page_${s}`, feature: PAGE_FEATURE[s] || null };
   }
+  // L'arrivée sur le site par un lien en bio (« ?src=tiktok ») : une fois par visite, réseau de la liste fermée seulement
+  if (e === 'arrivee') { const src = sourceValide(p.src); return src ? { key: `src_${src}`, feature: null } : null; }
   if (e === 'go') { const to = clean(p.to, 24); return { key: to ? `go_${to}` : 'ev_go', feature: null }; }
   if (e === 'exercise' || e === 'exercise_done') { const id = clean(p.id, 16); return { key: id ? `ev_${e}_${id}` : `ev_${e}`, feature: 'exercices' }; }
   if (e === 'test_done' || e === 'test_start') { const id = clean(p.scaleId || p.id, 20); return { key: id ? `ev_${e}__${id}` : `ev_${e}`, feature: 'tests' }; }

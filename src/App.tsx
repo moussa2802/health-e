@@ -41,6 +41,7 @@ import { noteLocation } from "./utils/navTrail";
 import { useAuth } from "./contexts/AuthContext";
 import { trackPage } from "./utils/accueilTracking";
 import { sectionOf } from "./utils/pageSection";
+import { capterSource } from "./utils/source";
 import { cleanupAllProfessionalsListeners } from "./hooks/useProfessionals";
 import { cleanupAllBookingListeners } from "./hooks/useBookings";
 import {
@@ -138,7 +139,9 @@ const PageLoader = () => (
 
 // Wrapper component that decides whether to show header/footer based on route
 const AppChrome: React.FC = () => {
-  const { pathname } = useLocation();
+  const { pathname, search } = useLocation();
+  // Le lien en bio (« ?src=tiktok ») : lu à l'arrivée, compté une fois par visite dans les statistiques
+  useEffect(() => { capterSource(search); }, [search]);
   useEffect(() => { noteLocation(pathname); trackPage(sectionOf(pathname)); }, [pathname]);
   const isAdminRoute = pathname.startsWith("/admin");
   const isAppRoute = pathname.startsWith("/app");
@@ -162,6 +165,9 @@ const AppChrome: React.FC = () => {
             <Route path="/mes-informations" element={<InfosPage />} />
             <Route path="/point-de-la-semaine" element={<PointPage />} />
             <Route path="/espace-pro/rejoindre" element={<ProApplyPage />} />
+            {/* Liens en bio : aussi redirigés par le serveur (public/_redirects) ; ici pour l'appli déjà installée */}
+            <Route path="/tt" element={<Navigate to="/cas-du-soir?src=tiktok" replace />} />
+            <Route path="/minuit" element={<Navigate to="/cas-du-soir/vu-de-minuit/1?src=tiktok" replace />} />
             <Route path="/cas-du-soir" element={<CasDuSoirListePage />} />
             <Route path="/cas-du-soir/:id" element={<CasDuSoirCasPage />} />
             <Route path="/cas-du-soir/:id/lecon" element={<CasDuSoirLeconPage />} />
