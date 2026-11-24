@@ -1,14 +1,15 @@
 /**
- * BoitePage — /boite-a-questions : une question anonyme, sans compte, sans promesse de réponse.
+ * BoitePage — /boite-a-questions : la boîte anonyme, sans compte, sans promesse de réponse.
  * Dr Lô lit tout ; il répond par écrit sur cette page ou dans une vidéo, quand il le peut.
  *
- * Organisation de la page (pour qu'on ne s'y perde pas quand les réponses s'accumulent) :
- *   1. « Tes questions » épinglé en haut : celles déposées depuis cet appareil, avec leur état.
- *   2. Poser une question.
- *   3. « Les réponses de Dr Lô » : thèmes, recherche, cartes repliées (la question d'abord), « voir plus ».
+ * On lit d'abord, on pose ensuite (refonte du 24/11/2026) :
+ *   1. Un titre qui rassure et trois repères (réponses publiées, aucun nom demandé, délai).
+ *   2. « Tes questions » épinglé : celles déposées depuis cet appareil, avec leur état.
+ *   3. Une réponse « à la une » (la plus utile), puis le fil : thèmes, recherche, cartes repliées (la question d'abord), « voir plus ».
+ *   4. Un bouton « Poser ma question, sans nom » toujours visible en bas, qui ouvre l'écran d'écriture (cadenas, amorces, compteur).
  */
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { ChevronDown, Clock, Pin, Phone, Search, Video } from 'lucide-react';
+import { ChevronDown, Clock, Lock, Pin, Phone, Search, Video, X } from 'lucide-react';
 import DrLoShell, { DC, card, usePalette } from '../../components/accueil/DrLoShell';
 import { RealDrLoPhoto } from '../../components/accueil/RealDrLoBadge';
 import {
@@ -152,20 +153,84 @@ const BoitePage: React.FC = () => {
     </div>
   );
 
+  // La plus utile en vedette (à égalité : la plus récente) ; elle sort du fil tant qu'on ne filtre pas
+  const une = useMemo(() => {
+    if (answers.length === 0) return null;
+    const score = (a: BoxAnswer) => parseInt(String(a.utile ?? '0'), 10) || 0;
+    return [...answers].sort((x, y) => score(y) - score(x) || y.at - x.at)[0];
+  }, [answers]);
+  const avecUne = !!une && topic === 'all' && !query.trim();
+  const fil = avecUne ? filtered.filter(a => a.id !== une.id) : filtered;
+  const montrees = fil.slice(0, shown);
+  const COULEURS = [DC.intime, DC.sage, DC.gold, DC.social, DC.confier];
+  const couleurDe = (id: string) => COULEURS[Math.max(0, topics.findIndex(t => t.id === id)) % COULEURS.length];
+
+  // L'écran pour poser sa question
+  const [ecrire, setEcrire] = useState(false);
+  const [toutesMes, setToutesMes] = useState(false);
+  const zone = useRef<HTMLTextAreaElement | null>(null);
+  useEffect(() => {
+    if (!ecrire) return;
+    const avant = document.body.style.overflow; document.body.style.overflow = 'hidden';
+    const t = window.setTimeout(() => zone.current?.focus(), 150);
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setEcrire(false); };
+    document.addEventListener('keydown', onKey);
+    return () => { document.body.style.overflow = avant; window.clearTimeout(t); document.removeEventListener('keydown', onKey); };
+  }, [ecrire]);
+  const AMORCES = ['Pourquoi j’ai peur d’être quittée ?', 'Je ne ressens pas de plaisir…', 'Comment dire non sans blesser ?', 'Je me sens seul(e), même entouré(e)…'];
+
+  const carte = (a: BoxAnswer) => {
+    const isOpen = !!open[a.id];
+    const own = mineIds.has(a.id);
+    return (
+      <article key={a.id} data-box-id={a.id} style={{ ...card, padding: 0, border: `1px solid ${own ? palette.accent : DC.line}` }}>
+        <button type="button" onClick={() => toggle(a.id)} aria-expanded={isOpen} className="drl-btn"
+          style={{ width: '100%', display: 'flex', gap: 12, alignItems: 'flex-start', padding: 16, minHeight: 56, border: 'none', background: 'transparent', color: 'inherit', textAlign: 'left', cursor: 'pointer', fontFamily: 'inherit' }}>
+          <span style={{ flex: 1, minWidth: 0 }}>
+            <span style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center', marginBottom: 6 }}>
+              <i aria-hidden="true" style={{ width: 7, height: 7, borderRadius: '50%', background: couleurDe(a.topic), display: 'inline-block' }} />
+              <span style={{ fontSize: 12, fontWeight: 700, letterSpacing: '.02em', color: DC.soft }}>{topicLabel(a.topic)}</span>
+              <span style={{ fontSize: 12, color: DC.faint }}>· {dayLabel(a.at)}</span>
+              {isRecent(a.at) && !seen.has(a.id) && <Pill color={palette.accent}>Nouveau</Pill>}
+              {own && <Pill color={palette.accent}>Ta question</Pill>}
+            </span>
+            <span style={{ display: 'block', fontFamily: 'Fraunces, serif', fontSize: 18, fontWeight: 600, lineHeight: 1.3, color: DC.title }}>{a.question}</span>
+            {!isOpen && (
+              <>
+                <span style={{ display: 'block', marginTop: 8, fontSize: 14, lineHeight: 1.5, color: DC.soft }}>Dr Lô : « {debut(a.answer)} »</span>
+                <span style={{ display: 'block', marginTop: 6, fontSize: 14, color: palette.accent, fontWeight: 700 }}>Lire la réponse</span>
+              </>
+            )}
+          </span>
+          <ChevronDown size={20} color={DC.soft} aria-hidden="true" style={{ flexShrink: 0, marginTop: 20, transform: isOpen ? 'rotate(180deg)' : 'none', transition: 'transform .2s' }} />
+        </button>
+        {isOpen && <div style={{ padding: '0 16px 16px' }}>{answerBlock(a.answer)}<Reactions a={a} accent={palette.accent} /></div>}
+      </article>
+    );
+  };
+
   return (
     <DrLoShell back={{ to: '/', label: 'Accueil' }} palette={palette}>
-      <h1 style={pageTitle}>Une question ? Dépose-la.</h1>
-      <p style={{ margin: '10px 0 0', fontSize: 15, color: DC.soft, lineHeight: 1.5 }}>Sans compte, sans nom. Dr Lô lit les questions et répond à certaines : ici par écrit, ou dans une vidéo. Il ne peut pas répondre à toutes.</p>
+      <h1 style={pageTitle}>La boîte anonyme</h1>
+      <p style={{ margin: '10px 0 0', fontSize: 15, color: DC.soft, lineHeight: 1.5 }}>Les questions que les gens n'osent pas poser, et les réponses de Dr Lô. Sans compte, sans nom. Il lit tout et répond à certaines : ici par écrit, ou dans une vidéo.</p>
+      <div style={{ display: 'flex', gap: 8, marginTop: 14 }}>
+        {[{ v: loaded ? String(answers.length) : '…', l: answers.length > 1 ? 'réponses publiées' : 'réponse publiée' }, { v: 'Aucun', l: 'nom demandé' }, { v: '7 jours', l: 'pour répondre' }].map(t => (
+          <div key={t.l} style={{ flex: 1, minWidth: 0, borderRadius: 14, border: `1px solid ${DC.line}`, background: DC.glass, padding: '9px 6px', textAlign: 'center' }}>
+            <b style={{ display: 'block', fontFamily: 'Fraunces, serif', fontSize: 18, fontWeight: 600, color: DC.title }}>{t.v}</b>
+            <span style={{ fontSize: 11.5, color: DC.soft }}>{t.l}</span>
+          </div>
+        ))}
+      </div>
 
-      {/* 1. Tes questions — épinglé en haut */}
+      {/* Tes questions : épinglées, avec leur état */}
       {mine.length > 0 && (
-        <section aria-labelledby="box-mine" style={{ marginTop: 20 }}>
+        <section aria-labelledby="box-mine" style={{ marginTop: 22 }}>
           <h2 id="box-mine" style={{ margin: '0 0 4px', display: 'flex', alignItems: 'center', gap: 8, fontFamily: 'Fraunces, serif', fontSize: 20, fontWeight: 600, color: DC.title }}>
             <Pin size={18} color={palette.accent} aria-hidden="true" /> Tes questions
           </h2>
           <p style={{ margin: '0 0 10px', fontSize: 13, lineHeight: 1.45, color: DC.faint }}>Gardées seulement sur cet appareil : si tu changes de téléphone ou vides les données du navigateur, elles ne s'affichent plus ici.</p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            {mine.map(q => {
+            {(toutesMes ? mine : mine.slice(0, 2)).map(q => {
               const s = status[q.id];
               const answered = s?.state === 'answered';
               return (
@@ -191,105 +256,123 @@ const BoitePage: React.FC = () => {
               );
             })}
           </div>
-        </section>
-      )}
-
-      {/* 2. Poser une question */}
-      {sent ? (
-        <section style={{ ...card, marginTop: 18 }} aria-live="polite">
-          <p style={{ margin: 0, fontFamily: 'Fraunces, serif', fontSize: 20, fontWeight: 600, color: DC.title }}>C'est déposé. Merci.</p>
-          <p style={{ margin: '8px 0 0', fontSize: 15, lineHeight: 1.5, color: DC.soft }}>Ta question est épinglée en haut de cette page, dans « Tes questions ». Reviens : si Dr Lô répond ici, tu la verras à cet endroit.</p>
-          {sent.support && (
-            <div role="alert" style={{ marginTop: 14, padding: 12, borderRadius: 14, border: '1px solid rgba(232,102,79,.5)', background: 'rgba(232,102,79,.1)' }}>
-              <p style={{ margin: 0, fontSize: 15, lineHeight: 1.5, color: DC.text }}>Ce que tu écris me fait penser que tu souffres. Ne reste pas avec ça sans en parler : parle à une personne de confiance, ou appelle maintenant le SAMU au <b>1515</b>.</p>
-              <a href="tel:1515" className="drl-btn" style={{ marginTop: 10, minHeight: 48, padding: '0 16px', borderRadius: 14, background: '#E8664F', color: '#fff', fontWeight: 700, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 8 }}><Phone size={18} aria-hidden="true" /> Appeler le 1515</a>
-            </div>
+          {mine.length > 2 && (
+            <button type="button" onClick={() => setToutesMes(v => !v)} aria-expanded={toutesMes} className="drl-btn"
+              style={{ marginTop: 10, minHeight: 44, padding: '0 4px', border: 'none', background: 'transparent', color: palette.accent, fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>
+              {toutesMes ? 'Réduire' : `Voir toutes mes questions (${mine.length})`}
+            </button>
           )}
-          <button onClick={() => setSent(null)} className="drl-btn" style={{ marginTop: 14, minHeight: 44, padding: '0 16px', borderRadius: 14, border: `1px solid ${DC.line}`, background: 'transparent', color: DC.text, fontWeight: 700, cursor: 'pointer' }}>Poser une autre question</button>
-        </section>
-      ) : (
-        <section style={{ ...card, marginTop: 18 }}>
-          <label htmlFor="box-q" style={{ display: 'block', fontSize: 14, fontWeight: 700, color: DC.soft }}>Ta question</label>
-          <textarea id="box-q" value={text} onChange={e => setText(e.target.value.slice(0, MAX))} rows={5} placeholder="Écris comme tu parles. Pas de numéro ni de lien."
-            style={{ width: '100%', boxSizing: 'border-box', marginTop: 8, borderRadius: 14, border: `1px solid ${DC.line}`, background: 'rgba(255,255,255,.06)', padding: 12, fontFamily: 'inherit', fontSize: 16, lineHeight: 1.45, color: DC.text, outline: 'none', resize: 'vertical' }} />
-          <p style={{ margin: '6px 0 0', fontSize: 13, color: DC.faint, textAlign: 'right' }}>{text.length} / {MAX}</p>
-          {error && <p role="alert" style={{ margin: '8px 0 0', color: '#F09A7A', fontSize: 15 }}>{error}</p>}
-          <button onClick={send} disabled={busy} className="drl-btn"
-            style={{ marginTop: 12, width: '100%', minHeight: 52, borderRadius: 16, border: 'none', background: palette.accent, color: '#1C1612', fontSize: 16, fontWeight: 800, cursor: busy ? 'default' : 'pointer', opacity: busy ? 0.55 : 1 }}>
-            {busy ? 'Envoi…' : 'Déposer ma question'}
-          </button>
-          <p style={{ margin: '10px 0 0', fontSize: 13, lineHeight: 1.45, color: DC.faint }}>Anonyme : on ne garde ni ton nom, ni ton compte, ni ton adresse. Ce n'est pas une consultation : en cas d'urgence, appelle le SAMU (1515).</p>
         </section>
       )}
 
-      {/* 3. Les réponses de Dr Lô */}
-      {loaded && (
-        <section aria-labelledby="box-answers" style={{ marginTop: 28 }}>
-          <h2 id="box-answers" style={{ margin: 0, fontFamily: 'Fraunces, serif', fontSize: 20, fontWeight: 600, color: DC.title }}>Les réponses de Dr Lô</h2>
+      {/* La réponse à la une, puis le fil des réponses de Dr Lô */}
+      {loaded && answers.length === 0 && (
+        <p style={{ margin: '22px 0 0', fontSize: 15, lineHeight: 1.5, color: DC.soft }}>Pas encore de réponse publiée. Sois la première ou le premier : pose ta question, sans nom.</p>
+      )}
+      {loaded && answers.length > 0 && (
+        <section aria-labelledby="box-answers" style={{ marginTop: 24 }}>
+          {avecUne && une && (
+            <article data-box-id={une.id} style={{ borderRadius: 20, padding: 16, border: `1px solid ${palette.accent}`, background: `linear-gradient(160deg, ${palette.accent}24, rgba(30,22,16,.92) 62%)`, marginBottom: 16 }}>
+              <p style={{ margin: 0, fontSize: 11.5, fontWeight: 700, letterSpacing: '.08em', color: palette.accent }}>À LA UNE · LA PLUS UTILE</p>
+              <p style={{ margin: '8px 0 12px', fontFamily: 'Fraunces, serif', fontSize: 21, fontWeight: 600, lineHeight: 1.25, color: DC.title }}>{une.question}</p>
+              {answerBlock(open[une.id] ? une.answer : debut(une.answer, 170))}
+              <button type="button" onClick={() => toggle(une.id)} aria-expanded={!!open[une.id]} className="drl-btn"
+                style={{ marginTop: 10, minHeight: 44, padding: 0, border: 'none', background: 'transparent', color: palette.accent, fontSize: 15, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>
+                {open[une.id] ? 'Réduire' : 'Lire la réponse ›'}
+              </button>
+              {open[une.id] ? <Reactions a={une} accent={palette.accent} /> : (une.utile || une.moi) ? (
+                <p style={{ margin: '4px 0 0', fontSize: 13, color: DC.soft }}>{[une.utile ? `Utile · ${une.utile}` : '', une.moi ? `Moi aussi · ${une.moi}` : ''].filter(Boolean).join('   ')}</p>
+              ) : null}
+            </article>
+          )}
+
+          <h2 id="box-answers" style={{ margin: 0, fontFamily: 'Fraunces, serif', fontSize: 20, fontWeight: 600, color: DC.title }}>{avecUne ? 'Les dernières réponses' : 'Les réponses de Dr Lô'}</h2>
           <p style={{ margin: '4px 0 0', fontSize: 14, lineHeight: 1.45, color: DC.soft }}>
-            {answers.length > 0 ? `${answers.length} réponse${answers.length > 1 ? 's' : ''} publiée${answers.length > 1 ? 's' : ''}` : 'Pas encore de réponse publiée.'}
+            {answers.length} réponse{answers.length > 1 ? 's' : ''} publiée{answers.length > 1 ? 's' : ''}
             {waiting !== null && waiting > 0 ? ` · ${waiting} question${waiting > 1 ? 's' : ''} attend${waiting > 1 ? 'ent' : ''} encore Dr Lô` : ''}
           </p>
 
-          {answers.length > 0 && (
-            <>
-              <div role="group" aria-label="Choisir un thème" style={{ display: 'flex', gap: 8, overflowX: 'auto', padding: '12px 0 4px', margin: '0 -2px', scrollbarWidth: 'none' }}>
-                <button type="button" onClick={() => { setTopic('all'); setShown(PAGE); }} aria-pressed={topic === 'all'} className="drl-btn" style={chip(topic === 'all')}>Toutes ({answers.length})</button>
-                {topics.filter(t => counts[t.id]).map(t => (
-                  <button key={t.id} type="button" onClick={() => { setTopic(t.id); setShown(PAGE); }} aria-pressed={topic === t.id} className="drl-btn" style={chip(topic === t.id)}>{t.label} ({counts[t.id]})</button>
-                ))}
-              </div>
+          <div role="group" aria-label="Choisir un thème" style={{ display: 'flex', gap: 8, overflowX: 'auto', padding: '12px 0 4px', margin: '0 -2px', scrollbarWidth: 'none' }}>
+            <button type="button" onClick={() => { setTopic('all'); setShown(PAGE); }} aria-pressed={topic === 'all'} className="drl-btn" style={chip(topic === 'all')}>Toutes ({answers.length})</button>
+            {topics.filter(t => counts[t.id]).map(t => (
+              <button key={t.id} type="button" onClick={() => { setTopic(t.id); setShown(PAGE); }} aria-pressed={topic === t.id} className="drl-btn" style={chip(topic === t.id)}>{t.label} ({counts[t.id]})</button>
+            ))}
+          </div>
 
-              <div style={{ position: 'relative', marginTop: 8 }}>
-                <Search size={18} color={DC.faint} aria-hidden="true" style={{ position: 'absolute', left: 14, top: 15 }} />
-                <input type="search" value={query} onChange={e => { setQuery(e.target.value); setShown(PAGE); }} placeholder="Chercher un mot (ex. : mère, stress, rupture)" aria-label="Chercher dans les réponses"
-                  style={{ width: '100%', boxSizing: 'border-box', minHeight: 48, borderRadius: 14, border: `1px solid ${DC.line}`, background: 'rgba(255,255,255,.06)', padding: '0 14px 0 42px', fontFamily: 'inherit', fontSize: 16, color: DC.text, outline: 'none' }} />
-              </div>
+          <div style={{ position: 'relative', marginTop: 8 }}>
+            <Search size={18} color={DC.faint} aria-hidden="true" style={{ position: 'absolute', left: 14, top: 15 }} />
+            <input type="search" value={query} onChange={e => { setQuery(e.target.value); setShown(PAGE); }} placeholder="Chercher un mot (ex. : mère, stress, rupture)" aria-label="Chercher dans les réponses"
+              style={{ width: '100%', boxSizing: 'border-box', minHeight: 48, borderRadius: 14, border: `1px solid ${DC.line}`, background: 'rgba(255,255,255,.06)', padding: '0 14px 0 42px', fontFamily: 'inherit', fontSize: 16, color: DC.text, outline: 'none' }} />
+          </div>
 
-              {filtered.length === 0 ? (
-                <p style={{ margin: '16px 0 0', fontSize: 15, lineHeight: 1.5, color: DC.soft }}>Aucune réponse ne correspond. Essaie un autre mot, ou une autre catégorie.</p>
-              ) : (
-                <div ref={listRef} style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 14 }}>
-                  {visible.map(a => {
-                    const isOpen = !!open[a.id];
-                    const own = mineIds.has(a.id);
-                    return (
-                      <article key={a.id} data-box-id={a.id} style={{ ...card, padding: 0, border: `1px solid ${own ? palette.accent : DC.line}` }}>
-                        <button type="button" onClick={() => toggle(a.id)} aria-expanded={isOpen} className="drl-btn"
-                          style={{ width: '100%', display: 'flex', gap: 12, alignItems: 'flex-start', padding: 16, minHeight: 56, border: 'none', background: 'transparent', color: 'inherit', textAlign: 'left', cursor: 'pointer', fontFamily: 'inherit' }}>
-                          <span style={{ flex: 1, minWidth: 0 }}>
-                            <span style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center', marginBottom: 6 }}>
-                              <span style={{ fontSize: 12, fontWeight: 700, color: DC.soft }}>{topicLabel(a.topic)}</span>
-                              <span style={{ fontSize: 12, color: DC.faint }}>· {dayLabel(a.at)}</span>
-                              {isRecent(a.at) && !seen.has(a.id) && <Pill color={palette.accent}>Nouveau</Pill>}
-                              {own && <Pill color={palette.accent}>Ta question</Pill>}
-                            </span>
-                            <span style={{ display: 'block', fontSize: 15, fontWeight: 700, lineHeight: 1.45, color: DC.title }}>{a.question}</span>
-                            {!isOpen && (
-                              <>
-                                <span style={{ display: 'block', marginTop: 8, fontSize: 14, lineHeight: 1.5, color: DC.soft }}>Dr Lô : « {debut(a.answer)} »</span>
-                                <span style={{ display: 'block', marginTop: 6, fontSize: 14, color: palette.accent, fontWeight: 700 }}>Lire la réponse</span>
-                              </>
-                            )}
-                          </span>
-                          <ChevronDown size={20} color={DC.soft} aria-hidden="true" style={{ flexShrink: 0, marginTop: 20, transform: isOpen ? 'rotate(180deg)' : 'none', transition: 'transform .2s' }} />
-                        </button>
-                        {isOpen && <div style={{ padding: '0 16px 16px' }}>{answerBlock(a.answer)}<Reactions a={a} accent={palette.accent} /></div>}
-                      </article>
-                    );
-                  })}
-                </div>
-              )}
+          {fil.length === 0 ? (
+            <p style={{ margin: '16px 0 0', fontSize: 15, lineHeight: 1.5, color: DC.soft }}>{filtered.length === 0 ? 'Aucune réponse ne correspond. Essaie un autre mot, ou une autre catégorie.' : 'Pas d\'autre réponse pour l\'instant.'}</p>
+          ) : (
+            <div ref={listRef} style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 14 }}>{montrees.map(carte)}</div>
+          )}
 
-              {filtered.length > shown && (
-                <button type="button" onClick={() => setShown(n => n + PAGE)} className="drl-btn"
-                  style={{ marginTop: 14, width: '100%', minHeight: 50, borderRadius: 16, border: `1px solid ${DC.line}`, background: 'transparent', color: DC.text, fontSize: 15, fontWeight: 700, cursor: 'pointer' }}>
-                  Voir {Math.min(PAGE, filtered.length - shown)} réponse{Math.min(PAGE, filtered.length - shown) > 1 ? 's' : ''} de plus ({filtered.length - shown} restante{filtered.length - shown > 1 ? 's' : ''})
-                </button>
-              )}
-            </>
+          {fil.length > shown && (
+            <button type="button" onClick={() => setShown(n => n + PAGE)} className="drl-btn"
+              style={{ marginTop: 14, width: '100%', minHeight: 50, borderRadius: 16, border: `1px solid ${DC.line}`, background: 'transparent', color: DC.text, fontSize: 15, fontWeight: 700, cursor: 'pointer' }}>
+              Voir {Math.min(PAGE, fil.length - shown)} réponse{Math.min(PAGE, fil.length - shown) > 1 ? 's' : ''} de plus ({fil.length - shown} restante{fil.length - shown > 1 ? 's' : ''})
+            </button>
           )}
         </section>
+      )}
+
+      {/* Le geste principal, toujours visible : poser sa question, sans nom */}
+      {!ecrire && (
+        <button type="button" onClick={() => { setSent(null); setEcrire(true); }} className="drl-btn"
+          style={{ position: 'fixed', left: 16, right: 16, bottom: 'calc(78px + env(safe-area-inset-bottom, 0px))', maxWidth: 448, margin: '0 auto', zIndex: 40, minHeight: 54, borderRadius: 999, border: 0, background: palette.accent, color: '#1C1612', fontSize: 16, fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit', boxShadow: '0 8px 24px rgba(0,0,0,.5)' }}>
+          Poser ma question, sans nom
+        </button>
+      )}
+
+      {/* L'écran d'écriture */}
+      {ecrire && (
+        <div role="dialog" aria-modal="true" aria-labelledby="box-ecrire" style={{ position: 'fixed', inset: 0, zIndex: 950, overflowY: 'auto', background: '#130D08' }}>
+          <div style={{ maxWidth: 480, margin: '0 auto', padding: 'calc(14px + env(safe-area-inset-top, 0px)) 18px calc(40px + env(safe-area-inset-bottom, 0px))' }}>
+            <button type="button" onClick={() => setEcrire(false)} aria-label="Fermer" className="drl-btn" style={{ width: 44, height: 44, borderRadius: 13, border: `1px solid ${DC.line}`, background: DC.glass, color: DC.text, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}><X size={20} aria-hidden="true" /></button>
+            {sent ? (
+              <section style={{ marginTop: 18 }} aria-live="polite">
+                <p id="box-ecrire" style={{ margin: 0, fontFamily: 'Fraunces, serif', fontSize: 24, fontWeight: 600, color: DC.title }}>C'est déposé. Merci.</p>
+                <p style={{ margin: '8px 0 0', fontSize: 15, lineHeight: 1.5, color: DC.soft }}>Ta question est épinglée en haut de la page, dans « Tes questions ». Reviens : si Dr Lô répond ici, tu la verras à cet endroit.</p>
+                {sent.support && (
+                  <div role="alert" style={{ marginTop: 14, padding: 12, borderRadius: 14, border: '1px solid rgba(232,102,79,.5)', background: 'rgba(232,102,79,.1)' }}>
+                    <p style={{ margin: 0, fontSize: 15, lineHeight: 1.5, color: DC.text }}>Ce que tu écris me fait penser que tu souffres. Ne reste pas avec ça sans en parler : parle à une personne de confiance, ou appelle maintenant le SAMU au <b>1515</b>.</p>
+                    <a href="tel:1515" className="drl-btn" style={{ marginTop: 10, minHeight: 48, padding: '0 16px', borderRadius: 14, background: '#E8664F', color: '#fff', fontWeight: 700, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 8 }}><Phone size={18} aria-hidden="true" /> Appeler le 1515</a>
+                  </div>
+                )}
+                <button type="button" onClick={() => setEcrire(false)} className="drl-btn" style={{ marginTop: 16, width: '100%', minHeight: 50, borderRadius: 999, border: 0, background: palette.accent, color: '#1C1612', fontSize: 16, fontWeight: 800, cursor: 'pointer' }}>Voir les réponses</button>
+                <button type="button" onClick={() => setSent(null)} className="drl-btn" style={{ marginTop: 10, width: '100%', minHeight: 46, borderRadius: 999, border: `1px solid ${DC.line}`, background: 'transparent', color: DC.text, fontWeight: 700, cursor: 'pointer' }}>Poser une autre question</button>
+              </section>
+            ) : (
+              <section style={{ marginTop: 14 }}>
+                <h2 id="box-ecrire" style={{ margin: 0, fontFamily: 'Fraunces, serif', fontSize: 26, fontWeight: 600, lineHeight: 1.15, color: DC.title }}>Ta question</h2>
+                <p style={{ margin: '6px 0 0', fontSize: 15, lineHeight: 1.5, color: DC.soft }}>Écris comme tu parles. Personne ne saura que c'est toi.</p>
+                <p style={{ margin: '8px 0 0', display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 13, color: DC.sage }}><Lock size={14} aria-hidden="true" /> Sans nom, sans compte, sans numéro</p>
+                <label htmlFor="box-q" style={{ position: 'absolute', left: -9999 }}>Ta question</label>
+                <textarea id="box-q" ref={zone} value={text} onChange={e => setText(e.target.value.slice(0, MAX))} rows={6} placeholder="Je n'arrive pas à… écris ici, en quelques phrases. Pas de numéro ni de lien."
+                  style={{ width: '100%', boxSizing: 'border-box', marginTop: 12, borderRadius: 16, border: `1px solid ${DC.line}`, background: 'rgba(255,255,255,.06)', padding: 14, fontFamily: 'inherit', fontSize: 16, lineHeight: 1.5, color: DC.text, outline: 'none', resize: 'vertical' }} />
+                <p style={{ margin: '6px 0 0', fontSize: 13, color: DC.faint, textAlign: 'right' }}>{text.length} / {MAX}</p>
+                {text.trim() === '' && (
+                  <>
+                    <p style={{ margin: '8px 0 6px', fontSize: 14, fontWeight: 700, color: DC.text }}>Pas d'idée ? Pars d'une de celles-ci :</p>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                      {AMORCES.map(a => <button key={a} type="button" onClick={() => { setText(a); zone.current?.focus(); }} className="drl-btn" style={{ minHeight: 40, padding: '0 14px', borderRadius: 999, border: `1px solid ${DC.line}`, background: 'transparent', color: DC.soft, fontSize: 14, cursor: 'pointer', fontFamily: 'inherit' }}>{a}</button>)}
+                    </div>
+                  </>
+                )}
+                {error && <p role="alert" style={{ margin: '10px 0 0', color: '#F09A7A', fontSize: 15 }}>{error}</p>}
+                <button type="button" onClick={send} disabled={busy} className="drl-btn"
+                  style={{ marginTop: 14, width: '100%', minHeight: 54, borderRadius: 999, border: 'none', background: palette.accent, color: '#1C1612', fontSize: 16, fontWeight: 800, cursor: busy ? 'default' : 'pointer', opacity: busy ? 0.55 : 1 }}>
+                  {busy ? 'Envoi…' : 'Déposer ma question'}
+                </button>
+                <p style={{ margin: '12px 0 0', fontSize: 13, lineHeight: 1.5, color: DC.faint, textAlign: 'center' }}>Dr Lô lit tout et répond à certaines questions, ici ou dans une vidéo. Rien n'est publié sans son accord, et jamais avec ton nom. Ce n'est pas une consultation : en cas d'urgence, appelle le SAMU (1515).</p>
+              </section>
+            )}
+          </div>
+        </div>
       )}
     </DrLoShell>
   );

@@ -26,6 +26,7 @@ function safeReload() {
 export default function UpdateBanner() {
   const [deferred, setDeferred] = useState(false);
   const [nouvelle, setNouvelle] = useState(false);
+  const [enCours, setEnCours] = useState(false);
   const hadController = useRef(!!navigator.serviceWorker?.controller);
   const refreshing = useRef(false);
 
@@ -100,21 +101,34 @@ export default function UpdateBanner() {
 
   if (!deferred && !nouvelle) return null;
 
+  // « Actualiser » répond tout de suite (le bouton change) ; si le nettoyage traîne, la page se recharge quand même après 6 s
+  const actualiser = () => {
+    if (enCours) return;
+    setEnCours(true);
+    const recharger = () => window.location.reload();
+    const secours = window.setTimeout(recharger, 6000);
+    void forcerMiseAJour(() => { window.clearTimeout(secours); recharger(); });
+  };
+
+  // Au-dessus de la barre du bas (elle reste utilisable) ; au-dessus de tout le reste
   return (
     <div
-      className="fixed bottom-4 left-4 right-4 z-[9999] flex items-center gap-3 bg-card border border-line rounded-xl px-4 py-3 shadow-lg max-w-sm mx-auto"
+      className="fixed left-4 right-4 z-[9999] flex items-center gap-3 bg-card border border-line rounded-xl px-4 py-3 shadow-lg max-w-sm mx-auto"
+      style={{ bottom: 'calc(84px + env(safe-area-inset-bottom, 0px))' }}
       role="status"
     >
       <Info size={14} className="text-accent flex-shrink-0" />
       <span className="text-sm text-ink flex-1">
-        {deferred ? 'Mise à jour prête : elle s\'appliquera quand tu auras terminé.' : 'Une nouvelle version est disponible.'}
+        {enCours ? 'Mise à jour en cours…' : deferred ? 'Mise à jour prête : elle s\'appliquera quand tu auras terminé.' : 'Une nouvelle version est disponible.'}
       </span>
       <button
         type="button"
-        onClick={() => { void forcerMiseAJour(() => window.location.reload()); }}
-        className="min-h-[44px] px-4 rounded-full bg-accent text-white text-sm font-bold flex-shrink-0"
+        onClick={actualiser}
+        disabled={enCours}
+        aria-busy={enCours}
+        className="min-h-[44px] px-4 rounded-full bg-accent text-white text-sm font-bold flex-shrink-0 disabled:opacity-70"
       >
-        Actualiser
+        {enCours ? 'Un instant…' : 'Actualiser'}
       </button>
     </div>
   );
