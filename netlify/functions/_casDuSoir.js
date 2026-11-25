@@ -5,6 +5,11 @@
 const { HISTOIRES } = require('./_casDuSoirHistoires');
 const MINUTAGES = { ...require('./_casDuSoirMinutages'), ...require('./_casDuSoirMinutagesGoumin'), ...require('./_casDuSoirMinutagesPlaisir'), ...require('./_casDuSoirMinutagesTelephone'), ...require('./_casDuSoirMinutagesDependance') };
 
+// Les « plans vivants » (cadres dans les images d'origine, moment Dr Lô, fiches) : accrochés au minutage de l'audio correspondant,
+// sur le même objet (l'épisode envoie toujours MINUTAGES[cle]). Un plan par phrase : sinon, la scène est ignorée.
+const SCENES = require('./_casDuSoirScenes');
+for (const [cle, s] of Object.entries(SCENES)) { const m = MINUTAGES[cle]; if (m && Array.isArray(s.lignes) && s.lignes.length === m.lignes.length) m.scene = s; }
+
 /** Le minutage d'un audio (ou null). */
 const minutage = (cle) => (cle && MINUTAGES[cle]) || null;
 

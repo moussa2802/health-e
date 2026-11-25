@@ -7,9 +7,10 @@
  *   3. la fin : une feuille sur la dernière image (le vote et la suite pour un épisode, le quiz pour la leçon).
  * Sans minutage ou sans audio : le texte entier, à lire. Aucun mouvement si l'appareil demande moins d'animations.
  */
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ChevronLeft } from 'lucide-react';
 import LecteurAudio from './LecteurAudio';
+import ScenesVivantes, { CADRE, HAUT_CADRE } from './ScenesVivantes';
 import type { CdsMinutage } from '../../services/casDuSoirService';
 import { indexA } from '../../utils/casDuSoirSync';
 
@@ -91,6 +92,10 @@ const LecteurImmersif: React.FC<{
     return texte.split(/\n{2,}/).filter(p => p.trim()).map(p => ({ t0: 0, qui: '', texte: p }));
   }, [minutage, texte]);
   const synchro = !!minutage?.lignes?.length && !!audioSrc && pret;
+  // Les plans vivants (si l'épisode en a) : à la place de l'image fixe ; le texte se place sous le cadre, plus bas quand Dr Lô prend l'écran
+  const scene = minutage?.scene && audioSrc && minutage.scene.lignes.length === minutage.lignes.length ? minutage.scene : null;
+  const [drlo, setDrlo] = useState(false);
+  const temps = useCallback(() => controle.current?.time?.() ?? 0, []);
   const imgs = useMemo(() => minutage?.images ?? [], [minutage]);
   const srcs = useMemo(() => {
     const liste = imgs.length ? imgs.map(x => `${DOSSIER}${x.image}`) : [];
@@ -172,7 +177,9 @@ const LecteurImmersif: React.FC<{
 
   return (
     <div role="region" aria-label={`${titre} : lecture en plein écran`} style={{ position: 'fixed', inset: 0, zIndex: 900, background: '#0B0704', color: INK, overflow: 'hidden', fontFamily: 'inherit' }}>
-      <Fond srcs={srcs} actif={actif} mode={fond} />
+      {scene && minutage
+        ? <ScenesVivantes scene={scene} lignes={minutage.lignes} duree={minutage.duree} accent={accent} temps={temps} onDrLo={setDrlo} />
+        : <Fond srcs={srcs} actif={actif} mode={fond} />}
 
       {/* Barre du haut : retour et ce qu'on lit */}
       <div style={{ position: 'absolute', left: 12, right: 12, top: 'calc(10px + env(safe-area-inset-top, 0px))', display: 'flex', alignItems: 'center', gap: 12, zIndex: 9 }}>
@@ -203,7 +210,7 @@ const LecteurImmersif: React.FC<{
       )}
 
       {/* 2. La lecture : le texte qui monte et se dissout */}
-      <div style={{ position: 'absolute', left: 0, right: 0, top: 'calc(64px + env(safe-area-inset-top, 0px))', bottom: audioSrc ? 86 : 0, zIndex: 3, opacity: lecture ? 1 : 0, pointerEvents: lecture ? 'auto' : 'none', transition: 'opacity .5s',
+      <div style={{ position: 'absolute', left: 0, right: 0, top: scene ? `calc(${HAUT_CADRE} + ${CADRE} * ${drlo ? 0.98 : 0.76})` : 'calc(64px + env(safe-area-inset-top, 0px))', bottom: audioSrc ? 86 : 0, zIndex: 3, opacity: lecture ? 1 : 0, pointerEvents: lecture ? 'auto' : 'none', transition: 'opacity .5s, top .9s ease',
         WebkitMaskImage: 'linear-gradient(to bottom, transparent 0, #000 34%, #000 100%)', maskImage: 'linear-gradient(to bottom, transparent 0, #000 34%, #000 100%)' }}>
       <div ref={tx} onTouchStart={reprendre} onWheel={reprendre} onPointerDown={e => { if (e.pointerType === 'mouse') reprendre(); }} tabIndex={lecture ? 0 : -1} aria-hidden={!lecture} aria-label="Le texte"
         style={{ position: 'absolute', inset: 0, overflowY: lecture ? 'auto' : 'hidden', scrollbarWidth: 'none', overscrollBehavior: 'contain', WebkitOverflowScrolling: 'touch' }}>

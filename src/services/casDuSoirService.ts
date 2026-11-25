@@ -7,7 +7,24 @@ import { sourceDeLaVisite } from '../utils/source';
 
 export interface CdsChoix { id: string; label: string }
 /** Le minutage d'un audio : les phrases (t en secondes) et les images qui changent pendant l'écoute */
-export interface CdsMinutage { duree: number; lignes: { t0: number; t1: number; qui: string; texte: string }[]; images?: { t: number; image: string }[] }
+export interface CdsMinutage { duree: number; lignes: { t0: number; t1: number; qui: string; texte: string }[]; images?: { t: number; image: string }[]; scene?: CdsScene | null }
+/**
+ * Les « plans vivants » d'un audio : les images d'origine, les cadres (plans) qui glissent de a vers b, un plan par phrase
+ * ('DRLO' : Dr Lô prend l'écran ; null : on garde le plan), et le moment Dr Lô (contexte, fiches de points clés, commentaires d'un live).
+ */
+export interface CdsScene {
+  images: Record<string, { src: string; w: number; h: number; lum?: [number, number, number, string, string][] }>;
+  plans: Record<string, [string, [number, number, number], [number, number, number]]>;
+  lignes: (string | null)[];
+  drlo?: {
+    contexte: 'video' | 'vocal' | 'appel' | 'live' | 'cabinet' | 'lecon';
+    titre?: string;
+    /** le plan derrière Dr Lô quand il prend l'écran */
+    fond?: string;
+    fiches?: { i: number; fin?: number; titre: string; points: [number, string][] }[];
+    commentaires?: [number, string][];
+  } | null;
+}
 export interface CdsEpisode { n: number; titre: string; texte: string; image: string | null; minutage?: CdsMinutage | null; minutes: number; question: string; choix: CdsChoix[]; embranchement: boolean; /** tests proposés à la fin de l'épisode (identifiants du catalogue) */ tests?: string[] }
 export interface CdsResultats {
   total: number;

@@ -8,10 +8,11 @@
  * Sans minutage ou sans audio : l'image fixe et le texte normal (« texte »), comme avant.
  * Léger : un seul fichier de minutage (déjà reçu avec l'épisode), et la page ne se redessine que quand la phrase ou l'image change.
  */
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { DC } from '../accueil/DrLoShell';
 import Illustration from '../accueil/Illustration';
 import LecteurAudio from './LecteurAudio';
+import ScenesVivantes from './ScenesVivantes';
 import type { CdsMinutage } from '../../services/casDuSoirService';
 import { indexA } from '../../utils/casDuSoirSync';
 
@@ -83,7 +84,8 @@ const AudioSynchro: React.FC<{
   /** Montrer les paroles seulement une fois la lecture lancée (intrigue sous la couverture) */
   parolesApresLecture?: boolean;
 }> = ({ src, minutage, label, accent, compact, image, texte, parolesApresLecture }) => {
-  const controle = useRef<{ seek: (t: number) => void } | null>(null);
+  const controle = useRef<{ seek: (t: number) => void; time?: () => number } | null>(null);
+  const temps = useCallback(() => controle.current?.time?.() ?? 0, []);
   const [pret, setPret] = useState(false);
   const [joue, setJoue] = useState(false);
   const [lance, setLance] = useState(false);
@@ -101,6 +103,7 @@ const AudioSynchro: React.FC<{
     if (playing) setLance(true);
   };
   const synchro = !!minutage && pret && lignes.length > 0;
+  const scene = minutage?.scene && src && minutage.scene.lignes.length === lignes.length ? minutage.scene : null;
   const parolesVisibles = synchro && (!parolesApresLecture || lance);
   // Pendant l'écoute synchronisée, l'image et le lecteur restent fixés en haut ; seul le texte défile dessous.
   // Pas de « position: sticky » : sur iPhone, un élément sticky retarde sur le défilement (l'image remonte un instant avec le texte,
@@ -145,7 +148,9 @@ const AudioSynchro: React.FC<{
       {/* La place de l'en-tête, gardée dans la page pendant qu'il est fixé */}
       {parolesVisibles && <div aria-hidden="true" style={{ height: hTete }} />}
       <div ref={tete} style={styleTete}>
-      {image && (images.length && pret
+      {/* Les plans vivants (l'intrigue) : l'image de l'histoire qui bouge avec la voix, même avant la lecture (premier plan) */}
+      {scene && minutage && <div style={{ marginBottom: 8 }}><ScenesVivantes compact scene={scene} lignes={minutage.lignes} duree={minutage.duree} accent={accent} temps={temps} /></div>}
+      {!scene && image && (images.length && pret
         ? <Diaporama images={images} idx={idxI} fixe={image.src} ratio={image.ratio} tint={accent} radius={image.radius ?? 12} fallback={image.fallback} />
         : <Illustration src={image.src} ratio={image.ratio} tint={accent} radius={image.radius ?? 12} fallback={image.fallback} />)}
       {/* Lecteur collé en haut de l'écran pendant la lecture synchronisée : on peut mettre en pause en lisant */}
