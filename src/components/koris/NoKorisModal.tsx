@@ -8,6 +8,7 @@ import { Loader2 } from 'lucide-react';
 import { useKoris } from '../../contexts/KorisContext';
 import { authedFetch } from '../../utils/authedFetch';
 import { CREDIT, credits } from '../../config/creditName';
+import { markWavePending, onReturnToPage, readWavePending } from '../../utils/wavePending';
 
 const KORI_IMG = CREDIT.img;
 
@@ -23,9 +24,18 @@ function formatPrice(n: number) {
 }
 
 const NoKorisModal: React.FC = () => {
-  const { showNoKorisModal, closeNoKorisModal, noKorisAction, noKorisCost, balance } = useKoris();
+  const { showNoKorisModal, closeNoKorisModal, noKorisAction, noKorisCost, balance, refreshBalance } = useKoris();
   const [loading, setLoading] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  // Retour depuis Wave (app de l'écran d'accueil : le paiement se termine dans Safari) : bouton débloqué, solde rechargé.
+  React.useEffect(() => onReturnToPage(() => {
+    setLoading(null);
+    if (readWavePending()) {
+      refreshBalance();
+      [3000, 8000].forEach(ms => setTimeout(() => refreshBalance(), ms));
+    }
+  }), [refreshBalance]);
 
   if (!showNoKorisModal) return null;
 
@@ -40,6 +50,7 @@ const NoKorisModal: React.FC = () => {
       });
       const data = await res.json();
       if (data.success && data.redirect_url) {
+        markWavePending(balance, PACKS.find(p => p.id === packId)?.koris ?? 0);
         window.location.href = data.redirect_url;
       } else {
         setError(data.error || 'Erreur lors de la création du paiement');

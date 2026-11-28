@@ -4,6 +4,8 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Check, Loader2, AlertCircle } from 'lucide-react';
 import DrLoShell, { DC, card, usePalette } from '../components/accueil/DrLoShell';
 import { useKoris } from '../contexts/KorisContext';
+import { useAuth } from '../contexts/AuthContext';
+import { clearWavePending, markWavePending, onReturnToPage, readWavePending, wavePaid } from '../utils/wavePending';
 import { authedFetch } from '../utils/authedFetch';
 import { CREDIT, credits } from '../config/creditName';
 
@@ -24,11 +26,15 @@ const AcheterKorisPage: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { balance, refreshBalance } = useKoris();
+  const { isAuthenticated, loading: authLoading } = useAuth();
   const palette = usePalette();
   const [loading, setLoading] = useState<string | null>(null);
   // La formule la plus choisie est allumée d'office ; on paie avec le bouton : jamais de départ vers Wave au premier tap.
   const [selected, setSelected] = useState<string | null>('pack_populaire');
   const [error, setError] = useState<string | null>(null);
+  // Paiement lancé depuis cet appareil et pas encore vu sur le solde (app de l'écran d'accueil : Wave revient dans Safari).
+  const [pending, setPending] = useState(() => readWavePending());
+  const [paidHere, setPaidHere] = useState<number | null>(null);
 
   const isSuccess = searchParams.get('success') === 'true';
   const isCancelled = searchParams.get('cancelled') === 'true';
@@ -44,6 +50,26 @@ const AcheterKorisPage: React.FC = () => {
     }
   }, [isSuccess, refreshBalance, returnTo, navigate]);
 
+  // Retour dans la page (depuis Wave ou Safari) : bouton débloqué, solde rechargé quelques fois.
+  React.useEffect(() => onReturnToPage(() => {
+    setLoading(null);
+    const p = readWavePending();
+    setPending(p);
+    if (p) {
+      refreshBalance();
+      [3000, 8000].forEach(ms => setTimeout(() => refreshBalance(), ms));
+    }
+  }), [refreshBalance]);
+
+  // Le solde a augmenté depuis le paiement lancé : c'est payé.
+  React.useEffect(() => {
+    if (pending && wavePaid(pending, balance)) {
+      setPaidHere(balance - pending.balanceBefore);
+      clearWavePending();
+      setPending(null);
+    }
+  }, [pending, balance]);
+
   const handlePurchase = async (packId: string) => {
     setLoading(packId);
     setError(null);
@@ -58,6 +84,9 @@ const AcheterKorisPage: React.FC = () => {
       const data = await res.json();
 
       if (data.success && data.redirect_url) {
+        const chosen = PACKS.find(p => p.id === packId);
+        markWavePending(balance, chosen?.koris ?? 0);
+        setPending(readWavePending());
         window.location.href = data.redirect_url;
       } else {
         setError(data.error || 'Erreur lors de l\'initiation du paiement.');
@@ -81,7 +110,9 @@ const AcheterKorisPage: React.FC = () => {
       <h1 style={{ margin: '18px 0 0', fontFamily: 'Fraunces, serif', fontSize: 28, lineHeight: 1.2, fontWeight: 600, color: DC.title }}>Recharger mes {CREDIT.many}</h1>
       <p style={{ margin: '6px 0 0', fontSize: 15, lineHeight: 1.5, color: DC.soft }}>Pour discuter plus longtemps avec ton compagnon et recevoir tes analyses détaillées.</p>
 
-      {isSuccess && notice(DC.sage, <><Check size={18} color={DC.sage} aria-hidden="true" /><span style={{ fontSize: 15, color: DC.text }}><b>Paiement reçu, merci !</b> Tes {CREDIT.many} arrivent sur ton solde dans quelques secondes.</span></>)}
+      {isSuccess && !authLoading && !isAuthenticated && notice(DC.sage, <><Check size={18} color={DC.sage} aria-hidden="true" /><span style={{ fontSize: 15, color: DC.text }}><b>Paiement reçu, merci !</b> Tes {CREDIT.many} sont sur ton compte Health-e. Si tu as payé depuis l'app Health-e de ton écran d'accueil, retournes-y : elles y sont déjà. Sinon, connecte-toi ici pour les voir.</span></>)}
+      {((isSuccess && (authLoading || isAuthenticated) && paidHere === null) || (!isSuccess && pending && paidHere === null)) && notice(DC.sage, <><Check size={18} color={DC.sage} aria-hidden="true" /><span style={{ fontSize: 15, color: DC.text }}>{isSuccess ? <><b>Paiement reçu, merci !</b> Tes {CREDIT.many} arrivent sur ton solde dans quelques secondes.</> : <><b>Paiement en cours dans Wave.</b> Une fois payé, ton solde se met à jour ici tout seul.</>}</span></>)}
+      {paidHere !== null && notice(DC.sage, <><Check size={18} color={DC.sage} aria-hidden="true" /><span style={{ fontSize: 15, color: DC.text }}><b>Paiement reçu, merci !</b> +{credits(paidHere)} sur ton solde.</span></>)}
       {isCancelled && notice(DC.gold, <span style={{ fontSize: 15, color: DC.soft }}>Paiement annulé. Tu peux réessayer quand tu veux.</span>)}
       {error && notice(DC.attention, <><AlertCircle size={18} color={DC.attention} aria-hidden="true" /><span style={{ fontSize: 15, color: DC.text }}>{error}</span></>)}
 
