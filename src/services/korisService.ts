@@ -1,7 +1,7 @@
 /**
  * Koris Service — Gestion de l'économie de crédits virtuels Health-e
  *
- * Modèle : 25 Koris offerts à l'inscription, puis achat de packs via PayTech.
+ * Modèle : 25 Koris offerts à l'inscription, puis achat de packs via Wave.
  *
  * Firestore data model:
  *   patients/{userId}.korisWallet: { balance, totalSpent, lastPaidAt, ... }

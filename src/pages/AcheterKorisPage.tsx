@@ -26,7 +26,7 @@ const AcheterKorisPage: React.FC = () => {
   const { balance, refreshBalance } = useKoris();
   const palette = usePalette();
   const [loading, setLoading] = useState<string | null>(null);
-  // La formule la plus choisie est allumée d'office ; on paie avec le bouton : jamais de départ vers PayTech au premier tap.
+  // La formule la plus choisie est allumée d'office ; on paie avec le bouton : jamais de départ vers Wave au premier tap.
   const [selected, setSelected] = useState<string | null>('pack_populaire');
   const [error, setError] = useState<string | null>(null);
 
@@ -36,11 +36,11 @@ const AcheterKorisPage: React.FC = () => {
 
   React.useEffect(() => {
     if (isSuccess) {
+      // Les étincelles sont créditées par la notification de Wave, qui peut arriver quelques secondes après le retour.
       refreshBalance();
-      if (returnTo) {
-        const timer = setTimeout(() => navigate(returnTo), 2000);
-        return () => clearTimeout(timer);
-      }
+      const refreshes = [3000, 8000, 15000].map(ms => setTimeout(() => refreshBalance(), ms));
+      const back = returnTo ? setTimeout(() => navigate(returnTo), 4000) : undefined;
+      return () => { refreshes.forEach(clearTimeout); if (back) clearTimeout(back); };
     }
   }, [isSuccess, refreshBalance, returnTo, navigate]);
 
@@ -49,7 +49,7 @@ const AcheterKorisPage: React.FC = () => {
     setError(null);
 
     try {
-      const res = await authedFetch('/.netlify/functions/paytech-koris', {
+      const res = await authedFetch('/.netlify/functions/wave-koris', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ packId }),
@@ -81,7 +81,7 @@ const AcheterKorisPage: React.FC = () => {
       <h1 style={{ margin: '18px 0 0', fontFamily: 'Fraunces, serif', fontSize: 28, lineHeight: 1.2, fontWeight: 600, color: DC.title }}>Recharger mes {CREDIT.many}</h1>
       <p style={{ margin: '6px 0 0', fontSize: 15, lineHeight: 1.5, color: DC.soft }}>Pour discuter plus longtemps avec ton compagnon et recevoir tes analyses détaillées.</p>
 
-      {isSuccess && notice(DC.sage, <><Check size={18} color={DC.sage} aria-hidden="true" /><span style={{ fontSize: 15, color: DC.text }}><b>C'est fait !</b> Tes {CREDIT.many} sont sur ton solde.</span></>)}
+      {isSuccess && notice(DC.sage, <><Check size={18} color={DC.sage} aria-hidden="true" /><span style={{ fontSize: 15, color: DC.text }}><b>Paiement reçu, merci !</b> Tes {CREDIT.many} arrivent sur ton solde dans quelques secondes.</span></>)}
       {isCancelled && notice(DC.gold, <span style={{ fontSize: 15, color: DC.soft }}>Paiement annulé. Tu peux réessayer quand tu veux.</span>)}
       {error && notice(DC.attention, <><AlertCircle size={18} color={DC.attention} aria-hidden="true" /><span style={{ fontSize: 15, color: DC.text }}>{error}</span></>)}
 
@@ -125,11 +125,11 @@ const AcheterKorisPage: React.FC = () => {
         <div style={{ position: 'sticky', bottom: 'calc(84px + env(safe-area-inset-bottom, 0px))', marginTop: 16, zIndex: 5 }}>
           <button onClick={() => handlePurchase(pack.id)} disabled={loading !== null} className="drl-btn"
             style={{ width: '100%', minHeight: 54, borderRadius: 999, border: 0, background: palette.primary, color: DC.ink, fontSize: 16, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, cursor: 'pointer', fontFamily: 'inherit', boxShadow: '0 10px 30px rgba(0,0,0,.35)' }}>
-            {loading ? <><Loader2 size={18} className="animate-spin" aria-hidden="true" /> Ouverture du paiement…</> : <>Payer {formatNumber(pack.price)} F · {credits(pack.koris)}</>}
+            {loading ? <><Loader2 size={18} className="animate-spin" aria-hidden="true" /> Ouverture du paiement…</> : <>Payer {formatNumber(pack.price)} F avec Wave · {credits(pack.koris)}</>}
           </button>
         </div>
       )}
-      <p style={{ margin: '10px 0 0', textAlign: 'center', fontSize: 13, lineHeight: 1.5, color: DC.muted }}>Wave, Orange Money ou carte, via PayTech. Health-e ne voit jamais tes codes.</p>
+      <p style={{ margin: '10px 0 0', textAlign: 'center', fontSize: 13, lineHeight: 1.5, color: DC.muted }}>Paiement par Wave. Health-e ne voit jamais ton code Wave.</p>
 
       <section aria-label="Comment ça marche" style={{ ...card, marginTop: 16 }}>
         <ul style={{ margin: 0, paddingLeft: 18, listStyle: 'disc', display: 'flex', flexDirection: 'column', gap: 6, fontSize: 14, lineHeight: 1.5, color: DC.soft }}>

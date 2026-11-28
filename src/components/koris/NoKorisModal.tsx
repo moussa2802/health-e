@@ -33,7 +33,7 @@ const NoKorisModal: React.FC = () => {
     setLoading(packId);
     setError(null);
     try {
-      const res = await authedFetch('/.netlify/functions/paytech-koris', {
+      const res = await authedFetch('/.netlify/functions/wave-koris', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ packId, returnTo: window.location.pathname }),
@@ -105,6 +105,8 @@ const NoKorisModal: React.FC = () => {
             </button>
           ))}
         </div>
+
+        <p className="text-[13px] text-ink-soft text-center m-0 mb-3">Paiement par Wave</p>
 
         {error && (
           <div className="text-xs text-danger text-center mb-3">{error}</div>

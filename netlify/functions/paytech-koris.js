@@ -21,6 +21,11 @@ const KORIS_PACKS = {
 };
 
 exports.handler = async (event) => {
+  // Désactivé depuis le passage à Wave (nov. 2026) : les achats passent par wave-koris.
+  // Pour revenir à PayTech : poser PAYTECH_ENABLED=true sur Netlify et rebrancher les boutons sur paytech-koris.
+  if (process.env.PAYTECH_ENABLED !== "true") {
+    return { statusCode: 410, headers: { "Content-Type": "application/json" }, body: JSON.stringify({ error: "PayTech désactivé : paiement par Wave" }) };
+  }
   const headers = {
     "Access-Control-Allow-Origin": "*",
     "Access-Control-Allow-Headers": "Content-Type, Authorization",

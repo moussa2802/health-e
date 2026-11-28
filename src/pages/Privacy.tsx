@@ -29,7 +29,7 @@ const Privacy: React.FC = () => (
         <><B>Ta situation</B>, que tu indiques au début : tranche d'âge, genre, situation de couple, et quelques repères (enfants, deuil, événement difficile) qui servent à te proposer les bons tests.</>,
         <><B>Tes tests</B> : tes réponses, tes scores et leurs interprétations, y compris pour la vie intime. Ce sont des données de santé : nous les traitons comme telles.</>,
         <><B>Ce que tu écris ou enregistres</B> : ton journal, ton humeur, tes conversations avec le compagnon IA, ce qu'il retient de toi pour s'en souvenir, tes questions à Dr Lô, tes commentaires et vocaux dans les chaînes, tes défis.</>,
-        <><B>Tes achats d'étincelles</B> : la formule, le montant, la date et la référence du paiement. Le paiement passe par PayTech (Wave, Orange Money) : nous ne recevons ni ton code ni tes informations bancaires.</>,
+        <><B>Tes achats d'étincelles</B> : la formule, le montant, la date et la référence du paiement. Le paiement passe par Wave : nous ne recevons ni ton code ni tes informations bancaires.</>,
         <><B>Des informations techniques</B> : des statistiques d'utilisation (pages ouvertes, boutons touchés, jamais le contenu de ce que tu écris) et, si tu actives les rappels, l'identifiant de notification de ton téléphone.</>,
       ]} />
     </InfoSection>
@@ -57,7 +57,7 @@ const Privacy: React.FC = () => (
         <><B>Dr Lô</B> : seulement ce que tu lui envoies (ta question, et les parties de ton profil que tu choisis de lui montrer) et ce que tu publies dans les chaînes. Tu peux lui écrire anonymement. Il ne reprend ta question dans une vidéo que si tu l'as accepté, toujours anonymement.</>,
         <><B>Les membres d'une chaîne</B> : tes commentaires, signés comme tu le choisis (anonyme, pseudo ou prénom).</>,
         <><B>La personne avec qui tu fais un test de compatibilité</B> : le résultat de la comparaison, pas tes réponses aux tests.</>,
-        <><B>Nos prestataires techniques</B>, uniquement pour faire fonctionner le service : Google Firebase (comptes et base de données), Netlify (hébergement du site), Anthropic (le compagnon IA), PayTech (paiements). Leurs serveurs peuvent se trouver hors du Sénégal.</>,
+        <><B>Nos prestataires techniques</B>, uniquement pour faire fonctionner le service : Google Firebase (comptes et base de données), Netlify (hébergement du site), Anthropic (le compagnon IA), Wave (paiements). Leurs serveurs peuvent se trouver hors du Sénégal.</>,
       ]} />
       <P>Nous ne vendons ni ne louons aucune donnée, et nous n'en donnons à personne d'autre, sauf obligation légale.</P>
     </InfoSection>
